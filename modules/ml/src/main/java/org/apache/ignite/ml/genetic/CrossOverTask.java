@@ -93,12 +93,12 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
     }
 
     /**
-     * Helper method to help assign ComputeJobs to respective ClusterNodes
+     * Helper method to help assign ComputeJobs to respective ClusterNodes.
      *
-     * @param clusterNode
-     * @param keys Primary keys of Chromosomes
-     * @param map Nodes where jobs will be sent
-     * @return A map of ComputeJob/ClusterNode's
+     * @param clusterNode Cluster node.
+     * @param keys Primary keys of Chromosomes.
+     * @param map Nodes where jobs will be sent.
+     * @return A map of ComputeJob/ClusterNode's.
      */
     private Map<ComputeJob, ClusterNode> setupCrossOver(ClusterNode clusterNode, List<Long> keys,
         Map<ComputeJob, ClusterNode> map) {

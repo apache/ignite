@@ -25,14 +25,13 @@
 #include <ignite/thin/ignite_client_configuration.h>
 
 #include <ignite/common/concurrent.h>
-
-#include <ignite/network/end_point.h>
 #include <ignite/network/socket_client.h>
 
 #include <ignite/impl/interop/interop_output_stream.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 
 #include "impl/protocol_version.h"
+#include "impl/ignite_node.h"
 
 namespace ignite
 {
@@ -60,9 +59,12 @@ namespace ignite
 
                 /** Version 1.2.0. */
                 static const ProtocolVersion VERSION_1_2_0;
+                
+                /** Version 1.4.0. Added: Affinity Awareness support, IEP-23. */
+                static const ProtocolVersion VERSION_1_4_0;
 
                 /** Current version. */
-                static const ProtocolVersion VERSION_CURRENT;
+                static const ProtocolVersion VERSION_DEFAULT;
 
                 /**
                  * Operation with timeout result.
@@ -147,17 +149,27 @@ namespace ignite
                  * response and stores it in the same memory.
                  *
                  * @param mem Memory.
-                 * @param timeout Opration timeout.
+                 * @param timeout Operation timeout.
                  */
                 void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
 
                 /**
-                 * Get address.
-                 * @return Address.
+                 * Get remote node.
+                 * @return Node.
                  */
-                const network::EndPoint& GetAddress() const
+                const IgniteNode& GetNode() const
                 {
-                    return address;
+                    return node;
+                }
+
+                /**
+                 * Check if the connection established.
+                 *
+                 * @return @true if connected.
+                 */
+                bool IsConnected() const
+                {
+                    return socket.get() != 0;
                 }
 
             private:
@@ -166,7 +178,7 @@ namespace ignite
                 /**
                  * Generate request ID.
                  *
-                 * Atomicaly generates and returns new Request ID.
+                 * Atomically generates and returns new Request ID.
                  *
                  * @return Unique Request ID.
                  */
@@ -306,8 +318,8 @@ namespace ignite
                 /** Sync IO mutex. */
                 common::concurrent::CriticalSection ioMutex;
 
-                /** Remote host address. */
-                network::EndPoint address;
+                /** Remote node data. */
+                IgniteNode node;
 
                 /** Configuration. */
                 const ignite::thin::IgniteClientConfiguration& config;

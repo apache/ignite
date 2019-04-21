@@ -16,24 +16,53 @@
  */
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Client context. Passed to partition resolver on thin clients.
  */
 public class PartitionClientContext {
+    /** Number of partitions. */
+    private int parts;
+
+    /** Mask to use in calculation when partitions count is power of 2. */
+    private int mask;
+
+    /**
+     * Constructor.
+     *
+     * @param parts Partitions count.
+     */
+    public PartitionClientContext(int parts) {
+        assert parts <= CacheConfiguration.MAX_PARTITIONS_COUNT;
+        assert parts > 0;
+
+        this.parts = parts;
+
+        mask = RendezvousAffinityFunction.calculateMask(parts);
+    }
+
     /**
      * Resolve partition.
      *
      * @param arg Argument.
      * @param typ Type.
-     * @param cacheName Cache name.
      * @return Partition or {@code null} if cannot be resolved.
      */
-    @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ, String cacheName) {
-        PartitionDataTypeUtils.convert(arg, typ);
+    @Nullable public Integer partition(Object arg, @Nullable PartitionParameterType typ) {
+        if (typ == null)
+            return null;
 
-        // TODO: IGNITE-10308: Implement partition resolution logic.
-        return null;
+        Object key = PartitionDataTypeUtils.convert(arg, typ);
+
+        if (key == PartitionDataTypeUtils.CONVERTATION_FAILURE)
+            return null;
+
+        if (key == null)
+            return null;
+
+        return RendezvousAffinityFunction.calculatePartition(key, mask, parts);
     }
 }

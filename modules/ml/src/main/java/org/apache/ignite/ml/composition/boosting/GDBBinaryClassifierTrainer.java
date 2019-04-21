@@ -17,23 +17,21 @@
 
 package org.apache.ignite.ml.composition.boosting;
 
-import org.apache.ignite.ml.composition.boosting.loss.LogLoss;
-import org.apache.ignite.ml.composition.boosting.loss.Loss;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
-
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.ignite.ml.composition.boosting.loss.LogLoss;
+import org.apache.ignite.ml.composition.boosting.loss.Loss;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
+import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 
 /**
  * Trainer for binary classifier using Gradient Boosting. As preparing stage this algorithm learn labels in dataset and
@@ -68,13 +66,13 @@ public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     }
 
     /** {@inheritDoc} */
-    @Override protected <V, K, C extends Serializable> boolean learnLabels(DatasetBuilder<K, V> builder,
-        Vectorizer<K, V, C, Double> vectorizer) {
+    @Override protected <V, K> boolean learnLabels(DatasetBuilder<K, V> builder,
+        Preprocessor<K, V> preprocessor) {
 
         Set<Double> uniqLabels = builder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer))
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(preprocessor))
             .compute((IgniteFunction<LabeledVectorSet<Double, LabeledVector>, Set<Double>>)x ->
                     Arrays.stream(x.labels()).boxed().collect(Collectors.toSet()), (a, b) -> {
                     if (a == null)

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor.impl;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -39,12 +40,13 @@ public class DummyVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, V
     }
 
     /** {@inheritDoc} */
-    @Override protected Double feature(Integer coord, K key, Vector value) {
-        return value.get(coord);
+    @Override protected Serializable feature(Integer coord, K key, Vector value) {
+        return value.getRaw(coord);
     }
 
     /** {@inheritDoc} */
     @Override protected int sizeOf(K key, Vector value) {
         return value.size();
     }
+
 }

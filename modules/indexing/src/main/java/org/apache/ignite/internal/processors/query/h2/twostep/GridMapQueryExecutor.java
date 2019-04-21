@@ -41,17 +41,12 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
@@ -70,7 +65,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -107,16 +101,6 @@ public class GridMapQueryExecutor {
     /** */
     private ConcurrentMap<UUID, MapNodeResults> qryRess = new ConcurrentHashMap<>();
 
-    /** */
-    private final GridSpinBusyLock busyLock;
-
-    /**
-     * @param busyLock Busy lock.
-     */
-    public GridMapQueryExecutor(GridSpinBusyLock busyLock) {
-        this.busyLock = busyLock;
-    }
-
     /**
      * @param ctx Context.
      * @param h2 H2 Indexing.
@@ -129,39 +113,23 @@ public class GridMapQueryExecutor {
         qryCtxRegistry = h2.queryContextRegistry();
 
         log = ctx.log(GridMapQueryExecutor.class);
+    }
 
-        ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final Event evt) {
-                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+    /**
+     * Node left event handling method..
+     * @param evt Discovery event.
+     */
+    public void onNodeLeft(DiscoveryEvent evt) {
+        UUID nodeId = evt.eventNode().id();
 
-                qryCtxRegistry.clearSharedOnRemoteNodeStop(nodeId);
+        qryCtxRegistry.clearSharedOnRemoteNodeStop(nodeId);
 
-                MapNodeResults nodeRess = qryRess.remove(nodeId);
+        MapNodeResults nodeRess = qryRess.remove(nodeId);
 
-                if (nodeRess == null)
-                    return;
+        if (nodeRess == null)
+            return;
 
-                nodeRess.cancelAll();
-            }
-        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
-
-        ctx.io().addMessageListener(GridTopic.TOPIC_QUERY, new GridMessageListener() {
-            @SuppressWarnings("deprecation")
-            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (!busyLock.enterBusy())
-                    return;
-
-                try {
-                    if (msg instanceof GridCacheQueryMarshallable)
-                        ((GridCacheQueryMarshallable)msg).unmarshall(ctx.config().getMarshaller(), ctx);
-
-                    GridMapQueryExecutor.this.onMessage(nodeId, msg);
-                }
-                finally {
-                    busyLock.leaveBusy();
-                }
-            }
-        });
+        nodeRess.cancelAll();
     }
 
     /**
@@ -173,44 +141,10 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    public void onMessage(UUID nodeId, Object msg) {
-        try {
-            assert msg != null;
-
-            ClusterNode node = ctx.discovery().node(nodeId);
-
-            if (node == null)
-                return; // Node left, ignore.
-
-            boolean processed = true;
-
-            if (msg instanceof GridH2QueryRequest)
-                onQueryRequest(node, (GridH2QueryRequest)msg);
-            else if (msg instanceof GridQueryNextPageRequest)
-                onNextPageRequest(node, (GridQueryNextPageRequest)msg);
-            else if (msg instanceof GridQueryCancelRequest)
-                onCancel(node, (GridQueryCancelRequest)msg);
-            else if (msg instanceof GridH2DmlRequest)
-                onDmlRequest(node, (GridH2DmlRequest)msg);
-            else
-                processed = false;
-
-            if (processed && log.isDebugEnabled())
-                log.debug("Processed request: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
-        }
-        catch(Throwable th) {
-            U.error(log, "Failed to process message: " + msg, th);
-        }
-    }
-
-    /**
      * @param node Node.
      * @param msg Message.
      */
-    private void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
+    public void onCancel(ClusterNode node, GridQueryCancelRequest msg) {
         long qryReqId = msg.queryRequestId();
 
         MapNodeResults nodeRess = resultsForNode(node.id());
@@ -250,7 +184,7 @@ public class GridMapQueryExecutor {
      * @param req Query request.
      * @throws IgniteCheckedException On error.
      */
-    private void onQueryRequest(final ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
+    public void onQueryRequest(final ClusterNode node, final GridH2QueryRequest req) throws IgniteCheckedException {
         int[] qryParts = req.queryPartitions();
 
         final Map<UUID,int[]> partsMap = req.partitions();
@@ -618,7 +552,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req DML request.
      */
-    private void onDmlRequest(final ClusterNode node, final GridH2DmlRequest req) {
+    public void onDmlRequest(final ClusterNode node, final GridH2DmlRequest req) {
         int[] parts = req.queryPartitions();
 
         List<Integer> cacheIds = req.caches();
@@ -736,7 +670,7 @@ public class GridMapQueryExecutor {
             if (node.isLocal()) {
                 U.error(log, "Failed to run map query on local node.", err);
 
-                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                h2.reduceQueryExecutor().onFail(node, msg);
             }
             else
                 ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
@@ -766,7 +700,7 @@ public class GridMapQueryExecutor {
                 log.debug("Sending: [localNodeId=" + ctx.localNodeId() + ", node=" + node.id() + ", msg=" + rsp + "]");
 
             if (node.isLocal())
-                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), rsp);
+                h2.reduceQueryExecutor().onDmlResponse(node, rsp);
             else {
                 rsp.marshall(ctx.config().getMarshaller());
 
@@ -782,7 +716,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req Request.
      */
-    private void onNextPageRequest(final ClusterNode node, final GridQueryNextPageRequest req) {
+    public void onNextPageRequest(final ClusterNode node, final GridQueryNextPageRequest req) {
         long reqId = req.queryRequestId();
 
         final MapNodeResults nodeRess = qryRess.get(node.id());
@@ -934,7 +868,7 @@ public class GridMapQueryExecutor {
         try {
             if (msg != null) {
                 if (node.isLocal())
-                    h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                    h2.reduceQueryExecutor().onNextPage(node, msg);
                 else
                     ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
             }
@@ -966,7 +900,7 @@ public class GridMapQueryExecutor {
             msg.retryCause(retryCause);
 
             if (loc)
-                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                h2.reduceQueryExecutor().onNextPage(node, msg);
             else
                 ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
         }
