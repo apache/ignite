@@ -758,7 +758,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         if (partitionLocalNode(p, topVer)) {
                             // Prepare partition to rebalance if it's not happened on full map update phase.
-                            if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
+                            if (locPart == null ||
+                                locPart.state() == RENTING ||
+                                locPart.state() == EVICTED ||
+                                locPart.state() == MOVING && !exchFut.isClearingPartition(grp, p))
                                 locPart = rebalancePartition(p, true, exchFut);
 
                             GridDhtPartitionState state = locPart.state();
@@ -1713,7 +1716,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     long updCntr = cntrMap.updateCounter(part.id());
                     long locUpdCntr = part.updateCounter();
 
-                    if (updCntr != 0 || locUpdCntr != 0) { // Avoid zero counter update to empty partition.
+                    if (updCntr != 0 || locUpdCntr != 0) { // Avoid creation of empty partition.
                         part.updateCounter(updCntr);
 
                         if (updCntr > locUpdCntr) {

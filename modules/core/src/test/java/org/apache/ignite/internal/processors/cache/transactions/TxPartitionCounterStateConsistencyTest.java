@@ -52,7 +52,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -265,7 +264,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             List<Integer> p1Keys = partitionKeys(cache, primaryParts[0], 2, 0);
             List<Integer> p2Keys = partitionKeys(cache, primaryParts[1], 2, 0);
 
-            assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(crd.cluster().localNode(), p1Keys.get(0)));
+            assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.cluster().localNode(), p1Keys.get(0)));
+
+            final String primName = crd.name();
 
             cache.put(p1Keys.get(0), 0); // Will be historically rebalanced.
             cache.put(p1Keys.get(1), 1);
@@ -277,24 +278,33 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             int stopBackupIdx = 0;
             int lastBackupIdx = 1;
 
-            stopGrid(true, backups.get(stopBackupIdx).name());
+            final String demanderName = backups.get(stopBackupIdx).name();
 
+            stopGrid(true, demanderName);
+
+            // Create counters delta.
             cache.remove(p1Keys.get(1));
             cache.put(p2Keys.get(1), 1); // Will be fully rebalanced.
+
+            stopAllGrids();
+
+            crd = startGrid(0);
+            startGrid(1);
+            startGrid(2);
+
+            //assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.cluster().localNode(), p1Keys.get(0)));
 
             TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(crd);
 
             // Block all rebalance from crd.
             crdSpi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
 
-            // Prevent rebalance completion.
-            TestRecordingCommunicationSpi lastOwnerSpi = TestRecordingCommunicationSpi.spi(backups.get(lastBackupIdx));
+            // Prevent historical rebalance completion from new supplier after crd is left.
+            TestRecordingCommunicationSpi newSupplierSpi = TestRecordingCommunicationSpi.spi(backups.get(lastBackupIdx));
 
-            lastOwnerSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            newSupplierSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
-                    String name = (String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME);
-
-                    if (name.equals(backups.get(stopBackupIdx).name()) && msg instanceof GridDhtPartitionSupplyMessage) {
+                    if (msg instanceof GridDhtPartitionSupplyMessage) {
                         GridDhtPartitionSupplyMessage msg0 = (GridDhtPartitionSupplyMessage)msg;
 
                         Map<Integer, CacheEntryInfoCollection> infos = U.field(msg0, "infos");
@@ -306,7 +316,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                 }
             });
 
-            IgniteEx backup2 = startGrid(backups.get(stopBackupIdx).name());
+            crd.cluster().active(true);
 
             IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -314,7 +324,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
                         crdSpi.waitForBlocked();
 
                         // Stop before supplying rebalance. New rebalance must start with second backup as supplier.
-                        stopGrid(crd.name());
+                        stopGrid(primName);
                     }
                     catch (InterruptedException e) {
                         fail();
@@ -326,12 +336,12 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
             doSleep(5000);
 
-            lastOwnerSpi.stopBlock();
+            newSupplierSpi.stopBlock();
 
             // While message is delayed topology version shouldn't change to ideal.
             awaitPartitionMapExchange();
 
-            assertPartitionsSame(idleVerify(backup2, DEFAULT_CACHE_NAME));
+            assertPartitionsSame(idleVerify(grid(demanderName), DEFAULT_CACHE_NAME));
         }
         finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL);
