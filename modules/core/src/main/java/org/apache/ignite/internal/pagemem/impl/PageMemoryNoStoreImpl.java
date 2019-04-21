@@ -749,24 +749,26 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             if (U.isLinux() || U.isMacOs()) {
                 int nativePageSize = GridUnsafe.getpagesize();
 
-                assert pageSize < nativePageSize ? nativePageSize % pageSize == 0 : pageSize % nativePageSize == 0;
+                assert pageSize < nativePageSize ?
+                    nativePageSize % pageSize == 0 : pageSize % nativePageSize == 0
+                    : " pageSize=" + pageSize + ", nativePageSize=" + nativePageSize;
             }
 
             GridUnsafe.putLong(lastAllocatedIdxPtr, 0);
 
             long limit = region.address() + region.size();
 
-            assert limit % pageSize == 0;
+            //assert limit % pageSize == 0 : "limit=" + limit + ", pageSize=" + pageSize;
 
             long delta = limit - pagesBase;
 
-            assert delta % pageSize == 0;
+            //assert delta % pageSize == 0;
 
             maxPages = (int)(delta / (pageSize + PAGE_OVERHEAD));
 
             headerBase = pagesBase + (pageSize * maxPages);
 
-            assert headerBase % pageSize == 0;
+            //assert headerBase % pageSize == 0;
         }
 
         private long header(long pageAbs) {
