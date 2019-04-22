@@ -104,8 +104,12 @@ public final class GridTestProperties {
                 System.setProperty("IGNITE_HOME", igniteHome);
         }
 
+        System.out.println("Resolved DEBUG IGNITE_HOME =" + igniteHome);
+
         // Load default properties.
         File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
+
+        System.out.println("Resolved cfgFile=" + cfgFile);
 
         assert cfgFile != null && cfgFile.exists();
         assert !cfgFile.isDirectory();
