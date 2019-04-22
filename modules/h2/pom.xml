@@ -209,6 +209,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemProperties>
+                        <user.language>en</user.language>
+                        <user.country>US</user.country>
                         <h2.maxMemoryRows>100</h2.maxMemoryRows>
                         <h2.delayWrongPasswordMin>0</h2.delayWrongPasswordMin>
                         <h2.delayWrongPasswordMax>0</h2.delayWrongPasswordMax>

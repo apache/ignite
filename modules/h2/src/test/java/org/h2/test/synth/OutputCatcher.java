@@ -77,8 +77,9 @@ public class OutputCatcher extends Thread {
                     break;
                 }
             }
-            IOUtils.closeSilently(in);
         } finally {
+            IOUtils.closeSilently(in);
+
             // just in case something goes wrong, make sure we store any partial output we got
             if (buff.length() > 0) {
                 synchronized (list) {

@@ -411,7 +411,7 @@ java org.h2.test.TestAll timer
     /**
      * If the test should stop when the first error occurs.
      */
-    boolean stopOnError;
+    public boolean stopOnError;
 
     /**
      * If the database should always be defragmented when closing.
