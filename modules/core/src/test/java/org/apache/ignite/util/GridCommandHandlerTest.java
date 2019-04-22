@@ -939,7 +939,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut = startTransactions("testTransactionInfo", lockLatch, unlockLatch, false);
 
         try {
-
             U.awaitQuiet(lockLatch);
 
             doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
