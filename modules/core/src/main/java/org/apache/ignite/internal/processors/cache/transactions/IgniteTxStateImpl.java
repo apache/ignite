@@ -130,9 +130,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Cleanup uninitialized caches.
+     */
     private void cleanupCaches() {
-        for (IgniteTxEntry e : txMap.values())
+        for (IgniteTxEntry e : allEntries())
             if (e.context().stop())
                 activeCacheIds.removeValue(0, e.cacheId());
     }
