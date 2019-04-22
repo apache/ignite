@@ -38,7 +38,7 @@ public class TestRecover {
 
     private static final int MAX_STRING_LENGTH = 10000;
     private static final String NODE = System.getProperty("test.node", "");
-    private static final String DIR = System.getProperty("test.dir", "/temp/db");
+    private static final String DIR = System.getProperty("test.dir", "/target/temp/db");
 
     private static final String TEST_DIRECTORY = DIR + "/data" + NODE;
     private static final String BACKUP_DIRECTORY = DIR + "/last";

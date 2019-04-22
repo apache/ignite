@@ -31,6 +31,13 @@ import org.junit.runners.Suite;
     H2PageStoreNoMVStoreTestSuite.class,
 })
 public class H2AllTestsSuite {
+    static {
+        System.setProperty("h2.clientTraceDirectory", "target/trace.db/");
+        System.setProperty("h2.maxMemoryRows", "100");
 
+        System.setProperty("h2.delayWrongPasswordMin", "0");
+        System.setProperty("h2.delayWrongPasswordMax", "0");
+        System.setProperty("h2.useThreadContextClassLoader", "true");
+    }
 }
 

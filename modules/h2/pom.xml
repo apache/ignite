@@ -189,6 +189,7 @@
                         <configuration>
                             <sources>
                                 <source>src/test/tools</source>
+                                <source>src/test/java/META-INF/**</source>
                             </sources>
                         </configuration>
                     </execution>

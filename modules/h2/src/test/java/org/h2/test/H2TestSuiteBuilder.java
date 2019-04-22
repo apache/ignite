@@ -91,7 +91,6 @@ public class H2TestSuiteBuilder extends TestAll {
             @Override public void run(TestResult result) {
                 try {
                     beforeTest0();
-
                     super.run(result);
                 }
                 finally {
@@ -145,7 +144,8 @@ public class H2TestSuiteBuilder extends TestAll {
         try {
             super.beforeTest();
         }
-        catch (SQLException e) {
+        catch (Exception e) {
+            e.printStackTrace(System.err);
             throw new AssertionError("Failed to start suite.", e);
         }
     }

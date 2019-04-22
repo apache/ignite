@@ -30,8 +30,8 @@ public class TestUndoLogLarge {
     }
 
     private static void test() throws SQLException {
-        DeleteDbFiles.execute("data", "test", true);
-        Connection conn = DriverManager.getConnection("jdbc:h2:data/test");
+        DeleteDbFiles.execute("target/data", "test", true);
+        Connection conn = DriverManager.getConnection("jdbc:h2:target/data/test");
         Statement stat = conn.createStatement();
         stat.execute("set max_operation_memory 100");
         stat.execute("set max_memory_undo 100");

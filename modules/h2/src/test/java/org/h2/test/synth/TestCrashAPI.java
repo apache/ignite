@@ -114,7 +114,7 @@ public class TestCrashAPI extends TestDb implements Runnable {
 
     private static void recoverAll() {
         org.h2.Driver.load();
-        File[] files = new File("temp/backup").listFiles();
+        File[] files = new File("target/temp/backup").listFiles();
         Arrays.sort(files, new Comparator<File>() {
             @Override
             public int compare(File o1, File o2) {
@@ -222,7 +222,7 @@ public class TestCrashAPI extends TestDb implements Runnable {
 //      url += ";TRACE_LEVEL_FILE=3";
 
         Connection conn = null;
-        String fileName = "temp/backup/db-" + uniqueId++ + ".zip";
+        String fileName = "target/temp/backup/db-" + uniqueId++ + ".zip";
         Backup.execute(fileName, getBaseDir() + "/" + DIR, dbName, true);
         // close databases earlier
         System.gc();
