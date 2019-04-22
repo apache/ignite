@@ -488,7 +488,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException {
-        // No-op.
+        PageStore store = getStore(grpId, partId);
+
+        if (store instanceof FilePageStore)
+            ((FilePageStore) store).dereferenceFile();
     }
 
     /** {@inheritDoc} */
@@ -714,10 +717,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             PageStore[] partStores = new PageStore[partitions];
 
             for (int partId = 0; partId < partStores.length; partId++) {
+                final int p = partId;
+
                 PageStore partStore =
                     pageStoreFactory.createPageStore(
                         PageMemory.FLAG_DATA,
-                        getPartitionFile(cacheWorkDir, partId),
+                        () -> getPartitionFile(cacheWorkDir, p),
                         allocatedTracker);
 
                     partStores[partId] = partStore;

@@ -22,16 +22,35 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
  *
  */
 public interface FilePageStoreFactory {
     /**
-     * Creates instance of FilePageStore based on given file.
+     * Creates instance of PageStore based on given file.
      *
      * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
      * @param file File Page store file.
+     * @param allocatedTracker metrics updater.
+     * @return page store
+     * @throws IgniteCheckedException if failed.
      */
-    PageStore createPageStore(byte type, File file, AllocatedPageTracker allocatedTracker) throws IgniteCheckedException;
+    default PageStore createPageStore(byte type, File file, AllocatedPageTracker allocatedTracker)
+        throws IgniteCheckedException {
+        return createPageStore(type, () -> file, allocatedTracker);
+    }
+
+    /**
+     * Creates instance of PageStore based on given path and partition id.
+     *
+     * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}
+     * @param fileProvider File Page store file provider.
+     * @param allocatedTracker metrics updater
+     * @return page store
+     * @throws IgniteCheckedException if failed
+     */
+    PageStore createPageStore(byte type, IgniteOutClosure<File> fileProvider, AllocatedPageTracker allocatedTracker)
+        throws IgniteCheckedException;
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.File;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
  *
@@ -31,19 +32,23 @@ public class FilePageStoreV2 extends FilePageStore {
     private final int hdrSize;
 
     /**
+     * Constructor which initializes file provider closure, allowing to dereference file instance.
+     *
      * @param type Type.
      * @param file File.
+     * @param fileProvider file provider.
      * @param factory Factory.
      * @param cfg Config.
-     * @param allocatedTracker Metrics updater
+     * @param allocatedTracker Allocated tracker.
      */
     public FilePageStoreV2(
         byte type,
         File file,
+        IgniteOutClosure<File> fileProvider,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
         AllocatedPageTracker allocatedTracker) {
-        super(type, file, factory, cfg, allocatedTracker);
+        super(type, file, fileProvider, factory, cfg, allocatedTracker);
 
         hdrSize = cfg.getPageSize();
     }
