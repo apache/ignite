@@ -26,7 +26,6 @@ import java.security.SecureClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.script.Compilable;
 import javax.script.CompiledScript;
 import javax.script.ScriptEngineManager;
@@ -40,7 +39,6 @@ import javax.tools.JavaFileObject.Kind;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
-
 import org.h2.api.ErrorCode;
 import org.h2.engine.SysProperties;
 import org.h2.message.DbException;
@@ -355,7 +353,7 @@ public class SourceCompiler {
     private static void javacProcess(File javaFile) {
         exec("javac",
                 "-sourcepath", COMPILE_DIR,
-                "-cp", "target/classes/:target/test-classes/",
+                "-cp", System.getProperty("surefire.test.class.path"),
                 "-d", COMPILE_DIR,
                 "-encoding", "UTF-8",
                 javaFile.getAbsolutePath());
@@ -408,7 +406,7 @@ public class SourceCompiler {
             final Integer status = (Integer)compile.invoke(javac, (Object) new String[] {
                     "-sourcepath", COMPILE_DIR,
                     // "-Xlint:unchecked",
-                    "-cp", "target/classes/:target/test-classes/",
+                    "-cp", System.getProperty("surefire.test.class.path"),
                     "-d", COMPILE_DIR,
                     "-encoding", "UTF-8",
                     javaFile.getAbsolutePath() });
