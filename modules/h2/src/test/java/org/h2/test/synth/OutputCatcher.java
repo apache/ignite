@@ -39,7 +39,7 @@ public class OutputCatcher extends Thread {
                 if (done)
                     return null;
                 try {
-                    list.wait(5 * 1000);
+                    list.wait(30 * 1000);
                 } catch (InterruptedException e) {
                     // ignore
                 }

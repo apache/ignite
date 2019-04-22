@@ -88,7 +88,7 @@ public class TestKillRestartMulti extends TestDb {
         // Inherit error so that the stacktraces reported from SelfDestructor
         // show up in our log.
         ProcessBuilder pb = new ProcessBuilder().redirectError(Redirect.INHERIT)
-                .command(getJVM(), selfDestruct, "-cp", getClassPath(),
+                .command(getJVM(), selfDestruct, "-cp", getClassPath() + ":target/classes:target/test-classes",
                         "-ea",
                         getClass().getName(), "-url", url, "-user", user,
                         "-password", password);
