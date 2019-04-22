@@ -1256,6 +1256,11 @@ public abstract class PagesList extends DataStructure {
         boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
 
         if (needWalDeltaRecord) {
+            assert PageIdUtils.partId(reusedPageId) == PageIdUtils.partId(newPageId):
+                "Partition consistency failure: " +
+                "newPageId=" + Long.toHexString(newPageId) + " (newPartId: " + PageIdUtils.partId(newPageId) + ") " +
+                "reusedPageId=" + Long.toHexString(reusedPageId) + " (partId: " + PageIdUtils.partId(reusedPageId) + ")";
+
             wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
                 initIo.getVersion(), newPageId));
         }

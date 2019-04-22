@@ -126,6 +126,8 @@ public class TxLog implements DbCheckpointListener {
                             io.setReuseListRoot(pageAddr, reuseListRoot);
 
                             if (PageHandler.isWalDeltaRecordNeeded(pageMemory, TX_LOG_CACHE_ID, metaId, metaPage, wal, null))
+                                assert io.getType() == PageIO.T_META;
+
                                 wal.log(new MetaPageInitRecord(
                                     TX_LOG_CACHE_ID,
                                     metaId,

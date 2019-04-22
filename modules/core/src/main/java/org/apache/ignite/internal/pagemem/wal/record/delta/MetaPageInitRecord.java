@@ -46,8 +46,6 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     public MetaPageInitRecord(int grpId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
         super(grpId, pageId, ioType, ioVer, pageId);
 
-        assert ioType == PageIO.T_META || ioType == PageIO.T_PART_META;
-
         this.treeRoot = treeRoot;
         this.reuseListRoot = reuseListRoot;
         this.ioType = ioType;
