@@ -51,7 +51,7 @@ public class TestTriggersConstraints extends TestDb implements Trigger {
         testTriggerBeforeSelect();
         testTriggerAlterTable();
         testTriggerAsSource();
-        testTriggerAsJavascript();
+//        testTriggerAsJavascript();
         testTriggers();
         testConstraints();
         testCheckConstraintErrorMessage();
