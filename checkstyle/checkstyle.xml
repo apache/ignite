@@ -24,12 +24,6 @@
 
     <property name="fileExtensions" value="java, properties, xml"/>
 
-    <!-- Excludes all 'module-info.java' files              -->
-    <!-- See https://checkstyle.org/config_filefilters.html -->
-    <module name="BeforeExecutionExclusionFileFilter">
-        <property name="fileNamePattern" value="module\-info\.java$"/>
-    </module>
-
     <!-- Whitespaces Checks. See: http://checkstyle.sourceforge.net/config_whitespace.html -->
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
