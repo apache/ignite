@@ -110,7 +110,7 @@ public abstract class TestBase {
     public TestBase init(TestAll conf) throws Exception {
         baseDir = getTestDir("");
         FileUtils.createDirectories(baseDir);
-        System.setProperty("java.io.tmpdir", TEMP_DIR);
+//        System.setProperty("java.io.tmpdir", TEMP_DIR);
         this.config = conf;
         return this;
     }
