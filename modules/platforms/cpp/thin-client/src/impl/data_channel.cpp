@@ -31,11 +31,11 @@ namespace ignite
         namespace thin
         {
             const ProtocolVersion DataChannel::VERSION_1_2_0(1, 2, 0);
-            const ProtocolVersion DataChannel::VERSION_1_3_0(1, 3, 0);
-            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_3_0);
+            const ProtocolVersion DataChannel::VERSION_1_4_0(1, 4, 0);
+            const ProtocolVersion DataChannel::VERSION_DEFAULT(VERSION_1_4_0);
 
             DataChannel::VersionSet::value_type supportedArray[] = {
-                DataChannel::VERSION_1_3_0,
+                DataChannel::VERSION_1_4_0,
                 DataChannel::VERSION_1_2_0,
             };
 
@@ -323,7 +323,7 @@ namespace ignite
                     return false;
                 }
 
-                if (propVer >= VERSION_1_3_0)
+                if (propVer >= VERSION_1_4_0)
                 {
                     Guid nodeGuid = reader.ReadGuid();
 
