@@ -215,7 +215,7 @@
                         <h2.useThreadContextClassLoader>true</h2.useThreadContextClassLoader>
                     </systemProperties>
                     <includes>
-                        <include>H2AllTestSuite.java</include>
+                        <include>H2AllTestsSuite.java</include>
                     </includes>
                     <excludes>
                         <exclude>TestAllJunit.java</exclude>
