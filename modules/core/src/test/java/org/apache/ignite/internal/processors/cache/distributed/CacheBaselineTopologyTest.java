@@ -55,9 +55,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
@@ -834,7 +831,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNonPersistentCachesIgnoreBaselineTopology() throws Exception {
+    public void testNonPersistentCachesDontIgnoreBaselineTopology() throws Exception {
         Ignite ig = startGrids(4);
 
         ig.cluster().active(true);
@@ -849,32 +846,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         assertEquals(0, ig.affinity(persistentCache.getName()).allPartitions(newNode.cluster().localNode()).length);
-        assertTrue(ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length > 0);
+        assertEquals(0, ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length);
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testNotMapNonBaselineTxPrimaryNodes() throws Exception {
-        checkNotMapNonBaselineTxNodes(true, false);
-    }
-
-    /**
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNotMapNonBaselineTxBackupNodes() throws Exception {
-        checkNotMapNonBaselineTxNodes(false, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNotMapNonBaselineNearTxPrimaryNodes() throws Exception {
-        checkNotMapNonBaselineTxNodes(true, true);
+    public void testMapTxPrimaryNodes() throws Exception {
+        checkMapTxNodes(true, false);
     }
 
     /**
@@ -882,8 +862,25 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNotMapNonBaselineNearTxBackupNodes() throws Exception {
-        checkNotMapNonBaselineTxNodes(false, true);
+    public void testMapTxBackupNodes() throws Exception {
+        checkMapTxNodes(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMapNearTxPrimaryNodes() throws Exception {
+        checkMapTxNodes(true, true);
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMapNearTxBackupNodes() throws Exception {
+        checkMapTxNodes(false, true);
     }
 
     /**
@@ -891,7 +888,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @param near Whether non-baseline nod is near node.
      * @throws Exception If failed.
      */
-    public void checkNotMapNonBaselineTxNodes(boolean primary, boolean near) throws Exception {
+    public void checkMapTxNodes(boolean primary, boolean near) throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         int bltNodesCnt = 3;
@@ -927,33 +924,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assertEquals(0, nearIgnite.affinity(persistentCache.getName()).allPartitions(nonBltNode).length);
 
-        assertTrue(nearIgnite.affinity(inMemoryCache.getName()).allPartitions(nonBltNode).length > 0);
-
-        ClusterNode nearNode = nearIgnite.cluster().localNode();
-
-        try (Transaction tx = nearIgnite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED)) {
-            for (int i = 0; ; i++) {
-                List<ClusterNode> nodes = new ArrayList<>(nearIgnite.affinity(inMemoryCache.getName())
-                    .mapKeyToPrimaryAndBackups(i));
-
-                ClusterNode primaryNode = nodes.get(0);
-
-                List<ClusterNode> backupNodes = nodes.subList(1, nodes.size());
-
-                if (nonBltNode.equals(primaryNode) == primary) {
-                    if (backupNodes.contains(nonBltNode) != primary) {
-                        inMemoryCache.put(i, i);
-
-                        // add some persistent data in the same transaction
-                        for (int j = 0; j < 100; j++)
-                            persistentCache.put(j, j);
-
-                        break;
-                    }
-                }
-            }
-            tx.commit();
-        }
+        assertEquals(0, nearIgnite.affinity(inMemoryCache.getName()).allPartitions(nonBltNode).length);
     }
 
     /**

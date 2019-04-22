@@ -189,6 +189,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
+    /** affinity awareness flag. */
+    private BooleanProperty affinityAwareness = new BooleanProperty(
+        "affinityAwareness",
+        "Whether jdbc thin affinity awareness is enabled.",
+        false, false);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -198,7 +204,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
         user, passwd,
-        dataPageScanEnabled
+        dataPageScanEnabled,
+        affinityAwareness
     };
 
     /** {@inheritDoc} */
@@ -502,6 +509,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled) {
         this.dataPageScanEnabled.setValue(dataPageScanEnabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAffinityAwareness() {
+        return affinityAwareness.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setAffinityAwareness(boolean affinityAwareness) {
+        this.affinityAwareness.setValue(affinityAwareness);
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
@@ -31,7 +32,7 @@ public class ClientCacheGetConfigurationResponse extends ClientResponse {
 
     /** Client version. */
     private final ClientListenerProtocolVersion ver;
-    
+
     /**
      * Constructor.
      *
@@ -50,8 +51,8 @@ public class ClientCacheGetConfigurationResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriterEx writer) {
-        super.encode(writer);
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        super.encode(ctx, writer);
 
         ClientCacheConfigurationSerializer.write(writer, cfg, ver);
     }

@@ -99,6 +99,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -1856,6 +1857,36 @@ public class GridCacheUtils {
     private static boolean isIgfsCacheInSystemRegion(CacheConfiguration ccfg) {
         return IgfsUtils.matchIgfsCacheName(ccfg.getName()) &&
             (SYSTEM_DATA_REGION_NAME.equals(ccfg.getDataRegionName()) || ccfg.getDataRegionName() == null);
+    }
+
+    /**
+     * @param nodes Nodes to check.
+     * @param cfg Config to class loader.
+     * @return {@code true} if cluster has only in-memory nodes.
+     */
+    public static boolean isInMemoryCluster(Collection<ClusterNode> nodes, IgniteConfiguration cfg) {
+        return nodes.stream().allMatch(serNode -> !CU.isPersistenceEnabled(extractDataStorage(serNode, cfg)));
+    }
+
+    /**
+     * Extract and unmarshal data storage configuration from given node.
+     *
+     * @param node Source of data storage configuration.
+     * @return Data storage configuration for given node.
+     */
+    private static DataStorageConfiguration extractDataStorage(ClusterNode node, IgniteConfiguration cfg) {
+        Object dsCfgBytes = node.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
+
+        if (dsCfgBytes instanceof byte[]) {
+            try {
+                return new JdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(cfg));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        return null;
     }
 
     /**
