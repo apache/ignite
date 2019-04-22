@@ -379,7 +379,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(testOut.toString().contains("Cluster is inactive"));
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is inactive"));
 
         testOut.reset();
 
@@ -389,7 +389,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(testOut.toString().contains("Cluster is active"));
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is active"));
 
         testOut.reset();
 
@@ -399,7 +399,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(testOut.toString().contains("Cluster is active mode: read-only"));
+        assertTrue(testOut.toString(), testOut.toString().contains("Cluster is active mode: read-only"));
     }
 
     /**
