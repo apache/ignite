@@ -51,7 +51,7 @@ public abstract class TestBase {
     /**
      * The base directory.
      */
-    public static final String BASE_TEST_DIR = "./data";
+    public static final String BASE_TEST_DIR = "./target/data";
 
     /**
      * An id used to create unique file names.
@@ -61,7 +61,7 @@ public abstract class TestBase {
     /**
      * The temporary directory.
      */
-    private static final String TEMP_DIR = "./data/temp";
+    private static final String TEMP_DIR = "./target/data/temp";
 
     /**
      * The base directory to write test databases.
