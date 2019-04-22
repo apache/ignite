@@ -217,6 +217,10 @@
                         <h2.javaSystemCompiler>false</h2.javaSystemCompiler>
                         <!--<java.io.tmpdir>./target/temp</java.io.tmpdir>-->
                     </systemProperties>
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>${project.build.outputDirectory}</additionalClasspathElement>
+                        <additionalClasspathElement>${project.build.testOutputDirectory}</additionalClasspathElement>
+                    </additionalClasspathElements>
                     <includes>
                         <include>H2AllTestsSuite.java</include>
                     </includes>
