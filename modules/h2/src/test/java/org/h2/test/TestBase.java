@@ -1323,7 +1323,7 @@ public abstract class TestBase {
      * @return the classpath list
      */
     protected String getClassPath() {
-        return System.getProperty("java.class.path");
+        return System.getProperty("java.class.path")  + ":target/classes:target/test-classes";
     }
 
     /**

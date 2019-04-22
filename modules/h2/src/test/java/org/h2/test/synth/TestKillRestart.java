@@ -45,7 +45,7 @@ public class TestKillRestart extends TestDb {
         String user = getUser(), password = getPassword();
         String selfDestruct = SelfDestructor.getPropertyString(60);
         String[] procDef = { getJVM(), selfDestruct,
-                "-cp", getClassPath() + ":target/classes:target/test-classes", "-ea",
+                "-cp", getClassPath(), "-ea",
                 getClass().getName(), "-url", url, "-user", user,
                 "-password", password };
 

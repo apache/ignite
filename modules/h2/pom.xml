@@ -214,7 +214,7 @@
                         <h2.delayWrongPasswordMax>0</h2.delayWrongPasswordMax>
                         <h2.useThreadContextClassLoader>true</h2.useThreadContextClassLoader>
                         <h2.javaSystemCompiler>false</h2.javaSystemCompiler>
-                        <java.io.tmpdir>./target/temp</java.io.tmpdir>
+                        <!--<java.io.tmpdir>./target/temp</java.io.tmpdir>-->
                     </systemProperties>
                     <includes>
                         <include>H2AllTestsSuite.java</include>
