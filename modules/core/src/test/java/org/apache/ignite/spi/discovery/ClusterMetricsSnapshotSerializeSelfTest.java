@@ -151,7 +151,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         metrics.setTotalJobsExecutionTime(50);
         metrics.setCurrentPmeDuration(51);
         metrics.setReadOnlyMode(true);
-        metrics.setReadOnlyModeChangeTime(52);
+        metrics.setReadOnlyModeDuration(52);
 
         return metrics;
     }

@@ -1250,10 +1250,10 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /**
      * Sets duration of cluster in read-only mode.
      *
-     * @param readOnlyModeChangeTime New cluster read-only mode.
+     * @param readOnlyModeDuration Duration.
      */
-    public void setReadOnlyModeChangeTime(long readOnlyModeChangeTime) {
-        this.readOnlyModeDuration = readOnlyModeChangeTime;
+    public void setReadOnlyModeDuration(long readOnlyModeDuration) {
+        this.readOnlyModeDuration = readOnlyModeDuration;
     }
 
     /**
@@ -1522,7 +1522,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
         // For compatibility with metrics serialized by old ignite versions.
         metrics.setReadOnlyMode(buf.remaining() >= 1 ? toBoolean(buf.get()) : false);
-        metrics.setReadOnlyModeChangeTime(buf.remaining() >= 8 ? buf.getLong() : 0);
+        metrics.setReadOnlyModeDuration(buf.remaining() >= 8 ? buf.getLong() : 0);
 
         return metrics;
     }
