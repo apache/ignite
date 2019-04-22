@@ -725,6 +725,18 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>jacoco-aggregate-report</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>
+                    modules/jacoco-aggregate-report
+                </module>
+            </modules>
+        </profile>
     </profiles>
 
     <build>
