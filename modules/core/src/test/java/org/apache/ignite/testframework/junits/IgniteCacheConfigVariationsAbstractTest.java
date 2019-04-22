@@ -65,6 +65,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.out.println("~~! start before all tests");
         initStoreStrategy();
         assert testsCfg != null;
         assert !testsCfg.withClients() || testsCfg.gridCount() >= 3;
@@ -127,6 +128,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                 + ", isClient=" + isClientMode()
                 + ", nearEnabled=" + nearEnabled() + "]");
         }
+
+        System.out.println("~~! finish before all tests: " + jcache());
     }
 
     /** Initialize {@link #storeStgy} with respect to the nature of the test */
@@ -176,13 +179,16 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        if (testsCfg.isStopCache()) {
+        super.afterTestsStopped();
+
+        System.out.println("~~! start sfter all tests");
+        if (testsCfg.isStopCache()) { //~~! add another one condition
             for (int i = 0; i < gridCount(); i++) {
                 info("Destroing cache on grid: " + i);
 
                 IgniteCache<String, Integer> cache = jcache(i);
 
-                assert i != 0 || cache != null;
+                assert i != 0 || cache != null; //~~! the main cache is not null
 
                 if (cache != null)
                     cache.destroy();
@@ -191,24 +197,29 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
         storeStgy.resetStore();
 
-        super.afterTestsStopped();
+        System.out.println("~~! finish after all tests");
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
+        System.out.println("~~! start before test");
         if (testsCfg.awaitPartitionMapExchange())
             awaitPartitionMapExchange();
+
+        System.out.println("~~! cache before: " + jcache());
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
 
         assertEquals(0, jcache().localSize());
         assertEquals(0, jcache().size());
+
+        super.beforeTest();
+        System.out.println("~~! finish before test");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        System.out.println("~~! start after test");
         Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
         if (tx != null) {
@@ -343,6 +354,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
         assertEquals(0, jcache().localSize());
         assertEquals(0, jcache().size());
+
+        System.out.println("~~! finish after test");
     }
 
     /**
@@ -378,7 +391,9 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      * @return Cache atomicity mode.
      */
     protected CacheAtomicityMode atomicityMode() {
-        return cacheConfiguration().getAtomicityMode();
+        CacheAtomicityMode mode = cacheConfiguration().getAtomicityMode();
+
+        return mode == null ? CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE : mode;
     }
 
     /**

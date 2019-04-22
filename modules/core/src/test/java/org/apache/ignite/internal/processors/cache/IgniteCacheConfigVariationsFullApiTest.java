@@ -5999,7 +5999,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     @Test
-    @Ignore
     public void testGetOutTx() throws Exception {
         checkGetOutTx(false, false);
     }
@@ -6008,7 +6007,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     @Test
-    @Ignore
     public void testGetOutTxAsyncOld() throws Exception {
         checkGetOutTx(true, true);
     }
@@ -6017,7 +6015,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     @Test
-    @Ignore
     public void testGetOutTxAsync() throws Exception {
         checkGetOutTx(true, false);
     }
