@@ -212,7 +212,7 @@
                         <h2.maxMemoryRows>100</h2.maxMemoryRows>
                         <h2.delayWrongPasswordMin>0</h2.delayWrongPasswordMin>
                         <h2.delayWrongPasswordMax>0</h2.delayWrongPasswordMax>
-                        <h2.useThreadContextClassLoader>true</h2.useThreadContextClassLoader>
+                        <h2.useThreadContextClassLoader>false</h2.useThreadContextClassLoader>
                         <h2.clientTraceDirectory>target/trace.db/</h2.clientTraceDirectory>
                         <h2.javaSystemCompiler>false</h2.javaSystemCompiler>
                         <!--<java.io.tmpdir>./target/temp</java.io.tmpdir>-->
