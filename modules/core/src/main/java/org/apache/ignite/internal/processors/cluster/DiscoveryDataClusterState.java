@@ -49,7 +49,7 @@ public class DiscoveryDataClusterState implements Serializable {
     /** Flag indicating if the cluster in read-only mode. */
     private final boolean readOnly;
 
-    /** Read-only mode change time. */
+    /** Read-only mode change time. Correctly work's only for enabling read-only mode. */
     private final long readOnlyChangeTime;
 
     /** Current cluster baseline topology. */
