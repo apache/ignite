@@ -1167,11 +1167,17 @@ public final class GridTestUtils {
     @Nullable private static File resolvePath(@Nullable String igniteHome, String path) {
         File file = new File(path).getAbsoluteFile();
 
+        System.out.println("PATH = " + path);
+
         if (!file.exists()) {
             String home = igniteHome != null ? igniteHome : U.getIgniteHome();
 
             if (home == null)
                 return null;
+
+            System.out.println("HOME = " + home);
+            System.out.println("PATH = " + path);
+            System.out.println("HOME+PATH = " + home + path);
 
             file = new File(home, path);
 
