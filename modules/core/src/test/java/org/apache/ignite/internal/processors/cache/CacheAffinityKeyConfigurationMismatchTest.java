@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -34,28 +35,28 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Test was added to check fix for IGNITE-7883.
- * Detect difference property "keyConfiguration" in cache configuration.
+ * Testing cluster inconsistent affinity configuration.
+ * Detect difference property "keyConfiguration" in cache configuration and generate exception.
  */
 public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstractTest {
     /**
-     * Test for matching "keyConfiguration" property
+     * Test for matching "keyConfiguration" property.
      *
      * @throws Exception If test fails.
      */
     @Test
     public void testKeyConfigurationMatch() throws Exception {
-        try (Ignite ignite0 = getIgnite(0, getCacheKeyConfiguration("a"))) {
-            try (Ignite ignite1 = getIgnite(1, getCacheKeyConfiguration("a"))) {
+        try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
+            try (Ignite ignite1 = getIgnite(1, getCacheAKeyConfiguration("a"))) {
                 Affinity<Object> affinity0 = ignite0.affinity(DEFAULT_CACHE_NAME);
                 Affinity<Object> affinity1 = ignite1.affinity(DEFAULT_CACHE_NAME);
 
                 for (int i = 0; i < Integer.MAX_VALUE; i = i << 1 | 1) {
-                    AKey key = new AKey(i);
+                    AKey aKey = new AKey(i);
 
-                    assertEquals("different affinity partition for key=" + i
-                        , affinity0.partition(key)
-                        , affinity1.partition(key)
+                    assertEquals("different affinity partition for key=" + i,
+                        affinity0.partition(aKey),
+                        affinity1.partition(aKey)
                     );
                 }
             }
@@ -69,14 +70,37 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      */
     @Test
     public void testKeyConfigurationDuplicateTypeName() throws Exception {
+        try (Ignite ignite0 = getIgnite(0,
+            new CacheKeyConfiguration(AKey.class),
+            getCacheAKeyConfiguration("a")
+        )) {
+            try (Ignite ignite1 = getIgnite(1,
+                new CacheKeyConfiguration(AKey.class)
+            )) {
+            }
+        }
+
         GridTestUtils.assertThrowsAnyCause(
             log,
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     try (Ignite ignite = getIgnite(0,
-                        getCacheKeyConfiguration("a"),
-                        getCacheKeyConfiguration("b")
+                        new CacheKeyConfiguration(AKey.class),
+                        getCacheAKeyConfiguration("b")
                     )) {
+                    }
+                    return null;
+                }
+            },
+            IgniteCheckedException.class, null);
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
+                        try (Ignite ignite1 = getIgnite(1, getCacheAKeyConfiguration("b"))) {
+                        }
                     }
                     return null;
                 }
@@ -92,19 +116,37 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
     @Test
     public void testKeyConfigurationLengthMismatch() throws Exception {
         GridTestUtils.assertThrowsAnyCause(
-            log
-            , new Callable<Void>() {
+            log,
+            new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Ignite ignite0 = getIgnite(0, getCacheKeyConfiguration("a"))) {
+                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
                         try (Ignite ignite1 = getIgnite(1)) {
                         }
                     }
 
                     return null;
                 }
-            }
-            , IgniteCheckedException.class
-            , "Affinity key configuration mismatch"
+            },
+            IgniteCheckedException.class,
+            "Affinity key configuration mismatch"
+        );
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
+                        try (Ignite ignite1 = getIgnite(1,
+                            getCacheAKeyConfiguration("a"),
+                            new CacheKeyConfiguration(BKey.class))) {
+                        }
+                    }
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "Affinity key configuration mismatch"
         );
     }
 
@@ -116,18 +158,33 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
     @Test
     public void testKeyConfigurationMismatch() throws Exception {
         GridTestUtils.assertThrowsAnyCause(
-            log
-            , new Callable<Void>() {
+            log,
+            new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Ignite ignite0 = getIgnite(0, getCacheKeyConfiguration("a"))) {
-                        try (Ignite ignite1 = getIgnite(1, getCacheKeyConfiguration("b"))) {
+                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
+                        try (Ignite ignite1 = getIgnite(1, getCacheAKeyConfiguration("b"))) {
                         }
                     }
                     return null;
                 }
-            }
-            , IgniteCheckedException.class
-            , "Affinity key configuration mismatch"
+            },
+            IgniteCheckedException.class,
+            "Affinity key configuration mismatch"
+        );
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
+                        try (Ignite ignite1 = getIgnite(1, new CacheKeyConfiguration(BKey.class))) {
+                        }
+                    }
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "Affinity key configuration mismatch"
         );
     }
 
@@ -137,8 +194,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      * @param affKeyFieldName Affinity field name.
      * @return Configuration.
      */
-    private CacheKeyConfiguration getCacheKeyConfiguration(String affKeyFieldName) {
-        return new CacheKeyConfiguration(AKey.class.getCanonicalName(), affKeyFieldName);
+    private CacheKeyConfiguration getCacheAKeyConfiguration(String affKeyFieldName) {
+        return new CacheKeyConfiguration(AKey.class.getName(), affKeyFieldName);
     }
 
     /**
@@ -174,7 +231,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      * Value structure for test
      */
     private static class AKey {
-        /**  */
+        /** */
+        @AffinityKeyMapped
         int a;
 
         public AKey(int a) {
@@ -183,6 +241,23 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
 
         @Override public String toString() {
             return "AKey{a=" + a + '}';
+        }
+    }
+
+    /**
+     * Value structure for test
+     */
+    private static class BKey {
+        /** */
+        @AffinityKeyMapped
+        int b;
+
+        public BKey(int b) {
+            this.b = b;
+        }
+
+        @Override public String toString() {
+            return "BKey{b=" + b + '}';
         }
     }
 }
