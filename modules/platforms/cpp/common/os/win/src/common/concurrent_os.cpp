@@ -59,6 +59,39 @@ namespace ignite
                 LeaveCriticalSection(&hnd);
             }
 
+            ReadWriteLock::ReadWriteLock() :
+                lock()
+            {
+                InitializeSRWLock(&lock);
+
+                Memory::Fence();
+            }
+
+            ReadWriteLock::~ReadWriteLock()
+            {
+                // No-op.
+            }
+
+            void ReadWriteLock::LockExclusive()
+            {
+                AcquireSRWLockExclusive(&lock);
+            }
+
+            void ReadWriteLock::ReleaseExclusive()
+            {
+                ReleaseSRWLockExclusive(&lock);
+            }
+
+            void ReadWriteLock::LockShared()
+            {
+                AcquireSRWLockShared(&lock);
+            }
+
+            void ReadWriteLock::ReleaseShared()
+            {
+                ReleaseSRWLockShared(&lock);
+            }
+
             SingleLatch::SingleLatch() :
                 hnd(CreateEvent(NULL, TRUE, FALSE, NULL))
             {
@@ -116,7 +149,7 @@ namespace ignite
             {
 #ifdef _WIN64
                 return InterlockedIncrement64(reinterpret_cast<LONG64*>(ptr));
-#else 
+#else
                 while (true)
                 {
                     int64_t expVal = *ptr;
@@ -132,7 +165,7 @@ namespace ignite
             {
 #ifdef _WIN64
                 return InterlockedDecrement64(reinterpret_cast<LONG64*>(ptr));
-#else 
+#else
                 while (true)
                 {
                     int64_t expVal = *ptr;
@@ -143,7 +176,7 @@ namespace ignite
                 }
 #endif
             }
-            
+
             bool ThreadLocal::OnProcessAttach()
             {
                 return (winTlsIdx = TlsAlloc()) != TLS_OUT_OF_INDEXES;

@@ -72,7 +72,7 @@ public abstract class LogListener implements Consumer<String> {
     /**
      * Reset listener state.
      */
-    abstract void reset();
+    public abstract void reset();
 
     /**
      * Creates new listener builder.
@@ -333,7 +333,7 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /** {@inheritDoc} */
-        @Override void reset() {
+        @Override public void reset() {
             matches.set(0);
         }
 
@@ -368,7 +368,7 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /** {@inheritDoc} */
-        @Override void reset() {
+        @Override public void reset() {
             for (LogMessageListener lsnr : lsnrs)
                 lsnr.reset();
         }

@@ -189,6 +189,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
         null, false);
 
+    /** affinity awareness flag. */
+    private BooleanProperty affinityAwareness = new BooleanProperty(
+        "affinityAwareness",
+        "Whether jdbc thin affinity awareness is enabled.",
+        false, false);
+
     /** Update batch size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). */
     private IntegerProperty updateBatchSize = new IntegerProperty("updateBatchSize",
         "Update bach size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). " +
@@ -204,7 +210,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
         user, passwd,
-        dataPageScanEnabled, updateBatchSize
+        dataPageScanEnabled,
+        affinityAwareness,
+        updateBatchSize
     };
 
     /** {@inheritDoc} */
@@ -508,6 +516,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled) {
         this.dataPageScanEnabled.setValue(dataPageScanEnabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAffinityAwareness() {
+        return affinityAwareness.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setAffinityAwareness(boolean affinityAwareness) {
+        this.affinityAwareness.setValue(affinityAwareness);
     }
 
     /** {@inheritDoc} */
