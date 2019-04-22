@@ -4994,7 +4994,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param step Exponent coefficient.
+     * @param step Exponent coefficient.m
      * @param timeout Base timeout.
      * @return Time to wait before next debug dump.
      */

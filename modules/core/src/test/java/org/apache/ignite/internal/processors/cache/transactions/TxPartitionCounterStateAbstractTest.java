@@ -114,15 +114,13 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     /** */
     protected static final int PARTS_CNT = 32;
 
-    protected static final int REB_TOPICS = 2;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId("node" + igniteInstanceName);
         cfg.setFailureHandler(new StopNodeFailureHandler());
-        cfg.setRebalanceThreadPoolSize(4);
+        cfg.setRebalanceThreadPoolSize(4); // Necessary to reproduce some issues.
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 

@@ -429,7 +429,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
                 else
-                    createPartitions(affVer, affAssignment, updateSeq);
+                    createPartitions(affVer, affAssignment, updateSeq, exchFut);
             }
             else {
                 // If preloader is disabled, then we simply clear out
@@ -475,12 +475,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /**
      * Creates non-existing partitions belong to given affinity {@code aff}.
-     *
-     * @param affVer Affinity version.
+     *  @param affVer Affinity version.
      * @param aff Affinity assignments.
      * @param updateSeq Update sequence.
+     * @param exchFut
      */
-    private void createPartitions(AffinityTopologyVersion affVer, List<List<ClusterNode>> aff, long updateSeq) {
+    private void createPartitions(AffinityTopologyVersion affVer, List<List<ClusterNode>> aff, long updateSeq,
+        GridDhtPartitionsExchangeFuture exchFut) {
         if (!grp.affinityNode())
             return;
 
@@ -494,7 +495,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (localNode(p, aff)) {
                     // This will make sure that all non-existing partitions
                     // will be created in MOVING state.
+                    boolean existing = locParts.get(p) != null;
+
                     GridDhtLocalPartition locPart = getOrCreatePartition(p);
+
+                    if (existing && locPart.state() == MOVING)
+                        exchFut.addClearingPartition(grp, p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
                 }
@@ -758,10 +764,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                         if (partitionLocalNode(p, topVer)) {
                             // Prepare partition to rebalance if it's not happened on full map update phase.
-                            if (locPart == null ||
-                                locPart.state() == RENTING ||
-                                locPart.state() == EVICTED ||
-                                locPart.state() == MOVING && !exchFut.isClearingPartition(grp, p))
+                            if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
                                 locPart = rebalancePartition(p, true, exchFut);
 
                             GridDhtPartitionState state = locPart.state();
@@ -776,6 +779,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                             log.debug("Will not own partition (there are owners to rebalance from) " +
                                                 "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                     }
+
+                                    if (exchFut.isClearingPartition(grp, p))
+                                        locPart.clearAsync();
                                 }
                                 else
                                     updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
@@ -1587,13 +1593,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
                         else if (state == MOVING) {
-                            // Force clearing and reloading of partition which was partially rebalanced (earlier in
-                            // MOVING state).
-                            GridDhtLocalPartition locPart = locParts.get(p);
-
-                            boolean wasMoving = locPart != null && locPart.state() == MOVING;
-
-                            rebalancePartition(p, partsToReload.contains(p) || wasMoving, exchFut);
+                            rebalancePartition(p, partsToReload.contains(p), exchFut);
 
                             changed = true;
                         }
