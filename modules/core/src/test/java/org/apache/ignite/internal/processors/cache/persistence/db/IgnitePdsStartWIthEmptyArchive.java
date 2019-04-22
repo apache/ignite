@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -34,13 +33,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
-import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
-import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,7 +51,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  */
 public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
     /** Mapping of WAL segment idx to WalSegmentArchivedEvent. */
-    private Map<Long, WalSegmentArchivedEvent> evts = new ConcurrentHashMap<>();
+    private final Map<Long, WalSegmentArchivedEvent> evts = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -92,6 +90,10 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * Executes initial steps before test execution.
+     * @throws Exception If failed.
+     */
     @Before
     public void before() throws Exception {
         stopAllGrids();
@@ -99,6 +101,19 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    /**
+     * Stops all nodes and cleans work dir after a test.
+     */
+    @After
+    public void cleanup() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void test() throws Exception {
         IgniteEx ig = startGrid(0);
@@ -121,7 +136,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         SegmentAware beforeSaw = U.field(walMgr, "segmentAware");
 
-        long beforeLastArchivedAbsoluteIndex = beforeSaw.lastArchivedAbsoluteIndex();
+        long beforeLastArchivedAbsoluteIdx = beforeSaw.lastArchivedAbsoluteIndex();
 
         FileWriteHandle fhBefore = U.field(walMgr, "currHnd");
 
@@ -153,10 +168,10 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
         int segments = ig.configuration().getDataStorageConfiguration().getWalSegments();
 
         Assert.assertTrue(
-            "lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIndex +
+            "lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIdx +
                 ", lastArchivedAfterIdx=" + afterLastArchivedAbsoluteIndex + ",  segments=" + segments,
             afterLastArchivedAbsoluteIndex >=
-            (beforeLastArchivedAbsoluteIndex - segments));
+            (beforeLastArchivedAbsoluteIdx - segments));
 
         ig.cluster().active(true);
 
@@ -167,9 +182,9 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
         long idxAfter = fhAfter.getSegmentId();
 
         Assert.assertEquals(idxBefore, idxAfter);
-        Assert.assertTrue(idxAfter >= beforeLastArchivedAbsoluteIndex);
+        Assert.assertTrue(idxAfter >= beforeLastArchivedAbsoluteIdx);
 
-        log.info("currentIdx=" + idxAfter + ", lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIndex +
+        log.info("currentIdx=" + idxAfter + ", lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIdx +
             ", lastArchivedAfteridx=" + afterLastArchivedAbsoluteIndex + ",  segments=" + segments);
 
         // One is a last archived, secod is a current write segment.
