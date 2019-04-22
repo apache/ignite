@@ -1181,6 +1181,8 @@ public final class GridTestUtils {
 
             file = new File(home, path);
 
+            System.out.println("FILE PATH = " + file.getAbsolutePath());
+
             return file.exists() ? file : null;
         }
 
