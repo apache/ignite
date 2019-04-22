@@ -208,8 +208,18 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <systemProperties>
+                        <h2.maxMemoryRows>100</h2.maxMemoryRows>
+                        <h2.delayWrongPasswordMin>0</h2.delayWrongPasswordMin>
+                        <h2.delayWrongPasswordMax>0</h2.delayWrongPasswordMax>
+                        <h2.useThreadContextClassLoader>true</h2.useThreadContextClassLoader>
+                    </systemProperties>
+                    <includes>
+                        <include>H2AllTestSuite.java</include>
+                    </includes>
                     <excludes>
                         <exclude>TestAllJunit.java</exclude>
+                        <exclude>H2TestCase.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>

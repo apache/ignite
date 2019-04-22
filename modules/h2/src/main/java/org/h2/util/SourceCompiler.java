@@ -355,6 +355,7 @@ public class SourceCompiler {
     private static void javacProcess(File javaFile) {
         exec("javac",
                 "-sourcepath", COMPILE_DIR,
+                "-cp", "target/classes/:target/test-classes/",
                 "-d", COMPILE_DIR,
                 "-encoding", "UTF-8",
                 javaFile.getAbsolutePath());
@@ -407,6 +408,7 @@ public class SourceCompiler {
             final Integer status = (Integer)compile.invoke(javac, (Object) new String[] {
                     "-sourcepath", COMPILE_DIR,
                     // "-Xlint:unchecked",
+                    "-cp", "target/classes/:target/test-classes/",
                     "-d", COMPILE_DIR,
                     "-encoding", "UTF-8",
                     javaFile.getAbsolutePath() });
