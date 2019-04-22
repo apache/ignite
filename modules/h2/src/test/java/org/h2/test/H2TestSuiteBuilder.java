@@ -81,11 +81,11 @@ public class H2TestSuiteBuilder extends TestAll {
             /** {@inheritDoc} */
             @Override public void run(TestResult result) {
                 try {
-                    beforeTest0();
+                    beforeTest();
                     super.run(result);
                 }
                 finally {
-                    afterTest0();
+                    afterTest();
                 }
             }
         };
@@ -112,26 +112,7 @@ public class H2TestSuiteBuilder extends TestAll {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeTest() throws SQLException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void afterTest() {
-        // No-op.
-    }
-
-    /**
-     * Release resources.
-     */
-    private void afterTest0() {
-        super.afterTest();
-    }
-
-    /**
-     * Init tests.
-     */
-    private void beforeTest0() {
+    @Override public void beforeTest() {
         try {
             super.beforeTest();
         }
@@ -139,5 +120,10 @@ public class H2TestSuiteBuilder extends TestAll {
             e.printStackTrace(System.err);
             throw new AssertionError("Failed to start suite.", e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterTest() {
+        super.afterTest();
     }
 }

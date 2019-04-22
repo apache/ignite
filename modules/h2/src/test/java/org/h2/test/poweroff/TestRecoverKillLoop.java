@@ -33,12 +33,12 @@ public class TestRecoverKillLoop extends TestBase {
     }
 
     private void runTest(int count) throws Exception {
-        FileUtils.deleteRecursive("data/db", false);
+        FileUtils.deleteRecursive("target/data/db", false);
         Random random = new Random(1);
         for (int i = 0; i < count; i++) {
             String[] procDef = {
                     getJVM(), "-cp", getClassPath(),
-                    "-Dtest.dir=data/db",
+                    "-Dtest.dir=target/data/db",
                     TestRecover.class.getName()
             };
             Process p = Runtime.getRuntime().exec(procDef);

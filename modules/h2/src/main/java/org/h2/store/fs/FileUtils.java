@@ -292,7 +292,18 @@ public class FileUtils {
             if (tryOnly) {
                 tryDelete(path);
             } else {
-                delete(path);
+                try {
+                    delete(path);
+                }
+                catch (Exception e) {
+                    if (isDirectory(path)) {
+                        for (String s : newDirectoryStream(path))
+                            System.err.println("Failed to delete: " + s);
+                    }
+                    else
+                        System.err.println("Failed to delete: "+ path);
+                    throw e;
+                }
             }
         }
     }
