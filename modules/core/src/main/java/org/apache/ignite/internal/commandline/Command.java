@@ -43,7 +43,10 @@ public enum Command {
     WAL("--wal", false),
 
     /** */
-    READ_ONLY("--read-only", true);
+    READ_ONLY_ENABLE("--read-only-on", true),
+
+    /** */
+    READ_ONLY_DISABLE("--read-only-off", true);
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final Command[] VALUES = Command.values();

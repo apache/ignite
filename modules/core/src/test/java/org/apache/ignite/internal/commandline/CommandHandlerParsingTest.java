@@ -25,6 +25,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,7 +33,6 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.Command.CACHE;
-import static org.apache.ignite.internal.commandline.Command.READ_ONLY;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
@@ -275,8 +275,8 @@ public class CommandHandlerParsingTest {
 
             fail("expected exception: invalid arguments for --wal command");
         }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
+        catch (IllegalArgumentException ignored) {
+            /* No-op */
         }
 
         try {
@@ -284,8 +284,8 @@ public class CommandHandlerParsingTest {
 
             fail("expected exception: invalid arguments for --wal command");
         }
-        catch (IllegalArgumentException e) {
-            e.printStackTrace();
+        catch (IllegalArgumentException ignored) {
+            /* No-op */
         }
     }
 
@@ -300,16 +300,14 @@ public class CommandHandlerParsingTest {
             if (!cmd.confirmationRequired())
                 continue;
 
-            Arguments args;
-            if(cmd == READ_ONLY)
-                args = hnd.parseAndValidate(asList(cmd.text(), "--disable"));
-            else
-                args = hnd.parseAndValidate(asList(cmd.text()));
+            Arguments args = hnd.parseAndValidate(asList(cmd.text()));
 
             checkCommonParametersCorrectlyParsed(cmd, args, false);
 
             switch (cmd) {
                 case DEACTIVATE:
+                case READ_ONLY_DISABLE:
+                case READ_ONLY_ENABLE:
                     args = hnd.parseAndValidate(asList(cmd.text(), "--yes"));
 
                     checkCommonParametersCorrectlyParsed(cmd, args, true);
@@ -336,15 +334,6 @@ public class CommandHandlerParsingTest {
                     assertEquals("xid1", args.transactionArguments().getXid());
                     assertEquals(10_000, args.transactionArguments().getMinDuration().longValue());
                     assertEquals(VisorTxOperation.KILL, args.transactionArguments().getOperation());
-
-                    break;
-
-                case READ_ONLY:
-                    args = hnd.parseAndValidate(asList(cmd.text(), "--enable", "--yes"));
-
-                    checkCommonParametersCorrectlyParsed(cmd, args, true);
-
-                    assertTrue(args.changeClusterStateArguments().readOnly());
 
                     break;
             }
@@ -511,7 +500,11 @@ public class CommandHandlerParsingTest {
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
     }
 
+    /** */
     private boolean commandHaveRequeredArguments(Command cmd) {
-        return cmd == Command.CACHE || cmd == Command.WAL || cmd == Command.READ_ONLY;
+        return cmd == Command.CACHE ||
+            cmd == Command.WAL ||
+            cmd == Command.READ_ONLY_DISABLE ||
+            cmd == Command.READ_ONLY_ENABLE;
     }
 }

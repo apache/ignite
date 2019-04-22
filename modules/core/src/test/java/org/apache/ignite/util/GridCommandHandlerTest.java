@@ -276,23 +276,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test activation in read-only mode works via control.sh
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testActivateReadOnly() throws Exception {
-        Ignite ignite = startGrids(1);
-
-        assertFalse(ignite.cluster().active());
-
-        assertEquals(EXIT_CODE_OK, execute("--activate", "--read-only"));
-
-        assertTrue(ignite.cluster().active());
-        assertTrue(ignite.cluster().readOnly());
-    }
-
-    /**
      * Test enabling/disabling read-only mode works via control.sh
      *
      * @throws Exception If failed.
@@ -305,11 +288,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertFalse(ignite.cluster().readOnly());
 
-        assertEquals(EXIT_CODE_OK, execute("--read-only", "--enable"));
+        assertEquals(EXIT_CODE_OK, execute("--read-only-on"));
 
         assertTrue(ignite.cluster().readOnly());
 
-        assertEquals(EXIT_CODE_OK, execute("--read-only", "--disable"));
+        assertEquals(EXIT_CODE_OK, execute("--read-only-off"));
 
         assertFalse(ignite.cluster().readOnly());
     }
@@ -416,7 +399,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertTrue(testOut.toString().contains("Cluster is active in read-only mode"));
+        assertTrue(testOut.toString().contains("Cluster is active mode: read-only"));
     }
 
     /**
