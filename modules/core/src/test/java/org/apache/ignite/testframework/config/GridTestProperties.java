@@ -112,6 +112,7 @@ public final class GridTestProperties {
 
         dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
 
+        System.out.println("DEBUG IGNITE_HOME =" + igniteHome);
         if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
             String user = System.getProperty("user.name");
 
@@ -143,7 +144,13 @@ public final class GridTestProperties {
         if (log4jFile == null)
             log4jFile = getTestConfigurationFile(null, cfgFile);
 
-        DOMConfigurator.configure(log4jFile.getAbsolutePath());
+        System.out.println("LOG4J-file " + log4jFile);
+
+        try {
+            DOMConfigurator.configure(log4jFile.getAbsolutePath());
+        } catch (Throwable e) {
+            System.out.println("error " + e.getMessage() + " - " + e.getStackTrace());
+        }
 
         System.out.println("Configured log4j from: " + log4jFile);
     }
