@@ -105,7 +105,7 @@ public class ClusterReadOnlyModeTestUtils {
 
                             fail("Put must fail for cache " + cacheName);
                         }
-                        catch (Exception e) {
+                        catch (Exception ignored) {
                             // No-op.
                         }
 
@@ -115,14 +115,16 @@ public class ClusterReadOnlyModeTestUtils {
 
                             fail("Remove must fail for cache " + cacheName);
                         }
-                        catch (Exception e) {
+                        catch (Exception ignored) {
                             // No-op.
                         }
                     }
                     else {
-                        cache.put(rnd.nextInt(100), rnd.nextInt()); // All puts must succeed.
+                        int key = rnd.nextInt(100);
 
-                        cache.remove(rnd.nextInt(100)); // All removes must succeed.
+                        cache.put(key, rnd.nextInt()); // All puts must succeed.
+
+                        cache.remove(key); // All removes must succeed.
                     }
                 }
             }
@@ -144,7 +146,11 @@ public class ClusterReadOnlyModeTestUtils {
                     for (int i = 0; i < 10; i++) {
                         ((DataStreamerImpl)streamer).maxRemapCount(5);
 
-                        streamer.addData(rnd.nextInt(1000), rnd.nextInt());
+                        int key = rnd.nextInt(1000);
+
+                        streamer.addData(key, rnd.nextInt());
+
+                        streamer.removeData(key);
                     }
                 }
                 catch (CacheException ignored) {
