@@ -130,7 +130,7 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         testThatCurrentTimestampIsSane();
         testThatCurrentTimestampStaysTheSameWithinATransaction();
         testThatCurrentTimestampUpdatesOutsideATransaction();
-        testAnnotationProcessorsOutput();
+//        testAnnotationProcessorsOutput();
         testRound();
         testSignal();
 

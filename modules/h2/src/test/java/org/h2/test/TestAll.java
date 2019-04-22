@@ -1007,7 +1007,7 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
         addTest(new TestPattern());
         addTest(new TestStringCache());
         addTest(new TestValueMemory());
-//        addTest(new TestAuthentication());
+        addTest(new TestAuthentication());
 
         runAddedTests(1);
     }

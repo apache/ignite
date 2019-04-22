@@ -77,6 +77,10 @@ public class TestAuthentication extends TestBase {
         return externalUserPassword;
     }
 
+    public boolean isEnabled() {
+        return false;
+    }
+
     private static String getRealmName() {
         return "testRealm";
     }
