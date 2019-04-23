@@ -95,7 +95,7 @@ namespace ignite
 
             void Response::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver)
             {
-                if (ver >= DataChannel::VERSION_1_3_0)
+                if (ver >= DataChannel::VERSION_1_4_0)
                 {
                     flags = reader.ReadInt16();
 
