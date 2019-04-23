@@ -61,6 +61,7 @@ import static org.apache.ignite.internal.commandline.Commands.TX;
 import static org.apache.ignite.internal.commandline.Commands.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
+import static org.apache.ignite.internal.commandline.TxCommandArg.TX_INFO;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_PRINT;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.HELP;
@@ -446,6 +447,9 @@ public class CommandHandler {
         usage("Set baseline topology based on version:", BASELINE, BaselineSubcommands.VERSION.text() + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
         usage("Set baseline autoadjustment settings:", BASELINE, BaselineSubcommands.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
         usage("List or kill transactions:", TX, getTxOptions());
+        usage("Print detailed information (topology and key lock ownership) about specific transaction:",
+            TX, TX_INFO.argName(), or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
+                "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));
 
         if (enableExperimental) {
             usage("Print absolute paths of unused archived wal segments on each node:", WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
@@ -508,6 +512,7 @@ public class CommandHandler {
         list.add(op(TxCommandArg.TX_LIMIT, "NUMBER"));
         list.add(op(TxCommandArg.TX_ORDER, or(VisorTxSortOrder.values())));
         list.add(op(TxCommandArg.TX_KILL));
+        list.add(op(TX_INFO));
         list.add(op(CMD_AUTO_CONFIRMATION));
 
         return list.toArray(new String[list.size()]);

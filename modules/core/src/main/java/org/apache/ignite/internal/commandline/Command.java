@@ -51,7 +51,6 @@ public abstract class Command<T> {
         this.common = commonArguments;
     }
 
-
     public ConnectionAndSslParameters commonArguments() {
         return common;
     }

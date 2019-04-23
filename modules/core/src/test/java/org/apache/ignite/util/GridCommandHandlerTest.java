@@ -1661,7 +1661,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         int exitCode = execute(args);
 
-        assertEquals(exitOk, EXIT_CODE_OK == exitCode);
+        assertEquals(testOut.toString(), exitOk, EXIT_CODE_OK == exitCode);
 
         if (exitCode == EXIT_CODE_OK) {
             Matcher fileNameMatcher = dumpFileNameMatcher();

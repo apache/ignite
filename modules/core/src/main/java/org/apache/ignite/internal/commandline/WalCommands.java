@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
@@ -37,6 +36,9 @@ import static org.apache.ignite.internal.commandline.CommandArgIterator.isComman
 import static org.apache.ignite.internal.commandline.Commands.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
+/**
+ *
+ */
 public class WalCommands extends Command<T2<String, String>> {
     /** */
     static final String WAL_PRINT = "print";
@@ -77,6 +79,7 @@ public class WalCommands extends Command<T2<String, String>> {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public String confirmationPrompt0() {
         if (WAL_DELETE.equals(walAct))
             return "Warning: the command will delete unused WAL segments.";
@@ -84,6 +87,7 @@ public class WalCommands extends Command<T2<String, String>> {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         String str = argIter.nextArg("Expected arguments for " + WAL.text());
 

@@ -40,10 +40,14 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;
 
+/**
+ * Commands assosiated with baseline functionality.
+ */
 public class BaselineCommand extends Command<BaselineArguments> {
     /** Arguments. */
     private BaselineArguments baselineArgs;
 
+    /** {@inheritDoc} */
     @Override public String confirmationPrompt0() {
         if (BaselineSubcommands.COLLECT != baselineArgs.getCmd())
             return "Warning: the command will perform changes in baseline.";
@@ -73,6 +77,7 @@ public class BaselineCommand extends Command<BaselineArguments> {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public BaselineArguments arg() {
         return baselineArgs;
     }
@@ -175,6 +180,7 @@ public class BaselineCommand extends Command<BaselineArguments> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         if (!argIter.hasNextSubArg()) {
             this.baselineArgs = new BaselineArguments.Builder(BaselineSubcommands.COLLECT).build();

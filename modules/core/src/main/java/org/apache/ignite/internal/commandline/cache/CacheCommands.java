@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -79,9 +82,9 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+import static java.lang.String.format;
 import static org.apache.ignite.internal.commandline.CommandArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.CommandHandler.NULL;
-import static org.apache.ignite.internal.commandline.CommandHandler.ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -127,6 +130,7 @@ public class CacheCommands extends Command<CacheArguments> {
     /** Validate indexes task name. */
     private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
 
+    /** */
     private CacheArguments cacheArgs;
 
     /**
@@ -666,7 +670,7 @@ public class CacheCommands extends Command<CacheArguments> {
                 break;
 
             case IDLE_VERIFY:
-                int idleVerifyArgsCnt = 3;
+                int idleVerifyArgsCnt = 5;
 
                 while (argIter.hasNextSubArg() && idleVerifyArgsCnt-- > 0) {
                     String nextArg = argIter.nextArg("");
@@ -674,10 +678,11 @@ public class CacheCommands extends Command<CacheArguments> {
                     IdleVerifyCommandArg arg = CommandArgUtils.of(nextArg, IdleVerifyCommandArg.class);
 
                     if (arg == null) {
-                        if (cacheArgs.excludeCaches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                            throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+                        Set<String> cacheNames = argIter.parseStringSet(nextArg);
 
-                        cacheArgs.caches(argIter.parseStringSet(nextArg));
+                        validateRegexes(cacheNames);
+
+                        cacheArgs.caches(cacheNames);
                     }
                     else {
                         switch (arg) {
@@ -697,9 +702,6 @@ public class CacheCommands extends Command<CacheArguments> {
                                 break;
 
                             case CACHE_FILTER:
-                                if (cacheArgs.caches() != null || cacheArgs.excludeCaches() != null)
-                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
-
                                 String filter = argIter.nextArg("The cache filter should be specified. The following " +
                                     "values can be used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
 
@@ -708,10 +710,11 @@ public class CacheCommands extends Command<CacheArguments> {
                                 break;
 
                             case EXCLUDE_CACHES:
-                                if (cacheArgs.caches() != null || cacheArgs.getCacheFilterEnum() != CacheFilterEnum.ALL)
-                                    throw new IllegalArgumentException(ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG);
+                                Set<String> cacheNames = argIter.nextStringSet("caches, which will be excluded.");
 
-                                cacheArgs.excludeCaches(argIter.nextStringSet("caches, which will be excluded."));
+                                validateRegexes(cacheNames);
+
+                                cacheArgs.excludeCaches(cacheNames);
 
                                 break;
                         }
@@ -900,6 +903,17 @@ public class CacheCommands extends Command<CacheArguments> {
             throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + argIter.peekNextArg());
 
         this.cacheArgs = cacheArgs;
+    }
+
+    private void validateRegexes(Set<String> cacheNames) {
+        cacheNames.forEach(c -> {
+            try {
+                Pattern.compile(c);
+            }
+            catch (PatternSyntaxException e) {
+                throw new IgniteException(format("Invalid cache name regexp '%s': %s", c, e.getMessage()));
+            }
+        });
     }
 
     @Override public CacheArguments arg() {

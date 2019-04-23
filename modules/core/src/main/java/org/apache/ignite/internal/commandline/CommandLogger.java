@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 
 public class CommandLogger {
     /** Indent for help output. */
-    private static final String INDENT = "  ";
+    public static final String INDENT = "  ";
 
     /**
      * Join input parameters with specified {@code delimeter} between them.

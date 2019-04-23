@@ -22,11 +22,10 @@ import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 
+/**
+ *
+ */
 public class ActivateCommand extends Command<Void> {
-    @Override public Void arg() {
-        return null;
-    }
-
     /**
      * Activate cluster.
      *

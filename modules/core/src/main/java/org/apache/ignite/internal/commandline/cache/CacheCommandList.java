@@ -40,8 +40,11 @@ public enum CacheCommandList {
     /**
      * Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster.
      */
-    IDLE_VERIFY("idle_verify", IdleVerifyCommandArg.class, "Verify counters and hash sums of primary " +
-        "and backup partitions for the specified caches on an idle cluster and print out the differences, if any."),
+    IDLE_VERIFY("idle_verify", IdleVerifyCommandArg.class, "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
+        "Cache filtering options configure the set of caches that will be processed by idle_verify command. " +
+        "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
+        "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
+        "regexps, by cache type and after all by exclude regexps."),
 
     /**
      * Prints info regarding caches, groups or sequences.

@@ -46,8 +46,10 @@ public enum TxCommandArg implements CommandArg {
     TX_XID("--xid"),
 
 
-    TX_KILL("--kill")
-    ;
+    TX_KILL("--kill"),
+
+    /** */
+    TX_INFO("--info");
 
     /** Option name. */
     private final String name;
