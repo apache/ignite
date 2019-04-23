@@ -138,7 +138,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
     /**
      * @param p Partition which was fully sent.
-     * TODO FIXME cntr is not used.
      */
     void last(int p, long cntr) {
         if (last == null)

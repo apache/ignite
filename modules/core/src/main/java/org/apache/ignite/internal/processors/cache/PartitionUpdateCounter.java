@@ -23,59 +23,73 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Partition update counter.
- *
- * TODO FIXME consider rolling bit set implementation.
- * TODO describe ITEM structure
- * TODO add debugging info
- * TODO non-blocking version ? BitSets instead of TreeSet ?
- * TODO cleanup and comment interface
- * TODO implement gaps iterator.
- * TODO detailed description (javadoc) for counter contract.
+ * Partition update counter maintains three entities for tracking partition update state.
+   <ol>
+ *     <li><b>Low water mark (LWM)</b> or update counter - lowest applied sequential update number.</li>
+ *     <li><b>High water mark (HWM)</b> or reservation counter - highest seen but unapplied yet update number.</li>
+ *     <li>Out-of-order applied updates in range between LWM and HWM.</li>
+ * </ol>
  */
 public interface PartitionUpdateCounter extends Iterable<long[]> {
     /**
-     * @param initUpdCntr Initialize upd counter.
-     * @param rawGapsData Raw gaps data.
+     * Restores update counter state.
+     *
+     * @param initUpdCntr LWM.
+     * @param cntrUpdData Counter updates raw data.
      */
-    public void init(long initUpdCntr, @Nullable byte[] rawGapsData);
+    public void init(long initUpdCntr, @Nullable byte[] cntrUpdData);
 
-    /** */
+    /**
+     * @deprecated TODO LWM could be used as initial counter https://ggsystems.atlassian.net/browse/GG-17396
+     */
     public long initial();
 
     /**
-     * TODO rename to lwm.
+     * Get LWM.
      */
     public long get();
 
-    /** */
+    /**
+     * Increment LWM by 1.
+     *
+     * @return New LWM.
+     */
     public long next();
 
     /**
+     * Increment LWM by delta.
+     *
      * @param delta Delta.
      */
     public long next(long delta);
 
     /**
+     * Increment HWM by delta.
+     *
      * @param delta Delta.
+     * @return New HWM.
      */
     public long reserve(long delta);
 
     /**
-     * TODO rename to hwm.
+     * Returns HWM.
      */
     public long reserved();
 
     /**
-     * @param val Value.
+     * Sets update counter to absolute value. All missed updates will be discarded.
      *
+     * @param val Absolute value.
      * @throws IgniteCheckedException if counter cannot be set to passed value due to incompatibility with current state.
      */
     public void update(long val) throws IgniteCheckedException;
 
     /**
-     * @param start Start.
+     * Applies counter update out of range. Update ranges must not intersect.
+     *
+     * @param start Start (<= lwm).
      * @param delta Delta.
+     * @return {@code True} if update was actually applied.
      */
     public boolean update(long start, long delta);
 
@@ -87,13 +101,12 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     /**
      * @param start Counter.
      * @param delta Delta.
+     * @deprecated TODO https://ggsystems.atlassian.net/browse/GG-17396
      */
     public void updateInitial(long start, long delta);
 
     /**
      * Flushes pending update counters closing all possible gaps.
-     *
-     * TODO FIXME should not be here (implement by gaps iterator + update(s, d)
      *
      * @return Even-length array of pairs [start, end] for each gap.
      */
@@ -113,8 +126,6 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public boolean empty();
 
     /**
-     * TODO implement gaps iterator instead.
-     *
      * @return Iterator for pairs [start, delta] for each out-of-order update in the update counter sequence.
      */
     @Override public Iterator<long[]> iterator();

@@ -31,7 +31,6 @@ public class MetastorageDataRow extends SimpleDataRow implements MetastorageSear
 
     /** */
     public MetastorageDataRow(long link, String key, byte[] val) {
-        // TODO FIXME use static setter to recalc part */
         super(link, MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ?
             PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION, val);
         this.key = key;

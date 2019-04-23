@@ -3838,7 +3838,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             catch (Throwable t) {
                 prepareFut = prepFut;
 
-                // TODO FIXME critical errors must be handled inside prep fut.
+                // Properly finish prepFut in case of unchecked error.
                 assert prepareFut != null; // Prep future must be set.
 
                 ((GridNearTxPrepareFutureAdapter)prepFut).onDone(t);
@@ -3863,7 +3863,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
 
                         if (!(e instanceof NodeStoppingException))
-                            fut.finish(false, true, true); // TODO FIXME add test for this scenario.
+                            fut.finish(false, true, true);
                         else
                             fut.onNodeStop(e);
                     }

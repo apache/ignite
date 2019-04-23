@@ -296,8 +296,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
-                    // TODO FIXME initialUpdateCounter is not needed for history calculation, remove it.
-                    // LWM is enough to calculcate required history on coordinator as maxCntr - lwm.
+                    // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11790
                     msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {

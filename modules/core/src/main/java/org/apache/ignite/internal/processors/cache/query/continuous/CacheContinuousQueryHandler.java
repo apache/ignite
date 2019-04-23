@@ -1116,7 +1116,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     PartitionUpdateCounter cntr = locPart.dataStore().partUpdateCounter();
 
-                    return backup || cctx.mvccEnabled() ? cntr.get() : cntr.reserved();
+                    if (cntr == null)
+                        return 0;
+
+                    // Use HWM for primary, LWM for backup.
+                    return backup ? cntr.get() : cntr.reserved();
                 }
             };
 

@@ -938,7 +938,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
                         .append(" fullSize=")
                         .append(part == null ? "NA" : part.fullSize())
-                        .append(p).append(" state=").append(part.state());
+                        .append(" state=").append(part.state());
                 }
                 else
                     sb.append(p).append(" is null");

@@ -359,7 +359,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        // TODO FIXME delegate to update counter.
         return store.isEmpty() && internalSize() == 0;
     }
 
@@ -987,9 +986,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Returns new update counter for primary node or passed counter for backup node.
      * <p>
-     * Used for atomic caches, during preloading, or isolated updates.
-     *
-     * TODO FIXME merge logic.
+     * Used for non-tx cases.
+     * <p>
+     * Counter generation/update logic is delegated to counter implementation.
      *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
@@ -1000,27 +999,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         @Nullable Long primaryCntr) {
         long nextCntr;
 
-        if (primaryCntr == null) {// Primary node.
-            if (init) {
-                nextCntr = store.nextUpdateCounter();
-
-                store.updateCounter(nextCntr);
-            }
-            else {
-                nextCntr = store.reserve(1) + 1; // Needed for mixed tx/atomic caches in same group.
-
-                store.updateCounter(nextCntr - 1, 1); // Apply update right now (TODO apply update after writing entry to WAL)
-            }
-        }
+        if (primaryCntr == null) // Primary node.
+            nextCntr = store.nextUpdateCounter();
         else {
             assert !init : "Initial update must generate a counter for partition " + this;
 
             // Backup.
             assert primaryCntr != 0;
 
-            nextCntr = primaryCntr;
-
-            store.updateCounter(primaryCntr - 1, 1);
+            store.updateCounter(nextCntr = primaryCntr);
         }
 
         if (grp.sharedGroup())
@@ -1067,9 +1054,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param val Update counter value.
      */
     public void updateCounter(long val) {
-//        if (id() == 0 && group().groupId() == CU.cacheId("default"))
-//            log.error("TX: set node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", val=" + val, new Exception());
-
         store.updateCounter(val);
     }
 

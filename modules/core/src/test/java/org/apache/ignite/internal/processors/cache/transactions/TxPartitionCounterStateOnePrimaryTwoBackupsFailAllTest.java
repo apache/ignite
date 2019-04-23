@@ -26,7 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
+import org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterImpl;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -38,7 +38,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNREC
 
 /**
  * Tests partition consistency recovery in case then all owners are lost in the middle of transaction.
- * TODO https://issues.apache.org/jira/browse/IGNITE-11611
+ * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11611
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPartitionCounterStateAbstractTest {
     /** */
@@ -344,7 +344,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
         if (expectAliveNodes == 1) {
             IgniteEx node = (IgniteEx)G.allGrids().iterator().next();
 
-            PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, node.name());
+            PartitionTxUpdateCounterImpl cntr = (PartitionTxUpdateCounterImpl)counter(PARTITION_ID, node.name());
 
             assertTrue(cntr.sequential());
         }

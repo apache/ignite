@@ -7,9 +7,9 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * TODO FIXME auto-enable with debug logging.
+ * Update counter implementation useful for debugging.
  */
-public class PartitionUpdateCounterDebugWrapper extends PartitionUpdateCounterImpl {
+public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCounterImpl {
     /** */
     private IgniteLogger log;
 
@@ -27,7 +27,7 @@ public class PartitionUpdateCounterDebugWrapper extends PartitionUpdateCounterIm
      * @param partId Part id.
      * @param filterGrpId Filter group id.
      */
-    public PartitionUpdateCounterDebugWrapper(CacheGroupContext grp, int partId, int filterGrpId) {
+    public PartitionTxUpdateCounterDebugWrapper(CacheGroupContext grp, int partId, int filterGrpId) {
         this.log = grp.shared().logger(getClass());
         this.partId = partId;
         this.grp = grp;

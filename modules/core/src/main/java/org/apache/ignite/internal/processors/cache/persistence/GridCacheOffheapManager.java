@@ -277,7 +277,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PartitionMetaStorage<SimpleDataRow> partStore = store.partStorage();
 
             long updCntr = store.updateCounter();
-            long size = store.fullSize(); // TODO FIXME size is wrong (ahead of counter).
+            long size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
             // TODO FIXME have to implement byte array input for freelist.insertRow.
@@ -1220,9 +1220,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 int pIdx = partMap.partitionIndex(donePart);
 
                 if (log.isDebugEnabled()) {
-                    // TODO FIXME log group.
-                    log.debug("Partition done [partId=" + donePart +
-                        " from=" + partMap.initialUpdateCounterAt(pIdx) + " to=" + partMap.updateCounterAt(pIdx) + ']');
+                    log.debug("Partition done [grpId=" + grp.groupId() +
+                        ", partId=" + donePart +
+                        ", from=" + partMap.initialUpdateCounterAt(pIdx) +
+                        ", to=" + partMap.updateCounterAt(pIdx) + ']');
                 }
 
                 doneParts.add(donePart);
@@ -1231,8 +1232,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
 
             advance();
-
-            // log.info("EEntry: key=" + (int)val.key().value(grp.cacheObjectContext(), false) + ", part=" + val.partition() + ", cntr=" + cntr);
 
             return val;
         }
@@ -1304,7 +1303,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
                                 // Partition will be marked as done for current entry on next iteration.
-                                if (++rebalancedCntrs[idx] == to)
+                                if (++rebalancedCntrs[idx] == to ||
+                                    entry.partitionCounter() == to && grp.hasAtomicCaches())
                                     donePart = entry.partitionId();
 
                                 next = entry;
@@ -1355,8 +1355,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
                 }
 
-                // TODO FIXME introduce isDone() for doneParts.size() == partMap.size()
-                // TODO print info about not done partitions
                 assert entryIt != null || doneParts.size() == partMap.size() :
                     "Reached end of WAL but not all partitions are done";
             }
@@ -2094,7 +2092,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (delegate0 == null)
                     throw new IllegalStateException("Should be never called.");
 
-                // TODO throw exception
                 return delegate0.nextUpdateCounter();
             }
             catch (IgniteCheckedException e) {
