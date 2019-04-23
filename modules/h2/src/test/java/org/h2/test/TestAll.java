@@ -15,6 +15,7 @@ import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import org.h2.Driver;
 import org.h2.engine.Constants;
+import org.h2.jdbcx.JdbcDataSourceFactory;
 import org.h2.store.fs.FilePathRec;
 import org.h2.store.fs.FileUtils;
 import org.h2.test.auth.TestAuthentication;
@@ -1112,6 +1113,7 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
         if (networked && server != null) {
             server.stop();
         }
+        JdbcDataSourceFactory.getTraceSystem().close();
         FileUtils.deleteRecursive("target/trace.db", true);
         FileUtils.deleteRecursive(TestBase.BASE_TEST_DIR, true);
     }
