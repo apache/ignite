@@ -32,13 +32,8 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @SuppressWarnings("unchecked")
 public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
-    /**
-     * Set up routine.
-     *
-     * @throws Exception If failed.
-     */
-
-    public void setup() throws Exception {
+    /** {@inheritDoc} */
+    @Override public void setup() throws Exception {
         super.setup();
 
         IgniteDataStreamer<Integer, IntValue> dataLdr = node.dataStreamer(cache.getName());
