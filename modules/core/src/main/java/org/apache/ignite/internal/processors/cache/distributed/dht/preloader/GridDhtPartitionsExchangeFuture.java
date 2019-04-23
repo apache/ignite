@@ -5025,6 +5025,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public boolean isClearingPartition(CacheGroupContext grp, int part) {
         synchronized (mux) {
+            if (clearingPartitions == null)
+                return false;
+
             Set<Integer> parts = clearingPartitions.get(grp.groupId());
 
             return parts != null && parts.contains(part);
