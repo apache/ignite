@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
@@ -201,4 +203,23 @@ public class CommandLogger {
         log("Error: " + msg);
     }
 
+
+
+    public boolean printErrors(Map<UUID, Exception> exceptions, String s) {
+        if (!F.isEmpty(exceptions)) {
+            log(s);
+
+            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+                logWithIndent("Node ID: " + e.getKey());
+
+                logWithIndent("Exception message:");
+                logWithIndent(e.getValue().getMessage(), 2);
+                nl();
+            }
+
+            return true;
+        }
+
+        return false;
+    }
 }

@@ -28,10 +28,13 @@ import java.util.stream.Collectors;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.OutputFormat;
 import org.apache.ignite.internal.commandline.TaskExecutor;
-import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
@@ -48,37 +51,141 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
 
+import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 
-public class CacheViewer {
+public class CacheViewer extends Command<CacheViewer.Arguments> {
+    public static class Arguments {
+        /** Regex. */
+        private String regex;
 
-    private final CommandLogger logger;
+        /** Full config flag. */
+        private boolean fullConfig;
 
-    public CacheViewer(CommandLogger logger) {
-        this.logger = logger;
+        /** Node id. */
+        private UUID nodeId;
+
+        /** Cache view command. */
+        private VisorViewCacheCmd cacheCmd;
+
+        /** Output format. */
+        private OutputFormat outputFormat;
+
+        public Arguments(String regex, boolean fullConfig, UUID nodeId, VisorViewCacheCmd cacheCmd, OutputFormat outputFormat) {
+            this.regex = regex;
+            this.fullConfig = fullConfig;
+            this.nodeId = nodeId;
+            this.cacheCmd = cacheCmd;
+            this.outputFormat = outputFormat;
+        }
+
+        /**
+         * @return Regex.
+         */
+        public String regex() {
+            return regex;
+        }
+
+        /**
+         * @return Node id.
+         */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return Output format.
+         */
+        public OutputFormat outputFormat() { return outputFormat; }
+
+        /**
+         * @return Cache view command.
+         */
+        public VisorViewCacheCmd cacheCommand() {
+            return cacheCmd;
+        }
+
+        /**
+         * @return Full config flag.
+         */
+        public boolean fullConfig(){ return fullConfig; }
     }
 
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    public void cacheView(GridClient client, CacheArguments cacheArgs, GridClientConfiguration clientCfg) throws GridClientException {
-        VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(cacheArgs.regex(), cacheArgs.cacheCommand());
+    private Arguments args;
 
-        VisorViewCacheTaskResult res = TaskExecutor.executeTaskByNameOnNode(
-            client,
-            VisorViewCacheTask.class.getName(),
-            taskArg,
-            cacheArgs.nodeId(),
-            clientCfg
-        );
+    @Override public Arguments arg() {
+        return args;
+    }
 
-        if (cacheArgs.fullConfig() && cacheArgs.cacheCommand() == CACHES)
-            cachesConfig(client, cacheArgs, res, clientCfg);
-        else
-            printCacheInfos(res.cacheInfos(), cacheArgs.cacheCommand());
+    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+        VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(args.regex(), args.cacheCommand());
+
+        VisorViewCacheTaskResult res;
+
+        try (GridClient client = startClient(clientCfg)) {
+            res = TaskExecutor.executeTaskByNameOnNode(
+                client,
+                VisorViewCacheTask.class.getName(),
+                taskArg,
+                args.nodeId(),
+                clientCfg
+            );
+
+            if (args.fullConfig() && args.cacheCommand() == CACHES)
+                cachesConfig(client, args, res, clientCfg, logger);
+            else
+                printCacheInfos(res.cacheInfos(), args.cacheCommand(), logger);
+        }
+
+
+        return res;
+    }
+
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        String regex = argIter.nextArg("Regex is expected");
+        boolean fullConfig = false;
+        VisorViewCacheCmd cacheCmd = CACHES;
+        OutputFormat outputFormat = SINGLE_LINE;
+        UUID nodeId = null;
+
+        while (argIter.hasNextSubArg()) {
+            String nextArg = argIter.nextArg("").toLowerCase();
+
+            ListCommandArg arg = CommandArgUtils.of(nextArg, ListCommandArg.class);
+            if (arg != null) {
+                switch (arg) {
+                    case GROUP:
+                        cacheCmd = GROUPS;
+
+                        break;
+
+                    case SEQUENCE:
+                        cacheCmd = SEQ;
+
+                        break;
+
+                    case OUTPUT_FORMAT:
+                        String tmp2 = argIter.nextArg("output format must be defined!").toLowerCase();
+
+                        outputFormat = OutputFormat.fromConsoleName(tmp2);
+
+                        break;
+
+                    case CONFIG:
+                        fullConfig = true;
+
+                        break;
+                }
+            }
+            else
+                nodeId = UUID.fromString(nextArg);
+        }
+
+
+        args = new Arguments(regex, fullConfig, nodeId, cacheCmd, outputFormat);
     }
 
     /**
@@ -192,7 +299,8 @@ public class CacheViewer {
     private void printCachesConfig(
         Map<String, VisorCacheConfiguration> caches,
         OutputFormat outputFormat,
-        Map<String, Integer> cacheToMapped
+        Map<String, Integer> cacheToMapped,
+        CommandLogger logger
     ) {
 
         for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
@@ -241,9 +349,10 @@ public class CacheViewer {
      */
     private void cachesConfig(
         GridClient client,
-        CacheArguments cacheArgs,
+        Arguments cacheArgs,
         VisorViewCacheTaskResult viewRes,
-        GridClientConfiguration clientCfg
+        GridClientConfiguration clientCfg,
+        CommandLogger logger
     ) throws GridClientException {
         VisorCacheConfigurationCollectorTaskArg taskArg = new VisorCacheConfigurationCollectorTaskArg(cacheArgs.regex());
 
@@ -255,7 +364,7 @@ public class CacheViewer {
         Map<String, Integer> cacheToMapped =
             viewRes.cacheInfos().stream().collect(Collectors.toMap(CacheInfo::getCacheName, CacheInfo::getMapped));
 
-        printCachesConfig(res, cacheArgs.outputFormat(), cacheToMapped);
+        printCachesConfig(res, cacheArgs.outputFormat(), cacheToMapped, logger);
     }
 
     /**
@@ -264,7 +373,7 @@ public class CacheViewer {
      * @param infos Caches info.
      * @param cmd Command.
      */
-    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd) {
+    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd, CommandLogger logger) {
         for (CacheInfo info : infos) {
             Map<String, Object> map = info.toMap(cmd);
 

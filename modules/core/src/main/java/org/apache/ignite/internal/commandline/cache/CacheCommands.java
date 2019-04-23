@@ -17,83 +17,24 @@
 
 package org.apache.ignite.internal.commandline.cache;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.commandline.OutputFormat;
-import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
-import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
-import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
-import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
-import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
-import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
-import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTask;
-import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskArg;
-import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
-import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
-import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceJobResult;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTask;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
-import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
-import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
-import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
-import org.apache.ignite.internal.visor.verify.VisorContentionTask;
-import org.apache.ignite.internal.visor.verify.VisorContentionTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTask;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
-import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
-import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
-import org.apache.ignite.lang.IgniteProductVersion;
 
-import static java.lang.String.format;
 import static org.apache.ignite.internal.commandline.CommandArgParser.getCommonOptions;
-import static org.apache.ignite.internal.commandline.CommandHandler.NULL;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.Commands.CACHE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
-import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
-import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.CONTENTION;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.DISTRIBUTION;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.FIND_AND_DELETE_GARBAGE;
@@ -113,12 +54,9 @@ import static org.apache.ignite.internal.commandline.cache.argument.ListCommandA
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder.DELIM;
 
-public class CacheCommands extends Command<CacheArguments> {
+public class CacheCommands extends Command<CacheCommandList> {
     /** */
     private static final String NODE_ID = "nodeId";
 
@@ -127,11 +65,8 @@ public class CacheCommands extends Command<CacheArguments> {
 
     private CommandLogger logger;
 
-    /** Validate indexes task name. */
-    private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
-
     /** */
-    private CacheArguments cacheArgs;
+    private CacheCommandList subcommand;
 
     /**
      * Executes --cache subcommand.
@@ -142,372 +77,65 @@ public class CacheCommands extends Command<CacheArguments> {
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
-        if (cacheArgs.command() == CacheCommandList.HELP) {
+        if (subcommand == CacheCommandList.HELP) {
             printCacheHelp();
 
             return null;
         }
 
-        try (GridClient client = startClient(clientCfg)) {
-            switch (cacheArgs.command()) {
-                case IDLE_VERIFY:
-                    cacheIdleVerify(client, cacheArgs, clientCfg);
+        Command command = subcommand.subcommand();
 
-                    break;
+        if (command == null)
+            throw new IllegalStateException("Unknown command " + subcommand);
 
-                case VALIDATE_INDEXES:
-                    cacheValidateIndexes(client, cacheArgs, clientCfg);
-
-                    break;
-
-                case FIND_AND_DELETE_GARBAGE:
-                    return findAndDeleteGarbage(client, cacheArgs, clientCfg);
-
-                case CONTENTION:
-                    cacheContention(client, cacheArgs, clientCfg);
-
-                    break;
-
-                case DISTRIBUTION:
-                    cacheDistribution(client, cacheArgs, clientCfg);
-
-                    break;
-
-                case RESET_LOST_PARTITIONS:
-                    cacheResetLostPartitions(client, cacheArgs, clientCfg);
-
-                    break;
-
-                default:
-                    new CacheViewer(logger).cacheView(client, cacheArgs, clientCfg);
-
-                    break;
-            }
-        }
-
-        return null;
+        return command.execute(clientCfg, logger);
     }
 
-   /**
-     * Executes appropriate version of idle_verify check. Old version will be used if there are old nodes in the
-     * cluster.
-     *  @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
+    /**
+     * Parses and validates cache arguments.
+     *
+     * @return --cache subcommand arguments in case validation is successful.
+     * @param argIter Argument iterator.
      */
-    private void cacheIdleVerify(
-        GridClient client,
-        CacheArguments cacheArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        Collection<GridClientNode> nodes = client.compute().nodes(GridClientNode::connectable);
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        if (!argIter.hasNextSubArg()) {
+            throw new IllegalArgumentException("Arguments are expected for --cache subcommand, " +
+                "run '--cache help' for more info.");
+        }
 
-        boolean idleVerifyV2 = true;
+        String str = argIter.nextArg("").toLowerCase();
 
-        for (GridClientNode node : nodes) {
-            String nodeVerStr = node.attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
+        CacheCommandList cmd = CacheCommandList.of(str);
 
-            IgniteProductVersion nodeVer = IgniteProductVersion.fromString(nodeVerStr);
+        if (cmd == null)
+            cmd = CacheCommandList.HELP;
 
-            if (nodeVer.compareTo(VerifyBackupPartitionsTaskV2.V2_SINCE_VER) < 0) {
-                idleVerifyV2 = false;
+
+        switch (cmd) {
+            case HELP:
+                break;
+
+            case RESET_LOST_PARTITIONS:
+            case LIST:
+            case IDLE_VERIFY:
+            case VALIDATE_INDEXES:
+            case FIND_AND_DELETE_GARBAGE:
+            case CONTENTION:
+            case DISTRIBUTION:
+                cmd.subcommand().parseArguments(argIter);
 
                 break;
-            }
+
+            default:
+                throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
         }
 
-        if (cacheArgs.dump())
-            cacheIdleVerifyDump(client, cacheArgs, clientCfg);
-        else if (idleVerifyV2)
-            cacheIdleVerifyV2(client, cacheArgs, clientCfg);
-        else
-            legacyCacheIdleVerify(client, cacheArgs, clientCfg);
+        if (argIter.hasNextSubArg())
+            throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + argIter.peekNextArg());
+
+        this.subcommand = cmd;
     }
 
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    private void cacheIdleVerifyDump(
-        GridClient client,
-        CacheArguments cacheArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        VisorIdleVerifyDumpTaskArg arg = new VisorIdleVerifyDumpTaskArg(
-            cacheArgs.caches(),
-            cacheArgs.excludeCaches(),
-            cacheArgs.isSkipZeros(),
-            cacheArgs.getCacheFilterEnum(),
-            cacheArgs.idleCheckCrc()
-        );
-
-        String path = executeTask(client, VisorIdleVerifyDumpTask.class, arg, clientCfg);
-
-        logger.log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
-    }
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    private void cacheIdleVerifyV2(
-        GridClient client,
-        CacheArguments cacheArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        IdleVerifyResultV2 res = executeTask(
-            client,
-            VisorIdleVerifyTaskV2.class,
-            new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.idleCheckCrc()),
-            clientCfg);
-
-        res.print(System.out::print);
-    }
-
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    private void cacheValidateIndexes(
-        GridClient client,
-        CacheArguments cacheArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
-            cacheArgs.caches(),
-            cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null,
-            cacheArgs.checkFirst(),
-            cacheArgs.checkThrough()
-        );
-
-        VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
-            client, VALIDATE_INDEXES_TASK, taskArg, null, clientCfg);
-
-        boolean errors = printErrors(taskRes.exceptions(), "Index validation failed on nodes:");
-
-        for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            if (!nodeEntry.getValue().hasIssues())
-                continue;
-
-            errors = true;
-
-            logger.log("Index issues found on node " + nodeEntry.getKey() + ":");
-
-            Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
-
-            if (!integrityCheckFailures.isEmpty()) {
-                for (IndexIntegrityCheckIssue is : integrityCheckFailures)
-                    logger.logWithIndent(is);
-            }
-
-            Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
-
-            for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : partRes.entrySet()) {
-                ValidateIndexesPartitionResult res = e.getValue();
-
-                if (!res.issues().isEmpty()) {
-                    logger.logWithIndent(j(" ", e.getKey(), e.getValue()));
-
-                    for (IndexValidationIssue is : res.issues())
-                        logger.logWithIndent(is, 2);
-                }
-            }
-
-            Map<String, ValidateIndexesPartitionResult> idxRes = nodeEntry.getValue().indexResult();
-
-            for (Map.Entry<String, ValidateIndexesPartitionResult> e : idxRes.entrySet()) {
-                ValidateIndexesPartitionResult res = e.getValue();
-
-                if (!res.issues().isEmpty()) {
-                    logger.logWithIndent(j(" ", "SQL Index", e.getKey(), e.getValue()));
-
-                    for (IndexValidationIssue is : res.issues())
-                        logger.logWithIndent(is, 2);
-                }
-            }
-        }
-
-        if (!errors)
-            logger.log("no issues found.");
-        else
-            logger.log("issues found (listed above).");
-
-        logger.nl();
-    }
-
-
-    private boolean printErrors(Map<UUID, Exception> exceptions, String s) {
-        if (!F.isEmpty(exceptions)) {
-            logger.log(s);
-
-            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-                logger.logWithIndent("Node ID: " + e.getKey());
-
-                logger.logWithIndent("Exception message:");
-                logger.logWithIndent(e.getValue().getMessage(), 2);
-                logger.nl();
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    private void cacheContention(
-        GridClient client,
-        CacheArguments cacheArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        VisorContentionTaskArg taskArg = new VisorContentionTaskArg(
-            cacheArgs.minQueueSize(), cacheArgs.maxPrint());
-
-        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
-
-        VisorContentionTaskResult res = executeTaskByNameOnNode(
-            client, VisorContentionTask.class.getName(), taskArg, nodeId, clientCfg);
-
-        if (!F.isEmpty(res.exceptions())) {
-            logger.log("Contention check failed on nodes:");
-
-            for (Map.Entry<UUID, Exception> e : res.exceptions().entrySet()) {
-                logger.log("Node ID: " + e.getKey());
-
-                logger.log("Exception message:");
-                logger.log(e.getValue().getMessage());
-                logger.nl();
-            }
-        }
-
-        for (ContentionInfo info : res.getInfos())
-            info.print();
-    }
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    private void legacyCacheIdleVerify(GridClient client, CacheArguments cacheArgs, GridClientConfiguration clientCfg) throws GridClientException {
-        VisorIdleVerifyTaskResult res = executeTask(
-            client,
-            VisorIdleVerifyTask.class,
-            new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.idleCheckCrc()),
-            clientCfg);
-
-        Map<PartitionKey, List<PartitionHashRecord>> conflicts = res.getConflicts();
-
-        if (conflicts.isEmpty()) {
-            logger.log("idle_verify check has finished, no conflicts have been found.");
-            logger.nl();
-        }
-        else {
-            logger.log("idle_verify check has finished, found " + conflicts.size() + " conflict partitions.");
-            logger.nl();
-
-            for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : conflicts.entrySet()) {
-                logger.log("Conflict partition: " + entry.getKey());
-
-                logger.log("Partition instances: " + entry.getValue());
-            }
-        }
-    }
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    private void cacheDistribution(
-        GridClient client,
-        CacheArguments cacheArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        CacheDistributionTaskArg taskArg = new CacheDistributionTaskArg(cacheArgs.caches(), cacheArgs.getUserAttributes());
-
-        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
-
-        CacheDistributionTaskResult res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId, clientCfg);
-
-        res.print(System.out);
-    }
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    private void cacheResetLostPartitions(
-        GridClient client,
-        CacheArguments cacheArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        CacheResetLostPartitionsTaskArg taskArg = new CacheResetLostPartitionsTaskArg(cacheArgs.caches());
-
-        CacheResetLostPartitionsTaskResult res = executeTaskByNameOnNode(client, CacheResetLostPartitionsTask.class.getName(), taskArg, null, clientCfg);
-
-        res.print(System.out);
-    }
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     * @param clientCfg Client configuration.
-     */
-    private VisorFindAndDeleteGarbargeInPersistenceTaskResult findAndDeleteGarbage(
-        GridClient client,
-        CacheArguments cacheArgs,
-        GridClientConfiguration clientCfg
-    ) throws GridClientException {
-        VisorFindAndDeleteGarbargeInPersistenceTaskArg taskArg = new VisorFindAndDeleteGarbargeInPersistenceTaskArg(
-            cacheArgs.groups(),
-            cacheArgs.delete(),
-            cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null
-        );
-
-        VisorFindAndDeleteGarbargeInPersistenceTaskResult taskRes = executeTask(
-            client, VisorFindAndDeleteGarbargeInPersistenceTask.class, taskArg, clientCfg);
-
-        printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:");
-
-        for (Map.Entry<UUID, VisorFindAndDeleteGarbargeInPersistenceJobResult> nodeEntry : taskRes.result().entrySet()) {
-            if (!nodeEntry.getValue().hasGarbarge()) {
-                logger.log("Node "+ nodeEntry.getKey() + " - garbage not found.");
-
-                continue;
-            }
-
-            logger.log("Garbarge found on node " + nodeEntry.getKey() + ":");
-
-            VisorFindAndDeleteGarbargeInPersistenceJobResult value = nodeEntry.getValue();
-
-            Map<Integer, Map<Integer, Long>> grpPartErrorsCount = value.checkResult();
-
-            if (!grpPartErrorsCount.isEmpty()) {
-                for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCount.entrySet()) {
-                    for (Map.Entry<Integer, Long> e : entry.getValue().entrySet()) {
-                        logger.logWithIndent("Group=" + entry.getKey() +
-                            ", partition=" + e.getKey() +
-                            ", count of keys=" + e.getValue());
-                    }
-                }
-            }
-
-            logger.nl();
-        }
-
-        return taskRes;
-    }
 
     /** */
     private void printCacheHelp() {
@@ -642,281 +270,7 @@ public class CacheCommands extends Command<CacheArguments> {
         return map;
     }
 
-    /**
-     * Parses and validates cache arguments.
-     *
-     * @return --cache subcommand arguments in case validation is successful.
-     * @param argIter Argument iterator.
-     */
-    @Override public void parseArguments(CommandArgIterator argIter) {
-        if (!argIter.hasNextSubArg()) {
-            throw new IllegalArgumentException("Arguments are expected for --cache subcommand, " +
-                "run '--cache help' for more info.");
-        }
-
-        CacheArguments cacheArgs = new CacheArguments();
-
-        String str = argIter.nextArg("").toLowerCase();
-
-        CacheCommandList cmd = CacheCommandList.of(str);
-
-        if (cmd == null)
-            cmd = CacheCommandList.HELP;
-
-        cacheArgs.command(cmd);
-
-        switch (cmd) {
-            case HELP:
-                break;
-
-            case IDLE_VERIFY:
-                int idleVerifyArgsCnt = 5;
-
-                while (argIter.hasNextSubArg() && idleVerifyArgsCnt-- > 0) {
-                    String nextArg = argIter.nextArg("");
-
-                    IdleVerifyCommandArg arg = CommandArgUtils.of(nextArg, IdleVerifyCommandArg.class);
-
-                    if (arg == null) {
-                        Set<String> cacheNames = argIter.parseStringSet(nextArg);
-
-                        validateRegexes(cacheNames);
-
-                        cacheArgs.caches(cacheNames);
-                    }
-                    else {
-                        switch (arg) {
-                            case DUMP:
-                                cacheArgs.dump(true);
-
-                                break;
-
-                            case SKIP_ZEROS:
-                                cacheArgs.skipZeros(true);
-
-                                break;
-
-                            case CHECK_CRC:
-                                cacheArgs.idleCheckCrc(true);
-
-                                break;
-
-                            case CACHE_FILTER:
-                                String filter = argIter.nextArg("The cache filter should be specified. The following " +
-                                    "values can be used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
-
-                                cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter.toUpperCase()));
-
-                                break;
-
-                            case EXCLUDE_CACHES:
-                                Set<String> cacheNames = argIter.nextStringSet("caches, which will be excluded.");
-
-                                validateRegexes(cacheNames);
-
-                                cacheArgs.excludeCaches(cacheNames);
-
-                                break;
-                        }
-                    }
-                }
-                break;
-
-            case CONTENTION:
-                cacheArgs.minQueueSize(Integer.parseInt(argIter.nextArg("Min queue size expected")));
-
-                if (argIter.hasNextSubArg())
-                    cacheArgs.nodeId(UUID.fromString(argIter.nextArg("")));
-
-                if (argIter.hasNextSubArg())
-                    cacheArgs.maxPrint(Integer.parseInt(argIter.nextArg("")));
-                else
-                    cacheArgs.maxPrint(10);
-
-                break;
-
-            case VALIDATE_INDEXES: {
-                int argsCnt = 0;
-
-                while (argIter.hasNextSubArg() && argsCnt++ < 4) {
-                    String nextArg = argIter.nextArg("");
-
-                    ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
-
-                    if (arg == CHECK_FIRST || arg == CHECK_THROUGH) {
-                        if (!argIter.hasNextSubArg())
-                            throw new IllegalArgumentException("Numeric value for '" + nextArg + "' parameter expected.");
-
-                        int numVal;
-
-                        String numStr = argIter.nextArg("");
-
-                        try {
-                            numVal = Integer.parseInt(numStr);
-                        }
-                        catch (IllegalArgumentException e) {
-                            throw new IllegalArgumentException(
-                                "Not numeric value was passed for '" + nextArg + "' parameter: " + numStr
-                            );
-                        }
-
-                        if (numVal <= 0)
-                            throw new IllegalArgumentException("Value for '" + nextArg + "' property should be positive.");
-
-                        if (arg == CHECK_FIRST)
-                            cacheArgs.checkFirst(numVal);
-                        else
-                            cacheArgs.checkThrough(numVal);
-
-                        continue;
-                    }
-
-                    try {
-                        cacheArgs.nodeId(UUID.fromString(nextArg));
-
-                        continue;
-                    }
-                    catch (IllegalArgumentException ignored) {
-                        //No-op.
-                    }
-
-                    cacheArgs.caches(argIter.parseStringSet(nextArg));
-                }
-
-                break;
-            }
-
-            case FIND_AND_DELETE_GARBAGE: {
-                int argsCnt = 0;
-
-                while (argIter.hasNextSubArg() && argsCnt++ < 3) {
-                    String nextArg = argIter.nextArg("");
-
-                    FindAndDeleteGarbageArg arg = CommandArgUtils.of(nextArg, FindAndDeleteGarbageArg.class);
-
-                    if (arg == FindAndDeleteGarbageArg.DELETE) {
-                        cacheArgs.delete(true);
-
-                        continue;
-                    }
-
-                    try {
-                        cacheArgs.nodeId(UUID.fromString(nextArg));
-
-                        continue;
-                    }
-                    catch (IllegalArgumentException ignored) {
-                        //No-op.
-                    }
-
-                    cacheArgs.groups(argIter.parseStringSet(nextArg));
-                }
-
-                break;
-            }
-
-            case DISTRIBUTION:
-                String nodeIdStr = argIter.nextArg("Node id expected or null");
-                if (!NULL.equals(nodeIdStr))
-                    cacheArgs.nodeId(UUID.fromString(nodeIdStr));
-
-                while (argIter.hasNextSubArg()) {
-                    String nextArg = argIter.nextArg("");
-
-                    DistributionCommandArg arg = CommandArgUtils.of(nextArg, DistributionCommandArg.class);
-
-                    if (arg == USER_ATTRIBUTES) {
-                        nextArg = argIter.nextArg("User attributes are expected to be separated by commas");
-
-                        Set<String> userAttrs = new HashSet<>();
-
-                        for (String userAttribute : nextArg.split(","))
-                            userAttrs.add(userAttribute.trim());
-
-                        cacheArgs.setUserAttributes(userAttrs);
-
-                        nextArg = (argIter.hasNextSubArg()) ? argIter.nextArg("") : null;
-
-                    }
-
-                    if (nextArg != null)
-                        cacheArgs.caches(argIter.parseStringSet(nextArg));
-                }
-
-                break;
-
-            case RESET_LOST_PARTITIONS:
-                cacheArgs.caches(argIter.nextStringSet("Cache name"));
-
-                break;
-
-            case LIST:
-                cacheArgs.regex(argIter.nextArg("Regex is expected"));
-
-                VisorViewCacheCmd cacheCmd = CACHES;
-
-                OutputFormat outputFormat = SINGLE_LINE;
-
-                while (argIter.hasNextSubArg()) {
-                    String nextArg = argIter.nextArg("").toLowerCase();
-
-                    ListCommandArg arg = CommandArgUtils.of(nextArg, ListCommandArg.class);
-                    if (arg != null) {
-                        switch (arg) {
-                            case GROUP:
-                                cacheCmd = GROUPS;
-
-                                break;
-
-                            case SEQUENCE:
-                                cacheCmd = SEQ;
-
-                                break;
-
-                            case OUTPUT_FORMAT:
-                                String tmp2 = argIter.nextArg("output format must be defined!").toLowerCase();
-
-                                outputFormat = OutputFormat.fromConsoleName(tmp2);
-
-                                break;
-
-                            case CONFIG:
-                                cacheArgs.fullConfig(true);
-
-                                break;
-                        }
-                    }
-                    else
-                        cacheArgs.nodeId(UUID.fromString(nextArg));
-                }
-
-                cacheArgs.cacheCommand(cacheCmd);
-                cacheArgs.outputFormat(outputFormat);
-
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
-        }
-
-        if (argIter.hasNextSubArg())
-            throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + argIter.peekNextArg());
-
-        this.cacheArgs = cacheArgs;
-    }
-
-    private void validateRegexes(Set<String> cacheNames) {
-        cacheNames.forEach(c -> {
-            try {
-                Pattern.compile(c);
-            }
-            catch (PatternSyntaxException e) {
-                throw new IgniteException(format("Invalid cache name regexp '%s': %s", c, e.getMessage()));
-            }
-        });
-    }
-
-    @Override public CacheArguments arg() {
-        return cacheArgs;
+    @Override public CacheCommandList arg() {
+        return subcommand;
     }
 }

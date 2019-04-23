@@ -48,4 +48,8 @@ public class ActivateCommand extends Command<Void> {
 
         return null;
     }
+
+    @Override public Void arg() {
+        return null;
+    }
 }

@@ -59,7 +59,5 @@ public abstract class Command<T> {
         return common.autoConfirmation()? null: confirmationPrompt0();
     }
 
-    public T arg() {
-        return null;
-    }
+    public abstract T arg();
 }

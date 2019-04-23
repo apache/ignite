@@ -42,4 +42,8 @@ public class StateCommand extends Command<Void> {
 
         return null;
     }
+
+    @Override public Void arg() {
+        return null;
+    }
 }

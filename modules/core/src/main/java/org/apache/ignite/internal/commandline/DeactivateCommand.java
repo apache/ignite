@@ -49,4 +49,8 @@ public class DeactivateCommand extends Command<Void> {
 
         return null;
     }
+
+    @Override public Void arg() {
+        return null;
+    }
 }

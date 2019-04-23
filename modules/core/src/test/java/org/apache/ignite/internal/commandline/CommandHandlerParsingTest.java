@@ -25,8 +25,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
-import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.cache.CacheCommandList;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
+import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
@@ -82,7 +84,9 @@ public class CommandHandlerParsingTest {
 
             assertTrue(command instanceof CacheCommands);
 
-            CacheArguments args = ((CacheCommands)command).arg();
+            CacheCommandList subcommand = ((CacheCommands)command).arg();
+
+            CacheValidateIndexes.Arguments args = (CacheValidateIndexes.Arguments)subcommand.subcommand().arg();
 
             assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
             assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, args.checkFirst());
@@ -106,7 +110,9 @@ public class CommandHandlerParsingTest {
 
             assertTrue(command instanceof CacheCommands);
 
-            CacheArguments args = ((CacheCommands)command).arg();
+            CacheCommandList subcommand = ((CacheCommands)command).arg();
+
+            CacheValidateIndexes.Arguments args = (CacheValidateIndexes.Arguments)subcommand.subcommand().arg();
 
             assertNull("caches weren't specified, null value expected", args.caches());
             assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
@@ -162,10 +168,11 @@ public class CommandHandlerParsingTest {
         for (List<String> list : lists) {
             Command command = parseArgs(list);
 
-
             assertTrue(command instanceof CacheCommands);
 
-            CacheArguments args = ((CacheCommands)command).arg();
+            CacheCommandList subcommand = ((CacheCommands)command).arg();
+
+            FindAndDeleteGarbage.Arguments args = (FindAndDeleteGarbage.Arguments)subcommand.subcommand().arg();
 
             if (list.contains(nodeId)) {
                 assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId().toString());

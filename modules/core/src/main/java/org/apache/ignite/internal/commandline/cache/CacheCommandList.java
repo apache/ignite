@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.cache;
 
+import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
@@ -35,7 +36,7 @@ public enum CacheCommandList {
     /**
      * Prints out help for the cache command.
      */
-    HELP("help", null, "Print how to use other cache commands."),
+    HELP("help", null, "Print how to use other cache commands.", null),
 
     /**
      * Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster.
@@ -44,14 +45,14 @@ public enum CacheCommandList {
         "Cache filtering options configure the set of caches that will be processed by idle_verify command. " +
         "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
         "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
-        "regexps, by cache type and after all by exclude regexps."),
+        "regexps, by cache type and after all by exclude regexps.", new IdleVerify()),
 
     /**
      * Prints info regarding caches, groups or sequences.
      */
     LIST("list", ListCommandArg.class,
         "Show information about caches, groups or sequences that match a regular expression. " +
-            "When executed without parameters, this subcommand prints the list of caches."),
+            "When executed without parameters, this subcommand prints the list of caches.", new CacheViewer()),
 
     /**
      * Validates indexes attempting to read each indexed entry.
@@ -61,28 +62,32 @@ public enum CacheCommandList {
             "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
             "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
             "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
-            "regexps, by cache type and after all by exclude regexps."),
+            "regexps, by cache type and after all by exclude regexps.", new CacheValidateIndexes()),
 
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).
      */
-    CONTENTION("contention", null, "Show the keys that are point of contention for multiple transactions."),
+    CONTENTION("contention", null, "Show the keys that are point of contention for multiple transactions.",
+        new CacheContention()),
 
     /**
      * Collect information on the distribution of partitions.
      */
-    DISTRIBUTION("distribution", DistributionCommandArg.class, "Prints the information about partition distribution."),
+    DISTRIBUTION("distribution", DistributionCommandArg.class, "Prints the information about partition distribution.",
+        new CacheDistribution()),
 
     /**
      * Reset lost partitions
      */
-    RESET_LOST_PARTITIONS("reset_lost_partitions", null, "Reset the state of lost partitions for the specified caches."),
+    RESET_LOST_PARTITIONS("reset_lost_partitions", null, "Reset the state of lost partitions for the specified caches.",
+        new ResetLostPartitions()),
 
     /**
      * Find and remove garbage.
      */
     FIND_AND_DELETE_GARBAGE("find_garbage", FindAndDeleteGarbageArg.class,
-        "Find and optionally delete garbage from shared cache groups which could be left after cache destroy.");
+        "Find and optionally delete garbage from shared cache groups which could be left after cache destroy.",
+        new FindAndDeleteGarbage());
 
 
     /** Enumerated values. */
@@ -93,15 +98,19 @@ public enum CacheCommandList {
     /** Name. */
     private final String name;
     private final String desc;
+    private final Command command;
 
     /**
      * @param name Name.
      * @param desc Command description.
+     * @param command
      */
-    CacheCommandList(String name, Class<? extends Enum<? extends CommandArg>> commandArgs, String desc) {
+    CacheCommandList(String name, Class<? extends Enum<? extends CommandArg>> commandArgs, String desc,
+        Command command) {
         this.name = name;
         this.commandArgs = commandArgs;
         this.desc = desc;
+        this.command = command;
     }
 
     /**
@@ -122,6 +131,10 @@ public enum CacheCommandList {
      */
     public String text() {
         return name;
+    }
+
+    public Command subcommand() {
+        return command;
     }
 
     public String description() {
