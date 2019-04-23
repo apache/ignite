@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
 import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -1740,7 +1742,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn,
-        String[] tblTypes) {
+        String... tblTypes) {
         Set<String> types = F.isEmpty(tblTypes) ? Collections.emptySet() : new HashSet<>(Arrays.asList(tblTypes));
 
         Collection<TableInformation> infos = new ArrayList<>();
@@ -1749,7 +1751,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             schemaMgr.dataTables().stream()
                 .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
                 .filter(t -> matches(t.getName(), tblNamePtrn))
-                .map(t -> new TableInformation(t.getSchema().getName(), t.getName(), TableType.TABLE.name()))
+                .map(t -> {
+                    int cacheGrpId = t.cacheInfo().groupId();
+
+                    CacheGroupDescriptor cacheGrpDesc = ctx.cache().cacheGroupDescriptors().get(cacheGrpId);
+
+                    // We should skip table in case in case regarding cache group has been removed.
+                    if (cacheGrpDesc == null)
+                        return null;
+
+                    GridQueryTypeDescriptor type = t.rowDescriptor().type();
+
+                    IndexColumn affCol = t.getExplicitAffinityKeyColumn();
+
+                    String affinityKeyCol = affCol != null ? affCol.columnName : null;
+
+                    return new TableInformation(t.getSchema().getName(), t.getName(), TableType.TABLE.name(), cacheGrpId,
+                        cacheGrpDesc.cacheOrGroupName(), t.cacheId(), t.cacheName(), affinityKeyCol,
+                        type.keyFieldAlias(), type.valueFieldAlias(), type.keyTypeName(), type.valueTypeName());
+                })
+                .filter(Objects::nonNull)
                 .forEach(infos::add);
         }
 
@@ -1774,24 +1795,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
             .filter(t -> matches(t.getName(), tblNamePtrn))
             .flatMap(
-                tbl ->
-                    Stream.of(tbl.getColumns())
+                tbl -> {
+                    IndexColumn affCol = tbl.getAffinityKeyColumn();
+
+                    return Stream.of(tbl.getColumns())
                         .filter(Column::getVisible)
                         .filter(c -> matches(c.getName(), colNamePtrn))
                         .map(c -> {
                             GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
 
+                            boolean isAff = affCol != null && c.getColumnId() == affCol.column.getColumnId();
+
                             return new ColumnInformation(
-                                c.getColumnId(),
+                                c.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1,
                                 tbl.getSchema().getName(),
                                 tbl.getName(),
                                 c.getName(),
                                 prop.type(),
-                                !prop.notNull(),
+                                c.isNullable(),
                                 prop.defaultValue(),
                                 prop.precision(),
-                                prop.scale());
-                        })
+                                prop.scale(),
+                                isAff);
+                        });
+                }
             ).forEach(infos::add);
 
         // Gather information about system views.
@@ -1803,7 +1830,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                         Stream.of(view.getColumns())
                             .filter(c -> matches(c.getName(), colNamePtrn))
                             .map(c -> new ColumnInformation(
-                                c.getColumnId(),
+                                c.getColumnId() + 1,
                                 QueryUtils.SCHEMA_SYS,
                                 view.getTableName(),
                                 c.getName(),
@@ -1811,7 +1838,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 c.isNullable(),
                                 null,
                                 (int)c.getPrecision(),
-                                c.getScale()))
+                                c.getScale(),
+                                false))
                 ).forEach(infos::add);
         }
 

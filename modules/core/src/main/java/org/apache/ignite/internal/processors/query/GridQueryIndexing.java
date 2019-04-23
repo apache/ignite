@@ -418,7 +418,7 @@ public interface GridQueryIndexing {
      *
      * @return Column information filtered by given patterns.
      */
-    Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn, String[] tblTypes);
+    Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn, String... tblTypes);
 
     /**
      * Return column information filtered by given patterns.

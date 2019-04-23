@@ -26,26 +26,38 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class ColumnInformation {
     /** */
-    private final int colId;
+    private final int ordinalPosition;
+
     /** */
     private final String schemaName;
+
     /** */
     private final String tblName;
+
     /** */
     private final String colName;
+
     /** */
     private final Class fieldCls;
+
     /** */
     private final boolean nullable;
+
     /** */
     private final Object dfltVal;
+
     /** */
     private final int precision;
+
     /** */
     private final int scale;
 
+    /** */
+    private final boolean affinityCol;
+
 
     /**
+     * @param ordinalPosition Ordinal column position.
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param colName Column name.
@@ -55,9 +67,9 @@ public class ColumnInformation {
      * @param precision Precision.
      * @param scale Scale.
      */
-    public ColumnInformation(int colId, String schemaName, String tblName, String colName, Class fieldCls,
-        boolean nullable, Object dfltVal, int precision, int scale) {
-        this.colId = colId;
+    public ColumnInformation(int ordinalPosition, String schemaName, String tblName, String colName, Class fieldCls,
+        boolean nullable, Object dfltVal, int precision, int scale, boolean affinityCol) {
+        this.ordinalPosition = ordinalPosition;
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.colName = colName;
@@ -66,13 +78,14 @@ public class ColumnInformation {
         this.dfltVal = dfltVal;
         this.precision = precision;
         this.scale = scale;
+        this.affinityCol = affinityCol;
     }
 
     /**
      * @return Column id.
      */
     public int columnId() {
-        return colId;
+        return ordinalPosition;
     }
     /**
      * @return Schema name.
@@ -128,6 +141,13 @@ public class ColumnInformation {
      */
     public int scale() {
         return scale;
+    }
+
+    /**
+     * @return {@code true} For affinity column.
+     */
+    public boolean affinityColumn() {
+        return affinityCol;
     }
 
     /** {@inheritDoc} */

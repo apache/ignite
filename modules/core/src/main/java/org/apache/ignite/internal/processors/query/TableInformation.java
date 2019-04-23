@@ -26,6 +26,34 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Information about table.
  */
 public class TableInformation {
+    /** Cache group id. */
+    private final int cacheGrpId;
+
+    /** Cache group name. */
+    private final String cacheGrpName;
+
+    /** Cache id. */
+    private final int cacheId;
+
+    /** cache name. */
+    private final String cacheName;
+
+    /** Affinity Key column. */
+    private final String affinityKeyCol;
+
+    /** Ket alias. */
+    private final String keyAlias;
+
+    /** Value alias.*/
+    private final String valAlias;
+
+    /** Key type name.*/
+    private final String keyTypeName;
+
+    /** Value type name.*/
+    private final String valTypeName;
+
+
     /** Schema name. */
     private final String schemaName;
 
@@ -40,11 +68,54 @@ public class TableInformation {
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @param tblType Table type.
+     * @param cacheGrpId Cache group id.
+     * @param cacheGrpName Cache group name.
+     * @param cacheId Cache id.
+     * @param cacheName Cache name.
+     * @param affinityKeyCol Affinity key column name.
+     * @param keyAlias Key alias.
+     * @param valAlias Value alias.
+     * @param keyTypeName Key type name.
+     * @param valTypeName Value type name.
      */
-    public TableInformation(String schemaName, String tblName, String tblType) {
+    public TableInformation(String schemaName, String tblName,
+        String tblType, int cacheGrpId, String cacheGrpName, int cacheId, String cacheName, String affinityKeyCol,
+        String keyAlias, String valAlias, String keyTypeName, String valTypeName) {
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.tblType = tblType;
+
+        this.cacheGrpId = cacheGrpId;
+        this.cacheGrpName = cacheGrpName;
+        this.cacheId = cacheId;
+        this.cacheName = cacheName;
+        this.affinityKeyCol = affinityKeyCol;
+        this.keyAlias = keyAlias;
+        this.valAlias = valAlias;
+        this.keyTypeName = keyTypeName;
+        this.valTypeName = valTypeName;
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param tblType Table type.
+     */
+    public TableInformation(String schemaName, String tblName, String tblType){
+        this.schemaName = schemaName;
+        this.tblName = tblName;
+        this.tblType = tblType;
+
+        this.cacheGrpId = -1;
+        this.cacheGrpName = null;
+        this.cacheId = -1;
+        this.cacheName = null;
+        this.affinityKeyCol = null;
+        this.keyAlias = null;
+        this.valAlias = null;
+        this.keyTypeName = null;
+        this.valTypeName = null;
+
     }
 
     /**
@@ -66,6 +137,69 @@ public class TableInformation {
      */
     public String tableType() {
         return tblType;
+    }
+
+    /**
+     * @return Cache Group id or {@code -1} if not applicable.
+     */
+    public int cacheGrpId() {
+        return cacheGrpId;
+    }
+
+    /**
+     * @return Cache group name or {@code null} if not applicable.
+     */
+    public String cacheGrpName() {
+        return cacheGrpName;
+    }
+
+    /**
+     * @return Cache id or {@code -1} if not applicable.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
+
+    /**
+     * @return Cache name or {@code null} if not applicable.
+     */
+    public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @return Affinity key column name or {@code null} if not applicable.
+     */
+    public String affinityKeyColumn() {
+        return affinityKeyCol;
+    }
+
+    /**
+     * @return Key alias or {@code null} if not applicable.
+     */
+    public String keyAlias() {
+        return keyAlias;
+    }
+
+    /**
+     * @return Value alias or {@code null} if not applicable.
+     */
+    public String valueAlias() {
+        return valAlias;
+    }
+
+    /**
+     * @return Key type name or {@code null} if not applicable.
+     */
+    public String keyTypeName() {
+        return keyTypeName;
+    }
+
+    /**
+     * @return Value type name or {@code null} if not applicable.
+     */
+    public String valueTypeName() {
+        return valTypeName;
     }
 
     /** {@inheritDoc} */
