@@ -71,7 +71,7 @@ namespace ignite
 
             SecureSocketClient::~SecureSocketClient()
             {
-                CloseInteral();
+                CloseInternal();
 
                 if (context)
                     SslGateway::GetInstance().SSL_CTX_free_(reinterpret_cast<SSL_CTX*>(context));
@@ -82,6 +82,8 @@ namespace ignite
                 SslGateway &sslGateway = SslGateway::GetInstance();
 
                 assert(sslGateway.Loaded());
+
+                CloseInternal();
 
                 if (!context)
                 {
@@ -95,7 +97,7 @@ namespace ignite
 
                 assert(ssl != 0);
 
-                common::MethodGuard<SecureSocketClient> guard(this, &SecureSocketClient::CloseInteral);
+                common::MethodGuard<SecureSocketClient> guard(this, &SecureSocketClient::CloseInternal);
 
                 SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
@@ -131,7 +133,7 @@ namespace ignite
 
             void SecureSocketClient::Close()
             {
-                CloseInteral();
+                CloseInternal();
             }
 
             int SecureSocketClient::Send(const int8_t* data, size_t size, int32_t)
@@ -340,7 +342,7 @@ namespace ignite
                 }
             }
 
-            void SecureSocketClient::CloseInteral()
+            void SecureSocketClient::CloseInternal()
             {
                 SslGateway &sslGateway = SslGateway::GetInstance();
 

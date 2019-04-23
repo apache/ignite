@@ -1048,6 +1048,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 ctx.cache().context().database().notifyMetaStorageSubscribersOnReadyForRead();
 
+                ((DistributedMetaStorageImpl)ctx.distributedMetastorage()).inMemoryReadyForRead();
+
                 ctx.cache().context().database().startMemoryRestore(ctx);
 
                 ctx.recoveryMode(false);

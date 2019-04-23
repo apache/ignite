@@ -428,6 +428,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
 
         /** */
+        @Ignore("https://issues.apache.org/jira/browse/IGNITE-11708")
         @Test
         public void test1() {
             processStage("test1", 2, 3);
@@ -435,6 +436,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
 
         /** */
+        @Ignore("https://issues.apache.org/jira/browse/IGNITE-11708")
         @Test
         public void test2() {
             processStage("test2", 2, 3);

@@ -22,7 +22,7 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
- *
+ * Mapped Preprocessor.
  *
  * @param <K> Type of key.
  * @param <V> Type of value.

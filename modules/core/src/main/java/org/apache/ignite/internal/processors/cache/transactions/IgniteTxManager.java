@@ -1007,6 +1007,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Peeks completed versions history map to find out whether transaction was committed or rolled back
+     * in the recent past.
+     *
+     * @param xid Transaction XID version.
+     * @return <code>true</code> if transaction was committed, <code>false</code> if transaction was rolled back,
+     * <code>null</code> if information is missed in history.
+     */
+    public Boolean peekCompletedVersionsHistory(GridCacheVersion xid) {
+        Object o = completedVersHashMap.get(xid);
+
+        return (o instanceof Boolean) ? (Boolean)o : null;
+    }
+
+    /**
      * @return Collection of active transactions.
      */
     public Collection<IgniteInternalTx> activeTransactions() {

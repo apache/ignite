@@ -96,7 +96,7 @@ namespace ignite
                  * Close the connection.
                  * Internal call.
                  */
-                void CloseInteral();
+                void CloseInternal();
 
                 /**
                  * Throw SSL-related error.
