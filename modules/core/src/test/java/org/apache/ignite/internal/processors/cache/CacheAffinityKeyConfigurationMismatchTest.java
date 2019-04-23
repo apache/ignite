@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -28,8 +27,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -39,6 +36,72 @@ import org.junit.Test;
  * Detect difference property "keyConfiguration" in cache configuration and generate exception.
  */
 public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstractTest {
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        CacheKeyConfiguration cacheKeyCfg[];
+
+        if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
+            cacheKeyCfg = new CacheKeyConfiguration[] {
+                new CacheKeyConfiguration(AKey.class)
+            };
+        }
+        else if (getTestIgniteInstanceName(1).equals(igniteInstanceName)) {
+            cacheKeyCfg = new CacheKeyConfiguration[] {
+                getCacheAKeyConfiguration("a")
+            };
+        }
+        else if (getTestIgniteInstanceName(2).equals(igniteInstanceName)) {
+            cacheKeyCfg = new CacheKeyConfiguration[] {
+                new CacheKeyConfiguration(AKey.class),
+                getCacheAKeyConfiguration("a")
+            };
+        }
+        else if (getTestIgniteInstanceName(3).equals(igniteInstanceName)) {
+            cacheKeyCfg = new CacheKeyConfiguration[] {
+                new CacheKeyConfiguration(AKey.class),
+                getCacheAKeyConfiguration("b")
+            };
+        }
+        else if (getTestIgniteInstanceName(4).equals(igniteInstanceName)) {
+            cacheKeyCfg = new CacheKeyConfiguration[] {
+                getCacheAKeyConfiguration("b")
+            };
+        }
+        else if (getTestIgniteInstanceName(5).equals(igniteInstanceName)) {
+            cacheKeyCfg = new CacheKeyConfiguration[] {
+            };
+        }
+        else if (getTestIgniteInstanceName(6).equals(igniteInstanceName)) {
+            cacheKeyCfg = new CacheKeyConfiguration[] {
+                new CacheKeyConfiguration(AKey.class),
+                new CacheKeyConfiguration(BKey.class)
+            };
+        }
+        else if (getTestIgniteInstanceName(7).equals(igniteInstanceName)) {
+            cacheKeyCfg = new CacheKeyConfiguration[] {
+                new CacheKeyConfiguration(BKey.class)
+            };
+        }
+        else {
+            cacheKeyCfg = null;
+        }
+
+        if (cacheKeyCfg != null) {
+            CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+            cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+            cacheCfg.setKeyConfiguration(cacheKeyCfg);
+
+            cfg.setCacheConfiguration(cacheCfg);
+        }
+
+        return cfg;
+    }
+
     /**
      * Test for matching "keyConfiguration" property.
      *
@@ -46,8 +109,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      */
     @Test
     public void testKeyConfigurationMatch() throws Exception {
-        try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
-            try (Ignite ignite1 = getIgnite(1, getCacheAKeyConfiguration("a"))) {
+        try (Ignite ignite0 = startGrid(0)) {
+            try (Ignite ignite1 = startGrid(1)) {
                 Affinity<Object> affinity0 = ignite0.affinity(DEFAULT_CACHE_NAME);
                 Affinity<Object> affinity1 = ignite1.affinity(DEFAULT_CACHE_NAME);
 
@@ -70,13 +133,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      */
     @Test
     public void testKeyConfigurationDuplicateTypeName() throws Exception {
-        try (Ignite ignite0 = getIgnite(0,
-            new CacheKeyConfiguration(AKey.class),
-            getCacheAKeyConfiguration("a")
-        )) {
-            try (Ignite ignite1 = getIgnite(1,
-                new CacheKeyConfiguration(AKey.class)
-            )) {
+        try (Ignite ignite0 = startGrid(2)) {
+            try (Ignite ignite1 = startGrid(0)) {
             }
         }
 
@@ -84,10 +142,7 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
             log,
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Ignite ignite = getIgnite(0,
-                        new CacheKeyConfiguration(AKey.class),
-                        getCacheAKeyConfiguration("b")
-                    )) {
+                    try (Ignite ignite = startGrid(3)) {
                     }
                     return null;
                 }
@@ -98,8 +153,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
             log,
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
-                        try (Ignite ignite1 = getIgnite(1, getCacheAKeyConfiguration("b"))) {
+                    try (Ignite ignite0 = startGrid(0)) {
+                        try (Ignite ignite1 = startGrid(4)) {
                         }
                     }
                     return null;
@@ -119,8 +174,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
             log,
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
-                        try (Ignite ignite1 = getIgnite(1)) {
+                    try (Ignite ignite0 = startGrid(0)) {
+                        try (Ignite ignite1 = startGrid(5)) {
                         }
                     }
 
@@ -135,10 +190,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
             log,
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
-                        try (Ignite ignite1 = getIgnite(1,
-                            getCacheAKeyConfiguration("a"),
-                            new CacheKeyConfiguration(BKey.class))) {
+                    try (Ignite ignite0 = startGrid(0)) {
+                        try (Ignite ignite1 = startGrid(6)) {
                         }
                     }
 
@@ -161,8 +214,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
             log,
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
-                        try (Ignite ignite1 = getIgnite(1, getCacheAKeyConfiguration("b"))) {
+                    try (Ignite ignite0 = startGrid(0)) {
+                        try (Ignite ignite1 = startGrid(4)) {
                         }
                     }
                     return null;
@@ -176,8 +229,8 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
             log,
             new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    try (Ignite ignite0 = getIgnite(0, new CacheKeyConfiguration(AKey.class))) {
-                        try (Ignite ignite1 = getIgnite(1, new CacheKeyConfiguration(BKey.class))) {
+                    try (Ignite ignite0 = startGrid(0)) {
+                        try (Ignite ignite1 = startGrid(7)) {
                         }
                     }
                     return null;
@@ -196,35 +249,6 @@ public class CacheAffinityKeyConfigurationMismatchTest extends GridCommonAbstrac
      */
     private CacheKeyConfiguration getCacheAKeyConfiguration(String affKeyFieldName) {
         return new CacheKeyConfiguration(AKey.class.getName(), affKeyFieldName);
-    }
-
-    /**
-     * Start ignite
-     *
-     * @param idx For instance name
-     * @param cacheKeyCfg Cache key configuration.
-     * @return Ignite
-     * @throws Exception If failed.
-     */
-    private Ignite getIgnite(int idx, CacheKeyConfiguration... cacheKeyCfg) throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
-
-        finder.setAddresses(Arrays.asList("localhost:47500..47501"));
-
-        cfg.setIgniteInstanceName("test" + idx);
-
-        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
-        cacheCfg.setKeyConfiguration(cacheKeyCfg);
-
-        cfg.setCacheConfiguration(cacheCfg);
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(finder));
-
-        return startGrid(cfg);
     }
 
     /**
