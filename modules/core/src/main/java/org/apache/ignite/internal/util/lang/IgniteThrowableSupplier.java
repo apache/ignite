@@ -15,27 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lang;
+package org.apache.ignite.internal.util.lang;
 
 import java.io.Serializable;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Defines a predicate which accepts two parameters and returns {@code true} or {@code false}.
+ * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
+ * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
+ * Also it is able to throw {@link IgniteCheckedException} unlike {@link java.util.function.Function}.
  *
- * @param <E1> Type of the first parameter.
- * @param <E2> Type of the second parameter.
+ * @param <E> Type of closure parameter.
  */
-public interface IgniteBiPredicate<E1, E2> extends Serializable {
+public interface IgniteThrowableSupplier<E> extends Serializable {
     /**
-     * Predicate body.
+     * Consumer body.
      *
-     * @param e1 First parameter.
-     * @param e2 Second parameter.
-     * @return Return value.
+     * @param e Consumer parameter.
+     * @throws IgniteCheckedException If body execution was failed.
      */
-    public boolean apply(E1 e1, E2 e2);
-
-    default IgniteBiPredicate<E1, E2> and(IgniteBiPredicate<E1, E2> then) {
-        return (p1, p2) -> apply(p1, p2) && then.apply(p1, p2);
-    }
+    public E get() throws IgniteCheckedException;
 }
