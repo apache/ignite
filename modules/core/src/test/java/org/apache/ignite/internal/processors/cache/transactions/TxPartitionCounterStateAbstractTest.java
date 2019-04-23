@@ -335,10 +335,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             }
             catch (Throwable ignored) {
                 // No-op.
-                System.out.println();
             }
-
-            // TODO FIXME expect rollback for some scenarios.
         }, sizes.length, "tx-thread");
 
         try {

@@ -403,10 +403,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void cleanupRemoveQueue() {
         if (state() == MOVING) {
-            if (rmvQueue.sizex() >= rmvQueueMaxSize)
-                // TODO FIXME better message.
+            if (rmvQueue.sizex() >= rmvQueueMaxSize) {
                 LT.warn(log, "Deferred delete buffer is exceeded " +
                     "[grpId=" + this.grp.groupId() + ", partId=" + id() + ", size=" + rmvQueueMaxSize + ']');
+            }
 
             return;
         }
@@ -418,8 +418,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 removeVersionedEntry(item.cacheId(), item.key(), item.version());
         }
 
-        // Prevent ttl removal for rebalancing partition or partition desync may happen.
-        // TODO FIXME store removed keys until rebalance finish.
         if (!grp.isDrEnabled()) {
             RemovedEntryHolder item = rmvQueue.peekFirst();
 

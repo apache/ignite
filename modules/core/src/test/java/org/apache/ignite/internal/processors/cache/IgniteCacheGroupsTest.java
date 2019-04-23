@@ -115,7 +115,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
- *
+ * TODO FIXME Mixed atomic-tx cache groups are broken. {@link #testConcurrentOperationsSameKeys} and
+ * {@link #testRestartsAndCacheCreateDestroy} are modified to use separate groups.
+ * See https://issues.apache.org/jira/browse/IGNITE-11797
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
@@ -3001,7 +3003,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS, CLIENTS);
 
-        // TODO FIXME both atomic and transactional caches are not supported in single group.
         srv0.createCache(cacheConfiguration(GROUP1, "a0", PARTITIONED, ATOMIC, 1, false));
         srv0.createCache(cacheConfiguration(GROUP1, "a1", PARTITIONED, ATOMIC, 1, false));
         srv0.createCache(cacheConfiguration(GROUP2, "t0", PARTITIONED, TRANSACTIONAL, 1, false));
@@ -4029,8 +4030,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHES; i++) {
             CacheAtomicityMode atomicityMode = i % 2 == 0 ? ATOMIC : TRANSACTIONAL;
 
-            caches.set(i,
-                clientNode.createCache(cacheConfiguration(GROUP1, "c" + i, PARTITIONED, atomicityMode, 0, false)));
+            caches.set(i, clientNode.createCache(cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
+                "c" + i, PARTITIONED, atomicityMode, 0, false)));
         }
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -4102,7 +4103,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                     String name = "newName-" + cacheCntr.incrementAndGet();
 
                                     cache = clientNode.createCache(
-                                        cacheConfiguration(GROUP1, name, PARTITIONED, atomicityMode, 0, false));
+                                        cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
+                                            name, PARTITIONED, atomicityMode, 0, false));
 
                                     caches.set(idx, cache);
                                 }

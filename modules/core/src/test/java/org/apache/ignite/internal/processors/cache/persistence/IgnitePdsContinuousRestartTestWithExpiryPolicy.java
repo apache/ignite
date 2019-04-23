@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-5879
+ * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11791
  */
 public class IgnitePdsContinuousRestartTestWithExpiryPolicy extends IgnitePdsContinuousRestartTest {
     /**

@@ -106,13 +106,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
                 ", before=" + toString());
 
         try {
-            long cntr = get();
-
-            long reserved = super.reserve(delta);
-
-            assert reserved >= cntr : "Update counter behind reserve counter: cntr=" + cntr + ", reserveCntr=" + reserved;
-
-            return reserved;
+            return super.reserve(delta);
         }
         finally {
             if (doLogging)

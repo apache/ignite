@@ -280,8 +280,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             long size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
-            // TODO FIXME have to implement byte array input for freelist.insertRow.
-            byte[] rawGaps = store.partUpdateCounter().getBytes();
+            byte[] updCntrsBytes = store.partUpdateCounter().getBytes();
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
@@ -329,15 +328,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         long link = io.getGapsLink(partMetaPageAddr);
 
-                        if (rawGaps == null && link != 0) {
+                        if (updCntrsBytes == null && link != 0) {
                             partStore.removeDataRowByLink(link, grp.statisticsHolderData());
 
                             io.setGapsLink(partMetaPageAddr, (link = 0));
 
                             changed = true;
                         }
-                        else if (rawGaps != null && link == 0) {
-                            SimpleDataRow row = new SimpleDataRow(store.partId(), rawGaps);
+                        else if (updCntrsBytes != null && link == 0) {
+                            SimpleDataRow row = new SimpleDataRow(store.partId(), updCntrsBytes);
 
                             partStore.insertDataRow(row, grp.statisticsHolderData());
 
@@ -345,16 +344,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             changed = true;
                         }
-                        else if (rawGaps != null && link != 0) {
+                        else if (updCntrsBytes != null && link != 0) {
                             byte[] prev = partStore.readRow(link);
 
                             assert prev != null : "Read null gaps using link=" + link;
 
-                            if (!Arrays.equals(prev, rawGaps)) {
-                                // TODO FIXME updateRow in-place optimization for same length arrays.
+                            if (!Arrays.equals(prev, updCntrsBytes)) {
                                 partStore.removeDataRowByLink(link, grp.statisticsHolderData());
 
-                                SimpleDataRow row = new SimpleDataRow(store.partId(), rawGaps);
+                                SimpleDataRow row = new SimpleDataRow(store.partId(), updCntrsBytes);
 
                                 partStore.insertDataRow(row, grp.statisticsHolderData());
 

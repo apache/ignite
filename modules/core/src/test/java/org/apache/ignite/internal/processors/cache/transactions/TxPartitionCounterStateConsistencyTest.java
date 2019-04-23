@@ -169,7 +169,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * Test primary-backup partitions consistency while restarting random backup nodes under load.
      */
     @Test
-    // TODO FIXME hanging tx ticket ?
     public void testPartitionConsistencyWithBackupsRestart() throws Exception {
         backups = 2;
 

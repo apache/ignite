@@ -136,14 +136,14 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("Isolated update mode can't be used concurrently with others")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutAtomicConcurrentPersistentWithIsolatedMode() throws Exception {
         doTestPutConcurrent(ATOMIC_CACHE, false);
     }
 
     /** */
     @Test
-    @Ignore("Isolated update mode can't be used concurrently with others")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutTxConcurrentPersistentWithIsolatedMode() throws Exception {
         doTestPutConcurrent(TX_CACHE, false);
     }
@@ -174,14 +174,14 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("Isolated update mode can't be used concurrently with others")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutAtomicConcurrentVolatileWithIsolatedMode() throws Exception {
         doTestPutConcurrent(ATOMIC_CACHE_MEMORY, false);
     }
 
     /** */
     @Test
-    @Ignore("Isolated update mode can't be used concurrently with others")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutTxConcurrentVolatileWithIsolatedMode() throws Exception {
         doTestPutConcurrent(TX_CACHE_MEMORY, false);
     }
