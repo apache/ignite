@@ -60,7 +60,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** Manages first and last test execution. */
     @Rule public RuleChain runRule
-        = RuleChain.outerRule(rulePrivate).around(super.runRule);
+        = RuleChain.outerRule(rulePrivate).around(super.nameAndRunRulesChain);
 
     /** */
     protected static final int SERVER_NODE_IDX = 0;
@@ -222,7 +222,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         return resCfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected final int gridCount() {
         return testsCfg.gridCount();
     }
