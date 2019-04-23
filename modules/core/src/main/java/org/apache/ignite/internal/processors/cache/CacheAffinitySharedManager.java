@@ -1080,13 +1080,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     public void onLocalAffinityRecalculation(GridDhtPartitionsExchangeFuture exchFut, boolean crd) {
         AffinityTopologyVersion topVer = exchFut.initialVersion();
 
-        Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
-
         forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) {
-                List<List<ClusterNode>> newAssignment = new ArrayList<>(aff.idealAssignment());
+                List<List<ClusterNode>> newAssignment = new ArrayList<>(aff.idealAssignmentRaw());
 
-                aff.initialize(topVer, cachedAssignment(aff, newAssignment, affCache));
+                aff.initialize(topVer, newAssignment);
 
                 exchFut.timeBag().finishLocalStage("Affinity locally recalculated by exchange " +
                     "[grp=" + aff.cacheOrGroupName() + "]");
