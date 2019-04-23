@@ -232,8 +232,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
 
     /** Enables start caches in parallel. */
-    private final boolean
-        IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
+    private final boolean IGNITE_ALLOW_START_CACHES_IN_PARALLEL =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_START_CACHES_IN_PARALLEL, true);
 
     /** */
