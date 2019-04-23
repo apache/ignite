@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -349,6 +351,14 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentPmeDuration() {
+        GridDhtPartitionsExchangeFuture future = ctx.cache().context().exchange().lastTopologyFuture();
+        
+        return (future == null || future.isDone()) ?
+            0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - future.getStartTime());
     }
 
     /**

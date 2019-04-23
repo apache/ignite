@@ -28,8 +28,9 @@
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include "impl/connectable_node_partitions.h"
 #include "impl/protocol_version.h"
+#include "impl/affinity/affinity_topology_version.h"
+#include "impl/affinity/affinity_awareness_group.h"
 
 namespace ignite
 {
@@ -142,6 +143,9 @@ namespace ignite
                     /** Cache nodes and partitions request. */
                     CACHE_NODE_PARTITIONS = 1100,
 
+                    /** Cache partitions request. */
+                    CACHE_PARTITIONS = 1101,
+
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
 
@@ -186,6 +190,38 @@ namespace ignite
                 {
                     // No-op.
                 }
+            };
+
+            /**
+             * Cache partitions request.
+             */
+            class CachePartitionsRequest : public Request<RequestType::CACHE_PARTITIONS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheIds Cache IDs.
+                 */
+                CachePartitionsRequest(const std::vector<int32_t>& cacheIds);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CachePartitionsRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
+
+            private:
+                /** Cache IDs. */
+                const std::vector<int32_t>& cacheIds;
             };
 
             /**
@@ -648,6 +684,33 @@ namespace ignite
                     return error;
                 }
 
+                /**
+                 * Get affinity topology version.
+                 *
+                 * @return Affinity topology version, or null if it has not changed.
+                 */
+                const AffinityTopologyVersion* GetAffinityTopologyVersion() const
+                {
+                    if (!IsAffinityTopologyChanged())
+                        return 0;
+
+                    return &topologyVersion;
+                }
+
+                /**
+                 * Check if affinity topology failed.
+                 *
+                 * @return @c true affinity topology failed.
+                 */
+                bool IsAffinityTopologyChanged() const;
+
+                /**
+                 * Check if operation failed.
+                 *
+                 * @return @c true if operation failed.
+                 */
+                bool IsFailure() const;
+
             protected:
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
@@ -658,6 +721,12 @@ namespace ignite
                 }
 
             private:
+                /** Flags. */
+                int16_t flags;
+
+                /** Affinity topology version. */
+                AffinityTopologyVersion topologyVersion;
+
                 /** Request processing status. */
                 int32_t status;
 
@@ -676,7 +745,7 @@ namespace ignite
                  *
                  * @param nodeParts Node partitions.
                  */
-                ClientCacheNodePartitionsResponse(std::vector<ConnectableNodePartitions>& nodeParts);
+                ClientCacheNodePartitionsResponse(std::vector<NodePartitions>& nodeParts);
 
                 /**
                  * Destructor.
@@ -692,7 +761,60 @@ namespace ignite
 
             private:
                 /** Node partitions. */
-                std::vector<ConnectableNodePartitions>& nodeParts;
+                std::vector<NodePartitions>& nodeParts;
+            };
+
+            /**
+             * Cache node list request.
+             */
+            class CachePartitionsResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param groups Affinity Awareness Groups.
+                 */
+                CachePartitionsResponse(std::vector<AffinityAwarenessGroup>& groups);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CachePartitionsResponse();
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+                /**
+                 * Get version.
+                 *
+                 * @return Topology version.
+                 */
+                const AffinityTopologyVersion& GetVersion() const
+                {
+                    return topologyVersion;
+                }
+
+                /**
+                 * Get affinity awareness groups.
+                 *
+                 * @return Affinity awareness groups.
+                 */
+                const std::vector<AffinityAwarenessGroup>& GetGroups() const
+                {
+                    return groups;
+                }
+
+            private:
+                /** Affinity topology version. */
+                AffinityTopologyVersion topologyVersion;
+
+                /** Affinity awareness groups. */
+                std::vector<AffinityAwarenessGroup>& groups;
             };
 
             /**

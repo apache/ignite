@@ -22,9 +22,9 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Trainer of the standard scaler preprocessor.
@@ -32,11 +32,11 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, Vector, Vector> {
+public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V> {
     /** {@inheritDoc} */
     @Override public StandardScalerPreprocessor<K, V> fit(LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> basePreprocessor) {
+        Preprocessor<K, V> basePreprocessor) {
         StandardScalerData standardScalerData = computeSum(envBuilder, datasetBuilder, basePreprocessor);
 
         int n = standardScalerData.sum.length;
@@ -55,7 +55,7 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
     /** Computes sum, squared sum and row count. */
     private StandardScalerData computeSum(LearningEnvironmentBuilder envBuilder,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> basePreprocessor) {
+        Preprocessor<K, V>  basePreprocessor) {
         try (Dataset<EmptyContext, StandardScalerData> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
@@ -66,7 +66,7 @@ public class StandardScalerTrainer<K, V> implements PreprocessingTrainer<K, V, V
 
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
-                    Vector row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+                    Vector row = basePreprocessor.apply(entity.getKey(), entity.getValue()).features();
 
                     if (sum == null) {
                         sum = new double[row.size()];

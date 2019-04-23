@@ -58,14 +58,8 @@ public class FitnessJob extends ComputeJobAdapter {
         this.fitnessFuncton = fitnessFunction;
     }
 
-    /**
-     * Perform fitness operation utilizing IFitnessFunction
-     *
-     * Update chromosome's fitness value
-     *
-     * @return Fitness score
-     */
-    public Double execute() throws IgniteException {
+    /** {@inheritDoc} */
+    @Override public Double execute() throws IgniteException {
 
         IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 

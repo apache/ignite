@@ -17,13 +17,19 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -36,83 +42,89 @@ public class EncoderTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFitOnStringCategorialFeatures() {
-        Map<Integer, String[]> data = new HashMap<>();
-        data.put(1, new String[]{"Monday", "September"});
-        data.put(2, new String[]{"Monday", "August"});
-        data.put(3, new String[]{"Monday", "August"});
-        data.put(4, new String[]{"Friday", "June"});
-        data.put(5, new String[]{"Friday", "June"});
-        data.put(6, new String[]{"Sunday", "August"});
+        Map<Integer, Vector> data = new HashMap<>();
+        data.put(1, new DenseVector(new Serializable[]{"Monday", "September"}));
+        data.put(2, new DenseVector(new Serializable[]{"Monday", "August"}));
+        data.put(3, new DenseVector(new Serializable[]{"Monday", "August"}));
+        data.put(4, new DenseVector(new Serializable[]{"Friday", "June"}));
+        data.put(5, new DenseVector(new Serializable[]{"Friday", "June"}));
+        data.put(6, new DenseVector(new Serializable[]{"Sunday", "August"}));
 
-        DatasetBuilder<Integer, String[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0 , 1);
 
-        EncoderTrainer<Integer, String[]> strEncoderTrainer = new EncoderTrainer<Integer, String[]>()
+        DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+
+        EncoderTrainer<Integer, Vector> strEncoderTrainer = new EncoderTrainer<Integer, Vector>()
             .withEncoderType(EncoderType.STRING_ENCODER)
             .withEncodedFeature(0)
             .withEncodedFeature(1);
 
-        EncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
+        EncoderPreprocessor<Integer, Vector> preprocessor = strEncoderTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
-            (k, v) -> v
+            vectorizer
         );
 
-        assertArrayEquals(new double[]{0.0, 2.0}, preprocessor.apply(7, new String[]{"Monday", "September"}).asArray(), 1e-8);
+        assertArrayEquals(new double[]{0.0, 2.0}, preprocessor.apply(7, new DenseVector(new Serializable[]{"Monday", "September"})).features().asArray(), 1e-8);
     }
 
     /** Tests {@code fit()} method. */
     @Test
     public void testFitOnIntegerCategorialFeatures() {
-        Map<Integer, Object[]> data = new HashMap<>();
-        data.put(1, new Object[]{3.0, 0.0});
-        data.put(2, new Object[]{3.0, 12.0});
-        data.put(3, new Object[]{3.0, 12.0});
-        data.put(4, new Object[]{2.0, 45.0});
-        data.put(5, new Object[]{2.0, 45.0});
-        data.put(6, new Object[]{14.0, 12.0});
+        Map<Integer, Vector> data = new HashMap<>();
+        data.put(1, VectorUtils.of(3.0, 0.0));
+        data.put(2, VectorUtils.of(3.0, 12.0));
+        data.put(3, VectorUtils.of(3.0, 12.0));
+        data.put(4, VectorUtils.of(2.0, 45.0));
+        data.put(5, VectorUtils.of(2.0, 45.0));
+        data.put(6, VectorUtils.of(14.0, 12.0));
 
-        DatasetBuilder<Integer, Object[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0 , 1);
 
-        EncoderTrainer<Integer, Object[]> strEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
+        DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+
+        EncoderTrainer<Integer, Vector> strEncoderTrainer = new EncoderTrainer<Integer, Vector>()
             .withEncoderType(EncoderType.ONE_HOT_ENCODER)
             .withEncodedFeature(0)
             .withEncodedFeature(1);
 
-        EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
+        EncoderPreprocessor<Integer, Vector> preprocessor = strEncoderTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
-            (k, v) -> v
+            vectorizer
         );
-        assertArrayEquals(new double[]{1.0, 0.0, 0.0, 0.0, 0.0, 1.0}, preprocessor.apply(7, new Double[]{3.0, 0.0}).asArray(), 1e-8);
-        assertArrayEquals(new double[]{0.0, 1.0, 0.0, 1.0, 0.0, 0.0}, preprocessor.apply(8, new Double[]{2.0, 12.0}).asArray(), 1e-8);
+        assertArrayEquals(new double[]{1.0, 0.0, 0.0, 0.0, 0.0, 1.0}, preprocessor.apply(7, VectorUtils.of(3.0, 0.0)).features().asArray(), 1e-8);
+        assertArrayEquals(new double[]{0.0, 1.0, 0.0, 1.0, 0.0, 0.0}, preprocessor.apply(8, VectorUtils.of(2.0, 12.0)).features().asArray(), 1e-8);
     }
 
     /** Tests {@code fit()} method. */
     @Test
     public void testFitWithUnknownStringValueInTheGivenData() {
-        Map<Integer, Object[]> data = new HashMap<>();
-        data.put(1, new Object[]{3.0, 0.0});
-        data.put(2, new Object[]{3.0, 12.0});
-        data.put(3, new Object[]{3.0, 12.0});
-        data.put(4, new Object[]{2.0, 45.0});
-        data.put(5, new Object[]{2.0, 45.0});
-        data.put(6, new Object[]{14.0, 12.0});
+        Map<Integer, Vector> data = new HashMap<>();
+        data.put(1, VectorUtils.of(3.0, 0.0));
+        data.put(2, VectorUtils.of(3.0, 12.0));
+        data.put(3, VectorUtils.of(3.0, 12.0));
+        data.put(4, VectorUtils.of(2.0, 45.0));
+        data.put(5, VectorUtils.of(2.0, 45.0));
+        data.put(6, VectorUtils.of(14.0, 12.0));
 
-        DatasetBuilder<Integer, Object[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0 , 1);
 
-        EncoderTrainer<Integer, Object[]> strEncoderTrainer = new EncoderTrainer<Integer, Object[]>()
+        DatasetBuilder<Integer,Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+
+        EncoderTrainer<Integer, Vector> strEncoderTrainer = new EncoderTrainer<Integer, Vector>()
             .withEncoderType(EncoderType.STRING_ENCODER)
             .withEncodedFeature(0)
             .withEncodedFeature(1);
 
-        EncoderPreprocessor<Integer, Object[]> preprocessor = strEncoderTrainer.fit(
+        EncoderPreprocessor<Integer, Vector> preprocessor = strEncoderTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
-            (k, v) -> v
+            vectorizer
         );
 
         try {
-            preprocessor.apply(7, new String[]{"Monday", "September"}).asArray();
+            preprocessor.apply(7, new DenseVector(new Serializable[]{"Monday", "September"})).features().asArray();
             fail("UnknownCategorialFeatureValue");
         } catch (UnknownCategorialFeatureValue e) {
             return;
@@ -123,28 +135,30 @@ public class EncoderTrainerTest extends TrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFitOnStringCategorialFeaturesWithReversedOrder() {
-        Map<Integer, String[]> data = new HashMap<>();
-        data.put(1, new String[] {"Monday", "September"});
-        data.put(2, new String[] {"Monday", "August"});
-        data.put(3, new String[] {"Monday", "August"});
-        data.put(4, new String[] {"Friday", "June"});
-        data.put(5, new String[] {"Friday", "June"});
-        data.put(6, new String[] {"Sunday", "August"});
+        Map<Integer, Vector> data = new HashMap<>();
+        data.put(1, new DenseVector(new Serializable[]{"Monday", "September"}));
+        data.put(2, new DenseVector(new Serializable[]{"Monday", "August"}));
+        data.put(3, new DenseVector(new Serializable[]{"Monday", "August"}));
+        data.put(4, new DenseVector(new Serializable[]{"Friday", "June"}));
+        data.put(5, new DenseVector(new Serializable[]{"Friday", "June"}));
+        data.put(6, new DenseVector(new Serializable[]{"Sunday", "August"}));
 
-        DatasetBuilder<Integer, String[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1);
 
-        EncoderTrainer<Integer, String[]> strEncoderTrainer = new EncoderTrainer<Integer, String[]>()
+        DatasetBuilder<Integer, Vector> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+
+        EncoderTrainer<Integer, Vector> strEncoderTrainer = new EncoderTrainer<Integer, Vector>()
             .withEncoderType(EncoderType.STRING_ENCODER)
             .withEncoderIndexingStrategy(EncoderSortingStrategy.FREQUENCY_ASC)
             .withEncodedFeature(0)
             .withEncodedFeature(1);
 
-        EncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
+        EncoderPreprocessor<Integer, Vector> preprocessor = strEncoderTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
-            (k, v) -> v
+            vectorizer
         );
 
-        assertArrayEquals(new double[] {2.0, 0.0}, preprocessor.apply(7, new String[] {"Monday", "September"}).asArray(), 1e-8);
+        assertArrayEquals(new double[] {2.0, 0.0}, preprocessor.apply(7, new DenseVector(new Serializable[]{"Monday", "September"})).features().asArray(), 1e-8);
     }
 }
