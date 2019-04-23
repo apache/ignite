@@ -362,10 +362,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final AtomicLongArray switchSegmentRecordOffset;
 
     /** Page snapshot records compression algorithm. */
-    private volatile DiskPageCompression pageCompression;
+    private DiskPageCompression pageCompression;
 
     /** Page snapshot records compression level. */
-    private volatile int pageCompressionLevel;
+    private int pageCompressionLevel;
 
     /**
      * @param ctx Kernal context.
@@ -800,7 +800,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             int pageSize = pageSnapshot.realPageSize();
 
-            ByteBuffer pageData = ByteBuffer.wrap(pageSnapshot.pageData()).order(ByteOrder.nativeOrder());
+            ByteBuffer pageData = pageSnapshot.pageDataBuffer();
 
             ByteBuffer compressedPage = cctx.kernalContext().compress().compressPage(pageData, pageSize, 1,
                 pageCompression, pageCompressionLevel);

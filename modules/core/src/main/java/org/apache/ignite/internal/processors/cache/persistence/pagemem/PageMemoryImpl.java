@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
@@ -968,7 +969,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                             if (snapshot.fullPageId().equals(fullId)) {
                                 if (tmpAddr == null) {
-                                    assert snapshot.pageData().length <= pageSize() : snapshot.pageData().length;
+                                    assert snapshot.pageDataSize() <= pageSize() : snapshot.pageDataSize();
 
                                     tmpAddr = GridUnsafe.allocateMemory(pageSize());
                                 }
@@ -978,10 +979,13 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                                 PageUtils.putBytes(tmpAddr, 0, snapshot.pageData());
 
-                                int realPageSize = realPageSize(snapshot.groupId());
+                                if (PageIO.getCompressionType(tmpAddr) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                                    int realPageSize = realPageSize(snapshot.groupId());
 
-                                if (snapshot.pageData().length < realPageSize)
+                                    assert snapshot.pageDataSize() < realPageSize : snapshot.pageDataSize();
+
                                     ctx.kernalContext().compress().decompressPage(curPage, realPageSize);
+                                }
                             }
 
                             break;

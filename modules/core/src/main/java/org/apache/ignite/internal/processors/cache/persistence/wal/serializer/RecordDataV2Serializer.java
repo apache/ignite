@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -122,6 +124,16 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
         int recordSize
     ) throws IOException, IgniteCheckedException {
         switch (type) {
+            case PAGE_RECORD:
+                int cacheId = in.readInt();
+                long pageId = in.readLong();
+
+                byte[] arr = new byte[recordSize - 4 /* cacheId */ - 8 /* pageId */];
+
+                in.readFully(arr);
+
+                return new PageSnapshot(new FullPageId(pageId, cacheId), arr, encrypted ? realPageSize : pageSize);
+
             case CHECKPOINT_RECORD:
                 long msb = in.readLong();
                 long lsb = in.readLong();

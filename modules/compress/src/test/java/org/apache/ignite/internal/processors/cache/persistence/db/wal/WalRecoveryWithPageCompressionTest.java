@@ -14,6 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import org.apache.ignite.IgniteSystemProperties;
@@ -36,7 +37,6 @@ public class WalRecoveryWithPageCompressionTest extends IgniteWalRecoveryTest {
      */
     @BeforeClass
     public static void clearSystemProperty() {
-        //
         oldDiskPageCompression = IgniteSystemProperties.getEnum(DiskPageCompression.class,
             IGNITE_DEFAULT_DISK_PAGE_COMPRESSION);
 

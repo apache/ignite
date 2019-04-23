@@ -129,10 +129,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     protected final GridCacheSharedContext cctx;
 
     /** Size of page used for PageMemory regions. */
-    private final int pageSize;
+    protected final int pageSize;
 
     /** Size of page without encryption overhead. */
-    private final int realPageSize;
+    protected final int realPageSize;
 
     /** Cache object processor to reading {@link DataEntry DataEntries}. */
     protected final IgniteCacheObjectProcessor co;
@@ -353,7 +353,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 PageSnapshot pageRec = (PageSnapshot)record;
 
-                return pageRec.pageData().length + 12;
+                return pageRec.pageDataSize() + 12;
 
             case CHECKPOINT_RECORD:
                 CheckpointRecord cpRec = (CheckpointRecord)record;
@@ -550,10 +550,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
         switch (type) {
             case PAGE_RECORD:
+                byte[] arr = new byte[pageSize];
+
                 int cacheId = in.readInt();
                 long pageId = in.readLong();
-
-                byte[] arr = new byte[recordSize == 0 ? pageSize : (recordSize - 4 - 8)];
 
                 in.readFully(arr);
 
@@ -1168,7 +1168,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(snap.fullPageId().groupId());
                 buf.putLong(snap.fullPageId().pageId());
-                buf.put(snap.pageData());
+                buf.put(snap.pageDataBuffer());
 
                 break;
 
