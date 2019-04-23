@@ -177,5 +177,4 @@ public class ColumnInformation {
     @Override public String toString() {
         return S.toString(ColumnInformation.class, this);
     }
-
 }

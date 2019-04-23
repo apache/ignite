@@ -35,24 +35,23 @@ public class TableInformation {
     /** Cache id. */
     private final int cacheId;
 
-    /** cache name. */
+    /** Cache name. */
     private final String cacheName;
 
     /** Affinity Key column. */
     private final String affinityKeyCol;
 
-    /** Ket alias. */
+    /** Key alias. */
     private final String keyAlias;
 
-    /** Value alias.*/
+    /** Value alias. */
     private final String valAlias;
 
-    /** Key type name.*/
+    /** Key type name. */
     private final String keyTypeName;
 
-    /** Value type name.*/
+    /** Value type name. */
     private final String valTypeName;
-
 
     /** Schema name. */
     private final String schemaName;
@@ -224,5 +223,4 @@ public class TableInformation {
     @Override public String toString() {
         return S.toString(TableInformation.class, this);
     }
-
 }

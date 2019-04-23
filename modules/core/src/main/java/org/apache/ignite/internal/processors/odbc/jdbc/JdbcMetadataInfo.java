@@ -84,7 +84,6 @@ public class JdbcMetadataInfo {
         }
     };
 
-
     /**
      * Initializes info.
      *
@@ -149,7 +148,7 @@ public class JdbcMetadataInfo {
      * @param schemaNamePtrn sql pattern for schema name.
      * @param tblNamePtrn sql pattern for table name.
      * @param tblTypes Requested table types.
-     * @return List of metadatas of tables that matches .
+     * @return List of metadatas of tables that matches.
      */
     public List<JdbcTableMeta> getTablesMeta(String schemaNamePtrn, String tblNamePtrn, String[] tblTypes) {
         Collection<TableInformation> tblsMeta = ctx.query().getIndexing()
