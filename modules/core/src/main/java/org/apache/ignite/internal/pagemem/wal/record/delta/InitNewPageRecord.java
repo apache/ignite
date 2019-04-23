@@ -56,10 +56,18 @@ public class InitNewPageRecord extends PageDeltaRecord {
         int newPartId = PageIdUtils.partId(newPageId);
         int partId = PageIdUtils.partId(pageId);
 
-        if (newPartId != partId) {
-            throw new AssertionError("Partition consistency failure: " +
-                "newPageId=" + Long.toHexString(newPageId) + " (newPartId: " + newPartId + ") " +
+        if (newPartId == 0 && newPartId != partId) {
+            U.warn(null, "Partition consistency warning: " +
+                "newPageId=" + Long.toHexString(newPageId) + " (newPartId: 0) " +
                 "pageId=" + Long.toHexString(pageId) + " (partId: " + partId + ")");
+
+            // Partition consistency failure came from https://issues.apache.org/jira/browse/IGNITE-11030
+            // This invalid record can come from persistent stores, version < 2.7.5 where this bug was not fixed.
+            newPartId = partId; // Just hack new page ID to make this record to be correctly applied.
+            this.newPageId = PageIdUtils.pageId(
+                newPartId,
+                PageIdUtils.flag(newPageId),
+                PageIdUtils.pageIndex(newPageId));
         }
     }
 
