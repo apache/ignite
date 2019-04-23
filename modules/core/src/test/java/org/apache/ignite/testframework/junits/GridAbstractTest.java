@@ -2236,6 +2236,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * @return If {@code true} serialized objects placed to {@link #serializedObj}
+     * are not cleared after each test execution.
+     *
+     * Setting this flag to true is need when some serialized objects are need to be shared between all tests in class.
+     */
+    protected boolean keepSerializedObjects() {
+        return false;
+    }
+
+    /**
      * @return Error handler to process all uncaught exceptions of the test run ({@code null} by default).
      */
     protected IgniteClosure<Throwable, Throwable> errorHandler() {
