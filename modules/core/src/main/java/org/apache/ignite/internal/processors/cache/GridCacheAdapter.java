@@ -4896,7 +4896,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     final GridNearTxLocal tx0 = checkCurrentTx();
 
-                    IgniteTxKey txKey = ctx.txKey(ctx.toCacheKeyObject(key));
+                    final IgniteTxKey txKey = ctx.txKey(ctx.toCacheKeyObject(key));
 
                     // Value was broken, fixed locally and should be spread across the topology.
                     if (tx0.txState().hasWriteKey(txKey))

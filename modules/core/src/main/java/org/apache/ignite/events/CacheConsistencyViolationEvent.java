@@ -32,41 +32,38 @@ public class CacheConsistencyViolationEvent extends EventAdapter {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
-    /** Map. */
-    Map<UUID /*Node*/, Map<Object /*Key*/, Object /*Value*/>> map;
+    /** Original distribution. */
+    Map<UUID /*Node*/, Map<Object /*Key*/, Object /*Value*/>> locEntries;
 
-    /** Fixed map. */
-    Map<Object /*Key*/, Object /*Value*/> fixedMap;
+    /** Fixed entries. */
+    Map<Object /*Key*/, Object /*Value*/> fixedEntries;
 
     /**
-     * @param node Node.
-     * @param msg Message.
-     * @param map Map.
-     * @param fixedMap Fixed map.
+     *
      */
     public CacheConsistencyViolationEvent(
         ClusterNode node,
         String msg,
-        Map<UUID, Map<Object, Object>> map,
-        Map<Object, Object> fixedMap) {
+        Map<UUID, Map<Object, Object>> locEntries,
+        Map<Object, Object> fixedEntries) {
         super(node, msg, EVT_CONSISTENCY_VIOLATION);
 
-        this.map = map;
-        this.fixedMap = fixedMap;
+        this.locEntries = locEntries;
+        this.fixedEntries = fixedEntries;
     }
 
     /**
-     * Detected distribution.
+     * Original distribution.
      */
-    public Map<UUID, Map<Object, Object>> getMap() {
-        return map;
+    public Map<UUID, Map<Object, Object>> getEntries() {
+        return locEntries;
     }
 
     /**
-     * Proposed distribution.
+     * Fixed entries.
      * Will be fixed in case of transaction commit.
      */
-    public Map<Object, Object> getFixedMap() {
-        return fixedMap;
+    public Map<Object, Object> getFixedEntries() {
+        return fixedEntries;
     }
 }

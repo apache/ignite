@@ -18,6 +18,7 @@
 package org.apache.ignite.events;
 
 import java.util.List;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -893,6 +894,7 @@ public interface EventType {
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see CacheConsistencyViolationEvent
+     * @see IgniteCache#withConsistencyCheck
      */
     public static final int EVT_CONSISTENCY_VIOLATION = 135;
 

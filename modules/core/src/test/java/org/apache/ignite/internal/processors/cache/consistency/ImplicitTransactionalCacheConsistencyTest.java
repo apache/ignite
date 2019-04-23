@@ -94,7 +94,7 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             raw,
             (ConsistencyRecoveryData data) -> {
                 GET_NULL.accept(data); // first attempt.
-                GET_NULL.accept(data); // second attempt.
+                GET_NULL.accept(data); // second attempt (checks first attempt causes no changes/fixes/etc).
             });
     }
 }

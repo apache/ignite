@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -68,7 +69,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     protected static final Consumer<ConsistencyRecoveryData> GET_CHECK_AND_FIX = (data) -> {
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
-        Boolean raw = data.raw;
+        boolean raw = data.raw;
 
         assert keys.size() == 1;
 
@@ -97,7 +98,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     protected static final Consumer<ConsistencyRecoveryData> GETALL_CHECK_AND_FIX = (data) -> {
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
-        Boolean raw = data.raw;
+        boolean raw = data.raw;
 
         assert !keys.isEmpty();
 
@@ -128,7 +129,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     protected static final Consumer<ConsistencyRecoveryData> GET_NULL = (data) -> {
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
-        Boolean raw = data.raw;
+        boolean raw = data.raw;
 
         assert keys.size() == 1;
 
@@ -153,7 +154,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
      */
     protected static final Consumer<ConsistencyRecoveryData> ENSURE_FIXED = (data) -> {
         IgniteCache<Integer, Integer> cache = data.cache;
-        Boolean raw = data.raw;
+        boolean raw = data.raw;
 
         for (Map.Entry<Integer, InconsistencyValuesMapping> entry : data.data.entrySet()) {
             try {
@@ -265,7 +266,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         while (!evtDeq.isEmpty()) {
             CacheConsistencyViolationEvent evt = evtDeq.remove();
 
-            fixed.putAll(evt.getFixedMap()); // Optimistic transactions will produce per key fixes.
+            fixed.putAll(evt.getFixedEntries()); // Optimistic transactions will produce per key fixes.
         }
 
         for (Map.Entry<Integer, InconsistencyValuesMapping> entry : data.data.entrySet()) {
@@ -342,28 +343,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
             nodes.addAll(backupNodes(key, DEFAULT_CACHE_NAME));
         }
 
-        boolean random = ThreadLocalRandom.current().nextBoolean();
-
-        if (random) {
-            Map<Integer, Ignite> nodes0 = new HashMap<>();
-
-            for (Ignite node : nodes) {
-                while (true) {
-                    int idx = ThreadLocalRandom.current().nextInt(nodes.size());
-
-                    if (nodes0.get(idx) == null) {
-                        nodes0.put(idx, node);
-
-                        break;
-                    }
-                }
-            }
-
-            nodes = new ArrayList<>();
-
-            for (int i = 0; i < nodes0.size(); i++)
-                nodes.add(nodes0.get(i));
-        }
+        if (ThreadLocalRandom.current().nextBoolean()) // Random order.
+            Collections.shuffle(nodes);
 
         GridCacheVersionManager mgr =
             ((GridCacheAdapter)(grid(1)).cachex(DEFAULT_CACHE_NAME).cache()).context().shared().versions();
@@ -414,7 +395,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         Map<Integer, InconsistencyValuesMapping> data;
 
         /** Raw read flag. True means required GetEntry() instead of get(). */
-        Boolean raw;
+        boolean raw;
 
         /**
          *
@@ -422,7 +403,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         public ConsistencyRecoveryData(
             IgniteCache<Integer, Integer> cache,
             Map<Integer, InconsistencyValuesMapping> data,
-            Boolean raw) {
+            boolean raw) {
             this.cache = cache;
             this.data = new HashMap<>(data);
             this.raw = raw;
