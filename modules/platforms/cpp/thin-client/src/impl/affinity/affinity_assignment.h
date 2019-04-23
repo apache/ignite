@@ -23,7 +23,7 @@
 #include <vector>
 
 #include <ignite/common/concurrent.h>
-#include <ignite/network/end_point.h>
+#include <ignite/guid.h>
 
 namespace ignite
 {
@@ -35,17 +35,14 @@ namespace ignite
             class WritableKey;
 
             /* Forward declaration. */
-            class ConnectableNodePartitions;
+            class NodePartitions;
 
-            namespace cache
+            namespace affinity
             {
-                /** End point collection. */
-                typedef std::vector<network::EndPoint> EndPoints;
-
                 /**
                  * Cache Affinity Info.
                  */
-                class CacheAffinityInfo
+                class AffinityAssignment
                 {
                 public:
                     /**
@@ -53,12 +50,12 @@ namespace ignite
                      *
                      * @param info Node partitions info.
                      */
-                    CacheAffinityInfo(const std::vector<ConnectableNodePartitions>& info);
+                    AffinityAssignment(const std::vector<NodePartitions>& info);
 
                     /**
                      * Destructor.
                      */
-                    ~CacheAffinityInfo();
+                    ~AffinityAssignment();
 
                     /**
                      * Get number of partitions.
@@ -73,7 +70,7 @@ namespace ignite
                      * @param part Partition.
                      * @return Mapping.
                      */
-                    const EndPoints& GetMapping(int32_t part) const;
+                    const Guid& GetNodeGuid(int32_t part) const;
 
                     /**
                      * Get mapping for the partition.
@@ -81,8 +78,9 @@ namespace ignite
                      * @param key Key.
                      * @return Mapping.
                      */
-                    const EndPoints& GetMapping(const WritableKey& key) const;
+                    const Guid& GetNodeGuid(const WritableKey& key) const;
 
+                private:
                     /**
                      * Calculate partition for the key assuming it uses Rendezvous Affinity Function.
                      *
@@ -91,13 +89,12 @@ namespace ignite
                      */
                     int32_t GetPartitionForKey(const WritableKey& key) const;
 
-                private:
-                    /** Affinity mapping. */
-                    std::vector<EndPoints> affinityMapping;
+                    /** Affinity assignment. */
+                    std::vector<Guid> assignment;
                 };
 
                 /** Shared pointer to Cache Affinity Info. */
-                typedef common::concurrent::SharedPointer<CacheAffinityInfo> SP_CacheAffinityInfo;
+                typedef common::concurrent::SharedPointer<AffinityAssignment> SP_AffinityAssignment;
             }
         }
     }

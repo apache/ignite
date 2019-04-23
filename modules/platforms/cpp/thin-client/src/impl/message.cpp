@@ -22,6 +22,7 @@
 #include <ignite/impl/thin/readable.h>
 
 #include "impl/response_status.h"
+#include "impl/data_channel.h"
 #include "impl/message.h"
 
 namespace ignite
@@ -30,6 +31,35 @@ namespace ignite
     {
         namespace thin
         {
+            /**
+             * Message flags.
+             */
+            struct Flag
+            {
+                enum Type
+                {
+                    /** Failure flag. */
+                    FAILURE = 1,
+
+                    /** Affinity topology change flag. */
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
+                };
+            };
+
+            CachePartitionsRequest::CachePartitionsRequest(const std::vector<int32_t>& cacheIds) :
+                cacheIds(cacheIds)
+            {
+                // No-op.
+            }
+
+            void CachePartitionsRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt32(static_cast<int32_t>(cacheIds.size()));
+
+                for (size_t i = 0; i < cacheIds.size(); ++i)
+                    writer.WriteInt32(cacheIds[i]);
+            }
+
             GetOrCreateCacheWithNameRequest::GetOrCreateCacheWithNameRequest(const std::string& name) :
                 name(name)
             {
@@ -53,6 +83,7 @@ namespace ignite
             }
 
             Response::Response():
+                flags(),
                 status(ResponseStatus::FAILED)
             {
                 // No-op.
@@ -65,6 +96,23 @@ namespace ignite
 
             void Response::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver)
             {
+                if (ver >= DataChannel::VERSION_1_4_0)
+                {
+                    flags = reader.ReadInt16();
+
+                    if (IsAffinityTopologyChanged())
+                        topologyVersion.Read(reader);
+
+                    if (!IsFailure())
+                    {
+                        status = ResponseStatus::SUCCESS;
+
+                        ReadOnSuccess(reader, ver);
+
+                        return;
+                    }
+                }
+
                 status = reader.ReadInt32();
 
                 if (status == ResponseStatus::SUCCESS)
@@ -73,8 +121,18 @@ namespace ignite
                     reader.ReadString(error);
             }
 
+            bool Response::IsAffinityTopologyChanged() const
+            {
+                return (flags & Flag::AFFINITY_TOPOLOGY_CHANGED) != 0;
+            }
+
+            bool Response::IsFailure() const
+            {
+                return (flags & Flag::FAILURE) != 0;
+            }
+
             ClientCacheNodePartitionsResponse::ClientCacheNodePartitionsResponse(
-                std::vector<ConnectableNodePartitions>& nodeParts):
+                std::vector<NodePartitions>& nodeParts):
                 nodeParts(nodeParts)
             {
                 // No-op.
@@ -95,6 +153,30 @@ namespace ignite
 
                 for (int32_t i = 0; i < num; ++i)
                     nodeParts[i].Read(reader);
+            }
+
+            CachePartitionsResponse::CachePartitionsResponse(std::vector<AffinityAwarenessGroup>& groups) :
+                groups(groups)
+            {
+                // No-op.
+            }
+
+            CachePartitionsResponse::~CachePartitionsResponse()
+            {
+                // No-op.
+            }
+
+            void CachePartitionsResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                topologyVersion.Read(reader);
+
+                int32_t groupsNum = reader.ReadInt32();
+
+                groups.clear();
+                groups.resize(static_cast<size_t>(groupsNum));
+
+                for (int32_t i = 0; i < groupsNum; ++i)
+                    groups[i].Read(reader);
             }
 
             CacheValueResponse::CacheValueResponse(Readable& value) :

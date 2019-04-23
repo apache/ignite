@@ -17,8 +17,8 @@
 
 #include <ignite/impl/thin/writable_key.h>
 
-#include "impl/connectable_node_partitions.h"
-#include "impl/cache/cache_affinity_info.h"
+#include "impl/affinity/node_partitions.h"
+#include "impl/affinity/affinity_assignment.h"
 
 namespace ignite
 {
@@ -26,62 +26,62 @@ namespace ignite
     {
         namespace thin
         {
-            namespace cache
+            namespace affinity
             {
-                CacheAffinityInfo::CacheAffinityInfo(const std::vector<ConnectableNodePartitions>& info)
+                AffinityAssignment::AffinityAssignment(const std::vector<NodePartitions>& info)
                 {
-                    std::vector<ConnectableNodePartitions>::const_iterator it;
+                    typedef std::vector<NodePartitions>::const_iterator InfoIterator;
 
-                    for (it = info.begin(); it != info.end(); ++it)
+                    for (InfoIterator it = info.begin(); it != info.end(); ++it)
                     {
                         const std::vector<int32_t>& parts = it->GetPartitions();
-                        const std::vector<network::EndPoint>& endPoints = it->GetEndPoints();
+                        const Guid& guid = it->GetGuid();
 
                         for (size_t i = 0; i < parts.size(); ++i)
                         {
                             assert(parts[i] >= 0);
 
-                            size_t upart = static_cast<size_t>(parts[i]);
+                            size_t uPart = static_cast<size_t>(parts[i]);
 
-                            if (upart >= affinityMapping.size())
-                                affinityMapping.resize(upart + 1);
+                            if (uPart >= assignment.size())
+                                assignment.resize(uPart + 1);
 
-                            EndPoints& dst = affinityMapping[upart];
-
-                            dst.insert(dst.end(), endPoints.begin(), endPoints.end());
+                            assignment[uPart] = guid;
                         }
                     }
                 }
 
-                CacheAffinityInfo::~CacheAffinityInfo()
+                AffinityAssignment::~AffinityAssignment()
                 {
                     // No-op.
                 }
 
-                int32_t CacheAffinityInfo::GetPartitionsNum() const
+                int32_t AffinityAssignment::GetPartitionsNum() const
                 {
-                    return static_cast<int32_t>(affinityMapping.size());
+                    return static_cast<int32_t>(assignment.size());
                 }
 
-                const EndPoints& CacheAffinityInfo::GetMapping(int32_t part) const
+                const Guid& AffinityAssignment::GetNodeGuid(int32_t part) const
                 {
                     assert(part >= 0);
-                    assert(static_cast<size_t>(part) < affinityMapping.size());
+                    assert(static_cast<size_t>(part) < assignment.size());
 
-                    return affinityMapping[part];
+                    return assignment[part];
                 }
 
-                const EndPoints& CacheAffinityInfo::GetMapping(const WritableKey& key) const
+                const Guid& AffinityAssignment::GetNodeGuid(const WritableKey& key) const
                 {
-                    int32_t part = GetPartitionForKey(key);
+                    size_t part = static_cast<size_t>(GetPartitionForKey(key));
 
-                    return affinityMapping[part];
+                    assert(part < assignment.size());
+
+                    return assignment[part];
                 }
 
-                int32_t CacheAffinityInfo::GetPartitionForKey(const WritableKey& key) const
+                int32_t AffinityAssignment::GetPartitionForKey(const WritableKey& key) const
                 {
                     int32_t hash = key.GetHashCode();
-                    uint32_t uhash = static_cast<uint32_t>(hash);
+                    uint32_t uHash = static_cast<uint32_t>(hash);
 
                     int32_t parts = GetPartitionsNum();
 
@@ -91,7 +91,7 @@ namespace ignite
                     {
                         int32_t mask = parts - 1;
 
-                        part = (uhash ^ (uhash >> 16)) & mask;
+                        part = (uHash ^ (uHash >> 16)) & mask;
                     }
                     else
                     {
