@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cluster.СlusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.jdbc.thin.JdbcThinAbstractSelfTest;
@@ -159,6 +161,59 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
         cache().clear();
 
         super.afterTest();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testStreamedInsertFailsOnReadOnlyMode() throws Exception {
+        grid(0).cluster().readOnly(true);
+
+        try {
+            assertTrue(grid(0).cluster().readOnly());
+
+            boolean failed = false;
+
+            try (Connection ordinalCon = createOrdinaryConnection();
+                 Statement selectStmt = ordinalCon.createStatement()
+            ) {
+                try (ResultSet rs = selectStmt.executeQuery("select count(*) from PUBLIC.Person")) {
+                    assertTrue(rs.next());
+
+                    assertEquals(0, rs.getLong(1));
+                }
+
+                try (Connection conn = createStreamedConnection(true)) {
+                    try (PreparedStatement stmt =
+                             conn.prepareStatement("insert into PUBLIC.Person(\"id\", \"name\") values (?, ?)")
+                    ) {
+                        for (int i = 1; i <= 2; i++) {
+                            stmt.setInt(1, i);
+                            stmt.setString(2, nameForId(i));
+
+                            stmt.executeUpdate();
+                        }
+                    }
+                }
+                catch (Exception e) {
+                    log.error("Insert failed", e);
+
+                    failed = U.hasCause(e, СlusterReadOnlyModeCheckedException.class);
+                }
+
+                try (ResultSet rs = selectStmt.executeQuery("select count(*) from PUBLIC.Person")) {
+                    assertTrue(rs.next());
+
+                    assertEquals("Insert should be failed!", 0, rs.getLong(1));
+                }
+            }
+
+            assertTrue(failed);
+        }
+        finally {
+            grid(0).cluster().readOnly(false);
+        }
     }
 
     /**
