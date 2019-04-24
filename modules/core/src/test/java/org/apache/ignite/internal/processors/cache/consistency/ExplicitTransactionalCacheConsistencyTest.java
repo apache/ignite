@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.consistency;
 
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.transactions.Transaction;
@@ -24,40 +26,53 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheConsistencyTest {
+    /** Test parameters. */
+    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}")
+    public static Collection parameters() {
+        return Arrays.asList(new Object[][] {
+            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED, true},
+            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, true},
+            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, true},
+
+            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED, true},
+            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, true},
+            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE, true},
+
+            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED, false},
+            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, false},
+            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, false},
+
+            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED, false},
+            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, false},
+            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE, false}
+        });
+    }
+
+    /** Concurrency. */
+    @Parameterized.Parameter
+    public TransactionConcurrency concurrency;
+
+    /** Isolation. */
+    @Parameterized.Parameter(1)
+    public TransactionIsolation isolation;
+
+    /** GetEntry or just get. */
+    @Parameterized.Parameter(2)
+    public boolean raw;
+
     /**
      *
      */
     @Test
     public void test() throws Exception {
-        test(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
-        test(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ);
-        test(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
-
-        test(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED);
-        test(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
-        test(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE);
-    }
-
-    /**
-     *
-     */
-    protected void test(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
-        test(concurrency, isolation, true);
-        test(concurrency, isolation, false);
-    }
-
-    /**
-     *
-     */
-    private void test(
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
-        boolean raw /*getEntry() or just get()*/) throws Exception {
         for (Ignite node : G.allGrids()) {
             testGet(node, concurrency, isolation, 1, raw, false);
             testGetAllVariations(node, concurrency, isolation, raw);

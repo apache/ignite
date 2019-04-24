@@ -17,27 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache.consistency;
 
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheConsistencyTest {
+    /** Test parameters. */
+    @Parameterized.Parameters(name = "getEntry={0}")
+    public static Collection parameters() {
+        return Arrays.asList(new Object[][] {
+            {true},
+            {false}
+        });
+    }
+
+    /** GetEntry or just get. */
+    @Parameterized.Parameter
+    public boolean raw;
+
     /**
      *
      */
     @Test
     public void test() throws Exception {
-        test(true);
-        test(false);
-    }
-
-    /**
-     *
-     */
-    private void test(boolean raw /*getEntry() or just get()*/) throws Exception {
         for (Ignite node : G.allGrids()) {
             testGet(node, raw);
             testGetAllVariations(node, raw);
