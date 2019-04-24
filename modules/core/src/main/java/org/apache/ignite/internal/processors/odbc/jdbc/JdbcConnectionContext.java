@@ -167,7 +167,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         }
 
-
         Boolean dataPageScanEnabled = null;
         Integer updateBatchSize = null;
 
