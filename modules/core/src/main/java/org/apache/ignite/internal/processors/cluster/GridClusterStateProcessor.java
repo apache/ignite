@@ -920,9 +920,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         boolean forceChangeBaselineTopology,
         boolean isAutoAdjust
     ) {
-        if (inMemoryMode)
-            return changeGlobalState0(activate, readOnly, null, false, isAutoAdjust);
-
         BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ? null :
             calculateNewBaselineTopology(activate, baselineNodes, forceChangeBaselineTopology);
 
