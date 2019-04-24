@@ -191,7 +191,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                             name: '"mode"',
                                             required: true,
                                             placeholder: 'Choose igfs mode',
-                                            options: '{{::$ctrl.IGFSs.defaultMode.values}}'
+                                            options: '::$ctrl.IGFSs.defaultMode.values'
                                         })(
                                             ng-model-options='{allowInvalid: true}'
                                         )

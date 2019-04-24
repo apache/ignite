@@ -37,6 +37,7 @@ ng-show='$ctrl.available(["2.0.0", "2.3.0"])'
                     label: 'Page size:',
                     model: `${model}.pageSize`,
                     name: '"MemoryConfigurationPageSize"',
+                    placeholder: 'Choose among the following...',
                     options: `$ctrl.Clusters.memoryConfiguration.pageSize.values`,
                     tip: 'Every memory region is split on pages of fixed size'
                 })

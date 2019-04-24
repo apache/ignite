@@ -65,11 +65,20 @@ export interface IndexField {
     name?: string,
     direction?: boolean
 }
+
+export enum InlineSizeType {
+    'AUTO' = -1,
+    'DISABLED' = 0,
+    'CUSTOM' = 1
+}
+
 export interface Index {
     _id: string,
     name: string,
     indexType: IndexTypes,
-    fields: Array<IndexField>
+    fields: Array<IndexField>,
+    inlineSize: number | null,
+    inlineSizeType: InlineSizeType
 }
 
 export interface DomainModel {

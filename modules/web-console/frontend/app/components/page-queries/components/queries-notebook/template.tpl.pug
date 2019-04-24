@@ -77,7 +77,8 @@ mixin query-settings
                 label: 'Rows per page:',
                 model: 'paragraph.pageSize',
                 name: '"pageSize" + paragraph.id',
-                options: 'pageSizesOptions'
+                options: 'pageSizesOptions',
+                inline: true
             })
 
         .form-field--inline(
@@ -89,7 +90,8 @@ mixin query-settings
                 label: 'Max pages:',
                 model: 'paragraph.maxPages',
                 name: '"maxPages" + paragraph.id',
-                options: 'maxPages'
+                options: 'maxPages',
+                inline: true
             })
 
         .form-field--inline(

@@ -48,6 +48,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                     model: '$item.kind',
                                     name: '"loadBalancingKind"',
                                     required: true,
+                                    placeholder: 'Choose among the following...',
                                     options: '::$ctrl.Clusters.loadBalancingKinds',
                                     tip: `Provides the next best balanced node for job execution
                                     <ul>

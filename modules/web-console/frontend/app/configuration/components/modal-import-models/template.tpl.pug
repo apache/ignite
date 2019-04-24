@@ -130,16 +130,15 @@ mixin td-ellipses-lbl(w, lbl)
                         .pc-form-grid-col-30
                             +form-field__dropdown({
                                 label: 'Action:',
-                                model: 'importCommon.action'
-                            })(
-                                bs-options='item.value as item.label for item in importActions'
-                            )
+                                model: 'importCommon.action',
+                                options: 'importActions'
+                            })
                         .pc-form-grid-col-30
                             +form-field__dropdown({
                                 label: 'Cache:',
-                                model: 'importCommon.cacheOrTemplate'
+                                model: 'importCommon.cacheOrTemplate',
+                                options: 'importCommon.cachesOrTemplates'
                             })(
-                                bs-options='item.value as item.label for item in importCommon.cachesOrTemplates'
                                 ng-change='$ctrl.onCacheSelect(importCommon.cacheOrTemplate)'
                             )
                         .pc-form-grid-col-60.pc-form-grid__text-only-item

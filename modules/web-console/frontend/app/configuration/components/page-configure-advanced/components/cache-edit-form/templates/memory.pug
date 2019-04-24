@@ -148,7 +148,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     name: '"offHeapMode"',
                     required: `$ctrl.Caches.offHeapMode.required(${model})`,
                     placeholder: '{{::$ctrl.Caches.offHeapMode.default}}',
-                    options: '{{::$ctrl.Caches.offHeapModes}}',
+                    options: '::$ctrl.Caches.offHeapModes',
                     tip: `Off-heap storage mode
                     <ul>
                         <li>Disabled - Off-heap storage is disabled</li>

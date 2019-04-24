@@ -264,7 +264,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                         model: `queryIndex.inlineSizeType`,
                                         name: '"InlineSizeKind"',
                                         placeholder: '{{::$ctrl.Models.inlineSizeType.default}}',
-                                        options: '{{::$ctrl.Models.inlineSizeTypes}}',
+                                        options: '::$ctrl.Models.inlineSizeTypes',
                                         tip: `Inline size
                                             <ul>
                                                 <li>Auto - Determine inline size automatically</li>
@@ -314,7 +314,7 @@ panel-collapsible(ng-form=form opened=`!!${model}.queryMetadata`)
                                                             placeholder: `{{ ${queryFields}.length > 0 ? 'Choose index field' : 'No fields configured' }}`,
                                                             options: queryFields
                                                         })(
-                                                            bs-options=`queryField.name as queryField.name for queryField in ${queryFields}`
+                                                            ng-options=`queryField.name as queryField.name for queryField in ${queryFields}`
                                                             ng-disabled=`${queryFields}.length === 0`
                                                             ng-model-options='{allowInvalid: true}'
                                                             ignite-unique='queryIndex.fields'

@@ -46,7 +46,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                     model: `${model}.defaultMode`,
                     name: '"defaultMode"',
                     placeholder: '{{::$ctrl.IGFSs.defaultMode.default}}',
-                    options: '{{::$ctrl.IGFSs.defaultMode.values}}',
+                    options: '::$ctrl.IGFSs.defaultMode.values',
                     tip: `
                     Mode to specify how IGFS interacts with Hadoop file system
                     <ul>

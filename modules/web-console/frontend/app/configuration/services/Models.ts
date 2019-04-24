@@ -16,7 +16,7 @@
 
 import ObjectID from 'bson-objectid';
 import omit from 'lodash/fp/omit';
-import {DomainModel, IndexField, ShortDomainModel, Index, Field, KeyField, ValueField} from '../types';
+import {DomainModel, IndexField, ShortDomainModel, Index, Field, KeyField, ValueField, InlineSizeType} from '../types';
 
 export default class Models {
     static $inject = ['$http'];
@@ -59,10 +59,12 @@ export default class Models {
     ];
 
     inlineSizeType = {
-        _val(queryIndex) {
+        _val(queryIndex: Index): InlineSizeType {
             return (queryIndex.inlineSizeType === null || queryIndex.inlineSizeType === void 0) ? -1 : queryIndex.inlineSizeType;
         },
-        onChange: (queryIndex) => {
+        onChange: (queryIndex?: Index): void => {
+            // Undefined queryIndex did not happen until native selects were introduced
+            if (!queryIndex) return;
             const inlineSizeType = this.inlineSizeType._val(queryIndex);
             switch (inlineSizeType) {
                 case 1:
