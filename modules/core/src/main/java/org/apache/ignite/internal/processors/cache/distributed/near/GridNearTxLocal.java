@@ -609,7 +609,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 /*singleRmv*/false,
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.consistency(),
+                false,
                 dataCenterId);
 
             try {
@@ -904,7 +904,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 false,
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.consistency(),
+                false,
                 dataCenterId);
 
             try {
@@ -1772,7 +1772,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             singleRmv,
             keepBinary,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.consistency(),
+            false,
             dataCenterId
         );
 
