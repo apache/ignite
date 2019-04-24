@@ -151,7 +151,7 @@ public class CommandArgParser {
      * @return Arguments bean.
      * @throws IllegalArgumentException In case arguments aren't valid.
      */
-    Command parseAndValidate(Iterator<String> rawArgIter) {
+    ConnectionAndSslParameters parseAndValidate(Iterator<String> rawArgIter) {
         String host = DFLT_HOST;
 
         String port = DFLT_PORT;
@@ -310,14 +310,12 @@ public class CommandArgParser {
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
 
-        command.command().commonArguments(
-            new ConnectionAndSslParameters(host, port, user, pwd,
+
+        return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation,
                 sslProtocol, sslCipherSuites,
                 sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
-                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType));
-
-        return command.command();
+                sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
     }
 
     private String securityWarningMessage(String password) {

@@ -157,9 +157,12 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            Command command = new CommandArgParser(logger).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters args = new CommandArgParser(logger).parseAndValidate(rawArgs.iterator());
 
-            if (!confirm(command.confirmationPrompt())) {
+            Command command = args.command();
+
+
+            if (!args.autoConfirmation() && !confirm(command.confirmationPrompt())) {
                 logger.log("Operation cancelled.");
 
                 return EXIT_CODE_OK;
@@ -169,9 +172,7 @@ public class CommandHandler {
 
             int tryConnectMaxCount = 3;
 
-            ConnectionAndSslParameters args = command.commonArguments();
-
-            boolean suppliedAuth = !F.isEmpty(args.getUserName()) && !F.isEmpty(args.getPassword());
+            boolean suppliedAuth = !F.isEmpty(args.userName()) && !F.isEmpty(args.password());
 
             GridClientConfiguration clientCfg = getClientConfiguration(args);
 
@@ -238,7 +239,7 @@ public class CommandHandler {
     @NotNull private GridClientConfiguration getClientConfiguration(
         ConnectionAndSslParameters args
     ) throws IgniteCheckedException {
-        return getClientConfiguration(args.getUserName(), args.getPassword(), args);
+        return getClientConfiguration(args.userName(), args.password(), args);
     }
 
     @NotNull private GridClientConfiguration getClientConfiguration(

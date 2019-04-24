@@ -71,6 +71,8 @@ public class ConnectionAndSslParameters {
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
 
+    private Command command;
+
     /**
      * @param host Host.
      * @param port Port.
@@ -89,12 +91,13 @@ public class ConnectionAndSslParameters {
      * @param sslTrustStorePassword Truststore Password.
      * @param sslTrustStoreType Truststore Type.
      */
-    public ConnectionAndSslParameters(String host, String port, String user, String pwd,
+    public ConnectionAndSslParameters(Command command, String host, String port, String user, String pwd,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
         String sslTrustStorePath, char[] sslTrustStorePassword, String sslTrustStoreType
     ) {
+        this.command = command;
         this.host = host;
         this.port = port;
         this.user = user;
@@ -119,6 +122,13 @@ public class ConnectionAndSslParameters {
     }
 
     /**
+     * @return High-level command which were defined by user to run.
+     */
+    public Command command() {
+        return command;
+    }
+
+    /**
      * @return host name
      */
     public String host() {
@@ -135,28 +145,28 @@ public class ConnectionAndSslParameters {
     /**
      * @return user name
      */
-    public String getUserName() {
+    public String userName() {
         return user;
     }
 
     /**
      * @param user New user name.
      */
-    public void setUserName(String user) {
+    public void userName(String user) {
         this.user = user;
     }
 
     /**
      * @return password
      */
-    public String getPassword() {
+    public String password() {
         return pwd;
     }
 
     /**
      * @param pwd New password.
      */
-    public void setPassword(String pwd) {
+    public void password(String pwd) {
         this.pwd = pwd;
     }
 

@@ -354,8 +354,8 @@ public class CommandHandlerParsingTest {
             Command command = parseArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
             ConnectionAndSslParameters args = command.commonArguments();
 
-            assertEquals("testUser", args.getUserName());
-            assertEquals("testPass", args.getPassword());
+            assertEquals("testUser", args.userName());
+            assertEquals("testPass", args.password());
             assertEquals(cmd.command(), command);
         }
     }
