@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * Result of job work which is sent between nodes.
  */
 public class VisorFindAndDeleteGarbageInPersistenceJobResult extends IgniteDataTransferObject {
     /** */

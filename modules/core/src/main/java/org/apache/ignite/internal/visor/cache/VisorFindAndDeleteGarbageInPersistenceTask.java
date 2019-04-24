@@ -35,7 +35,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Compute task which are part of 'find and delete garbage' functionality.
  */
 @GridInternal
 public class VisorFindAndDeleteGarbageInPersistenceTask extends VisorMultiNodeTask<VisorFindAndDeleteGarbageInPersistenceTaskArg,

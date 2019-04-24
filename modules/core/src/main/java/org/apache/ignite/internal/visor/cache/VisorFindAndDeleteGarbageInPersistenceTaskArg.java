@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * {@link VisorFindAndDeleteGarbageInPersistenceTask} arguments.
  */
 public class VisorFindAndDeleteGarbageInPersistenceTaskArg extends IgniteDataTransferObject {
     /** */

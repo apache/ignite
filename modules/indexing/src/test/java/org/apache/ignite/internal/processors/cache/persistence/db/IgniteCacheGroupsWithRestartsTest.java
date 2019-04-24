@@ -56,7 +56,10 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 
 /**
- *
+ * Testing corner cases in cache group functionality:
+ * -stopping cache in shared group and immediate node leaving;
+ * -starting cache in shared group with the same name as destroyed one;
+ * -etc.
  */
 @WithSystemProperty(key=IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value="true")
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})

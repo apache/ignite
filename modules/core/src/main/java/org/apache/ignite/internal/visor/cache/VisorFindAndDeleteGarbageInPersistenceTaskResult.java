@@ -28,7 +28,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Result of running {@link VisorFindAndDeleteGarbageInPersistenceTask} which would contain result
+ * from all participating nodes.
  */
 public class VisorFindAndDeleteGarbageInPersistenceTaskResult extends IgniteDataTransferObject {
     /** */
@@ -50,13 +51,13 @@ public class VisorFindAndDeleteGarbageInPersistenceTaskResult extends IgniteData
 
     /**
      * For externalization only.
-     * @param jobResults
-     * @param exceptions
+     * @param jobResults Per node job result.
+     * @param exceptions Per node execution problems.
      */
     public VisorFindAndDeleteGarbageInPersistenceTaskResult(
         Map<UUID, VisorFindAndDeleteGarbageInPersistenceJobResult> jobResults,
-        Map<UUID, Exception> exceptions) {
-
+        Map<UUID, Exception> exceptions
+    ) {
         this.result = jobResults;
         this.exceptions = exceptions;
     }
@@ -78,11 +79,13 @@ public class VisorFindAndDeleteGarbageInPersistenceTaskResult extends IgniteData
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeMap(out, result);
+        U.writeMap(out, exceptions);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         result = U.readMap(in);
+        exceptions = U.readMap(in);
     }
 
     /** {@inheritDoc} */

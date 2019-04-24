@@ -52,7 +52,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 
 /**
+ * Class contains logic of finding data of already destroyed caches in running cache groups.
  *
+ * Also, could cleanup this garbage in cache partitions and indexes.
  */
 public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<VisorFindAndDeleteGarbageInPersistenceJobResult> {
     /** */
@@ -222,7 +224,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                 if (groupContext.sharedGroup())
                     grpIds.add(groupContext.groupId());
                 else
-                    log.warning("Group[name=" + grpName + "] is not shared one, it couldn't contains garbage from destroyed caches.");
+                    log.warning("Group[name=" + grpName + "] is not shared one, it couldn't contain garbage from destroyed caches.");
             }
 
             if (!missingCacheGroups.isEmpty()) {

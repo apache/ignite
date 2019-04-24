@@ -507,7 +507,7 @@ public class CommandHandlerParsingTest {
     }
 
     /**
-     *
+     * Test parsing arguments by find_garbage command.
      */
     @Test
     public void testFindAndDeleteGarbage() {

@@ -1036,6 +1036,8 @@ public class CommandHandler {
         GridClient client,
         CacheArguments cacheArgs
     ) throws GridClientException {
+        checkFeatureSupportedByCluster(client, IgniteFeatures.FIND_AND_DELETE_GARBAGE_COMMAND, false);
+
         VisorFindAndDeleteGarbageInPersistenceTaskArg taskArg = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
             cacheArgs.groups(),
             cacheArgs.delete(),
