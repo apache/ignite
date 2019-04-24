@@ -195,6 +195,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Whether jdbc thin affinity awareness is enabled.",
         false, false);
 
+    /** Update batch size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). */
+    private IntegerProperty updateBatchSize = new IntegerProperty("updateBatchSize",
+        "Update bach size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). " +
+            "Set to 1 to prevent deadlock on update where keys sequence are different " +
+            "in several concurrent updates.", null, false, 1, Integer.MAX_VALUE);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -205,7 +211,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustAll, sslFactory,
         user, passwd,
         dataPageScanEnabled,
-        affinityAwareness
+        affinityAwareness,
+        updateBatchSize
     };
 
     /** {@inheritDoc} */
@@ -519,6 +526,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setAffinityAwareness(boolean affinityAwareness) {
         this.affinityAwareness.setValue(affinityAwareness);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Integer getUpdateBatchSize() {
+        return updateBatchSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException {
+        this.updateBatchSize.setValue(updateBatchSize);
     }
 
     /**
@@ -1021,8 +1038,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         NumberProperty(String name, String desc, Number dfltVal, boolean required, Number min, Number max) {
             super(name, desc, dfltVal, null, required);
 
-            assert dfltVal != null;
-
             val = dfltVal;
 
             range = new Number[] {min, max};
@@ -1031,7 +1046,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
             if (str == null)
-                val = (int)dfltVal;
+                val = dfltVal != null ? (int)dfltVal : null;
             else {
                 try {
                     setValue(parse(str));
@@ -1052,7 +1067,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override String valueObject() {
-            return String.valueOf(val);
+            return val != null ? String.valueOf(val) : null;
         }
 
         /**
@@ -1103,8 +1118,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /**
          * @return Property value.
          */
-        int value() {
-            return val.intValue();
+        Integer value() {
+            return val != null ? val.intValue() : null;
         }
     }
 

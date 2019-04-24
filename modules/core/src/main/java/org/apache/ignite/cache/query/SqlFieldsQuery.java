@@ -50,6 +50,9 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Default value of the update internal batch size. */
+    private static final int DFLT_UPDATE_BATCH_SIZE = 1;
+
     /** Do not remove. For tests only. */
     @SuppressWarnings("NonConstantFieldWithUpperCaseName")
     private static boolean DFLT_LAZY;
@@ -89,6 +92,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private Boolean dataPageScanEnabled;
 
     /**
+     * Update internal batch size. Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     */
+    private int updateBatchSize = DFLT_UPDATE_BATCH_SIZE;
+
+    /**
      * Copy constructs SQL fields query.
      *
      * @param qry SQL query.
@@ -105,6 +114,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
         parts = qry.parts;
         schema = qry.schema;
         dataPageScanEnabled = qry.dataPageScanEnabled;
+        updateBatchSize = qry.updateBatchSize;
     }
 
     /**
@@ -406,6 +416,31 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
+    }
+
+    /**
+     * Gets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @return Update internal batch size
+     */
+    public int getUpdateBatchSize() {
+        return updateBatchSize;
+    }
+
+    /**
+     * Sets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @param updateBatchSize Update internal batch size.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setUpdateBatchSize(int updateBatchSize) {
+        this.updateBatchSize = updateBatchSize;
+
+        return this;
     }
 
     /**

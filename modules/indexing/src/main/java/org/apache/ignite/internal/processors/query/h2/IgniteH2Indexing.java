@@ -1269,6 +1269,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cancel Cancel.
      * @param timeout Timeout.
      * @return Fields query.
+     * @throws IgniteCheckedException On error.
      */
     private QueryCursorImpl<List<?>> executeSelectForDml(
         String schema,
@@ -1315,6 +1316,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param inTx Flag whether query is executed within transaction.
      * @param timeout Timeout.
      * @return Query result.
+     * @throws IgniteCheckedException On error.
      */
     private Iterable<List<?>> executeSelect0(
         QueryDescriptor qryDesc,
@@ -2350,7 +2352,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     List<List<List<?>>> cur = plan.createRows(argss);
 
                     //TODO: IGNITE-11176 - Need to support cancellation
-                    ress = DmlUtils.processSelectResultBatched(plan, cur, qryParams.pageSize());
+                    ress = DmlUtils.processSelectResultBatched(plan, cur, qryParams.updateBatchSize());
                 }
                 finally {
                     DmlUtils.restoreKeepBinaryContext(cctx, opCtx);
@@ -2624,7 +2626,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }, cancel);
         }
 
-        int pageSize = loc ? 0 : qryParams.pageSize();
+        int pageSize = qryParams.updateBatchSize();
 
         //TODO: IGNITE-11176 - Need to support cancellation
         return DmlUtils.processSelectResult(plan, cur, pageSize);
