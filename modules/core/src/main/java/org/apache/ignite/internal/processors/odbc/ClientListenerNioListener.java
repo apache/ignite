@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -65,7 +65,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Next connection id. */
-    private static AtomicInteger nextConnId = new AtomicInteger(1);
+    private static AtomicLong nextConnId = new AtomicLong(1);
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
@@ -328,10 +328,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
     /**
      * Generate unique connection id.
+     *
      * @return connection id.
      */
     private long nextConnectionId() {
-        return (ctx.discovery().localNode().order() << 32) + nextConnId.getAndIncrement();
+        return nextConnId.getAndIncrement();
     }
 
     /**

@@ -36,9 +36,11 @@ public class ConnectToStartingNodeTest {
     @Rule
     public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
-    /** */
+    /**
+     * Test connect attempts to a starting node.
+     */
     @Test
-    public void test() throws Exception {
+    public void testConnectToStartingNode() {
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
             Ignition.start(getServerConfiguration());
         });

@@ -529,8 +529,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean dropConnection(long id) {
-            assert (id >> 32) == ctx.discovery().localNode().order() : "Invalid connection id.";
-
             Collection<? extends GridNioSession> sessions = srv.sessions();
 
             for (GridNioSession ses : sessions) {
