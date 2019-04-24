@@ -66,7 +66,10 @@ public class FilePageStore implements PageStore {
     /** */
     private final IgniteOutClosure<File> fileProvider;
 
-    /** */
+    /**
+     * Caches the existance state of storage file. After it is initialized, it will be not set to null
+     * during FilePageStore lifecycle.
+     */
     private volatile Boolean fileExists;
 
     /** */
