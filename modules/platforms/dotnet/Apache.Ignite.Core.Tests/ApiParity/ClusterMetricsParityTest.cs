@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             // IGNITE-7127
             "TotalJobsExecutionTime",
             "CurrentPmeDuration",
-            "ReadOnlyMode",
+            "isReadOnlyMode",
             "ReadOnlyModeDuration"
         };
 
