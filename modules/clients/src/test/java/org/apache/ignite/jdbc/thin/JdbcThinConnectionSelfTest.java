@@ -248,15 +248,42 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /**
+     * Test update batch size property.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateBatchSize() throws Exception {
+        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";updateBatchSize=-1",
+            "Property cannot be lower than 1 [name=updateBatchSize, value=-1]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon)) {
+            for (JdbcThinTcpIo io: ios(conn))
+                assertNull(io.connectionProperties().getUpdateBatchSize());
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon
+            + ";updateBatchSize=1024")) {
+            for (JdbcThinTcpIo io: ios(conn))
+                assertEquals(1024, (int)io.connectionProperties().getUpdateBatchSize());
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag +
+            "&updateBatchSize=1024")) {
+            for (JdbcThinTcpIo io: ios(conn))
+                assertEquals(1024, (int)io.connectionProperties().getUpdateBatchSize());
+        }
+    }
+
+    /**
      * Test SQL hints.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testSqlHints() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
-            assertHints(conn, false, false, false, false, false,
-                false, affinityAwareness);
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
+            assertHints(conn, false, false, false, false, false, false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&distributedJoins=true")) {
