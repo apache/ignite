@@ -780,27 +780,10 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
     /** */
     private void checkNotNullCheckDmlInsertValues(CacheAtomicityMode atomicityMode) throws Exception {
-        executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL) WITH \"atomicity="
+        executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR NOT NULL, age INT) WITH \"atomicity="
             + atomicityMode.name() + "\"");
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                executeSql("INSERT INTO test(id, name) " +
-                    "VALUES (1, 'ok'), (2, NULLIF('a', 'a')), (3, 'ok')");
-
-                return null;
-            }
-        }, IgniteSQLException.class, ERR_MSG);
-
-        List<List<?>> result = executeSql("SELECT id, name FROM test ORDER BY id");
-
-        assertEquals(0, result.size());
-
-        executeSql("INSERT INTO test(id, name) VALUES (1, 'ok'), (2, 'ok2'), (3, 'ok3')");
-
-        result = executeSql("SELECT id, name FROM test ORDER BY id");
-
-        assertEquals(3, result.size());
+        checkNotNullInsertValues();
     }
 
     /** */
@@ -822,10 +805,16 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
         executeSql("ALTER TABLE test ADD COLUMN name VARCHAR NOT NULL");
 
+        checkNotNullInsertValues();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkNotNullInsertValues() throws Exception {
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                executeSql("INSERT INTO test(id, name, age) " +
-                    "VALUES (1, 'ok', 1), (2, NULLIF('a', 'a'), 2), (3, 'ok', 3)");
+                executeSql("INSERT INTO test(id, name, age) VALUES (2, NULLIF('a', 'a'), 2)");
 
                 return null;
             }
@@ -847,7 +836,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
     public void testNotNullCheckDmlInsertFromSelect() throws Exception {
         executeSql("CREATE TABLE test(id INT PRIMARY KEY, name VARCHAR, age INT)");
 
-        executeSql("INSERT INTO test(id, name, age) VALUES (1, 'Macy', 25), (2, null, 25), (3, 'John', 30)");
+        executeSql("INSERT INTO test(id, name, age) VALUES (2, null, 25)");
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -861,6 +850,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
         assertEquals(0, result.size());
 
+        executeSql("INSERT INTO test(id, name, age) VALUES (1, 'Macy', 25), (3, 'John', 30)");
         executeSql("DELETE FROM test WHERE id = 2");
 
         result = executeSql("INSERT INTO " + TABLE_PERSON + "(_key, name, age) " + "SELECT id, name, age FROM test");
@@ -906,9 +896,9 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return executeSql("UPDATE dest" +
-                    " p SET (name) = " +
-                    "(SELECT name FROM src t WHERE p.id = t.id)");
+                return executeSql("UPDATE dest p " +
+                    "SET (name) = (SELECT name FROM src t WHERE p.id = t.id) " +
+                    "WHERE p.id = 2");
             }
         }, IgniteSQLException.class, ERR_MSG);
 
