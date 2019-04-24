@@ -720,8 +720,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.consistency());
+            opCtx != null && opCtx.recovery());
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -985,8 +984,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         final boolean skipStore,
-        final boolean keepBinary,
-        final boolean consistency
+        final boolean keepBinary
     ) {
         assert keys != null;
 
@@ -1011,8 +1009,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 accessTtl,
                 filter,
                 skipStore,
-                keepBinary,
-                consistency);
+                keepBinary);
         }
         else {
             return new GridEmbeddedFuture<>(keyFut,
@@ -1034,8 +1031,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             accessTtl,
                             filter,
                             skipStore,
-                            keepBinary,
-                            consistency);
+                            keepBinary);
                     }
                 }
             );
@@ -1072,8 +1068,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final long accessTtl,
         @Nullable final CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary,
-        boolean consistency) {
+        boolean keepBinary) {
         int cnt = keys.size();
 
         if (tx == null) {
@@ -1159,8 +1154,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 createTtl,
                 accessTtl,
                 skipStore,
-                keepBinary,
-                consistency);
+                keepBinary);
 
             return new GridDhtEmbeddedFuture<>(
                 new C2<GridCacheReturn, Exception, Exception>() {

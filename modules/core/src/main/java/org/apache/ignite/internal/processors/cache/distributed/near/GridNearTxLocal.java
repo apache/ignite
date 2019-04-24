@@ -4372,8 +4372,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         long createTtl,
         long accessTtl,
         boolean skipStore,
-        boolean keepBinary,
-        boolean consistency) {
+        boolean keepBinary) {
         assert pessimistic();
 
         try {

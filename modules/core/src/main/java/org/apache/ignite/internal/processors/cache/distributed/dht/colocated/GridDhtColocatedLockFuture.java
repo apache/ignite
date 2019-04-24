@@ -174,9 +174,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     private final boolean recovery;
 
     /** */
-    private final boolean consistency;
-
-    /** */
     private int miniId;
 
     /** {@code True} when mappings are ready for processing. */
@@ -206,8 +203,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery,
-        boolean consistency
+        boolean recovery
     ) {
         super(CU.boolReducer());
 
@@ -225,7 +221,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
-        this.consistency = consistency;
 
         ignoreInterrupts();
 
@@ -1311,8 +1306,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             accessTtl,
             filter,
             skipStore,
-            keepBinary,
-            consistency);
+            keepBinary);
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
