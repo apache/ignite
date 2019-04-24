@@ -45,6 +45,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static org.apache.ignite.client.Config.getClientConfiguration;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -411,13 +412,5 @@ public class FunctionalTest {
             String.format("%s expected but no exception was received", ClientConnectionException.class.getName()),
             expEx
         );
-    }
-
-    /** */
-    private static ClientConfiguration getClientConfiguration() {
-        return new ClientConfiguration()
-            .setAddresses(Config.SERVER)
-            .setSendBufferSize(0)
-            .setReceiveBufferSize(0);
     }
 }
