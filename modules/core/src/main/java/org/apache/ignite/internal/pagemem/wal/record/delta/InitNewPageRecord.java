@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Initializes new page by calling {@link PageIO#initNewPage(long, long, int)}.
@@ -47,6 +49,18 @@ public class InitNewPageRecord extends PageDeltaRecord {
      * @param newPageId New page ID.
      */
     public InitNewPageRecord(int grpId, long pageId, int ioType, int ioVer, long newPageId) {
+        this(grpId, pageId, ioType, ioVer, newPageId, null);
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @param pageId  Page ID.
+     * @param ioType IO type.
+     * @param ioVer IO version.
+     * @param newPageId New page ID.
+     * @param log Logger for case data is invalid. Can be {@code null}, but is needed when processing existing storage.
+     */
+    public InitNewPageRecord(int grpId, long pageId, int ioType, int ioVer, long newPageId, @Nullable IgniteLogger log) {
         super(grpId, pageId);
 
         this.ioType = ioType;
@@ -56,10 +70,19 @@ public class InitNewPageRecord extends PageDeltaRecord {
         int newPartId = PageIdUtils.partId(newPageId);
         int partId = PageIdUtils.partId(pageId);
 
-        if (newPartId != partId) {
-            throw new AssertionError("Partition consistency failure: " +
-                "newPageId=" + Long.toHexString(newPageId) + " (newPartId: " + newPartId + ") " +
+        if (newPartId == 0 && newPartId != partId) {
+            U.warn(log, "Partition consistency warning: " +
+                "newPageId=" + Long.toHexString(newPageId) + " (newPartId: 0) " +
                 "pageId=" + Long.toHexString(pageId) + " (partId: " + partId + ")");
+
+            // Partition consistency failure came from https://issues.apache.org/jira/browse/IGNITE-11030
+            // This invalid record can come from persistent stores, version < 2.7.5 where this bug was not fixed.
+            newPartId = partId; // Just hack new page ID to make this record to be correctly applied.
+
+            this.newPageId = PageIdUtils.pageId(
+                newPartId,
+                PageIdUtils.flag(newPageId),
+                PageIdUtils.pageIndex(newPageId));
         }
     }
 
