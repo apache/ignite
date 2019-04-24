@@ -499,7 +499,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
-                    if (existing && locPart.state() == MOVING)
+                    if (existing && locPart.state() == MOVING && !locPart.isEmpty())
                         exchFut.addClearingPartition(grp, p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);

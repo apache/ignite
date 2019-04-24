@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -1443,7 +1442,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             pCntr = grp.mvccEnabled() ? new PartitionMvccTxUpdateCounterImpl() :
                 grp.hasAtomicCaches() ? new PartitionAtomicUpdateCounterImpl() :
                     ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
-                        new PartitionTxUpdateCounterDebugWrapper(grp, partId, 0) : new PartitionTxUpdateCounterImpl();
+                        new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
         }
 
         /**

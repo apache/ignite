@@ -2293,7 +2293,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         for (final int i : sequence(loaders)) {
             final IgniteDataStreamer ldr = clientNode.dataStreamer(cache.getName());
-
+            ldr.allowOverwrite(true); // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11793
             ldr.autoFlushFrequency(0);
 
             cls.add(new Callable<Void>() {
