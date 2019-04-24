@@ -40,7 +40,7 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public void init(long initUpdCntr, @Nullable byte[] cntrUpdData);
 
     /**
-     * @deprecated TODO LWM could be used as initial counter https://ggsystems.atlassian.net/browse/GG-17396
+     * @deprecated TODO LWM should be used as initial counter https://ggsystems.atlassian.net/browse/GG-17396
      */
     public long initial();
 

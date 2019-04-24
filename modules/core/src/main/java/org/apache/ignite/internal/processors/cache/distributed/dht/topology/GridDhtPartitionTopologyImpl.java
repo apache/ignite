@@ -1433,7 +1433,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
 
-                // TODO FIXME while stale check after counter updates ?
+                // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11800
                 if (exchangeVer != null) {
                     // Ignore if exchange already finished or new exchange started.
                     if (readyTopVer.compareTo(exchangeVer) > 0 || lastTopChangeVer.compareTo(exchangeVer) > 0) {

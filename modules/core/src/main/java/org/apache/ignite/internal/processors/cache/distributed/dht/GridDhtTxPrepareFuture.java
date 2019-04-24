@@ -1307,10 +1307,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 for (IgniteTxEntry write : req.writes()) {
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
-                    // TODO FIXME add test for transforms to WithFilter.
-                    // Counter shouldn't be generated for mvcc, local cache entries, NOOP operations and NOOP transforms.
-                    if (!entry.cached().isLocal() &&
-                        entry != null && entry.op() != NOOP &&
+                    assert entry != null && entry.cached() != null : entry;
+
+                    // Counter shouldn't be reserved for mvcc, local cache entries, NOOP operations and NOOP transforms.
+                    if (!entry.cached().isLocal() && entry.op() != NOOP &&
                         !(entry.op() == TRANSFORM &&
                             (entry.entryProcessorCalculatedValue() == null || // Possible for txs over cachestore
                                 entry.entryProcessorCalculatedValue().get1() == NOOP)))

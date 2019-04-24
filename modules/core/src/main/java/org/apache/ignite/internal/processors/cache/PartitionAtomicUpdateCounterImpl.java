@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Partition update counter for non-tx scenarios without support for tracking missed updates.
+ * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
  */
 public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter {
     /** Counter of applied updates in partition. */
@@ -33,7 +34,6 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /**
      * Initial counter points to last sequential update after WAL recovery.
-     * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
     private long initCntr;
 
@@ -68,7 +68,8 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
     }
 
     /**
-     * Updates counter by delta from start position. Used only in transactions.
+     * Updates counter by delta from start position.
+     *
      * @param start Start.
      * @param delta Delta.
      */
