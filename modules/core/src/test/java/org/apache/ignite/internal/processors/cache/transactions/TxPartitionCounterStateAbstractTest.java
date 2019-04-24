@@ -138,19 +138,26 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
                 setInitialSize(100 * MB).setMaxSize(100 * MB)));
 
-        if (!client) {
-            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-            ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setBackups(backups);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-            ccfg.setOnheapCacheEnabled(false);
-            ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
-
-            cfg.setCacheConfiguration(ccfg);
-        }
+        if (!client)
+            cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;
+    }
+
+    /**
+     * @param name Name.
+     */
+    protected CacheConfiguration cacheConfiguration(String name) {
+        CacheConfiguration ccfg = new CacheConfiguration(name);
+
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setBackups(backups);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setOnheapCacheEnabled(false);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
+        ccfg.setGroupName("test");
+
+        return ccfg;
     }
 
     /** {@inheritDoc} */

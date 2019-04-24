@@ -17,18 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -45,8 +48,7 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
      * rebalancing before it should always be cleared first OR deletes on supplier will not be visible on demander
      * causing partition desync.
      *
-     * TODO FIXME if partitions was partially historically rebalanced, it could be historically rebalanced again without
-     * clear.
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11799
      *
      * @throws Exception
      */
@@ -107,5 +109,83 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
         awaitPartitionMapExchange();
 
         assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     * Same as {@link #testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_MovingPartitionNotCleared} but
+     * new coordinator is demander.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
+        backups = 2;
+
+        Ignite crd = startGrids(SERVER_NODES);
+
+        crd.cluster().active(true);
+
+        int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
+
+        IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
+
+        List<Integer> p1Keys = partitionKeys(cache, primaryParts[0], 2, 0);
+        List<Integer> p2Keys = partitionKeys(cache, primaryParts[1], 2, 0);
+
+        assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.cluster().localNode(), p1Keys.get(0)));
+        assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.cluster().localNode(), p2Keys.get(0)));
+
+        final String primName = crd.name();
+
+        cache.put(p1Keys.get(0), 0); // Will be historically rebalanced.
+        cache.put(p1Keys.get(1), 1);
+
+        forceCheckpoint();
+
+        List<Ignite> backups = Arrays.asList(grid(1), grid(2));
+
+        assertFalse(backups.contains(crd));
+
+        final String demanderName = backups.get(0).name();
+
+        stopGrid(true, demanderName);
+
+        // Create counters delta.
+        cache.remove(p1Keys.get(1));
+        cache.put(p2Keys.get(1), 1); // Will be fully rebalanced.
+
+        stopAllGrids();
+
+        crd = startGrid(0);
+        startGrid(1);
+        startGrid(2);
+
+        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(crd);
+
+        // Block all rebalance from crd.
+        crdSpi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+
+        crd.cluster().active(true);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    crdSpi.waitForBlocked();
+
+                    // Stop before supplying rebalance. New rebalance must start with second backup as supplier
+                    // doing full rebalance.
+                    stopGrid(primName);
+                }
+                catch (InterruptedException e) {
+                    fail();
+                }
+            }
+        });
+
+        fut.get();
+
+        awaitPartitionMapExchange();
+
+        assertPartitionsSame(idleVerify(grid(demanderName), DEFAULT_CACHE_NAME));
     }
 }
