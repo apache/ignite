@@ -14,11 +14,18 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {Component, ViewChild} from '@angular/core';
+import {PopperContent} from 'ngx-popper';
 
-import igniteConsole from './app/app';
-import configurationLazyModule from './app/configuration/index.lazy';
-import {IgniteWebConsoleModule} from './app-angular';
-import {downgradeModuleFactory} from './app-angular/downgrade';
-
-angular.bootstrap(document, [igniteConsole.name, configurationLazyModule.name, downgradeModuleFactory(IgniteWebConsoleModule)], {strictDi: true});
+@Component({
+    selector: 'form-field-hint',
+    template: `
+        <popper-content>
+            <ng-content></ng-content>
+        </popper-content>
+    `
+})
+export class FormFieldHint {
+    @ViewChild(PopperContent)
+    popper: PopperContent
+}

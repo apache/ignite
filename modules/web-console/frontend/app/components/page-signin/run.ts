@@ -47,7 +47,8 @@ export function registerState($uiRouter: UIRouter) {
                         const restored = trans.router.stateService.target(name, params);
 
                         return restored.valid() ? restored : 'default-state';
-                    } catch (ignored) {
+                    }
+                    catch (ignored) {
                         return 'default-state';
                     }
                 })

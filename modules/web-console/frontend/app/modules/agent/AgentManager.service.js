@@ -175,7 +175,7 @@ export default class AgentManager {
         try {
             return JSON.parse(localStorage.cluster);
         }
-        catch (ignore) {
+        catch (ignored) {
             return null;
         }
         finally {
@@ -284,7 +284,7 @@ export default class AgentManager {
         try {
             localStorage.cluster = JSON.stringify(cluster);
         }
-        catch (ignore) {
+        catch (ignored) {
             // No-op.
         }
     }

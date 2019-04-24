@@ -22,7 +22,8 @@ const scrollIntoView = (() => {
     return (el: HTMLElement) => {
         try {
             el.scrollIntoView({block: 'center'});
-        } catch (e) {
+        }
+        catch (ignored) {
             el.scrollIntoView();
         }
     };

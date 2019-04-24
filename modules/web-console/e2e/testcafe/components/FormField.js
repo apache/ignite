@@ -69,6 +69,19 @@ export class FormField {
     }
 }
 
+export class AngularFormField extends FormField {
+    static ROOT_SELECTOR = 'form-field';
+    static LABEL_SELECTOR = 'label';
+    static CONTROL_SELECTOR = '[formcontrolname]';
+    static ERRORS_SELECTOR = 'form-field-errors';
+
+    async selectOption(label) {
+        await t
+            .click(this.control)
+            .click(this.control.find('option').withText(label));
+    }
+}
+
 /**
  * Not really a custom field, use for form fields at login and profile screens, these don't have "ignite" prefix
  */

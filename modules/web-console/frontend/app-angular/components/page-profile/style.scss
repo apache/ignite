@@ -14,11 +14,34 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+page-profile {
+    display: block;
+    max-width: 800px;
 
-import igniteConsole from './app/app';
-import configurationLazyModule from './app/configuration/index.lazy';
-import {IgniteWebConsoleModule} from './app-angular';
-import {downgradeModuleFactory} from './app-angular/downgrade';
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: var(--form-gap);
 
-angular.bootstrap(document, [igniteConsole.name, configurationLazyModule.name, downgradeModuleFactory(IgniteWebConsoleModule)], {strictDi: true});
+        .span-1 {
+            grid-column: span 1;
+        }
+        .span-2 {
+            grid-column: span 2;
+        }
+    }
+
+    .security-token-generate-button-container {
+        align-items: flex-end;
+        display: flex;
+        padding-bottom: 9px;
+    }
+
+    footer {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: max-content;
+        justify-content: flex-end;
+        grid-gap: var(--form-gap);
+    }
+}

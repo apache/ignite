@@ -90,8 +90,9 @@ export default class AuthService {
     async resendSignupConfirmation(email: string) {
         try {
             return await this.$http.post('/api/v1/activation/resend/', {email});
-        } catch (res) {
-            throw res.data;
+        }
+        catch (err) {
+            throw err.data;
         }
     }
 }

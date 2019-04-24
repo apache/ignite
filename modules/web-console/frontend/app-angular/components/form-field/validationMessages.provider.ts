@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {Injectable} from '@angular/core';
 
-import igniteConsole from './app/app';
-import configurationLazyModule from './app/configuration/index.lazy';
-import {IgniteWebConsoleModule} from './app-angular';
-import {downgradeModuleFactory} from './app-angular/downgrade';
-
-angular.bootstrap(document, [igniteConsole.name, configurationLazyModule.name, downgradeModuleFactory(IgniteWebConsoleModule)], {strictDi: true});
+@Injectable({
+    providedIn: 'root'
+})
+export class VALIDATION_MESSAGES {
+    required = 'Value is required';
+    email = 'Email has invalid format';
+    passwordMatch = 'Passwords do not match';
+}

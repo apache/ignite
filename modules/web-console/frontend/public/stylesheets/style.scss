@@ -24,6 +24,12 @@
 :root {
     --sans-serif-font: Roboto;
     --serif-font: Roboto_slab;
+    --page-side-padding: 30px;
+    --form-gap: 10px;
+    --error-red-R: 238;
+    --error-red-G: 43;
+    --error-red-B: 39;
+    --error-red: rgb(var(--error-red-R), var(--error-red-G), var(--error-red-B));
 }
 
 body {
@@ -256,10 +262,6 @@ body {
     overflow-x: hidden;
     display: flex;
     flex-direction: column;
-}
-
-:root {
-    --page-side-padding: 30px;
 }
 
 .wrapper {
@@ -1306,14 +1308,6 @@ input[type="number"]::-webkit-inner-spin-button {
 
 input[type="number"] {
     -moz-appearance: textfield;
-}
-
-input.ng-dirty.ng-invalid, button.ng-dirty.ng-invalid {
-    border-color: $ignite-invalid-color;
-
-    :focus {
-        border-color: $ignite-invalid-color;
-    }
 }
 
 .form-control-feedback {

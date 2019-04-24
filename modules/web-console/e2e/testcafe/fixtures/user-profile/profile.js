@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { Selector } from 'testcafe';
 import { dropTestDB, insertTestUser, resolveUrl } from '../../environment/envtools';
 import { createRegularUser } from '../../roles';
 import {pageProfile} from '../../page-models/pageProfile';
@@ -55,5 +54,5 @@ test('Testing user data change', async(t) => {
         .expect(pageProfile.lastName.control.value).eql(lastName)
         .expect(pageProfile.email.control.value).eql(email)
         .expect(pageProfile.company.control.value).eql(company)
-        .expect(pageProfile.country.control.innerText).eql(country);
+        .expect(pageProfile.country.control.value).eql(country);
 });

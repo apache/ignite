@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-page-profile {
-    max-width: 800px;
-    display: block;
+import {Component, Input, ViewChild, Inject, ElementRef, AfterViewInit, TemplateRef} from '@angular/core';
+import {FormField} from './formField.component';
 
-    panel-collapsible {
-        width: 100%;
-    }
+@Component({
+    selector: 'form-field-error',
+    template: `<ng-template #errorTemplate><ng-content></ng-content></ng-template>`
+})
+export class FormFieldError implements AfterViewInit {
+    @Input()
+    error: string;
 
-    footer {
-        display: flex;
-        justify-content: flex-end;
-    }
+    @ViewChild('errorTemplate')
+    template: TemplateRef<any>;
 
-    .btn-ignite + .btn-ignite {
-        margin-left: 10px;
+    static parameters = [[new Inject(ElementRef)], [new Inject(FormField)]];
+
+    constructor(private ref: ElementRef, private formField: FormField) {}
+
+    ngAfterViewInit() {
+        this.formField.addExtraErrorMessage(this.error, this.template);
     }
 }

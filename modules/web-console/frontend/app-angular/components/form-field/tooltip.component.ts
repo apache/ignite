@@ -14,23 +14,30 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-import component from './component';
-import './style.scss';
+import {Component, Input} from '@angular/core';
+import {PopperContent} from 'ngx-popper';
 
-export default angular
-    .module('ignite-console.page-profile', [
-        'ignite-console.user'
-    ])
-    .config(['$stateProvider', ($stateProvider) => {
-        // set up the states
-        $stateProvider.state('base.settings.profile', {
-            url: '/profile',
-            component: 'pageProfile',
-            permission: 'profile',
-            tfMetaTags: {
-                title: 'User profile'
-            }
-        });
-    }])
-    .component('pageProfile', component);
+@Component({
+    selector: 'form-field-tooltip',
+    template: `
+        <ignite-icon
+            name='info'
+            [popper]='content'
+            popperApplyClass='ignite-popper,ignite-popper__tooltip'
+            popperTrigger='hover'
+            popperAppendTo='body'
+        ></ignite-icon>
+    `,
+    styles: [`
+        :host {
+            display: inline-flex;
+        }
+        ignite-icon {
+            color: #0067b9;
+        }
+    `]
+})
+export class FormFieldTooltip {
+    @Input()
+    content: PopperContent
+}

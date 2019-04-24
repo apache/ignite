@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {Directive, AfterViewInit, Inject, ElementRef} from '@angular/core';
 
-import igniteConsole from './app/app';
-import configurationLazyModule from './app/configuration/index.lazy';
-import {IgniteWebConsoleModule} from './app-angular';
-import {downgradeModuleFactory} from './app-angular/downgrade';
+@Directive({selector: 'input[autofocus]'})
+export class Autofocus implements AfterViewInit {
+    static parameters = [[new Inject(ElementRef)]];
 
-angular.bootstrap(document, [igniteConsole.name, configurationLazyModule.name, downgradeModuleFactory(IgniteWebConsoleModule)], {strictDi: true});
+    constructor(private el: ElementRef<HTMLInputElement>) {}
+
+    ngAfterViewInit() {
+        setTimeout(() => this.el.nativeElement.focus(), 0);
+    }
+}

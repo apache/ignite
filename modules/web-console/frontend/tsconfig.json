@@ -7,7 +7,12 @@
         "noEmit": true,
         "allowJs": true,
         "checkJs": true,
-        "baseUrl": "."
+        "baseUrl": ".",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "plugins": [
+            {"name": "@angular/language-service"}
+        ]
     },
     "exclude": [
         "build"

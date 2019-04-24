@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-import {CustomFormField} from '../components/FormField';
-import {PanelCollapsible} from '../components/PanelCollapsible';
+import {AngularFormField} from '../components/FormField';
+import {AngularPanelCollapsible} from '../components/PanelCollapsible';
 import {Selector} from 'testcafe';
 
 export const pageProfile = {
-    firstName: new CustomFormField({id: 'firstNameInput'}),
-    lastName: new CustomFormField({id: 'lastNameInput'}),
-    email: new CustomFormField({id: 'emailInput'}),
-    phone: new CustomFormField({id: 'phoneInput'}),
-    country: new CustomFormField({id: 'countryInput'}),
-    company: new CustomFormField({id: 'companyInput'}),
+    firstName: new AngularFormField({id: 'firstName'}),
+    lastName: new AngularFormField({id: 'lastName'}),
+    email: new AngularFormField({id: 'email'}),
+    phone: new AngularFormField({id: 'phone'}),
+    country: new AngularFormField({id: 'country'}),
+    company: new AngularFormField({id: 'company'}),
     securityToken: {
-        panel: new PanelCollapsible('security token'),
+        panel: new AngularPanelCollapsible('security token'),
         generateTokenButton: Selector('a').withText('Generate Random Security Token?'),
-        value: new CustomFormField({id: 'securityTokenInput'})
+        value: new AngularFormField({id: 'securityToken'})
     },
     password: {
-        panel: new PanelCollapsible('password'),
-        newPassword: new CustomFormField({id: 'passwordInput'}),
-        confirmPassword: new CustomFormField({id: 'passwordConfirmInput'})
+        panel: new AngularPanelCollapsible('password'),
+        newPassword: new AngularFormField({id: 'newPassword'}),
+        confirmPassword: new AngularFormField({id: 'confirmPassword'})
     },
     saveChangesButton: Selector('.btn-ignite.btn-ignite--success').withText('Save Changes')
 };

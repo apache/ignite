@@ -129,6 +129,13 @@ const config = {
             {
                 test: require.resolve('nvd3'),
                 use: 'expose-loader?nv'
+            },
+            {
+                // Mark files inside `@angular/core` as using SystemJS style dynamic imports.
+                // Removing this will cause deprecation warnings to appear.
+                // https://github.com/angular/angular/issues/21560#issuecomment-433601967
+                test: /[\/\\]@angular[\/\\]core[\/\\].+\.js$/,
+                parser: { system: true } // enable SystemJS
             }
         ]
     },

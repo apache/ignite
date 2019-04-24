@@ -25,3 +25,13 @@ export class PanelCollapsible {
         });
     }
 }
+
+export class AngularPanelCollapsible {
+    constructor(title) {
+        this._selector = Selector('panel-collapsible-angular>.heading>.title').withText(title).parent('panel-collapsible-angular');
+        this.heading = this._selector.find('.heading');
+        this.body = this._selector.addCustomDOMProperties({
+            isOpened: (el) => el.hasAttribute('open')
+        });
+    }
+}

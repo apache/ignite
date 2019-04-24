@@ -106,7 +106,7 @@ export function service($root, $modal, igniteGettingStarted) {
         try {
             localStorage.showGettingStarted = !scope.ui.dontShowGettingStarted;
         }
-        catch (ignore) {
+        catch (ignored) {
             // No-op.
         }
 
@@ -122,7 +122,7 @@ export function service($root, $modal, igniteGettingStarted) {
                 scope.ui.dontShowGettingStarted = !(_.isNil(localStorage.showGettingStarted)
                         || localStorage.showGettingStarted === 'true');
             }
-            catch (ignore) {
+            catch (ignored) {
                 // No-op.
             }
 

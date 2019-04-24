@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
-import controller from './controller';
+import {NgHybridStateDeclaration} from '@uirouter/angular-hybrid';
+import {PageProfile} from '.';
 
-export default {
-    template,
-    controller
-};
+export const states: NgHybridStateDeclaration[] = [
+    {
+        name: 'base.settings.profile',
+        url: '/profile',
+        component: PageProfile,
+        permission: 'profile',
+        tfMetaTags: {
+            title: 'User profile'
+        }
+    }
+];

@@ -424,7 +424,7 @@ export class ModalImportModels {
                     }
                 });
             }
-            catch (ignore) {
+            catch (ignored) {
                 // No-op.
             }
         }

@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {UpgradeComponent} from '@angular/upgrade/static';
+import {Directive, ElementRef, Injector, Inject, Input} from '@angular/core';
 
-import igniteConsole from './app/app';
-import configurationLazyModule from './app/configuration/index.lazy';
-import {IgniteWebConsoleModule} from './app-angular';
-import {downgradeModuleFactory} from './app-angular/downgrade';
+@Directive({
+    selector: 'global-progress-line'
+})
+export class GlobalProgressLine extends UpgradeComponent {
+    static parameters = [[new Inject(ElementRef)], [new Inject(Injector)]];
 
-angular.bootstrap(document, [igniteConsole.name, configurationLazyModule.name, downgradeModuleFactory(IgniteWebConsoleModule)], {strictDi: true});
+    constructor(elRef: ElementRef, injector: Injector) {
+        super('globalProgressLine', elRef, injector);
+    }
+
+    @Input()
+    isLoading: boolean
+}
+
+export const upgradedComponents = [
+    GlobalProgressLine
+];

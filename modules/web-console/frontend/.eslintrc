@@ -70,7 +70,8 @@ rules:
     max-nested-callbacks: [1, 4]
     max-params: [0, 3]
     max-statements: [0, 10]
-    new-cap: 2
+    // This rule conflicts with TS decorators
+    // new-cap: 2
     new-parens: 2
     no-alert: 2
     no-array-constructor: 2
