@@ -126,9 +126,13 @@ import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -149,10 +153,11 @@ import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_C
  * Common abstract test for Ignite tests.
  */
 @SuppressWarnings({
-    "TransientFieldInNonSerializableClass",
-    "ProhibitedExceptionDeclared"
+    "ExtendsUtilityClass",
+    "ProhibitedExceptionDeclared",
+    "TransientFieldInNonSerializableClass"
 })
-public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
+public abstract class GridAbstractTest extends JUnitAssertAware {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
      *                  TO ANOTHER NODE.                          *
@@ -181,7 +186,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     @ClassRule public static final TestRule firstLastTestRule = new BeforeFirstAndAfterLastTestRule();
 
     /** Manages test execution and reporting. */
-    @Rule public transient TestRule runRule = (base, desc) -> new Statement() {
+    private transient TestRule runRule = (base, desc) -> new Statement() {
         @Override public void evaluate() throws Throwable {
             assert getName() != null : "getName returned null";
 
@@ -191,6 +196,29 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** Allows easy repeating for test. */
     @Rule public transient RepeatRule repeatRule = new RepeatRule();
+
+    /**
+     * Supports obtaining test name for JUnit4 framework in a way that makes it available for methods invoked
+     * from {@code runTest(Statement)}.
+     */
+    private transient TestName nameRule = new TestName();
+
+    /**
+     * Gets the name of the currently executed test case.
+     *
+     * @return Name of the currently executed test case.
+     */
+    public String getName() {
+        return nameRule.getMethodName();
+    }
+
+    /**
+     * Provides the order of JUnit TestRules. Because of JUnit framework specifics {@link #nameRule} must be invoked
+     * first.
+     */
+    @Rule public transient RuleChain nameAndRunRulesChain = RuleChain
+        .outerRule(nameRule)
+        .around(runRule);
 
     /** */
     private static transient boolean startGrid;
@@ -259,6 +287,52 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         log = new GridTestLog4jLogger();
 
         GridAbstractTest.startGrid = startGrid;
+    }
+
+    /**
+     * Called before execution of every test method in class.
+     * <p>
+     * Do not annotate with {@link Before} in overriding methods.</p>
+     *
+     * @throws Exception If failed. {@link #afterTest()} will be called anyway.
+     */
+    protected void beforeTest() throws Exception {
+        // No-op.
+    }
+
+    /**
+     * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
+     * execution.
+     * <p>
+     * Do not annotate with {@link After} in overriding methods.</p>
+     *
+     * @throws Exception If failed.
+     */
+    protected void afterTest() throws Exception {
+        // No-op.
+    }
+
+    /**
+     * Called before execution of all test methods in class.
+     * <p>
+     * Do not annotate with {@link BeforeClass} in overriding methods.</p>
+     *
+     * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
+     */
+    protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
+    /**
+     * Called after execution of all test methods in class or if {@link #beforeTestsStarted()} failed without
+     * execution of any test methods.
+     * <p>
+     * Do not annotate with {@link AfterClass} in overriding methods.</p>
+     *
+     * @throws Exception If failed.
+     */
+    protected void afterTestsStopped() throws Exception {
+        // No-op.
     }
 
     /**
@@ -576,7 +650,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             t.printStackTrace();
 
             try {
-                tearDown();
+                cleanUpTestEnviroment();
             }
             catch (Exception e) {
                 log.error("Failed to tear down test after exception was thrown in beforeTestsStarted (will " +
@@ -584,6 +658,31 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             }
 
             throw t;
+        }
+    }
+
+    /**
+     * Runs after each test. Is responsible for clean up test enviroment in accordance with {@link #afterTest()}
+     * method overriding.
+     *
+     * @throws Exception If failed.
+     */
+    private void cleanUpTestEnviroment() throws Exception {
+        long dur = System.currentTimeMillis() - ts;
+
+        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+
+        try {
+            afterTest();
+        }
+        finally {
+            serializedObj.clear();
+
+            Thread.currentThread().setContextClassLoader(clsLdr);
+
+            clsLdr = null;
+
+            cleanReferences();
         }
     }
 
@@ -2040,7 +2139,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
 
     /** Runs test with the provided scenario. */
     private void runTest(Statement testRoutine) throws Throwable {
-        setUp();
+        prepareTestEnviroment();
         
         try {
             final AtomicReference<Throwable> ex = new AtomicReference<>();
@@ -2098,7 +2197,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
         finally {
             try {
-                tearDown();
+                cleanUpTestEnviroment();
             }
             catch (Exception e) {
                 log.error("Failed to execute tear down after test (will ignore)", e);
@@ -2107,11 +2206,12 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     }
 
     /**
-     * Runs before each test.
+     * Runs before each test. Is responsible for prepare test enviroment in accordance with {@link #beforeTest()}
+     * method overriding.
      *
      * @throws Exception If failed.
      */
-    private void setUp() throws Exception {
+    private void prepareTestEnviroment() throws Exception {
         stopGridErr = false;
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -2129,7 +2229,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
         catch (Exception | Error t) {
             try {
-                tearDown();
+                cleanUpTestEnviroment();
             }
             catch (Exception e) {
                 log.error("Failed to tear down test after exception was thrown in beforeTest (will ignore)", e);
@@ -2139,31 +2239,6 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
         }
 
         ts = System.currentTimeMillis();
-    }
-
-    /**
-     * Runs after each test.
-     *
-     * @throws Exception If failed.
-     */
-    private void tearDown() throws Exception {
-        long dur = System.currentTimeMillis() - ts;
-
-        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
-
-        try {
-            afterTest();
-        }
-        finally {
-            if (!keepSerializedObjects())
-                serializedObj.clear();
-
-            Thread.currentThread().setContextClassLoader(clsLdr);
-
-            clsLdr = null;
-
-            cleanReferences();
-        }
     }
 
     /**
