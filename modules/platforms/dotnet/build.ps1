@@ -195,6 +195,18 @@ if (!$skipDotNet) {
 	echo "Starting MsBuild: '$msBuildCommand'"
 	cmd /c $msBuildCommand
 
+    # Build core
+    $targetSolution =  ".\Apache.Ignite\Apache.Ignite.DotNetCore.csproj"
+    if ($clean) {
+        $cleanCommand = "dotnet clean $targetSolution -c $configuration"
+        echo "Starting dotnet clean: '$cleanCommand'"
+        cmd /c $cleanCommand
+    }
+
+    $publishCommand = "dotnet publish $targetSolution -c $configuration"
+	echo "Starting dotnet publish: '$publishCommand'"
+	cmd /c $publishCommand
+
 	# Check result
 	if ($LastExitCode -ne 0) {
 		echo ".NET build failed."
