@@ -1564,6 +1564,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public long reservedCounter() {
+            return pCntr.reserved();
+        }
+
+        /** {@inheritDoc} */
         @Override public PartitionUpdateCounter partUpdateCounter() {
             return pCntr;
         }

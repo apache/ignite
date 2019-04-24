@@ -29,7 +29,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -794,6 +793,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param primary Primary.
          */
         protected void onAllPrimaryPrepared(IgniteEx primary) {
@@ -801,6 +802,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param backup Backup.
          * @param tx Tx.
          * @param idx Index.
@@ -812,7 +815,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
-         * TODO FIXME callbacks are called only for defined order: add to javadoc!!
+         * Note: callbacks are called only if node presents in defined order.
          *
          * @param primary Primary.
          * @param idx Index.
@@ -824,6 +827,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param backup Backup node.
          * @param idx Index.
          */
@@ -835,6 +840,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param primary Primary node.
          */
         protected void onAllPrimaryCommitted(IgniteEx primary) {
@@ -842,6 +849,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param backup Backup node.
          */
         protected void onAllBackupCommitted(IgniteEx backup) {
@@ -849,7 +858,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
-         *
          * @param primary Primary node.
          * @param tx Primary tx.
          */

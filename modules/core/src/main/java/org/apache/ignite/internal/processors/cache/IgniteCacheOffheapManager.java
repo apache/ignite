@@ -632,9 +632,14 @@ public interface IgniteCacheOffheapManager {
         void updateSize(int cacheId, long delta);
 
         /**
-         * @return Update counter.
+         * @return Update counter (LWM).
          */
         long updateCounter();
+
+        /**
+         * @return Reserved counter (HWM).
+         */
+        long reservedCounter();
 
         /**
          * @return Update counter or {@code null} if store is not yet created.

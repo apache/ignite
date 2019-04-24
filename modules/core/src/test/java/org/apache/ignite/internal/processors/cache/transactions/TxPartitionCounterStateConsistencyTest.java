@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -368,32 +366,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
     }
 
-    public static final String DEFAULT_CACHE_NAME_2 = DEFAULT_CACHE_NAME + "2";
-
-    @Test
-    public void testPut() throws Exception {
-        backups = 2;
-
-        Ignite crd = startGridsMultiThreaded(SERVER_NODES);
-
-        IgniteEx client = startGrid("client");
-
-        assertNotNull(client.createCache(cacheConfiguration(DEFAULT_CACHE_NAME_2)));
-
-        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            List<Integer> keys0 = partitionKeys(client.cache(DEFAULT_CACHE_NAME), 1, 10, 0);
-            List<Integer> keys2 = partitionKeys(client.cache(DEFAULT_CACHE_NAME_2), 9, 10, 0);
-
-            for (Integer k : keys0)
-                client.cache(DEFAULT_CACHE_NAME).put(k, k);
-
-            for (Integer k : keys2)
-                client.cache(DEFAULT_CACHE_NAME_2).put(k, k);
-
-            tx.commit();
-        }
-    }
-
     /**
      * @param ignite Ignite.
      */
@@ -506,5 +478,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         public TestVal(int id) {
             this.id = id;
         }
+    }
+
+    /**
+     * Use increased timeout because history rebalance could take a while.
+     * Better to have utility method allowing to wait for specific rebalance future.
+     */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return getTestTimeout();
     }
 }

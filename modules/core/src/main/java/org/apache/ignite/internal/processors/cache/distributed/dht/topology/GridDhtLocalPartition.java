@@ -1022,7 +1022,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param primaryCntr Primary counter.
      */
     public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
-        long nextCntr;
+        Long nextCntr;
 
         if (primaryCntr != null)
             nextCntr = primaryCntr;
@@ -1033,6 +1033,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             // Null must never be returned on primary node.
             nextCntr = txCounters.generateNextCounter(cacheId, id());
+
+            assert nextCntr != null : this;
         }
 
         if (grp.sharedGroup())
@@ -1042,10 +1044,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return Current update counter.
+     * @return Current update counter (LWM).
      */
     public long updateCounter() {
         return store.updateCounter();
+    }
+
+    /**
+     * @return Current reserved counter (HWM).
+     */
+    public long reservedCounter() {
+        return store.reservedCounter();
     }
 
     /**

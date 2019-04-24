@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -1114,13 +1113,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     if (locPart == null)
                         return -1L;
 
-                    PartitionUpdateCounter cntr = locPart.dataStore().partUpdateCounter();
-
-                    if (cntr == null)
-                        return 0;
-
                     // Use HWM for primary, LWM for backup.
-                    return backup ? cntr.get() : cntr.reserved();
+                    return backup ? locPart.updateCounter() : locPart.reservedCounter();
                 }
             };
 
