@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCacheRestartingException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -141,7 +142,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
                 runTxOnCacheStop(conc, iso, ig, false);
 
-                runCacheStopInMidTx(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, ig);
+                runCacheStopInMidTx(conc, iso, ig);
             }
 
         ig.cluster().active(false);
@@ -150,7 +151,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void runTxOnCacheStop(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig, boolean runConc)
+    private void runTxOnCacheStop(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig, boolean runConc)
         throws Exception {
         CountDownLatch destroyLatch = new CountDownLatch(1);
 
@@ -201,11 +202,13 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         });
 
         IgniteInternalFuture f1 = GridTestUtils.runAsync(() -> {
+            byte[] val = new byte[1024];
+
             try (Transaction tx = ig.transactions().txStart(conc, iso, 1_000, 2)) {
                 try {
-                    cache.put(100, new byte[1024]);
+                    cache.put(100, val);
 
-                    cache2.put(100, new byte[1024]);
+                    cache2.put(100, val);
                 } catch (IgniteCacheRestartingException e) {
                     e.restartFuture().get();
                 }
@@ -213,13 +216,19 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 tx.commit();
             } catch (IgniteException e) {
                 assertTrue(X.hasCause(e, IgniteTxTimeoutCheckedException.class)
-                    || X.hasCause(e, CacheInvalidStateException.class));
+                    || X.hasCause(e, CacheInvalidStateException.class) || X.hasCause(e, IgniteException.class));
             }
-
         });
 
         f1.get();
         f0.get();
+
+        try {
+            if (conc == TransactionConcurrency.OPTIMISTIC)
+                assertTrue(cache2.get(100) == cache.get(100));
+        } catch (IllegalStateException e) {
+            assertTrue(X.hasCause(e, CacheStoppedException.class));
+        }
 
         spi.stopBlock();
     }
@@ -227,7 +236,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void runCacheStopInMidTx(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig) throws Exception {
+    private void runCacheStopInMidTx(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig) throws Exception {
         CountDownLatch destroyLatch = new CountDownLatch(1);
 
         CountDownLatch putLatch = new CountDownLatch(1);
@@ -241,6 +250,8 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         final IgniteCache<Integer, byte[]> cache = ig.getOrCreateCache(ccfg);
+
+        final IgniteCache<Integer, byte[]> cache2 = ig.cache(CACHE_2_NAME);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ig);
 
@@ -257,9 +268,13 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         });
 
         IgniteInternalFuture f1 = GridTestUtils.runAsync(() -> {
-            try (Transaction tx = ig.transactions().txStart(conc, iso)) {
+            byte[] val = new byte[1024];
+
+            try (Transaction tx = ig.transactions().txStart(conc, iso, 1_000, 2)) {
                 try {
-                    cache.put(100, new byte[1024]);
+                    cache.put(100, val);
+
+                    cache2.put(100, val);
 
                     putLatch.countDown();
                 } catch (IgniteCacheRestartingException e) {
@@ -271,7 +286,8 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 tx.commit();
             } catch (IgniteException e) {
                 assertTrue(X.hasCause(e, CacheInvalidStateException.class) ||
-                    X.hasCause(e, CacheStoppedException.class) || X.hasCause(e, TransactionRollbackException.class) );
+                    X.hasCause(e, CacheStoppedException.class) || X.hasCause(e, TransactionRollbackException.class) ||
+                    X.hasCause(e, IgniteException.class));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
