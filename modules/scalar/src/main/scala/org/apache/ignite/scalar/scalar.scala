@@ -69,8 +69,8 @@ import scala.annotation.meta.field
  * Scalar needs to be imported in a proper way so that necessary objects and implicit
  * conversions got available in the scope:
  * <pre name="code" class="scala">
- * import org.apache.ignite.scalar._
- * import scalar._
+ * import org.apache.ignite.scalar.scalar
+ * import org.apache.ignite.scalar.scalar._
  * </pre>
  * This way you import object `scalar` as well as all methods declared or inherited in that
  * object as well.
