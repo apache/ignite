@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCluster;
-import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 
 /**
  * SQL state codes.

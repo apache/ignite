@@ -338,12 +338,14 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     /**
      * Gets cluster read-only mode status.
      */
+     @Override
      @MXBeanDescription("Cluster read-only mode status.")
      public boolean isReadOnlyMode();
 
     /**
      * Gets duration of read-only mode enabled on cluster.
      */
+     @Override
      @MXBeanDescription("Duration of read-only mode enabled on cluster.")
      public long getReadOnlyModeDuration();
 }

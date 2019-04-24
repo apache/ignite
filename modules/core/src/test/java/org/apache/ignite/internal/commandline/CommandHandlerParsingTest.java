@@ -25,7 +25,6 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
