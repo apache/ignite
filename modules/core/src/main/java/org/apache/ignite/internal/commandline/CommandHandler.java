@@ -236,12 +236,24 @@ public class CommandHandler {
         }
     }
 
+    /**
+     * @param args Common arguments.
+     * @return Thin client configuration to connect to cluster.
+     * @throws IgniteCheckedException If error occur.
+     */
     @NotNull private GridClientConfiguration getClientConfiguration(
         ConnectionAndSslParameters args
     ) throws IgniteCheckedException {
         return getClientConfiguration(args.userName(), args.password(), args);
     }
 
+    /**
+     * @param userName User name for authorization.
+     * @param password Password for authorization.
+     * @param args Common arguments.
+     * @return Thin client configuration to connect to cluster.
+     * @throws IgniteCheckedException If error occur.
+     */
     @NotNull private GridClientConfiguration getClientConfiguration(
         String userName,
         String password,
@@ -264,6 +276,13 @@ public class CommandHandler {
         return clientCfg;
     }
 
+    /**
+     * @param userName User name for authorization.
+     * @param password Password for authorization.
+     * @param clientCfg Thin client configuration to connect to cluster.
+     * @return Security credentials provider with usage of given user name and password.
+     * @throws IgniteCheckedException If error occur.
+     */
     @NotNull private SecurityCredentialsProvider getSecurityCredentialsProvider(
         String userName,
         String password,
@@ -281,6 +300,10 @@ public class CommandHandler {
         return securityCredential;
     }
 
+    /**
+     * @param args Commond args.
+     * @return Ssl support factory.
+     */
     @NotNull private GridSslBasicContextFactory createSslSupportFactory(ConnectionAndSslParameters args) {
         GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 

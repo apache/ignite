@@ -153,7 +153,7 @@ public class TxCommands extends Command<VisorTxTaskArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt0() {
+    @Override public String confirmationPrompt() {
         if (args.getOperation() == VisorTxOperation.KILL)
             return "Warning: the command will kill some transactions.";
 

@@ -80,7 +80,7 @@ public class WalCommands extends Command<T2<String, String>> {
     }
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt0() {
+    @Override public String confirmationPrompt() {
         if (WAL_DELETE.equals(walAct))
             return "Warning: the command will delete unused WAL segments.";
 

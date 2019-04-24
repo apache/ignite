@@ -28,8 +28,23 @@ import org.apache.ignite.internal.client.GridClientFactory;
  * @param <T> Generic for getArg method which should return command-specific paramters which it would be run with.
  */
 public abstract class Command<T> {
+    /**
+     * Actual command execution. Parameters for run should be already set by calling parseArguments method.
+     *
+     * @param clientCfg Thin client configuration if connection to cluster is necessary.
+     * @param logger Logger to use.
+     * @return Result of operation (mostly usable for tests).
+     * @throws Exception If error occur.
+     */
     public abstract Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
 
+    /**
+     * Method to create thin client for communication with cluster.
+     *
+     * @param clientCfg Thin client configuration.
+     * @return Grid thin client instance which is already connected to cluster.
+     * @throws Exception If error occur.
+     */
     protected final GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
         GridClient client = GridClientFactory.start(clientCfg);
 
@@ -40,17 +55,24 @@ public abstract class Command<T> {
         return client;
     }
 
-    protected String confirmationPrompt0() {
+    /**
+     * @return Message text to show user for. If null it means that confirmantion is not needed.
+     */
+    public String confirmationPrompt() {
         return null;
     }
 
+    /**
+     * Parse command-specific arguments.
+     *
+     * @param argIterator Argument iterator.
+     */
     public void parseArguments(CommandArgIterator argIterator) {
         //Empty block.
     }
 
-    public final String confirmationPrompt() {
-        return confirmationPrompt0();
-    }
-
+    /**
+     * @return Command arguments which were parsed during {@link #parseArguments(CommandArgIterator)} call.
+     */
     public abstract T arg();
 }

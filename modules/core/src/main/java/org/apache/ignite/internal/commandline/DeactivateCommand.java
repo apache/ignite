@@ -23,7 +23,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 
 public class DeactivateCommand extends Command<Void> {
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt0() {
+    @Override public String confirmationPrompt() {
         return "Warning: the command will deactivate a cluster.";
     }
 

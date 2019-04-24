@@ -48,7 +48,7 @@ public class BaselineCommand extends Command<BaselineArguments> {
     private BaselineArguments baselineArgs;
 
     /** {@inheritDoc} */
-    @Override public String confirmationPrompt0() {
+    @Override public String confirmationPrompt() {
         if (BaselineSubcommands.COLLECT != baselineArgs.getCmd())
             return "Warning: the command will perform changes in baseline.";
 
