@@ -137,8 +137,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withPartitionRecover();
 
     /**
-     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
-     * with forced backup nodes consistency check on each read attempt.
+     * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt.
      *
      * Consistency check means that each backup node will be checked to have the same entry as primary node has.
      * In case consistency violation found:
@@ -146,6 +145,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * -- automaticaly for OPTIMISTIC || READ_COMMITTED transactions
      * -- at commit() for PESSIMISTIC && !READ_COMMITTED transactions
      * - consistency violation event will be recorded in case it's configured as recordable
+     *
+     * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
+     * already cached inside the transaction. In case you use !READ_COMMITTED isolation mode and already have
+     * cached value, for example read the value or performed a write, you'll gain the cached value.
      *
      * @return Cache with explicit consistency check on each read.
      */

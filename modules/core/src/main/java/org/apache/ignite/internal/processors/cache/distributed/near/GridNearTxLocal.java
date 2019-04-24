@@ -2595,16 +2595,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         val = txEntry.applyEntryProcessors(val);
 
                     if (val != null) {
-                        if (consistency) {
-                            throw new IgniteCheckedException((txEntry.op() != READ) ?
-                                "Consistency-get operation can not be performed after update operation " +
-                                    "inside the same transaction." :
-                                "Some values were read from explicit transaction's cache due to isolation mode. " +
-                                    "Consistency-get operation should always use non-cached values. " +
-                                    "It should be performed as a first get operation at " +
-                                    "REPEATABLE_READ or SERIALIZABLE transactions. ");
-                        }
-
                         GridCacheVersion ver = null;
 
                         if (needVer) {
