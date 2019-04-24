@@ -11,7 +11,7 @@
 #
 
 Name:             apache-ignite
-Version:          2.7.0
+Version:          2.7.5
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
@@ -265,6 +265,9 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 #
 # Changelog
 #
+
+* Fri Apr 12 2019 Peter Ivanov <mr.weider@gmail.com> - 2.7.5-1
+- Updated Apache Ignite to version 2.7.5
 
 * Thu Jul 26 2018 Peter Ivanov <mr.weider@gmail.com> - 2.7.0-1
 - Updated Apache Ignite to version 2.7.0
