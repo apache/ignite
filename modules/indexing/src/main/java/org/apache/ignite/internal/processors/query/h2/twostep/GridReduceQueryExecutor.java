@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -290,14 +290,20 @@ public class GridReduceQueryExecutor {
      * @param r Query run.
      * @param nodeId Failed node ID.
      * @param msg Error message.
+     * @param failCode Fail code of a map query.
      */
     private void fail(ReduceQueryRun r, UUID nodeId, String msg, byte failCode) {
         if (r != null) {
-            CacheException e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
-                ", errMsg=" + msg + ']');
+            final CacheException e;
 
-            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR)
-                e.addSuppressed(new QueryCancelledException());
+            if (failCode == GridQueryFailResponse.CANCELLED_BY_ORIGINATOR) {
+                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
+                    ", errMsg=" + msg + ']', new QueryCancelledException());
+            }
+            else {
+                e = new CacheException("Failed to execute map query on remote node [nodeId=" + nodeId +
+                    ", errMsg=" + msg + ']');
+            }
 
             r.setStateOnException(nodeId, e);
         }
@@ -1215,7 +1221,7 @@ public class GridReduceQueryExecutor {
      * @return {@code true} if exception is caused by cancel.
      */
     private boolean wasCancelled(CacheException e) {
-        return X.hasSuppressed(e, QueryCancelledException.class);
+        return X.hasCause(e, QueryCancelledException.class);
     }
 
     /**
@@ -1231,13 +1237,16 @@ public class GridReduceQueryExecutor {
         // For distributedJoins need always send cancel request to cleanup resources.
         if (distributedJoins)
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
-        else {
-            for (GridMergeIndex idx : r.indexes()) {
-                if (!idx.fetchedAll()) {
+
+        for (GridMergeIndex idx : r.indexes()) {
+            if (!idx.fetchedAll()) {
+                if (!distributedJoins) // cancel request has been already sent for distributed join.
                     send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
 
-                    break;
-                }
+                r.setStateOnException(ctx.localNodeId(),
+                    new CacheException("Query is canceled.", new QueryCancelledException()));
+
+                break;
             }
         }
 

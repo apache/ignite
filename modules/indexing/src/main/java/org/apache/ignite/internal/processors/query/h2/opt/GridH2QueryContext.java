@@ -400,6 +400,8 @@ public class GridH2QueryContext {
 
         assert x.key.equals(key);
 
+        x.cleared = true;
+
         if (x.lazyWorker() != null)
             x.lazyWorker().stop(nodeStop);
         else

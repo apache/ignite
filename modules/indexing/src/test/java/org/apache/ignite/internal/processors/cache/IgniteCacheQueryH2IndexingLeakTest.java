@@ -56,7 +56,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static final int THREAD_COUNT = 10;
 
     /** Timeout */
-    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 1000;
+    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 500;
 
     /** Orig cleanup period. */
     private static String origCacheCleanupPeriod;
@@ -183,7 +183,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return getStatementCacheSize(qryProc) == 0;
                 }
-            }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
+            }, STMT_CACHE_CLEANUP_TIMEOUT * 10));
         }
     }
 
