@@ -85,7 +85,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
+import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcResultSet;
+import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -1064,30 +1066,50 @@ public class GridMapQueryExecutor {
     private void onNextPageRequest(final ClusterNode node, final GridQueryNextPageRequest req) {
         final MapNodeResults nodeRess = qryRess.get(node.id());
 
+        final long reqId = req.queryRequestId();
+
         if (nodeRess == null) {
-            sendError(node, req.queryRequestId(), new CacheException("No node result found for request: " + req));
+            sendError(node, reqId, new CacheException("No node result found for request: " + req));
 
             return;
         }
         else if (nodeRess.cancelled(req.queryRequestId())) {
-            sendError(node, req.queryRequestId(), new QueryCancelledException());
+            sendError(node, reqId, new QueryCancelledException());
 
             return;
         }
 
-        final MapQueryResults qr = nodeRess.get(req.queryRequestId(), req.segmentId());
+        final MapQueryResults qr = nodeRess.get(reqId, req.segmentId());
 
         if (qr == null)
-            sendError(node, req.queryRequestId(), new CacheException("No query result found for request: " + req));
+            sendError(node, reqId, new CacheException("No query result found for request: " + req));
         else if (qr.cancelled())
-            sendError(node, req.queryRequestId(), new QueryCancelledException());
+            sendError(node, reqId, new QueryCancelledException());
         else {
             MapQueryLazyWorker lazyWorker = qr.lazyWorker();
 
             if (lazyWorker != null) {
                 lazyWorker.submit(new Runnable() {
                     @Override public void run() {
-                        sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+                        try {
+                            sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+                        }
+                        catch (Exception e) {
+                            GridH2RetryException retryEx = X.cause(e, GridH2RetryException.class);
+
+                            if (retryEx != null)
+                                sendError(node, reqId, retryEx);
+                            else {
+                                JdbcSQLException sqlEx = X.cause(e, JdbcSQLException.class);
+
+                                if (sqlEx != null && sqlEx.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
+                                    sendError(node, reqId, new QueryCancelledException());
+                                else
+                                    sendError(node, reqId, e);
+                            }
+
+                            qr.cancel(false);
+                        }
                     }
                 });
             }
