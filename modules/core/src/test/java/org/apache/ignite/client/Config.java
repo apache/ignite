@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -57,5 +58,13 @@ public class Config {
         igniteCfg.setIgniteInstanceName(UUID.randomUUID().toString());
 
         return igniteCfg;
+    }
+
+    /** */
+    public static ClientConfiguration getClientConfiguration() {
+        return new ClientConfiguration()
+            .setAddresses(SERVER)
+            .setSendBufferSize(0)
+            .setReceiveBufferSize(0);
     }
 }
