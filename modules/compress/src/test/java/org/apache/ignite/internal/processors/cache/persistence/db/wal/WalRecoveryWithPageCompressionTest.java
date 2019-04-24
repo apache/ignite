@@ -17,41 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DiskPageCompression;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 
 /**
- *
+ * WAL recovery test with WAL page compression enabled and PDS disk page compression disabled.
  */
+@WithSystemProperty(key = IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, value = "DISABLED")
 public class WalRecoveryWithPageCompressionTest extends IgniteWalRecoveryTest {
-    /** Old value of disk page compression system property. */
-    private static DiskPageCompression oldDiskPageCompression;
-
-    /**
-     * We need to clear default DiskPageCompression system property (which is set up by default for this test suite)
-     * to test WAL compression and data store compression separately.
-     */
-    @BeforeClass
-    public static void clearSystemProperty() {
-        oldDiskPageCompression = IgniteSystemProperties.getEnum(DiskPageCompression.class,
-            IGNITE_DEFAULT_DISK_PAGE_COMPRESSION);
-
-        System.clearProperty(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION);
-    }
-
-    /**
-     * Restore suite default DiskPageCompression system property.
-     */
-    @AfterClass
-    public static void restoreSystemProperty() {
-        if (oldDiskPageCompression != null)
-            System.setProperty(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, oldDiskPageCompression.name());
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
