@@ -458,12 +458,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         testOut.reset();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
-
-        assertTrue(testOut.toString().contains("garbage not found"));
-
-        testOut.reset();
-
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
             ignite(0).localNode().id().toString(), "--port", "11212"));
 
