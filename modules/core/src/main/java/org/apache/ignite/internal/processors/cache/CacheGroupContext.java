@@ -864,6 +864,7 @@ public class CacheGroupContext {
     }
 
     /**
+
      * @return {@code True} if current cache group is in recovery mode.
      */
     public boolean isRecoveryMode() {

@@ -75,7 +75,10 @@ public interface GridComponent {
         SERVICE_PROC,
 
         /** Distributed MetaStorage processor. */
-        META_STORAGE;
+        META_STORAGE,
+
+        /** Transactional data replication processor. */
+        TX_DR_PROC;
 
         /** Cached values array. */
         public static final DiscoveryDataExchangeType[] VALUES = values();

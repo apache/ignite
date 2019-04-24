@@ -81,7 +81,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -170,6 +169,8 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.txdr.NoOpTransactionalDrProcessor;
+import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
@@ -1030,6 +1031,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
+
+                // Start transactional data replication processor.
+                startProcessor(createComponent(TransactionalDrProcessor.class, ctx));
 
                 // Start plugins.
                 for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -3658,18 +3662,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         cluster().active(active);
     }
 
-    /** */
-    private Collection<BaselineNode> baselineNodes() {
-        Collection<ClusterNode> srvNodes = cluster().forServers().nodes();
-
-        ArrayList baselineNodes = new ArrayList(srvNodes.size());
-
-        for (ClusterNode clN : srvNodes)
-            baselineNodes.add(clN);
-
-        return baselineNodes;
-    }
-
     /** {@inheritDoc} */
     @Override public void resetLostPartitions(Collection<String> cacheNames) {
         CU.validateCacheNames(cacheNames);
@@ -4148,6 +4140,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
+
+        if (cls.equals(TransactionalDrProcessor.class))
+            return (T)new NoOpTransactionalDrProcessor(ctx);
 
         Class<T> implCls = null;
 

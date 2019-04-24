@@ -452,11 +452,11 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
 
     /** */
     private void checkRootsPageIdFlag(long treeRoot, long reuseListRoot) throws StorageException {
-        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+        if (PageIdUtils.flag(treeRoot) != FLAG_DATA)
             throw new StorageException("Wrong tree root page id flag: treeRoot="
                 + U.hexLong(treeRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
 
-        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_DATA)
+        if (PageIdUtils.flag(reuseListRoot) != FLAG_DATA)
             throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
                 + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
     }
@@ -515,11 +515,11 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                         //MetaStorage never encrypted so realPageSize == pageSize.
                         io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
 
-                        treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
-                        reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_DATA);
+                        treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, FLAG_DATA);
+                        reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, FLAG_DATA);
 
-                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA;
-                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA;
+                        assert PageIdUtils.flag(treeRoot) == FLAG_DATA;
+                        assert PageIdUtils.flag(reuseListRoot) == FLAG_DATA;
 
                         io.setTreeRoot(pageAddr, treeRoot);
                         io.setReuseListRoot(pageAddr, reuseListRoot);

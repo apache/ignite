@@ -490,7 +490,7 @@
                                 <packages>org.apache.ignite.springdata20.repository*</packages>
                             </group>
                             <group>
-                            <title>RocketMQ integration</title>
+                                <title>RocketMQ integration</title>
                                 <packages>org.apache.ignite.stream.rocketmq*</packages>
                             </group>
                             <group>

@@ -318,9 +318,8 @@ public class GridDhtPartitionDemander {
                     metrics.clearRebalanceCounters();
 
                     for (GridDhtPartitionDemandMessage msg : assignments.values()) {
-                        for (Integer partId : msg.partitions().fullSet()) {
+                        for (Integer partId : msg.partitions().fullSet())
                             metrics.onRebalancingKeysCountEstimateReceived(grp.topology().globalPartSizes().get(partId));
-                        }
 
                         CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
 
@@ -783,6 +782,9 @@ public class GridDhtPartitionDemander {
                             // If message was last for this partition,
                             // then we take ownership.
                             if (last) {
+                                if (ctx.kernalContext().txDr().shouldApplyUpdateCounterOnRebalance())
+                                    grp.offheap().onPartitionInitialCounterUpdated(p, supplyMsg.last().get(p));
+
                                 fut.partitionDone(nodeId, p, true);
 
                                 if (log.isDebugEnabled())

@@ -705,6 +705,15 @@ public class ZookeeperDiscoveryImpl {
     }
 
     /**
+     * Sets grid start time.
+     *
+     * @param val New time value.
+     */
+    public void setGridStartTime(long val) {
+        rtState.gridStartTime = val;
+    }
+
+    /**
      * Starts join procedure and waits for {@link EventType#EVT_NODE_JOINED} event for local node.
      *
      * @throws InterruptedException If interrupted.

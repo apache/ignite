@@ -222,6 +222,8 @@ class GridDhtPartitionSupplier {
 
         SupplyContext sctx = null;
 
+        Map<Integer, Long> initUpdateCntrs;
+
         try {
             synchronized (scMap) {
                 sctx = scMap.remove(contextId);
@@ -274,11 +276,25 @@ class GridDhtPartitionSupplier {
             Set<Integer> remainingParts;
 
             if (sctx == null || sctx.iterator == null) {
-                iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
-
                 remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
 
+                Set<Integer> demandParts = new HashSet<>(demandMsg.partitions().fullSet());
+
                 CachePartitionPartialCountersMap histMap = demandMsg.partitions().historicalMap();
+
+                for (int i = 0; i < histMap.size(); ++i)
+                    demandParts.add(histMap.partitionAt(i));
+
+                initUpdateCntrs = new HashMap<>(demandParts.size());
+
+                for (Integer part : demandParts) {
+                    GridDhtLocalPartition loc = top.localPartition(part, demandMsg.topologyVersion(), false);
+
+                    if (loc != null && loc.state() == GridDhtPartitionState.OWNING)
+                        initUpdateCntrs.put(part, loc.updateCounter());
+                }
+
+                iter = grp.offheap().rebalanceIterator(demandMsg.partitions(), demandMsg.topologyVersion());
 
                 for (int i = 0; i < histMap.size(); i++) {
                     int p = histMap.partitionAt(i);
@@ -311,6 +327,8 @@ class GridDhtPartitionSupplier {
                 iter = sctx.iterator;
 
                 remainingParts = sctx.remainingParts;
+
+                initUpdateCntrs = sctx.initUpdateCntrs;
             }
 
             final int msgMaxSize = grp.config().getRebalanceBatchSize();
@@ -332,7 +350,8 @@ class GridDhtPartitionSupplier {
                         saveSupplyContext(contextId,
                             iter,
                             remainingParts,
-                            demandMsg.rebalanceId()
+                            demandMsg.rebalanceId(),
+                            initUpdateCntrs
                         );
 
                         reply(topicId, demanderNode, demandMsg, supplyMsg, contextId);
@@ -393,7 +412,7 @@ class GridDhtPartitionSupplier {
                 }
 
                 if (iter.isPartitionDone(part)) {
-                    supplyMsg.last(part, loc.updateCounter());
+                    supplyMsg.last(part, initUpdateCntrs.get(part));
 
                     remainingParts.remove(part);
 
@@ -595,17 +614,19 @@ class GridDhtPartitionSupplier {
      * @param entryIt Entries rebalance iterator.
      * @param remainingParts Set of partitions that weren't sent yet.
      * @param rebalanceId Rebalance id.
+     * @param initUpdateCntrs Collection of update counters that corresponds to the beginning of rebalance.
      */
     private void saveSupplyContext(
         T3<UUID, Integer, AffinityTopologyVersion> contextId,
         IgniteRebalanceIterator entryIt,
         Set<Integer> remainingParts,
-        long rebalanceId
+        long rebalanceId,
+        Map<Integer, Long> initUpdateCntrs
     ) {
         synchronized (scMap) {
             assert scMap.get(contextId) == null;
 
-            scMap.put(contextId, new SupplyContext(entryIt, remainingParts, rebalanceId));
+            scMap.put(contextId, new SupplyContext(entryIt, remainingParts, rebalanceId, initUpdateCntrs));
         }
     }
 
@@ -623,17 +644,27 @@ class GridDhtPartitionSupplier {
         /** Rebalance id. */
         private final long rebalanceId;
 
+        /** Update counters for rebalanced partitions. */
+        private final Map<Integer, Long> initUpdateCntrs;
+
         /**
          * Constructor.
          *
          * @param iterator Entries rebalance iterator.
          * @param remainingParts Set of partitions which weren't sent yet.
          * @param rebalanceId Rebalance id.
+         * @param initUpdateCntrs Collection of update counters that corresponds to the beginning of rebalance.
          */
-        SupplyContext(IgniteRebalanceIterator iterator, Set<Integer> remainingParts, long rebalanceId) {
+        SupplyContext(
+            IgniteRebalanceIterator iterator,
+            Set<Integer> remainingParts,
+            long rebalanceId,
+            Map<Integer, Long> initUpdateCntrs
+        ) {
             this.iterator = iterator;
             this.remainingParts = remainingParts;
             this.rebalanceId = rebalanceId;
+            this.initUpdateCntrs = initUpdateCntrs;
         }
 
         /** {@inheritDoc} */

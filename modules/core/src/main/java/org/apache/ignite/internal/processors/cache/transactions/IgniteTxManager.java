@@ -232,7 +232,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private TxDeadlockDetection txDeadlockDetection;
 
     /** Flag indicates that {@link TxRecord} records will be logged to WAL. */
-    private boolean logTxRecords;
+    private volatile boolean logTxRecords;
+
+    /** Pending transactions tracker. */
+    private LocalPendingTransactionsTracker pendingTracker;
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
@@ -307,6 +310,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
+        this.pendingTracker = new LocalPendingTransactionsTracker(cctx);
+
+        // todo gg-13416 unhardcode
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
     }
 
@@ -2499,6 +2505,27 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     *
+     */
+    public LocalPendingTransactionsTracker pendingTxsTracker() {
+        return pendingTracker;
+    }
+
+    /**
+     * Enables pending transactions tracker.
+     * Also enables transaction wal logging, if it was disabled.
+     */
+    public void trackPendingTxs() {
+        pendingTracker.enable();
+
+        if (!logTxRecords) {
+            logTxRecords = true;
+
+            U.warn(log, "Transaction wal logging is enabled, because pending transaction tracker is enabled.");
+        }
+    }
+
+    /**
      * Sets MVCC state.
      *
      * @param tx Transaction.
@@ -2555,7 +2582,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
 
         try {
-            return cctx.wal().log(record);
+            WALPointer ptr = cctx.wal().log(record);
+
+            TransactionState txState = tx.state();
+
+            if (txState == PREPARED)
+                cctx.tm().pendingTxsTracker().onTxPrepared(tx.nearXidVersion());
+            else if (txState == ROLLED_BACK)
+                cctx.tm().pendingTxsTracker().onTxRolledBack(tx.nearXidVersion());
+            else
+                cctx.tm().pendingTxsTracker().onTxCommitted(tx.nearXidVersion());
+
+            return ptr;
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to log TxRecord: " + record, e);

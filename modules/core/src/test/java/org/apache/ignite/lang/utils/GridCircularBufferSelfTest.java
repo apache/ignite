@@ -17,9 +17,13 @@
 package org.apache.ignite.lang.utils;
 
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -176,5 +180,80 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
         assert evictedQ.size() == putQ.size();
 
         info("Buffer: " + buf);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testEmptyBufIterator() throws Exception {
+        assertFalse(new GridCircularBuffer<>(8).iterator().hasNext());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testHalfFullBufIterator() throws Exception {
+        int size = 8;
+
+        GridCircularBuffer<Integer> buf = new GridCircularBuffer<>(size);
+
+        IntStream.range(0, size / 2).forEach(makeConsumer(buf));
+
+        checkExpectedRange(0, size / 2, buf);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFullBufIterator() throws Exception {
+        int size = 8;
+
+        GridCircularBuffer<Integer> buf = new GridCircularBuffer<>(size);
+
+        IntStream.range(0, size).forEach(makeConsumer(buf));
+
+        checkExpectedRange(0, size, buf);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testOverflownBufIterator() throws Exception {
+        int size = 8;
+
+        GridCircularBuffer<Integer> buf = new GridCircularBuffer<>(size);
+
+        IntStream.range(0, 3 * size / 2).forEach(makeConsumer(buf));
+
+        checkExpectedRange(size / 2, 3 * size / 2, buf);
+    }
+
+    /**
+     *
+     */
+    private static IntConsumer makeConsumer(GridCircularBuffer<Integer> buf) {
+        return t -> {
+            try {
+                buf.add(t);
+            }
+            catch (InterruptedException e) {
+                throw new IgniteInterruptedException(e);
+            }
+        };
+    }
+
+    /**
+     *
+     */
+    private void checkExpectedRange(int beginInclusive, int endExclusive, GridCircularBuffer<Integer> buf) {
+        Iterator<Integer> iter = buf.iterator();
+
+        IntStream.range(beginInclusive, endExclusive).forEach(i -> assertEquals(i, iter.next().intValue()));
+
+        assertFalse(iter.hasNext());
     }
 }

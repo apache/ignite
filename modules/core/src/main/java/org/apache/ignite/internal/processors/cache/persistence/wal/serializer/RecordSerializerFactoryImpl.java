@@ -148,4 +148,12 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
 
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public RecordSerializerFactory clearSegmentLocalState() {
+        skipPositionCheck = false;
+        recordDeserializeFilter = null;
+
+        return this;
+    }
 }

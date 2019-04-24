@@ -170,7 +170,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
         boolean fail = false;
 
         try (WALIterator it = sharedContext.wal().replay(null)) {
-            dbMgr.applyUpdatesOnRecovery(it, (ptr, rec) -> true, (entry) -> true);
+            dbMgr.applyUpdatesOnRecovery(it, (ptr, rec) -> true, (rec, entry) -> true);
         }
         catch (IgniteCheckedException e) {
             if (nodeStopPoint.needCleanUp)

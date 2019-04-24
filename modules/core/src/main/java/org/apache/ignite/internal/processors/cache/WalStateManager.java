@@ -390,7 +390,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      */
     public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer, boolean changedBaseline) {
         if (changedBaseline
-            && IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED)
+            && cctx.tm().pendingTxsTracker().enabled()
             || !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
             return;
 

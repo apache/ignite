@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
 import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
@@ -427,6 +428,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Authentication processor.
      */
     public GridSecurityProcessor security();
+
+    /**
+     * Gets transactional data replication processor.
+     *
+     * @return Transactional data replication processor.
+     */
+    public TransactionalDrProcessor txDr();
 
     /**
      * Gets load balancing manager.

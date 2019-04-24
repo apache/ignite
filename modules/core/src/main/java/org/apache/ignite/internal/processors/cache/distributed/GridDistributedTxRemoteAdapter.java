@@ -775,6 +775,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
                                 .collect(Collectors.toList());
 
+                            logKeysToPendingTxsTracker(entriesWithCounters);
+
                             cctx.wal().log(new DataRecord(entriesWithCounters));
                         }
 
@@ -814,6 +816,27 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                 state(COMMITTED);
             }
+        }
+    }
+
+    /**
+     * @param dataEntries Data entries.
+     */
+    private void logKeysToPendingTxsTracker(List<DataEntry> dataEntries) {
+        for (DataEntry dataEntry : dataEntries) {
+            List<KeyCacheObject> readKeys = new ArrayList<>();
+            List<KeyCacheObject> writeKeys = new ArrayList<>();
+
+            if (dataEntry.op() == READ)
+                readKeys.add(dataEntry.key());
+            else
+                writeKeys.add(dataEntry.key());
+
+            if (!readKeys.isEmpty())
+                cctx.tm().pendingTxsTracker().onKeysRead(nearXidVersion(), readKeys);
+
+            if (!writeKeys.isEmpty())
+                cctx.tm().pendingTxsTracker().onKeysWritten(nearXidVersion(), writeKeys);
         }
     }
 

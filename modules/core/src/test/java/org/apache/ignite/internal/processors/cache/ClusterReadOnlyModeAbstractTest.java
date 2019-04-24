@@ -24,6 +24,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -118,5 +119,14 @@ public class ClusterReadOnlyModeAbstractTest extends GridCommonAbstractTest {
 
             ignite.context().cache().context().readOnlyMode(readOnly);
         }
+    }
+
+    /**
+     * @param e Exception.
+     */
+    public static void checkThatRootCauseIsReadOnly(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause())
+            if (t.getCause() == null)
+                assertTrue(t.getMessage(), t instanceof IgniteClusterReadOnlyException);
     }
 }

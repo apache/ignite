@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.integration.CompletionListener;
@@ -590,6 +591,21 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         Ignite crd = null;
 
         for (Ignite g : G.allGrids()) {
+            if (nodes != null) {
+                Set<UUID> gClusterNodeIds = g.cluster().nodes().stream()
+                    .map(ClusterNode::id)
+                    .collect(Collectors.toSet());
+
+                Set<UUID> awaitPmeNodeIds = nodes.stream()
+                    .map(ClusterNode::id)
+                    .collect(Collectors.toSet());
+
+                gClusterNodeIds.retainAll(awaitPmeNodeIds);
+
+                if (gClusterNodeIds.isEmpty())
+                    continue; // Node g is from another cluster and can't be elected as coordinator.
+            }
+
             ClusterNode node = g.cluster().localNode();
 
             if (crd == null || node.order() < crd.cluster().localNode().order()) {

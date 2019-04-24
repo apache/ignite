@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -78,6 +78,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -335,6 +336,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
+     * Returns baseline topology history.
+     */
+    public BaselineTopologyHistory baselineHistory() {
+        return bltHist;
+    }
+
+    /**
      * @param blt Blt.
      */
     private void writeBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
@@ -443,20 +451,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /**
      * Checks whether all conditions to meet BaselineTopology are satisfied.
      */
-    private boolean isBaselineSatisfied(BaselineTopology blt, List<ClusterNode> serverNodes) {
+    private boolean isBaselineSatisfied(BaselineTopology blt, List<ClusterNode> srvNodes) {
         if (blt == null)
             return false;
 
         if (blt.consistentIds() == null)
             return false;
 
-        if (//only node participating in BaselineTopology is allowed to send activation command...
-            blt.consistentIds().contains(ctx.discovery().localNode().consistentId())
-                //...and with this node BaselineTopology is reached
-                && blt.isSatisfied(serverNodes))
-            return true;
-
-        return false;
+        // Only node participating in BaselineTopology is allowed to send activation command
+        // and with this node BaselineTopology is reached.
+        return blt.consistentIds().contains(ctx.discovery().localNode().consistentId()) && blt.isSatisfied(srvNodes);
     }
 
     /** {@inheritDoc} */
@@ -523,10 +527,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         DiscoveryDataClusterState state = globalState;
 
-        if (log.isInfoEnabled())
-            U.log(log, "Received " + prettyStr(msg.activate()) + " request with BaselineTopology" +
-                (msg.baselineTopology() == null ? ": null"
-                    : "[id=" + msg.baselineTopology().id() + "]"));
+        if (log.isInfoEnabled()) {
+            String baseline = msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + ']';
+
+            U.log(log, "Received " + prettyStr(msg.activate()) + " request with BaselineTopology" + baseline);
+        }
 
         if (msg.baselineTopology() != null)
             compatibilityMode = false;
@@ -592,7 +597,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
                     globalState.baselineTopology());
 
-                transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
+                transitionFuts.put(msg.requestId(), new GridFutureAdapter<>());
 
                 DiscoveryDataClusterState prevState = globalState;
 
@@ -679,7 +684,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (initiatorNode.equals(ctx.localNodeId())) {
             GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
-            if (fut != null && fut.requestId.equals(reqId))
+            if (fut != null && fut.reqId.equals(reqId))
                 return fut;
         }
 
@@ -774,19 +779,19 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return;
         }
 
-        BaselineTopologyHistory historyToSend = null;
+        BaselineTopologyHistory histToSnd = null;
 
         if (!bltHist.isEmpty()) {
             if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
                 int lastId = joiningNodeState.baselineTopology().id();
 
-                historyToSend = bltHist.tailFrom(lastId);
+                histToSnd = bltHist.tailFrom(lastId);
             }
             else
-                historyToSend = bltHist;
+                histToSnd = bltHist;
         }
 
-        dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
+        dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, histToSnd));
     }
 
     /** {@inheritDoc} */
@@ -811,7 +816,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             DiscoveryDataClusterState state = stateDiscoData.globalState;
 
             if (state.transition())
-                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<Void>());
+                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<>());
 
             globalState = state;
 
@@ -826,9 +831,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     @Override public IgniteInternalFuture<?> changeGlobalState(
         final boolean activate,
         Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology
+        boolean forceChangeBaselineTop
     ) {
-        return changeGlobalState(activate, baselineNodes, forceChangeBaselineTopology, false);
+        return changeGlobalState(activate, baselineNodes, forceChangeBaselineTop, false);
     }
 
     public IgniteInternalFuture<?> changeGlobalState(
@@ -848,15 +853,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      */
     private BaselineTopology calculateNewBaselineTopology(final boolean activate,
         Collection<? extends BaselineNode> baselineNodes,
-        boolean forceChangeBaselineTopology) {
+        boolean forceChangeBaselineTop
+    ) {
         BaselineTopology newBlt;
 
-        BaselineTopology currentBlt = globalState.baselineTopology();
+        BaselineTopology currBlt = globalState.baselineTopology();
 
         int newBltId = 0;
 
-        if (currentBlt != null)
-            newBltId = activate ? currentBlt.id() + 1 : currentBlt.id();
+        if (currBlt != null)
+            newBltId = activate ? currBlt.id() + 1 : currBlt.id();
 
         if (baselineNodes != null && !baselineNodes.isEmpty()) {
             List<BaselineNode> baselineNodes0 = new ArrayList<>();
@@ -875,16 +881,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             baselineNodes = baselineNodes0;
         }
 
-        if (forceChangeBaselineTopology)
+        if (forceChangeBaselineTop)
             newBlt = BaselineTopology.build(baselineNodes, newBltId);
         else if (activate) {
             if (baselineNodes == null)
                 baselineNodes = baselineNodes();
 
-            if (currentBlt == null)
+            if (currBlt == null)
                 newBlt = BaselineTopology.build(baselineNodes, newBltId);
             else {
-                newBlt = currentBlt;
+                newBlt = currBlt;
 
                 newBlt.updateHistory(baselineNodes);
             }
@@ -899,32 +905,38 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private Collection<BaselineNode> baselineNodes() {
         List<ClusterNode> clNodes = ctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
-        ArrayList<BaselineNode> bltNodes = new ArrayList<>(clNodes.size());
+        List<BaselineNode> bltNodes = new ArrayList<>(clNodes.size());
 
-        for (ClusterNode clNode : clNodes)
-            bltNodes.add(clNode);
+        bltNodes.addAll(clNodes);
 
         return bltNodes;
     }
 
     /** */
-    private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
-        BaselineTopology blt, boolean forceChangeBaselineTopology) {
-        return changeGlobalState0(activate, blt, forceChangeBaselineTopology, false);
+    private IgniteInternalFuture<?> changeGlobalState0(
+        final boolean activate,
+        BaselineTopology blt,
+        boolean forceChangeBaselineTop
+    ) {
+        return changeGlobalState0(activate, blt, forceChangeBaselineTop, false);
     }
 
     /** */
-    private IgniteInternalFuture<?> changeGlobalState0(final boolean activate,
-        BaselineTopology blt, boolean forceChangeBaselineTopology, boolean isAutoAdjust) {
+    private IgniteInternalFuture<?> changeGlobalState0(
+        final boolean activate,
+        BaselineTopology blt,
+        boolean forceChangeBaselineTop,
+        boolean isAutoAdjust
+    ) {
         boolean isBaselineAutoAdjustEnabled = isBaselineAutoAdjustEnabled();
 
-        if (forceChangeBaselineTopology && isBaselineAutoAdjustEnabled != isAutoAdjust)
+        if (forceChangeBaselineTop && isBaselineAutoAdjustEnabled != isAutoAdjust)
             throw new BaselineAdjustForbiddenException(isBaselineAutoAdjustEnabled);
 
         if (ctx.isDaemon() || ctx.clientNode()) {
             GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
-            sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTopology, fut);
+            sendComputeChangeGlobalState(activate, blt, forceChangeBaselineTop, fut);
 
             return fut;
         }
@@ -995,14 +1007,16 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             }
         }
 
-        ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(startedFut.requestId,
+        ChangeGlobalStateMessage msg = new ChangeGlobalStateMessage(startedFut.reqId,
             ctx.localNodeId(),
             storedCfgs,
             activate,
             blt,
-            forceChangeBaselineTopology,
+            forceChangeBaselineTop,
             System.currentTimeMillis()
         );
+
+        ctx.txDr().onChangeGlobalStateMessagePrepared(msg);
 
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
@@ -1059,16 +1073,17 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             return null;
 
         if (globalState == null || globalState.baselineTopology() == null) {
-            if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
-                String msg = "Node with set up BaselineTopology is not allowed to join cluster without one: " + node.consistentId();
+            if (joiningNodeState.baselineTopology() != null) {
+                String msg = "Node with set up BaselineTopology is not allowed to join cluster without one: " +
+                        node.consistentId();
 
                 return new IgniteNodeValidationResult(node.id(), msg, msg);
             }
         }
 
         if (globalState.transition() && globalState.previousBaselineTopology() == null) {
-            //case when cluster is activating for the first time and other node with existing baseline topology
-            //tries to join
+            // Case when cluster is activating for the first time and other node with existing baseline topology
+            // tries to join.
 
             String msg = "Node with set up BaselineTopology is not allowed " +
                 "to join cluster in the process of first activation: " + node.consistentId();
@@ -1193,12 +1208,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", daemon" + ctx.isDaemon() + "]");
         }
 
-        ClusterGroupAdapter clusterGroupAdapter = (ClusterGroupAdapter)ctx.cluster().get().forServers();
+        ClusterGroupAdapter clusterGrpAdapter = (ClusterGroupAdapter)ctx.cluster().get().forServers();
 
-        if (F.isEmpty(clusterGroupAdapter.nodes()))
+        if (F.isEmpty(clusterGrpAdapter.nodes()))
             return new IgniteFinishedFutureImpl<>(false);
 
-        IgniteCompute comp = clusterGroupAdapter.compute();
+        IgniteCompute comp = clusterGrpAdapter.compute();
 
         return comp.callAsync(new IgniteCallable<Boolean>() {
             @IgniteInstanceResource
@@ -1283,6 +1298,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                     distributedBaselineConfiguration.onActivate();
 
+                    ctx.txDr().onActivate(ctx);
+
                     if (log.isInfoEnabled())
                         log.info("Successfully performed final activation steps [nodeId="
                             + ctx.localNodeId() + ", client=" + client + ", topVer=" + req.topologyVersion() + "]");
@@ -1333,6 +1350,92 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /**
+     * Executes validation checks of cluster state and BaselineTopology before changing BaselineTopology to new one.
+     */
+    public void validateBeforeBaselineChange(Collection<? extends BaselineNode> baselineTop) {
+        verifyBaselineTopologySupport(ctx.discovery().discoCache());
+
+        if (!ctx.state().clusterState().active())
+            throw new IgniteException("Changing BaselineTopology on inactive cluster is not allowed.");
+
+        if (baselineTop != null) {
+            if (baselineTop.isEmpty())
+                throw new IgniteException("BaselineTopology must contain at least one node.");
+
+            Collection<Object> onlineNodes = onlineBaselineNodesRequestedForRemoval(baselineTop);
+
+            if (onlineNodes != null) {
+                if (!onlineNodes.isEmpty()) {
+                    throw new IgniteException("Removing online nodes from BaselineTopology is not supported: " +
+                            onlineNodes);
+                }
+            }
+        }
+    }
+
+    /**
+     * Verifies all nodes in current cluster topology support BaselineTopology feature
+     * so compatibilityMode flag is enabled to reset.
+     *
+     * @param discoCache Discovery cache.
+     */
+    private void verifyBaselineTopologySupport(DiscoCache discoCache) {
+        if (discoCache.minimumServerNodeVersion().compareTo(MIN_BLT_SUPPORTING_VER) < 0) {
+            SB sb = new SB("Cluster contains nodes that don't support BaselineTopology: [");
+
+            for (ClusterNode cn : discoCache.serverNodes()) {
+                if (cn.version().compareTo(MIN_BLT_SUPPORTING_VER) < 0)
+                    sb
+                            .a('[')
+                            .a(cn.consistentId())
+                            .a(':')
+                            .a(cn.version())
+                            .a("], ");
+            }
+
+            sb.d(sb.length() - 2, sb.length());
+
+            throw new IgniteException(sb.a(']').toString());
+        }
+    }
+
+    /** */
+    @Nullable private Collection<Object> onlineBaselineNodesRequestedForRemoval(Collection<? extends BaselineNode> newBlt) {
+        BaselineTopology blt = ctx.state().clusterState().baselineTopology();
+        Set<Object> bltConsIds;
+
+        if (blt == null)
+            return null;
+        else
+            bltConsIds = blt.consistentIds();
+
+        ArrayList<Object> onlineNodesRequestedForRemoval = new ArrayList<>();
+
+        Collection<Object> aliveNodesConsIds = getConsistentIds(ctx.discovery().aliveServerNodes());
+
+        Collection<Object> newBltConsIds = getConsistentIds(newBlt);
+
+        for (Object oldBltConsId : bltConsIds) {
+            if (aliveNodesConsIds.contains(oldBltConsId)) {
+                if (!newBltConsIds.contains(oldBltConsId))
+                    onlineNodesRequestedForRemoval.add(oldBltConsId);
+            }
+        }
+
+        return onlineNodesRequestedForRemoval;
+    }
+
+    /** */
+    private Collection<Object> getConsistentIds(Collection<? extends BaselineNode> nodes) {
+        ArrayList<Object> res = new ArrayList<>(nodes.size());
+
+        for (BaselineNode n : nodes)
+            res.add(n.consistentId());
+
+        return res;
+    }
+
+    /**
      * @param reqId Request ID.
      * @param initNodeId Initialize node id.
      * @param ex Exception.
@@ -1374,14 +1477,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         if (log.isDebugEnabled()) {
             log.debug("Received activation response [requestId=" + msg.getRequestId() +
-                ", nodeId=" + nodeId + "]");
+                ", nodeId=" + nodeId + ']');
         }
 
-        UUID requestId = msg.getRequestId();
+        UUID reqId = msg.getRequestId();
 
         final GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
-        if (fut != null && requestId.equals(fut.requestId)) {
+        if (fut != null && reqId.equals(fut.reqId)) {
             if (fut.initFut.isDone())
                 fut.onResponse(nodeId, msg);
             else {
@@ -1403,11 +1506,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private void onStateRestored(BaselineTopology blt) {
         DiscoveryDataClusterState state = globalState;
 
-        if (!state.active() && !state.transition() && state.baselineTopology() == null) {
-            DiscoveryDataClusterState newState = DiscoveryDataClusterState.createState(false, blt);
-
-            globalState = newState;
-        }
+        if (!state.active() && !state.transition() && state.baselineTopology() == null)
+            globalState = DiscoveryDataClusterState.createState(false, blt);
     }
 
     /**
@@ -1518,7 +1618,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture, boolean hasMovingPartitions) {
+    @Override public void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchFut, boolean hasMovingPartitions) {
         // no-op
     }
 
@@ -1627,7 +1727,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private class GridChangeGlobalStateFuture extends GridFutureAdapter<Void> {
         /** Request id. */
         @GridToStringInclude
-        private final UUID requestId;
+        private final UUID reqId;
 
         /** Activate. */
         private final boolean activate;
@@ -1657,12 +1757,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         private final IgniteLogger log;
 
         /**
-         * @param requestId State change request ID.
+         * @param reqId State change request ID.
          * @param activate New cluster state.
          * @param ctx Context.
          */
-        GridChangeGlobalStateFuture(UUID requestId, boolean activate, GridKernalContext ctx) {
-            this.requestId = requestId;
+        GridChangeGlobalStateFuture(UUID reqId, boolean activate, GridKernalContext ctx) {
+            this.reqId = reqId;
             this.activate = activate;
             this.ctx = ctx;
 
@@ -1670,10 +1770,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         /**
-         * @param event Event.
+         * @param evt Event.
          */
-        void onNodeLeft(DiscoveryEvent event) {
-            assert event != null;
+        void onNodeLeft(DiscoveryEvent evt) {
+            assert evt != null;
 
             if (isDone())
                 return;
@@ -1681,7 +1781,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             boolean allReceived = false;
 
             synchronized (mux) {
-                if (remaining.remove(event.eventNode().id()))
+                if (remaining.remove(evt.eventNode().id()))
                     allReceived = remaining.isEmpty();
             }
 

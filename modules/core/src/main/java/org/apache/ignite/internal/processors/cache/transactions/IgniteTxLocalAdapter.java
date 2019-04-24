@@ -835,6 +835,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                     if (grp.persistenceEnabled() && grp.walEnabled() &&
                                         cctx.snapshot().needTxReadLogging()) {
+                                        cctx.tm().pendingTxsTracker().onKeysRead(
+                                            nearXidVersion(), Collections.singletonList(txEntry.key()));
+
                                         ptr = cctx.wal().log(new DataRecord(new DataEntry(
                                             cacheCtx.cacheId(),
                                             txEntry.key(),

@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -203,6 +204,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     private AtomicBoolean added = new AtomicBoolean(false);
+
+    /** Exchange type. */
+    private volatile ExchangeType exchangeType;
 
     /**
      * Discovery event receive latch. There is a race between discovery event processing and single message
@@ -493,6 +497,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return exchCtx0.events().topologyVersion();
+    }
+
+    /**
+     * @return Exchange type or <code>null</code> if not determined yet.
+     */
+    public ExchangeType exchangeType() {
+        return exchangeType;
     }
 
     /**
@@ -852,6 +863,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.cache().registrateProxyRestart(resolveCacheRequests(exchActions), afterLsnrCompleteFut);
 
+            exchangeType = exchange;
+
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onInitBeforeTopologyLock(this);
+
             updateTopologies(crdNode);
 
             timeBag.finishGlobalStage("Determine exchange type");
@@ -898,6 +914,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.exchange().exchangerBlockingSectionEnd();
                 }
             }
+
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onInitAfterTopologyLock(this);
 
             if (exchLog.isInfoEnabled())
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
@@ -1185,6 +1204,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.exchange().exchangerBlockingSectionBegin();
 
                 try {
+                    kctx.txDr().onDeActivate(cctx.kernalContext());
+
                     kctx.dataStructures().onDeActivate(kctx);
 
                     if (cctx.kernalContext().service() instanceof GridServiceProcessor)
@@ -1938,6 +1959,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             compress,
             newCntrMap,
             exchangeId(),
+            null,
             last != null ? last : cctx.versions().last(),
             partHistSuppliers,
             partsToReload);
@@ -2207,6 +2229,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (err == null)
                 cctx.coordinators().onExchangeDone(events().discoveryCache());
 
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onDoneBeforeTopologyUnlock(this);
+
             // Create and destory caches and cache proxies.
             cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
@@ -2307,6 +2332,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
             }
+
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onDoneAfterTopologyUnlock(this);
 
             if (firstDiscoEvt instanceof DiscoveryCustomEvent)
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
@@ -3150,7 +3178,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         top.globalPartSizes(partSizes);
 
-        Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(ownersByUpdCounters, haveHistory);
+        TransactionalDrProcessor txDrProc = cctx.kernalContext().txDr();
+
+        boolean skipResetOwners = txDrProc != null && txDrProc.shouldIgnoreAssignPartitionStates(this);
+
+        Set<UUID> joinedNodes = new HashSet<>();
+
+        for (DiscoveryEvent evt : events().events()) {
+            if (evt.type() == EVT_NODE_JOINED)
+                joinedNodes.add(evt.eventNode().id());
+        }
+
+        Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(
+            ownersByUpdCounters, haveHistory, joinedNodes, skipResetOwners);
 
         for (Map.Entry<UUID, Set<Integer>> e : partitionsToRebalance.entrySet()) {
             UUID nodeId = e.getKey();
@@ -3413,6 +3453,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     });
             }
 
+            TransactionalDrProcessor txDrProc = cctx.kernalContext().txDr();
+
+            boolean skipResetOwners = txDrProc != null && txDrProc.shouldIgnoreAssignPartitionStates(this);
+
             timeBag.finishGlobalStage("Affinity recalculation (crd)");
 
             Map<Integer, CacheGroupAffinityMessage> joinedNodeAff = new ConcurrentHashMap<>(cctx.cache().cacheGroups().size());
@@ -3469,9 +3513,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 timeBag.finishGlobalStage("Ideal affinity diff calculation (enforced)");
             }
 
-            for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
-                if (!grpCtx.isLocal())
-                    grpCtx.topology().applyUpdateCounters();
+            if (!skipResetOwners) {
+                for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                    if (!grpCtx.isLocal())
+                        grpCtx.topology().applyUpdateCounters();
+                }
             }
 
             timeBag.finishGlobalStage("Apply update counters");
@@ -3639,6 +3685,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         GridDhtPartitionsSingleMessage msg,
         Map<Integer, CacheGroupAffinityMessage> messageAccumulator
     ) {
+        TransactionalDrProcessor txDrProc = cctx.kernalContext().txDr();
+
+        boolean skipResetOwners = txDrProc != null && txDrProc.shouldIgnoreAssignPartitionStates(this);
+
         for (Map.Entry<Integer, GridDhtPartitionMap> e : msg.partitions().entrySet()) {
             Integer grpId = e.getKey();
 
@@ -3650,7 +3700,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             CachePartitionPartialCountersMap cntrs = msg.partitionUpdateCounters(grpId, top.partitions());
 
-            if (cntrs != null)
+            if (cntrs != null && !skipResetOwners)
                 top.collectUpdateCounters(cntrs);
         }
 
@@ -5029,20 +5079,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             this.resTopVer = resTopVer;
             this.msg = msg;
         }
-    }
-
-    /**
-     *
-     */
-    enum ExchangeType {
-        /** */
-        CLIENT,
-
-        /** */
-        ALL,
-
-        /** */
-        NONE
     }
 
     /**

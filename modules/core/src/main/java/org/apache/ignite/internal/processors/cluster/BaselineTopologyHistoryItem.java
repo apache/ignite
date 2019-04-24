@@ -19,6 +19,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -74,5 +75,24 @@ public class BaselineTopologyHistoryItem implements Serializable {
      */
     public List<Long> branchingHistory() {
         return branchingHistory;
+    }
+
+    /**
+     * Returns {@code true} if baseline topology history item contains node with given consistent ID.
+     *
+     * @param consistentId Consistent ID.
+     * @return {@code True} if baseline topology history item contains node with given consistent ID.
+     */
+    public boolean containsNode(Object consistentId) {
+        return consIds.contains(consistentId);
+    }
+
+    /**
+     * Returns a copy of consistent ids of nodes that included into this baseline topology item.
+     *
+     * @return Collection of consistent ids.
+     */
+    public Collection<Object> consistentIds() {
+        return U.arrayList(this.consIds);
     }
 }

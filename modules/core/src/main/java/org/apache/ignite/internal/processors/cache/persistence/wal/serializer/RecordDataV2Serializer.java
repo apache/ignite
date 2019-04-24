@@ -28,6 +28,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
@@ -107,6 +108,9 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             case MVCC_TX_RECORD:
                 return txRecordSerializer.size((MvccTxRecord)rec);
+
+            case CONSISTENT_CUT:
+                return 0;
 
             default:
                 return super.plainSize(rec);
@@ -192,6 +196,9 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case MVCC_TX_RECORD:
                 return txRecordSerializer.readMvccTx(in);
 
+            case CONSISTENT_CUT:
+                return new ConsistentCutRecord();
+
             default:
                 return super.readPlainRecord(type, in, encrypted);
         }
@@ -272,6 +279,9 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             case MVCC_TX_RECORD:
                 txRecordSerializer.write((MvccTxRecord)rec, buf);
 
+                break;
+
+            case CONSISTENT_CUT:
                 break;
 
             default:

@@ -283,9 +283,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (tup == null)
             return tup;
 
-        if (!checkBounds(tup.get1())) {
+        if (tup.get2() instanceof FilteredRecord)
+            return new T2<>(tup.get1(), FilteredRecord.INSTANCE);
+
+        WALPointer originalPtr = tup.get2().position();
+
+        if (!checkBounds(originalPtr)) {
             if (curRec != null) {
-                FileWALPointer prevRecPtr = (FileWALPointer)curRec.get1();
+                FileWALPointer prevRecPtr = (FileWALPointer)curRec.get2().position();
 
                 // Fast stop condition, after high bound reached.
                 if (prevRecPtr != null && prevRecPtr.compareTo(highBound) > 0)
@@ -471,7 +476,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param keepBinary Don't convert non primitive types.
      * @return Unwrapped entry.
      */
-    private DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
+    private @NotNull DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
         KeyCacheObject key, CacheObject val, boolean keepBinary) {
         if (dataEntry instanceof MvccDataEntry)
             return new UnwrapMvccDataEntry(
