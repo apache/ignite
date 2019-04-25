@@ -23,6 +23,9 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -4752,20 +4755,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         checkJta();
 
         try {
-            return getAsync(key,
-                !ctx.config().isReadFromBackup(),
-                /*skip tx*/false,
-                null,
-                taskName,
-                deserializeBinary,
-                /*skip vals*/false,
-                needVer).get();
+            // Привелигерованный вызов нужен для выполнения операции, неразрешенной вызывающему коду.
+            // В данном случае будет разрешено использование reflection.
+            // Привелигерованный вызов расположен здесь только для демонстрационных целей!
+            return AccessController.doPrivileged(
+                (PrivilegedExceptionAction<V>)() -> getAsync(key,
+                    !ctx.config().isReadFromBackup(),
+                    /*skip tx*/false,
+                    null,
+                    taskName,
+                    deserializeBinary,
+                    /*skip vals*/false,
+                    needVer).get()
+            );
         }
-        catch (IgniteException e) {
-            if (e.getCause(IgniteCheckedException.class) != null)
-                throw e.getCause(IgniteCheckedException.class);
+        catch (PrivilegedActionException pae){
+            IgniteException ie = (IgniteException) pae.getException();
+
+            if (ie.getCause(IgniteCheckedException.class) != null)
+                throw ie.getCause(IgniteCheckedException.class);
             else
-                throw e;
+                throw ie;
         }
     }
 

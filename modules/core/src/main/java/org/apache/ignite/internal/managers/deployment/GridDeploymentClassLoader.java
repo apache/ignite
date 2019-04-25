@@ -19,6 +19,10 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.security.CodeSource;
+import java.security.Permissions;
+import java.security.ProtectionDomain;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -514,7 +518,13 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 if (byteMap != null)
                     byteMap.put(path, byteSrc.array());
 
-                cls = defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
+                //Опредлить домен, который фактически не имеет прав.
+                ProtectionDomain pd = new ProtectionDomain(
+                    new CodeSource(null, (Certificate[])null), new Permissions()
+                );
+
+                //определить класс, принадлежащий "бесправному" домену.
+                cls = defineClass(name, byteSrc.internalArray(), 0, byteSrc.size(), pd);
 
                 /* Define package in classloader. See URLClassLoader.defineClass(). */
                 int i = name.lastIndexOf('.');
