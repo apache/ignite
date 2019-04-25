@@ -1188,6 +1188,33 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerifyNodeFilter() throws Exception {
+        IgniteEx ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        UUID lastNodeId = ignite.localNode().id();
+
+        ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setNodeFilter(node -> !node.id().equals(lastNodeId))
+            .setBackups(1));
+
+        try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 100; i++)
+                streamer.addData(i, i);
+        }
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", DEFAULT_CACHE_NAME));
+
+        assertContains(testOut.toString(), "no conflicts have been found");
+    }
+
+    /**
      * Tests that both update counter and hash conflicts are detected.
      *
      * @throws Exception If failed.
@@ -1366,13 +1393,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished",
+            "idle_verify check has finished, found 100 partitions",
             "idle_verify task was executed with the following args: --cache-filter SYSTEM --exclude-caches wrong.* ",
             "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 96 partitions",
+            "idle_verify check has finished, found 196 partitions",
             null,
             "--cache", "idle_verify", "--dump", ".*", "--exclude-caches", "wrong.*"
         );
@@ -1392,13 +1419,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             true,
             "idle_verify check has finished, found 160 partitions",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "USER"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 160 partitions",
+            "There are no caches matching given filter options.",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "SYSTEM"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
@@ -1416,7 +1443,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             true,
             "idle_verify check has finished, no conflicts have been found.",
             null,
-            "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*"
+            "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*", "--cache-filter", "DEFAULT"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
@@ -1916,7 +1943,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("idle_verify check has finished, found 0 partitions"));
+            assertTrue(dumpWithConflicts.contains("There are no caches matching given filter options."));
         }
         else
             fail("Should be found dump with conflicts");
