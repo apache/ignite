@@ -412,9 +412,6 @@ public class CacheGroupContext {
 
             this.drEnabled = drEnabled;
         }
-
-        if (cctx.config().getAtomicityMode() == ATOMIC)
-            this.hasAtomicCaches = caches.stream().anyMatch(ctx -> ctx.config().getAtomicityMode() == ATOMIC);
     }
 
     /**

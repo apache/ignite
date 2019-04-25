@@ -61,7 +61,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /** {@inheritDoc} */
     @SuppressWarnings("StatementWithEmptyBody")
-    @Override public synchronized void update(long val) throws IgniteCheckedException {
+    @Override public void update(long val) throws IgniteCheckedException {
         long cur;
 
         while(val > (cur = cntr.get()) && !cntr.compareAndSet(cur, val));
@@ -74,7 +74,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
      * @param delta Delta.
      */
     @Override public boolean update(long start, long delta) {
-        throw new UnsupportedOperationException();
+        return false; // Prevent RollbackRecord in mixed tx-atomic mode.
     }
 
     /**
@@ -105,7 +105,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /** {@inheritDoc} */
     @Override public long reserve(long delta) {
-        throw new UnsupportedOperationException();
+        return next(delta);
     }
 
     /** {@inheritDoc} */

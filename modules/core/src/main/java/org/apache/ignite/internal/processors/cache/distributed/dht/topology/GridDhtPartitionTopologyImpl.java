@@ -2715,8 +2715,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                         gapStart - 1, gapStop - gapStart + 1);
 
-                                    // log.error("TX: log closegap [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
-
                                     try {
                                         ctx.wal().log(rec);
                                     }

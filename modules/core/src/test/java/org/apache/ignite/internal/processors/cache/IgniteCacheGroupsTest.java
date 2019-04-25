@@ -115,9 +115,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
- * TODO FIXME Mixed atomic-tx cache groups are broken. {@link #testConcurrentOperationsSameKeys} and
- * {@link #testRestartsAndCacheCreateDestroy} are modified to use separate groups.
- * See https://issues.apache.org/jira/browse/IGNITE-11797
+ * TODO FIXME Mixed atomic-tx cache groups currently are broken if tx cache is dynamically started after atomic.
+ * TODO FIXME See https://issues.apache.org/jira/browse/IGNITE-11797
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
@@ -1462,6 +1461,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore
     public void testStartManyCaches() throws Exception {
         final int CACHES =  SF.apply(5_000);
 
@@ -2987,6 +2987,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     @Test
@@ -3005,8 +3006,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         srv0.createCache(cacheConfiguration(GROUP1, "a0", PARTITIONED, ATOMIC, 1, false));
         srv0.createCache(cacheConfiguration(GROUP1, "a1", PARTITIONED, ATOMIC, 1, false));
-        srv0.createCache(cacheConfiguration(GROUP2, "t0", PARTITIONED, TRANSACTIONAL, 1, false));
-        srv0.createCache(cacheConfiguration(GROUP2, "t1", PARTITIONED, TRANSACTIONAL, 1, false));
+        srv0.createCache(cacheConfiguration(GROUP1, "t0", PARTITIONED, TRANSACTIONAL, 1, false));
+        srv0.createCache(cacheConfiguration(GROUP1, "t1", PARTITIONED, TRANSACTIONAL, 1, false));
 
         final List<Integer> keys = new ArrayList<>();
 
@@ -3092,6 +3093,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     @Test
@@ -3198,7 +3200,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
                         IgniteCache cache = node.createCache(cacheConfiguration(grp, "tmpCache-" + cntr++,
                             PARTITIONED,
-                            rnd.nextBoolean() ? ATOMIC : TRANSACTIONAL,
+                            grp.equals(GROUP1) ? ATOMIC : TRANSACTIONAL,
                             backups,
                             rnd.nextBoolean()));
 
@@ -3818,6 +3820,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     @Test
@@ -3826,6 +3829,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     @Test
@@ -3848,8 +3852,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         client.createCache(cacheConfiguration(GROUP1, "c2", PARTITIONED, TRANSACTIONAL, 1, false));
         client.createCache(cacheConfiguration(GROUP1, "c3", PARTITIONED, ATOMIC, 1, false));
 
-        client.createCache(cacheConfiguration(GROUP2, "c4", PARTITIONED, TRANSACTIONAL, 1, false));
-        client.createCache(cacheConfiguration(GROUP2, "c5", PARTITIONED, ATOMIC, 1, false));
+        client.createCache(cacheConfiguration(GROUP2, "c4", PARTITIONED, ATOMIC, 1, false));
+        client.createCache(cacheConfiguration(GROUP2, "c5", PARTITIONED, TRANSACTIONAL, 1, false));
         client.createCache(cacheConfiguration(GROUP2, "c6", PARTITIONED, TRANSACTIONAL, 1, false));
 
         client.createCache(cacheConfiguration(null, "c7", PARTITIONED, ATOMIC, 1, false));
@@ -3948,6 +3952,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     @Test
@@ -4030,8 +4035,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHES; i++) {
             CacheAtomicityMode atomicityMode = i % 2 == 0 ? ATOMIC : TRANSACTIONAL;
 
-            caches.set(i, clientNode.createCache(cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
-                "c" + i, PARTITIONED, atomicityMode, 0, false)));
+            caches.set(i,
+                clientNode.createCache(cacheConfiguration(GROUP1, "c" + i, PARTITIONED, atomicityMode, 0, false)));
         }
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -4103,8 +4108,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
                                     String name = "newName-" + cacheCntr.incrementAndGet();
 
                                     cache = clientNode.createCache(
-                                        cacheConfiguration(atomicityMode == ATOMIC ? GROUP1 : GROUP2,
-                                            name, PARTITIONED, atomicityMode, 0, false));
+                                        cacheConfiguration(GROUP1, name, PARTITIONED, atomicityMode, 0, false));
 
                                     caches.set(idx, cache);
                                 }
