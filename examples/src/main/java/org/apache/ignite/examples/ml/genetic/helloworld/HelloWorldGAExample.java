@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,9 +37,9 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * <p>
  * You can change the test data and parameters of GA grid used in this example and re-run it to explore
  * this functionality further.</p>
- * 
+ *
  * For example, you may change the some basic genetic parameters on the GAConfiguration object:
- * 
+ *
  *  Mutation Rate
  *  Crossover Rate
  *  Population Size
