@@ -275,7 +275,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             /*keepCacheObjects*/false,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.consistency(),
+            consistency,
             null,
             mvccSnapshot);
 
