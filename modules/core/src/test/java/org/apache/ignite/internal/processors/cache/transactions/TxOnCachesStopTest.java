@@ -73,6 +73,10 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     /** rnd instance. */
     private static final GridRandom rnd = new GridRandom();
 
+    private static CacheConfiguration<Integer, byte[]> destroyCacheCfg;
+
+    private static CacheConfiguration<Integer, byte[]> surviveCacheCfg;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -92,6 +96,16 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(memCfg);
 
+        CacheConfiguration<Integer, byte[]> ccfg1 = new CacheConfiguration<>();
+
+        ccfg1.setName(CACHE_1_NAME);
+        ccfg1.setBackups(1);
+        ccfg1.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        destroyCacheCfg = ccfg1;
+
         CacheConfiguration ccfg2 = new CacheConfiguration();
 
         ccfg2.setName(CACHE_2_NAME);
@@ -100,7 +114,9 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
 
-        cfg.setCacheConfiguration(ccfg2);
+        surviveCacheCfg = ccfg2;
+
+        cfg.setCacheConfiguration(ccfg1, ccfg2);
 
         return cfg;
     }
@@ -137,13 +153,24 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         for (TransactionConcurrency conc : TransactionConcurrency.values())
-            for (TransactionIsolation iso : TransactionIsolation.values()) {
+            for (TransactionIsolation iso : TransactionIsolation.values())
                 runTxOnCacheStop(conc, iso, ig, true);
 
+        ig.getOrCreateCache(destroyCacheCfg).destroy();
+
+        ig.getOrCreateCache(surviveCacheCfg).destroy();
+
+        for (TransactionConcurrency conc : TransactionConcurrency.values())
+            for (TransactionIsolation iso : TransactionIsolation.values())
                 runTxOnCacheStop(conc, iso, ig, false);
 
+        ig.getOrCreateCache(destroyCacheCfg).destroy();
+
+        ig.getOrCreateCache(surviveCacheCfg).destroy();
+
+        for (TransactionConcurrency conc : TransactionConcurrency.values())
+            for (TransactionIsolation iso : TransactionIsolation.values())
                 runCacheStopInMidTx(conc, iso, ig);
-            }
 
         ig.cluster().active(false);
     }
@@ -155,17 +182,9 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         throws Exception {
         CountDownLatch destroyLatch = new CountDownLatch(1);
 
-        CacheConfiguration<Integer, byte[]> ccfg = new CacheConfiguration<>();
+        final IgniteCache<Integer, byte[]> cache = ig.getOrCreateCache(destroyCacheCfg);
 
-        ccfg.setName(CACHE_1_NAME);
-        ccfg.setBackups(1);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        final IgniteCache<Integer, byte[]> cache = ig.getOrCreateCache(ccfg);
-
-        final IgniteCache<Integer, byte[]> cache2 = ig.cache(CACHE_2_NAME);
+        final IgniteCache<Integer, byte[]> cache2 = ig.getOrCreateCache(surviveCacheCfg);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ig);
 
@@ -224,8 +243,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         f0.get();
 
         try {
-            if (conc == TransactionConcurrency.OPTIMISTIC)
-                assertTrue(cache2.get(100) == cache.get(100));
+            assertTrue(cache2.get(100) == cache.get(100));
         } catch (IllegalStateException e) {
             assertTrue(X.hasCause(e, CacheStoppedException.class));
         }
@@ -241,17 +259,9 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         CountDownLatch putLatch = new CountDownLatch(1);
 
-        CacheConfiguration<Integer, byte[]> ccfg = new CacheConfiguration<>();
+        final IgniteCache<Integer, byte[]> cache = ig.getOrCreateCache(destroyCacheCfg);
 
-        ccfg.setName(CACHE_1_NAME);
-        ccfg.setBackups(1);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-
-        final IgniteCache<Integer, byte[]> cache = ig.getOrCreateCache(ccfg);
-
-        final IgniteCache<Integer, byte[]> cache2 = ig.cache(CACHE_2_NAME);
+        final IgniteCache<Integer, byte[]> cache2 = ig.getOrCreateCache(surviveCacheCfg);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ig);
 
@@ -296,6 +306,8 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         f1.get();
         f0.get();
+
+        assertNull(cache2.get(100));
 
         spi.stopBlock();
     }
