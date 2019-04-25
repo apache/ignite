@@ -20,8 +20,12 @@ package org.apache.ignite.internal.processors.monitoring.lists;
 /**
  *
  */
-public interface ListRow<T> {
+public interface ListRow<Id, Data> {
+    Id id();
+
     String sessionID();
 
-    T row();
+    Data data();
+
+    void data(Data data);
 }

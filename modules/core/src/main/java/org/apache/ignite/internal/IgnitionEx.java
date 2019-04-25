@@ -121,6 +121,7 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.monitoring.noop.NoopMonitoringExposerSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -2414,6 +2415,9 @@ public class IgnitionEx {
 
             if (cfg.getEncryptionSpi() == null)
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+            if (cfg.getMonitoringExposerSpi() == null || cfg.getMonitoringExposerSpi().length == 0)
+                cfg.setMonitoringExposerSpi(new NoopMonitoringExposerSpi());
         }
 
         /**

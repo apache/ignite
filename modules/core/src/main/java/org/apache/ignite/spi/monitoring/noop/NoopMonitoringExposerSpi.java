@@ -15,23 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.sensor;
+package org.apache.ignite.spi.monitoring.noop;
 
-import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiNoop;
+import org.apache.ignite.spi.monitoring.MonitoringExposerSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public abstract class AbstractTimeSensor extends AbstractSensor implements TimeSensor {
-    long timestamp;
-
-    public AbstractTimeSensor(MonitoringGroup group, String name, long timestamp) {
-        super(group, name);
-
-        this.timestamp = timestamp;
+@IgniteSpiNoop
+public class NoopMonitoringExposerSpi extends IgniteSpiAdapter implements MonitoringExposerSpi {
+    @Override public void setMonitoringProcessor(GridMonitoringManager gridMonitoringManager) {
+        // No-op.
     }
 
-    @Override public long timestamp() {
-        return timestamp;
+    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        // No-op.
+    }
+
+    @Override public void spiStop() throws IgniteSpiException {
+        // No-op.
     }
 }

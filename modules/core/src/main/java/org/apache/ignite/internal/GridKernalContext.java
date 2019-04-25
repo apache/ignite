@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -192,6 +193,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Metrics processor.
      */
     public GridJobMetricsProcessor jobMetric();
+
+    /**
+     * Gets monitoring processor.
+     *
+     * @return
+     */
+    public GridMonitoringManager monitoring();
 
     /**
      * Gets caches processor.

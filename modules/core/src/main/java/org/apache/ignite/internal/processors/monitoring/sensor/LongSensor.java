@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+
 /**
  *
  */
 public class LongSensor extends AbstractSensor {
     private long value;
 
-    public LongSensor(SensorGroup group, String name, long value) {
+    public LongSensor(MonitoringGroup group, String name, long value) {
         super(group, name);
 
         this.value = value;

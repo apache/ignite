@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.sensor;
+package org.apache.ignite.spi.monitoring;
 
-import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
+import org.apache.ignite.spi.IgniteSpi;
 
 /**
  *
  */
-public abstract class AbstractTimeSensor extends AbstractSensor implements TimeSensor {
-    long timestamp;
-
-    public AbstractTimeSensor(MonitoringGroup group, String name, long timestamp) {
-        super(group, name);
-
-        this.timestamp = timestamp;
-    }
-
-    @Override public long timestamp() {
-        return timestamp;
-    }
+public interface MonitoringExposerSpi extends IgniteSpi {
+    public void setMonitoringProcessor(GridMonitoringManager gridMonitoringManager);
 }

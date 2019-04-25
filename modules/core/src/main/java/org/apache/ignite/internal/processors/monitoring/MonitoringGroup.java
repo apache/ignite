@@ -15,23 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.sensor;
-
-import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+package org.apache.ignite.internal.processors.monitoring;
 
 /**
  *
  */
-public abstract class AbstractTimeSensor extends AbstractSensor implements TimeSensor {
-    long timestamp;
-
-    public AbstractTimeSensor(MonitoringGroup group, String name, long timestamp) {
-        super(group, name);
-
-        this.timestamp = timestamp;
-    }
-
-    @Override public long timestamp() {
-        return timestamp;
-    }
+public enum MonitoringGroup {
+    CACHE,
+    COMPUTE,
+    SERVICE,
+    TRANSACTIONS,
+    DATA_STREAMER,
+    LOCKS,
+    DATA_STRUCTURES,
+    MESSAGE_TOPICS,
+    THIN_CLIENT_CONNECTIONS,
+    INSTANCE_INFO
 }

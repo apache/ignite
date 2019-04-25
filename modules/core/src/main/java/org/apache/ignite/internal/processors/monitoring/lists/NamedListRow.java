@@ -20,6 +20,6 @@ package org.apache.ignite.internal.processors.monitoring.lists;
 /**
  *
  */
-public interface NamedListRow<T> extends ListRow<T> {
+public interface NamedListRow<Id, Row> extends ListRow<Id, Row> {
     String name();
 }

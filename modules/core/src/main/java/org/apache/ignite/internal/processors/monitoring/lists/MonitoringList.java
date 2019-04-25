@@ -15,23 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.sensor;
-
-import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+package org.apache.ignite.internal.processors.monitoring.lists;
 
 /**
  *
  */
-public abstract class AbstractTimeSensor extends AbstractSensor implements TimeSensor {
-    long timestamp;
+public interface MonitoringList<Id, Row> extends Iterable<ListRow<Id, Row>> {
+    String name();
 
-    public AbstractTimeSensor(MonitoringGroup group, String name, long timestamp) {
-        super(group, name);
+    void add(Id id, String sessionId, Row row);
 
-        this.timestamp = timestamp;
-    }
+    void add(Id id, String sessionId, String name, Row row);
 
-    @Override public long timestamp() {
-        return timestamp;
-    }
+    void update(Id id, Row row);
+
+    void remove(Id id);
 }

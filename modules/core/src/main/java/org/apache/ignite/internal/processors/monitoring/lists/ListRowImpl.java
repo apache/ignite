@@ -15,19 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring;
-
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
+package org.apache.ignite.internal.processors.monitoring.lists;
 
 /**
  *
  */
-public class MonitoringProcessor extends GridProcessorAdapter {
-    /**
-     * @param ctx Kernal context.
-     */
-    protected MonitoringProcessor(GridKernalContext ctx) {
-        super(ctx);
+public class ListRowImpl<Id, Data> implements ListRow<Id, Data> {
+    private Id id;
+
+    private String sessionId;
+
+    private Data data;
+
+    public ListRowImpl(Id id, String sessionId, Data data) {
+        this.id = id;
+        this.sessionId = sessionId;
+        this.data = data;
+    }
+
+    @Override public Id id() {
+        return id;
+    }
+
+    @Override public String sessionID() {
+        return sessionId;
+    }
+
+    @Override public Data data() {
+        return data;
+    }
+
+    @Override public void data(Data data) {
+        this.data = data;
     }
 }

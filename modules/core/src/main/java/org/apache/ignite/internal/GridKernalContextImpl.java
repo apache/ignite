@@ -48,6 +48,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
 import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
@@ -202,7 +203,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridJobMetricsProcessor metricsProc;
+    private GridJobMetricsProcessor jobMetricsProc;
+
+    /** */
+    @GridToStringInclude
+    private GridMonitoringManager monitoringProc;
 
     /** */
     @GridToStringInclude
@@ -612,7 +617,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridResourceProcessor)
             rsrcProc = (GridResourceProcessor)comp;
         else if (comp instanceof GridJobMetricsProcessor)
-            metricsProc = (GridJobMetricsProcessor)comp;
+            jobMetricsProc = (GridJobMetricsProcessor)comp;
+        else if (comp instanceof GridMonitoringManager)
+            monitoringProc = (GridMonitoringManager)comp;
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
         else if (comp instanceof GridClusterStateProcessor)
@@ -757,7 +764,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public GridJobMetricsProcessor jobMetric() {
-        return metricsProc;
+        return jobMetricsProc;
+    }
+
+    @Override public GridMonitoringManager monitoring() {
+        return monitoringProc;
     }
 
     /** {@inheritDoc} */

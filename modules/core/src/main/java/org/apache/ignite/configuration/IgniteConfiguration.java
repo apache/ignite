@@ -77,6 +77,7 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.monitoring.MonitoringExposerSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -384,6 +385,9 @@ public class IgniteConfiguration {
     /** Encryption SPI. */
     private EncryptionSpi encryptionSpi;
 
+    /** Monitoring SPI. */
+    private MonitoringExposerSpi[] monitoringExposerSpi;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -557,6 +561,7 @@ public class IgniteConfiguration {
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
+        monitoringExposerSpi = cfg.getMonitoringExposerSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -2167,6 +2172,16 @@ public class IgniteConfiguration {
      */
     public EncryptionSpi getEncryptionSpi() {
         return encryptionSpi;
+    }
+
+    public IgniteConfiguration setMonitoringExposerSpi(MonitoringExposerSpi... monitoringExposerSpi) {
+        this.monitoringExposerSpi = monitoringExposerSpi;
+
+        return this;
+    }
+
+    public MonitoringExposerSpi[] getMonitoringExposerSpi() {
+        return monitoringExposerSpi;
     }
 
     /**

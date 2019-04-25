@@ -18,18 +18,19 @@
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
 import java.util.Map;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
 
 /**
  *
  */
 abstract class AbstractSensor implements Sensor {
-    private SensorGroup group;
+    private MonitoringGroup group;
 
     private String name;
 
     private Map<String, String> labels;
 
-    public AbstractSensor(SensorGroup group, String name) {
+    public AbstractSensor(MonitoringGroup group, String name) {
         this.group = group;
         this.name = name;
     }
@@ -42,7 +43,7 @@ abstract class AbstractSensor implements Sensor {
         return labels;
     }
 
-    @Override public SensorGroup group() {
+    @Override public MonitoringGroup group() {
         return group;
     }
 }

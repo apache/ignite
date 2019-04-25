@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.sensor;
+package org.apache.ignite.internal.processors.monitoring.lists;
 
 /**
  *
  */
-public enum SensorGroup {
-    CACHE,
-    COMPUTE,
-    SERVICE,
-    TRANSACTIONS,
-    DATA_STREAMER,
-    LOCKS,
-    DATA_STRUCTURES,
-    MESSAGE_TOPICS,
-    THIN_CLIENT_CONNECTIONS
+public class NamedListRowImpl<Id, Row> extends ListRowImpl<Id, Row> implements NamedListRow<Id, Row>  {
+    private String name;
+
+    public NamedListRowImpl(Id id, String sessionId, String name, Row row) {
+        super(id, sessionId, row);
+
+        this.name = name;
+    }
+
+    @Override public String name() {
+        return name;
+    }
 }
