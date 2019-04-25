@@ -95,7 +95,6 @@ public class Auditor<T, E> implements Serializable {
     /**
      * @param event Event.
      */
-    @SuppressWarnings("unchecked")
     protected void accept(@NotNull CacheEntryEvent event) {
 
         EventType type = event.getEventType();

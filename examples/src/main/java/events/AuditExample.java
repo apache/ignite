@@ -1,7 +1,6 @@
 package events;
 
-import com.sbt.sbergrid.security.cache.SecurityInfo;
-import java.time.LocalDateTime;
+//import java.time.LocalDateTime;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -15,21 +14,21 @@ public class AuditExample {
         try(Ignite ignite = Ignition.start(StartGrid.CFG)) {
 
             /** Create caches */
-            IgniteCache<String, SecurityInfo> cache = ignite.getOrCreateCache(new CacheConfiguration<String, SecurityInfo>()
+            IgniteCache<String, String> cache = ignite.getOrCreateCache(new CacheConfiguration<String, String>()
                 .setName("UserCache")
                 .setCacheMode(CacheMode.REPLICATED)
             );
 
-            IgniteCache<LocalDateTime,String> auditCache = ignite.getOrCreateCache(new CacheConfiguration<LocalDateTime, String>()
-                .setName("AuditCache")
-                .setCacheMode(CacheMode.REPLICATED)
-            );
+//            IgniteCache<LocalDateTime,String> auditCache = ignite.getOrCreateCache(new CacheConfiguration<LocalDateTime, String>()
+//                .setName("AuditCache")
+//                .setCacheMode(CacheMode.REPLICATED)
+//            );
 
 //            for (int i = 0; i < 20; i++)
 //                cache.put("name" + i, new SecurityInfo());
 
             for (int i = 0; i < 10; i++)
-                cache.put("name" + i, new SecurityInfo());
+                cache.put("name" + i, "value"+1);
 
 //            for (int i = 0; i < 10; i++)
 //                cache.remove("name" + i);

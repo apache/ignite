@@ -1,6 +1,7 @@
 package events;
 
 import java.time.LocalDateTime;
+import java.util.logging.Logger;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.EventType;
 import org.apache.ignite.Ignite;
@@ -9,15 +10,13 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AuditService<E,T> implements Service {
 
     /** Ignite. */
     @IgniteInstanceResource Ignite ignite;
     /** Logger. */
-    final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
+    final Logger LOGGER = Logger.getLogger(this.getClass().getName());
     /** Cache. */
     private IgniteCache cache;
     /** Audit cache. */
@@ -60,7 +59,6 @@ public class AuditService<E,T> implements Service {
 auditor.init();
     }
 
-    @SuppressWarnings("unchecked")
     private void accept(CacheEntryEvent evt) {
 
         EventType type = evt.getEventType();

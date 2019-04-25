@@ -11,7 +11,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 public class StartGrid {
-    public final static IgniteConfiguration CFG = new IgniteConfiguration()
+    public static final IgniteConfiguration CFG = new IgniteConfiguration()
 
         .setDeploymentMode(DeploymentMode.PRIVATE)
         .setPeerClassLoadingEnabled(true)

@@ -1,6 +1,5 @@
 package events;
 
-import com.sbt.sbergrid.security.cache.SecurityInfo;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -12,7 +11,7 @@ public class StartAudit {
         Ignition.setClientMode(true);
         try(Ignite ignite = Ignition.start(StartGrid.CFG)){
 
-            IgniteCache<String, SecurityInfo> cache = ignite.getOrCreateCache(new CacheConfiguration<String, SecurityInfo>()
+            IgniteCache<String, String> cache = ignite.getOrCreateCache(new CacheConfiguration<String, String>()
                 .setName("UserCache")
                 .setCacheMode(CacheMode.REPLICATED)
             );
