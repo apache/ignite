@@ -53,8 +53,12 @@ public enum IgniteFeatures {
     /** Displaying versbose transaction information: --info option of --tx control script command. */
     TX_INFO_COMMAND(7),
 
+    /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
+    FIND_AND_DELETE_GARBAGE_COMMAND(8),
+
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11);
+    ;
 
     /**
      * Unique feature identifier.
