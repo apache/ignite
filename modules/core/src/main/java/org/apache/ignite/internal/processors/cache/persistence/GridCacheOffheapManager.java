@@ -70,7 +70,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.DefaultFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -1061,7 +1061,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            DefaultFreeList freeList = ((GridCacheDataStore)store).freeList;
+            AbstractFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1083,7 +1083,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            DefaultFreeList freeList = ((GridCacheDataStore)store).freeList;
+            AbstractFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1522,7 +1522,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private String name;
 
         /** */
-        private volatile DefaultFreeList<CacheDataRow> freeList;
+        private volatile AbstractFreeList<CacheDataRow> freeList;
 
         /** */
         private PendingEntriesTree pendingTree;

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.DefaultFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  */
-public class PartitionMetaStorageImpl<T extends Storable> extends DefaultFreeList<T> implements PartitionMetaStorage<T> {
+public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeList<T> implements PartitionMetaStorage<T> {
     /**
      * @param cacheId Cache id.
      * @param name Name.

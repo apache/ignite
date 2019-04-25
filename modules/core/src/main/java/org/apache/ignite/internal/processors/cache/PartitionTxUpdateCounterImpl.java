@@ -245,10 +245,6 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
         long reserved = reserveCntr.getAndAdd(delta);
 
-        if (reserved < cntr) {
-            System.out.println();
-        }
-
         assert reserved >= cntr : "LWM after HWM: lwm=" + cntr + ", hwm=" + reserved;
 
         return reserved;

@@ -45,7 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  */
-public abstract class DefaultFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
+public abstract class AbstractFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
     /** */
     private static final int BUCKETS = 256; // Must be power of 2.
 
@@ -336,7 +336,7 @@ public abstract class DefaultFreeList<T extends Storable> extends PagesList impl
      * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public DefaultFreeList(
+    public AbstractFreeList(
         int cacheId,
         String name,
         DataRegionMetricsImpl memMetrics,
