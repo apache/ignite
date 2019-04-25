@@ -160,5 +160,29 @@ namespace Apache.Ignite.Core.Cluster
         /// </summary>
         /// <param name="timeout"></param>
         void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout);
+
+        /// <summary>
+        /// Returns value of manual baseline control or auto adjusting baseline.
+        /// </summary>
+        /// <returns><c>true</c> If cluster in auto-adjust. <c>false</c> If cluster in manual.</returns>
+        bool IsBaselineAutoAdjustEnabled();
+
+        /// <summary>
+        /// Sets the value of manual baseline control or auto adjusting baseline.
+        /// </summary>
+        /// <param name="isBaselineAutoAdjustEnabled"><c>true</c> If cluster in auto-adjust. <c>false</c> If cluster in manual.</param>
+        void SetBaselineAutoAdjustEnabledFlag(bool isBaselineAutoAdjustEnabled);
+
+        /// <summary>
+        /// Gets the value of time which we would wait before the actual topology change since last server topology change(node join/left/fail).
+        /// </summary>
+        /// <returns>Timeout value</returns>
+        long GetBaselineAutoAdjustTimeout();
+
+        /// <summary>
+        /// Sets the value of time which we would wait before the actual topology change since last server topology change(node join/left/fail).
+        /// </summary>
+        /// <param name="baselineAutoAdjustTimeout">Timeout value</param>
+        void SetBaselineAutoAdjustTimeout(long baselineAutoAdjustTimeout);
     }
 }
