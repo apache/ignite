@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.apache.ignite.ClassPathContentLoggingTest;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.failure.FailureHandlerTriggeredTest;
 import org.apache.ignite.failure.OomFailureHandlerTest;
@@ -238,6 +239,8 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(PluginNodeValidationTest.class));
 
         suite.addTest(new JUnit4TestAdapter(DeadLockOnNodeLeftExchangeTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(ClassPathContentLoggingTest.class));
 
         return suite;
     }

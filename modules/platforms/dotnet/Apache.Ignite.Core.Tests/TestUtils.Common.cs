@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests
         private const int DfltBusywaitSleepInterval = 200;
 
         /** Work dir. */
-        private static readonly string WorkDir = 
+        private static readonly string WorkDir =
             // ReSharper disable once AssignNullToNotNullAttribute
             Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ignite_work");
 
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private static readonly IList<string> JvmDebugOpts =
-            new List<string> { "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005" };
+            new List<string> { "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005", "-DIGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP=false" };
 
         /** */
         public static bool JvmDebug = true;
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (Thread thread in threads)
                 thread.Join();
-            
+
             foreach (var ex in errors)
                 Assert.Fail("Unexpected exception: " + ex);
         }
