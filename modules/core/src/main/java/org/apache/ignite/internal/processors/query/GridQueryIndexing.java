@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,12 +28,16 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -215,6 +219,27 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
     public void unregisterCache(GridCacheContext cctx, boolean rmvIdx) throws IgniteCheckedException;
+
+    /**
+     * Destroy founded index which belongs to stopped cache.
+     *
+     * @param page Root page.
+     * @param indexName Index name.
+     * @param grpId Group id which contains garbage.
+     * @param pageMemory Page memory to work with.
+     * @param removeId Global remove id.
+     * @param reuseList Reuse list where free pages should be stored.
+     * @param mvccEnabled Is mvcc enabled for group or not.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void destroyOrphanIndex(
+        RootPage page,
+        String indexName,
+        int grpId,
+        PageMemory pageMemory,
+        final GridAtomicLong removeId,
+        final ReuseList reuseList,
+        boolean mvccEnabled) throws IgniteCheckedException;
 
     /**
      *
