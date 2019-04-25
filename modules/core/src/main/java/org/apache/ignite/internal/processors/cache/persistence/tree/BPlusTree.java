@@ -5839,18 +5839,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Creates a new instance of {@link CorruptedTreeException}.
      *
-     * @param message Detailed error message.
+     * @param msg Detailed error message.
      * @param cause The cause.
      * @param rows Optional parameters.
      * @return New instance of {@link CorruptedTreeException}.
      */
-    private CorruptedTreeException createCorruptedTreeException(String message, Throwable cause, Object... rows) {
+    private CorruptedTreeException createCorruptedTreeException(String msg, Throwable cause, Object... rows) {
         try {
-            return new CorruptedTreeException(String.format(message, rows), cause);
+            return new CorruptedTreeException(String.format(msg, rows), cause);
         }
-        catch (Throwable t) {
+        catch (Throwable ignored) {
             // Failed to create string representation of optional parameters.
-            return new CorruptedTreeException("", cause);
+            return new CorruptedTreeException(msg + " <failed to create rows string representation>", cause);
         }
     }
 }

@@ -2505,7 +2505,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     *
+     * @return Tracker that is aware of pending transactions state.
      */
     public LocalPendingTransactionsTracker pendingTxsTracker() {
         return pendingTracker;

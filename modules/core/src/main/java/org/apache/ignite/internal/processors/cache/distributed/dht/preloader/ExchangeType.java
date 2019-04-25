@@ -16,15 +16,15 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 /**
- * todo javadoc
+ * Enumerates possible types of partition map exchange process.
  */
 public enum ExchangeType {
-    /** */
+    /** Local join of client node: used only on joining node, completed locally. */
     CLIENT,
 
-    /** */
+    /** Distributed partition map exchange, assumes distributed messaging involving coordinator node. */
     ALL,
 
-    /** */
+    /** Leave/join of another client node, completed locally. */
     NONE
 }
