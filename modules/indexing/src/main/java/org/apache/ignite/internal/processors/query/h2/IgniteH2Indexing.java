@@ -1767,7 +1767,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         Collection<TableInformation> infos = new ArrayList<>();
 
-        if (F.isEmpty(tblTypes) || types.contains(TableType.TABLE.name())) {
+        boolean allTypes = F.isEmpty(tblTypes);
+
+        if (allTypes || types.contains(TableType.TABLE.name())) {
             schemaMgr.dataTables().stream()
                 .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
                 .filter(t -> matches(t.getName(), tblNamePtrn))
@@ -1794,7 +1796,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 .forEach(infos::add);
         }
 
-        if ((F.isEmpty(tblTypes) || types.contains(TableType.VIEW.name()))
+        if ((allTypes || types.contains(TableType.VIEW.name()))
             && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
             schemaMgr.systemViews().stream()
                 .filter(t -> matches(t.getTableName(), tblNamePtrn))

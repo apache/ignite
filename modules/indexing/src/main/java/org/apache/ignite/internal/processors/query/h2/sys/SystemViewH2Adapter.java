@@ -35,7 +35,7 @@ import org.h2.table.TableType;
 /**
  * System H2 table over a view.
  */
-public class SqlSystemTable extends TableBase {
+public class SystemViewH2Adapter extends TableBase {
     /** Scan index. */
     protected final SqlSystemIndex scanIdx;
 
@@ -53,7 +53,7 @@ public class SqlSystemTable extends TableBase {
      * @param data Data.
      * @param view Meta view.
      */
-    public SqlSystemTable(CreateTableData data, SqlSystemView view) {
+    public SystemViewH2Adapter(CreateTableData data, SqlSystemView view) {
         super(data);
 
         assert view != null;

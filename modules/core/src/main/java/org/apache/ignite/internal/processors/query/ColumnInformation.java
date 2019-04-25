@@ -38,7 +38,7 @@ public class ColumnInformation {
     private final String colName;
 
     /** */
-    private final Class fieldCls;
+    private final Class<?> fieldCls;
 
     /** */
     private final boolean nullable;
@@ -67,7 +67,7 @@ public class ColumnInformation {
      * @param precision Precision.
      * @param scale Scale.
      */
-    public ColumnInformation(int ordinalPosition, String schemaName, String tblName, String colName, Class fieldCls,
+    public ColumnInformation(int ordinalPosition, String schemaName, String tblName, String colName, Class<?> fieldCls,
         boolean nullable, Object dfltVal, int precision, int scale, boolean affinityCol) {
         this.ordinalPosition = ordinalPosition;
         this.schemaName = schemaName;
@@ -111,7 +111,7 @@ public class ColumnInformation {
     /**
      * @return Class of column type.
      */
-    public Class fieldClass() {
+    public Class<?> fieldClass() {
         return fieldCls;
     }
 
@@ -165,12 +165,13 @@ public class ColumnInformation {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = schemaName != null ? schemaName.hashCode() : 0;
+        int res = schemaName != null ? schemaName.hashCode() : 0;
 
-        result = 31 * result + (tblName != null ? tblName.hashCode() : 0);
-        result = 31 * result + colName.hashCode();
+        res = 31 * res + (tblName != null ? tblName.hashCode() : 0);
 
-        return result;
+        res = 31 * res + colName.hashCode();
+
+        return res;
     }
 
     /** {@inheritDoc} */

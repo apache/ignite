@@ -750,8 +750,8 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         if (!isValidCatalog(catalog) || !tblTypeMatch)
             return new JdbcThinResultSet(Collections.<List<Object>>emptyList(), meta);
 
-        JdbcMetaTablesResult res = conn.sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tblNamePtrn, tblTypes)).
-            response();
+        JdbcMetaTablesResult res = conn.sendRequest(new JdbcMetaTablesRequest(schemaPtrn, tblNamePtrn, tblTypes))
+            .response();
 
         List<List<Object>> rows = new LinkedList<>();
 

@@ -717,7 +717,19 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         List<List<?>> rows = Collections.emptyList();
 
-        boolean areTypesValid = tblTypes == null || Arrays.asList(tblTypes).contains(TYPE_TABLE);
+        boolean areTypesValid = false;
+
+        if(tblTypes == null)
+            areTypesValid = true;
+        else {
+            for (String type : tblTypes) {
+                if (TYPE_TABLE.equals(type) || TYPE_VIEW.equals(type)) {
+                    areTypesValid = true;
+
+                    break;
+                }
+            }
+        }
 
         if (isValidCatalog(catalog) && areTypesValid) {
             List<JdbcTableMeta> tabMetas = meta.getTablesMeta(schemaPtrn, tblNamePtrn, tblTypes);

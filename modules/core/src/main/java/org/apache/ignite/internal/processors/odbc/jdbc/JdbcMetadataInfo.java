@@ -49,12 +49,12 @@ public class JdbcMetadataInfo {
     /** Root context. Used to get all the database metadata. */
     private final GridKernalContext ctx;
 
-    /** Comparator for {@code ColumnInformation} by schema then table name then column order. */
+    /** Comparator for {@link ColumnInformation} by schema then table name then column order. */
     private static final Comparator<ColumnInformation> bySchemaThenTabNameThenColOrder = new Comparator<ColumnInformation>() {
         @Override public int compare(ColumnInformation o1, ColumnInformation o2) {
             int schemaCmp = o1.schemaName().compareTo(o2.schemaName());
 
-            if(schemaCmp != 0)
+            if (schemaCmp != 0)
                 return schemaCmp;
 
             int tblNameCmp = o1.tableName().compareTo(o2.tableName());
@@ -62,28 +62,27 @@ public class JdbcMetadataInfo {
             if (tblNameCmp != 0)
                 return tblNameCmp;
 
-            return Integer.compare(o1.columnId(),o2.columnId());
+            return Integer.compare(o1.columnId(), o2.columnId());
         }
     };
 
-    /** Comparator for {@code JdbcTableMeta} by table type then schema then table name. */
+    /** Comparator for {@link JdbcTableMeta} by table type then schema then table name. */
     private static final Comparator<TableInformation> byTblTypeThenSchemaThenTabname =
         new Comparator<TableInformation>() {
-        @Override public int compare(TableInformation o1, TableInformation o2) {
-            int tblTypeCmp = o1.tableType().compareTo(o2.tableType());
+            @Override public int compare(TableInformation o1, TableInformation o2) {
+                int tblTypeCmp = o1.tableType().compareTo(o2.tableType());
 
-            if(tblTypeCmp != 0)
-                return tblTypeCmp;
+                if (tblTypeCmp != 0)
+                    return tblTypeCmp;
 
-            int schemCmp = o1.schemaName().compareTo(o2.schemaName());
+                int schemCmp = o1.schemaName().compareTo(o2.schemaName());
 
-            if (schemCmp != 0)
-                return schemCmp;
+                if (schemCmp != 0)
+                    return schemCmp;
 
-            return o1.tableName().compareTo(o2.tableName());
-        }
-    };
-
+                return o1.tableName().compareTo(o2.tableName());
+            }
+        };
 
     /**
      * Initializes info.
@@ -166,8 +165,8 @@ public class JdbcMetadataInfo {
      *
      * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
      *
-     * @param protoVer for what version of protocol to generate metadata. Early versions of protocol don't support
-     * some features like default values or precision/scale. If {@code null}, current version will be used.
+     * @param protoVer for what version of protocol to generate metadata. Early versions of protocol don't support some
+     * features like default values or precision/scale. If {@code null}, current version will be used.
      * @return List of metadatas about columns that match specified schema/tablename/columnname criterias.
      */
     public Collection<JdbcColumnMeta> getColumnsMeta(@Nullable ClientListenerProtocolVersion protoVer,

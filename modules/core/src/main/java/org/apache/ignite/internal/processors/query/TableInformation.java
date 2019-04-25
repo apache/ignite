@@ -81,6 +81,10 @@ public class TableInformation {
     public TableInformation(String schemaName, String tblName,
         String tblType, int cacheGrpId, String cacheGrpName, int cacheId, String cacheName, String affinityKeyCol,
         String keyAlias, String valAlias, String keyTypeName, String valTypeName) {
+        assert schemaName != null;
+        assert tblName != null;
+        assert tblType != null;
+
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.tblType = tblType;
@@ -102,20 +106,23 @@ public class TableInformation {
      * @param tblType Table type.
      */
     public TableInformation(String schemaName, String tblName, String tblType){
+        assert schemaName != null;
+        assert tblName != null;
+        assert tblType != null;
+
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.tblType = tblType;
 
-        this.cacheGrpId = -1;
-        this.cacheGrpName = null;
-        this.cacheId = -1;
-        this.cacheName = null;
-        this.affinityKeyCol = null;
-        this.keyAlias = null;
-        this.valAlias = null;
-        this.keyTypeName = null;
-        this.valTypeName = null;
-
+        cacheGrpId = -1;
+        cacheGrpName = null;
+        cacheId = -1;
+        cacheName = null;
+        affinityKeyCol = null;
+        keyAlias = null;
+        valAlias = null;
+        keyTypeName = null;
+        valTypeName = null;
     }
 
     /**
@@ -212,12 +219,16 @@ public class TableInformation {
 
         TableInformation tblInfo = (TableInformation)o;
 
-        return F.eq(schemaName, tblInfo.schemaName) && F.eq(tblName, tblInfo.tblName);
+        return schemaName.equals(tblInfo.schemaName) && tblName.equals(tblInfo.tblName);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(schemaName, tblName);
+        int res = schemaName.hashCode();
+
+        res = 31 * res + tblName.hashCode();
+
+        return res;
     }
 
     /** {@inheritDoc} */

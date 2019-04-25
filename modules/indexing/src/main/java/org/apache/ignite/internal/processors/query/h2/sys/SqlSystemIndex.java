@@ -44,7 +44,7 @@ public class SqlSystemIndex extends BaseIndex {
      * @param tbl Table.
      * @param col Column.
      */
-    SqlSystemIndex(SqlSystemTable tbl, Column... col) {
+    SqlSystemIndex(SystemViewH2Adapter tbl, Column... col) {
         IndexColumn[] idxCols;
 
         if (col != null && col.length > 0)
@@ -72,9 +72,9 @@ public class SqlSystemIndex extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-        assert table instanceof SqlSystemTable;
+        assert table instanceof SystemViewH2Adapter;
 
-        Iterator<Row> rows = ((SqlSystemTable)table).getRows(ses, first, last);
+        Iterator<Row> rows = ((SystemViewH2Adapter)table).getRows(ses, first, last);
 
         return new GridH2Cursor(rows);
     }
@@ -86,7 +86,7 @@ public class SqlSystemIndex extends BaseIndex {
 
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
 
-        if (((SqlSystemTable)table).view.isDistributed())
+        if (((SystemViewH2Adapter)table).view.isDistributed())
             baseCost = baseCost * DISTRIBUTED_MUL;
 
         return baseCost;

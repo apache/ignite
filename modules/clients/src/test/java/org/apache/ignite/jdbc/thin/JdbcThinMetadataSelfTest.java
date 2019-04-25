@@ -323,20 +323,20 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    private void testGetTables(String[] tblTypes, Set<String> expectedTbls) throws Exception {
+    private void testGetTables(String[] tblTypes, Set<String> expTbls) throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getTables(null, null, null, tblTypes);
 
-            Set<String> actualTbls = new HashSet<>(expectedTbls.size());
+            Set<String> actualTbls = new HashSet<>(expTbls.size());
 
             while (rs.next()) {
                 actualTbls.add(rs.getString("TABLE_SCHEM") + '.'
                     + rs.getString("TABLE_NAME"));
             }
 
-            assert expectedTbls.equals(actualTbls) : "expectedTbls=" + expectedTbls +
+            assert expTbls.equals(actualTbls) : "expectedTbls=" + expTbls +
                 ", actualTbls" + actualTbls;
         }
     }
