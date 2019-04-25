@@ -76,7 +76,7 @@ public class CacheArguments {
     private boolean fullConfig;
 
     /** Cache filter. */
-    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.DEFAULT;
 
     /** Check CRC sum on idle verify. */
     private boolean idleCheckCrc;
