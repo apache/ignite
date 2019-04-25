@@ -384,9 +384,6 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         AffinityTopologyVersion topVer)
         throws IgniteCheckedException
     {
-//        if (primary)
-//            log.info("TX: entryUpdated: " + key + ", cntr=" + updateCntr);
-
         assert key != null;
         assert lsnrCol != null;
 
