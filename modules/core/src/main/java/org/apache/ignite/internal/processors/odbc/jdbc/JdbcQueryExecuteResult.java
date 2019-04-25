@@ -25,6 +25,8 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResultMarshaler;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+
 /**
  * JDBC query execute result.
  */
@@ -140,7 +142,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
         writer.writeBoolean(partRes != null);
 
-        if (partRes != null)
+        if (ver.compareTo(VER_2_8_0) >= 0 && partRes != null)
             PartitionResultMarshaler.marshal(writer, partRes);
     }
 
@@ -163,7 +165,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
             updateCnt = reader.readLong();
         }
 
-        if (reader.readBoolean())
+        if (ver.compareTo(VER_2_8_0) >= 0 && reader.readBoolean())
             partRes = PartitionResultMarshaler.unmarshal(reader);
     }
 
