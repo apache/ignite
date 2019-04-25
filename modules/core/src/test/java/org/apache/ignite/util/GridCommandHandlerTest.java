@@ -62,11 +62,10 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.Command;
-import org.apache.ignite.internal.commandline.CommandArgFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -116,7 +115,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
-import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -1152,12 +1151,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         String output = testOut.toString();
 
-        for (CacheCommand cmd : CacheCommand.values()) {
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
             if (cmd != HELP) {
                 assertContains(log, output, cmd.toString());
 
-                for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                    assertContains(log, output, arg.toString());
+                Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
+
+                if (args != null)
+                    for (Enum<? extends CommandArg> arg : args.getEnumConstants())
+                        assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+
             }
         }
     }
@@ -1168,9 +1171,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
-        for (CacheCommand cmd : CacheCommand.values()) {
-            for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
+            Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
+
+            if(args != null)
+                for (Enum<? extends CommandArg> arg : args.getEnumConstants())
+                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -1184,8 +1190,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         String testOutStr = testOut.toString();
 
-        for (Command cmd : Command.values())
-            assertContains(log, testOutStr, cmd.text());
+        for (CommandList cmd : CommandList.values())
+            assertContains(log, testOutStr, cmd.toString());
     }
 
     /**
@@ -1561,7 +1567,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         int exitCode = execute(args);
 
-        assertEquals(exitOk, EXIT_CODE_OK == exitCode);
+        assertEquals(testOut.toString(), exitOk, EXIT_CODE_OK == exitCode);
 
         if (exitCode == EXIT_CODE_OK) {
             Matcher fileNameMatcher = dumpFileNameMatcher();

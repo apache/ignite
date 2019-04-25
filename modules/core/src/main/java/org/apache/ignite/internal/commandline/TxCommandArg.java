@@ -14,32 +14,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.cache.argument;
+
+package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 
 /**
- * {@link CacheSubcommands#LIST} command arguments.
+ * Transaction command arguments name.
  */
-public enum ListCommandArg implements CommandArg {
-    /** Group. */
-    GROUP("--groups"),
+public enum TxCommandArg implements CommandArg {
+    /** */
+    TX_LIMIT("--limit"),
 
-    /** Sequence. */
-    SEQUENCE("--seq"),
+    /** */
+    TX_ORDER("--order"),
 
-    /** Output format. */
-    OUTPUT_FORMAT("--output-format"),
+    /** */
+    TX_SERVERS("--servers"),
 
-    /** Config. */
-    CONFIG("--config");
+    /** */
+    TX_CLIENTS("--clients"),
+
+    /** */
+    TX_DURATION("--min-duration"),
+
+    /** */
+    TX_SIZE("--min-size"),
+
+    /** */
+    TX_LABEL("--label"),
+
+    /** */
+    TX_NODES("--nodes"),
+
+    /** */
+    TX_XID("--xid"),
+
+    /** */
+    TX_KILL("--kill"),
+
+    /** */
+    TX_INFO("--info");
 
     /** Option name. */
     private final String name;
 
-    /** */
-    ListCommandArg(String name) {
+    /**
+     * @param name Argument name.
+     */
+    TxCommandArg(String name) {
         this.name = name;
     }
 

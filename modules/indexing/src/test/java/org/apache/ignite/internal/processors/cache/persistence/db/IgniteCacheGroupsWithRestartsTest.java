@@ -163,7 +163,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDeletingGarbageAfterCacheDestroyedAndNodeStop() throws Exception {
+    public void testCleaningGarbageAfterCacheDestroyedAndNodeStop() throws Exception {
         testFindAndDeleteGarbage(this::executeTask);
     }
 
@@ -172,7 +172,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testDeletingGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
+    public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
         testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
     }
 
