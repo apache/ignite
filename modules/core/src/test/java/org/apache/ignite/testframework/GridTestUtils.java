@@ -2030,7 +2030,7 @@ public final class GridTestUtils {
 
         /** */
         public static int apply(int val) {
-            return (int) Math.round(TEST_SCALE_FACTOR_VALUE * val);
+            return (int)Math.round(TEST_SCALE_FACTOR_VALUE * val);
         }
 
         /** */
