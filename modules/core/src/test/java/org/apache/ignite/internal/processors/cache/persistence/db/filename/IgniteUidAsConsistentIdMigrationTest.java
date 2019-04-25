@@ -215,22 +215,43 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      */
     @Test
     public void testPreconfiguredUuidConsitentIdIsApplied() throws Exception {
-        Ignite ignite = startActivateFillDataGrid(0);
-        String sub = genNewStyleSubfolderName(0, ignite);
+        Ignite igniteFirst = startActivateFillDataGrid(0);
 
-        assertPdsDirsDefaultExist(sub);
+        igniteFirst.getOrCreateCache(CACHE_NAME).put("tmp", "tmpval");
 
-        UUID generatedCid = (UUID)(ignite.cluster().localNode().consistentId());
+        Ignite igniteSecond = startActivateFillDataGrid(1);
+        String sub1 = genNewStyleSubfolderName(0, igniteFirst);
+        String sub2 = genNewStyleSubfolderName(1, igniteSecond);
+        String sub2as1 = genNewStyleSubfolderName(0, igniteSecond);
+
+        assertPdsDirsDefaultExist(sub2);
+
+        UUID generatedFirstCid = (UUID)(igniteFirst.cluster().localNode().consistentId());
+        UUID generatedSecondCid = (UUID)(igniteSecond.cluster().localNode().consistentId());
 
         stopGrid(0);
 
-        this.configuredConsistentId = generatedCid;
+        stopGrid(1);
 
-        Ignite igniteRestarted = startActivateGrid(0);
+        this.configuredConsistentId = generatedFirstCid;
 
-        assertEquals("there!", igniteRestarted.getOrCreateCache(CACHE_NAME).get("hi"));
+        Ignite igniteRestarted1 = startGrid(0);
 
-        assertPdsDirsDefaultExist(sub);
+        this.configuredConsistentId = generatedSecondCid;
+
+        Ignite igniteRestarted2 = startActivateGrid(1);
+
+        assertEquals("there!", igniteRestarted2.getOrCreateCache(CACHE_NAME).get("hi"));
+
+        assertPdsDirsDefaultExist(sub1);
+        assertPdsDirsDefaultExist(sub2);
+
+        final File curFolder = new File(U.defaultWorkDirectory());
+
+        ensureExistence(false, curFolder, "binary_meta", sub2as1);
+        ensureExistence(false, curFolder, DataStorageConfiguration.DFLT_WAL_PATH, sub2as1);
+        ensureExistence(false, curFolder, DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, sub2as1);
+        ensureExistence(false, curFolder, PdsConsistentIdProcessor.DB_DEFAULT_FOLDER, sub2as1);
 
         stopGrid(0);
     }
@@ -731,6 +752,11 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if IO error occur.
      */
     private void assertDirectoryExist(final File workFolder, String... subFolderNames) throws IgniteCheckedException {
+        ensureExistence(true, workFolder, subFolderNames);
+    }
+
+    private void ensureExistence(boolean shouldExist, File workFolder,
+        String... subFolderNames) throws IgniteCheckedException {
         File curFolder = workFolder;
 
         for (String name : subFolderNames)
@@ -744,8 +770,9 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to convert path: [" + curFolder.getAbsolutePath() + "]", e);
         }
-        assertTrue("Directory " + Arrays.asList(subFolderNames).toString()
-            + " is expected to exist [" + path + "]", curFolder.exists() && curFolder.isDirectory());
-    }
+        String msg = "Directory " + Arrays.asList(subFolderNames).toString()
+            + " is expected to " + (shouldExist ? " exist" : "not exist" ) + " [" + path + "]";
 
+        assertEquals(msg, shouldExist, curFolder.exists() && curFolder.isDirectory());
+    }
 }
