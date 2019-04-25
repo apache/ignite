@@ -1939,8 +1939,8 @@ public class CommandHandler {
                     "processed by " + IDLE_VERIFY + " command. If cache names are specified, in form of regular " +
                     "expressions, only matching caches will be verified. Caches matched by regexes specified after " +
                     EXCLUDE_CACHES + " parameter will be excluded from verification. Using parameter " + CACHE_FILTER +
-                    " you can verify: only USER caches, only user PERSISTENT caches, only user NOT_PERSISTENT caches, " +
-                    ", only SYSTEM caches, or ALL of the above.";
+                    " you can verify: only " + USER + " caches, only user " + PERSISTENT + " caches, only user " +
+                    NOT_PERSISTENT + " caches, only " + SYSTEM + " caches, or " + ALL + " of the above.";
 
             case VALIDATE_INDEXES:
                 return "Validate indexes on an idle cluster and print out the keys that are missing in the indexes.";
