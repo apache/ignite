@@ -1055,6 +1055,36 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
+     * @param cacheId Which was stopped, but its data still presented.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void findAndCleanupLostIndexesForStoppedCache(int cacheId) throws IgniteCheckedException {
+        for (String name : indexStorage.getIndexNames()) {
+            if (indexStorage.nameIsAssosiatedWithCache(name, cacheId)) {
+                ctx.database().checkpointReadLock();
+
+                try {
+                    RootPage page = indexStorage.allocateIndex(name);
+
+                    ctx.kernalContext().query().getIndexing().destroyOrphanIndex(
+                        page,
+                        name,
+                        grp.groupId(),
+                        grp.dataRegion().pageMemory(), globalRemoveId(),
+                        reuseListForIndex(name),
+                        grp.mvccEnabled()
+                    );
+
+                    indexStorage.dropIndex(name);
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+            }
+        }
+    }
+
+    /**
      *
      */
     private static class WALHistoricalIterator implements IgniteHistoricalIterator {
