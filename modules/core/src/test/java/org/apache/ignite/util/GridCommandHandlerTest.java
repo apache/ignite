@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -224,7 +225,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override public String getTestIgniteInstanceName() {
-        return "bltTest";
+        return "gridCommandHandlerTest";
     }
 
     /** {@inheritDoc} */
@@ -432,6 +433,42 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals("(Coordinator: ConsistentId=" +
             grid(0).cluster().localNode().consistentId() + ", Order=4)", crdStr);
 
+    }
+
+    /**
+     * Very basic tests for running the command in different enviroment which other command are running in.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testFindAndDeleteGarbage() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        injectTestSystemOut();
+
+        ignite.createCaches(Arrays.asList(
+            new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
+            new CacheConfiguration<>("garbage2").setGroupName("groupGarbage")));
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            ignite(0).localNode().id().toString(), "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
+            "groupGarbage", "--port", "11212"));
+
+        assertTrue(testOut.toString().contains("garbage not found"));
     }
 
     /**
@@ -735,7 +772,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, true);
+        IgniteInternalFuture<?> fut = startTransactions("testActiveTransactions", lockLatch, unlockLatch, true);
 
         U.awaitQuiet(lockLatch);
 
@@ -893,36 +930,39 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, false);
+        IgniteInternalFuture<?> fut = startTransactions("testTransactionInfo", lockLatch, unlockLatch, false);
 
-        U.awaitQuiet(lockLatch);
+        try {
+            U.awaitQuiet(lockLatch);
 
-        doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
+            doSleep(3000); // Should be more than enough for all transactions to appear in contexts.
 
-        Set<GridCacheVersion> nearXids = new HashSet<>();
+            Set<GridCacheVersion> nearXids = new HashSet<>();
 
-        for (int i = 0; i < 5; i++) {
-            IgniteEx grid = grid(i);
+            for (int i = 0; i < 5; i++) {
+                IgniteEx grid = grid(i);
 
-            IgniteTxManager tm = grid.context().cache().context().tm();
+                IgniteTxManager tm = grid.context().cache().context().tm();
 
-            for (IgniteInternalTx tx : tm.activeTransactions())
-                nearXids.add(tx.nearXidVersion());
+                for (IgniteInternalTx tx : tm.activeTransactions())
+                    nearXids.add(tx.nearXidVersion());
+            }
+
+            injectTestSystemOut();
+
+            for (GridCacheVersion nearXid : nearXids)
+                assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
+
+            String out = testOut.toString();
+
+            for (GridCacheVersion nearXid : nearXids)
+                assertTrue(nearXid.toString(), out.contains(nearXid.toString()));
         }
+        finally {
+            unlockLatch.countDown();
 
-        injectTestSystemOut();
-
-        for (GridCacheVersion nearXid : nearXids)
-            assertEquals(EXIT_CODE_OK, execute("--tx", "--info", nearXid.toString()));
-
-        String out = testOut.toString();
-
-        for (GridCacheVersion nearXid : nearXids)
-            assertTrue(out.contains(nearXid.toString()));
-
-        unlockLatch.countDown();
-
-        fut.get();
+            fut.get();
+        }
     }
 
     /**
@@ -945,7 +985,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch, false);
+        IgniteInternalFuture<?> fut = startTransactions("testTransactionHistoryInfo", lockLatch, unlockLatch, false);
 
         U.awaitQuiet(lockLatch);
 
@@ -1166,8 +1206,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 if (m instanceof GridDhtTxFinishRequest) {
                     GridDhtTxFinishRequest r = (GridDhtTxFinishRequest)m;
 
-                    if (r.nearNodeId().equals(clients[0].cluster().localNode().id()))
-                        return false;
+                    return !r.nearNodeId().equals(clients[0].cluster().localNode().id());
                 }
 
                 return true;
@@ -1273,7 +1312,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
-        assertTrue(testOut.toString().contains("Node not found for consistent ID: bltTest2"));
+        assertTrue(testOut.toString(), testOut.toString().contains("Node not found for consistent ID:"));
+        assertFalse(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName() + "1"));
     }
 
     /**
@@ -1776,9 +1816,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump"));
-        });
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() ->
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify", "--dump")));
 
         TestRecordingCommunicationSpi.spi(unstable).waitForBlocked();
 
@@ -1869,8 +1908,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String outputStr = testOut.toString();
 
-        assertTrue(outputStr.contains("idle_verify failed on 1 node."));
-        assertTrue(outputStr.contains("idle_verify check has finished, no conflicts have been found."));
+        assertTrue(outputStr, outputStr.contains("idle_verify failed on 1 node."));
+        assertTrue(outputStr, outputStr.contains("idle_verify check has finished, no conflicts have been found."));
     }
 
     /** */
@@ -1968,7 +2007,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             .setAffinity(new RendezvousAffinityFunction(false, parts))
             .setBackups(2);
 
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -2023,7 +2062,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnPersistenceClientCache() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -2044,7 +2083,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         dataRegionConfiguration = new DataRegionConfiguration()
             .setName("none-persistence-region");
 
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -2090,7 +2129,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDumpExcludedCacheGrp() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -2130,7 +2169,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyDumpExcludedCaches() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(3);
+        IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
@@ -2185,7 +2224,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyMovingParts() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrids(2);
+        IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
@@ -2649,6 +2688,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @return Future to be completed after finish of all started transactions.
      */
     private IgniteInternalFuture<?> startTransactions(
+        String testName,
         CountDownLatch lockLatch,
         CountDownLatch unlockLatch,
         boolean topChangeBeforeUnlock
@@ -2717,7 +2757,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                         break;
                 }
             }
-        }, 4, "tx-thread");
+        }, 4, "tx-thread-" + testName);
     }
 
     /** */

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheR
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxHistoricalRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
@@ -87,7 +88,9 @@ import org.junit.runners.Suite;
 
     IgniteLogicalRecoveryTest.class,
 
-    IgniteSequentialNodeCrashRecoveryTest.class
+    IgniteSequentialNodeCrashRecoveryTest.class,
+
+    IgniteCacheGroupsWithRestartsTest.class
 })
 public class IgnitePdsWithIndexingCoreTestSuite {
 }
