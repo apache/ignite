@@ -249,7 +249,10 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
                 throw new UnsupportedOperationException("Consistency check is suitable only in case " +
                     "at least 1 backup configured for cache.");
 
-            assert !opCtx.consistency();
+            boolean consistency = opCtx.consistency();
+
+            if (consistency)
+                return this;
 
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.setConsistency(true), lock);
         }
