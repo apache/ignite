@@ -536,7 +536,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.consistency(),
+            false,
             /*force primary*/false,
             expiry,
             skipVals,
