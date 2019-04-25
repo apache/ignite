@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -186,7 +187,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         UUID.fromString(ignite.cluster().localNode().consistentId().toString());
         final String subfolderName = genNewStyleSubfolderName(0, ignite);
 
-        assertDirectoryExist("binary_meta", subfolderName);
+        assertDirectoryExist(StandaloneGridKernalContext.BINARY_META_FOLDER, subfolderName);
 
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
         assertDirectoryExist(pstWalArchCustomPath, subfolderName);
@@ -725,7 +726,7 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
      * @throws IgniteCheckedException if IO error occur
      */
     private void assertPdsDirsDefaultExist(String subDirName) throws IgniteCheckedException {
-        assertDirectoryExist("binary_meta", subDirName);
+        assertDirectoryExist(StandaloneGridKernalContext.BINARY_META_FOLDER, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_PATH, subDirName);
         assertDirectoryExist(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, subDirName);
         assertDirectoryExist(PdsConsistentIdProcessor.DB_DEFAULT_FOLDER, subDirName);
@@ -743,7 +744,6 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertDirectoryExist(curFolder, subFolderNames);
     }
 
-
     /**
      * Checks one folder existence.
      *
@@ -755,6 +755,11 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         ensureExistence(true, workFolder, subFolderNames);
     }
 
+    /**
+     * @param shouldExist Should directory exist.
+     * @param workFolder Work parent folder.
+     * @param subFolderNames Sub folder(s) name(s).
+     */
     private void ensureExistence(boolean shouldExist, File workFolder,
         String... subFolderNames) throws IgniteCheckedException {
         File curFolder = workFolder;

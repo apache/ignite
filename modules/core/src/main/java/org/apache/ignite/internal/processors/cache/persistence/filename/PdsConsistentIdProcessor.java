@@ -69,11 +69,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     private static final String SUBDIR_PATTERN = NODE_PATTERN + UUID_STR_PATTERN;
 
     /** Database subfolders for new style filter. */
-    public static final FileFilter DB_SUBFOLDERS_NEW_STYLE_FILTER = new FileFilter() {
-        @Override public boolean accept(File pathname) {
-            return pathname.isDirectory() && pathname.getName().matches(SUBDIR_PATTERN);
-        }
-    };
+    public static final FileFilter DB_SUBFOLDERS_NEW_STYLE_FILTER =
+        (pathname) -> pathname.isDirectory() && pathname.getName().matches(SUBDIR_PATTERN);
 
     /** Database subfolders for old style filter. */
     private static final FileFilter DB_SUBFOLDERS_OLD_STYLE_FILTER = new FileFilter() {
@@ -141,11 +138,16 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         Serializable configuredConsistentId) throws IgniteCheckedException {
         if (configuredConsistentId instanceof UUID) {
             UUID uuid = (UUID)configuredConsistentId;
+            String regexForCurrUuid = NODE_PATTERN + uuid.toString();
 
-            int nodeIdx = 0;
-            final String consIdBasedFolder = genNewStyleSubfolderName(nodeIdx, uuid);
-            final File existingUuidFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
-            final GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(existingUuidFolder);
+            List<FolderCandidate> files = getFilteredPdsFiles(pstStoreBasePath,
+                (pathname) -> pathname.isDirectory() && pathname.getName().matches(regexForCurrUuid));
+
+            int nodeIdx = files.isEmpty() ? 0 : files.get(files.size() - 1).nodeIdx;
+
+            String consIdBasedFolder = genNewStyleSubfolderName(nodeIdx, uuid);
+            File existingUuidFolder = U.resolveWorkDirectory(pstStoreBasePath.getAbsolutePath(), consIdBasedFolder, false); //mkdir here
+            GridCacheDatabaseSharedManager.FileLockHolder fileLockHolder = tryLock(existingUuidFolder);
 
             return new PdsFolderSettings(pstStoreBasePath,
                 consIdBasedFolder,
@@ -171,6 +173,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
                 ctx.discovery().consistentId(settings.consistentId());
             }
         }
+
         return settings;
     }
 
@@ -409,7 +412,16 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * applicable new style files. Collection is sorted ascending according to node ID, 0 node index is coming first.
      */
     @Nullable private List<FolderCandidate> getNodeIndexSortedCandidates(File pstStoreBasePath) {
-        final File[] files = pstStoreBasePath.listFiles(DB_SUBFOLDERS_NEW_STYLE_FILTER);
+        return getFilteredPdsFiles(pstStoreBasePath, DB_SUBFOLDERS_NEW_STYLE_FILTER);
+    }
+
+    /**
+     * @param pstStoreBasePath persistent store store base path.
+     * @param filter Filter for files.
+     * @return matching files sored ascending according to node ID, 0 node index is coming first.
+     */
+    @NotNull private List<FolderCandidate> getFilteredPdsFiles(File pstStoreBasePath, FileFilter filter) {
+        final File[] files = pstStoreBasePath.listFiles(filter);
 
         if (files == null)
             return Collections.emptyList();
@@ -422,7 +434,8 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             if (candidate != null)
                 res.add(candidate);
         }
-        Collections.sort(res, new Comparator<FolderCandidate>() {
+
+        res.sort(new Comparator<FolderCandidate>() {
             @Override public int compare(FolderCandidate c1, FolderCandidate c2) {
                 return Integer.compare(c1.nodeIndex(), c2.nodeIndex());
             }
