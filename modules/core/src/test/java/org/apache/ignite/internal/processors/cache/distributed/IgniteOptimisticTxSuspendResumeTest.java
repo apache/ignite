@@ -483,6 +483,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
 
                     assertEquals(ROLLED_BACK, tx.state());
 
+                    // Here we check that we can start any transactional operation in the same thread after a suspended
+                    // transaction is timed-out.
+                    assertFalse(cache.containsKey(1));
+
                     tx.close();
                 }
             }

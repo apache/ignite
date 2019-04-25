@@ -4821,15 +4821,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        if (state() == SUSPENDED) {
-            try {
-                resume(false, threadId());
-            }
-            catch (IgniteCheckedException e) {
-                log.warning("Error resuming suspended transaction on timeout: " + this, e);
-            }
-        }
-
         boolean proceed;
 
         synchronized (this) {
