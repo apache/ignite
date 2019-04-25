@@ -1608,7 +1608,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             true,
             "idle_verify check has finished, no conflicts have been found.",
             null,
-            "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*"
+            "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*", "--cache-filter", "DEFAULT"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
