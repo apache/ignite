@@ -165,13 +165,13 @@ namespace Apache.Ignite.Core.Cluster
         /// <summary>
         /// Returns value of manual baseline control or auto adjusting baseline.
         /// </summary>
-        /// <returns><c>true</c> If cluster in auto-adjust. <c>false</c> If cluster in manuale</returns>
+        /// <returns><c>true</c> If cluster in auto-adjust. <c>false</c> If cluster in manual.</returns>
         bool IsBaselineAutoAdjustEnabled();
 
         /// <summary>
         /// Sets the value of manual baseline control or auto adjusting baseline.
         /// </summary>
-        /// <param name="isBaselineAutoAdjustEnabled"><c>true</c> If cluster in auto-adjust. <c>false</c> If cluster in manuale</param>
+        /// <param name="isBaselineAutoAdjustEnabled"><c>true</c> If cluster in auto-adjust. <c>false</c> If cluster in manual.</param>
         void SetBaselineAutoAdjustEnabledFlag(bool isBaselineAutoAdjustEnabled);
 
         /// <summary>
