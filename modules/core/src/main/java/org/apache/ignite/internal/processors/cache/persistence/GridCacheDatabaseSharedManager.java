@@ -1161,8 +1161,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         PrewarmingConfiguration prewarmCfg = plcCfg.getPrewarmingConfiguration();
 
-        if (prewarmCfg != null)
-            prewarming = new PageMemoryPrewarmingImpl(plcCfg.getName(), prewarmCfg, memMetrics, cctx);
+        if (prewarmCfg != null) {
+            prewarming = new PageMemoryPrewarmingImpl(
+                plcCfg.getName(),
+                prewarmCfg,
+                memMetrics,
+                cctx);
+        }
 
         PageMemoryImpl pageMem = new PageMemoryImpl(
             wrapMetricsMemoryProvider(memProvider, memMetrics),
@@ -2084,7 +2089,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             PageMemory pageMem = dataRegion.pageMemory();
 
             if (pageMem instanceof PageMemoryEx)
-                ((PageMemoryEx)pageMem).startWarmingUp();
+                ((PageMemoryEx)pageMem).startPrewarming();
         }
     }
 

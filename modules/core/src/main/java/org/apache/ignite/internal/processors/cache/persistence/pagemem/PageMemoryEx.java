@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
-import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -162,18 +161,12 @@ public interface PageMemoryEx extends PageMemory {
 
     /**
      * @param act Action.
+     * TODO description
      */
-    public IgniteInternalFuture<Void> forEachAsync(BiConsumer<FullPageId, Long> act);
+    public IgniteInternalFuture<Void> forEachAsync(LoadedPagesMap.CellConsumer act);
 
     /**
-     * Starts page memory warming-up process.
+     * Starts page memory prewarming process.
      */
-    public void startWarmingUp();
-
-    /**
-     *  Specifies count of segments.
-     *
-     * @return Count of segments.
-     */
-    public int getSegments();
+    public void startPrewarming();
 }

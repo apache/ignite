@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -35,9 +34,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PrewarmingConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -64,7 +60,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
     protected int tmpFileMBytes = 2 * 1024;
 
     /** Size of int[] array values, x4 in bytes. */
-    protected int valSize = 5 * 1024 * 1024;
+    protected int valSize = 1024 * 1024;
 
     /** Value count. */
     protected int valCnt = 20;
@@ -92,7 +88,8 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(true)
                 .setPrewarmingConfiguration(new PrewarmingConfiguration()
                     .setWaitPrewarmingOnStart(waitPrewarmingOnStart)
-                    .setRuntimeDumpDelay(prewarmingRuntimeDumpDelay))
+                    .setRuntimeDumpDelay(prewarmingRuntimeDumpDelay)
+                    .setPageLoadThreads(1))
             );
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -130,7 +127,9 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
      * @return Average elapsed cache reading time.
      * @throws Exception If failed.
      */
-    public long doCachePersistenceRead(boolean prewarmingEnabled, boolean prewarmingMultithreaded, IgniteLogger log) throws Exception {
+    private long doCachePersistenceRead(boolean prewarmingEnabled, boolean prewarmingMultithreaded, IgniteLogger log) throws Exception {
+        assertTrue(valCnt > 0);
+
         fillPersistence();
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log);
@@ -139,7 +138,6 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
 
         if (prewarmingEnabled && !prewarmingMultithreaded)
             dataRegionCfg.getPrewarmingConfiguration()
-                .setDumpReadThreads(1)
                 .setPageLoadThreads(1);
 
         if (!prewarmingEnabled)
@@ -175,23 +173,29 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testWarmingUpWithoutLoad() throws Exception{
+    public void testPrewarming() throws Exception {
         ListeningTestLogger log = new ListeningTestLogger(false, log());
 
-        LogListener throttleLsnr = throttleListener(false);
+        long prewarmedCacheReadDuration = doCachePersistenceRead(true, false, log);
 
-        log.registerListener(throttleLsnr);
+        stopAllGrids(false);
 
-        doCachePersistenceRead(true, false, log);
+        cleanPersistenceDir();
 
-        assertTrue(throttleLsnr.check());
+        long cacheReadDuration = doCachePersistenceRead(false, false, log);
+
+        log().info("Cache average reading duration with prewarming enabled: " + prewarmedCacheReadDuration);
+
+        log().info("Cache average reading duration with prewarming disabled: " + cacheReadDuration);
+
+        assertTrue(cacheReadDuration > prewarmedCacheReadDuration) ;
     }
 
     /**
      *
      */
     @Test
-    public void testMultithreadedPrewarming() throws Exception {
+    public void testPrewarmingMultithreaded() throws Exception {
         ListeningTestLogger log = new ListeningTestLogger(false, log());
 
         AtomicInteger elapsed = new AtomicInteger(0);
@@ -245,29 +249,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testPrewarming() throws Exception {
-        ListeningTestLogger log = new ListeningTestLogger(false, log());
-
-        long prewarmedCacheReadDuration = doCachePersistenceRead(true, false, log);
-
-        stopAllGrids(false);
-
-        cleanPersistenceDir();
-
-        long cacheReadDuration = doCachePersistenceRead(false, false, log);
-
-        log().info("Cache average reading duration with prewarming enabled: " + prewarmedCacheReadDuration);
-
-        log().info("Cache average reading duration with prewarming disabled: " + cacheReadDuration);
-
-        assertTrue(cacheReadDuration > prewarmedCacheReadDuration) ;
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testWarmingUpWithLoad() throws Exception {
+    public void testPrewarmingWithLoad() throws Exception {
         fillPersistence();
 
         AtomicBoolean stop = new AtomicBoolean(false);
@@ -275,7 +257,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
         ListeningTestLogger log = new ListeningTestLogger(false, log());
 
         LogListener throttleLsnr = throttleListener(true);
-        LogListener stopLsnr = LogListener.matches("Warming-up of DataRegion [name=default] finished in ")
+        LogListener stopLsnr = LogListener.matches("Prewarming of DataRegion [name=default] finished in ")
             .times(1).build();
 
         log.registerListener(throttleLsnr);
@@ -284,8 +266,7 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0)).setGridLogger(log);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getPrewarmingConfiguration()
-            .setThrottleAccuracy(0.9)
-            .setDumpReadThreads(1);
+            .setThrottleAccuracy(0.9);
 
         GridTestUtils.runMultiThreadedAsync(getLoadRunnable(stop), 10, "put-thread");
 
@@ -297,9 +278,14 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
                     stopLsnr.reset();
                     throttleLsnr.reset();
 
-                    ignite = startGrid(cfg);
+                    ignite = startGrid(new IgniteConfiguration(cfg));
 
-                    res = GridTestUtils.waitForCondition(stopLsnr::check, 180_000) && throttleLsnr.check();
+                    res = GridTestUtils.waitForCondition(stopLsnr::check, 120_000) && throttleLsnr.check();
+
+                    if (res)
+                        break;
+
+                    stopGrid(0, true);
                 }
                 catch (Throwable t) {
                     Thread.interrupted();
@@ -310,9 +296,23 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
         }
         finally {
             stop.set(true);
-
-            ignite.close();
         }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testPrewarmingWithoutLoad() throws Exception{
+        ListeningTestLogger log = new ListeningTestLogger(false, log());
+
+        LogListener throttleLsnr = throttleListener(false);
+
+        log.registerListener(throttleLsnr);
+
+        doCachePersistenceRead(true, false, log);
+
+        assertTrue(throttleLsnr.check());
     }
 
     /**
@@ -388,15 +388,6 @@ public class PageMemoryPrewarmingTest extends GridCommonAbstractTest {
                                 cache0.put(k, val);
                             else
                                 cache0.remove(k);
-
-                            IgniteKernal primaryNode = (IgniteKernal)primaryCache(k, CACHE_NAME).unwrap(Ignite.class);
-                            GridCacheEntryEx entry = primaryNode.internalCache(CACHE_NAME).entryEx(k);
-
-                            try {
-                                entry.unswap();
-                            }
-                            catch (IgniteCheckedException | GridCacheEntryRemovedException ignore) {
-                            }
                         }
                     }
                     catch (Throwable ignore) {}

@@ -16,55 +16,38 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import java.util.regex.Pattern;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.PrewarmingConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.util.future.CountDownFuture;
-import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.thread.IgniteThreadFactory;
 
-import static org.apache.ignite.internal.pagemem.PageIdUtils.PART_ID_SIZE;
 import static org.apache.ignite.internal.stat.IoStatisticsType.CACHE_GROUP;
 
 /**
  * Default {@link PageMemoryPrewarming} implementation.
  */
-public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPagesTracker {
-    /** Prewarming page IDs dump directory name. */
-    private static final String PREWARM_DUMP_DIR = "prewarm";
-
+public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming {
     /** Throttle time in nanoseconds. */
     private static final long THROTTLE_TIME_NANOS = 4_000;
 
@@ -80,6 +63,12 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
     /** Prewarming configuration. */
     private final PrewarmingConfiguration prewarmCfg;
 
+    /** Last loaded page IDs store. */
+    private final LastLoadedPagesIdsStore lastLoadedPagesIdsStore;
+
+    /** Custom prewarming page IDs supplier. */
+    private final Supplier<Map<String, Map<Integer, Supplier<int[]>>>> customPageIdsSupplier;
+
     /** Data region metrics. */
     private final DataRegionMetrics dataRegMetrics;
 
@@ -88,9 +77,6 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
 
     /** */
     private final IgniteLogger log;
-
-    /** */
-    private final ConcurrentMap<Long, Segment> segments = new ConcurrentHashMap<>();
 
     /** Need throttling. */
     private final AtomicBoolean needThrottling = new AtomicBoolean();
@@ -110,29 +96,14 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
     /** Page memory. */
     private volatile PageMemoryEx pageMem;
 
-    /** Prewarming page IDs dump directory. */
-    private File dumpDir;
-
     /** Prewarming thread. */
     private volatile Thread prewarmThread;
 
     /** Stop prewarming flag. */
     private volatile boolean stopPrewarm;
 
-    /** Dump worker. */
-    private volatile LoadedPagesIdsDumpWorker dumpWorker;
-
-    /** Loaded pages dump in progress flag. */
-    private volatile boolean loadedPagesDumpInProgress;
-
     /** Stopping flag. */
     private volatile boolean stopping;
-
-    /** Thread pool for warm up files processing. */
-    private ExecutorService dumpReadSvc;
-
-    /** Thread factory for page loading. */
-    IgniteThreadFactory pageLoadThreadFactory;
 
     /**
      * @param dataRegName Data region name.
@@ -158,68 +129,57 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
         this.ctx = ctx;
         this.log = ctx.logger(PageMemoryPrewarmingImpl.class);
 
-        int dumpReadThread = prewarmCfg.getDumpReadThreads();
+        customPageIdsSupplier = prewarmCfg.getCustomPageIdsSupplier();
 
-        if (dumpReadThread > 1) {
-            dumpReadSvc = new ThreadPoolExecutor(
-                dumpReadThread,
-                dumpReadThread,
-                60L,
-                TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>());
-        }
-
-        pageLoadThreadFactory = new IgniteThreadFactory(ctx.igniteInstanceName(),
-            dataRegName + "-prewarm-seg");
+        lastLoadedPagesIdsStore = customPageIdsSupplier != null ? null :
+            new LastLoadedPagesIdsStore(dataRegName, prewarmCfg, ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void pageMemory(PageMemoryEx pageMem) {
         this.pageMem = pageMem;
+
+        if (lastLoadedPagesIdsStore != null)
+            lastLoadedPagesIdsStore.pageMemory(pageMem);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onPageReplacementStarted() {
+        stopPrewarm = true;
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        initDir();
+        if (lastLoadedPagesIdsStore != null)
+            lastLoadedPagesIdsStore.initStore();
 
         if (prewarmCfg.isWaitPrewarmingOnStart()) {
             prewarmThread = Thread.currentThread();
 
-            warmUp();
+            prewarm();
         }
         else {
             prewarmThread = new IgniteThread(
                 ctx.igniteInstanceName(),
-                dataRegName + "-prewarm",
-                this::warmUp);
+                threadNamePrefix(),
+                this::prewarm);
 
+            prewarmThread.setUncaughtExceptionHandler(ctx.kernalContext().uncaughtExceptionHandler());
             prewarmThread.setDaemon(true);
             prewarmThread.start();
-        }
-
-        if (prewarmCfg.getRuntimeDumpDelay() > PrewarmingConfiguration.RUNTIME_DUMP_DISABLED) {
-            dumpWorker = new LoadedPagesIdsDumpWorker();
-
-            new IgniteThread(dumpWorker).start();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         stopping = true;
+        stopPrewarm = true;
 
         try {
             Thread prewarmThread = this.prewarmThread;
 
             if (prewarmThread != null)
                 prewarmThread.join();
-
-            if (dumpWorker != null) {
-                if (!loadedPagesDumpInProgress)
-                    dumpWorker.cancel();
-
-                dumpWorker.join();
-            }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -227,138 +187,162 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
             throw new IgniteException(e);
         }
 
-        dumpLoadedPagesIds(true);
+        if (lastLoadedPagesIdsStore != null)
+            lastLoadedPagesIdsStore.stop();
+        else if (customPageIdsSupplier instanceof LifecycleAware)
+            ((LifecycleAware)customPageIdsSupplier).stop();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onPageLoad(int grpId, long pageId) {
-        if (prewarmCfg.isIndexesOnly() &&
-            PageIdUtils.partId(pageId) != PageIdAllocator.INDEX_PARTITION)
-            return;
-
-        getSegment(Segment.key(grpId, pageId)).incCount();
+    /**
+     * @return {@code true} if prewarming process should be stopped.
+     */
+    private boolean isStopPrewarm() {
+        return stopPrewarm;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onPageUnload(int grpId, long pageId) {
-        if (prewarmCfg.isIndexesOnly() &&
-            PageIdUtils.partId(pageId) != PageIdAllocator.INDEX_PARTITION)
-            return;
-
-        getSegment(Segment.key(grpId, pageId)).decCount();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onPageEvicted(int grpId, long pageId) {
-        stopPrewarm = true;
-
-        onPageUnload(grpId, pageId);
+    /**
+     * @return Thread name prefix for worker threads.
+     */
+    private String threadNamePrefix() {
+        return dataRegName + "-prewarm";
     }
 
     /**
      *
      */
-    private void initDir() throws IgniteException {
-        IgnitePageStoreManager store = ctx.pageStore();
+    private void prewarm() {
+        if (log.isInfoEnabled())
+            log.info("Start prewarming of DataRegion [name=" + dataRegName + "]");
 
-        assert store instanceof FilePageStoreManager : "Invalid page store manager was created: " + store;
+        initReadsRate();
 
-        dumpDir = Paths.get(((FilePageStoreManager)store).workDir().getAbsolutePath(), PREWARM_DUMP_DIR).toFile();
+        needThrottling.set(readsRates[readsRates.length - 1] == Long.MAX_VALUE);
 
-        if (!U.mkdirs(dumpDir))
-            throw new IgniteException("Could not create directory for prewarming data: " + dumpDir);
-    }
+        if (needThrottling.get() && log.isInfoEnabled())
+            log.info("Detected need to throttle warming up.");
 
-    /**
-     *
-     */
-    private void warmUp() {
-        ExecutorService[] workers = null;
+        long startTs = U.currentTimeMillis();
 
-        boolean dumpReadMultithreaded = prewarmCfg.getDumpReadThreads() > 1;
+        readRatesLastTs.set(startTs);
 
-        boolean pageLoadMultithreaded = prewarmCfg.getPageLoadThreads() > 1;
+        FullPageIdSource pageIdSrc = lastLoadedPagesIdsStore != null ? lastLoadedPagesIdsStore :
+            this::forEachCustomPageIds;
+
+        PageLoader pageLdr = new PageLoader();
 
         try {
-            if (log.isInfoEnabled())
-                log.info("Start prewarming of DataRegion [name=" + dataRegName + "]");
+            pageIdSrc.forEach(pageLdr, this::isStopPrewarm);
 
-            File[] segFiles = dumpDir.listFiles(Segment.FILE_FILTER);
+            IgniteInternalFuture<Void> finishFut = pageLdr.finishFuture();
 
-            if (segFiles == null) {
-                if (log.isInfoEnabled())
-                    log.info("Saved prewarming dump files not found!");
-
-                return;
-            }
-
-            if (log.isInfoEnabled())
-                log.info("Saved prewarming dump files found: " + segFiles.length);
-
-            initReadsRate();
-
-            needThrottling.set(readsRates[readsRates.length - 1] == Long.MAX_VALUE);
-
-            if (needThrottling.get() && log.isInfoEnabled())
-                log.info("Detected need to throttle warming up.");
-
-            long startTs = U.currentTimeMillis();
-
-            readRatesLastTs.set(startTs);
-
-            SegmentLoader segmentLdr = new SegmentLoader();
-
-            if (pageLoadMultithreaded) {
-                int pageLoadThreads = prewarmCfg.getPageLoadThreads();
-
-                workers = new ExecutorService[pageLoadThreads];
-
-                for (int i = 0; i < pageLoadThreads; i++)
-                    workers[i] = Executors.newSingleThreadExecutor(pageLoadThreadFactory);
-
-                segmentLdr.setWorkers(workers);
-            }
-
-            CountDownFuture completeFut = new CountDownFuture(segFiles.length);
-
-            AtomicInteger pagesWarmed = new AtomicInteger();
-
-            for (File segFile : segFiles) {
-                Runnable dumpReader = () -> {
-                    try {
-                        pagesWarmed.addAndGet(segmentLdr.load(segFile, needThrottling));
-
-                        completeFut.onDone();
-                    }
-                    catch (Throwable e) {
-                        completeFut.onDone(e);
-                    }
-                };
-
-                if (dumpReadMultithreaded)
-                    dumpReadSvc.execute(dumpReader);
-                else
-                    dumpReader.run();
-            }
-
-            if (segFiles.length > 0)
-                completeFut.get();
-
+            finishFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Prewarming of DataRegion [name=" + dataRegName + "] failed", e);
+        }
+        finally {
             long warmingUpTime = U.currentTimeMillis() - startTs;
 
             if (log.isInfoEnabled()) {
-                log.info("Prewarming of DataRegion [name=" + dataRegName + "] finished in " +
-                    warmingUpTime + " ms, pages warmed: " + pagesWarmed);
+                log.info("Prewarming of DataRegion [name=" + dataRegName +
+                    "] finished in " + warmingUpTime + " ms, pages prewarmed: " + pageLdr.loadedPagesCount());
             }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-        finally {
-            if (workers != null)
-                Arrays.asList(workers).forEach(ExecutorService::shutdown);
 
             prewarmThread = null;
+
+            if (lastLoadedPagesIdsStore != null)
+                lastLoadedPagesIdsStore.start();
+            else if (customPageIdsSupplier instanceof LifecycleAware)
+                ((LifecycleAware)customPageIdsSupplier).start();
+        }
+    }
+
+    /**
+     * @param consumer Full page ID consumer.
+     * @param breakCond Break condition.
+     */
+    private void forEachCustomPageIds(FullPageIdConsumer consumer, BooleanSupplier breakCond) {
+        if (customPageIdsSupplier == null)
+            return;
+
+        Map<String, Map<Integer, Supplier<int[]>>> pageIdsMap = customPageIdsSupplier.get();
+
+        if (pageIdsMap == null || breakCond != null && breakCond.getAsBoolean())
+            return;
+
+        for (Map.Entry<String, Map<Integer, Supplier<int[]>>> entry : pageIdsMap.entrySet()) {
+            String cacheName = entry.getKey();
+
+            if (cacheName == null || cacheName.isEmpty()) {
+                U.warn(log, "Invalid (null or empty) custom value of cache name encountered.");
+
+                continue;
+            }
+
+            int cacheId = CU.cacheId(cacheName);
+
+            for (Map.Entry<Integer, Supplier<int[]>> part : entry.getValue().entrySet()) {
+                if (part.getKey() == null) {
+                    U.warn(log, "Invalid (null) custom value of partition ID encountered for cache [name=" +
+                        cacheName + "].");
+
+                    continue;
+                }
+
+                int partId = part.getKey();
+
+                if (partId > PageIdAllocator.MAX_PARTITION_ID && partId != PageIdAllocator.INDEX_PARTITION) {
+                    U.warn(log, "Invalid (" + U.hexInt(partId) +
+                        ") custom value of partition ID encountered for cache [name=" +
+                        cacheName + "].");
+                }
+
+                if (prewarmCfg.isIndexesOnly() && partId != PageIdAllocator.INDEX_PARTITION) {
+                    U.warn(log, "Invalid (non-index: " + U.hexInt(partId) +
+                        ") custom value of partition ID encountered for cache [name=" + cacheName +
+                        "] while prewarming of indexes only is set.");
+
+                    continue;
+                }
+
+                Supplier<int[]> pageIdxSupplier = part.getValue();
+
+                if (pageIdxSupplier == null) {
+                    U.warn(log, "Invalid (null) page index supplier encountered for partition [cacheName=" +
+                        cacheName + ", partId=" + partId + "].");
+
+                    continue;
+                }
+
+                if (pageIdxSupplier == PrewarmingConfiguration.WHOLE_PARTITION) {
+                    // TODO
+                    /*try {
+                        if (ctx.cache().cache(grpName).localPreloadPartition(partId)) {
+                            IgnitePageStoreManager pageStoreMgr = ctx.pageStore();
+
+                            if (pageStoreMgr != null)
+                                pagesPrewarmed.addAndGet(pageStoreMgr.pages(CU.cacheId(grpName), partId));
+                        }
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to preload partition [id=" + partId +
+                            "] of cache group [name=" + grpName + "]", e);
+                    }*/
+                }
+                else {
+                    int[] pageIdxArr = pageIdxSupplier.get();
+
+                    if (pageIdxArr == null || pageIdxArr.length == 0)
+                        continue;
+
+                    for (int pageIdx : pageIdxArr) {
+                        consumer.accept(cacheId, PageIdUtils.pageId(partId, pageIdx));
+
+                        if (breakCond != null && breakCond.getAsBoolean())
+                            return;
+                    }
+                }
+            }
         }
     }
 
@@ -494,410 +478,58 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
         return true;
     }
 
-    /**
-     * @param onStopping On stopping.
-     */
-    private void dumpLoadedPagesIds(boolean onStopping) {
-        if (prewarmThread != null) {
-            if (onStopping)
-                U.warn(log, "Attempt dump of loaded pages IDs on stopping while prewarming process is running!");
-
-            return;
-        }
-
-        loadedPagesDumpInProgress = true;
-
-        try {
-            if (!onStopping && stopping)
-                return;
-
-            if (log.isInfoEnabled())
-                log.info("Starting dump of loaded pages IDs of DataRegion [name=" + dataRegName + "]");
-
-            final ConcurrentMap<Long, Segment> updated = new ConcurrentHashMap<>();
-
-            long startTs = U.currentTimeMillis();
-
-            pageMem.forEachAsync((fullId, val) -> {
-                if (prewarmCfg.isIndexesOnly() &&
-                    PageIdUtils.partId(fullId.pageId()) != PageIdAllocator.INDEX_PARTITION)
-                    return;
-
-                Segment seg = !onStopping && stopping ?
-                    updated.get(
-                        Segment.key(fullId.groupId(), fullId.pageId())) :
-                    updated.computeIfAbsent(
-                        Segment.key(fullId.groupId(), fullId.pageId()),
-                        key -> getSegment(key).resetModifiedAndGet());
-
-                if (seg != null)
-                    seg.addPageIdx(fullId.pageId());
-            }).get();
-
-            int segUpdated = 0;
-
-            for (Segment seg : updated.values()) {
-                if (!onStopping && stopping && seg.modified)
-                    continue;
-
-                try {
-                    updateSegment(seg);
-
-                    segUpdated++;
-                }
-                catch (IOException e) {
-                    throw new IgniteCheckedException(e);
-                }
-            }
-
-            long dumpTime = U.currentTimeMillis() - startTs;
-
-            if (log.isInfoEnabled()) {
-                log.info("Dump of loaded pages IDs of DataRegion [name=" + dataRegName + "] finished in " +
-                    dumpTime + " ms, segments updated: " + segUpdated);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Dump of loaded pages IDs for DataRegion [name=" + dataRegName + "] failed", e);
-        }
-        finally {
-            loadedPagesDumpInProgress = false;
-        }
-    }
-
-    /**
-     * @param key Segment key.
-     */
-    private Segment getSegment(long key) {
-        return segments.computeIfAbsent(key, Segment::new);
-    }
-
-    /**
-     * @param segFile Segment file.
-     */
-    private int[] loadPageIndexes(File segFile) throws IOException {
-        try (FileIO io = new RandomAccessFileIO(segFile, StandardOpenOption.READ)) {
-            int[] pageIdxArr = new int[(int)(io.size() / Integer.BYTES)];
-
-            byte[] intBytes = new byte[Integer.BYTES];
-
-            for (int i = 0; i < pageIdxArr.length; i++) {
-                io.read(intBytes, 0, intBytes.length);
-
-                pageIdxArr[i] = U.bytesToInt(intBytes, 0);
-            }
-
-            return pageIdxArr;
-        }
-    }
-
-    /**
-     * @param seg Segment.
-     */
-    private void updateSegment(Segment seg) throws IOException {
-        int[] pageIdxArr = seg.pageIdxArr;
-
-        seg.pageIdxArr = null;
-
-        File segFile = new File(dumpDir, seg.fileName());
-
-        if (pageIdxArr.length == 0) {
-            if (!segFile.delete())
-                U.warn(log, "Failed to delete prewarming dump file: " + segFile.getName());
-
-            return;
-        }
-
-        try (FileIO io = new RandomAccessFileIO(segFile,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.CREATE,
-            StandardOpenOption.TRUNCATE_EXISTING)) {
-
-            byte[] chunk = new byte[Integer.BYTES * 1024];
-
-            int chunkPtr = 0;
-
-            for (int pageIdx : pageIdxArr) {
-                chunkPtr = U.intToBytes(pageIdx, chunk, chunkPtr);
-
-                if (chunkPtr == chunk.length) {
-                    io.write(chunk, 0, chunkPtr);
-                    io.force();
-
-                    chunkPtr = 0;
-                }
-            }
-
-            if (chunkPtr > 0) {
-                io.write(chunk, 0, chunkPtr);
-                io.force();
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class Segment {
-        /** File extension. */
-        private static final String FILE_EXT = ".seg";
-
-        /** File name length. */
-        private static final int FILE_NAME_LENGTH = 12;
-
-        /** Group ID prefix length. */
-        private static final int GRP_ID_PREFIX_LENGTH = 8;
-
-        /** Group ID key mask. */
-        private static final long GRP_ID_MASK = ~(-1L << 32);
-
-        /** File name pattern. */
-        private static final Pattern FILE_NAME_PATTERN = Pattern.compile("[0-9A-Fa-f]{" + FILE_NAME_LENGTH + "}\\" + FILE_EXT);
-
-        /** File filter. */
-        private static final FileFilter FILE_FILTER = file -> !file.isDirectory() && FILE_NAME_PATTERN.matcher(file.getName()).matches();
-
-        /** Id count field updater. */
-        private static final AtomicIntegerFieldUpdater<Segment> idCntUpd = AtomicIntegerFieldUpdater.newUpdater(
-            Segment.class, "idCnt");
-
-        /** Page index array pointer field updater. */
-        private static final AtomicIntegerFieldUpdater<Segment> pageIdxIUpd = AtomicIntegerFieldUpdater.newUpdater(
-            Segment.class, "pageIdxI");
-
-        /** Key. */
-        final long key;
-
-        /** Id count. */
-        volatile int idCnt;
-
-        /** Modified flag. */
-        volatile boolean modified;
-
-        /** Page index array. */
-        volatile int[] pageIdxArr;
-
-        /** Page index array pointer. */
-        volatile int pageIdxI;
-
-        // TODO Collection of sub-segments if idCnt was dramatically grown.
-
-        /**
-         * @param key Key.
-         */
-        Segment(long key) {
-            this.key = key;
-        }
-
-        /**
-         *
-         */
-        String fileName() {
-            SB b = new SB();
-
-            String keyHex = Long.toHexString(key);
-
-            for (int i = keyHex.length(); i < FILE_NAME_LENGTH; i++)
-                b.a('0');
-
-            return b.a(keyHex).a(FILE_EXT).toString();
-        }
-
-        /**
-         *
-         */
-        void incCount() {
-            modified = true;
-
-            idCntUpd.incrementAndGet(this);
-        }
-
-        /**
-         *
-         */
-        void decCount() {
-            modified = true;
-
-            idCntUpd.decrementAndGet(this);
-        }
-
-        /**
-         * @param pageId Page id.
-         */
-        void addPageIdx(long pageId) {
-            int ptr = pageIdxIUpd.getAndIncrement(this);
-
-            if (ptr < pageIdxArr.length)
-                pageIdxArr[ptr] = PageIdUtils.pageIndex(pageId);
-        }
-
-        /**
-         * Returns {@code null} if {@link #modified} is {@code false}, otherwise resets {@link #pageIdxI},
-         * creates new {@link #pageIdxArr} and returns {@code this}.
-         */
-        Segment resetModifiedAndGet() {
-            if (!modified)
-                return null;
-
-            modified = false;
-
-            pageIdxI = 0;
-
-            pageIdxArr = new int[idCnt];
-
-            return this;
-        }
-
-        /**
-         * @param grpId Group id.
-         * @param pageId Page id.
-         */
-        static long key(long grpId, long pageId) {
-            return (((grpId & GRP_ID_MASK) << PART_ID_SIZE)) + PageIdUtils.partId(pageId);
-        }
-    }
-
-    /**
-     *
-     */
-    private class LoadedPagesIdsDumpWorker extends GridWorker {
-        /** */
-        private static final String NAME_SUFFIX = "-loaded-pages-ids-dump-worker";
+    /** */
+    private class PageLoader implements FullPageIdConsumer {
+        /** Striped thread pool executor for multithreaded page loading. */
+        private final IgniteStripedThreadPoolExecutor stripedExecutor;
+
+        /** Stripe selector. */
+        private final StripeSelector stripeSelector;
+
+        /** Loaded pages count. */
+        private final AtomicLong loadedPagesCnt = new AtomicLong();
+
+        /** Finish future reference. */
+        private final AtomicReference<IgniteInternalFuture<Void>> finishFutRef = new AtomicReference<>();
 
         /**
          * Default constructor.
          */
-        LoadedPagesIdsDumpWorker() {
-            super(ctx.igniteInstanceName(), dataRegName + NAME_SUFFIX, PageMemoryPrewarmingImpl.this.log);
+        PageLoader() {
+            int pageLoadThreads = prewarmCfg.getPageLoadThreads();
+
+            if (pageLoadThreads > 1) {
+                stripedExecutor = new IgniteStripedThreadPoolExecutor(
+                    pageLoadThreads,
+                    ctx.igniteInstanceName(),
+                    "prewarm",
+                    ctx.kernalContext().uncaughtExceptionHandler()
+                );
+
+                stripeSelector = pageMem instanceof PageMemoryImpl ?
+                    new SegmentBasedStripeSelector((PageMemoryImpl)pageMem, pageLoadThreads) :
+                    new CyclicStripeSelector(pageLoadThreads);
+            }
+            else {
+                stripedExecutor = null;
+                stripeSelector = null;
+
+                finishFutRef.set(new GridFinishedFuture<>());
+            }
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!stopping && !isCancelled()) {
-                Thread.sleep(prewarmCfg.getRuntimeDumpDelay());
+        @Override public void accept(int grpId, long pageId) {
+            if (prewarmCfg.isIndexesOnly() && PageIdUtils.partId(pageId) != PageIdAllocator.INDEX_PARTITION)
+                return;
 
-                if (stopping)
-                    break;
-
-                dumpLoadedPagesIds(false);
+            if (stripedExecutor != null) {
+                stripedExecutor.execute(
+                    () -> loadPage(grpId, pageId),
+                    stripeSelector.selectStripe(grpId, pageId));
             }
-        }
-    }
-
-    /** */
-    private class SegmentLoader {
-        /** Workers for multithreaded page loading. */
-        private ExecutorService[] workers;
-
-        /**
-         * Sets list of workers for multithreaded page loading.
-         *
-         * @param workers Workers for multithreaded page loading
-         */
-        public void setWorkers(ExecutorService[] workers) {
-            this.workers = workers;
-        }
-
-        /**
-         * Loads pages which pageIDs saved in dump file into memory.
-         * If workers are setted, they will be used for multithreaded loading.
-         *
-         * @param segFile Dump file to be load.
-         * @param needThrottling Need throttling object.
-         * @return Count of warmed pages.
-         */
-        public int load(File segFile, AtomicBoolean needThrottling) {
-            AtomicBoolean del = new AtomicBoolean(false);
-
-            AtomicInteger pagesWarmed = new AtomicInteger(0);
-
-            try {
-                if (stopping || stopPrewarm)
-                    return pagesWarmed.get();
-
-                int partId = Integer.parseInt(segFile.getName().substring(
-                    Segment.GRP_ID_PREFIX_LENGTH,
-                    Segment.FILE_NAME_LENGTH), 16);
-
-                if (prewarmCfg.isIndexesOnly() && partId != PageIdAllocator.INDEX_PARTITION)
-                    return pagesWarmed.get();
-
-                int grpId = (int)Long.parseLong(segFile.getName().substring(0, Segment.GRP_ID_PREFIX_LENGTH), 16);
-
-                int[] pageIdxArr = loadPageIndexes(segFile);
-
-                Arrays.sort(pageIdxArr);
-
-                CountDownFuture completeFut = new CountDownFuture(pageIdxArr.length);
-
-                boolean multithreaded = workers != null && workers.length != 0;
-
-                for (int pageIdx : pageIdxArr) {
-                    if (stopping || stopPrewarm) {
-                        del.set(true);
-
-                        completeFut.onDone();
-
-                        break;
-                    }
-
-                    long pageId = PageIdUtils.pageId(partId, pageIdx);
-
-                    Runnable pageWarmer = () -> {
-                        try {
-                            if (loadPage(grpId, pageId)) {
-                                pagesWarmed.incrementAndGet();
-
-                                incThrottleCounter();
-                            } else
-                                del.set(true);
-
-                            if (needThrottling.get())
-                                LockSupport.parkNanos(THROTTLE_TIME_NANOS);
-
-                            completeFut.onDone();
-                        }
-                        catch (Throwable e) {
-                            completeFut.onDone(e);
-                        }
-                    };
-
-                    if (multithreaded) {
-                        int segIdx = PageMemoryImpl.segmentIndex(grpId, pageId, pageMem.getSegments());
-
-                        ExecutorService worker = workers[segIdx % workers.length];
-
-                        if (worker == null || worker.isShutdown()) {
-                            completeFut.onDone();
-
-                            continue;
-                        }
-
-                        worker.execute(pageWarmer);
-
-                    } else
-                        pageWarmer.run();
-                }
-
-                if (pageIdxArr.length > 0)
-                    completeFut.get();
-            }
-            catch (IOException | NumberFormatException e) {
-                U.error(log, "Failed to read prewarming dump file: " + segFile.getName(), e);
-
-                del.set(true);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to load prewarming dump file: " + segFile.getName(), e);
-
-                throw new IgniteException(e);
-            }
-            finally {
-                if (del.get() && !segFile.delete())
-                    U.warn(log, "Failed to delete prewarming dump file: " + segFile.getName());
-            }
-
-            return pagesWarmed.get();
+            else
+                loadPage(grpId, pageId);
         }
 
         /**
@@ -905,23 +537,60 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
          *
          * @param grpId Page group ID.
          * @param pageId Page ID.
-         * @return Whether page was loaded successfully.
          */
-        public boolean loadPage(int grpId, long pageId) {
-            boolean warmed = false;
-
+        public void loadPage(int grpId, long pageId) {
             try {
                 long page = pageMem.acquirePage(grpId, pageId);
 
                 pageMem.releasePage(grpId, pageId, page);
 
-                warmed = true;
+                loadedPagesCnt.incrementAndGet();
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to acquire page [grpId=" + grpId + ", pageId=" + pageId + ']', e);
+                U.error(log, "Failed to load page [grpId=" + grpId + ", pageId=" + pageId + ']', e);
             }
 
-            return warmed;
+            incThrottleCounter();
+
+            if (needThrottling.get())
+                LockSupport.parkNanos(THROTTLE_TIME_NANOS);
+        }
+
+        /**
+         * Should be called after {@code this} instance used as {@link FullPageIdConsumer}.
+         *
+         * @return Page loading finish future.
+         */
+        public IgniteInternalFuture<Void> finishFuture() {
+            IgniteInternalFuture<Void> fut = finishFutRef.get();
+
+            if (fut != null)
+                return fut;
+
+            int concurrencyLevel = stripedExecutor.concurrencyLevel();
+
+            CountDownFuture fut0 = new CountDownFuture(concurrencyLevel) {
+                @Override protected void afterDone() {
+                    stripedExecutor.shutdownNow();
+                }
+            };
+
+            if (!finishFutRef.compareAndSet(null, fut0))
+                return finishFutRef.get();
+
+            Runnable finish = fut0::onDone;
+
+            for (int i = 0; i < concurrencyLevel; i++)
+                stripedExecutor.execute(finish, i);
+
+            return fut0;
+        }
+
+        /**
+         *
+         */
+        public long loadedPagesCount() {
+            return loadedPagesCnt.get();
         }
 
         /**
@@ -949,6 +618,79 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming, LoadedPag
                     throttlingCnt.set(-THROTTLE_CHECK_FREQUENCY);
                 }
             }
+        }
+    }
+
+    /**
+     * Functional interface for selecting stripe index for specified cache group ID and page ID.
+     */
+    private interface StripeSelector {
+        /**
+         * @param grpId Cache group ID.
+         * @param pageId Page ID.
+         */
+        public int selectStripe(int grpId, long pageId);
+    }
+
+    /**
+     * Selects next stripe index using cyclic counter.
+     */
+    private static class CyclicStripeSelector implements StripeSelector {
+        /** Counter. */
+        private final AtomicInteger cntr = new AtomicInteger();
+
+        /** Stripe count. */
+        private final int stripeCnt;
+
+        /**
+         * @param stripeCnt Stripe count.
+         */
+        private CyclicStripeSelector(int stripeCnt) {
+            assert stripeCnt > 1;
+
+            this.stripeCnt = stripeCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int selectStripe(int grpId, long pageId) {
+            while (true) {
+                int idx = cntr.get();
+
+                int nextIdx = idx + 1;
+
+                if (nextIdx == stripeCnt)
+                    nextIdx = 0;
+
+                if (cntr.compareAndSet(idx, nextIdx))
+                    return idx;
+            }
+        }
+    }
+
+    /**
+     * Selects stripe index based on segment index provided by {@link PageMemoryImpl}.
+     */
+    private static class SegmentBasedStripeSelector implements StripeSelector {
+        /** Page memory. */
+        private final PageMemoryImpl pageMemory;
+
+        /** Stripe count. */
+        private final int stripeCnt;
+
+        /**
+         * @param pageMemory Page memory.
+         * @param stripeCnt Stripe count.
+         */
+        private SegmentBasedStripeSelector(PageMemoryImpl pageMemory, int stripeCnt) {
+            this.pageMemory = pageMemory;
+            this.stripeCnt = stripeCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int selectStripe(int grpId, long pageId) {
+            int segIdx = pageMemory.segmentIndex(grpId, pageId);
+
+            return segIdx % stripeCnt;
         }
     }
 }

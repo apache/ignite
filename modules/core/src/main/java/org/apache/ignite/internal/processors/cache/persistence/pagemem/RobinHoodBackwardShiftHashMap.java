@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.function.BiConsumer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridLongList;
@@ -636,14 +635,14 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public void forEach(BiConsumer<FullPageId, Long> act) {
+    @Override public void forEach(CellConsumer act) {
         for (int i = 0; i < numBuckets; i++) {
             if (isEmptyAt(i))
                 continue;
 
             long base = entryBase(i);
 
-            act.accept(getFullPageId(base), getValue(base));
+            act.accept(getGrpId(base), getPageId(base), getValue(base));
         }
     }
 

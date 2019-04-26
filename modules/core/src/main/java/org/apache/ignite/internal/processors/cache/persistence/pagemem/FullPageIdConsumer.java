@@ -19,22 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 /**
  *
  */
-public interface LoadedPagesTracker {
+@FunctionalInterface
+public interface FullPageIdConsumer {
     /**
-     * @param grpId Group id.
-     * @param pageId Page id.
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
      */
-    public void onPageLoad(int grpId, long pageId);
-
-    /**
-     * @param grpId Group id.
-     * @param pageId Page id.
-     */
-    public void onPageUnload(int grpId, long pageId);
-
-    /**
-     * @param grpId Group id.
-     * @param pageId Page id.
-     */
-    public void onPageEvicted(int grpId, long pageId);
+    public void accept(int grpId, long pageId);
 }

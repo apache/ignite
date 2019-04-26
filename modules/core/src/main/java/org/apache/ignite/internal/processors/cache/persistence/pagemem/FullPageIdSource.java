@@ -16,19 +16,23 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.lifecycle.LifecycleAware;
+import java.util.function.BooleanSupplier;
 
 /**
  *
  */
-public interface PageMemoryPrewarming extends LifecycleAware {
+@FunctionalInterface
+public interface FullPageIdSource {
     /**
-     * @param pageMem Page memory.
+     * @param consumer Consumer.
+     * @param breakCond Break condition.
      */
-    public void pageMemory(PageMemoryEx pageMem);
+    public void forEach(FullPageIdConsumer consumer, BooleanSupplier breakCond);
 
     /**
-     * Should be called by {@link PageMemoryEx} implementation when page replacement (rotation with disk) started.
+     * @param consumer Consumer.
      */
-    public void onPageReplacementStarted();
+    default void forEach(FullPageIdConsumer consumer) {
+        forEach(consumer, () -> false);
+    }
 }

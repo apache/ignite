@@ -17,6 +17,8 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * This class defines page memory prewarming configuration.
@@ -28,20 +30,20 @@ public class PrewarmingConfiguration implements Serializable {
     /** Runtime dump disabled. */
     public static final long RUNTIME_DUMP_DISABLED = -1;
 
+    /** Default hottest zone ratio. */
+    public static final double DFLT_HOTTEST_ZONE_RATIO = 0.25;
+
     /**
      * Optimal count of threads for warm up pages loading into memory.
      * That value was obtained through testing warm up functionality on 28 cores with hyperThreading.
      */
     public static final int OPTIMAL_PAGE_LOAD_THREADS = 16;
 
-    /**
-     * Optimal count of threads for warm up dump files reading.
-     * That value was obtained through testing warm up functionality on 28 cores with hyperThreading.
-     */
-    public static final int OPTIMAL_DUMP_READ_THREADS = 4;
-
     /** Default throttle accuracy. */
     public static final double DFLT_THROTTLE_ACCURACY = 0.25;
+
+    /** Supplier of partition page indexes which assumed as supplier of all pages in the partition. */
+    public static final Supplier<int[]> WHOLE_PARTITION = () -> null;
 
     /** Prewarming of indexes only flag. */
     private boolean indexesOnly;
@@ -52,19 +54,21 @@ public class PrewarmingConfiguration implements Serializable {
     /** Prewarming runtime dump delay. */
     private long runtimeDumpDelay = RUNTIME_DUMP_DISABLED;
 
-    /** Count of threads which are used for warm up dump files reading. */
-    private int dumpReadThreads = Math.min(
-        OPTIMAL_DUMP_READ_THREADS, Runtime.getRuntime().availableProcessors());
+    /** Hottest zone ratio. */
+    private double hottestZoneRatio = DFLT_HOTTEST_ZONE_RATIO;
 
-    /** Count of threads which are used for warm up pages loading into memory. */
+    /** Count of threads which are used for loading pages into memory. */
     private int pageLoadThreads = Math.min(
         OPTIMAL_PAGE_LOAD_THREADS, Runtime.getRuntime().availableProcessors());
 
     /** Prewarming throttle accuracy. */
     private double throttleAccuracy = DFLT_THROTTLE_ACCURACY;
 
+    /** Custom supplier of page IDs to prewarm. */
+    private Supplier<Map<String, Map<Integer, Supplier<int[]>>>> customPageIdsSupplier;
+
     /**
-     * If enabled, only index partitions will be tracked and warmed up.
+     * If enabled, only index partitions will be prewarmed.
      *
      * @return Prewarming of indexes only flag.
      */
@@ -129,42 +133,35 @@ public class PrewarmingConfiguration implements Serializable {
     }
 
     /**
-     * Specifies count of threads which are used for warm up dump files reading.
-     *
-     * @return Count of thread which are used for warm up dump files reading.
+     * @return Hottest zone ratio.
      */
-    public int getDumpReadThreads() {
-        return dumpReadThreads;
+    public double getHottestZoneRatio() {
+        return hottestZoneRatio;
     }
 
     /**
-     * Sets count of threads which will be used for warm up dump files reading.
-     *
-     * @param dumpReadThreads Count of threads which will be used for warm up dump files reading.
-     * Must be greater than 0.
+     * @param hottestZoneRatio New hottest zone ratio.
      * @return {@code this} for chaining.
      */
-    public PrewarmingConfiguration setDumpReadThreads(int dumpReadThreads) {
-        assert dumpReadThreads > 0;
-
-        this.dumpReadThreads = dumpReadThreads;
+    public PrewarmingConfiguration setHottestZoneRatio(double hottestZoneRatio) {
+        this.hottestZoneRatio = hottestZoneRatio;
 
         return this;
     }
 
     /**
-     * Specifies count of threads which are used for warm up pages loading into memory.
+     * Specifies count of threads which are used for loading pages into memory.
      *
-     * @return Count of threads which are used for warm up pages loading into memory.
+     * @return Count of threads which are used for loading pages into memory.
      */
     public int getPageLoadThreads() {
         return pageLoadThreads;
     }
 
     /**
-     * Sets count of threads which will be used for warm up pages loading into memory.
+     * Sets count of threads which will be used for loading pages into memory.
      *
-     * @param pageLoadThreads Count of threads which will be used for warm up pages loading into memory.
+     * @param pageLoadThreads Count of threads which will be used for loading pages into memory.
      * Must be greater than 0.
      * @return {@code this} for chaining.
      */
@@ -190,5 +187,28 @@ public class PrewarmingConfiguration implements Serializable {
         this.throttleAccuracy = throttleAccuracy;
 
         return this;
+    }
+
+    /**
+     * Gets custom supplier of page IDs to prewarm.
+     * It should supply a map, which keys will assumed as cache names, and values as maps of partition IDs in that cache
+     * to suppliers of page indexes arrays in that partition. Pages will be loaded in order which provided by supplier.
+     *
+     * @see #setCustomPageIdsSupplier(Supplier)
+     * @return Custom supplier of page IDs to prewarm.
+     */
+    public Supplier<Map<String, Map<Integer, Supplier<int[]>>>> getCustomPageIdsSupplier() {
+        return customPageIdsSupplier;
+    }
+
+    /**
+     * Sets custom supplier of page IDs to prewarm.
+     * If not set, default supplier which provides IDs of loaded pages before last shutdown will be used.
+     *
+     * @see #getCustomPageIdsSupplier()
+     * @param customPageIdsSupplier New custom supplier of page IDs to prewarm.
+     */
+    public void setCustomPageIdsSupplier(Supplier<Map<String, Map<Integer, Supplier<int[]>>>> customPageIdsSupplier) {
+        this.customPageIdsSupplier = customPageIdsSupplier;
     }
 }
