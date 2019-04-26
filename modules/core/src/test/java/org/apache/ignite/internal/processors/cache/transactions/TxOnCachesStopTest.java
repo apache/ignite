@@ -73,8 +73,10 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     /** rnd instance. */
     private static final GridRandom rnd = new GridRandom();
 
+    /** */
     private static CacheConfiguration<Integer, byte[]> destroyCacheCfg;
 
+    /** */
     private static CacheConfiguration<Integer, byte[]> surviveCacheCfg;
 
     /** {@inheritDoc} */
@@ -157,7 +159,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 runTxOnCacheStop(conc, iso, ig, true);
 
         ig.getOrCreateCache(destroyCacheCfg).destroy();
-
         ig.getOrCreateCache(surviveCacheCfg).destroy();
 
         for (TransactionConcurrency conc : TransactionConcurrency.values())
@@ -165,7 +166,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 runTxOnCacheStop(conc, iso, ig, false);
 
         ig.getOrCreateCache(destroyCacheCfg).destroy();
-
         ig.getOrCreateCache(surviveCacheCfg).destroy();
 
         for (TransactionConcurrency conc : TransactionConcurrency.values())
