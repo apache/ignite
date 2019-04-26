@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Partition reservation key.
@@ -48,6 +49,13 @@ public class PartitionReservationKey {
         return cacheName;
     }
 
+    /**
+     * @return Topology version of reservation.
+     */
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -69,5 +77,10 @@ public class PartitionReservationKey {
         res = 31 * res + (topVer != null ? topVer.hashCode() : 0);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PartitionReservationKey.class, this);
     }
 }
