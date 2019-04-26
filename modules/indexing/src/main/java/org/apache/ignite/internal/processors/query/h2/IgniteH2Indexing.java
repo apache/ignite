@@ -116,6 +116,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNode
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
@@ -259,6 +260,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
+
+    /** Partition reservation manager. */
+    private PartitionReservationManager partReservationMgr;
 
     /** */
     private final GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
@@ -2212,6 +2216,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             SysProperties.serializeJavaObject = false;
         }
 
+        partReservationMgr = new PartitionReservationManager(ctx);
+
         connMgr = new ConnectionManager(ctx);
 
         longRunningQryMgr = new LongRunningQueryManager(ctx);
@@ -2505,10 +2511,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String schemaName = schema(cacheName);
 
+        partReservationMgr.onCacheStop(cacheName);
+
         H2Schema schema = schemas.get(schemaName);
 
         if (schema != null) {
-            mapQryExec.onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
 
             // Remove this mapping only after callback to DML proc - it needs that mapping internally
@@ -2715,6 +2722,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public ConnectionManager connections() {
         return connMgr;
+    }
+
+    /**
+     * @return Partition reservation manager.
+     */
+    public PartitionReservationManager partitionReservationManager() {
+        return partReservationMgr;
     }
 
     /**

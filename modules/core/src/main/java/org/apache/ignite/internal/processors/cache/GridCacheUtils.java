@@ -1856,6 +1856,44 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param sctx Shared context.
+     * @param cacheIds Cache ids.
+     * @return First partitioned cache or {@code null} in case no partitioned cache ids are in list.
+     */
+    public static GridCacheContext<?, ?> firstPartitioned(GridCacheSharedContext<?, ?> sctx, int[] cacheIds) {
+        for (int i = 0; i < cacheIds.length; i++) {
+            GridCacheContext<?, ?> cctx = sctx.cacheContext(cacheIds[i]);
+
+            if (cctx == null)
+                throw new CacheException("Failed to find cache.");
+
+            if (!cctx.isLocal() && !cctx.isReplicated())
+                return cctx;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param sctx Shared context.
+     * @param cacheIds Cache ids.
+     * @return First partitioned cache or {@code null} in case no partitioned cache ids are in list.
+     */
+    public static GridCacheContext<?, ?> firstPartitioned(GridCacheSharedContext<?, ?> sctx, Iterable<Integer> cacheIds) {
+        for (Integer i : cacheIds) {
+            GridCacheContext<?, ?> cctx = sctx.cacheContext(i);
+
+            if (cctx == null)
+                throw new CacheException("Failed to find cache.");
+
+            if (!cctx.isLocal() && !cctx.isReplicated())
+                return cctx;
+        }
+
+        return null;
+    }
+
+    /**
      * @param cacheName Name of cache or cache template.
      * @return {@code true} if cache name ends with asterisk (*), and therefire is a template name.
      */
