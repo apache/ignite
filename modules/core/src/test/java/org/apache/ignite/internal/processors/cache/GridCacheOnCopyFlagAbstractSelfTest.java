@@ -84,7 +84,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
         return c;
     }
 
-    /** {@inheritDoc} */
+    /** */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration ccfg = defaultCacheConfiguration();

@@ -67,9 +67,7 @@ public class SparseMatrixStorage implements MatrixStorage, StorageConstants {
         sto = new HashMap<>();
     }
 
-    /**
-     * @return Matrix elements storage mode.
-     */
+    /** {@inheritDoc} */
     @Override public int storageMode() {
         return stoMode;
     }

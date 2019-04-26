@@ -92,9 +92,7 @@ public class CrossOverJob extends ComputeJobAdapter {
         return newGeneKeys;
     }
 
-    /**
-     * Perform crossover operation
-     */
+    /** {@inheritDoc} */
     @Override public Object execute() throws IgniteException {
 
         if (this.crossOverRate > Math.random()) {

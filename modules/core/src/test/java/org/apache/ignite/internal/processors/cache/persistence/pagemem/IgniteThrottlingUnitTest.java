@@ -212,7 +212,7 @@ public class IgniteThrottlingUnitTest {
     public void tooMuchPagesMarkedDirty() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-        // 363308	350004	348976	10604
+        // 363308 350004 348976 10604
         long time = throttle.getParkTime(0.75,
             ((350004 + 348976) / 2),
             350004 - 10604,

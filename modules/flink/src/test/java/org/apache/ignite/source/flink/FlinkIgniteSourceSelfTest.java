@@ -59,7 +59,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     /** Ignite Source instance */
     private IgniteSource igniteSrc;
 
-    /** {@inheritDoc} */
+    /** */
     @SuppressWarnings("unchecked")
     @Before
     public void setUpTest() throws Exception {

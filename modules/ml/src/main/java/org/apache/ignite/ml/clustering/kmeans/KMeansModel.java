@@ -52,21 +52,17 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         return distanceMeasure;
     }
 
-    /** Amount of centers in clusterization. */
+    /** {@inheritDoc} */
     @Override public int getAmountOfClusters() {
         return centers.length;
     }
 
-    /** Get centers of clusters. */
+    /** {@inheritDoc} */
     @Override public Vector[] getCenters() {
         return Arrays.copyOf(centers, centers.length);
     }
 
-    /**
-     * Predict closest center index for a given vector.
-     *
-     * @param vec Vector.
-     */
+    /** {@inheritDoc} */
     @Override public Integer predict(Vector vec) {
         int res = -1;
         double minDist = Double.POSITIVE_INFINITY;

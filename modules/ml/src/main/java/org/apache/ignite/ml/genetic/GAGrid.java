@@ -218,7 +218,7 @@ public class GAGrid {
      * @return Map of primary key/fitness score pairs for chromosomes.
      */
     private LinkedHashMap<Long,Double> getChromosomesByFittest() {
-    	LinkedHashMap<Long, Double> orderChromKeysByFittest  = new LinkedHashMap<>();
+        LinkedHashMap<Long, Double> orderChromKeysByFittest = new LinkedHashMap<>();
     	
         String orderDirection = "desc";
 
@@ -233,9 +233,9 @@ public class GAGrid {
         List<List<?>> res = cursor.getAll();
           		
         for (List row : res) {
-        	Long key = (Long)row.get(0);
-        	Double fitnessScore= (Double)row.get(1);
-        	orderChromKeysByFittest.put(key, fitnessScore);
+            Long key = (Long)row.get(0);
+            Double fitnessScore = (Double)row.get(1);
+            orderChromKeysByFittest.put(key, fitnessScore);
         }
         
         return orderChromKeysByFittest;
@@ -337,7 +337,7 @@ public class GAGrid {
      * @return List of primary Keys for respective chromosomes that will breed
      */
     private List<Long> selectByRouletteWheel(LinkedHashMap map) {
-    	List<Long> populationKeys = this.ignite.compute().execute(new RouletteWheelSelectionTask(this.cfg), map);
+        List<Long> populationKeys = this.ignite.compute().execute(new RouletteWheelSelectionTask(this.cfg), map);
     	
         return populationKeys;
     }
@@ -434,9 +434,9 @@ public class GAGrid {
      * @return List of Chromosome primary keys
      */
     List<Long> getPopulationKeys() {
-    	 String fittestSQL = "select _key from Chromosome";
+        String fittestSQL = "select _key from Chromosome";
 
-         // Execute query to retrieve keys for ALL Chromosomes
+        // Execute query to retrieve keys for ALL Chromosomes
          QueryCursor<List<?>> cursor = populationCache.query(new SqlFieldsQuery(fittestSQL));
 
          List<List<?>> res = cursor.getAll();

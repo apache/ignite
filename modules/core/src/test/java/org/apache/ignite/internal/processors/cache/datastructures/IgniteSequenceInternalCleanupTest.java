@@ -74,7 +74,7 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected AtomicConfiguration atomicConfiguration() {
         AtomicConfiguration cfg = new AtomicConfiguration();
 

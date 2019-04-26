@@ -18,7 +18,6 @@ package org.apache.ignite.testframework.junits;
 
 import org.junit.Rule;
 import org.junit.rules.TestName;
-import org.junit.runners.model.Statement;
 
 /**
  * Supports compatibility with old tests that expect specific threading behavior of JUnit 3 TestCase class,

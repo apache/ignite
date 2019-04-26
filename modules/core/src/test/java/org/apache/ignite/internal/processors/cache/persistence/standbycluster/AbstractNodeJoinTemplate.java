@@ -299,7 +299,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                             .setMaxSize(100 * 1024 * 1024)));
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected IgniteConfiguration persistentCfg(IgniteConfiguration cfg) throws Exception {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()

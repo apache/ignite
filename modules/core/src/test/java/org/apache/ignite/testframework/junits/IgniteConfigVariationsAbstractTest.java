@@ -221,7 +221,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         return resCfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected final int gridCount() {
         return testsCfg.gridCount();
     }

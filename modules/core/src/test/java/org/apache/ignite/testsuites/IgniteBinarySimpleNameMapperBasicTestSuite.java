@@ -16,7 +16,6 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;

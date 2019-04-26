@@ -47,15 +47,8 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
         this.logConsumer = logConsumer;
     }
 
-    /**
-     * Check whether termination condition is met.
-     *
-     * @param fittestChromosome Most fit chromosome at for the nth generation.
-     * @param averageFitnessScore Average fitness score as of the nth generation.
-     * @param currGeneration Current generation.
-     * @return Status whether condition is met or not.
-     */
-    public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
+    /** {@inheritDoc} */
+    @Override public boolean isTerminationConditionMet(Chromosome fittestChromosome, double averageFitnessScore,
         int currGeneration) {
         boolean isTerminate = true;
 

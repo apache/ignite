@@ -227,6 +227,6 @@ public abstract class NNClassificationModel implements IgniteModel<Vector, Doubl
         this.stgy = mdl.stgy;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public abstract <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path);
 }

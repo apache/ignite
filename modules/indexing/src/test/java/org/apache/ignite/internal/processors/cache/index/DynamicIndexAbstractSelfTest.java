@@ -118,14 +118,8 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
         return commonConfiguration(idx).setClientMode(true);
     }
 
-    /**
-     * Create common node configuration.
-     *
-     * @param idx Index.
-     * @return Configuration.
-     * @throws Exception If failed.
-     */
-    protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
 
         cfg.setFailureHandler(new StopNodeFailureHandler());

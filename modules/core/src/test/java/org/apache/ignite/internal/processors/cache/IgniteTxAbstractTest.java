@@ -38,7 +38,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.apache.ignite.transactions.TransactionSerializationException;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -91,7 +90,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      */
     protected abstract boolean printMemoryStats();
 
-    /** {@inheritDoc} */
+    /** */
     private void debug(String msg) {
         if (isTestDebug())
             info(msg);

@@ -2265,7 +2265,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             this.name = name;
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void writeObject(ObjectOutputStream stream) throws IOException {
             stream.defaultWriteObject();
 

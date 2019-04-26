@@ -78,7 +78,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     private CacheConfiguration cacheConfiguration(int cacheIdx) {
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME + cacheIdx)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)

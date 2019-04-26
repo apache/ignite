@@ -321,7 +321,7 @@ public class DiscoveryDataPacket implements Serializable {
      * @param b Source of bytes.
      * @return Made int.
      */
-    static private int makeInt(byte[] b) {
+    private static int makeInt(byte[] b) {
         return (((b[3]) << 24) |
             ((b[2] & 0xff) << 16) |
             ((b[1] & 0xff) << 8) |

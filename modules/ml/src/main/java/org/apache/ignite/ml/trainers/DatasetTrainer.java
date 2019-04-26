@@ -337,7 +337,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
                 return new PatchedPreprocessor<K, V, L1, L>(func, extractor);
             }
 
-            /** {@inheritDoc} */
+            /** */
             public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
                                 Vectorizer<K, V, Integer, L1> extractor) {
                 return old.fit(datasetBuilder, getNewExtractor(extractor));

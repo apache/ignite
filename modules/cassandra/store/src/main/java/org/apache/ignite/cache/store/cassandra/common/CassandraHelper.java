@@ -23,7 +23,6 @@ import com.datastax.driver.core.exceptions.DriverException;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
-
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -99,7 +98,7 @@ public class CassandraHelper {
         while (e != null) {
             if (e instanceof InvalidQueryException &&
                 (TABLE_EXIST_ERROR1.matcher(e.getMessage()).matches() ||
-                	TABLE_EXIST_ERROR3.matcher(e.getMessage()).matches() ||
+                    TABLE_EXIST_ERROR3.matcher(e.getMessage()).matches() ||
                     KEYSPACE_EXIST_ERROR1.matcher(e.getMessage()).matches() ||
                     KEYSPACE_EXIST_ERROR2.matcher(e.getMessage()).matches()))
                 return true;

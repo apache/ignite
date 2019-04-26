@@ -139,12 +139,12 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
      * Test class.
      */
     private static class NotSerializableClass implements Serializable {
-        /** {@inheritDoc}*/
+        /** */
         private void writeObject(ObjectOutputStream out) throws IOException {
             out.writeObject(this);
         }
 
-        /** {@inheritDoc}*/
+        /** */
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
             if (fail)
                 throw new RuntimeException("Deserialization failed.");

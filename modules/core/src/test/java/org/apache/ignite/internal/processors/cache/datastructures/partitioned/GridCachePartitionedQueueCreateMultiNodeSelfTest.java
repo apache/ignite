@@ -87,7 +87,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
         return c;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = defaultCacheConfiguration();
 

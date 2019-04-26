@@ -157,7 +157,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     }
 
     /** {@inheritDoc} */
-    public void setConsistentId(Serializable consistentId) {
+    @Override public void setConsistentId(Serializable consistentId) {
         this.consistentId = consistentId;
 
         final Map<String, Object> map = new HashMap<>(attrs);
@@ -210,7 +210,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     }
 
     /** {@inheritDoc} */
-    public void setMetrics(ClusterMetrics metrics) {
+    @Override public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;
@@ -230,7 +230,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     }
 
     /** {@inheritDoc} */
-    public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
+    @Override public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
         this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 

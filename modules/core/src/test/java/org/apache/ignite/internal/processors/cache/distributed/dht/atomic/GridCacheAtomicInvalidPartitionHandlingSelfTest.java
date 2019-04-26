@@ -90,7 +90,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 

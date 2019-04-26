@@ -53,11 +53,7 @@ public class MutateJob extends ComputeJobAdapter {
         this.mutatedGeneKeys = mutatedGeneKeys;
     }
 
-    /**
-     * Perform mutation
-     *
-     * @return Boolean value
-     */
+    /** {@inheritDoc} */
     @Override public Boolean execute() throws IgniteException {
 
         IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);

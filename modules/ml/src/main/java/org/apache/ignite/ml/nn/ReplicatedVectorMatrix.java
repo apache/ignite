@@ -172,7 +172,7 @@ class ReplicatedVectorMatrix implements Matrix {
         return asCol ? new ReplicatedVectorMatrix(swap(row1, row2), replicationCnt, asCol) : this;
     }
 
-    /** {@inheritDoc} */
+    /** */
     private Vector swap(int idx1, int idx2) {
         double val = vector.getX(idx1);
 

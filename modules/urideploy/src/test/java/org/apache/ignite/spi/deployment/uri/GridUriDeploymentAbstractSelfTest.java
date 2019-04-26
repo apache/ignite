@@ -92,7 +92,7 @@ public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractT
     protected void waitForTask(String taskName, boolean expectDeployed, long timeout) throws IgniteCheckedException {
         assertTrue("Failed to wait for (un)deployment of " + taskName,
             GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-                public boolean applyx() throws IgniteCheckedException {
+                @Override public boolean applyx() throws IgniteCheckedException {
                     if (expectDeployed)
                         return getSpi().findResource(taskName) != null;
                     else

@@ -96,7 +96,7 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
         stmt = conn.createStatement();
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected IgniteEx clientNode() {
         IgniteEx clientNode = grid(1);
 
@@ -105,7 +105,7 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
         return clientNode;
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected IgniteEx serverNode() {
         IgniteEx srvNode = grid(0);
 

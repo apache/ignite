@@ -99,7 +99,7 @@ public class RedisCommonAbstractTest extends GridCommonAbstractTest {
         return grid(0).cache(DFLT_CACHE_NAME);
     }
 
-    /** {@inheritDoc} */
+    /** */
     protected int gridCount() {
         return GRID_CNT;
     }

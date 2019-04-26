@@ -73,11 +73,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         return mutatedGenes;
     }
 
-    /**
-     * @param nodes List of ClusterNode
-     * @param chromosomeKeys Primary keys for respective chromosomes
-     * @return Mapping compute jobs to nodes.
-     */
+    /** {@inheritDoc} */
     @Override public Map map(List<ClusterNode> nodes, List<Long> chromosomeKeys) throws IgniteException {
 
         Map<ComputeJob, ClusterNode> map = new HashMap<>();
@@ -91,21 +87,12 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         return map;
     }
 
-    /**
-     * We return TRUE if success, else Exection is thrown.
-     *
-     * @param list List of ComputeJobResult
-     * @return Boolean value
-     */
+    /** {@inheritDoc} */
     @Override public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
         return Boolean.TRUE;
     }
 
-    /**
-     * @param res ComputeJobResult
-     * @param rcvd List of ComputeJobResult
-     * @return ComputeJobResultPolicy
-     */
+    /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         IgniteException err = res.getException();
 

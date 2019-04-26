@@ -121,7 +121,7 @@ public class HadoopSplitWrapper extends HadoopInputSplit {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(HadoopSplitWrapper.class, this, "hosts", Arrays.toString(hosts));
     }
 }

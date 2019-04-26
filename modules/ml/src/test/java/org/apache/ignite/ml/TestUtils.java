@@ -447,7 +447,7 @@ public class TestUtils {
      */
     public static <I, O, M extends IgniteModel<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
         return new DatasetTrainer<M, L>() {
-            /** {@inheritDoc} */
+            /** */
             public <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, L> extractor) {
                 return ml;
@@ -467,8 +467,8 @@ public class TestUtils {
                 return null;
             }
 
-            /** {@inheritDoc} */
-             public <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+            /** */
+            public <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
                 Vectorizer<K, V, C, L> extractor) {
                 return ml;
             }

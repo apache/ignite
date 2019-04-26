@@ -353,8 +353,10 @@ public class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, Smooth
     }
 
     /** {@inheritDoc} */
-    @Override public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-                                                      Matrix inputsBatch, Matrix truthBatch) {
+    @Override public Vector differentiateByParameters(
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+        Matrix inputsBatch, Matrix truthBatch
+    ) {
         // Backpropagation algorithm is used here.
         int batchSize = inputsBatch.columnSize();
         double invBatchSize = 1 / (double)batchSize;

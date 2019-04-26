@@ -48,7 +48,7 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest {
     /** */
     private static final int GRID_COUNT = 2;
 
-    /** {@inheritDoc} */
+    /** */
     @After
     public void tearDown() {
         // Next grid in the same VM shouldn't use cached values produced by these tests.

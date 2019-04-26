@@ -405,12 +405,12 @@ public class BinarySerializationQuerySelfTest extends GridCommonAbstractTest {
             this.val = val;
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void writeObject(ObjectOutputStream s) throws IOException{
             s.writeInt(val);
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void readObject(ObjectInputStream s) throws IOException, ClassNotFoundException {
             val = s.readInt();
         }

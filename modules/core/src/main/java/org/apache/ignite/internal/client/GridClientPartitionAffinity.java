@@ -246,7 +246,7 @@ public class GridClientPartitionAffinity implements GridClientDataAffinity, Grid
         return lookup.get(nodeInfo);
     }
 
-    /** {@inheritDoc} */
+    /** */
     private int partition(Object key) {
         return Math.abs(key.hashCode() % getPartitions());
     }

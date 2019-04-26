@@ -125,7 +125,7 @@ public class UpdateErrors implements Message {
         err.addSuppressed(e);
     }
 
-    /** {@inheritDoc} */
+    /** */
     void prepareMarshal(GridCacheMessage msg, GridCacheContext cctx) throws IgniteCheckedException {
         msg.prepareMarshalCacheObjects(failedKeys, cctx);
 
@@ -133,7 +133,7 @@ public class UpdateErrors implements Message {
             errBytes = U.marshal(cctx.marshaller(), err);
     }
 
-    /** {@inheritDoc} */
+    /** */
     void finishUnmarshal(GridCacheMessage msg, GridCacheContext cctx, ClassLoader ldr) throws IgniteCheckedException {
         msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
 

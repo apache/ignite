@@ -106,7 +106,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /** {@inheritDoc} */
-    public synchronized void onContainersAllocated(List<Container> conts) {
+    @Override public synchronized void onContainersAllocated(List<Container> conts) {
         for (Container c : conts) {
             if (checkContainer(c)) {
                 try {
@@ -225,7 +225,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /** {@inheritDoc} */
-    public synchronized void onContainersCompleted(List<ContainerStatus> statuses) {
+    @Override public synchronized void onContainersCompleted(List<ContainerStatus> statuses) {
         for (ContainerStatus status : statuses) {
             containers.remove(status.getContainerId());
 
@@ -235,7 +235,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /** {@inheritDoc} */
-    public synchronized void onNodesUpdated(List<NodeReport> updated) {
+    @Override public synchronized void onNodesUpdated(List<NodeReport> updated) {
         for (NodeReport node : updated) {
             // If node unusable.
             if (node.getNodeState().isUnusable()) {
@@ -255,17 +255,17 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /** {@inheritDoc} */
-    public void onShutdownRequest() {
+    @Override public void onShutdownRequest() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    public void onError(Throwable t) {
+    @Override public void onError(Throwable t) {
         nmClient.stop();
     }
 
     /** {@inheritDoc} */
-    public float getProgress() {
+    @Override public float getProgress() {
         return 50;
     }
 

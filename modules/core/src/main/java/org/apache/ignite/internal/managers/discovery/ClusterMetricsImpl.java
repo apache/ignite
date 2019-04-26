@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.util.Collection;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.GridKernalContext;
