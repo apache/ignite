@@ -25,6 +25,7 @@ import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -54,6 +56,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJU
 /**
  * Test TTL worker with persistence enabled
  */
+@WithSystemProperty(key = IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, value = "5")
 public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "expirableCache";
@@ -190,7 +193,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         fillCache(srv.cache(CACHE_NAME));
 
         if (restartGrid) {
-            srv.context().cache().context().database().wakeupForCheckpoint("test-checkpoint");
+            srv.context().cache().context().database().waitForCheckpoint("test-checkpoint");
 
             stopGrid(0);
             srv = startGrid(0);

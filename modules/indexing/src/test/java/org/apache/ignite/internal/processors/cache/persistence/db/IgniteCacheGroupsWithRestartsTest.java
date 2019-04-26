@@ -42,10 +42,10 @@ import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbag
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceJobResult;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTask;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskArg;
-import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbargeInPersistenceTaskResult;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -56,7 +56,10 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 
 /**
- *
+ * Testing corner cases in cache group functionality:
+ * -stopping cache in shared group and immediate node leaving;
+ * -starting cache in shared group with the same name as destroyed one;
+ * -etc.
  */
 @WithSystemProperty(key=IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value="true")
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
