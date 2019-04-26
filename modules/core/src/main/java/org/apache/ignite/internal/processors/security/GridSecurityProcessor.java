@@ -27,7 +27,6 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface defines a grid authentication processor.
@@ -84,7 +83,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param securityCtx Optional security context.
      * @throws SecurityException If security check failed.
      */
-    public void authorize(String name, SecurityPermission perm, @Nullable SecurityContext securityCtx)
+    public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException;
 
     /**
@@ -96,6 +95,8 @@ public interface GridSecurityProcessor extends GridProcessor {
 
     /**
      * @return GridSecurityProcessor is enable.
+     * @deprecated To determine the security mode use {@link IgniteSecurity#enabled()}.
      */
+    @Deprecated
     public boolean enabled();
 }
