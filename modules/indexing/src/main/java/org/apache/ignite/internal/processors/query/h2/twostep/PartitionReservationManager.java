@@ -16,20 +16,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.PartitionLossPolicy;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsReservation;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +23,23 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.PartitionLossPolicy;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionsReservation;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
@@ -45,18 +48,23 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
- * Class responsible for partition reservation for queries executed on local node.
- * Prevents partitions from being eveicted from node during query execution.
+ * Class responsible for partition reservation for queries executed on local node. Prevents partitions from being
+ * evicted from node during query execution.
  */
-public class PartitionReservationManager {
+public class PartitionReservationManager implements PartitionsExchangeAware {
     /** Special instance of reservable object for REPLICATED caches. */
     private static final ReplicatedReservable REPLICATED_RESERVABLE = new ReplicatedReservable();
 
     /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** Reservations. */
+    /** Group reservations cache. When affinity version is not changed and all primary partitions must be reserved
+     * we get group reservation from this map instead of create new reservation group.
+     */
     private final ConcurrentMap<PartitionReservationKey, GridReservable> reservations = new ConcurrentHashMap<>();
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /**
      * Constructor.
@@ -65,11 +73,15 @@ public class PartitionReservationManager {
      */
     public PartitionReservationManager(GridKernalContext ctx) {
         this.ctx = ctx;
+
+        log = ctx.log(PartitionReservationManager.class);
+
+        ctx.cache().context().exchange().registerExchangeAwareComponent(this);
     }
 
     /**
      * @param cacheIds Cache IDs.
-     * @param topVer Topology version.
+     * @param reqTopVer Topology version from request.
      * @param explicitParts Explicit partitions list.
      * @param nodeId Node ID.
      * @param reqId Request ID.
@@ -78,17 +90,17 @@ public class PartitionReservationManager {
      */
     public PartitionReservation reservePartitions(
         @Nullable List<Integer> cacheIds,
-        AffinityTopologyVersion topVer,
+        AffinityTopologyVersion reqTopVer,
         final int[] explicitParts,
         UUID nodeId,
         long reqId
     ) throws IgniteCheckedException {
-        assert topVer != null;
+        assert reqTopVer != null;
+
+        AffinityTopologyVersion topVer = ctx.cache().context().exchange().lastAffinityChangedTopologyVersion(reqTopVer);
 
         if (F.isEmpty(cacheIds))
             return new PartitionReservation(Collections.emptyList());
-
-        List<GridReservable> reserved = new ArrayList<>();
 
         Collection<Integer> partIds;
 
@@ -102,6 +114,8 @@ public class PartitionReservationManager {
             for (int explicitPart : explicitParts)
                 partIds.add(explicitPart);
         }
+
+        List<GridReservable> reserved = new ArrayList<>();
 
         for (int i = 0; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> cctx = ctx.cache().context().cacheContext(cacheIds.get(i));
@@ -305,6 +319,31 @@ public class PartitionReservationManager {
      */
     private static GridDhtLocalPartition partition(GridCacheContext<?, ?> cctx, int p) {
         return cctx.topology().localPartition(p, NONE, false);
+    }
+
+    /**
+     * Cleanup group reservations cache on change affinity version.
+     */
+    @Override public void onDoneAfterTopologyUnlock(final GridDhtPartitionsExchangeFuture fut) {
+        try {
+            // Must not do anything at the exchange thread. Dispatch to the management thread pool.
+            ctx.closure().runLocal(() -> {
+                    AffinityTopologyVersion topVer = ctx.cache().context().exchange()
+                        .lastAffinityChangedTopologyVersion(fut.topologyVersion());
+
+                    reservations.forEach((key, r) -> {
+                        if (r != REPLICATED_RESERVABLE && !F.eq(key.topologyVersion(), topVer)) {
+                            assert r instanceof GridDhtPartitionsReservation;
+
+                            ((GridDhtPartitionsReservation)r).invalidate();
+                        }
+                    });
+                },
+                GridIoPolicy.MANAGEMENT_POOL);
+        }
+        catch (Throwable e) {
+            log.error("Unexpected exception on start reservations cleanup", e);
+        }
     }
 
     /**
