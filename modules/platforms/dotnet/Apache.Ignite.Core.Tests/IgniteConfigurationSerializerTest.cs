@@ -988,7 +988,7 @@ namespace Apache.Ignite.Core.Tests
                     ConcurrencyLevel = 1,
                     PageSize = 5 * 1024,
                     WalAutoArchiveAfterInactivity = TimeSpan.FromSeconds(19),
-                    WalPageCompression = DiskPageCompression.LZ4,
+                    WalPageCompression = DiskPageCompression.Lz4,
                     WalPageCompressionLevel = 10,
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {

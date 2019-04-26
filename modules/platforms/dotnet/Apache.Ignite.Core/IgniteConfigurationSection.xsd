@@ -123,7 +123,7 @@
             <xs:enumeration value="Disabled" />
             <xs:enumeration value="SkipGarbage" />
             <xs:enumeration value="Zstd" />
-            <xs:enumeration value="LZ4" />
+            <xs:enumeration value="Lz4" />
             <xs:enumeration value="Snappy" />
         </xs:restriction>
     </xs:simpleType>

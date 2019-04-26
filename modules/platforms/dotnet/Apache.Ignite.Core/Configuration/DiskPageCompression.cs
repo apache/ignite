@@ -38,9 +38,9 @@ namespace Apache.Ignite.Core.Configuration
         Zstd,
 
         /// <summary>
-        /// LZ4 compression.
+        /// Lz4 compression.
         /// </summary>
-        LZ4,
+        Lz4,
 
         /// <summary>
         /// Snappy compression.
