@@ -180,6 +180,11 @@ import static org.apache.ignite.internal.commandline.cache.argument.ListCommandA
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.ALL;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.NOT_PERSISTENT;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.PERSISTENT;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.SYSTEM;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.USER;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
@@ -862,8 +867,8 @@ public class CommandHandler {
 
         usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
-        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
+        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC), op(EXCLUDE_CACHES, CACHES),
+            op(CACHE_FILTER, or(ALL, USER, SYSTEM, PERSISTENT, NOT_PERSISTENT)), op(CACHES));
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
@@ -1927,11 +1932,14 @@ public class CommandHandler {
                 return "Show the keys that are point of contention for multiple transactions.";
 
             case IDLE_VERIFY:
-                return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
-                    "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
-                    "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
-                    "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
-                    "regexps, by cache type and after all by exclude regexps.";
+                return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache " +
+                    "groups on an idle cluster and print out the differences, if any. When no parameters are specified, " +
+                    "all user caches are verified. Cache filtering options configure the set of caches that will be " +
+                    "processed by " + IDLE_VERIFY + " command. If cache names are specified, in form of regular " +
+                    "expressions, only matching caches will be verified. Caches matched by regexes specified after " +
+                    EXCLUDE_CACHES + " parameter will be excluded from verification. Using parameter " + CACHE_FILTER +
+                    " you can verify: only " + USER + " caches, only user " + PERSISTENT + " caches, only user " +
+                    NOT_PERSISTENT + " caches, only " + SYSTEM + " caches, or " + ALL + " of the above.";
 
             case VALIDATE_INDEXES:
                 return "Validate indexes on an idle cluster and print out the keys that are missing in the indexes.";
