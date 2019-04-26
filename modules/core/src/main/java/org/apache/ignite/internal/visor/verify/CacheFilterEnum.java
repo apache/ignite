@@ -25,8 +25,8 @@ import org.jetbrains.annotations.Nullable;
  * @see org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2
  */
 public enum CacheFilterEnum {
-    /** All. */
-    ALL,
+    /** Default - user only, or all caches specified by name. */
+    DEFAULT,
 
     /** System. */
     SYSTEM,
@@ -35,7 +35,13 @@ public enum CacheFilterEnum {
     PERSISTENT,
 
     /** Not persistent. */
-    NOT_PERSISTENT;
+    NOT_PERSISTENT,
+
+    /** User. */
+    USER,
+
+    /** All. */
+    ALL;
 
     /** Enumerated values. */
     private static final CacheFilterEnum[] VALS = values();
