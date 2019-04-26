@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -88,6 +89,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_FORCE_LAZY_RESULT_SET;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
@@ -111,6 +113,10 @@ public class GridMapQueryExecutor {
     public static final boolean FORCE_LAZY = IgniteSystemProperties.getBoolean(IGNITE_SQL_FORCE_LAZY_RESULT_SET);
 
     /** */
+    public static final int GROUP_RESERVATIONS_CACHE_MAX_SIZE =
+        IgniteSystemProperties.getInteger(IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE, 1024);
+
+    /** */
     private IgniteLogger log;
 
     /** */
@@ -126,7 +132,8 @@ public class GridMapQueryExecutor {
     private final GridSpinBusyLock busyLock;
 
     /** */
-    private final ConcurrentMap<MapReservationKey, GridReservable> reservations = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<MapReservationKey, GridReservable> reservations =
+        new GridBoundedConcurrentLinkedHashMap<>(GROUP_RESERVATIONS_CACHE_MAX_SIZE);
 
     /** Lazy workers. */
     private final ConcurrentHashMap<MapQueryLazyWorkerKey, MapQueryLazyWorker> lazyWorkers = new ConcurrentHashMap<>();
