@@ -55,6 +55,9 @@ import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.TxCommandArg.TX_INFO;
 
+/**
+ * Transaction commands.
+ */
 public class TxCommands extends Command<VisorTxTaskArg> {
     /** Double indent. */
     private static final String DOUBLE_INDENT = INDENT + INDENT;
@@ -65,6 +68,7 @@ public class TxCommands extends Command<VisorTxTaskArg> {
     /** Logger. */
     private CommandLogger logger;
 
+    /** {@inheritDoc} */
     @Override public VisorTxTaskArg arg() {
         return args;
     }
@@ -116,7 +120,6 @@ public class TxCommands extends Command<VisorTxTaskArg> {
             throw e;
         }
     }
-
 
     /**
      * Dump transactions information.

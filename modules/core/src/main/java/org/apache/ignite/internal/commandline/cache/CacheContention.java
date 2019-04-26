@@ -1,16 +1,12 @@
 package org.apache.ignite.internal.commandline.cache;
 
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
@@ -18,7 +14,13 @@ import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 
+/**
+ * Cache contention detection subcommand.
+ */
 public class CacheContention extends Command<CacheContention.Arguments> {
+    /**
+     * Container for command arguments.
+     */
     public class Arguments {
         /** Node id. */
         private UUID nodeId;
@@ -29,6 +31,9 @@ public class CacheContention extends Command<CacheContention.Arguments> {
         /** Max print. */
         private int maxPrint;
 
+        /**
+         *
+         */
         public Arguments(UUID nodeId, int minQueueSize, int maxPrint) {
             this.nodeId = nodeId;
             this.minQueueSize = minQueueSize;
@@ -56,17 +61,22 @@ public class CacheContention extends Command<CacheContention.Arguments> {
         }
     }
 
-    private Arguments cacheArgs;
+    /**
+     * Command parsed arguments.
+     */
+    private Arguments args;
 
+    /** {@inheritDoc} */
     @Override public Arguments arg() {
-        return cacheArgs;
+        return args;
     }
 
+    /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         VisorContentionTaskArg taskArg = new VisorContentionTaskArg(
-            cacheArgs.minQueueSize(), cacheArgs.maxPrint());
+            args.minQueueSize(), args.maxPrint());
 
-        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
+        UUID nodeId = args.nodeId() == null ? BROADCAST_UUID : args.nodeId();
 
         VisorContentionTaskResult res;
 
@@ -74,17 +84,7 @@ public class CacheContention extends Command<CacheContention.Arguments> {
             res = executeTaskByNameOnNode(client, VisorContentionTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 
-        if (!F.isEmpty(res.exceptions())) {
-            logger.log("Contention check failed on nodes:");
-
-            for (Map.Entry<UUID, Exception> e : res.exceptions().entrySet()) {
-                logger.log("Node ID: " + e.getKey());
-
-                logger.log("Exception message:");
-                logger.log(e.getValue().getMessage());
-                logger.nl();
-            }
-        }
+        logger.printErrors(res.exceptions(), "Contention check failed on nodes:");
 
         for (ContentionInfo info : res.getInfos())
             info.print();
@@ -92,6 +92,7 @@ public class CacheContention extends Command<CacheContention.Arguments> {
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         int minQueueSize = Integer.parseInt(argIter.nextArg("Min queue size expected"));
 
@@ -105,6 +106,6 @@ public class CacheContention extends Command<CacheContention.Arguments> {
         if (argIter.hasNextSubArg())
             maxPrint = Integer.parseInt(argIter.nextArg(""));
 
-        cacheArgs = new Arguments(nodeId, minQueueSize, maxPrint);
+        args = new Arguments(nodeId, minQueueSize, maxPrint);
     }
 }

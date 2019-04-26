@@ -21,6 +21,9 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
+/**
+ * Command to print cluster state.
+ */
 public class StateCommand extends Command<Void> {
     /**
      * Print cluster state.
@@ -43,6 +46,7 @@ public class StateCommand extends Command<Void> {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
     }

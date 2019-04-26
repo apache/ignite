@@ -92,6 +92,9 @@ public enum BaselineSubcommands {
         return name;
     }
 
+    /**
+     * @return {@link VisorBaselineOperation} which is associated with baseline subcommand.
+     */
     public VisorBaselineOperation visorBaselineOperation() {
         return visorBaselineOperation;
     }

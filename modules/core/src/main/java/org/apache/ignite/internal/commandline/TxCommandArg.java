@@ -15,37 +15,42 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 
+/**
+ * Transaction command arguments name.
+ */
 public enum TxCommandArg implements CommandArg {
+    /** */
     TX_LIMIT("--limit"),
 
+    /** */
     TX_ORDER("--order"),
 
+    /** */
     TX_SERVERS("--servers"),
 
-
+    /** */
     TX_CLIENTS("--clients"),
 
-
+    /** */
     TX_DURATION("--min-duration"),
 
-
+    /** */
     TX_SIZE("--min-size"),
 
-
+    /** */
     TX_LABEL("--label"),
 
-
+    /** */
     TX_NODES("--nodes"),
 
-
+    /** */
     TX_XID("--xid"),
 
-
+    /** */
     TX_KILL("--kill"),
 
     /** */

@@ -72,7 +72,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.Commands;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheCommandList;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -127,7 +127,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.HELP;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -1325,7 +1325,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String output = testOut.toString();
 
-        for (CacheCommandList cmd : CacheCommandList.values()) {
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
             if (cmd != HELP) {
                 assertTrue(cmd.text(), output.contains(cmd.toString()));
 
@@ -1345,7 +1345,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
-        for (CacheCommandList cmd : CacheCommandList.values()) {
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
             Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
 
             if(args != null)

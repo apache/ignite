@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
 /**
- * Bean with all parsed and validated arguments.
+ * Container with common parsed and validated arguments.
  */
 public class ConnectionAndSslParameters {
     /** Host. */
@@ -71,6 +71,7 @@ public class ConnectionAndSslParameters {
     /** Truststore Password. */
     private char[] sslTrustStorePassword;
 
+    /** High-level command. */
     private Command command;
 
     /**

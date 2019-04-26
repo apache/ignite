@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Collection;
@@ -25,10 +42,13 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByN
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 
+/**
+ * Validate indexes command.
+ */
 public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments> {
-    /** Validate indexes task name. */
-    private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
-
+    /**
+     * Container for command arguments.
+     */
     public class Arguments {
          /** Caches. */
         private Set<String> caches;
@@ -36,12 +56,15 @@ public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments
         /** Node id. */
         private UUID nodeId;
 
-        /** validate_indexes 'checkFirst' argument */
+        /** Max number of entries to be checked. */
         private int checkFirst = -1;
 
-        /** validate_indexes 'checkThrough' argument */
+        /** Number of entries to check through. */
         private int checkThrough = -1;
 
+        /**
+         *
+         */
         public Arguments(Set<String> caches, UUID nodeId, int checkFirst, int checkThrough) {
             this.caches = caches;
             this.nodeId = nodeId;
@@ -79,12 +102,15 @@ public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments
         }
     }
 
+    /** Command parsed arguments. */
     private Arguments args;
 
+    /** {@inheritDoc} */
     @Override public Arguments arg() {
         return args;
     }
 
+    /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
             args.caches(),
@@ -95,7 +121,7 @@ public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments
 
         try (GridClient client = startClient(clientCfg);) {
             VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
-                client, VALIDATE_INDEXES_TASK, taskArg, null, clientCfg);
+                client, "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask", taskArg, null, clientCfg);
 
             boolean errors = logger.printErrors(taskRes.exceptions(), "Index validation failed on nodes:");
 
@@ -152,6 +178,7 @@ public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         int checkFirst = -1;
         int checkThrough = -1;

@@ -29,19 +29,19 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 
-import static org.apache.ignite.internal.commandline.CommandArgParser.getCommonOptions;
+import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.Commands.CACHE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.CONTENTION;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.DISTRIBUTION;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.FIND_AND_DELETE_GARBAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.IDLE_VERIFY;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.LIST;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.RESET_LOST_PARTITIONS;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONTENTION;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DISTRIBUTION;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.IDLE_VERIFY;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.LIST;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.RESET_LOST_PARTITIONS;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CHECK_CRC;
@@ -56,28 +56,27 @@ import static org.apache.ignite.internal.commandline.cache.argument.ValidateInde
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder.DELIM;
 
-public class CacheCommands extends Command<CacheCommandList> {
+/**
+ * High-level "cache" command realization.
+ */
+public class CacheCommands extends Command<CacheSubcommands> {
     /** */
     private static final String NODE_ID = "nodeId";
 
     /** */
     private static final String OP_NODE_ID = op(NODE_ID);
 
+    /** */
     private CommandLogger logger;
 
     /** */
-    private CacheCommandList subcommand;
+    private CacheSubcommands subcommand;
 
-    /**
-     * Executes --cache subcommand.
-     *
-     * @param clientCfg Client configuration.
-     */
-
+    /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
-        if (subcommand == CacheCommandList.HELP) {
+        if (subcommand == CacheSubcommands.HELP) {
             printCacheHelp();
 
             return null;
@@ -91,12 +90,7 @@ public class CacheCommands extends Command<CacheCommandList> {
         return command.execute(clientCfg, logger);
     }
 
-    /**
-     * Parses and validates cache arguments.
-     *
-     * @return --cache subcommand arguments in case validation is successful.
-     * @param argIter Argument iterator.
-     */
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         if (!argIter.hasNextSubArg()) {
             throw new IllegalArgumentException("Arguments are expected for --cache subcommand, " +
@@ -105,11 +99,10 @@ public class CacheCommands extends Command<CacheCommandList> {
 
         String str = argIter.nextArg("").toLowerCase();
 
-        CacheCommandList cmd = CacheCommandList.of(str);
+        CacheSubcommands cmd = CacheSubcommands.of(str);
 
         if (cmd == null)
-            cmd = CacheCommandList.HELP;
-
+            cmd = CacheSubcommands.HELP;
 
         switch (cmd) {
             case HELP:
@@ -171,7 +164,7 @@ public class CacheCommands extends Command<CacheCommandList> {
      * @param cmd Cache command.
      * @param args Cache command arguments.
      */
-    private void usageCache(CacheCommandList cmd, String... args) {
+    private void usageCache(CacheSubcommands cmd, String... args) {
         usageCache(1, cmd, args);
     }
 
@@ -182,7 +175,7 @@ public class CacheCommands extends Command<CacheCommandList> {
      * @param cmd Cache command.
      * @param args Cache command arguments.
      */
-    private void usageCache(int indentsNum, CacheCommandList cmd, String... args) {
+    private void usageCache(int indentsNum, CacheSubcommands cmd, String... args) {
         logger.logWithIndent(DELIM, indentsNum);
         logger.nl();
         logger.logWithIndent(j(" ", CACHE, cmd, j(" ", args)), indentsNum++);
@@ -245,7 +238,7 @@ public class CacheCommands extends Command<CacheCommandList> {
      * @param cmd Cache command.
      * @return Cache command arguments description.
      */
-    private Map<String, String> createCacheArgsDesc(CacheCommandList cmd) {
+    private Map<String, String> createCacheArgsDesc(CacheSubcommands cmd) {
         Map<String, String> map = U.newLinkedHashMap(16);
         switch (cmd) {
             case LIST:
@@ -270,7 +263,8 @@ public class CacheCommands extends Command<CacheCommandList> {
         return map;
     }
 
-    @Override public CacheCommandList arg() {
+    /** {@inheritDoc} */
+    @Override public CacheSubcommands arg() {
         return subcommand;
     }
 }

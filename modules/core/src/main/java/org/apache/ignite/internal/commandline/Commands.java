@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
 
 /**
- * Command.
+ * High-level command.
  */
 public enum Commands {
     /** */
@@ -50,6 +50,7 @@ public enum Commands {
     /** */
     private final String text;
 
+    /** Command realization. */
     private final Command command;
 
     /**
@@ -81,6 +82,9 @@ public enum Commands {
         return text;
     }
 
+    /**
+     * @return Command realization.
+     */
     public Command command() {
         return command;
     }

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 
 /**
- *
+ * Activate cluster command.
  */
 public class ActivateCommand extends Command<Void> {
     /**
@@ -49,6 +49,7 @@ public class ActivateCommand extends Command<Void> {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
     }

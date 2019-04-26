@@ -36,6 +36,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+/**
+ * Visor task executor.
+ */
 public class TaskExecutor {
     /** */
     public static final String DFLT_HOST = "127.0.0.1";

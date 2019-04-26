@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * Iterator over command arguments.
  */
 public class CommandArgIterator {
     /** */
@@ -34,16 +34,18 @@ public class CommandArgIterator {
     /** */
     private String peekedArg;
 
-    private final Set<String> subCommandsSet;
+    /**
+     * Set of common arguments names and high level command name set.
+     */
+    private final Set<String> commonArgumentsAndHighLevelCommandSet;
 
     /**
-     *
-     * @param argsIt
-     * @param subCommandsSet All known subcomands.
+     * @param argsIt Raw argument iterator.
+     * @param commonArgumentsAndHighLevelCommandSet All known subcomands.
      */
-    public CommandArgIterator(Iterator<String> argsIt, Set<String> subCommandsSet) {
+    public CommandArgIterator(Iterator<String> argsIt, Set<String> commonArgumentsAndHighLevelCommandSet) {
         this.argsIt = argsIt;
-        this.subCommandsSet = subCommandsSet;
+        this.commonArgumentsAndHighLevelCommandSet = commonArgumentsAndHighLevelCommandSet;
     }
 
     /**
@@ -57,7 +59,8 @@ public class CommandArgIterator {
      * @return <code>true</code> if there's next argument for subcommand.
      */
     public boolean hasNextSubArg() {
-        return hasNextArg() && Commands.of(peekNextArg()) == null && !subCommandsSet.contains(peekNextArg());
+        return hasNextArg() && Commands.of(peekNextArg()) == null &&
+            !commonArgumentsAndHighLevelCommandSet.contains(peekNextArg());
     }
 
     /**
@@ -121,6 +124,11 @@ public class CommandArgIterator {
         return parseStringSet(string);
     }
 
+    /**
+     *
+     * @param string To scan on for string set.
+     * @return Set of string parsed from string param.
+     */
     @NotNull public Set<String> parseStringSet(String string) {
         Set<String> namesSet = new HashSet<>();
 

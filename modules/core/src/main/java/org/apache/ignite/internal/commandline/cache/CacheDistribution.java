@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.HashSet;
@@ -19,7 +36,13 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg.USER_ATTRIBUTES;
 
+/**
+ * Would collect and print info about how data is spread between nodes and partitions.
+ */
 public class CacheDistribution extends Command<CacheDistribution.Arguments> {
+    /**
+     * Container for command arguments.
+     */
     public class Arguments {
         /** Caches. */
         private Set<String> caches;
@@ -30,6 +53,9 @@ public class CacheDistribution extends Command<CacheDistribution.Arguments> {
         /** Additional user attributes in result. Set of attribute names whose values will be searched in ClusterNode.attributes(). */
         private Set<String> userAttributes;
 
+        /**
+         *
+         */
         public Arguments(Set<String> caches, UUID nodeId, Set<String> userAttributes) {
             this.caches = caches;
             this.nodeId = nodeId;
@@ -58,12 +84,15 @@ public class CacheDistribution extends Command<CacheDistribution.Arguments> {
         }
     }
 
+    /** Command parsed arguments */
     private Arguments args;
 
+    /** {@inheritDoc} */
     @Override public Arguments arg() {
         return args;
     }
 
+    /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         CacheDistributionTaskArg taskArg = new CacheDistributionTaskArg(args.caches(), args.getUserAttributes());
 
@@ -75,11 +104,14 @@ public class CacheDistribution extends Command<CacheDistribution.Arguments> {
             res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 
+        logger.printErrors(res.exceptions(), "Cache distrubution task failed on nodes:");
+
         res.print(System.out);
 
         return res;
     }
 
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         UUID nodeId = null;
         Set<String> caches = null;
@@ -90,7 +122,6 @@ public class CacheDistribution extends Command<CacheDistribution.Arguments> {
 
         if (!NULL.equals(nodeIdStr))
             nodeId= UUID.fromString(nodeIdStr);
-
 
         while (argIter.hasNextSubArg()) {
             String nextArg = argIter.nextArg("");

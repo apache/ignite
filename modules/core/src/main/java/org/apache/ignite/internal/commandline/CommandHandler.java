@@ -47,8 +47,8 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.commandline.CommandArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.CommandArgParser.getCommonOptions;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.TxCommandArg.TX_INFO;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_PRINT;
-import static org.apache.ignite.internal.commandline.cache.CacheCommandList.HELP;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
@@ -127,7 +127,6 @@ public class CommandHandler {
     /** */
     private Object lastOperationRes;
 
-
     /**
      * @param args Arguments to parse and apply.
      */
@@ -157,7 +156,7 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            ConnectionAndSslParameters args = new CommandArgParser(logger).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters args = new CommonArgParser(logger).parseAndValidate(rawArgs.iterator());
 
             Command command = args.command();
 

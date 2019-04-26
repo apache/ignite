@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheCommandList;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 
 /**
- * {@link CacheCommandList#DISTRIBUTION} command arguments.
+ * {@link CacheSubcommands#DISTRIBUTION} command arguments.
  */
 public enum DistributionCommandArg implements CommandArg {
     /** User attributes. */

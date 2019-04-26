@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Arrays;
@@ -34,7 +51,13 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import static java.lang.String.format;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
+/**
+ *
+ */
 public class IdleVerify extends Command<IdleVerify.Arguments> {
+    /**
+     * Container for command arguments.
+     */
     public static class Arguments {
         /** Caches. */
         private Set<String> caches;
@@ -54,6 +77,9 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
         /** Cache filter. */
         private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
 
+        /**
+         *
+         */
         public Arguments(Set<String> caches, Set<String> excludeCaches, boolean dump, boolean skipZeros,
             boolean idleCheckCrc,
             CacheFilterEnum cacheFilterEnum) {
@@ -109,12 +135,15 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
         }
     }
 
+    /** Command parsed arguments. */
     private Arguments args;
 
+    /** {@inheritDoc} */
     @Override public Arguments arg() {
         return args;
     }
 
+    /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         try (GridClient client = startClient(clientCfg);) {
             Collection<GridClientNode> nodes = client.compute().nodes(GridClientNode::connectable);
@@ -144,6 +173,7 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         Set<String> cacheNames = null;
         boolean dump = false;
@@ -202,13 +232,16 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
         args = new Arguments(cacheNames, excludeCaches, dump, skipZeros, idleCheckCrc, cacheFilterEnum);
     }
 
-    private void validateRegexes(Set<String> cacheNames) {
-        cacheNames.forEach(c -> {
+    /**
+     * @param string To validate that given name is valed regex.
+     */
+    private void validateRegexes(Set<String> string) {
+        string.forEach(s -> {
             try {
-                Pattern.compile(c);
+                Pattern.compile(s);
             }
             catch (PatternSyntaxException e) {
-                throw new IgniteException(format("Invalid cache name regexp '%s': %s", c, e.getMessage()));
+                throw new IgniteException(format("Invalid cache name regexp '%s': %s", s, e.getMessage()));
             }
         });
     }

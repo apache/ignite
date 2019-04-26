@@ -181,7 +181,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @param doFindAndRemove Do find and remove.
      */
     private void testFindAndDeleteGarbage(
-        BiFunction<IgniteEx, Boolean, VisorFindAndDeleteGarbargeInPersistenceTaskResult> doFindAndRemove
+        BiFunction<IgniteEx, Boolean, VisorFindAndDeleteGarbageInPersistenceTaskResult> doFindAndRemove
     ) throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -201,11 +201,11 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        VisorFindAndDeleteGarbargeInPersistenceTaskResult taskResult = doFindAndRemove.apply(ex1, false);
+        VisorFindAndDeleteGarbageInPersistenceTaskResult taskResult = doFindAndRemove.apply(ex1, false);
 
-        VisorFindAndDeleteGarbargeInPersistenceJobResult result = taskResult.result().get(ex1.localNode().id());
+        VisorFindAndDeleteGarbageInPersistenceJobResult result = taskResult.result().get(ex1.localNode().id());
 
-        Assert.assertTrue(result.hasGarbarge());
+        Assert.assertTrue(result.hasGarbage());
 
         Assert.assertTrue(result.checkResult()
             .get(CU.cacheId("group"))
@@ -214,11 +214,11 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         //removing garbage
         result = doFindAndRemove.apply(ex1, true).result().get(ex1.localNode().id());
 
-        Assert.assertTrue(result.hasGarbarge());
+        Assert.assertTrue(result.hasGarbage());
 
         result = doFindAndRemove.apply(ex1, false).result().get(ex1.localNode().id());
 
-        Assert.assertFalse(result.hasGarbarge());
+        Assert.assertFalse(result.hasGarbage());
     }
 
     /**
@@ -226,19 +226,19 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @param deleteFoundGarbarge If clearing mode should be used.
      * @return Result of task run.
      */
-    private VisorFindAndDeleteGarbargeInPersistenceTaskResult executeTask(
+    private VisorFindAndDeleteGarbageInPersistenceTaskResult executeTask(
         IgniteEx ignite,
         boolean deleteFoundGarbarge
     ) {
-        VisorFindAndDeleteGarbargeInPersistenceTaskArg group = new VisorFindAndDeleteGarbargeInPersistenceTaskArg(
+        VisorFindAndDeleteGarbageInPersistenceTaskArg group = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
             Collections.singleton(GROUP), deleteFoundGarbarge, null);
 
         UUID id = ignite.localNode().id();
 
         VisorTaskArgument arg = new VisorTaskArgument(id, group, true);
 
-        VisorFindAndDeleteGarbargeInPersistenceTaskResult result =
-            ignite.compute().execute(VisorFindAndDeleteGarbargeInPersistenceTask.class, arg);
+        VisorFindAndDeleteGarbageInPersistenceTaskResult result =
+            ignite.compute().execute(VisorFindAndDeleteGarbageInPersistenceTask.class, arg);
 
         return result;
     }
@@ -248,7 +248,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @param deleteFoundGarbarge If clearing mode should be used.
      * @return Result of task run.
      */
-    private VisorFindAndDeleteGarbargeInPersistenceTaskResult executeTaskViaControlConsoleUtil(
+    private VisorFindAndDeleteGarbageInPersistenceTaskResult executeTaskViaControlConsoleUtil(
         IgniteEx ignite,
         boolean deleteFoundGarbarge
     ) {

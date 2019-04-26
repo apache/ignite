@@ -285,7 +285,7 @@ public class IndexStorageImpl implements IndexStorage {
     /**
      *
      */
-    public static class IndexItem {
+    private static class IndexItem {
         /** */
         private byte[] idxName;
 

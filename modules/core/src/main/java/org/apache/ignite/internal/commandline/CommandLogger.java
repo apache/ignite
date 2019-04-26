@@ -22,6 +22,9 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
+/**
+ * Logger used in command.
+ */
 public class CommandLogger {
     /** Indent for help output. */
     public static final String INDENT = "  ";

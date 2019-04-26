@@ -32,7 +32,12 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
-public class CommandArgParser {
+/**
+ * Common argument parser.
+ * Also would parse high-level command and delegate parsing for its argument to the command.
+ */
+public class CommonArgParser {
+    /** */
     private final CommandLogger logger;
 
     /** */
@@ -113,7 +118,10 @@ public class CommandArgParser {
         AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
     }
 
-    public CommandArgParser(CommandLogger logger) {
+    /**
+     * @param logger Logger.
+     */
+    public CommonArgParser(CommandLogger logger) {
         this.logger = logger;
     }
 
@@ -310,7 +318,6 @@ public class CommandArgParser {
         if (command == null)
             throw new IllegalArgumentException("No action was specified");
 
-
         return new ConnectionAndSslParameters(command.command(), host, port, user, pwd,
                 pingTimeout, pingInterval, autoConfirmation,
                 sslProtocol, sslCipherSuites,
@@ -318,6 +325,10 @@ public class CommandArgParser {
                 sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
     }
 
+    /**
+     * @param password Parsed password.
+     * @return String with warning to show for user.
+     */
     private String securityWarningMessage(String password) {
         final String pwdArgWarnFmt = "Warning: %s is insecure. " +
             "Whenever possible, use interactive prompt for password (just discard %s option).";

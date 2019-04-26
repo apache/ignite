@@ -21,6 +21,9 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
+/**
+ * Command to deactivate cluster.
+ */
 public class DeactivateCommand extends Command<Void> {
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
@@ -50,6 +53,7 @@ public class DeactivateCommand extends Command<Void> {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public Void arg() {
         return null;
     }

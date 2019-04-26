@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.commandline.Commands.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
 /**
- *
+ * Wal commands.
  */
 public class WalCommands extends Command<T2<String, String>> {
     /** */
@@ -46,10 +46,17 @@ public class WalCommands extends Command<T2<String, String>> {
     /** */
     static final String WAL_DELETE = "delete";
 
-
+    /** */
     private CommandLogger logger;
 
+    /**
+     * Wal action.
+     */
     private String walAct;
+
+    /**
+     * Wal arguments.
+     */
     private String walArgs;
 
     /**
@@ -105,6 +112,9 @@ public class WalCommands extends Command<T2<String, String>> {
             throw new IllegalArgumentException("Unexpected action " + walAct + " for " + WAL.text());
     }
 
+    /**
+     * @return Tuple where first string is wal action, second - wal arguments.
+     */
     @Override public T2<String, String> arg() {
         return new T2<>(walAct, walArgs);
     }

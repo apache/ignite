@@ -22,19 +22,28 @@ package org.apache.ignite.internal.commandline.cache.argument;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 
+/**
+ * List of extra arguments.
+ */
 public enum FindAndDeleteGarbageArg implements CommandArg {
     DELETE("--delete");
 
+    /** Argument name. */
     private final String name;
 
+    /**
+     * @param name Argument name.
+     */
     FindAndDeleteGarbageArg(String name) {
         this.name = name;
     }
 
+    /** {@inheritDoc} */
     @Override public String argName() {
         return name;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return name;
     }
