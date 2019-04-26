@@ -35,7 +35,7 @@
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <node.version>v8.11.2</node.version>
+        <node.version>v10.15.2</node.version>
         <docker.registry.host>docker.io</docker.registry.host>
         <docker.repository>apacheignite</docker.repository>
         <docker.backend.image>web-console-backend</docker.backend.image>
