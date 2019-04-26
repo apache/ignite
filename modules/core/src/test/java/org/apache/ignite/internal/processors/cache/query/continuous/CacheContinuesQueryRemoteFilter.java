@@ -12,6 +12,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.log4j.BasicConfigurator;
 import org.junit.Test;
 
+import static com.sun.corba.se.impl.util.RepositoryId.cache;
+
 public class CacheContinuesQueryRemoteFilter extends GridCommonAbstractTest {
     /** */
     protected static final String CLIENT = "_client";
@@ -32,28 +34,47 @@ public class CacheContinuesQueryRemoteFilter extends GridCommonAbstractTest {
         Ignite grid1 = startGrid(1+SERVER);
         Ignite grid2 =startGrid(2+SERVER);
 
-        CacheConfiguration<String, String> cfg = new CacheConfiguration<>();
-        cfg.setCacheMode(CacheMode.REPLICATED);
-        cfg.setName("myCache");
 
-        IgniteCache<String, String> cache = grid1.getOrCreateCache(cfg);
 
         AtomicInteger counter = new AtomicInteger(0);
         AtomicInteger cacheSize = new AtomicInteger(0);
 
-        Auditor auditor = new Auditor(counter, cache);
-
         try(Ignite client=startGrid("1" + CLIENT)) {
-            client.compute().run(auditor);
 
-            for (long i = 0; i < 10; i++) {
+            IgniteCache<String, String> cache = client.getOrCreateCache(new CacheConfiguration<String, String>()
+                .setName("myCache")
+                .setCacheMode(CacheMode.REPLICATED));
+
+            ContinuousQuery<String, String> qry = new ContinuousQuery<>();
+            qry.setAutoUnsubscribe(false);
+
+            qry.setRemoteFilterFactory(() -> event -> {
+                counter.incrementAndGet();
+                System.out.println("RemoteFilter=" + event.getKey() + " " + event.getEventType());
+                return true;
+            });
+
+//        qry.setRemoteFilter(evt -> {
+//            cntr.incrementAndGet();
+//            System.out.println("RemoteFilter: type{" + evt.getEventType() + "}, key{" + evt.getKey() + "}, value{" + evt.getValue() + "}");
+//            return true;
+//        });
+
+            qry.setLocalListener(events -> {
+                events.forEach(event -> {
+                    System.out.println("LocalListener=" + event.getEventType() + " " + event.getKey());
+                });
+            });
+
+            for (long i = 0; i < 10; i++)
                 cache.put("k" + i, "v" + i);
-            }
+
+            cache.forEach(a->cacheSize.incrementAndGet());
+
         }
 
         Thread.sleep(TIMEOUT);
 
-        cache.forEach(a->cacheSize.incrementAndGet());
 
         assertTrue("CacheSize:"+cacheSize.get(), DATA_AMOUNT==cacheSize.get());
 
@@ -65,54 +86,9 @@ public class CacheContinuesQueryRemoteFilter extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.endsWith(CLIENT)) {
+        if (igniteInstanceName.endsWith(CLIENT))
             cfg.setClientMode(true);
-
-            cfg.setCommunicationSpi(new CacheContinuousBatchAckTest.FailedTcpCommunicationSpi(true, false));
-        }
-        else if (igniteInstanceName.endsWith(SERVER2))
-            cfg.setCommunicationSpi(new CacheContinuousBatchAckTest.FailedTcpCommunicationSpi(false, true));
-        else
-            cfg.setCommunicationSpi(new CacheContinuousBatchAckTest.FailedTcpCommunicationSpi(false, false));
-
         return cfg;
     }
 }
 
-class Auditor<T, E> implements IgniteRunnable {
-
-//    @IgniteInstanceResource Ignite ignite;
-
-    AtomicInteger cntr;
-
-    IgniteCache cache;
-
-    public Auditor(AtomicInteger cntr, IgniteCache<T, E> cache) {
-        this.cntr = cntr;
-        this.cache = cache;
-
-    }
-
-    @Override public void run() {
-        ContinuousQuery<String, String> qry = new ContinuousQuery<>();
-        qry.setAutoUnsubscribe(false);
-
-        qry.setRemoteFilterFactory(() -> event -> {
-            cntr.incrementAndGet();
-            System.out.println("RemoteFilter=" + event.getKey() + " " + event.getEventType());
-            return true;
-        });
-
-//        qry.setRemoteFilter(evt -> {
-//            cntr.incrementAndGet();
-//            System.out.println("RemoteFilter: type{" + evt.getEventType() + "}, key{" + evt.getKey() + "}, value{" + evt.getValue() + "}");
-//            return true;
-//        });
-
-        qry.setLocalListener(events -> {
-            events.forEach(event -> {
-                System.out.println("LocalListener=" + event.getEventType() + " " + event.getKey());
-            });
-        });
-    }
-}
