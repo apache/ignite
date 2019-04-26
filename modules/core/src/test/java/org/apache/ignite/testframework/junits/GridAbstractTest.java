@@ -1399,7 +1399,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param idx Index.
      * @return Ignite instance.
      */
-    protected Ignite ignite(int idx) {
+    protected IgniteEx ignite(int idx) {
         return grid(idx);
     }
 

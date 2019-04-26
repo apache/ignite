@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -137,6 +138,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Cache object processor to reading {@link DataEntry DataEntries}. */
     protected final IgniteCacheObjectProcessor co;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Serializer of {@link TxRecord} records. */
     private TxRecordSerializer txRecordSerializer;
 
@@ -173,6 +177,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             this.realPageSize = CU.encryptedPageSize(pageSize, encSpi);
         else
             this.realPageSize = pageSize;
+
+        log = cctx.logger(getClass());
     }
 
     /** {@inheritDoc} */
@@ -590,7 +596,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long treeRoot = in.readLong();
                 long reuseListRoot = in.readLong();
 
-                res = new MetaPageInitRecord(cacheId, pageId, ioType, ioVer, treeRoot, reuseListRoot);
+                res = new MetaPageInitRecord(cacheId, pageId, ioType, ioVer, treeRoot, reuseListRoot, log);
 
                 break;
 
@@ -795,7 +801,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 ioVer = in.readUnsignedShort();
                 long virtualPageId = in.readLong();
 
-                res = new InitNewPageRecord(cacheId, pageId, ioType, ioVer, virtualPageId);
+                res = new InitNewPageRecord(cacheId, pageId, ioType, ioVer, virtualPageId, log);
 
                 break;
 
@@ -1025,7 +1031,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 prevPageId = in.readLong();
                 long addDataPageId = in.readLong();
 
-                res = new PagesListInitNewPageRecord(cacheId, pageId, ioType, ioVer, newPageId, prevPageId, addDataPageId);
+                res = new PagesListInitNewPageRecord(cacheId, pageId, ioType, ioVer, newPageId, prevPageId, addDataPageId, log);
 
                 break;
 
