@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -52,7 +53,7 @@ public class GridH2QueryContext {
     private volatile boolean cleared;
 
     /** */
-    private List<GridReservable> reservations;
+    private PartitionReservation reserved;
 
     /** Range streams for indexes. */
     private Map<Integer, Object> streams;
@@ -189,11 +190,11 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param reservations Reserved partitions or group reservations.
+     * @param reserved Reserved partitions or group reservations.
      * @return {@code this}.
      */
-    public GridH2QueryContext reservations(List<GridReservable> reservations) {
-        this.reservations = reservations;
+    public GridH2QueryContext reservations(PartitionReservation reserved) {
+        this.reserved = reserved;
 
         return this;
     }
@@ -417,12 +418,8 @@ public class GridH2QueryContext {
     public void clearContext(boolean nodeStop) {
         cleared = true;
 
-        List<GridReservable> r = reservations;
-
-        if (!nodeStop && !F.isEmpty(r)) {
-            for (int i = 0; i < r.size(); i++)
-                r.get(i).release();
-        }
+        if (!nodeStop && reserved != null)
+            reserved.release();
     }
 
     /**
