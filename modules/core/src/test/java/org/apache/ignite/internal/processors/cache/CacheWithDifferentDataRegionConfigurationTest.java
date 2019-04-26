@@ -224,7 +224,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
         );
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void secondNodeMustRejectJoinOnThirdNode() throws Exception {
         IgniteEx node1 = node(NODE_1)
             .start();
@@ -232,12 +232,13 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
         node1.cluster().baselineAutoAdjustTimeout(1); //Hack: The way to add persistence cache into in-memory cluster
 
         IgniteEx node2 = node(NODE_2)
-            .withRegion(REGION_1, PERSISTENCE)
+            .withRegion(REGION_2, PERSISTENCE)
             .start();
 
-        IgniteEx node3 = node(NODE_3)
-            .withRegion(REGION_1, MEMORY)
-            .start();
+        assertThrowsContainsMessage(() -> node(NODE_3).withRegion(REGION_2, MEMORY).start(),
+            IgniteSpiException.class,
+            "Failed to join node (Incompatible data region configuration [region=" + REGION_2
+        );
     }
 
     /**

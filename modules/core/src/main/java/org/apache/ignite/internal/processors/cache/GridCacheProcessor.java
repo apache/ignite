@@ -212,7 +212,6 @@ import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD_DUMP_PROVIDING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistence;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
@@ -1070,9 +1069,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param node
+     * @return Data storage configuration
+     */
+    private DataStorageConfiguration extractDataStorage(ClusterNode node){
+        return GridCacheUtils.extractDataStorage(
+            node,
+            ctx.marshallerContext().jdkMarshaller(),
+            U.resolveClassLoader(ctx.config())
+        );
+    }
+
+    /**
      * @param dataStorageCfg User-defined data regions.
      */
-    private Map<String, DataRegionConfiguration> customRegionConfigurations(DataStorageConfiguration dataStorageCfg) {
+    private Map<String, DataRegionConfiguration> dataRegionCfgs(DataStorageConfiguration dataStorageCfg) {
         if(dataStorageCfg != null) {
             return Optional.ofNullable(dataStorageCfg.getDataRegionConfigurations())
                 .map(Stream::of)
@@ -3512,41 +3523,40 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private List<String> validateRmtRegions(ClusterNode rmtNode) {
         List<String> errorMessages = new ArrayList<>();
 
-        DataStorageConfiguration rmtDataStorageCfg = extractDataStorage(
-            rmtNode,
-            ctx.marshallerContext().jdkMarshaller(),
-            U.resolveClassLoader(ctx.config())
-        );
-        Map<String, DataRegionConfiguration> rmtRegionCfgs = customRegionConfigurations(rmtDataStorageCfg);
+        DataStorageConfiguration rmtStorageCfg = extractDataStorage(rmtNode);
+        Map<String, DataRegionConfiguration> rmtRegionCfgs = dataRegionCfgs(rmtStorageCfg);
 
-        DataStorageConfiguration locDataStorageCfg = ctx.config().getDataStorageConfiguration();
-        Map<String, DataRegionConfiguration> locRegionCfgs = customRegionConfigurations(locDataStorageCfg);
+        DataStorageConfiguration locStorageCfg = ctx.config().getDataStorageConfiguration();
 
-        if (isDefaultDataRegionPersistence(rmtDataStorageCfg) != isDefaultDataRegionPersistence(locDataStorageCfg)) {
+        if (isDefaultDataRegionPersistence(locStorageCfg) != isDefaultDataRegionPersistence(rmtStorageCfg)) {
             errorMessages.add(String.format(
                 INVALID_REGION_CONFIGURATION_MESSAGE,
                 "DEFAULT",
                 ctx.localNodeId(),
-                isDefaultDataRegionPersistence(locDataStorageCfg),
+                isDefaultDataRegionPersistence(locStorageCfg),
                 rmtNode.id(),
-                isDefaultDataRegionPersistence(rmtDataStorageCfg)
+                isDefaultDataRegionPersistence(rmtStorageCfg)
             ));
         }
 
-        for (Map.Entry<String, DataRegionConfiguration> locRegionCfgEntry : locRegionCfgs.entrySet()) {
-            String regionName = locRegionCfgEntry.getKey();
+        for (ClusterNode clusterNode : ctx.discovery().aliveServerNodes()) {
+            Map<String, DataRegionConfiguration> nodeRegionCfg = dataRegionCfgs(extractDataStorage(clusterNode));
 
-            DataRegionConfiguration rmtRegionCfg = rmtRegionCfgs.get(regionName);
+            for (Map.Entry<String, DataRegionConfiguration> nodeRegionCfgEntry : nodeRegionCfg.entrySet()) {
+                String regionName = nodeRegionCfgEntry.getKey();
 
-            if (rmtRegionCfg != null && rmtRegionCfg.isPersistenceEnabled() != locRegionCfgEntry.getValue().isPersistenceEnabled())
-                errorMessages.add(String.format(
-                    INVALID_REGION_CONFIGURATION_MESSAGE,
-                    regionName,
-                    ctx.localNodeId(),
-                    locRegionCfgEntry.getValue().isPersistenceEnabled(),
-                    rmtNode.id(),
-                    rmtRegionCfg.isPersistenceEnabled()
-                ));
+                DataRegionConfiguration rmtRegionCfg = rmtRegionCfgs.get(regionName);
+
+                if (rmtRegionCfg != null && rmtRegionCfg.isPersistenceEnabled() != nodeRegionCfgEntry.getValue().isPersistenceEnabled())
+                    errorMessages.add(String.format(
+                        INVALID_REGION_CONFIGURATION_MESSAGE,
+                        regionName,
+                        ctx.localNodeId(),
+                        nodeRegionCfgEntry.getValue().isPersistenceEnabled(),
+                        rmtNode.id(),
+                        rmtRegionCfg.isPersistenceEnabled()
+                    ));
+            }
         }
 
         return errorMessages;
