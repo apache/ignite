@@ -139,6 +139,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNode
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
+import org.apache.ignite.internal.processors.query.h2.twostep.PartitionReservationManager;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -382,6 +383,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
+
+    /** Partition reservation manager. */
+    private PartitionReservationManager partReservationMgr;
 
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<H2TwoStepCachedQueryKey, H2TwoStepCachedQuery> twoStepCache =
@@ -3274,6 +3278,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         org.h2.Driver.load();
 
+        partReservationMgr = new PartitionReservationManager(ctx);
+
         try {
             if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
                 Connection c = DriverManager.getConnection(dbUrl);
@@ -3636,10 +3642,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String schemaName = schema(cacheName);
 
+        partReservationMgr.onCacheStop(cacheName);
+
         H2Schema schema = schemas.get(schemaName);
 
         if (schema != null) {
-            mapQryExec.onCacheStop(cacheName);
             dmlProc.onCacheStop(cacheName);
 
             // Remove this mapping only after callback to DML proc - it needs that mapping internally
@@ -3847,6 +3854,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public Map<Thread, ?> perThreadConnections() {
         return conns;
+    }
+
+    /**
+     * @return Partition reservation manager.
+     */
+    public PartitionReservationManager partitionReservationManager() {
+        return partReservationMgr;
     }
 
     /**
