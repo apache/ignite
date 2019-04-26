@@ -59,6 +59,14 @@
         </fileSet>
 
         <fileSet>
+            <directory>${project.basedir}/backend/templates</directory>
+            <outputDirectory>/templates</outputDirectory>
+            <includes>
+                <include>*.html</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
             <directory>${basedir}/backend/build</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
