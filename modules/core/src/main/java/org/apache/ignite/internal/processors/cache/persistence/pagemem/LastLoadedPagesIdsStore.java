@@ -383,10 +383,14 @@ public class LastLoadedPagesIdsStore implements LifecycleAware, FullPageIdSource
          * @param cooling Cooling.
          */
         void addPageIdx(long pageId, long cooling) {
+            long[] pageIdxTsArr = this.pageIdxTsArr;
+
             int ptr = pageIdxIUpd.getAndIncrement(this);
 
             if (ptr < pageIdxTsArr.length)
                 pageIdxTsArr[ptr] = ((cooling / 1000) << PAGE_IDX_SIZE) | PageIdUtils.pageIndex(pageId);
+            else
+                pageIdxI = pageIdxTsArr.length;
         }
 
         /**
