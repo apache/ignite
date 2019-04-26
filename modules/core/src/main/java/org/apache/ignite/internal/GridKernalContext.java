@@ -66,7 +66,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
@@ -431,11 +431,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridCollisionManager collision();
 
     /**
-     * Gets authentication processor.
+     * Gets instance of {@link IgniteSecurity}.
      *
-     * @return Authentication processor.
+     * @return Ignite security.
      */
-    public GridSecurityProcessor security();
+    public IgniteSecurity security();
 
     /**
      * Gets load balancing manager.

@@ -1443,7 +1443,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (!ctx.security().enabled())
             return;
 
-        ctx.security().authorize(cacheName, perm, null);
+        ctx.security().authorize(cacheName, perm);
     }
 
     /**

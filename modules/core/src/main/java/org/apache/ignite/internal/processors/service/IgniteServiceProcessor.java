@@ -610,7 +610,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private SecurityException checkPermissions(String name, SecurityPermission perm) {
         try {
-            ctx.security().authorize(name, perm, null);
+            ctx.security().authorize(name, perm);
 
             return null;
         }
@@ -864,7 +864,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             return null;
 
         try {
-            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
@@ -935,7 +935,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     @Override public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> srvcCls, boolean sticky,
         long timeout)
         throws IgniteException {
-        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+        ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
         if (hasLocalNode(prj)) {
             ServiceContextImpl ctx = serviceContext(name);
@@ -975,7 +975,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             return null;
 
         try {
-            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE, null);
+            ctx.security().authorize(name, SecurityPermission.SERVICE_INVOKE);
 
             Collection<ServiceContextImpl> ctxs = serviceContexts(name);
 
