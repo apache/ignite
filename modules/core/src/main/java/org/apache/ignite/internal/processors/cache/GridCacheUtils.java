@@ -1860,25 +1860,27 @@ public class GridCacheUtils {
 
     /**
      * @param nodes Nodes to check.
-     * @param cfg Config to class loader.
+     * @param marshaller JdkMarshaller
+     * @param clsLdr Class loader.
      * @return {@code true} if cluster has only in-memory nodes.
      */
-    public static boolean isInMemoryCluster(Collection<ClusterNode> nodes, IgniteConfiguration cfg) {
-        return nodes.stream().allMatch(serNode -> !CU.isPersistenceEnabled(extractDataStorage(serNode, cfg)));
+    public static boolean isInMemoryCluster(Collection<ClusterNode> nodes, JdkMarshaller marshaller, ClassLoader clsLdr) {
+        return nodes.stream().allMatch(serNode -> !CU.isPersistenceEnabled(extractDataStorage(serNode, marshaller, clsLdr)));
     }
 
     /**
      * Extract and unmarshal data storage configuration from given node.
      *
      * @param node Source of data storage configuration.
-     * @return Data storage configuration for given node.
+     * @return  Data storage configuration for given node,
+     * or {@code null} if this node has not data storage configuration.
      */
-    private static DataStorageConfiguration extractDataStorage(ClusterNode node, IgniteConfiguration cfg) {
+    @Nullable public static DataStorageConfiguration extractDataStorage(ClusterNode node, JdkMarshaller marshaller, ClassLoader clsLdr) {
         Object dsCfgBytes = node.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
 
         if (dsCfgBytes instanceof byte[]) {
             try {
-                return new JdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(cfg));
+                return marshaller.unmarshal((byte[])dsCfgBytes, clsLdr);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1886,6 +1888,21 @@ public class GridCacheUtils {
         }
 
         return null;
+    }
+
+    /**
+     * @return {@code true} if persistence is enabled for a default data region, {@code false} if not.
+     */
+    public static boolean isDefaultDataRegionPersistence(DataStorageConfiguration cfg) {
+        if (cfg == null)
+            return false;
+
+        DataRegionConfiguration defaultRegionCfg = cfg.getDefaultDataRegionConfiguration();
+
+        if (defaultRegionCfg == null)
+            return false;
+
+        return defaultRegionCfg.isPersistenceEnabled();
     }
 
     /**
