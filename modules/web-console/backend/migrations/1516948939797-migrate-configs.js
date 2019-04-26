@@ -32,15 +32,15 @@ function makeDup(name) {
 }
 
 function linkCacheToCluster(clustersModel, cluster, cachesModel, cache, domainsModel) {
-    return clustersModel.update({_id: cluster._id}, {$addToSet: {caches: cache._id}}).exec()
-        .then(() => cachesModel.update({_id: cache._id}, {clusters: [cluster._id]}).exec())
+    return clustersModel.updateOne({_id: cluster._id}, {$addToSet: {caches: cache._id}}).exec()
+        .then(() => cachesModel.updateOne({_id: cache._id}, {clusters: [cluster._id]}).exec())
         .then(() => {
             if (_.isEmpty(cache.domains))
                 return Promise.resolve();
 
             return _.reduce(cache.domains, (start, domain) => start.then(() => {
-                return domainsModel.update({_id: domain}, {clusters: [cluster._id]}).exec()
-                    .then(() => clustersModel.update({_id: cluster._id}, {$addToSet: {models: domain}}).exec());
+                return domainsModel.updateOne({_id: domain}, {clusters: [cluster._id]}).exec()
+                    .then(() => clustersModel.updateOne({_id: cluster._id}, {$addToSet: {models: domain}}).exec());
             }), Promise.resolve());
         })
         .catch((err) => error(`Failed link cache to cluster [cache=${cache.name}, cluster=${cluster.name}]`, err));
@@ -65,7 +65,7 @@ function cloneCache(clustersModel, cachesModel, domainsModel, cache) {
             newCache.clusters = [cluster];
             newCache.domains = [];
 
-            return clustersModel.update({_id: {$in: newCache.clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
+            return clustersModel.updateMany({_id: {$in: newCache.clusters}}, {$pull: {caches: cacheId}}).exec()
                 .then(() => cachesModel.create(newCache))
                 .catch((err) => {
                     if (err.code === DUPLICATE_KEY_ERROR) {
@@ -80,7 +80,7 @@ function cloneCache(clustersModel, cachesModel, domainsModel, cache) {
 
                     return Promise.reject(err);
                 })
-                .then((clone) => clustersModel.update({_id: {$in: newCache.clusters}}, {$addToSet: {caches: clone._id}}, {multi: true}).exec()
+                .then((clone) => clustersModel.updateMany({_id: {$in: newCache.clusters}}, {$addToSet: {caches: clone._id}}).exec()
                     .then(() => clone))
                 .then((clone) => {
                     if (_.isEmpty(domainIds))
@@ -109,8 +109,8 @@ function cloneCache(clustersModel, cachesModel, domainsModel, cache) {
                                         }
                                     })
                                     .then((createdDomain) => {
-                                        return clustersModel.update({_id: cluster}, {$addToSet: {models: createdDomain._id}}).exec()
-                                            .then(() => cachesModel.update({_id: clone.id}, {$addToSet: {domains: createdDomain._id}}));
+                                        return clustersModel.updateOne({_id: cluster}, {$addToSet: {models: createdDomain._id}}).exec()
+                                            .then(() => cachesModel.updateOne({_id: clone.id}, {$addToSet: {domains: createdDomain._id}}));
                                     })
                                     .catch((err) => error('Failed to clone domain during cache clone', err));
                             })
@@ -120,8 +120,8 @@ function cloneCache(clustersModel, cachesModel, domainsModel, cache) {
                 .catch((err) => error(`Failed to clone cache[id=${cacheId}, name=${cache.name}]`, err));
         }
 
-        return cachesModel.update({_id: cacheId}, {clusters: [cluster]}).exec()
-            .then(() => clustersModel.update({_id: cluster}, {$addToSet: {models: {$each: cache.domains}}}).exec());
+        return cachesModel.updateOne({_id: cacheId}, {clusters: [cluster]}).exec()
+            .then(() => clustersModel.updateOne({_id: cluster}, {$addToSet: {models: {$each: cache.domains}}}).exec());
     }), Promise.resolve());
 }
 
@@ -166,8 +166,8 @@ function migrateCaches(clustersModel, cachesModel, domainsModel) {
 }
 
 function linkIgfsToCluster(clustersModel, cluster, igfsModel, igfs) {
-    return clustersModel.update({_id: cluster._id}, {$addToSet: {igfss: igfs._id}}).exec()
-        .then(() => igfsModel.update({_id: igfs._id}, {clusters: [cluster._id]}).exec())
+    return clustersModel.updateOne({_id: cluster._id}, {$addToSet: {igfss: igfs._id}}).exec()
+        .then(() => igfsModel.updateOne({_id: igfs._id}, {clusters: [cluster._id]}).exec())
         .catch((err) => error(`Failed link IGFS to cluster [IGFS=${igfs.name}, cluster=${cluster.name}]`, err));
 }
 
@@ -184,13 +184,13 @@ function cloneIgfs(clustersModel, igfsModel, igfs) {
         newIgfs.clusters = [cluster];
 
         if (idx > 0) {
-            return clustersModel.update({_id: {$in: newIgfs.clusters}}, {$pull: {igfss: igfsId}}, {multi: true}).exec()
+            return clustersModel.updateMany({_id: {$in: newIgfs.clusters}}, {$pull: {igfss: igfsId}}).exec()
                 .then(() => igfsModel.create(newIgfs))
-                .then((clone) => clustersModel.update({_id: {$in: newIgfs.clusters}}, {$addToSet: {igfss: clone._id}}, {multi: true}).exec())
+                .then((clone) => clustersModel.updateMany({_id: {$in: newIgfs.clusters}}, {$addToSet: {igfss: clone._id}}).exec())
                 .catch((err) => error(`Failed to clone IGFS: id=${igfsId}, name=${igfs.name}]`, err));
         }
 
-        return igfsModel.update({_id: igfsId}, {clusters: [cluster]}).exec();
+        return igfsModel.updateOne({_id: igfsId}, {clusters: [cluster]}).exec();
     }), Promise.resolve());
 }
 
@@ -234,14 +234,14 @@ function migrateIgfss(clustersModel, igfsModel) {
 }
 
 function linkDomainToCluster(clustersModel, cluster, domainsModel, domain) {
-    return clustersModel.update({_id: cluster._id}, {$addToSet: {models: domain._id}}).exec()
-        .then(() => domainsModel.update({_id: domain._id}, {clusters: [cluster._id]}).exec())
+    return clustersModel.updateOne({_id: cluster._id}, {$addToSet: {models: domain._id}}).exec()
+        .then(() => domainsModel.updateOne({_id: domain._id}, {clusters: [cluster._id]}).exec())
         .catch((err) => error(`Failed link domain model to cluster [domain=${domain._id}, cluster=${cluster.name}]`, err));
 }
 
 function linkDomainToCache(cachesModel, cache, domainsModel, domain) {
-    return cachesModel.update({_id: cache._id}, {$addToSet: {domains: domain._id}}).exec()
-        .then(() => domainsModel.update({_id: domain._id}, {caches: [cache._id]}).exec())
+    return cachesModel.updateOne({_id: cache._id}, {$addToSet: {domains: domain._id}}).exec()
+        .then(() => domainsModel.updateOne({_id: domain._id}, {caches: [cache._id]}).exec())
         .catch((err) => error(`Failed link domain model to cache [cache=${cache.name}, domain=${domain._id}]`, err));
 }
 
@@ -290,16 +290,16 @@ function migrateDomain(clustersModel, cachesModel, domainsModel, domain) {
 
                             return domainsModel.create(domain)
                                 .then((clonedDomain) => {
-                                    return cachesModel.update({_id: {$in: clusterCaches}}, {$addToSet: {domains: clonedDomain._id}}).exec()
+                                    return cachesModel.updateOne({_id: {$in: clusterCaches}}, {$addToSet: {domains: clonedDomain._id}}).exec()
                                         .then(() => clonedDomain);
                                 })
                                 .then((clonedDomain) => linkDomainToCluster(clustersModel, {_id: cluster, name: `stub${idx}`}, domainsModel, clonedDomain))
                                 .then(() => {
-                                    return cachesModel.update({_id: {$in: clusterCaches}}, {$pull: {domains: domainId}}, {multi: true}).exec();
+                                    return cachesModel.updateMany({_id: {$in: clusterCaches}}, {$pull: {domains: domainId}}).exec();
                                 });
                         }
 
-                        return domainsModel.update(domainsModel.update({_id: domainId}, {caches: clusterCaches}).exec())
+                        return domainsModel.updateOne({_id: domainId}, {caches: clusterCaches}).exec()
                             .then(() => linkDomainToCluster(clustersModel, {_id: cluster, name: `stub${idx}`}, domainsModel, domain));
                     }), Promise.resolve());
                 }

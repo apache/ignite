@@ -16,11 +16,15 @@
 
 'use strict';
 
-const mongoose = require('mongoose');
-
 // Fire me up!
 
 module.exports = {
-    implements: 'mongoose',
-    factory: () => mongoose
+    implements: 'services/mails:mock',
+    inject: ['services/mails']
+};
+
+module.exports.factory = (mails) => {
+    mails.send = () => Promise.resolve(true);
+
+    return mails;
 };

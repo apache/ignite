@@ -17,7 +17,7 @@ version: '3'
 
 services:
   mongodb:
-    image: mongo:3.4
+    image: mongo:4.0
     container_name: 'mongodb'
     volumes:
       # External volume for persisting data. (HOST_PATH:CONTAINER_PATH).

@@ -28,5 +28,8 @@ module.exports = fireUp.newInjector({
         './services/**/*.js',
         './test/app/*.js'
     ],
-    use: ['mongoose:mock']
+    use: [
+        'settings:mock',
+        'services/mails:mock'
+    ]
 });
