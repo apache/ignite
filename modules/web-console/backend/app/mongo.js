@@ -16,9 +16,9 @@
 
 'use strict';
 
+const fs = require('fs');
 const _ = require('lodash');
-const {MongodHelper} = require('mongodb-prebuilt');
-const {MongoDBDownload} = require('mongodb-download');
+const mongoose = require('mongoose');
 
 // Fire me up!
 
@@ -27,10 +27,10 @@ const {MongoDBDownload} = require('mongodb-download');
  */
 module.exports = {
     implements: 'mongo',
-    inject: ['settings', 'mongoose', 'schemas']
+    inject: ['settings', 'schemas']
 };
 
-const defineSchema = (mongoose, schemas) => {
+const defineSchema = (schemas) => {
     const result = { connection: mongoose.connection };
 
     result.ObjectId = mongoose.Types.ObjectId;
@@ -66,26 +66,36 @@ const upgradeAccounts = (mongo, activation) => {
             });
     }
 
-    return mongo.Account.update({activated: false}, {$unset: {activationSentAt: "", activationToken: ""}}, {multi: true}).exec();
+    return mongo.Account.updateMany({activated: false}, {$unset: {activationSentAt: '', activationToken: ''}}).exec();
 };
 
-module.exports.factory = function(settings, mongoose, schemas) {
+module.exports.factory = function(settings, schemas) {
     // Use native promises
     mongoose.Promise = global.Promise;
 
-    console.log('Trying to connect to local MongoDB...');
+    console.log(settings.mongoUrl, 'Trying to connect to local MongoDB...');
+
+
 
     // Connect to mongoDB database.
-    return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}})
-        .then(() => defineSchema(mongoose, schemas))
-        .catch((err) => {
-            console.log('Failed to connect to local MongoDB, will try to download and start embedded MongoDB', err);
+    return mongoose.connect(settings.mongoUrl, {useNewUrlParser: true, useCreateIndex: true})
+        .then(() => defineSchema(schemas))
+        .catch(() => {
+            console.log(`Failed to connect to MongoDB with connection string: "${settings.mongoUrl}", will try to download and start embedded MongoDB`);
 
-            const helper = new MongodHelper(['--port', '27017', '--dbpath', `${process.cwd()}/user_data`]);
+            const dbDir = `${process.cwd()}/user_data`;
+
+            if (!fs.existsSync(dbDir))
+                fs.mkdirSync(dbDir);
+
+            const {MongodHelper} = require('mongodb-prebuilt');
+            const {MongoDBDownload} = require('mongodb-download');
+
+            const helper = new MongodHelper(['--port', '27017', '--dbpath', dbDir]);
 
             helper.mongoBin.mongoDBPrebuilt.mongoDBDownload = new MongoDBDownload({
                 downloadDir: `${process.cwd()}/libs/mongodb`,
-                version: '3.4.7'
+                version: '4.0.9'
             });
 
             let mongodRun;
@@ -117,14 +127,14 @@ module.exports.factory = function(settings, mongoose, schemas) {
                 .then(() => {
                     console.log('Embedded MongoDB successfully started');
 
-                    return mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}})
+                    return mongoose.connect(settings.mongoUrl, {useNewUrlParser: true, useCreateIndex: true})
                         .catch((err) => {
                             console.log('Failed to connect to embedded MongoDB', err);
 
                             return Promise.reject(err);
                         });
                 })
-                .then(() => defineSchema(mongoose, schemas))
+                .then(() => defineSchema(schemas))
                 .then((mongo) => {
                     if (settings.packaged) {
                         return mongo.Account.count()

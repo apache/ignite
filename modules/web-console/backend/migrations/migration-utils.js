@@ -107,7 +107,7 @@ function getCacheForMigration(clustersModel, cachesModel, space) {
                     });
                 })
                 .then((cache) => {
-                    return clustersModel.update({_id: cache.clusters[0]}, {$addToSet: {caches: cache._id}}).exec()
+                    return clustersModel.updateOne({_id: cache.clusters[0]}, {$addToSet: {caches: cache._id}}).exec()
                         .then(() => cache);
                 });
         });

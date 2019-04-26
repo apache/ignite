@@ -21,7 +21,7 @@ const logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const connectMongo = require('connect-mongo');
+const MongoDBStore = require('connect-mongodb-session');
 const passport = require('passport');
 const passportSocketIo = require('passport.socketio');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -37,7 +37,7 @@ module.exports = {
 };
 
 module.exports.factory = function(settings, mongo, apis) {
-    const _sessionStore = new (connectMongo(session))({mongooseConnection: mongo.connection});
+    const _sessionStore = new (MongoDBStore(session))({uri: settings.mongoUrl});
 
     return {
         express: (app) => {

@@ -37,7 +37,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
      *
      * @param {RemoveResult} result - The results of remove operation.
      */
-    const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
+    const convertRemoveStatus = (result) => ({rowsAffected: result.n});
 
     /**
      * Update existing IGFS.
@@ -48,9 +48,9 @@ module.exports.factory = (mongo, spacesService, errors) => {
     const update = (igfs) => {
         const igfsId = igfs._id;
 
-        return mongo.Igfs.update({_id: igfsId}, igfs, {upsert: true}).exec()
-            .then(() => mongo.Cluster.update({_id: {$in: igfs.clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec())
-            .then(() => mongo.Cluster.update({_id: {$nin: igfs.clusters}}, {$pull: {igfss: igfsId}}, {multi: true}).exec())
+        return mongo.Igfs.updateOne({_id: igfsId}, igfs, {upsert: true}).exec()
+            .then(() => mongo.Cluster.updateMany({_id: {$in: igfs.clusters}}, {$addToSet: {igfss: igfsId}}).exec())
+            .then(() => mongo.Cluster.updateMany({_id: {$nin: igfs.clusters}}, {$pull: {igfss: igfsId}}).exec())
             .then(() => igfs)
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_UPDATE_ERROR || err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
@@ -69,7 +69,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
     const create = (igfs) => {
         return mongo.Igfs.create(igfs)
             .then((savedIgfs) =>
-                mongo.Cluster.update({_id: {$in: savedIgfs.clusters}}, {$addToSet: {igfss: savedIgfs._id}}, {multi: true}).exec()
+                mongo.Cluster.updateMany({_id: {$in: savedIgfs.clusters}}, {$addToSet: {igfss: savedIgfs._id}}).exec()
                     .then(() => savedIgfs)
             )
             .catch((err) => {
@@ -87,8 +87,8 @@ module.exports.factory = (mongo, spacesService, errors) => {
      * @returns {Promise.<RemoveResult>} - that resolves results of remove operation.
      */
     const removeAllBySpaces = (spaceIds) => {
-        return mongo.Cluster.update({space: {$in: spaceIds}}, {igfss: []}, {multi: true}).exec()
-            .then(() => mongo.Igfs.remove({space: {$in: spaceIds}}).exec());
+        return mongo.Cluster.updateMany({space: {$in: spaceIds}}, {igfss: []}).exec()
+            .then(() => mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec());
     };
 
     class IgfssService {
@@ -108,7 +108,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
 
             const query = _.pick(igfs, ['space', '_id']);
 
-            return mongo.Igfs.update(query, {$set: igfs}, {upsert: true}).exec()
+            return mongo.Igfs.updateOne(query, {$set: igfs}, {upsert: true}).exec()
                 .catch((err) => {
                     if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                         throw new errors.DuplicateKeyException(`IGFS with name: "${igfs.name}" already exist.`);
@@ -155,13 +155,13 @@ module.exports.factory = (mongo, spacesService, errors) => {
             if (_.isEmpty(ids))
                 return Promise.resolve({rowsAffected: 0});
 
-            return mongo.Cluster.update({igfss: {$in: ids}}, {$pull: {igfss: {$in: ids}}}, {multi: true}).exec()
+            return mongo.Cluster.updateMany({igfss: {$in: ids}}, {$pull: {igfss: {$in: ids}}}).exec()
                 // TODO WC-201 fix cleanup on node filter on deletion for cluster serviceConfigurations and caches.
-                // .then(() => mongo.Cluster.update({ 'serviceConfigurations.$.nodeFilter.kind': { $ne: 'IGFS' }, 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
-                //     {$unset: {'serviceConfigurations.$.nodeFilter.IGFS.igfs': ''}}, {multi: true}).exec())
-                // .then(() => mongo.Cluster.update({ 'serviceConfigurations.nodeFilter.kind': 'IGFS', 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
-                //     {$unset: {'serviceConfigurations.$.nodeFilter': ''}}, {multi: true}).exec())
-                .then(() => mongo.Igfs.remove({_id: {$in: ids}}).exec())
+                // .then(() => mongo.Cluster.updateMany({ 'serviceConfigurations.$.nodeFilter.kind': { $ne: 'IGFS' }, 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
+                //     {$unset: {'serviceConfigurations.$.nodeFilter.IGFS.igfs': ''}}).exec())
+                // .then(() => mongo.Cluster.updateMany({ 'serviceConfigurations.nodeFilter.kind': 'IGFS', 'serviceConfigurations.nodeFilter.IGFS.igfs': igfsId},
+                //     {$unset: {'serviceConfigurations.$.nodeFilter': ''}}).exec())
+                .then(() => mongo.Igfs.deleteMany({_id: {$in: ids}}).exec())
                 .then(convertRemoveStatus);
         }
 

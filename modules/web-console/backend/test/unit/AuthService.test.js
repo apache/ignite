@@ -45,7 +45,7 @@ suite('AuthServiceTestsSuite', () => {
     });
 
     test('Reset password token for existing user', (done) => {
-        authService.resetPasswordToken(testAccounts[0].email)
+        authService.resetPasswordToken(null, testAccounts[0].email)
             .then((account) => {
                 assert.notEqual(account.resetPasswordToken.length, 0);
                 assert.notEqual(account.resetPasswordToken, testAccounts[0].resetPasswordToken);
@@ -63,7 +63,7 @@ suite('AuthServiceTestsSuite', () => {
     });
 
     test('Reset password by token for existing user', (done) => {
-        authService.resetPasswordByToken(testAccounts[0].resetPasswordToken, 'NewUniquePassword$1')
+        authService.resetPasswordByToken(null, testAccounts[0].resetPasswordToken, 'NewUniquePassword$1')
             .then((account) => {
                 assert.isUndefined(account.resetPasswordToken);
                 assert.notEqual(account.hash, 0);
