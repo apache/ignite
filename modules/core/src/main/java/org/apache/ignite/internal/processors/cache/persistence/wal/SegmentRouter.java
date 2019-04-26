@@ -87,4 +87,25 @@ public class SegmentRouter {
 
         return fd;
     }
+
+    /**
+     * @return {@code true} If archive folder exists.
+     */
+    public boolean hasArchive() {
+        return !walWorkDir.getAbsolutePath().equals(walArchiveDir.getAbsolutePath());
+    }
+
+    /**
+     * @return WAL working directory.
+     */
+    public File getWalWorkDir() {
+        return walWorkDir;
+    }
+
+    /**
+     * @return WAL archive directory.
+     */
+    public File getWalArchiveDir() {
+        return walArchiveDir;
+    }
 }

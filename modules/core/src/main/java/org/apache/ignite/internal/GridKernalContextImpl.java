@@ -48,6 +48,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.maintain.DebugProcessor;
 import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
@@ -319,6 +320,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private IgniteAuthenticationProcessor authProc;
+
+    /** Global metastorage. */
+    @GridToStringInclude
+    private DebugProcessor debugProcessor;
 
     /** */
     @GridToStringExclude
@@ -673,6 +678,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             authProc = (IgniteAuthenticationProcessor)comp;
         else if (comp instanceof CompressionProcessor)
             compressProc = (CompressionProcessor)comp;
+        else if (comp instanceof DebugProcessor)
+            debugProcessor = (DebugProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -978,6 +985,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public LongJVMPauseDetector longJvmPauseDetector() {
         return pauseDetector;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DebugProcessor debug() {
+        return debugProcessor;
     }
 
     /** {@inheritDoc} */
