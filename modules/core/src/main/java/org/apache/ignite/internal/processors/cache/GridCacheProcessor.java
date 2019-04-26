@@ -3449,12 +3449,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
+                DynamicCacheDescriptor locDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
-                if (localDesc == null)
+                if (locDesc == null)
                     continue;
 
-                QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+                QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
 
                 if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
                     if (errorMsg.length() > 0)
@@ -3462,14 +3462,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (schemaPatch.hasConflicts())
                         errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
-                            localDesc.cacheName(), schemaPatch.getConflictsMessage()));
+                            locDesc.cacheName(), schemaPatch.getConflictsMessage()));
                     else
-                        errorMsg.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, localDesc.cacheName()));
+                        errorMsg.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, locDesc.cacheName()));
                 }
 
                 // This check must be done on join, otherwise group encryption key will be
                 // written to metastore regardless of validation check and could trigger WAL write failures.
-                boolean locEnc = localDesc.cacheConfiguration().isEncryptionEnabled();
+                boolean locEnc = locDesc.cacheConfiguration().isEncryptionEnabled();
                 boolean rmtEnc = cacheInfo.cacheData().config().isEncryptionEnabled();
 
                 if (locEnc != rmtEnc) {
