@@ -2488,8 +2488,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         List<List<ClusterNode>> newAssignment = null;
 
         if (latePrimary) {
-            BitSet processedPartitions = new BitSet(curAssignment.size());
-
             // Late affinity assignment to changed primaries.
             for (ClusterNode joinedNode : evts.joinedServerNodes()) {
                 Set<Integer> primaries = idealAssignment.idealPrimaries(joinedNode);
@@ -2510,36 +2508,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         p,
                         curPrimary,
                         idealNodes,
-                        rebalanceInfo);
-
-                    if (newAssignment == null)
-                        newAssignment = new ArrayList<>(idealAssignment.assignment());
-
-                    newAssignment.set(p, newNodes);
-
-                    processedPartitions.set(p);
-                }
-            }
-
-            Set<Integer> partitionsWithChangedPrimary = aff.partitionPrimariesDifferentToIdeal(affTopVer);
-
-            for (int p : partitionsWithChangedPrimary) {
-                // Already processed above.
-                if (processedPartitions.get(p))
-                    continue;
-
-                List<ClusterNode> curNodes = curAssignment.get(p);
-
-                if (curNodes.isEmpty())
-                    continue;
-
-                List<ClusterNode> idealOwners = idealAssignment.assignment().get(p);
-
-                if (!curNodes.get(0).equals(idealOwners.get(0))) {
-                    List<ClusterNode> newNodes = latePrimaryAssignment(aff,
-                        p,
-                        curNodes.get(0),
-                        idealOwners,
                         rebalanceInfo);
 
                     if (newAssignment == null)

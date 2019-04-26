@@ -352,22 +352,22 @@ public class GridAffinityAssignmentCache {
             if (hasBaseline && changedBaseline) {
                 recalculateBaselineAssignment(topVer, events, prevAssignment, sorted, blt);
 
-                assignment = IdealAffinityAssignment.createWithPreservedPrimaries(
+                assignment = IdealAffinityAssignment.create(
                     topVer,
-                    baselineAssignmentWithoutOfflineNodes(topVer),
-                    baselineAssignment
+                    sorted,
+                    baselineAssignmentWithoutOfflineNodes(topVer)
                 );
             }
             else if (skipCalculation)
                 assignment = prevAssignment;
-            else if (hasBaseline && !changedBaseline) {
+            else if (hasBaseline) {
                 if (baselineAssignment == null)
                     recalculateBaselineAssignment(topVer, events, prevAssignment, sorted, blt);
 
-                assignment = IdealAffinityAssignment.createWithPreservedPrimaries(
+                assignment = IdealAffinityAssignment.create(
                     topVer,
-                    baselineAssignmentWithoutOfflineNodes(topVer),
-                    baselineAssignment
+                    sorted,
+                    baselineAssignmentWithoutOfflineNodes(topVer)
                 );
             }
             else {

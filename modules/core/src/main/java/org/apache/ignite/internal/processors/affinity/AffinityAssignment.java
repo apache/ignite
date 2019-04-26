@@ -74,7 +74,7 @@ public interface AffinityAssignment {
     public Collection<UUID> getIds(int part);
 
     /**
-     * @return Nodes having parimary and backup assignments.
+     * @return Nodes having primary and backup assignments.
      */
     public Set<ClusterNode> nodes();
 
