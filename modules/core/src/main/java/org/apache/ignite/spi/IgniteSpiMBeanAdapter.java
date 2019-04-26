@@ -20,15 +20,35 @@ package org.apache.ignite.spi;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.UUID;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
+import org.apache.ignite.internal.processors.monitoring.sensor.ClosureSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.LongClosureSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.LongSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This class provides convenient adapter for MBean implementations.
+ *
+ * @deprecated Use GridMonitoringManager instead.
  */
+@Deprecated
 public class IgniteSpiMBeanAdapter implements IgniteSpiManagementMBean {
-    /** */
-    protected IgniteSpiAdapter spiAdapter;
+    private final String name;
+
+    private final ClosureSensor<String> startTimestampFormatted;
+
+    private final ClosureSensor<String> upTimeFormatted;
+
+    private final LongSensor startTimestamp;
+
+    private final LongClosureSensor upTime;
+
+    private final ClosureSensor<UUID> localNodeId;
+
+    private final ClosureSensor<String> igniteHome;
 
     /**
      * Constructor
@@ -36,43 +56,64 @@ public class IgniteSpiMBeanAdapter implements IgniteSpiManagementMBean {
      * @param spiAdapter Spi implementation.
      */
     public IgniteSpiMBeanAdapter(IgniteSpiAdapter spiAdapter) {
-        this.spiAdapter = spiAdapter;
+        name = spiAdapter.getName();
+
+        GridMonitoringManager mon = ((IgniteEx)spiAdapter.ignite).context().monitoring();
+
+        SensorGroup<String> spiSensors = mon.sensorsGroup(name);
+
+        startTimestampFormatted = spiSensors.sensor("startTimestampFormatted",
+            () -> DateFormat.getDateTimeInstance().format(new Date(spiAdapter.getStartTstamp())));
+
+        upTimeFormatted = spiSensors.sensor("upTimeFormatted", () -> X.timeSpan2DHMSM(getUpTime()));
+
+        startTimestamp = spiSensors.longSensor("startTimestamp", spiAdapter.getStartTstamp());
+
+        upTime = spiSensors.longSensor("upTime", new LongClosureSensor.LongClosure() {
+            @Override public long call() {
+                final long startTstamp = startTimestamp.getValue();
+
+                return startTstamp == 0 ? 0 : U.currentTimeMillis() - startTstamp;
+            }
+        });
+
+        localNodeId = spiSensors.sensor("localNodeId", () -> spiAdapter.ignite.cluster().localNode().id());
+
+        igniteHome = spiSensors.sensor("igniteHome", () -> spiAdapter.ignite.configuration().getIgniteHome());
     }
 
     /** {@inheritDoc} */
     @Override public final String getStartTimestampFormatted() {
-        return DateFormat.getDateTimeInstance().format(new Date(spiAdapter.getStartTstamp()));
+        return startTimestampFormatted.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public final String getUpTimeFormatted() {
-        return X.timeSpan2DHMSM(getUpTime());
+        return upTimeFormatted.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public final long getStartTimestamp() {
-        return spiAdapter.getStartTstamp();
+        return startTimestamp.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public final long getUpTime() {
-        final long startTstamp = spiAdapter.getStartTstamp();
-
-        return startTstamp == 0 ? 0 : U.currentTimeMillis() - startTstamp;
+        return upTime.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public UUID getLocalNodeId() {
-        return spiAdapter.ignite.cluster().localNode().id();
+        return localNodeId.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public final String getIgniteHome() {
-        return spiAdapter.ignite.configuration().getIgniteHome();
+        return igniteHome.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public String getName() {
-        return spiAdapter.getName();
+        return name;
     }
 }

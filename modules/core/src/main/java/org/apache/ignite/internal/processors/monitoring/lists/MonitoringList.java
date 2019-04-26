@@ -21,7 +21,7 @@ package org.apache.ignite.internal.processors.monitoring.lists;
  *
  */
 public interface MonitoringList<Id, Row> extends Iterable<ListRow<Id, Row>> {
-    String name();
+    String getName();
 
     void add(Id id, String sessionId, Row row);
 

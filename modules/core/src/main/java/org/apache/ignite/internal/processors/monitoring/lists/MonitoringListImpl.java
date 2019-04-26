@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.monitoring.lists;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -38,7 +39,7 @@ public class MonitoringListImpl<Id, Data> implements MonitoringList<Id, Data> {
         this.group = group;
     }
 
-    @Override public String name() {
+    @Override public String getName() {
         return name;
     }
 
@@ -58,7 +59,7 @@ public class MonitoringListImpl<Id, Data> implements MonitoringList<Id, Data> {
         if (!rows.containsKey(id))
             return; //TODO: should we throw an exception here?
 
-        rows.get(id).data(data);
+        rows.get(id).setData(data);
     }
 
     @Override public void remove(Id id) {
@@ -67,5 +68,9 @@ public class MonitoringListImpl<Id, Data> implements MonitoringList<Id, Data> {
 
     @NotNull @Override public Iterator<ListRow<Id, Data>> iterator() {
         return rows.values().iterator();
+    }
+
+    public Collection<ListRow<Id, Data>> getRows() {
+        return rows.values();
     }
 }

@@ -21,5 +21,5 @@ package org.apache.ignite.internal.processors.monitoring.sensor;
  *
  */
 public interface TimeSensor extends Sensor {
-    long timestamp();
+    long getTimestamp();
 }

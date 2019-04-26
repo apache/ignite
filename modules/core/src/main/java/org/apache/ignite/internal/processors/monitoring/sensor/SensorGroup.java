@@ -17,19 +17,32 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.Collection;
+import java.util.concurrent.Callable;
+
 /**
  *
  */
-public abstract class AbstractTimeSensor extends AbstractSensor implements TimeSensor {
-    long timestamp;
+public interface SensorGroup<Name> {
+    public Name getName();
 
-    public AbstractTimeSensor(String name, long timestamp) {
-        super(name);
+    public Collection<Sensor> getSensors();
 
-        this.timestamp = timestamp;
-    }
+    public <T> TypedSensor<T> sensor(String name);
 
-    @Override public long getTimestamp() {
-        return timestamp;
-    }
+    public <T> TypedSensor<T> sensor(String name, T value);
+
+    public <T> ClosureSensor<T> sensor(String name, Callable<T> value);
+
+    public LongSensor longSensor(String name);
+
+    public LongSensor longSensor(String name, long value);
+
+    public DoubleSensor doubleSensor(String name);
+
+    public DoubleSensor doubleSensor(String name, double value);
+
+    public LongClosureSensor longSensor(String name, LongClosureSensor.LongClosure sensorValue);
+
+    public DoubleClosureSensor doubleSensor(String name, DoubleClosureSensor.DoubleClosure sensorValue);
 }

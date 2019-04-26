@@ -19,6 +19,9 @@ package org.apache.ignite.monitoring;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.monitoring.HttpPullExposerSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,7 +50,17 @@ public class MonitoringSelfTest extends GridCommonAbstractTest {
     public void testMonitoring() throws Exception {
         Ignite grid = grid(0);
 
-        grid.compute().broadcast(() -> {
+        deployService(grid);
+
+        executeTask(grid, "testBroadcast");
+        executeTask(grid, "testBroadcast2");
+        executeTask(grid, "anotherBroadcast");
+
+        Thread.sleep(60_000L);
+    }
+
+    private void executeTask(Ignite grid, String name) {
+        grid.compute().withName(name).broadcastAsync(() -> {
             System.out.println("MonitoringSelfTest.testMonitoring - 1");
             try {
                 Thread.sleep(20_000L);
@@ -57,5 +70,29 @@ public class MonitoringSelfTest extends GridCommonAbstractTest {
             }
             System.out.println("MonitoringSelfTest.testMonitoring - 2");
         });
+    }
+
+    private void deployService(Ignite grid) {
+        ServiceConfiguration cfg = new ServiceConfiguration();
+
+        cfg.setName("testService");
+        cfg.setMaxPerNodeCount(1);
+        cfg.setService(new MyService());
+
+        grid.services().deploy(cfg);
+    }
+
+    public static class MyService implements Service {
+        @Override public void cancel(ServiceContext ctx) {
+            System.out.println("MonitoringSelfTest.cancel");
+        }
+
+        @Override public void init(ServiceContext ctx) throws Exception {
+            System.out.println("MonitoringSelfTest.init");
+        }
+
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            System.out.println("MonitoringSelfTest.execute");
+        }
     }
 }

@@ -65,6 +65,9 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.lists.ComputeTaskInfo;
+import org.apache.ignite.internal.processors.monitoring.lists.MonitoringList;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -137,6 +140,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
+    private final MonitoringList<UUID, ComputeTaskInfo> tasksMonitoring;
+
     /**
      * @param ctx Kernal context.
      */
@@ -146,6 +151,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         marsh = ctx.config().getMarshaller();
 
         discoLsnr = new TaskDiscoveryListener();
+
+        tasksMonitoring = ctx.monitoring().list(MonitoringGroup.COMPUTE, "tasks");
     }
 
     /** {@inheritDoc} */
@@ -737,6 +744,15 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
 
+        UUID taskId = UUID.randomUUID();
+
+        tasksMonitoring.add(taskId, sesId.toString(), taskName,
+            new ComputeTaskInfo(taskClsName, startTime, timeout0, execName));
+
+        fut.listen(f -> {
+            tasks.remove(taskId);
+        });
+
         IgniteCheckedException securityEx = null;
 
         if (ctx.security().enabled() && deployEx == null && !dep.internalTask(task, taskCls)) {
@@ -764,7 +780,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                     map,
                     subjId);
 
-                GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
+                GridTaskWorker<?, ?> taskWorker0 = this.tasks.putIfAbsent(sesId, taskWorker);
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
@@ -796,7 +812,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                                 ctx.getExecutorService().execute(taskWorker);
                         }
                         catch (RejectedExecutionException e) {
-                            tasks.remove(sesId);
+                            this.tasks.remove(sesId);
 
                             release(dep);
 

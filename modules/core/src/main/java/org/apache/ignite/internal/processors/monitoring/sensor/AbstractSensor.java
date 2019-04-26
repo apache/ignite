@@ -24,26 +24,19 @@ import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
  *
  */
 abstract class AbstractSensor implements Sensor {
-    private MonitoringGroup group;
-
     private String name;
 
     private Map<String, String> labels;
 
-    public AbstractSensor(MonitoringGroup group, String name) {
-        this.group = group;
+    public AbstractSensor(String name) {
         this.name = name;
     }
 
-    @Override public String name() {
+    @Override public String getName() {
         return name;
     }
 
-    @Override public Map<String, String> labels() {
+    @Override public Map<String, String> getLabels() {
         return labels;
-    }
-
-    @Override public MonitoringGroup group() {
-        return group;
     }
 }

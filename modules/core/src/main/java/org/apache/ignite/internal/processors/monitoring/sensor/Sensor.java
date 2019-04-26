@@ -24,9 +24,7 @@ import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
  *
  */
 public interface Sensor {
-    MonitoringGroup group();
+    String getName();
 
-    String name();
-
-    Map<String, String> labels();
+    Map<String, String> getLabels();
 }

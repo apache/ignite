@@ -17,21 +17,19 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
-import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
-
 /**
  *
  */
 public class DoubleTimeSensor extends AbstractTimeSensor {
     private double value;
 
-    public DoubleTimeSensor(MonitoringGroup group, String name, long timestamp, double value) {
-        super(group, name, timestamp);
+    public DoubleTimeSensor(String name, long timestamp, double value) {
+        super(name, timestamp);
 
         this.value = value;
     }
 
-    public double value() {
+    public double getValue() {
         return value;
     }
 

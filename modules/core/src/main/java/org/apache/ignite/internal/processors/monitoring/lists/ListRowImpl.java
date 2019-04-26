@@ -33,19 +33,19 @@ public class ListRowImpl<Id, Data> implements ListRow<Id, Data> {
         this.data = data;
     }
 
-    @Override public Id id() {
+    @Override public Id getId() {
         return id;
     }
 
-    @Override public String sessionID() {
+    @Override public String getSessionId() {
         return sessionId;
     }
 
-    @Override public Data data() {
+    @Override public Data getData() {
         return data;
     }
 
-    @Override public void data(Data data) {
+    @Override public void setData(Data data) {
         this.data = data;
     }
 }

@@ -21,11 +21,11 @@ package org.apache.ignite.internal.processors.monitoring.lists;
  *
  */
 public interface ListRow<Id, Data> {
-    Id id();
+    Id getId();
 
-    String sessionID();
+    String getSessionId();
 
-    Data data();
+    Data getData();
 
-    void data(Data data);
+    void setData(Data data);
 }

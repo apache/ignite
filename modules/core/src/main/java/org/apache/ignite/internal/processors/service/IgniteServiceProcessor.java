@@ -61,6 +61,8 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.lists.MonitoringList;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -180,6 +182,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Disconnected flag. */
     private volatile boolean disconnected;
 
+    MonitoringList<UUID, ServiceConfiguration> monitoringServices;
+
     /**
      * @param ctx Kernal context.
      */
@@ -228,6 +232,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                     processServicesFullDeployments(msg);
                 }
             });
+
+        monitoringServices = ctx.monitoring().list(MonitoringGroup.SERVICE, "services");
     }
 
     /** {@inheritDoc} */
@@ -1596,6 +1602,8 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         }
                         else {
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
+
+                            monitoringServices.add(reqSrvcId.globalId(), snd.id().toString(), cfg);
 
                             registeredServices.put(reqSrvcId, desc);
 

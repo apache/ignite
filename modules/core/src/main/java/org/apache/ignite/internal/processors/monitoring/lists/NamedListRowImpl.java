@@ -29,7 +29,7 @@ public class NamedListRowImpl<Id, Row> extends ListRowImpl<Id, Row> implements N
         this.name = name;
     }
 
-    @Override public String name() {
+    @Override public String getName() {
         return name;
     }
 }

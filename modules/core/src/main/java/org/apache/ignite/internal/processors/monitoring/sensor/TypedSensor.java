@@ -20,16 +20,18 @@ package org.apache.ignite.internal.processors.monitoring.sensor;
 /**
  *
  */
-public abstract class AbstractTimeSensor extends AbstractSensor implements TimeSensor {
-    long timestamp;
+public class TypedSensor<T> extends AbstractSensor {
+    private T value;
 
-    public AbstractTimeSensor(String name, long timestamp) {
+    public TypedSensor(String name) {
         super(name);
-
-        this.timestamp = timestamp;
     }
 
-    @Override public long getTimestamp() {
-        return timestamp;
+    public T getValue() {
+        return value;
+    }
+
+    public void setValue(T value) {
+        this.value = value;
     }
 }

@@ -21,5 +21,5 @@ package org.apache.ignite.internal.processors.monitoring.lists;
  *
  */
 public interface NamedListRow<Id, Row> extends ListRow<Id, Row> {
-    String name();
+    String getName();
 }

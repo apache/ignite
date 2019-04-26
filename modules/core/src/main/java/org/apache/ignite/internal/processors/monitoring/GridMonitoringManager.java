@@ -24,20 +24,19 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.monitoring.lists.MonitoringList;
 import org.apache.ignite.internal.processors.monitoring.lists.MonitoringListImpl;
-import org.apache.ignite.internal.processors.monitoring.sensor.DoubleSensor;
-import org.apache.ignite.internal.processors.monitoring.sensor.LongSensor;
-import org.apache.ignite.internal.processors.monitoring.sensor.Sensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroupImpl;
 import org.apache.ignite.spi.monitoring.MonitoringExposerSpi;
 
 /**
  *
  */
 public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerSpi> {
-    Map<MonitoringGroup, Map<String, Sensor>> sensors = new HashMap<>();
+    Map<MonitoringGroup, SensorGroup> sensors = new HashMap<>();
+
+    Map<String, SensorGroup> sensorGroups = new HashMap<>();
 
     Map<MonitoringGroup, Map<String, MonitoringList<?, ?>>> lists = new HashMap<>();
-
-    Map<MonitoringGroup, Map<String, Object>> values = new HashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -55,10 +54,6 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
     }
 
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        value(MonitoringGroup.INSTANCE_INFO, "igniteInstanceName", ctx.igniteInstanceName());
-        value(MonitoringGroup.INSTANCE_INFO, "nodeId", ctx.localNodeId());
-        value(MonitoringGroup.INSTANCE_INFO, "version", ctx.grid().version().toString());
-        value(MonitoringGroup.INSTANCE_INFO, "consistentId", ctx.grid().localNode().consistentId());
     }
 
     /** {@inheritDoc} */
@@ -66,36 +61,12 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         stopSpi();
     }
 
-    public LongSensor longSensor(MonitoringGroup group, String name) {
-        return longSensor(group, name, 0);
+    public SensorGroup<MonitoringGroup> sensors(MonitoringGroup group) {
+        return sensors.computeIfAbsent(group, g -> new SensorGroupImpl(group));
     }
 
-    public LongSensor longSensor(MonitoringGroup group, String name, long value) {
-        Map<String, Sensor> sensorGroups = sensors.computeIfAbsent(group, g -> new HashMap<>());
-
-        LongSensor sensor = new LongSensor(group, name, value);
-
-        Sensor old = sensorGroups.putIfAbsent(name, sensor);
-
-        assert old == null;
-
-        return sensor;
-    }
-
-    public DoubleSensor doubleSensor(MonitoringGroup group, String name) {
-        return doubleSensor(group, name, 0);
-    }
-
-    public DoubleSensor doubleSensor(MonitoringGroup group, String name, double value) {
-        Map<String, Sensor> sensorGroups = sensors.computeIfAbsent(group, g -> new HashMap<>());
-
-        DoubleSensor sensor = new DoubleSensor(group, name, value);
-
-        Sensor old = sensorGroups.putIfAbsent(name, sensor);
-
-        assert old == null;
-
-        return sensor;
+    public SensorGroup<String> sensorsGroup(String name) {
+        return sensorGroups.computeIfAbsent(name, n -> new SensorGroupImpl(name));
     }
 
     public <Id, Row> MonitoringList<Id, Row> list(MonitoringGroup group, String name) {
@@ -110,21 +81,15 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         return list;
     }
 
-    public void value(MonitoringGroup group, String name, Object value) {
-        values
-            .computeIfAbsent(group, g -> new HashMap<>())
-            .put(name, value);
+    public Map<MonitoringGroup, SensorGroup> sensors() {
+        return sensors;
     }
 
-    public Map<MonitoringGroup, Map<String, Sensor>> sensors() {
-        return sensors;
+    public Map<String, SensorGroup> sensorGroups() {
+        return sensorGroups;
     }
 
     public Map<MonitoringGroup, Map<String, MonitoringList<?, ?>>> lists() {
         return lists;
-    }
-
-    public Map<MonitoringGroup, Map<String, Object>> values() {
-        return values;
     }
 }

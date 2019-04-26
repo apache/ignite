@@ -20,16 +20,28 @@ package org.apache.ignite.internal.processors.monitoring.sensor;
 /**
  *
  */
-public abstract class AbstractTimeSensor extends AbstractSensor implements TimeSensor {
-    long timestamp;
+public class DoubleClosureSensor extends AbstractSensor {
+    private final DoubleClosure sensorValue;
 
-    public AbstractTimeSensor(String name, long timestamp) {
+    public DoubleClosureSensor(String name, DoubleClosure sensorValue) {
         super(name);
 
-        this.timestamp = timestamp;
+        this.sensorValue = sensorValue;
     }
 
-    @Override public long getTimestamp() {
-        return timestamp;
+    public double getValue() {
+        try {
+            return sensorValue.call();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            return 0;
+        }
+    }
+
+
+    public static interface DoubleClosure {
+        public double call();
     }
 }

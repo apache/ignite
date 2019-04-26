@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.monitoring;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -94,9 +96,11 @@ public class HttpPullExposerSpi extends IgniteSpiAdapter implements MonitoringEx
 
             data.put("sensors", mgr.sensors());
             data.put("lists", mgr.lists());
-            data.put("values", mgr.values());
+            data.put("sensorGroups", mgr.sensorGroups());
 
-            new ObjectMapper().writeValue(res.getOutputStream(), data);
+            ObjectMapper mapper = mapper();
+
+            mapper.writeValue(res.getOutputStream(), data);
 
             res.getOutputStream();
 
@@ -107,6 +111,14 @@ public class HttpPullExposerSpi extends IgniteSpiAdapter implements MonitoringEx
 
             req.setHandled(true);
         }
+    }
+
+    @NotNull private ObjectMapper mapper() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+
+        return mapper;
     }
 
     @Override public void spiStop() throws IgniteSpiException {
