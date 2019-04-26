@@ -55,7 +55,6 @@ import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
-import org.apache.ignite.internal.client.impl.GridClientImpl;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
@@ -74,6 +73,9 @@ import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributi
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTask;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskArg;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
+import org.apache.ignite.internal.commandline.debug.DebugArguments;
+import org.apache.ignite.internal.commandline.debug.DebugCommand;
+import org.apache.ignite.internal.commandline.debug.DebugPageCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -101,6 +103,9 @@ import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
+import org.apache.ignite.internal.visor.debug.VisorDumpPageHistoryTaskArg;
+import org.apache.ignite.internal.visor.debug.VisorDumpOperation;
+import org.apache.ignite.internal.visor.debug.VisorDumpPageHistoryTask;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -150,6 +155,7 @@ import org.apache.ignite.transactions.TransactionState;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -157,6 +163,7 @@ import static org.apache.ignite.internal.commandline.Command.ACTIVATE;
 import static org.apache.ignite.internal.commandline.Command.BASELINE;
 import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
+import static org.apache.ignite.internal.commandline.Command.DEBUG;
 import static org.apache.ignite.internal.commandline.Command.STATE;
 import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.commandline.Command.WAL;
@@ -705,7 +712,7 @@ public class CommandHandler {
                         node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
                         node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
                     )
-                        .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())
+                        .map(addr -> addr + ":" + node.tcpPort()).collect(toList())
                 )
             );
     }
@@ -734,7 +741,7 @@ public class CommandHandler {
 
             List<UUID> nodeIds = nodes.stream()
                 .map(GridClientNode::nodeId)
-                .collect(Collectors.toList());
+                .collect(toList());
 
             return client.compute().execute(taskClsName, new VisorTaskArgument<>(nodeIds, taskArgs, false));
         }
@@ -1269,6 +1276,37 @@ public class CommandHandler {
         }
 
         return null;
+    }
+
+
+    /**
+     * Change baseline.
+     *
+     * @param client Client.
+     * @param baselineArgs Baseline action arguments.
+     * @throws Throwable If failed to execute baseline action.
+     */
+    private void debug(GridClient client, DebugArguments baselineArgs) throws Throwable {
+        try {
+            executeTask(client, VisorDumpPageHistoryTask.class, toVisorArguments(baselineArgs));
+        }
+        catch (Throwable e) {
+            log("Failed to execute baseline command='" + baselineArgs.getCmd().text() + "'", e);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Prepare task argument.
+     *
+     * @param args Argument from command line.
+     * @return Task argument.
+     */
+    private VisorDumpPageHistoryTaskArg toVisorArguments(DebugArguments args) {
+        return new VisorDumpPageHistoryTaskArg(args.getCmd() == DebugCommand.PAGE_HISTORY ? VisorDumpOperation.PAGE : null,
+            args.getPageIds(), args.getFileToDump(), args.getDumpActions()
+        );
     }
 
     /**
@@ -2063,6 +2101,10 @@ public class CommandHandler {
         throw new IllegalArgumentException(err);
     }
 
+    private List<String> nextListArg(String err){
+        return Arrays.stream(nextArg(err).split(",")).map(String::trim).collect(toList());
+    }
+
     /**
      * Returns the next argument in the iteration, without advancing the iteration.
      *
@@ -2104,6 +2146,7 @@ public class CommandHandler {
         CacheArguments cacheArgs = null;
 
         BaselineArguments baselineArgs = null;
+        DebugArguments debugArgs = null;
 
         List<Command> commands = new ArrayList<>();
 
@@ -2157,6 +2200,13 @@ public class CommandHandler {
                         commands.add(BASELINE);
 
                         baselineArgs = parseAndValidateBaselineArgs();
+
+                        break;
+
+                    case DEBUG:
+                        commands.add(DEBUG);
+
+                        debugArgs = parseAndValidateDebugArgs();
 
                         break;
 
@@ -2305,6 +2355,7 @@ public class CommandHandler {
 
         return new Arguments(cmd, host, port, user, pwd,
             baselineArgs,
+            debugArgs,
             txArgs, cacheArgs,
             walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation,
@@ -2361,6 +2412,49 @@ public class CommandHandler {
         }
 
         return baselineArgs.build();
+    }
+
+    /**
+     * Parses and validates baseline arguments.
+     *
+     * @return --baseline subcommand arguments in case validation is successful.
+     */
+    private DebugArguments parseAndValidateDebugArgs() {
+        DebugCommand cmd = DebugCommand.of(nextArg("Expected baseline action"));
+
+        if (cmd == null)
+            throw new IllegalArgumentException("Expected correct baseline action");
+
+        DebugArguments.Builder debugArgs = new DebugArguments.Builder(cmd);
+
+        switch (cmd) {
+            case PAGE_HISTORY:
+                do {
+                    DebugPageCommandArg debugPageArg = CommandArgUtils.of(
+                        nextArg("Expected one of auto-adjust arguments"), DebugPageCommandArg.class
+                    );
+
+                    if (debugPageArg == null)
+                        throw new IllegalArgumentException("Expected one of auto-adjust arguments");
+
+                    if (debugPageArg == DebugPageCommandArg.PAGE_IDS)
+                        debugArgs.withPageIds(nextListArg("pageIds").stream().map(Long::valueOf).collect(toList()));
+
+                    if (debugPageArg == DebugPageCommandArg.PRINT_TO_LOG_ACTION)
+                        debugArgs.addDumpAction(VisorDumpPageHistoryTaskArg.DumpAction.PRINT_TO_LOG);
+
+                    if (debugPageArg == DebugPageCommandArg.PRINT_TO_FILE_ACTION)
+                        debugArgs.addDumpAction(VisorDumpPageHistoryTaskArg.DumpAction.PRINT_TO_FILE);
+
+                    if (debugPageArg == DebugPageCommandArg.DUMP_PATH)
+                        debugArgs.withFileToDump(nextArg("DumpPath"));
+                }
+                while (hasNextSubArg());
+
+                return debugArgs.build();
+        }
+
+        return debugArgs.build();
     }
 
     /**
@@ -2963,7 +3057,7 @@ public class CommandHandler {
         return Arrays.stream(s.split(delim))
             .map(String::trim)
             .filter(item -> !item.isEmpty())
-            .collect(Collectors.toList());
+            .collect(toList());
     }
 
     /**
@@ -3175,6 +3269,10 @@ public class CommandHandler {
 
                         case BASELINE:
                             baseline(client, args.baselineArguments());
+
+                            break;
+                        case DEBUG:
+                            debug(client, args.getDebugArgs());
 
                             break;
 

@@ -1868,6 +1868,23 @@ public abstract class IgniteUtils {
     }
 
     /**
+     *
+     * @param out Output.
+     * @param col Set to write.
+     * @throws IOException If write failed.
+     */
+    public static <E extends Enum> void writeEnumCollection(DataOutput out, Collection<E> col) throws IOException {
+        if (col != null) {
+            out.writeInt(col.size());
+
+            for (E i : col)
+                writeEnum(out, i);
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /**
      * @param in Input.
      * @return Deserialized set.
      * @throws IOException If deserialization failed.
@@ -5456,6 +5473,27 @@ public abstract class IgniteUtils {
 
         for (int i = 0; i < size; i++)
             col.add((E)in.readObject());
+
+        return col;
+    }
+
+    /**
+     * @param in Input.
+     * @return Deserialized list.
+     * @throws IOException If deserialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @Nullable public static <E extends Enum> List<E> readEnumList(ObjectInput in, Class<E> claz) throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        List<E> col = new ArrayList<>(size);
+
+        for (int i = 0; i < size; i++)
+            col.add((E)claz.getEnumConstants()[in.readByte()] );
 
         return col;
     }

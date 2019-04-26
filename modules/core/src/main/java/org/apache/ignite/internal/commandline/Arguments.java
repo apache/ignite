@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.debug.DebugArguments;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 /**
@@ -48,6 +49,11 @@ public class Arguments {
      * Arguments for baseline command.
      */
     private BaselineArguments baselineArgs;
+
+    /**
+     * Arguments for baseline command.
+     */
+    private DebugArguments debugArgs;
 
     /** Transaction arguments. */
     private final VisorTxTaskArg txArg;
@@ -125,7 +131,8 @@ public class Arguments {
      * @param sslTrustStoreType Truststore Type.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
-        BaselineArguments baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+        BaselineArguments baselineArgs, DebugArguments debugArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs,
+        String walAct, String walArgs,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
@@ -138,6 +145,7 @@ public class Arguments {
         this.pwd = pwd;
 
         this.baselineArgs = baselineArgs;
+        this.debugArgs = debugArgs;
 
         this.txArg = txArg;
         this.cacheArgs = cacheArgs;
@@ -217,6 +225,10 @@ public class Arguments {
      */
     public BaselineArguments baselineArguments() {
         return baselineArgs;
+    }
+
+    public DebugArguments getDebugArgs() {
+        return debugArgs;
     }
 
     /**

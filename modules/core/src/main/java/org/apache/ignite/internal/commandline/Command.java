@@ -40,7 +40,11 @@ public enum Command {
     CACHE("--cache"),
 
     /** */
-    WAL("--wal");
+    WAL("--wal"),
+
+    /** */
+    DEBUG("--debug"),
+    ;
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final Command[] VALUES = Command.values();
