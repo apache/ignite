@@ -49,8 +49,6 @@ public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertPartitionsSame(idleVerify(grid(0), CACHE_NAME));
-
         super.afterTest();
 
         cleanPersistenceDir();
