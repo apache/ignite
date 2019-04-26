@@ -77,7 +77,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Tests an ability to eagerly rollback timed out transactions.
- * TODO add test with persistence and partition/counter consistency check.
  */
 public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /** */

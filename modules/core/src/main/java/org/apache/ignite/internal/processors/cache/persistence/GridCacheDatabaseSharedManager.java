@@ -2806,10 +2806,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             metaStateRecord.groupId(), metaStateRecord.partitionId()
                         );
 
-//                        PartitionRecoverState state = new PartitionRecoverState(
-//                            (int)metaStateRecord.state(), metaStateRecord.updateCounter()
-//                        );
-
                         restoreLogicalState.partitionRecoveryStates.put(groupPartitionId, (int)metaStateRecord.state());
 
                         break;

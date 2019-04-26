@@ -1469,8 +1469,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 null,
                 grps);
 
-        if (log.isInfoEnabled())
-            log.info("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
+        if (log.isTraceEnabled())
+            log.trace("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
 
         try {
             cctx.io().sendNoRetry(node, m, SYSTEM_POOL);

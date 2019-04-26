@@ -3527,7 +3527,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param topVer Topology version for current operation.
      * @param primary Primary node update flag.
-     * @param initial
+     * @param initial {@code True} if initial value.
      *@param primaryCntr Counter assigned on primary node.  @return Update counter.
      */
     protected long nextPartitionCounter(AffinityTopologyVersion topVer, boolean primary, boolean initial,

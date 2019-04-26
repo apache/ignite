@@ -399,13 +399,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * TODO Get rid of deferred delete queue: https://issues.apache.org/jira/browse/IGNITE-11704
+     * TODO FIXME Get rid of deferred delete queue https://issues.apache.org/jira/browse/IGNITE-11704
      */
     public void cleanupRemoveQueue() {
         if (state() == MOVING) {
             if (rmvQueue.sizex() >= rmvQueueMaxSize) {
-                LT.warn(log, "Deferred delete buffer is exceeded " +
-                    "[grpId=" + this.grp.groupId() + ", partId=" + id() + ", size=" + rmvQueueMaxSize + ']');
+                LT.warn(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
+                    "[grpId=" + this.grp.groupId() +
+                    ", partId=" + id() +
+                    ", grpParts=" + this.grp.affinity().partitions() +
+                    ", maxRmvQueueSize=" + rmvQueueMaxSize + ']');
             }
 
             return;

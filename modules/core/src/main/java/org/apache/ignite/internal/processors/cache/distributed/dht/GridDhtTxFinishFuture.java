@@ -437,11 +437,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             add(fut); // Append new future.
 
-//            Collection<Long> updCntrs = new ArrayList<>(dhtMapping.entries().size());
-//
-//            for (IgniteTxEntry e : dhtMapping.entries())
-//                updCntrs.add(e.updateCounter());
-
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,

@@ -1461,7 +1461,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore
     public void testStartManyCaches() throws Exception {
         final int CACHES =  SF.apply(5_000);
 

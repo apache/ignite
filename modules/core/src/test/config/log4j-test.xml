@@ -96,8 +96,9 @@
             <level value="DEBUG"/>
         </category>
     -->
+
     <!--
-        Uncomment to tracing partition counters.
+        Uncomment to enable debugging of partition counters.
     -->
     <!--
     <category name="org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterDebugWrapper">

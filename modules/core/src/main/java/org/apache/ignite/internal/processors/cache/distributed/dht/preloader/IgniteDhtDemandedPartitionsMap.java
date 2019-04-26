@@ -49,6 +49,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     }
 
     public IgniteDhtDemandedPartitionsMap() {
+        // No-op.
     }
 
     /**

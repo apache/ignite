@@ -475,7 +475,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /**
      * Creates non-existing partitions belong to given affinity {@code aff}.
-     *  @param affVer Affinity version.
+     *
+     * @param affVer Affinity version.
      * @param aff Affinity assignments.
      * @param updateSeq Update sequence.
      * @param exchFut
@@ -1420,7 +1421,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             long updCntr = incomeCntrMap.updateCounter(part.id());
                             long curCntr = part.updateCounter();
 
-                            if (updCntr != 0 || curCntr != 0) {  // Avoid zero counter update to empty partition.
+                            // Avoid zero counter update to empty partition to prevent lazy init.
+                            if (updCntr != 0 || curCntr != 0) {
                                 part.updateCounter(updCntr);
 
                                 if (updCntr > curCntr) {

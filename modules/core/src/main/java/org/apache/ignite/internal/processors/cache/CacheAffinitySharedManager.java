@@ -3111,8 +3111,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param assignment New assignment.
          */
         void add(Integer grpId, Integer part, UUID waitNode, @Nullable List<ClusterNode> assignment) {
-            //assert !F.isEmpty(assignment) : assignment;
-
             deploymentIds.putIfAbsent(grpId, cachesRegistry.group(grpId).deploymentId());
 
             waitGrps.computeIfAbsent(grpId, k -> new HashMap<>()).put(part, waitNode);

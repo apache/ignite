@@ -19,10 +19,6 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
@@ -36,9 +32,5 @@ public class CacheContinuousQueryFailoverAtomicSelfTest extends CacheContinuousQ
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.ATOMIC;
-    }
-
-    @Override public void testMultiThreadedFailover() throws Exception {
-        super.testMultiThreadedFailover();
     }
 }
