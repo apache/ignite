@@ -52,15 +52,15 @@ function deduplicateAccounts(model) {
                 .then((spaces) => _.map(spaces, '_id'))
                 .then((spaceIds) =>
                     Promise.all([
-                        model('Cluster').remove({space: {$in: spaceIds}}).exec(),
-                        model('Cache').remove({space: {$in: spaceIds}}).exec(),
-                        model('DomainModel').remove({space: {$in: spaceIds}}).exec(),
-                        model('Igfs').remove({space: {$in: spaceIds}}).exec(),
-                        model('Notebook').remove({space: {$in: spaceIds}}).exec(),
-                        model('Activities').remove({owner: accountIds}).exec(),
-                        model('Notifications').remove({owner: accountIds}).exec(),
-                        spaceModel.remove({owner: accountIds}).exec(),
-                        accountsModel.remove({_id: accountIds}).exec()
+                        model('Cluster').deleteMany({space: {$in: spaceIds}}).exec(),
+                        model('Cache').deleteMany({space: {$in: spaceIds}}).exec(),
+                        model('DomainModel').deleteMany({space: {$in: spaceIds}}).exec(),
+                        model('Igfs').deleteMany({space: {$in: spaceIds}}).exec(),
+                        model('Notebook').deleteMany({space: {$in: spaceIds}}).exec(),
+                        model('Activities').deleteMany({owner: accountIds}).exec(),
+                        model('Notifications').deleteMany({owner: accountIds}).exec(),
+                        spaceModel.deleteMany({owner: accountIds}).exec(),
+                        accountsModel.deleteMany({_id: accountIds}).exec()
                     ])
                 )
                 .then(() => {

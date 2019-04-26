@@ -20,11 +20,12 @@
 // Fire me up!
 
 module.exports = {
-    implements: 'mongoose:mock',
-    inject: ['require(mongoose)', 'require(mockgoose)']
+    implements: 'services/mails:mock',
+    inject: ['services/mails']
 };
 
-module.exports.factory = (mongoose, mockgoose) => {
-    return mockgoose(mongoose)
-            .then(() => mongoose);
+module.exports.factory = (mails) => {
+    mails.send = () => Promise.resolve(true);
+
+    return mails;
 };
