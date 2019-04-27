@@ -17,44 +17,30 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import org.jetbrains.annotations.Nullable;
-
 /**
- * Thread-local security context.
+ *
  */
-public class SecurityContextHolder {
-    /** Context. */
-    private static final ThreadLocal<SecurityContext> CTX = new ThreadLocal<>();
+public class OperationSecurityContext implements AutoCloseable {
+    /** Ignite Security. */
+    private final IgniteSecurity proc;
+
+    /** Security context. */
+    private final SecurityContext secCtx;
 
     /**
-     * Get security context.
-     *
-     * @return Security context.
+     * @param proc Ignite Security.
+     * @param secCtx Security context.
      */
-    @Nullable public static SecurityContext get() {
-        return CTX.get();
+    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
+        assert proc != null;
+        assert secCtx != null || !proc.enabled();
+
+        this.proc = proc;
+        this.secCtx = secCtx;
     }
 
-    /**
-     * Set security context.
-     *
-     * @param ctx Context.
-     * @return Old context.
-     */
-    public static SecurityContext push(@Nullable SecurityContext ctx) {
-        SecurityContext oldCtx = CTX.get();
-
-        CTX.set(ctx);
-
-        return oldCtx;
-    }
-
-    /**
-     * Pop security context.
-     *
-     * @param oldCtx Old context.
-     */
-    public static void pop(@Nullable SecurityContext oldCtx) {
-        CTX.set(oldCtx);
+    /** {@inheritDoc} */
+    @Override public void close() {
+        proc.withContext(secCtx);
     }
 }

@@ -184,7 +184,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         if (!ctx.nextSnapshot())
             syncMetadata(ctx);
     }
@@ -1052,6 +1052,36 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         return emptyDataPages;
+    }
+
+    /**
+     * @param cacheId Which was stopped, but its data still presented.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void findAndCleanupLostIndexesForStoppedCache(int cacheId) throws IgniteCheckedException {
+        for (String name : indexStorage.getIndexNames()) {
+            if (indexStorage.nameIsAssosiatedWithCache(name, cacheId)) {
+                ctx.database().checkpointReadLock();
+
+                try {
+                    RootPage page = indexStorage.allocateIndex(name);
+
+                    ctx.kernalContext().query().getIndexing().destroyOrphanIndex(
+                        page,
+                        name,
+                        grp.groupId(),
+                        grp.dataRegion().pageMemory(), globalRemoveId(),
+                        reuseListForIndex(name),
+                        grp.mvccEnabled()
+                    );
+
+                    indexStorage.dropIndex(name);
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+            }
+        }
     }
 
     /**
