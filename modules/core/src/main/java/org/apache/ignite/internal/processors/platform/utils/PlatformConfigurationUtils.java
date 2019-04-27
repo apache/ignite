@@ -223,7 +223,6 @@ public class PlatformConfigurationUtils {
         ccfg.setMaxQueryIteratorsCount(in.readInt());
         ccfg.setQueryDetailMetricsSize(in.readInt());
         ccfg.setQueryParallelism(in.readInt());
-        ccfg.setDefaultQueryTimeout(in.readLong());
         ccfg.setSqlSchema(in.readString());
         ccfg.setEncryptionEnabled(in.readBoolean());
 
@@ -622,6 +621,8 @@ public class PlatformConfigurationUtils {
         ClientListenerProtocolVersion ver) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setDefaultQueryTimeout(in.readLong());
         int[] evtTypes = in.readIntArray();
         if (evtTypes != null)
             cfg.setIncludeEventTypes(evtTypes);
@@ -1216,6 +1217,8 @@ public class PlatformConfigurationUtils {
 
         w.writeBoolean(true);
         w.writeBoolean(cfg.isClientMode());
+        w.writeBoolean(true);
+        w.writeLong(cfg.getDfltQryTimeout());
         w.writeIntArray(cfg.getIncludeEventTypes());
         w.writeBoolean(true);
         w.writeLong(cfg.getMetricsExpireTime());

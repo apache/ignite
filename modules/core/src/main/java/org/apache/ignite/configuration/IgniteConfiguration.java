@@ -228,6 +228,9 @@ public class IgniteConfiguration {
     /** Default SQL query history size. */
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
+    /** Default query timeout. */
+    public static final long DFLT_QRY_TIMEOUT = 0;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -278,6 +281,9 @@ public class IgniteConfiguration {
 
     /** SQL query history size. */
     private int sqlQryHistSize = DFLT_SQL_QUERY_HISTORY_SIZE;
+
+    /** Default query timeout. */
+    private long dfltQryTimeout = DFLT_QRY_TIMEOUT;
 
     /** Ignite installation folder. */
     private String igniteHome;
@@ -585,6 +591,7 @@ public class IgniteConfiguration {
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
+        dfltQryTimeout = cfg.getDfltQryTimeout();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
@@ -1028,6 +1035,29 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSqlQueryHistorySize(int size) {
         sqlQryHistSize = size;
+
+        return this;
+    }
+
+    /**
+     * Defines the default query timeout.
+     *
+     * Defaults to {@link #DFLT_QRY_TIMEOUT}.
+     *
+     * @return Default query timeout.
+     */
+    public long getDfltQryTimeout() {
+        return dfltQryTimeout;
+    }
+
+    /**
+     * Sets timeout in milliseconds for default query timeout.
+     *
+     * @param dfltQryTimeout Timeout in milliseconds.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDefaultQueryTimeout(long dfltQryTimeout) {
+        this.dfltQryTimeout = dfltQryTimeout;
 
         return this;
     }

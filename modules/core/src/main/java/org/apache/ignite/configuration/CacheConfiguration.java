@@ -185,9 +185,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
-    /** Default query timeout. */
-    public static final long DFLT_QRY_TIMEOUT = 5000;
-
     /** Default value for events disabled flag. */
     public static final boolean DFLT_EVENTS_DISABLED = false;
 
@@ -378,9 +375,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private int qryParallelism = DFLT_QUERY_PARALLELISM;
 
-    /** Default query timeout. */
-    private long dfltQryTimeout = DFLT_QRY_TIMEOUT;
-
     /** Cache key configuration. */
     private CacheKeyConfiguration[] keyCfg;
 
@@ -470,7 +464,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         qryDetailMetricsSz = cc.getQueryDetailMetricsSize();
         qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         qryParallelism = cc.getQueryParallelism();
-        dfltQryTimeout = cc.dfltQryTimeout;
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceBatchesPrefetchCnt = cc.getRebalanceBatchesPrefetchCount();
@@ -2087,29 +2080,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         A.ensure(qryParallelism > 0, "Query parallelism must be positive.");
 
         this.qryParallelism = qryParallelism;
-
-        return this;
-    }
-
-    /**
-     * Defines the default query timeout.
-     *
-     * Defaults to {@link #DFLT_QRY_TIMEOUT}.
-     *
-     * @return Default query timeout.
-     */
-    public long getDfltQryTimeout() {
-        return dfltQryTimeout;
-    }
-
-    /**
-     * Sets timeout in milliseconds for default query timeout.
-     *
-     * @param dfltQryTimeout Timeout in milliseconds.
-     * @return {@code this} for chaining.
-     */
-    public CacheConfiguration<K, V> setDefaultQueryTimeout(long dfltQryTimeout) {
-        this.dfltQryTimeout = dfltQryTimeout;
 
         return this;
     }
