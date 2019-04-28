@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
@@ -58,7 +59,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
      * Initial counter points to last sequential update after WAL recovery.
      * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
-    private long initCntr;
+    @Deprecated private long initCntr;
 
     /** {@inheritDoc} */
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
@@ -85,10 +86,14 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /**
-     * @return Next update counter.
+     * @return Next update counter. For tx mode called by {@link DataStreamerImpl.IsolatedUpdater}.
      */
     @Override public long next() {
-        return cntr.incrementAndGet();
+        long next = cntr.incrementAndGet();
+
+        reserveCntr.set(next);
+
+        return next;
     }
 
     /** {@inheritDoc} */
@@ -265,23 +270,16 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         if (queue.isEmpty())
             return null;
 
-        // TODO slow output stream
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             DataOutputStream dos = new DataOutputStream(bos);
 
-            dos.writeByte(VERSION); // Version.
+            dos.writeByte(VERSION);
 
             int size = queue.size();
 
-            dos.writeInt(size); // Holes count.
-
-            // TODO store as deltas in varint format. Eg:
-            // 10000000000, 2; 10000000002, 4; 10000000004, 10;
-            // stored as:
-            // 10000000000; 0, 2; 2, 4; 4, 10.
-            // All ints are packed except first.
+            dos.writeInt(size);
 
             for (Item item : queue) {
                 dos.writeLong(item.start);

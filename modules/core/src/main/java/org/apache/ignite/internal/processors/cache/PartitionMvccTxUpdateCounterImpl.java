@@ -23,11 +23,11 @@ package org.apache.ignite.internal.processors.cache;
 public class PartitionMvccTxUpdateCounterImpl extends PartitionTxUpdateCounterImpl {
     /** {@inheritDoc} */
     @Override public long reserve(long delta) {
-        return super.next(delta);
+        return next(delta);
     }
 
     /** {@inheritDoc} */
     @Override public long reserved() {
-        return super.get();
+        return get();
     }
 }
