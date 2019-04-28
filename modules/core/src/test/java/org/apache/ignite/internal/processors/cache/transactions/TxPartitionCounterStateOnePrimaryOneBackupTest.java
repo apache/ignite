@@ -231,10 +231,6 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         // Trigger rebalance.
         IgniteEx prim = startGrid(primaryName);
 
-        //doSleep(5000);
-
-        System.out.println();
-
         // Wait for restart.
         fut.get();
 

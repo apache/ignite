@@ -56,4 +56,9 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
     @Override public void testCommitReorderWithRollbackNoRebalanceAfterRestart() throws Exception {
         // No-op.
     }
+
+    @Test
+    @Override public void testPartialPrepare_2TX_1_1() throws Exception {
+        super.testPartialPrepare_2TX_1_1();
+    }
 }

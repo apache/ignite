@@ -493,7 +493,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         GridDhtLocalPartition part = top.localPartition(p);
 
                         // LOST state is possible if tx is prepared when cache is in recovery mode (withCacheRecovery).
-                        assert part != null && (part.state() == OWNING || part.state() == LOST && ctx0.isRecoveryMode()):
+                        assert part != null && (part.state() == OWNING || part.state() == LOST):
                             part == null ?
                                 "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
                                 "part=" + part.toString();

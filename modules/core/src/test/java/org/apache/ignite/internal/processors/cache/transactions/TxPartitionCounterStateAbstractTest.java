@@ -154,7 +154,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setOnheapCacheEnabled(false);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
-        ccfg.setGroupName("test");
 
         return ccfg;
     }

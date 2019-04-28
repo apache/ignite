@@ -1360,7 +1360,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     else if (rec.get2() instanceof RollbackRecord) {
                         RollbackRecord rbRec = (RollbackRecord)rec.get2();
 
-                        if (cacheIds.contains(rbRec.groupId())) {
+                        if (grp.groupId() == rbRec.groupId()) {
                             int idx = partMap.partitionIndex(rbRec.partitionId());
 
                             if (idx < 0 || missingParts.contains(idx))
@@ -2213,7 +2213,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
         }
-        
+
         /** {@inheritDoc} */
         @Override public boolean mvccApplyHistoryIfAbsent(
             GridCacheContext cctx,

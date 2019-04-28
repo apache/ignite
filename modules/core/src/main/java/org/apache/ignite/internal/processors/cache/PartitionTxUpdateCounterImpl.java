@@ -86,7 +86,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /**
-     * @return Next update counter. For tx mode called by {@link DataStreamerImpl.IsolatedUpdater}.
+     * @return Next update counter. For tx mode called by {@link DataStreamerImpl} IsolatedUpdater.
      */
     @Override public long next() {
         long next = cntr.incrementAndGet();
