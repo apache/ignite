@@ -61,7 +61,7 @@ namespace Apache.Ignite
 
                     if (Help.Contains(first))
                     {
-                        ConsoleUtils.PrintHelp();
+                        ConsoleUtils.PrintHelp("Apache.Ignite.exe", true);
 
                         return;
                     }

@@ -218,7 +218,13 @@ if(!$skipDotNetCore) {
 
     $publishCommand = "dotnet publish $targetSolution -c $configuration"
 	echo "Starting dotnet publish: '$publishCommand'"
-	cmd /c $publishCommand
+	cmd /c $publishCommand    
+
+    # Check result
+	if ($LastExitCode -ne 0) {
+		echo ".NET Core build failed."
+		exit -1
+	}
 }
 
 if ($asmDirs) {

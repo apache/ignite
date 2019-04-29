@@ -28,7 +28,7 @@ namespace Apache.Ignite
     /// <summary>
     /// Runner class.
     /// </summary>
-    public class IgniteCoreRunner
+    public static class IgniteCoreRunner
     {
         /** Help commands. */
         private static readonly IList<string> Help = new List<string> { "/help", "-help", "--help" };

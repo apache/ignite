@@ -19,12 +19,17 @@ namespace Apache.Ignite
 {
     using System;
 
+    /// <summary>
+    /// Console utilities.
+    /// </summary>
     internal static class ConsoleUtils
     {
         /// <summary>
         /// Prints help.
         /// </summary>
-        public static void PrintHelp(string entryPoint = "Apache.Ignite.exe", bool useServices = true)
+        /// <param name="entryPoint">Application entry point.</param>
+        /// <param name="useServices">Indicates whether include service info in help or not.</param>
+        public static void PrintHelp(string entryPoint, bool useServices)
         {
             if (useServices)
             {
