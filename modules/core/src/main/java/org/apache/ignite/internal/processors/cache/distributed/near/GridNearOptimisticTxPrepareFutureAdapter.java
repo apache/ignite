@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -27,7 +28,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -139,14 +139,30 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         }
         else {
             cctx.time().waitAsync(topFut, tx.remainingTime(), (e, timedOut) -> {
-                if (errorOrTimeoutOnTopologyVersion(e, timedOut))
-                    return;
+                // TODO GG-17429 this should actually go to the cctx.time().waitAsync(...) logic.
+                if (cctx.exchange().currentThreadIsExchanger()) {
+                    cctx.kernalContext().closure().runLocalSafe(() -> {
+                        if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                            return;
 
-                try {
-                    prepareOnTopology(remap, c);
+                        try {
+                            prepareOnTopology(remap, c);
+                        }
+                        finally {
+                            cctx.txContextReset();
+                        }
+                    }, GridIoPolicy.SYSTEM_POOL);
                 }
-                finally {
-                    cctx.txContextReset();
+                else {
+                    if (errorOrTimeoutOnTopologyVersion(e, timedOut))
+                        return;
+
+                    try {
+                        prepareOnTopology(remap, c);
+                    }
+                    finally {
+                        cctx.txContextReset();
+                    }
                 }
             });
         }
