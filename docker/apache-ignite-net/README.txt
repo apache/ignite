@@ -18,6 +18,6 @@ Build image
 
 4) Build docker image
 
-        docker build . -t apacheignite-net/ignite[:<version>]
+        docker build . -t apacheignite/ignite-net[:<version>]
 
    Prepared image will be available issuing `docker images` command

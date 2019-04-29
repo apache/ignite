@@ -16,7 +16,7 @@
 #
 
 # Build runtime image
-FROM microsoft/dotnet:aspnetcore-runtime
+FROM microsoft/dotnet:runtime
 
 ## Workaround for apt/jre issues
 RUN mkdir -p /usr/share/man/man1
