@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -128,13 +129,16 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     protected final GridCacheSharedContext cctx;
 
     /** Size of page used for PageMemory regions. */
-    private final int pageSize;
+    protected final int pageSize;
 
     /** Size of page without encryption overhead. */
-    private final int realPageSize;
+    protected final int realPageSize;
 
     /** Cache object processor to reading {@link DataEntry DataEntries}. */
     protected final IgniteCacheObjectProcessor co;
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /** Serializer of {@link TxRecord} records. */
     private TxRecordSerializer txRecordSerializer;
@@ -172,6 +176,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             this.realPageSize = CU.encryptedPageSize(pageSize, encSpi);
         else
             this.realPageSize = pageSize;
+
+        log = cctx.logger(getClass());
     }
 
     /** {@inheritDoc} */
@@ -185,7 +191,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     }
 
     /** {@inheritDoc} */
-    @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in)
+    @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in, int size)
         throws IOException, IgniteCheckedException {
         if (type == ENCRYPTED_RECORD) {
             if (encSpi == null) {
@@ -202,10 +208,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             if (clData.get1() == null)
                 return new EncryptedRecord(clData.get2(), clData.get3());
 
-            return readPlainRecord(clData.get3(), clData.get1(), true);
+            return readPlainRecord(clData.get3(), clData.get1(), true, clData.get1().buffer().capacity());
         }
 
-        return readPlainRecord(type, in, false);
+        return readPlainRecord(type, in, false, size);
     }
 
     /** {@inheritDoc} */
@@ -347,7 +353,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 PageSnapshot pageRec = (PageSnapshot)record;
 
-                return pageRec.pageData().length + 12;
+                return pageRec.pageDataSize() + 12;
 
             case CHECKPOINT_RECORD:
                 CheckpointRecord cpRec = (CheckpointRecord)record;
@@ -533,12 +539,13 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
      * @param type Record type.
      * @param in Input
      * @param encrypted Record was encrypted.
+     * @param recordSize Record size.
      * @return Deserialized record.
      * @throws IOException If failed.
      * @throws IgniteCheckedException If failed.
      */
     WALRecord readPlainRecord(RecordType type, ByteBufferBackedDataInput in,
-        boolean encrypted) throws IOException, IgniteCheckedException {
+        boolean encrypted, int recordSize) throws IOException, IgniteCheckedException {
         WALRecord res;
 
         switch (type) {
@@ -585,7 +592,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long treeRoot = in.readLong();
                 long reuseListRoot = in.readLong();
 
-                res = new MetaPageInitRecord(cacheId, pageId, ioType, ioVer, treeRoot, reuseListRoot);
+                res = new MetaPageInitRecord(cacheId, pageId, ioType, ioVer, treeRoot, reuseListRoot, log);
 
                 break;
 
@@ -795,7 +802,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 ioVer = in.readUnsignedShort();
                 long virtualPageId = in.readLong();
 
-                res = new InitNewPageRecord(cacheId, pageId, ioType, ioVer, virtualPageId);
+                res = new InitNewPageRecord(cacheId, pageId, ioType, ioVer, virtualPageId, log);
 
                 break;
 
@@ -1025,7 +1032,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 prevPageId = in.readLong();
                 long addDataPageId = in.readLong();
 
-                res = new PagesListInitNewPageRecord(cacheId, pageId, ioType, ioVer, newPageId, prevPageId, addDataPageId);
+                res = new PagesListInitNewPageRecord(cacheId, pageId, ioType, ioVer, newPageId, prevPageId, addDataPageId, log);
 
                 break;
 
@@ -1161,7 +1168,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(snap.fullPageId().groupId());
                 buf.putLong(snap.fullPageId().pageId());
-                buf.put(snap.pageData());
+                buf.put(snap.pageDataBuffer());
 
                 break;
 

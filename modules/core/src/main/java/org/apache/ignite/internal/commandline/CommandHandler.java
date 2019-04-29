@@ -64,6 +64,7 @@ import org.apache.ignite.internal.commandline.baseline.BaselineCommand;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
@@ -100,6 +101,10 @@ import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -166,6 +171,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.baseline.BaselineCommand.of;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.CONTENTION;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.DISTRIBUTION;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.FIND_AND_DELETE_GARBAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VERIFY;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.LIST;
@@ -183,6 +189,11 @@ import static org.apache.ignite.internal.commandline.cache.argument.ListCommandA
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.ALL;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.NOT_PERSISTENT;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.PERSISTENT;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.SYSTEM;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.USER;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
@@ -861,7 +872,7 @@ public class CommandHandler {
      * @param client Client.
      * @param cacheArgs Cache args.
      */
-    private void cache(GridClient client, CacheArguments cacheArgs) throws Throwable {
+    private Object cache(GridClient client, CacheArguments cacheArgs) throws Throwable {
         switch (cacheArgs.command()) {
             case HELP:
                 printCacheHelp();
@@ -893,11 +904,16 @@ public class CommandHandler {
 
                 break;
 
+            case FIND_AND_DELETE_GARBAGE:
+                return findAndDeleteGarbage(client, cacheArgs);
+
             default:
                 cacheView(client, cacheArgs);
 
                 break;
         }
+
+        return null;
     }
 
     /** */
@@ -915,11 +931,12 @@ public class CommandHandler {
 
         usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
         usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
-        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
+        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC), op(EXCLUDE_CACHES, CACHES),
+            op(CACHE_FILTER, or(ALL, USER, SYSTEM, PERSISTENT, NOT_PERSISTENT)), op(CACHES));
         usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
         usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
         usageCache(RESET_LOST_PARTITIONS, CACHES);
+        usageCache(FIND_AND_DELETE_GARBAGE, op(GROUPS), OP_NODE_ID, op(FindAndDeleteGarbageArg.DELETE));
         nl();
     }
 
@@ -967,21 +984,7 @@ public class CommandHandler {
         VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
             client, VALIDATE_INDEXES_TASK, taskArg, null);
 
-        boolean errors = false;
-
-        if (!F.isEmpty(taskRes.exceptions())) {
-            errors = true;
-
-            log("Index validation failed on nodes:");
-
-            for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet()) {
-                log(i("Node ID: " + e.getKey()));
-
-                log(i("Exception message:"));
-                log(i(e.getValue().getMessage(), 2));
-                nl();
-            }
-        }
+        boolean errors = printErrors(taskRes.exceptions(), "Index validation failed on nodes:");
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
             if (!nodeEntry.getValue().hasIssues())
@@ -1080,6 +1083,79 @@ public class CommandHandler {
             cacheIdleVerifyV2(client, cacheArgs);
         else
             legacyCacheIdleVerify(client, cacheArgs);
+    }
+
+    /**
+     * @param client Client.
+     * @param cacheArgs Cache args.
+     */
+    private VisorFindAndDeleteGarbageInPersistenceTaskResult findAndDeleteGarbage(
+        GridClient client,
+        CacheArguments cacheArgs
+    ) throws GridClientException {
+        checkFeatureSupportedByCluster(client, IgniteFeatures.FIND_AND_DELETE_GARBAGE_COMMAND, false);
+
+        VisorFindAndDeleteGarbageInPersistenceTaskArg taskArg = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
+            cacheArgs.groups(),
+            cacheArgs.delete(),
+            cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null
+        );
+
+        VisorFindAndDeleteGarbageInPersistenceTaskResult taskRes = executeTask(
+            client, VisorFindAndDeleteGarbageInPersistenceTask.class, taskArg);
+
+        printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:");
+
+        for (Map.Entry<UUID, VisorFindAndDeleteGarbageInPersistenceJobResult> nodeEntry : taskRes.result().entrySet()) {
+            if (!nodeEntry.getValue().hasGarbage()) {
+                log("Node "+ nodeEntry.getKey() + " - garbage not found.");
+
+                continue;
+            }
+
+            log("Garbage found on node " + nodeEntry.getKey() + ":");
+
+            VisorFindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
+
+            Map<Integer, Map<Integer, Long>> grpPartErrorsCount = value.checkResult();
+
+            if (!grpPartErrorsCount.isEmpty()) {
+                for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCount.entrySet()) {
+                    for (Map.Entry<Integer, Long> e : entry.getValue().entrySet()) {
+                        log(i("Group=" + entry.getKey() +
+                            ", partition=" + e.getKey() +
+                            ", count of keys=" + e.getValue()));
+                    }
+                }
+            }
+
+            nl();
+        }
+
+        return taskRes;
+    }
+
+    /**
+     * @param exceptions Exception per node.
+     * @param msg Message to print before errors if at least one presented.
+     * @return True if found any error.
+     */
+    private boolean printErrors(Map<UUID, Exception> exceptions, String msg) {
+        if (!F.isEmpty(exceptions)) {
+            log(msg);
+
+            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+                log(i("Node ID: " + e.getKey()));
+
+                log(i("Exception message:"));
+                log(i(e.getValue().getMessage(), 2));
+                nl();
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -1980,11 +2056,14 @@ public class CommandHandler {
                 return "Show the keys that are point of contention for multiple transactions.";
 
             case IDLE_VERIFY:
-                return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
-                    "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
-                    "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
-                    "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
-                    "regexps, by cache type and after all by exclude regexps.";
+                return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache " +
+                    "groups on an idle cluster and print out the differences, if any. When no parameters are specified, " +
+                    "all user caches are verified. Cache filtering options configure the set of caches that will be " +
+                    "processed by " + IDLE_VERIFY + " command. If cache names are specified, in form of regular " +
+                    "expressions, only matching caches will be verified. Caches matched by regexes specified after " +
+                    EXCLUDE_CACHES + " parameter will be excluded from verification. Using parameter " + CACHE_FILTER +
+                    " you can verify: only " + USER + " caches, only user " + PERSISTENT + " caches, only user " +
+                    NOT_PERSISTENT + " caches, only " + SYSTEM + " caches, or " + ALL + " of the above.";
 
             case VALIDATE_INDEXES:
                 return "Validate indexes on an idle cluster and print out the keys that are missing in the indexes.";
@@ -1994,6 +2073,9 @@ public class CommandHandler {
 
             case RESET_LOST_PARTITIONS:
                 return "Reset the state of lost partitions for the specified caches.";
+
+            case FIND_AND_DELETE_GARBAGE:
+                return "Find and optionally delete garbage from shared cache groups which could be left after cache destroy.";
 
             default:
                 throw new IllegalArgumentException("Unknown command: " + cmd);
@@ -2024,6 +2106,11 @@ public class CommandHandler {
 
             case IDLE_VERIFY:
                 map.put(CHECK_CRC.toString(), "check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.");
+
+                break;
+
+            case FIND_AND_DELETE_GARBAGE:
+                map.put(FindAndDeleteGarbageArg.DELETE.toString(), "remove found garbage or not");
 
                 break;
         }
@@ -2501,7 +2588,7 @@ public class CommandHandler {
 
                 break;
 
-            case VALIDATE_INDEXES:
+            case VALIDATE_INDEXES: {
                 int argsCnt = 0;
 
                 while (hasNextSubArg() && argsCnt++ < 4) {
@@ -2550,6 +2637,7 @@ public class CommandHandler {
                 }
 
                 break;
+            }
 
             case DISTRIBUTION:
                 String nodeIdStr = nextArg("Node id expected or null");
@@ -2630,6 +2718,35 @@ public class CommandHandler {
                 cacheArgs.outputFormat(outputFormat);
 
                 break;
+
+            case FIND_AND_DELETE_GARBAGE: {
+                int argsCnt = 0;
+
+                while (hasNextSubArg() && argsCnt++ < 3) {
+                    String nextArg = nextArg("");
+
+                    FindAndDeleteGarbageArg arg = CommandArgUtils.of(nextArg, FindAndDeleteGarbageArg.class);
+
+                    if (arg == FindAndDeleteGarbageArg.DELETE) {
+                        cacheArgs.delete(true);
+
+                        continue;
+                    }
+
+                    try {
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
+
+                        continue;
+                    }
+                    catch (IllegalArgumentException ignored) {
+                        //No-op.
+                    }
+
+                    cacheArgs.groups(parseCacheNames(nextArg));
+                }
+
+                break;
+            }
 
             default:
                 throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
@@ -3246,7 +3363,7 @@ public class CommandHandler {
                             break;
 
                         case CACHE:
-                            cache(client, args.cacheArgs());
+                            lastOperationRes = cache(client, args.cacheArgs());
 
                             break;
 

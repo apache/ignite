@@ -57,8 +57,11 @@ public enum IgniteFeatures {
     /** Displaying versbose transaction information: --info option of --tx control script command. */
     TX_INFO_COMMAND(7),
 
+    /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
+    FIND_AND_DELETE_GARBAGE_COMMAND(8),
+
     /** Support of cluster read-only mode. */
-    CLUSTER_READ_ONLY_MODE(8);
+    CLUSTER_READ_ONLY_MODE(9);
 
     /**
      * Unique feature identifier.

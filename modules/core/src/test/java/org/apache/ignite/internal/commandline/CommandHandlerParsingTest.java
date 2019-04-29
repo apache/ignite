@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
@@ -409,9 +414,8 @@ public class CommandHandlerParsingTest {
     @Test
     public void testTransactionArguments() {
         CommandHandler hnd = new CommandHandler();
-        Arguments args;
 
-        args = hnd.parseAndValidate(asList("--tx"));
+        hnd.parseAndValidate(asList("--tx"));
 
         try {
             hnd.parseAndValidate(asList("--tx", "minDuration"));
@@ -469,7 +473,7 @@ public class CommandHandlerParsingTest {
         catch (IllegalArgumentException ignored) {
         }
 
-        args = hnd.parseAndValidate(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE",
+        Arguments args = hnd.parseAndValidate(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE",
             "--servers"));
 
         VisorTxTaskArg arg = args.transactionArguments();
@@ -505,5 +509,127 @@ public class CommandHandlerParsingTest {
             cmd == Command.WAL ||
             cmd == Command.READ_ONLY_DISABLE ||
             cmd == Command.READ_ONLY_ENABLE;
+    }
+
+
+    /**
+     * Test parsing arguments by find_garbage command.
+     */
+    @Test
+    public void testFindAndDeleteGarbage() {
+        CommandHandler hnd = new CommandHandler();
+
+        String nodeId = UUID.randomUUID().toString();
+        String delete = FindAndDeleteGarbageArg.DELETE.toString();
+        String groups = "group1,grpoup2,group3";
+
+        List<List<String>> lists = generateArgumentList(
+            "find_garbage",
+            new T2<>(nodeId, false),
+            new T2<>(delete, false),
+            new T2<>(groups, false)
+        );
+
+        for (List<String> list : lists) {
+            Arguments arg = hnd.parseAndValidate(list);
+
+            CacheArguments args = arg.cacheArgs();
+
+            if (list.contains(nodeId))
+                assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId().toString());
+            else
+                assertNull(args.nodeId());
+
+            assertEquals(list.contains(delete), args.delete());
+
+            if (list.contains(groups))
+                assertEquals(3, args.groups().size());
+            else
+                assertNull(args.groups());
+        }
+    }
+
+    /**
+     * @param subcommand Cache subcommand.
+     * @param optional List of arguments, where second param is this argument is stopping one or not.
+     *  Every argument treated as optional.
+     *
+     * @return List of every possible combinations of the arguments {[], [1], [2], [3], [1,2], [2,1], [1.3], [3,1], [1,2,3]...}.
+     */
+    private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>...optional) {
+        List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
+
+        ArrayList<List<String>> res = new ArrayList<>();
+
+        ArrayList<String> empty = new ArrayList<>();
+
+        empty.add(CACHE.text());
+        empty.add(subcommand);
+
+        res.add(empty);
+
+        for (List<T2<String, Boolean>> list : lists) {
+            ArrayList<String> arg = new ArrayList<>(empty);
+
+            list.forEach(x -> arg.add(x.get1()));
+
+            res.add(arg);
+        }
+
+        return res;
+    }
+
+    /**
+     * @param source Source of elements.
+     * @param stopFunc Stop function.
+     */
+    private <T> List<List<T>> generateAllCombinations(List<T> source, Predicate<T> stopFunc) {
+        List<List<T>> res = new ArrayList<>();
+
+        for (int i = 0; i < source.size(); i++) {
+            List<T> sourceCopy = new ArrayList<>(source);
+
+            T removed = sourceCopy.remove(i);
+
+            generateAllCombinations(Collections.singletonList(removed), sourceCopy, stopFunc, res);
+        }
+
+        return res;
+    }
+
+
+    /**
+     * @param res Intermidiate result.
+     * @param source Source of left elements.
+     * @param stopFunc Stop function.
+     * @param acc Ready result accumulator.
+     */
+    private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
+        acc.add(res);
+
+        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1)))
+            return;
+
+        if (source.size() == 1) {
+            List<T> list = new ArrayList<>(res);
+
+            list.add(source.get(0));
+
+            acc.add(list);
+
+            return;
+        }
+
+        for (int i = 0; i < source.size(); i++) {
+            ArrayList<T> res0 = new ArrayList<>(res);
+
+            List<T> sourceCopy = new ArrayList<>(source);
+
+            T removed = sourceCopy.remove(i);
+
+            res0.add(removed);
+
+            generateAllCombinations(res0, sourceCopy, stopFunc, acc);
+        }
     }
 }
