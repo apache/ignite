@@ -35,8 +35,8 @@ import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.randomforest.RandomForestRegressionTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.junit.Test;
@@ -51,7 +51,7 @@ import static org.junit.Assert.assertEquals;
 public class LearningEnvironmentTest {
     /** */
     @Test
-    public void testBasic() throws InterruptedException {
+    public void testBasic() {
         RandomForestRegressionTrainer trainer = new RandomForestRegressionTrainer(
             IntStream.range(0, 0).mapToObj(
                 x -> new FeatureMeta("", 0, false)).collect(Collectors.toList())
@@ -87,8 +87,7 @@ public class LearningEnvironmentTest {
 
         DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-            @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, Void> extractor) {
+             @Override public <K, V> IgniteModel<Object, Vector> fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
                     (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
@@ -107,15 +106,15 @@ public class LearningEnvironmentTest {
                 return false;
             }
 
+
             /** {@inheritDoc} */
-            @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
-                DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, Void> extractor) {
+             @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
+                DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
                 return null;
             }
         };
         trainer.withEnvironmentBuilder(envBuilder);
-        IgniteModel<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null, null);
+        IgniteModel<Object, Vector> mdl = trainer.fit(getCacheMock(partitions), partitions, null);
 
         Vector exp = VectorUtils.zeroes(partitions);
         for (int i = 0; i < partitions; i++)

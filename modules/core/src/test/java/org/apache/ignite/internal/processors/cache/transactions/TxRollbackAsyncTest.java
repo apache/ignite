@@ -537,8 +537,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRollbackDelayNearLockRequest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
-
         final Ignite client = startClient();
 
         final Ignite prim = primaryNode(0, CACHE_NAME);
@@ -567,7 +565,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             fail();
         }
         catch (CacheException e) {
-            assertTrue(X.getFullStackTrace(e),X.hasCause(e, TransactionRollbackException.class));
+            assertTrue(X.getFullStackTrace(e), X.hasCause(e, TransactionRollbackException.class));
         }
 
         rollbackFut.get();
@@ -1004,7 +1002,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         // Rollback tx using kill task.
         VisorTxTaskArg arg =
-            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null);
+            new VisorTxTaskArg(VisorTxOperation.KILL, null, null, null, null, null, null, null, null, null, null);
 
         Map<ClusterNode, VisorTxTaskResult> res = client.compute(client.cluster().forPredicate(F.alwaysTrue())).
             execute(new VisorTxTask(), new VisorTaskArgument<>(client.cluster().localNode().id(), arg, false));

@@ -20,6 +20,7 @@ include /app/configuration/mixins
 -var model = '$ctrl.clonedCluster'
 -var form = 'failoverSpi'
 -var failoverSpi = model + '.failoverSpi'
+-var failureHandler = model + '.failureHandler'
 -var failoverCustom = '$item.kind === "Custom"'
 
 panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
@@ -122,6 +123,67 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                                 )
 
                 +clusters-failover-spi
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
+                +form-field__dropdown({
+                    label: 'Failure handler:',
+                    model: `${failureHandler}.kind`,
+                    name: '"FailureHandlerKind"',
+                    placeholder: 'Default',
+                    options: '$ctrl.failureHandlerVariant',
+                    tip: 'Handle failures<br/>\
+                        <ul>\
+                            <li>Restart process - Process will be terminated using Ignition.restart call</li>\
+                            <li>Try stop with timeout - Handler will try to stop node if tryStop value is true or terminate forcibly</li>\
+                            <li>Stop on critical error - Handler will stop node in case of critical error</li>\
+                            <li>Disabled - Ignores any failure</li>\n\
+                            <li>Custom - Custom implementation of failure handler</li>\
+                            <li>Default - Default implementation of failure handler</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.5.0") && ${failureHandler}.kind === "Custom"`)
+                +form-field__java-class({
+                    label: 'Class name:',
+                    model: `${failureHandler}.Custom.className`,
+                    name: '"CustomFailureHandler"',
+                    required: true,
+                    tip: 'Class name of custom failure handler implementation',
+                    validationActive: true
+                })
+            .pc-form-group.pc-form-grid-row(ng-if=`$ctrl.available("2.5.0") && ${failureHandler}.kind === 'StopNodeOnHalt'`)
+                .pc-form-grid-col-60
+                    +form-field__number({
+                        label: 'Stop node timeout:',
+                        model: `${failureHandler}.StopNodeOnHalt.timeout`,
+                        name: '"StopNodeOnHaltTimeout"',
+                        placeholder: '0',
+                        min: '0',
+                        tip: 'Timeout for forcibly terminating by using Runtime.getRuntime().halt()'
+                    })
+                .pc-form-grid-col-60
+                    +form-field__checkbox({
+                        label: 'Try to stop node',
+                        model: `${failureHandler}.StopNodeOnHalt.tryStop`,
+                        name: '"StopNodeOnHaltTryStop"',
+                        tip: 'Try to stop node'
+                    })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.5.0") && ['RestartProcess', 'StopNodeOnHalt', 'StopNode'].indexOf(${failureHandler}.kind) >= 0`)
+                +form-field__dropdown({
+                    label: 'Ignored failure types:',
+                    model: `${failureHandler}.ignoredFailureTypes`,
+                    name: '"FailureHandlerIgnoredFailureTypes"',
+                    multiple: true,
+                    placeholder: 'Choose ignored failure types',
+                    placeholderEmpty: '',
+                    options: '$ctrl.ignoredFailureTypes',
+                    tip: 'Ignored failure types:<br/>\
+                        <ul>\
+                            <li>SEGMENTATION - Node segmentation</li>\
+                            <li>SYSTEM_WORKER_TERMINATION - System worker termination</li>\
+                            <li>SYSTEM_WORKER_BLOCKED - System worker has not updated its heartbeat for a long time</li>\
+                            <li>CRITICAL_ERROR - Critical error - error which leads to the system\'s inoperability</li>\n\
+                            <li>SYSTEM_CRITICAL_OPERATION_TIMEOUT - System-critical operation has been timed out</li>\
+                        </ul>'
+                })
 
         .pca-form-column-6
             +preview-xml-java(model, 'clusterFailover')

@@ -41,7 +41,7 @@ public interface ClientListenerConnectionContext {
     /**
      * @return Current context version.
      */
-    ClientListenerProtocolVersion currentVersion();
+    ClientListenerProtocolVersion defaultVersion();
 
     /**
      * Initialize from handshake message.

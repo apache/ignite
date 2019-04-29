@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.BinaryTypeMismatchLoggingTest;
+import org.apache.ignite.internal.processors.cache.BinaryTypeRegistrationTest;
 import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationP2PTest;
 import org.apache.ignite.internal.processors.cache.CacheIndexStreamerTest;
@@ -82,6 +83,8 @@ import org.junit.runners.Suite;
     IgniteDataStreamerTest.class,
 
     BinaryTypeMismatchLoggingTest.class,
+
+    BinaryTypeRegistrationTest.class,
 
     ClusterReadOnlyModeSqlTest.class
 })

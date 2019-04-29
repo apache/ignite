@@ -65,6 +65,9 @@ public class BinaryClassificationMetricValues implements MetricValues {
     /** F1-Score is the harmonic mean of Precision and Sensitivity. */
     private double f1Score;
 
+    /** ROC AUC. */
+    private double rocauc;
+
     /**
      * Initialize an example by 4 metrics.
      *
@@ -73,11 +76,12 @@ public class BinaryClassificationMetricValues implements MetricValues {
      * @param fp False Positive (FP).
      * @param fn False Negative (FN).
      */
-    public BinaryClassificationMetricValues(long tp, long tn, long fp, long fn) {
+    public BinaryClassificationMetricValues(long tp, long tn, long fp, long fn, double rocauc) {
         this.tp = tp;
         this.tn = tn;
         this.fp = fp;
         this.fn = fn;
+        this.rocauc = rocauc;
 
         long p = tp + fn;
         long n = tn + fp;
@@ -168,4 +172,10 @@ public class BinaryClassificationMetricValues implements MetricValues {
     public double f1Score() {
         return f1Score;
     }
+
+    /** Returns ROCAUC value. */
+    public double rocauc() {
+        return rocauc;
+    }
+
 }

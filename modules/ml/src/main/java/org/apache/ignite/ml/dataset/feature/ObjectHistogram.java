@@ -17,11 +17,7 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Basic implementation of {@link Histogram} that implements also {@link DistributionComputer}.
@@ -118,14 +114,14 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
      * Counter mapping.
      *
      * @param obj Object.
-     * @return counter.
+     * @return Counter.
      */
     public abstract Double mapToCounter(T obj);
 
     /**
      * Creates an instance of ObjectHistogram from child class.
      *
-     * @return object histogram.
+     * @return Object histogram.
      */
     public abstract ObjectHistogram<T> newInstance();
 }

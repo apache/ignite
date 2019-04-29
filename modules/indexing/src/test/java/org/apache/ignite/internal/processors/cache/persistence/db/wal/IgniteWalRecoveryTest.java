@@ -43,7 +43,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -101,6 +100,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.transactions.Transaction;
@@ -109,6 +109,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
@@ -1520,113 +1521,107 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * @throws Exception If any fail.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
     public void testTxRecordsConsistency() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
-
         IgniteEx ignite = (IgniteEx)startGrids(3);
         ignite.cluster().active(true);
 
-        try {
-            final String cacheName = "transactional";
+        final String cacheName = "transactional";
 
-            CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setCacheMode(CacheMode.PARTITIONED)
-                .setRebalanceMode(CacheRebalanceMode.SYNC)
-                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-                .setBackups(0);
+        CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setRebalanceMode(CacheRebalanceMode.SYNC)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setBackups(0);
 
-            ignite.createCache(cacheConfiguration);
+        ignite.createCache(cacheConfiguration);
 
-            IgniteCache<Object, Object> cache = ignite.cache(cacheName);
+        IgniteCache<Object, Object> cache = ignite.cache(cacheName);
 
-            GridCacheSharedContext<Object, Object> sharedCtx = ignite.context().cache().context();
+        GridCacheSharedContext<Object, Object> sharedCtx = ignite.context().cache().context();
 
-            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
 
-            db.waitForCheckpoint("test");
-            db.enableCheckpoints(false).get();
+        db.waitForCheckpoint("test");
+        db.enableCheckpoints(false).get();
 
-            // Log something to know where to start.
-            WALPointer startPtr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+        // Log something to know where to start.
+        WALPointer startPtr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
-            final int transactions = 100;
-            final int operationsPerTransaction = 40;
+        final int transactions = 100;
+        final int operationsPerTransaction = 40;
 
-            Random random = new Random();
+        Random random = new Random();
 
-            for (int t = 1; t <= transactions; t++) {
-                Transaction tx = ignite.transactions().txStart(
-                    TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+        for (int t = 1; t <= transactions; t++) {
+            Transaction tx = ignite.transactions().txStart(
+                TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
 
-                for (int op = 0; op < operationsPerTransaction; op++) {
-                    int key = random.nextInt(1000) + 1;
+            for (int op = 0; op < operationsPerTransaction; op++) {
+                int key = random.nextInt(1000) + 1;
 
-                    Object value = random.nextBoolean() ? randomString(random) + key : new BigObject(key);
+                Object value = random.nextBoolean() ? randomString(random) + key : new BigObject(key);
 
-                    cache.put(key, value);
-                }
-
-                if (random.nextBoolean()) {
-                    tx.commit();
-                }
-                else {
-                    tx.rollback();
-                }
-
-                if (t % 50 == 0)
-                    log.info("Finished transaction " + t);
+                cache.put(key, value);
             }
 
-            Set<GridCacheVersion> activeTransactions = new HashSet<>();
-
-            // Check that all DataRecords are within PREPARED and COMMITTED tx records.
-            try (WALIterator it = sharedCtx.wal().replay(startPtr)) {
-                while (it.hasNext()) {
-                    IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
-
-                    WALRecord rec = tup.get2();
-
-                    if (rec instanceof TxRecord) {
-                        TxRecord txRecord = (TxRecord)rec;
-                        GridCacheVersion txId = txRecord.nearXidVersion();
-
-                        switch (txRecord.state()) {
-                            case PREPARED:
-                                assert !activeTransactions.contains(txId) : "Transaction is already present " + txRecord;
-
-                                activeTransactions.add(txId);
-
-                                break;
-                            case COMMITTED:
-                                assert activeTransactions.contains(txId) : "No PREPARE marker for transaction " + txRecord;
-
-                                activeTransactions.remove(txId);
-
-                                break;
-                            case ROLLED_BACK:
-                                activeTransactions.remove(txId);
-                                break;
-
-                            default:
-                                throw new IllegalStateException("Unknown Tx state of record " + txRecord);
-                        }
-                    }
-                    else if (rec instanceof DataRecord) {
-                        DataRecord dataRecord = (DataRecord)rec;
-
-                        for (DataEntry entry : dataRecord.writeEntries()) {
-                            GridCacheVersion txId = entry.nearXidVersion();
-
-                            assert activeTransactions.contains(txId) : "No transaction for entry " + entry;
-                        }
-                    }
-                }
+            if (random.nextBoolean()) {
+                tx.commit();
             }
+            else {
+                tx.rollback();
+            }
+
+            if (t % 50 == 0)
+                log.info("Finished transaction " + t);
         }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+
+        Set<GridCacheVersion> activeTransactions = new HashSet<>();
+
+        // Check that all DataRecords are within PREPARED and COMMITTED tx records.
+        try (WALIterator it = sharedCtx.wal().replay(startPtr)) {
+            while (it.hasNext()) {
+                IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+
+                WALRecord rec = tup.get2();
+
+                if (rec instanceof TxRecord) {
+                    TxRecord txRecord = (TxRecord)rec;
+                    GridCacheVersion txId = txRecord.nearXidVersion();
+
+                    switch (txRecord.state()) {
+                        case PREPARED:
+                            assert !activeTransactions.contains(txId) : "Transaction is already present " + txRecord;
+
+                            activeTransactions.add(txId);
+
+                            break;
+                        case COMMITTED:
+                            assert activeTransactions.contains(txId) : "No PREPARE marker for transaction " + txRecord;
+
+                            activeTransactions.remove(txId);
+
+                            break;
+                        case ROLLED_BACK:
+                            activeTransactions.remove(txId);
+                            break;
+
+                        default:
+                            throw new IllegalStateException("Unknown Tx state of record " + txRecord);
+                    }
+                }
+                else if (rec instanceof DataRecord) {
+                    DataRecord dataRecord = (DataRecord)rec;
+
+                    for (DataEntry entry : dataRecord.writeEntries()) {
+                        GridCacheVersion txId = entry.nearXidVersion();
+
+                        assert activeTransactions.contains(txId) : "No transaction for entry " + entry;
+                    }
+                }
+            }
         }
     }
 

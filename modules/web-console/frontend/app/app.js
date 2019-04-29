@@ -176,7 +176,6 @@ export default angular
         'ui.grid.saveState',
         'ui.grid.selection',
         'ui.router',
-        'ui.carousel',
         // Base modules.
         'ignite-console.core',
         'ignite-console.ace',

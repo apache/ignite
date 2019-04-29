@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -57,7 +58,9 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewInde
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeAttributes;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodeMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewNodes;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewQueryHistoryMetrics;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewRunningQueries;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewSchemas;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewTables;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -142,7 +145,7 @@ public class SchemaManager {
 
         try {
             synchronized (schemaMux) {
-                createSchema0(QueryUtils.SCHEMA_SYS);
+                createSchema(QueryUtils.SCHEMA_SYS, true);
             }
 
             try (Connection c = connMgr.connectionNoCache(QueryUtils.SCHEMA_SYS)) {
@@ -170,8 +173,10 @@ public class SchemaManager {
         views.add(new SqlSystemViewCacheGroups(ctx));
         views.add(new SqlSystemViewCacheGroupsIOStatistics(ctx));
         views.add(new SqlSystemViewRunningQueries(ctx));
+        views.add(new SqlSystemViewQueryHistoryMetrics(ctx));
         views.add(new SqlSystemViewTables(ctx, this));
         views.add(new SqlSystemViewIndexes(ctx, this));
+        views.add(new SqlSystemViewSchemas(ctx, this));
 
         return views;
     }
@@ -413,6 +418,15 @@ public class SchemaManager {
             res = "";
 
         return res;
+    }
+
+    /**
+     * Get schemas names.
+     *
+     * @return Schemas names.
+     */
+    public Set<String> schemaNames(){
+        return new HashSet<>(schemas.keySet());
     }
 
     /**

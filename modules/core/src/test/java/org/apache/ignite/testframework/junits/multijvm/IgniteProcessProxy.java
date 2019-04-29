@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
@@ -119,7 +120,7 @@ public class IgniteProcessProxy implements IgniteEx {
     private final transient IgniteConfiguration cfg;
 
     /** Local JVM grid. */
-    private final transient Ignite locJvmGrid;
+    private final transient Function<Void, Ignite> locJvmGrid;
 
     /** Logger. */
     private final transient IgniteLogger log;
@@ -135,7 +136,7 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid)
         throws Exception {
-        this(cfg, log, locJvmGrid, true);
+        this(cfg, log, (Function<Void, Ignite>)locJvmGrid, true);
     }
 
     /**
@@ -144,7 +145,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param locJvmGrid Local JVM grid.
      * @throws Exception On error.
      */
-    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean discovery)
+    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Function<Void, Ignite> locJvmGrid, boolean discovery)
         throws Exception {
         this(cfg, log, locJvmGrid, discovery, Collections.emptyList());
     }
@@ -160,7 +161,7 @@ public class IgniteProcessProxy implements IgniteEx {
     public IgniteProcessProxy(
         IgniteConfiguration cfg,
         IgniteLogger log,
-        Ignite locJvmGrid,
+        Function<Void, Ignite> locJvmGrid,
         boolean resetDiscovery,
         List<String> additionalArgs
     )
@@ -177,7 +178,8 @@ public class IgniteProcessProxy implements IgniteEx {
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
         if (locJvmGrid != null)
-            locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
+            locJvmGrid.apply(null).events()
+                .localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
         proc = GridJavaProcess.exec(
             igniteNodeRunnerClassName(),
@@ -333,7 +335,7 @@ public class IgniteProcessProxy implements IgniteEx {
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
             final UUID rmNodeId = proxy.getId();
 
-            proxy.locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+            proxy.localJvmGrid().events().localListen(new IgnitePredicateX<Event>() {
                 @Override public boolean applyx(Event e) {
                     if (((DiscoveryEvent)e).eventNode().id().equals(rmNodeId)) {
                         rmtNodeStoppedLatch.countDown();
@@ -357,6 +359,8 @@ public class IgniteProcessProxy implements IgniteEx {
 
                 throw t;
             }
+
+            proxy.getProcess().kill();
 
             gridProxies.remove(igniteInstanceName, proxy);
         }
@@ -426,7 +430,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return Local JVM grid instance.
      */
     public Ignite localJvmGrid() {
-        return locJvmGrid;
+        return locJvmGrid.apply(null);
     }
 
     /**
@@ -685,7 +689,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public Collection<String> cacheNames() {
-        return locJvmGrid.cacheNames();
+        return localJvmGrid().cacheNames();
     }
 
     /** {@inheritDoc} */
@@ -835,10 +839,10 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
-        if (locJvmGrid != null) {
+        if (localJvmGrid() != null) {
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
 
-            locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+            localJvmGrid().events().localListen(new IgnitePredicateX<Event>() {
                 @Override public boolean applyx(Event e) {
                     if (((DiscoveryEvent)e).eventNode().id().equals(id)) {
                         rmtNodeStoppedLatch.countDown();
@@ -894,15 +898,17 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return {@link IgniteCompute} instance to communicate with remote node.
      */
     public IgniteCompute remoteCompute() {
-        if (locJvmGrid == null)
+        Ignite localJvmGrid = localJvmGrid();
+
+        if (localJvmGrid == null)
             return null;
 
-        ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
+        ClusterGroup grp = localJvmGrid.cluster().forNodeId(id);
 
         if (grp.nodes().isEmpty())
             throw new IllegalStateException("Could not found node with id=" + id + ".");
 
-        return locJvmGrid.compute(grp);
+        return localJvmGrid.compute(grp);
     }
 
     /**

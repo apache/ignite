@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
@@ -74,6 +75,9 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /** Execute cancel request. */
     static final byte QRY_CANCEL = 15;
+
+    /** Get cache partitions distributions. */
+    static final byte CACHE_PARTITIONS = 16;
 
     /** Request Id generator. */
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
@@ -205,6 +209,11 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
                 break;
 
+            case CACHE_PARTITIONS:
+                req = new JdbcCachePartitionsRequest();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
         }
@@ -236,5 +245,10 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         stream.position(1);
 
         return stream.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcRequest.class, this);
     }
 }

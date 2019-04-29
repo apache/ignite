@@ -52,6 +52,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.SkipDaemon;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -1239,9 +1240,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      */
     private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
         if (cfg instanceof LazyServiceConfiguration) {
+            LazyServiceConfiguration srvcCfg = (LazyServiceConfiguration)cfg;
+
+            GridDeployment srvcDep = ctx.deploy().getDeployment(srvcCfg.serviceClassName());
+
             byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
-            Service srvc = U.unmarshal(marsh, bytes, U.resolveClassLoader(null, ctx.config()));
+            Service srvc = U.unmarshal(marsh, bytes,
+                U.resolveClassLoader(srvcDep != null ? srvcDep.classLoader() : null, ctx.config()));
 
             ctx.resource().inject(srvc);
 

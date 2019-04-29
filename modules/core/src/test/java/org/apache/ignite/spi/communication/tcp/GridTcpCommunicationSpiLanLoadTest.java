@@ -272,8 +272,6 @@ public class GridTcpCommunicationSpiLanLoadTest extends GridSpiAbstractTest<TcpC
         spi.spiStop();
 
         spiRsrc.stopThreads();
-
-        tearDown();
     }
 
     /**

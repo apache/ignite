@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+
+import java.io.Serializable;
 
 /**
  * Discrete naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
@@ -72,7 +73,7 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /**
      * @param vector features vector.
-     * @return a label with max probability.
+     * @return A label with max probability.
      */
     @Override public Double predict(Vector vector) {
         double maxProbapilityPower = -Double.MAX_VALUE;

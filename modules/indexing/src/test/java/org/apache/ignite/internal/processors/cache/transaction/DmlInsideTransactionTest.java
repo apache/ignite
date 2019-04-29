@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transaction;
 
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -27,11 +26,12 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.GridTestUtils.SystemProperty;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -79,15 +79,14 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
      * @throws Exception In case failure.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_ALLOW_DML_INSIDE_TRANSACTION, value = "false")
     public void testDmlInTransactionInDisabledCompatibilityMode() throws Exception {
-        try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION, "false")) {
-            prepareIgnite();
+        prepareIgnite();
 
-            for (String dmlQuery : DML_QUERIES) {
-                runDmlSqlFieldsQueryInTransactionTest(dmlQuery, false, false);
+        for (String dmlQuery : DML_QUERIES) {
+            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, false, false);
 
-                runDmlSqlFieldsQueryInTransactionTest(dmlQuery, true, false);
-            }
+            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, true, false);
         }
     }
 
@@ -97,15 +96,14 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
      * @throws Exception In case failure.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_ALLOW_DML_INSIDE_TRANSACTION, value = "true")
     public void testDmlInTransactionInCompatibilityMode() throws Exception {
-        try (SystemProperty ignored = new SystemProperty(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION, "true")) {
-            prepareIgnite();
+        prepareIgnite();
 
-            for (String dmlQuery : DML_QUERIES) {
-                runDmlSqlFieldsQueryInTransactionTest(dmlQuery, false, true);
+        for (String dmlQuery : DML_QUERIES) {
+            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, false, true);
 
-                runDmlSqlFieldsQueryInTransactionTest(dmlQuery, true, true);
-            }
+            runDmlSqlFieldsQueryInTransactionTest(dmlQuery, true, true);
         }
     }
 

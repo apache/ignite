@@ -60,7 +60,7 @@ public class HadoopFileSystemCounterWriterDelegateImpl implements HadoopFileSyst
     }
 
     /** {@inheritDoc} */
-    public void write(HadoopJobEx job, HadoopCounters cntrs) throws IgniteCheckedException {
+    @Override public void write(HadoopJobEx job, HadoopCounters cntrs) throws IgniteCheckedException {
         Configuration hadoopCfg = HadoopUtils.safeCreateConfiguration();
 
         final HadoopJobInfo jobInfo = job.info();

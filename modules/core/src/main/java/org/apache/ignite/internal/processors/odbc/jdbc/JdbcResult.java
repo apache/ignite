@@ -22,6 +22,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC response result.
@@ -75,6 +76,9 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** A result of the processing ordered batch request. */
     static final byte BATCH_EXEC_ORDERED = 18;
 
+    /** A result of the processing cache partitions distributions request. */
+    static final byte CACHE_PARTITIONS = 19;
+
     /** Success status. */
     private byte type;
 
@@ -96,7 +100,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader,
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        // No-op.
     }
 
     /**
@@ -105,12 +108,13 @@ public class JdbcResult implements JdbcRawBinarylizable {
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcResult readResult(BinaryReaderExImpl reader, ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    public static JdbcResult readResult(BinaryReaderExImpl reader,
+        ClientListenerProtocolVersion ver) throws BinaryObjectException {
         int resId = reader.readByte();
 
         JdbcResult res;
 
-        switch(resId) {
+        switch (resId) {
             case QRY_EXEC:
                 res = new JdbcQueryExecuteResult();
 
@@ -191,6 +195,11 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
+            case CACHE_PARTITIONS:
+                res = new JdbcCachePartitionsResult();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + resId + ']');
         }
@@ -198,5 +207,10 @@ public class JdbcResult implements JdbcRawBinarylizable {
         res.readBinary(reader, ver);
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcResult.class, this);
     }
 }

@@ -22,6 +22,8 @@ import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -62,10 +64,12 @@ public class StandardScalerTrainerTest extends TrainerTest {
     public void testCalculatesCorrectMeans() {
         double[] expectedMeans = new double[] {0.5, 1.75, 4.5, 0.875};
 
-        StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2, 3);
+
+        StandardScalerPreprocessor<Integer, Vector> preprocessor = (StandardScalerPreprocessor<Integer, Vector>)standardizationTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
-            (k, v) -> v
+            vectorizer
         );
 
         assertArrayEquals(expectedMeans, preprocessor.getMeans(), 1e-8);
@@ -76,10 +80,12 @@ public class StandardScalerTrainerTest extends TrainerTest {
     public void testCalculatesCorrectStandardDeviations() {
         double[] expectedSigmas = new double[] {0.5, 1.47901995, 14.51723114, 0.93374247};
 
-        StandardScalerPreprocessor<Integer, Vector> preprocessor = standardizationTrainer.fit(
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(0, 1, 2, 3);
+
+        StandardScalerPreprocessor<Integer, Vector> preprocessor = (StandardScalerPreprocessor<Integer, Vector>)standardizationTrainer.fit(
             TestUtils.testEnvBuilder(),
             datasetBuilder,
-            (k, v) -> v
+            vectorizer
         );
 
         assertArrayEquals(expectedSigmas, preprocessor.getSigmas(), 1e-8);

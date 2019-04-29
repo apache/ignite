@@ -316,7 +316,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture fut) {
-        PREP_FUT_UPD.compareAndSet(this, fut, null);
+       //No-op.
     }
 
     /**
@@ -4423,7 +4423,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (trackTimeout)
                 rmv = removeTimeoutHandler();
 
-            if (state != COMMITTING && state != ROLLING_BACK && (!trackTimeout || rmv))
+            if (state != COMMITTING && state != ROLLING_BACK &&
+                (!trackTimeout || rmv || (prepFut != null && prepFut.isDone())))
                 rollbackNearTxLocalAsync(clearThreadMap, false).get();
 
             synchronized (this) {

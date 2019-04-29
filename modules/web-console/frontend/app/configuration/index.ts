@@ -85,7 +85,13 @@ import {
 import {errorState} from './transitionHooks/errorState';
 import {default as ActivitiesData} from '../core/activities/Activities.data';
 
+const JDBC_LINKS = {
+    Oracle: 'https://www.oracle.com/technetwork/database/application-development/jdbc/downloads/index.html',
+    DB2: 'http://www-01.ibm.com/support/docview.wss?uid=swg21363866'
+};
+
 registerActivitiesHook.$inject = ['$uiRouter', 'IgniteActivitiesData'];
+
 function registerActivitiesHook($uiRouter: UIRouter, ActivitiesData: ActivitiesData) {
     $uiRouter.transitionService.onSuccess({to: 'base.configuration.**'}, (transition) => {
         ActivitiesData.post({group: 'configuration', action: transition.targetState().name()});
@@ -183,4 +189,5 @@ export default angular
     .directive('pcIsInCollection', isInCollection)
     .directive('fakeUiCanExit', fakeUiCanExit)
     .directive('formUiCanExitGuard', formUICanExitGuard)
-    .directive('igniteUiAceTabs', uiAceTabs);
+    .directive('igniteUiAceTabs', uiAceTabs)
+    .constant('JDBC_LINKS', JDBC_LINKS);

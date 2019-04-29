@@ -49,7 +49,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
         CacheConfiguration cfg = cctx.config();
 
-        diskPageCompression = cfg.getDiskPageCompression();
+        diskPageCompression = cctx.kernalContext().config().isClientMode() ? null : cfg.getDiskPageCompression();
 
         if (diskPageCompression != null) {
             if (!cctx.dataRegion().config().isPersistenceEnabled())

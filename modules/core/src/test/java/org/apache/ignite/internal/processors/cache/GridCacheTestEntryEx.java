@@ -84,6 +84,22 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
+    @Override public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime,
+        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore) {
+        assert false;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccPreloadEntry(
+        List<GridCacheMvccEntryInfo> entries) {
+        assert false;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isInternal() {
         return key instanceof GridCacheInternal;
     }
@@ -198,7 +214,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param baseVer Base version.
      */
     void salvageRemote(GridCacheVersion baseVer) {
-        mvcc.salvageRemote(baseVer);
+        mvcc.salvageRemote(baseVer, false);
     }
 
     /**

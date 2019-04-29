@@ -570,6 +570,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if (ctx.config().getCommunicationFailureResolver() != null)
             ctx.resource().injectGeneric(ctx.config().getCommunicationFailureResolver());
 
+        // Shared reference between DiscoverySpiListener and DiscoverySpiDataExchange.
+        AtomicReference<IgniteFuture<?>> lastStateChangeEvtLsnrFutRef = new AtomicReference<>();
+
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
 
@@ -602,7 +605,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 });
 
-                return new IgniteFutureImpl<>(notificationFut);
+                IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
+
+                //TODO could be optimized with more specific conditions.
+                switch (type) {
+                    case EVT_NODE_JOINED:
+                    case EVT_NODE_LEFT:
+                    case EVT_NODE_FAILED:
+                        if (!CU.isPersistenceEnabled(ctx.config()))
+                            lastStateChangeEvtLsnrFutRef.set(fut);
+
+                        break;
+
+                    case EVT_DISCOVERY_CUSTOM_EVT:
+                        lastStateChangeEvtLsnrFutRef.set(fut);
+                }
+
+                return fut;
             }
 
             /**
@@ -679,12 +698,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
                         ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
 
-                        Snapshot snapshot = topSnap.get();
-
-                        // Topology version does not change, but need create DiscoCache with new state.
-                        DiscoCache discoCache = snapshot.discoCache.copy(snapshot.topVer, ctx.state().clusterState());
-
-                        topSnap.set(new Snapshot(snapshot.topVer, discoCache));
+                        updateTopologySnapshot();
 
                         incMinorTopVer = false;
                     }
@@ -765,6 +779,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 else
                     // Current version.
                     discoCache = discoCache();
+
+                if (locJoinEvt || !node.isClient() && !node.isDaemon()) {
+                    if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
+                        boolean discoCacheUpdated = ctx.state().autoAdjustInMemoryClusterState(
+                            node.id(),
+                            topSnapshot,
+                            discoCache,
+                            topVer,
+                            minorTopVer
+                        );
+
+                        if (discoCacheUpdated) {
+                            discoCache = discoCache();
+
+                            discoCacheHist.put(nextTopVer, discoCache);
+                        }
+                    }
+                }
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
@@ -854,12 +886,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ctx.service().onLocalJoin(localJoinEvent(), discoCache);
 
+                    DiscoCache discoCache0 = discoCache;
+
                     ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
                         @Override public void apply(IgniteFuture<?> fut) {
                             try {
                                 fut.get();
 
-                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache, topSnapshot, null);
+                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache0, topSnapshot, null);
                             }
                             catch (IgniteException ignore) {
                                 // No-op.
@@ -888,6 +922,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         c.collectJoiningNodeData(dataBag);
                 }
                 else {
+                    waitForLastStateChangeEventFuture();
+
                     for (GridComponent c : ctx.components())
                         c.collectGridNodeData(dataBag);
                 }
@@ -933,6 +969,34 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
             }
+
+            /** */
+            private void waitForLastStateChangeEventFuture() {
+                IgniteFuture<?> lastStateChangeEvtLsnrFut = lastStateChangeEvtLsnrFutRef.get();
+
+                if (lastStateChangeEvtLsnrFut != null) {
+                    Thread currThread = Thread.currentThread();
+
+                    GridWorker worker = currThread instanceof IgniteDiscoveryThread
+                        ? ((IgniteDiscoveryThread)currThread).worker()
+                        : null;
+
+                    if (worker != null)
+                        worker.blockingSectionBegin();
+
+                    try {
+                        lastStateChangeEvtLsnrFut.get();
+                    }
+                    finally {
+                        // Guaranteed to be invoked in the same thread as DiscoverySpiListener#onDiscovery.
+                        // No additional synchronization for reference is required.
+                        lastStateChangeEvtLsnrFutRef.set(null);
+
+                        if (worker != null)
+                            worker.blockingSectionEnd();
+                    }
+                }
+            }
         });
 
         new DiscoveryMessageNotifierThread(discoNtfWrk).start();
@@ -968,6 +1032,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
+    }
+
+    /**
+     * Update {@link #topSnap} with the latest cluster state.
+     */
+    public void updateTopologySnapshot() {
+        Snapshot snapshot = topSnap.get();
+
+        // Topology version does not change, but need create DiscoCache with new state.
+        DiscoCache discoCache = snapshot.discoCache.copy(snapshot.topVer, ctx.state().clusterState());
+
+        topSnap.set(new Snapshot(snapshot.topVer, discoCache));
     }
 
     /**
@@ -2642,9 +2718,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** */
     private class DiscoveryMessageNotifierThread extends IgniteThread implements IgniteDiscoveryThread {
+        /** */
+        private final GridWorker worker;
+
         /** {@inheritDoc} */
         public DiscoveryMessageNotifierThread(GridWorker worker) {
             super(worker);
+
+            this.worker = worker;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridWorker worker() {
+            return worker;
         }
     }
 

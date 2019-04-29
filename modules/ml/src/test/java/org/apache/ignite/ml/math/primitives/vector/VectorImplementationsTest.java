@@ -671,7 +671,8 @@ public class VectorImplementationsTest { // TODO: IGNITE-5723, split this to sma
                 for (int idx = 0; idx < size; idx++)
                     ref[idx] = operation.apply(ref[idx], val);
 
-                checker.assertCloseEnough(vecOperation.apply(v, val), ref);
+                Vector apply = vecOperation.apply(v, val);
+                checker.assertCloseEnough(apply, ref);
             });
     }
 

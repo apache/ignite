@@ -183,6 +183,6 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcBatchExecuteRequest.class, this);
+        return S.toString(JdbcBatchExecuteRequest.class, this, super.toString());
     }
 }

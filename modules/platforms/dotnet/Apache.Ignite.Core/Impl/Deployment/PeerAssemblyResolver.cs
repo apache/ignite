@@ -43,9 +43,9 @@ namespace Apache.Ignite.Core.Impl.Deployment
         {
             Debug.Assert(ignite != null);
 
-            _handler = (sender, args) => GetAssembly(ignite, args.Name, originNodeId);
+            _handler = (sender, args) => RemoteAssemblyLoadingBlock.IsActive ? null : GetAssembly(ignite, args.Name, originNodeId);
 
-            // AssemblyResolve handler is called only when aseembly can't be found via normal lookup,
+            // AssemblyResolve handler is called only when assembly can't be found via normal lookup,
             // so we won't end up loading assemblies that are already present.
             AppDomain.CurrentDomain.AssemblyResolve += _handler;
         }
@@ -209,6 +209,48 @@ namespace Apache.Ignite.Core.Impl.Deployment
                 aex.Handle(e => e is ClusterGroupEmptyException);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Special class that indicates that there is no need in remote assembly request.
+        /// </summary>
+        private sealed class RemoteAssemblyLoadingBlock : IDisposable
+        {
+            /** Block status. */
+            [ThreadStatic]
+            private static bool _isActive;
+
+            /// <summary>
+            /// Gets the block status.
+            /// </summary>
+            public static bool IsActive
+            {
+                get { return _isActive; }
+            }
+
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            public RemoteAssemblyLoadingBlock()
+            {
+                _isActive = true;
+            }
+
+            /** <inheritdoc /> */
+            public void Dispose()
+            {
+                _isActive = false;
+            }
+        }
+
+        /// <summary>
+        /// Disable remote assembly loading, default functionality will be used instead.
+        /// This is useful to prevent cycled resolution, for sample consider <see cref="GetAssemblyFunc" />.
+        /// </summary>
+        /// <returns></returns>
+        public static IDisposable Disable()
+        {
+            return new RemoteAssemblyLoadingBlock();
         }
     }
 }

@@ -28,45 +28,55 @@ public class VisorBaselineAutoAdjustSettings extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** "Enable" flag. */
-    private boolean enabled;
+    public Boolean enabled;
 
     /** Soft timeout. */
-    private long softTimeout;
+    public Long softTimeout;
 
     /** Default constructor. */
     public VisorBaselineAutoAdjustSettings() {
     }
 
     /** Constructor. */
-    public VisorBaselineAutoAdjustSettings(boolean enabled, long softTimeout) {
-        this.enabled= enabled;
+    public VisorBaselineAutoAdjustSettings(Boolean enabled, Long softTimeout) {
+        this.enabled = enabled;
         this.softTimeout = softTimeout;
     }
 
     /**
      * @return "Enable" flag.
      */
-    public boolean isEnabled() {
+    public Boolean getEnabled() {
         return enabled;
     }
 
     /**
      * Soft timeout.
      */
-    public long getSoftTimeout() {
+    public Long getSoftTimeout() {
         return softTimeout;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(enabled);
-        out.writeLong(softTimeout);
+        out.writeBoolean(enabled != null);
+
+        if (enabled != null)
+            out.writeBoolean(enabled);
+
+        out.writeBoolean(softTimeout != null);
+
+        if (softTimeout != null)
+            out.writeLong(softTimeout);
     }
 
     /** {@inheritDoc} */
     @Override
     protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        enabled = in.readBoolean();
-        softTimeout = in.readLong();
+        if (in.readBoolean())
+            enabled = in.readBoolean();
+
+        if (in.readBoolean())
+            softTimeout = in.readLong();
     }
 }

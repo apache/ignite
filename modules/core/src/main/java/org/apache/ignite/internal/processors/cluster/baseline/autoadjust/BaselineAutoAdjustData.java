@@ -17,27 +17,37 @@
 
 package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 
-import org.apache.ignite.events.Event;
-
 /**
  * Container of required data for changing baseline.
  */
 class BaselineAutoAdjustData {
-    /** Event with which this data correspond to. For statistic only. */
-    private final Event reasonEvent;
+    /** Task represented NULL value is using when normal task can not be created. */
+    public static final BaselineAutoAdjustData NULL_BASELINE_DATA = nullValue();
     /** Topology version nodes of which should be set to baseline by this task. */
     private final long targetTopologyVersion;
 
     /** {@code true} If this data don't actual anymore and it setting should be skipped. */
     private volatile boolean invalidated = false;
+    /** {@code true} If this data was adjusted. */
+    private volatile boolean adjusted = false;
 
     /**
-     * @param evt Event with which this data correspond to. For statistic only.
      * @param targetTopologyVersion Topology version nodes of which should be set by this task.
      */
-    BaselineAutoAdjustData(Event evt, long targetTopologyVersion) {
-        reasonEvent = evt;
+    BaselineAutoAdjustData(long targetTopologyVersion) {
         this.targetTopologyVersion = targetTopologyVersion;
+    }
+
+    /**
+     * @return New null value.
+     */
+    private static BaselineAutoAdjustData nullValue() {
+        BaselineAutoAdjustData data = new BaselineAutoAdjustData(-1);
+
+        data.onInvalidate();
+        data.onAdjust();
+
+        return data;
     }
 
     /**
@@ -48,6 +58,13 @@ class BaselineAutoAdjustData {
     }
 
     /**
+     * Mark that this data was adjusted.
+     */
+    public void onAdjust() {
+        adjusted = true;
+    }
+
+    /**
      * @return Topology version nodes of which should be set to baseline by this task.
      */
     public long getTargetTopologyVersion() {
@@ -55,21 +72,27 @@ class BaselineAutoAdjustData {
     }
 
     /**
-     * @return {@code true} If this data still actual and can be set.
+     * @return {@code true} If this data already invalidated and can not be set.
      */
     public boolean isInvalidated() {
         return invalidated;
     }
 
     /**
+     * @return {@code true} If this data already adjusted.
+     */
+    public boolean isAdjusted() {
+        return adjusted;
+    }
+
+    /**
      * Produce next set baseline data based on this data.
      *
-     * @param evt New triggired event.
      * @return New set baseline data.
      */
-    public BaselineAutoAdjustData next(Event evt, long targetTopologyVersion) {
+    public BaselineAutoAdjustData next(long targetTopologyVersion) {
         onInvalidate();
 
-        return new BaselineAutoAdjustData(evt, targetTopologyVersion);
+        return new BaselineAutoAdjustData(targetTopologyVersion);
     }
 }

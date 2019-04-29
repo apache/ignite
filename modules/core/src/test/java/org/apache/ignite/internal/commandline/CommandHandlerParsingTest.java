@@ -327,8 +327,8 @@ public class CommandHandlerParsingTest {
                         assertEquals(cmd, args.command());
                         assertEquals(DFLT_HOST, args.host());
                         assertEquals(DFLT_PORT, args.port());
-                        assertEquals(baselineAct, args.baselineAction());
-                        assertEquals("c_id1,c_id2", args.baselineArguments());
+                        assertEquals(baselineAct, args.baselineArguments().getCmd().text());
+                        assertEquals(Arrays.asList("c_id1","c_id2"), args.baselineArguments().getConsistentIds());
                         assertEquals(true, args.autoConfirmation());
                     }
 

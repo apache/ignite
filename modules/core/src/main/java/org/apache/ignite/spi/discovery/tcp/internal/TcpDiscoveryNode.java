@@ -66,6 +66,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     private UUID id;
 
     /** Consistent ID. */
+    @GridToStringInclude
     private Object consistentId;
 
     /** Node attributes. */

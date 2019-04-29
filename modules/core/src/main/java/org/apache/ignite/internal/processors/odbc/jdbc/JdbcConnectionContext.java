@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
@@ -34,6 +36,8 @@ import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.nullableBooleanFromByte;
 
 /**
  * JDBC Connection Context.
@@ -57,7 +61,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.7.0: adds maximum length for columns feature.*/
     static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
-    /** Version 2.8.0: adds query id in order to implement cancel feature.*/
+    /** Version 2.8.0: adds query id in order to implement cancel feature, affinity awareness support: IEP-23.*/
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
     /** Current version. */
@@ -84,6 +88,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Request handler. */
     private JdbcRequestHandler handler = null;
 
+    /** Last reported affinity topology version. */
+    private AtomicReference<AffinityTopologyVersion> lastAffinityTopVer = new AtomicReference<>();
+
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
         SUPPORTED_VERS.add(VER_2_8_0);
@@ -100,7 +107,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      *  @param ctx Kernal Context.
      * @param ses Session.
      * @param busyLock Shutdown busy lock.
-     * @param connId
+     * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
@@ -120,7 +127,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerProtocolVersion currentVersion() {
+    @Override public ClientListenerProtocolVersion defaultVersion() {
         return CURRENT_VER;
     }
 
@@ -160,6 +167,15 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         }
 
+        Boolean dataPageScanEnabled = null;
+        Integer updateBatchSize = null;
+
+        if (ver.compareTo(VER_2_8_0) >= 0) {
+            dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
+
+            updateBatchSize = JdbcUtils.readNullableInteger(reader);
+        }
+
         if (ver.compareTo(VER_2_5_0) >= 0) {
             String user = null;
             String passwd = null;
@@ -192,8 +208,9 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         };
 
-        handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, actx, ver);
+        handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
+            dataPageScanEnabled, updateBatchSize, actx, ver, this);
 
         handler.start();
     }
@@ -213,5 +230,26 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         handler.onDisconnect();
 
         super.onDisconnected();
+    }
+
+    /**
+     * @return Retrieves current affinity topology version and sets it as a last if it was changed, false otherwise.
+     */
+    public AffinityTopologyVersion getAffinityTopologyVersionIfChanged() {
+        while (true) {
+            AffinityTopologyVersion oldVer = lastAffinityTopVer.get();
+            AffinityTopologyVersion newVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            boolean changed = oldVer == null || oldVer.compareTo(newVer) < 0;
+
+            if (changed) {
+                boolean success = lastAffinityTopVer.compareAndSet(oldVer, newVer);
+
+                if (!success)
+                    continue;
+            }
+
+            return changed ? newVer : null;
+        }
     }
 }

@@ -23,8 +23,8 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * A partition {@code data} builder that makes {@link SimpleDatasetData}.
@@ -32,22 +32,23 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
+ * @param <CO> Type of COordinate for vectorizer.
  */
-public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
+public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends Serializable>
     implements PartitionDataBuilder<K, V, C, SimpleDatasetData> {
     /** */
     private static final long serialVersionUID = 756800193212149975L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
      *
-     * @param featureExtractor Function that extracts features from an {@code upstream} data.
+     * @param preprocessor Function that extracts features from an {@code upstream} data.
      */
-    public SimpleDatasetDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor) {
-        this.featureExtractor = featureExtractor;
+    public SimpleDatasetDataBuilder(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
@@ -61,7 +62,7 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable>
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            Vector row = featureExtractor.apply(entry.getKey(), entry.getValue());
+            Vector row = preprocessor.apply(entry.getKey(), entry.getValue()).features();
 
             if (cols < 0) {
                 cols = row.size();

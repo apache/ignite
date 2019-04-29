@@ -557,7 +557,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                             IndexValidationIssue is = new IndexValidationIssue(
                                 o.toString(), cacheCtx.name(), idx.getName(), t);
 
-                            log.error("Failed to lookup key: " + is.toString());
+                            log.error("Failed to lookup key: " + is.toString(), t);
 
                             enoughIssues |= partRes.reportIssue(is);
                         }

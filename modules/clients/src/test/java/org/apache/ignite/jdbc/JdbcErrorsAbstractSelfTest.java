@@ -70,6 +70,11 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             .setInterceptor(new TestCacheInterceptor()));
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean keepSerializedObjects() {
+        return true;
+    }
+
     /**
      * Test that H2 specific error codes get propagated to Ignite SQL exceptions.
      * @throws SQLException if failed.
@@ -108,7 +113,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             "Value for INSERT, COPY, MERGE, or UPDATE must not be null");
 
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "0700B",
-            "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
+            "Value conversion failed [column=_VAL, from=java.lang.String, to=java.lang.Integer]");
     }
 
     /**

@@ -29,9 +29,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,8 +59,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -69,7 +69,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -303,7 +302,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         GridTestUtils.runAsync(() -> {
             while (true) {
                 try {
-                    nodeStartBarrier.await(20000, TimeUnit.MILLISECONDS);
+                    nodeStartBarrier.await(10000, TimeUnit.MILLISECONDS);
 
                     Ignite ignite = ignite(0);
 
@@ -318,6 +317,9 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
                         iter.remove();
                     }
+                }
+                catch (TimeoutException | InterruptedException | BrokenBarrierException e) {
+                    return;
                 }
                 catch (Exception e) {
                     if (Thread.currentThread().isInterrupted())

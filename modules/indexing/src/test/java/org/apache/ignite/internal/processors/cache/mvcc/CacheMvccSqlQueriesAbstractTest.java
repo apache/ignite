@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.CacheException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -41,8 +42,8 @@ import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -53,10 +54,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * TODO IGNITE-6739: text/spatial indexes with mvcc.
- * TODO IGNITE-6739: indexingSpi with mvcc.
- * TODO IGNITE-6739: setQueryParallelism with mvcc.
- * TODO IGNITE-6739: dynamic index create.
+ *
  */
 @SuppressWarnings("unchecked")
 public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractTest {
@@ -137,7 +135,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testUpdateSingleValue_SingleNode() throws Exception {
         updateSingleValue(true, false);
@@ -146,7 +143,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testUpdateSingleValue_LocalQuery_SingleNode() throws Exception {
         updateSingleValue(true, true);
@@ -155,7 +151,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testUpdateSingleValue_ClientServer() throws Exception {
         updateSingleValue(false, false);
@@ -167,8 +162,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     private void updateSingleValue(boolean singleNode, final boolean locQry) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         final int VALS = 100;
 
         final int writers = 4;
@@ -201,30 +194,40 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
                         try {
                             Integer key = rnd.nextInt(VALS);
 
-                            cache.cache.invoke(key, new CacheEntryProcessor<Integer, MvccTestSqlIndexValue, Object>() {
-                                @Override public Object process(MutableEntry<Integer, MvccTestSqlIndexValue> e, Object... args) {
-                                    Integer key = e.getKey();
+                            while (true) {
+                                try {
+                                    cache.cache.invoke(key, new CacheEntryProcessor<Integer, MvccTestSqlIndexValue, Object>() {
+                                        @Override public Object process(MutableEntry<Integer, MvccTestSqlIndexValue> e,
+                                            Object... args) {
+                                            Integer key = e.getKey();
 
-                                    MvccTestSqlIndexValue val = e.getValue();
+                                            MvccTestSqlIndexValue val = e.getValue();
 
-                                    int newIdxVal;
+                                            int newIdxVal;
 
-                                    if (val.idxVal1 < INC_BY) {
-                                        assertEquals(key.intValue(), val.idxVal1);
+                                            if (val.idxVal1 < INC_BY) {
+                                                assertEquals(key.intValue(), val.idxVal1);
 
-                                        newIdxVal = val.idxVal1 + INC_BY;
-                                    }
-                                    else {
-                                        assertEquals(INC_BY + key, val.idxVal1);
+                                                newIdxVal = val.idxVal1 + INC_BY;
+                                            }
+                                            else {
+                                                assertEquals(INC_BY + key, val.idxVal1);
 
-                                        newIdxVal = key;
-                                    }
+                                                newIdxVal = key;
+                                            }
 
-                                    e.setValue(new MvccTestSqlIndexValue(newIdxVal));
+                                            e.setValue(new MvccTestSqlIndexValue(newIdxVal));
 
-                                    return null;
+                                            return null;
+                                        }
+                                    });
+
+                                    break;
                                 }
-                            });
+                                catch (CacheException e) {
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
+                                }
+                            }
                         }
                         finally {
                             cache.readUnlock();
@@ -371,7 +374,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testJoinTransactional_SingleNode() throws Exception {
         joinTransactional(true, false);
@@ -380,7 +382,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testJoinTransactional_ClientServer() throws Exception {
         joinTransactional(false, false);
@@ -389,7 +390,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testJoinTransactional_DistributedJoins_ClientServer() throws Exception {
         joinTransactional(false, true);
@@ -401,8 +401,6 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      * @throws Exception If failed.
      */
     private void joinTransactional(boolean singleNode, final boolean distributedJoin) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9470");
-
         final int KEYS = 100;
 
         final int writers = 4;
@@ -422,31 +420,38 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
                         IgniteTransactions txs = cache.cache.unwrap(Ignite.class).transactions();
 
                         try {
-                            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                Integer key = rnd.nextInt(KEYS);
+                            while (true) {
+                                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                    Integer key = rnd.nextInt(KEYS);
 
-                                JoinTestChildKey childKey = new JoinTestChildKey(key);
+                                    JoinTestChildKey childKey = new JoinTestChildKey(key);
 
-                                JoinTestChild child = (JoinTestChild)cache.cache.get(childKey);
+                                    JoinTestChild child = (JoinTestChild)cache.cache.get(childKey);
 
-                                if (child == null) {
-                                    Integer parentKey = distributedJoin ? key + 100 : key;
+                                    if (child == null) {
+                                        int parentKey = distributedJoin ? key + 100 : key;
 
-                                    child = new JoinTestChild(parentKey);
+                                        child = new JoinTestChild(parentKey);
 
-                                    cache.cache.put(childKey, child);
+                                        cache.cache.put(childKey, child);
 
-                                    JoinTestParent parent = new JoinTestParent(parentKey);
+                                        JoinTestParent parent = new JoinTestParent(parentKey);
 
-                                    cache.cache.put(new JoinTestParentKey(parentKey), parent);
+                                        cache.cache.put(new JoinTestParentKey(parentKey), parent);
+                                    }
+                                    else {
+                                        cache.cache.remove(childKey);
+
+                                        cache.cache.remove(new JoinTestParentKey(child.parentId));
+                                    }
+
+                                    tx.commit();
+
+                                    break;
                                 }
-                                else {
-                                    cache.cache.remove(childKey);
-
-                                    cache.cache.remove(new JoinTestParentKey(child.parentId));
+                                catch (CacheException e) {
+                                    MvccFeatureChecker.assertMvccWriteConflict(e);
                                 }
-
-                                tx.commit();
                             }
 
                             cnt++;

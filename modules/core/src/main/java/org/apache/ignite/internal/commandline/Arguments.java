@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
@@ -44,14 +45,9 @@ public class Arguments {
     private boolean autoConfirmation;
 
     /**
-     * Action for baseline command.
-     */
-    private String baselineAct;
-
-    /**
      * Arguments for baseline command.
      */
-    private String baselineArgs;
+    private BaselineArguments baselineArgs;
 
     /** Transaction arguments. */
     private final VisorTxTaskArg txArg;
@@ -110,7 +106,6 @@ public class Arguments {
      * @param port Port.
      * @param user User.
      * @param pwd Password.
-     * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
      * @param txArg TX arg.
      * @param cacheArgs --cache subcommand arguments.
@@ -129,8 +124,8 @@ public class Arguments {
      * @param sslTrustStorePassword Truststore Password.
      * @param sslTrustStoreType Truststore Type.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-        String baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
+    public Arguments(Command cmd, String host, String port, String user, String pwd,
+        BaselineArguments baselineArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs, String walAct, String walArgs,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
         String sslKeyStorePath, char[] sslKeyStorePassword, String sslKeyStoreType,
@@ -142,7 +137,6 @@ public class Arguments {
         this.user = user;
         this.pwd = pwd;
 
-        this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
 
         this.txArg = txArg;
@@ -219,16 +213,9 @@ public class Arguments {
     }
 
     /**
-     * @return baseline action
+     * @return Baseline arguments.
      */
-    public String baselineAction() {
-        return baselineAct;
-    }
-
-    /**
-     * @return baseline arguments
-     */
-    public String baselineArguments() {
+    public BaselineArguments baselineArguments() {
         return baselineArgs;
     }
 
