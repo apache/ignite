@@ -42,7 +42,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-indexing</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
@@ -50,7 +50,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
+            <groupId>org.gridgain</groupId>
             <artifactId>ignite-indexing</artifactId>
             <scope>test</scope>
             <version>${project.version}</version>
