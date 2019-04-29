@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
@@ -26,6 +27,9 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  * Dummy PageIO implementation. For test purposes only.
  */
 public class DummyPageIO extends PageIO implements CompactablePageIO {
+    /** */
+    public static final IOVersions<DummyPageIO> VERSIONS = new IOVersions<>(new DummyPageIO());
+
     /** */
     public DummyPageIO() {
         super(2 * Short.MAX_VALUE, 1);

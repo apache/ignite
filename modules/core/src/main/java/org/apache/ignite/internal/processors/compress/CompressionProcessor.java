@@ -50,7 +50,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
     public static final int ZSTD_DEFAULT_LEVEL = 3;
 
     /** */
-    protected static final byte UNCOMPRESSED_PAGE = 0;
+    public static final byte UNCOMPRESSED_PAGE = 0;
 
     /** */
     protected static final byte COMPACTED_PAGE = 1;
@@ -130,6 +130,15 @@ public class CompressionProcessor extends GridProcessorAdapter {
      */
     private static <T> T fail() throws IgniteCheckedException {
         throw new IgniteCheckedException("Make sure that ignite-compress module is in classpath.");
+    }
+
+    /**
+     * Checks weither page compression is supported.
+     *
+     * @throws IgniteCheckedException If compression is not supported.
+     */
+    public void checkPageCompressionSupported() throws IgniteCheckedException {
+        fail();
     }
 
     /**

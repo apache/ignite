@@ -346,6 +346,10 @@ public class FilePageStore implements PageStore {
             if (inited) {
                 long newSize = Math.max(pageSize, fileIO.size() - headerSize());
 
+                // In the case of compressed pages we can miss the tail of the page.
+                if (newSize % pageSize != 0)
+                    newSize += pageSize - newSize % pageSize;
+
                 long delta = newSize - allocated.getAndSet(newSize);
 
                 assert delta % pageSize == 0 : delta;

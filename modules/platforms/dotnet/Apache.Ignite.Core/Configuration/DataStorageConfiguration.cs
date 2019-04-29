@@ -169,6 +169,11 @@ namespace Apache.Ignite.Core.Configuration
         public const long DefaultMaxWalArchiveSize = 1024 * 1024 * 1024;
 
         /// <summary>
+        /// Default value for <see cref="WalPageCompression"/>.
+        /// </summary>
+        public const DiskPageCompression DefaultWalPageCompression = DiskPageCompression.Disabled;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         public DataStorageConfiguration()
@@ -196,6 +201,7 @@ namespace Apache.Ignite.Core.Configuration
             PageSize = DefaultPageSize;
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
             MaxWalArchiveSize = DefaultMaxWalArchiveSize;
+            WalPageCompression = DefaultWalPageCompression;
         }
 
         /// <summary>
@@ -236,6 +242,8 @@ namespace Apache.Ignite.Core.Configuration
             ConcurrencyLevel = reader.ReadInt();
             WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
             CheckpointReadLockTimeout = reader.ReadTimeSpanNullable();
+            WalPageCompression = (DiskPageCompression)reader.ReadInt();
+            WalPageCompressionLevel = reader.ReadIntNullable();
 
             var count = reader.ReadInt();
 
@@ -290,6 +298,8 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(ConcurrencyLevel);
             writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);
             writer.WriteTimeSpanAsLongNullable(CheckpointReadLockTimeout);
+            writer.WriteInt((int)WalPageCompression);
+            writer.WriteIntNullable(WalPageCompressionLevel);
 
             if (DataRegionConfigurations != null)
             {
@@ -496,6 +506,16 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the timeout for checkpoint read lock acquisition.
         /// </summary>
         public TimeSpan? CheckpointReadLockTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets the compression algorithm for WAL page snapshot records.
+        /// </summary>
+        public DiskPageCompression WalPageCompression { get; set; }
+
+        /// <summary>
+        /// Gets or sets the compression level for WAL page snapshot records.
+        /// </summary>
+        public int? WalPageCompressionLevel { get; set; }
 
         /// <summary>
         /// Gets or sets the data region configurations.

@@ -166,6 +166,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction level. */
     public static final int DFLT_WAL_COMPACTION_LEVEL = Deflater.BEST_SPEED;
 
+    /** Default compression algorithm for WAL page snapshot records. */
+    public static final DiskPageCompression DFLT_WAL_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
+
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
 
@@ -288,6 +291,12 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Timeout for checkpoint read lock acquisition. */
     private Long checkpointReadLockTimeout;
+
+    /** Compression algorithm for WAL page snapshot records. */
+    private DiskPageCompression walPageCompression = DFLT_WAL_PAGE_COMPRESSION;
+
+    /** Compression level for WAL page snapshot records. */
+    private Integer walPageCompressionLevel;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -1016,6 +1025,50 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setCheckpointReadLockTimeout(long checkpointReadLockTimeout) {
         this.checkpointReadLockTimeout = checkpointReadLockTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets compression algorithm for WAL page snapshot records.
+     *
+     * @return Page compression algorithm.
+     */
+    public DiskPageCompression getWalPageCompression() {
+        return walPageCompression == null ? DFLT_WAL_PAGE_COMPRESSION : walPageCompression;
+    }
+
+    /**
+     * Sets compression algorithm for WAL page snapshot records.
+     *
+     * @param walPageCompression Page compression algorithm.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setWalPageCompression(DiskPageCompression walPageCompression) {
+        this.walPageCompression = walPageCompression;
+
+        return this;
+    }
+
+    /**
+     * Gets {@link #getWalPageCompression algorithm} specific WAL page compression level.
+     *
+     * @return WAL page snapshots compression level or {@code null} for default.
+     */
+    public Integer getWalPageCompressionLevel() {
+        return walPageCompressionLevel;
+    }
+
+    /**
+     * Sets {@link #setWalPageCompression algorithm} specific page compression level.
+     *
+     * @param walPageCompressionLevel Disk page compression level or {@code null} to use default.
+     *      {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
+     *      {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setWalPageCompressionLevel(Integer walPageCompressionLevel) {
+        this.walPageCompressionLevel = walPageCompressionLevel;
 
         return this;
     }

@@ -190,6 +190,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default SQL on-heap cache size. */
     public static final int DFLT_SQL_ONHEAP_CACHE_MAX_SIZE = 0;
 
+    /** Default disk page compression algorithm. */
+    public static final DiskPageCompression DFLT_DISK_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
+
     /** Cache name. */
     private String name;
 
@@ -2318,7 +2321,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see #getDiskPageCompressionLevel
      */
     public DiskPageCompression getDiskPageCompression() {
-        return diskPageCompression;
+        return diskPageCompression == null ? DFLT_DISK_PAGE_COMPRESSION : diskPageCompression;
     }
 
     /**
