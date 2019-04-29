@@ -35,9 +35,6 @@ public enum IgniteFeatures {
     /** Cache metrics v2 support. */
     CACHE_METRICS_V2(1),
 
-    /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(2),
-
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
@@ -53,9 +50,11 @@ public enum IgniteFeatures {
      */
     TRANSACTION_OWNER_THREAD_DUMP_PROVIDING(6),
 
-
     /** Displaying versbose transaction information: --info option of --tx control script command. */
-    TX_INFO_COMMAND(7);
+    TX_INFO_COMMAND(7),
+
+    /** Distributed metastorage. */
+    DISTRIBUTED_METASTORAGE(11);
 
     /**
      * Unique feature identifier.
