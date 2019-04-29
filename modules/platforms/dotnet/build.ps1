@@ -221,10 +221,10 @@ if(!$skipDotNetCore) {
 	cmd /c $publishCommand    
 
     # Check result
-	if ($LastExitCode -ne 0) {
-		echo ".NET Core build failed."
-		exit -1
-	}
+    if ($LastExitCode -ne 0) {
+        echo ".NET Core build failed."
+        exit -1
+    }
 }
 
 if ($asmDirs) {
