@@ -49,6 +49,7 @@
                         </goals>
                         <configuration>
                             <excludeTransitive>false</excludeTransitive>
+                            <excludeScope>provided</excludeScope>
                         </configuration>
                     </execution>
                 </executions>
@@ -72,9 +73,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>${h2.version}</version>
+            <groupId>org.gridgain</groupId>
+            <artifactId>ignite-h2</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>

@@ -1,0 +1,252 @@
+<!-- can not use doctype -->
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html><head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Error Analyzer</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<style type="text/css">
+body {
+    max-width: none;
+    width: inherit;
+}
+a {
+    text-decoration: underline;
+    font-weight: normal;
+    color: #0000ff;
+}
+a.selected {
+    text-decoration: none;
+    font-weight: bold;
+    color: #000000;
+}
+a.disabled {
+    text-decoration: none;
+    font-weight: normal;
+    color: lightGray;
+}
+input {
+    vertical-align: middle;
+}
+</style>
+
+<script type="text/javascript">
+//<!--
+
+function getVersion(build) {
+    if (build == 64) {
+        return '1.0/version-1.0.' + build;
+    } else if (build >= 177) {
+        return '1.4.' + build;
+    } else if (build >= 146 && build != 147) {
+        return '1.3/version-1.3.' + build;
+    } else if (build >= 120) {
+        return '1.2/version-1.2.' + build;
+    } else if (build >= 100) {
+        return '1.1/version-1.1.' + build;
+    }
+    return '1.0.' + build;
+}
+
+function get(id) {
+    return document.getElementById(id);
+}
+
+var lastError = '';
+var hasData = false;
+var errorCode = '0';
+var build = 100;
+
+function goDetails(code) {
+    code = code.replace('21S', '210');
+    code = code.replace('42S', '421');
+    code = code.replace('HY', '50');
+    code = code.replace('C', '1');
+    code = code.replace('T', '2');
+    get('more').src = 'http://h2database.com/javadoc/org/h2/constant/ErrorCode.html#c' + code;
+}
+
+function go(file, line) {
+    var url;
+    if (get('rawSource').checked == true) {
+        url = "source.html?file=";
+        url += file;
+        url += "&line=";
+        url += line;
+        url += "&build=";
+        url += build;
+        get('file').innerHTML = file;
+        get('code').src = url;
+    } else {
+        url = 'https://github.com/h2database/h2database/tree/'
+        if (build && build > 0) {
+            url += 'version-' + getVersion(build) + '/h2';
+        } else {
+            var tag = 'master/h2';
+        }
+        url += '/src/main/';
+        url += file;
+        url += '#';
+        url += line;
+        // X-Frame-Options is now 'SAMEORIGIN'
+        window.open(url);
+    }
+}
+
+function convert() {
+    try {
+        var s = get('error').value;
+        if(lastError == s) {
+            return;
+        }
+        lastError = s;
+        var result = '';
+        hasData = false;
+        var idx = s.lastIndexOf("[");
+        if (idx >= 0) {
+            get('message').innerHTML = s.substring(0, idx);
+            var end = s.indexOf("]", idx);
+            errorCode = s.substring(idx + 1, end);
+            hasData = true;
+            idx = errorCode.indexOf("-");
+            build = parseInt(errorCode.substring(idx + 1));
+            get('version').innerHTML = getVersion(build);
+            errorCode = errorCode.substring(0, idx);
+            while (errorCode.length > 1 && errorCode.charAt(0) == '0') {
+                errorCode = errorCode.substring(1);
+            }
+            get('errorCode').innerHTML = errorCode;
+            goDetails(errorCode);
+        }
+        idx = 0;
+        s = s.replace(/\t/g, " ");
+        s = s.replace(/ +/g, " ");
+        while (true) {
+            var start = s.indexOf("at org.h2.", idx);
+            if (start < 0) {
+                result += s.substring(idx);
+                break;
+            }
+            start += 3; // skip 'at '
+            if (idx > 0) {
+                result += s.substring(idx, start);
+            }
+            var end = s.indexOf(')', start);
+            if (end < 0) {
+                result += s.substring(idx);
+                break;
+            }
+            var element = s.substring(start, end + 1);
+            var open = element.lastIndexOf('(');
+            var dotMethod = element.lastIndexOf('.', open - 1);
+            var dotClass = element.lastIndexOf('.', dotMethod - 1);
+            var packageName = element.substring(0, dotClass);
+            var colon = element.lastIndexOf(':');
+            var file = element.substring(open + 1, colon);
+            var lineNumber = element.substring(colon + 1, element.length - 1);
+            var fullFileName = packageName.replace(/\./g, '/') + "/" + file;
+            result += "<a href='javascript:go(\"";
+            result += fullFileName;
+            result += "\",";
+            result += lineNumber;
+            result += ")'>";
+            result += element;
+            result += "<" + "/a>";
+            hasData = true;
+            idx = end + 1;
+        }
+        result = result.replace(/[\n\r]+/g, "<br/>");
+        result = result.replace(/ at /g, "");
+        get('links').innerHTML = result;
+        select('input');
+    } catch(e) {
+        hasData = false;
+        alert('Can not parse the stack trace: ' + e);
+    }
+
+}
+
+function select(id) {
+    get('input').style.display = 'none';
+    get('details').style.display = 'none';
+    get('source').style.display = 'none';
+    get('inputTab').className = '';
+    get('detailsTab').className = hasData ? '' : 'disabled';
+    get('sourceTab').className = hasData ? '' : 'disabled';
+    get(id + 'Tab').className = 'selected';
+    get(id).style.display = '';
+    if(id=='details') {
+        goDetails(errorCode);
+    }
+    sizeTextArea();
+}
+
+function sizeTextArea() {
+    var height=document.body.clientHeight;
+    var error = get('error');
+    error.style.height = (height - error.offsetTop - 25) + 'px';
+    var more = get('more');
+    more.style.height = (height - more.offsetTop - 25) + 'px';
+    var code = get('code');
+    code.style.height = (height - get('sourceTable').offsetTop - code.offsetTop - 30) + 'px';
+}
+
+//-->
+</script>
+
+</head>
+<body style="margin:20px" onresize="sizeTextArea();" onload="sizeTextArea();" >
+
+<h1>Error Analyzer</h1>
+<b><a href="../html/main.html">Home</a></b><br />
+<h2>
+    <a href="javascript:select('input')" id = "inputTab">Input</a>&nbsp;
+    <a href="javascript:select('details')" id = "detailsTab">Details</a>&nbsp;
+    <a href="javascript:select('source')" id = "sourceTab">Source Code</a>
+</h2>
+<hr/>
+<div id = "input">
+    <p>Paste the error message and stack trace below and click on 'Details' or 'Source Code': </p>
+    <textarea id = "error" cols="100" style="width: 100%; overflow: auto;" rows="20"
+        onChange="convert()"
+        onSelect="convert()"
+        onKeyUp="convert()"
+        onKeyPress="convert()"
+        onFocus="convert()"
+        onBlur="convert()"
+    >
+    </textarea>
+</div>
+<div id = "details">
+    <p><b>Error Code: </b><span id = "errorCode"></span></p>
+    <p><b>Product Version: </b><span id = "version"></span></p>
+    <p><b>Message: </b></p>
+    <p id = "message"></p>
+    <p><b>More Information:</b></p>
+    <iframe id = "more" frameborder="0" marginwidth="0" marginheight="0" width="100%" height="100px" src="">
+    </iframe>
+</div>
+<div id = "source">
+    <table id = "sourceTable" style="border:0px" width="100%"><tr>
+    <td style="border:0px" width="30px">
+        <p><b>Stack Trace: </b></p>
+        <p id = "links"></p>
+    </td><td style="border:0px" width="90%">
+        <p><b>Source File: </b><span id = "file"></span><br />
+        Inline <input type="checkbox" id = "rawSource" checked="checked" /></p>
+        <iframe id = "code" frameborder="0" marginwidth="0" marginheight="0" width="4000px" height="100px" src="">
+        </iframe>
+    </td>
+    </tr></table>
+</div>
+<script type="text/javascript">
+//<!--
+select('input');
+//-->
+</script>
+<!-- analytics -->
+</body></html>

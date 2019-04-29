@@ -1,0 +1,154 @@
+/*
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * and the EPL 1.0 (http://h2database.com/html/license.html).
+ * * Initial Developer: H2 Group
+ */
+
+td, input, select, textarea, body, code, pre, td, th {
+    font: 14pt Tahoma, Arial, Helvetica, sans-serif;
+    font-weight: normal;
+}
+
+h1, h2, h3, h4, h5 {
+    font: 14pt Arial, Helvetica, sans-serif;
+    font-weight: bold;
+}
+
+td, input, select, textarea, body, code, pre {
+    font-size: 14pt;
+}
+
+pre {
+    background-color: #ece9d8;
+    border: 1px solid rgb(172, 168, 153);
+    padding: 4px;
+}
+
+img {
+    border: 0px;
+}
+
+body {
+    margin: 0px;
+}
+
+h1, p.title {
+    background-color: #0000bb;
+    padding: 2px 4px 2px 4px;
+    color: #fff;
+    font-size: 24pt;
+    font-weight: bold;
+    line-height: normal;
+}
+
+h2 {
+    font-size: 18pt;
+    margin-top: 1.5em;
+}
+
+h3 {
+    font-size: 16pt;
+    margin-top: 1.5em;
+}
+
+h4 {
+    font-size: 14pt;
+    margin-top: 1.5em;
+}
+
+hr {
+    color: #CCC;
+    background-color: #CCC;
+    height: 1px;
+    border: 0px solid blue;
+}
+
+table {
+    background-color: #ffffff;
+    border-collapse: collapse;
+    border: 1px solid #aca899;
+}
+
+th {
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: left;
+    border: 1px solid #aca899;
+    padding: 2px;
+}
+
+td {
+    background-color: #ffffff;
+    font-size: 14pt;
+    text-align: left;
+    vertical-align: top;
+    border: 1px solid #aca899;
+    padding: 2px;
+    margin: 0px;
+}
+
+form {
+}
+
+ul, ol {
+    list-style-position: outside;
+    padding-left: 20px;
+}
+
+li {
+    margin-top: 2px;
+}
+
+a {
+    text-decoration: none;
+    color: #0000ff;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+em.u {
+    text-decoration: underline;
+    font-style: normal;
+}
+
+.screenshot {
+    border: 1px outset #888;
+    padding: 10px;
+    margin: 10px 0px;
+}
+
+.compareFeature {
+}
+
+.compareY {
+    color: #050;
+}
+
+.compareN {
+    color: #800;
+}
+
+table.index {
+    width: 100%;
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+    border: 0px none;
+    border-collapse: collapse;
+}
+
+/*    width: 570px;
+    width: 190px;
+    */
+
+td.index {
+    width: 33%;
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+    border: 0px none;
+    border-collapse: collapse;
+    vertical-align: top;
+}

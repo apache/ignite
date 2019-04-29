@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
 /**
@@ -203,7 +202,7 @@ public enum GridSqlOperationType {
 
         /** {@inheritDoc} */
         @Override public String getSql(GridSqlOperation operation) {
-            StatementBuilder buff = new StatementBuilder("(");
+            StringBuilder buff = new StringBuilder("(");
 
             buff.append(operation.child(0).getSQL()).append(" IN(");
 
@@ -216,7 +215,9 @@ public enum GridSqlOperationType {
             }
             else {
                 for (int i = 1; i < operation.size(); i++) {
-                    buff.appendExceptFirst(", ");
+                    if (i > 1)
+                        buff.append(", ");
+
                     buff.append(operation.child(i).getSQL());
                 }
             }

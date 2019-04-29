@@ -1,0 +1,325 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+Build
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1 id="build_index">Build</h1>
+<a href="#portability">
+    Portability</a><br />
+<a href="#environment">
+    Environment</a><br />
+<a href="#building">
+    Building the Software</a><br />
+<a href="#build_targets">
+    Build Targets</a><br />
+<a href="#maven2">
+    Using Maven 2</a><br />
+<a href="#using_eclipse">
+    Using Eclipse</a><br />
+<a href="#translating">
+    Translating</a><br />
+<a href="#providing_patches">
+    Submitting Source Code Changes</a><br />
+<a href="#support">
+    Reporting Problems or Requests</a><br />
+<a href="#automated">
+    Automated Build</a><br />
+<a href="#railroad">
+    Generating Railroad Diagrams</a><br />
+
+<h2 id="portability">Portability</h2>
+<p>
+This database is written in Java and therefore works on many platforms.
+</p>
+
+<h2 id="environment">Environment</h2>
+<p>
+To run this database, a Java Runtime Environment (JRE) version 7 or higher is required.
+</p>
+<p>
+To create the database executables, the following software stack was used.
+To use this database, it is not required to install this software however.
+</p>
+<ul><li>Mac OS X and Windows
+</li><li><a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle JDK Version 7</a>
+(version 7 is not available for free download any more)
+</li><li><a href="http://www.eclipse.org">Eclipse</a>
+</li><li>Eclipse Plugins:
+    <a href="http://subclipse.tigris.org">Subclipse</a>,
+    <a href="https://checkstyle.github.io/eclipse-cs/">Eclipse Checkstyle Plug-in</a>,
+    <a href="http://www.eclemma.org">EclEmma Java Code Coverage</a>
+</li><li><a href="https://www.mozilla.com/firefox">Mozilla Firefox</a>
+</li><li><a href="http://www.openoffice.org">OpenOffice</a>
+</li><li><a href="http://nsis.sourceforge.net">NSIS</a> (Nullsoft Scriptable Install System)
+</li><li><a href="http://maven.apache.org">Maven</a>
+</li></ul>
+
+<h2 id="building">Building the Software</h2>
+<p>
+You need to install a JDK, for example the Oracle JDK version 7 or 8.
+Ensure that Java binary directory is included in the <code>PATH</code> environment variable, and that
+the environment variable <code>JAVA_HOME</code> points to your Java installation.
+On the command line, go to the directory <code>h2</code> and execute the following command:
+</p>
+<pre>
+build -?
+</pre>
+<p>
+For Linux and OS X, use <code>./build.sh</code> instead of <code>build</code>.
+</p>
+<p>
+You will get a list of targets. If you want to build the <code>jar</code> file, execute (Windows):
+</p>
+<pre>
+build jar
+</pre>
+<p>
+To run the build tool in shell mode, use the command line option <code>-</code>:
+</p>
+<pre>
+./build.sh -
+</pre>
+
+<h2 id="build_targets">Build Targets</h2>
+<p>
+The build system can generate smaller jar files as well. The following targets are currently supported:
+</p>
+<ul><li><code>jarClient</code>
+    creates the file <code>h2client.jar</code>. This only contains the JDBC client.
+</li><li><code>jarSmall</code>
+    creates the file <code>h2small.jar</code>.
+    This only contains the embedded database. Debug information is disabled.
+</li><li><code>javadocImpl</code> creates the Javadocs of the implementation.
+</li></ul>
+<p>
+To create the file <code>h2client.jar</code>, go to the directory <code>h2</code> and execute the following command:
+</p>
+<pre>
+build jarClient
+</pre>
+
+<h3>Using Apache Lucene</h3>
+<p>
+Apache Lucene 5.5.5 is used for testing.
+Newer versions up to 7.7.1 can also be used.
+</p>
+
+<h2 id="maven2">Using Maven 2</h2>
+<h3>Using a Central Repository</h3>
+<p>
+You can include the database in your Maven 2 project as a dependency.
+Example:
+</p>
+<pre>
+&lt;dependency&gt;
+    &lt;groupId&gt;com.h2database&lt;/groupId&gt;
+    &lt;artifactId&gt;h2&lt;/artifactId&gt;
+    &lt;version&gt;${version}&lt;/version&gt;
+&lt;/dependency&gt;
+</pre>
+<p>
+New versions of this database are first uploaded to http://hsql.sourceforge.net/m2-repo/ and then automatically
+synchronized with the main <a href="http://repo2.maven.org/maven2/com/h2database/h2/">Maven repository</a>;
+however after a new release it may take a few hours before they are available there.
+</p>
+<h3>Maven Plugin to Start and Stop the TCP Server</h3>
+<p>
+A Maven plugin to start and stop the H2 TCP server is available from
+<a href="https://github.com/ljnelson/h2-maven-plugin">Laird Nelson at GitHub</a>.
+To start the H2 server, use:
+</p>
+<pre>
+mvn com.edugility.h2-maven-plugin:1.0-SNAPSHOT:spawn
+</pre>
+<p>
+To stop the H2 server, use:
+</p>
+<pre>
+mvn com.edugility.h2-maven-plugin:1.0-SNAPSHOT:stop
+</pre>
+
+<h3>Using Snapshot Version</h3>
+<p>
+To build a <code>h2-*-SNAPSHOT.jar</code> file and upload it the to the local Maven 2 repository, execute the following command:
+</p>
+<pre>
+build mavenInstallLocal
+</pre>
+<p>
+Afterwards, you can include the database in your Maven 2 project as a dependency:
+</p>
+<pre>
+&lt;dependency&gt;
+    &lt;groupId&gt;com.h2database&lt;/groupId&gt;
+    &lt;artifactId&gt;h2&lt;/artifactId&gt;
+    &lt;version&gt;1.0-SNAPSHOT&lt;/version&gt;
+&lt;/dependency&gt;
+</pre>
+
+<h2 id="using_eclipse">Using Eclipse</h2>
+<p>
+To create an Eclipse project for H2, use the following steps:
+</p>
+<ul><li>Install Git and <a href="http://www.eclipse.org">Eclipse</a>.
+</li><li>Get the H2 source code from Github:<br />
+    <code>git clone https://github.com/h2database/h2database</code>
+</li><li>Download all dependencies:<br />
+    <code>build.bat download</code>(Windows)<br />
+    <code>./build.sh download</code>(otherwise)<br />
+</li><li>In Eclipse, create a new Java project from existing source code:
+    <code>File, New, Project, Java Project, Create project from existing source</code>.
+</li><li>Select the <code>h2</code> folder, click <code>Next</code> and <code>Finish</code>.
+</li><li>To resolve <code>com.sun.javadoc</code> import statements,
+    you may need to manually add the file <code>&lt;java.home&gt;/../lib/tools.jar</code> to the build path.
+</li></ul>
+
+<h2 id="translating">Translating</h2>
+<p>
+The translation of this software is split into the following parts:
+</p>
+<ul>
+<li>H2 Console: <code>src/main/org/h2/server/web/res/_text_*.prop</code>
+</li><li>Error messages: <code>src/main/org/h2/res/_messages_*.prop</code>
+</li></ul>
+<p>
+To translate the H2 Console, start it and select Preferences / Translate.
+After you are done, send the translated <code>*.prop</code> file to the Google Group.
+The web site is currently translated using Google.
+</p>
+
+<h2 id="providing_patches">Submitting Source Code Changes</h2>
+<p>
+If you'd like to contribute bug fixes or new features, please consider the following guidelines to simplify merging them:
+</p>
+<ul><li>Only use Java 7 features (do not use Java 8/9/etc) (see <a href="#environment">Environment</a>).
+</li><li>Follow the coding style used in the project, and use Checkstyle (see above) to verify.
+    For example, do not use tabs (use spaces instead).
+    The checkstyle configuration is in <code>src/installer/checkstyle.xml</code>.
+</li><li>A template of the Eclipse settings are in
+    <code>src/installer/eclipse.settings/*</code>. If you want to use them,
+    you need to copy them to the <code>.settings</code> directory.
+    The formatting options (<code>eclipseCodeStyle</code>) are also included.
+</li><li>Please provide test cases and integrate them into the test suite.
+    For Java level tests, see <code>src/test/org/h2/test/TestAll.java</code>.
+    For SQL level tests, see SQL files in <code>src/test/org/h2/test/scripts</code>.
+</li><li>The test cases should cover at least 90% of the changed and new code;
+    use a code coverage tool to verify that (see above).
+    or use the build target <code>coverage</code>.
+</li><li>Verify that you did not break other features: run the test cases by executing
+    <code>build test</code>.
+</li><li>Provide end user documentation if required (<code>src/docsrc/html/*</code>).
+</li><li>Document grammar changes in <code>src/docsrc/help/help.csv</code>
+</li><li>Provide a change log entry (<code>src/docsrc/html/changelog.html</code>).
+</li><li>Verify the spelling using <code>build spellcheck</code>. If required
+    add the new words to <code>src/tools/org/h2/build/doc/dictionary.txt</code>.
+</li><li>Run <code>src/installer/buildRelease</code> to find and fix formatting errors.
+</li><li>Verify the formatting using <code>build docs</code> and
+    <code>build javadoc</code>.
+</li><li>Submit changes using GitHub's "pull requests". You'll require a free <a href="https://github.com/">GitHub</a>
+    account. If you are not familiar with pull requests, please read GitHub's
+    <a href="https://help.github.com/articles/using-pull-requests/">Using pull requests</a> page.
+</li></ul>
+<p>
+For legal reasons, patches need to be public in the form of an
+    <a href="https://github.com/h2database/h2database/issues">issue report or attachment</a> or in the form of an email
+    to the <a href="https://groups.google.com/group/h2-database">group</a>.
+Significant contributions need to include the following statement:
+</p>
+<p>
+"I wrote the code, it's mine, and I'm contributing it to H2 for distribution
+multiple-licensed under the MPL 2.0, and the EPL 1.0
+(http://h2database.com/html/license.html)."
+</p>
+
+<h2 id="support">Reporting Problems or Requests</h2>
+<p>
+Please consider the following checklist if you have a question, want to report a problem,
+or if  you have a feature request:
+</p>
+<ul><li>For bug reports, please provide a
+    <a href="http://sscce.org/">short, self contained, correct (compilable), example</a> of the problem.
+</li><li>Feature requests are always welcome, even if the feature is already on the
+    <a href="http://www.h2database.com/html/roadmap.html">roadmap</a>. Your mail will help prioritize feature requests.
+    If you urgently need a feature, consider <a href="#providing_patches">providing a patch</a>.
+</li><li>Before posting problems, check the
+    <a href="faq.html">FAQ</a> and do a <a href="http://google.com">Google search</a>.
+</li><li>When got an unexpected exception, please try the
+    <a href="http://www.h2database.com/html/sourceError.html">Error Analyzer tool</a>. If this doesn't help,
+    please report the problem, including the complete error message and stack trace,
+    and the root cause stack trace(s).
+</li><li>When sending source code, please use a public web clipboard such as
+    <a href="https://pastebin.com/">Pastebin</a> or
+    <a href="http://www.mysticpaste.com/new">Mystic Paste</a>
+    to avoid formatting problems.
+    Please keep test cases as simple and short as possible,
+    but so that the problem can still be reproduced.
+    As a template, use:
+    <a href="https://github.com/h2database/h2database/tree/master/h2/src/test/org/h2/samples/HelloWorld.java">HelloWorld.java</a>.
+    Method that simply call other methods should be avoided,
+    as well as unnecessary exception handling.
+    Please use the JDBC API and no external tools or libraries.
+    The test should include all required initialization code, and
+    should be started with the main method.
+</li><li>For large attachments, use a public storage such as
+    <a href="https://www.google.com/drive/">Google Drive</a>.
+</li><li>Google Group versus issue tracking:
+    Use the
+    <a href="http://groups.google.com/group/h2-database">Google Group</a>
+    for questions or if you are not sure it's a bug.
+    If you are sure it's a bug, you can create an
+    <a href="https://github.com/h2database/h2database/issues">issue</a>,
+    but you don't need to (sending an email to the group is enough).
+    Please note that only few people monitor the issue tracking system.
+</li><li>For out-of-memory problems, please analyze the problem yourself first,
+    for example using the command line option
+    <code>-XX:+HeapDumpOnOutOfMemoryError</code>
+    (to create a heap dump file on out of memory)
+    and a memory analysis tool such as the
+    <a href="http://www.eclipse.org/mat">Eclipse Memory Analyzer (MAT)</a>.
+</li><li>It may take a few days to get an answers. Please do not double post.
+</li></ul>
+
+<h2 id="automated">Automated Build</h2>
+<p>
+This build process is automated and runs regularly.
+The build process includes running the tests and code coverage, using the command line
+<code>./build.sh clean jar coverage -Dh2.ftpPassword=... uploadBuild</code>.
+The last results are available here:
+</p>
+<ul><li><a href="http://h2database.com/html/testOutput.html">Test Output</a>
+</li><li><a href="http://h2database.com/coverage/overview.html">Code Coverage Summary</a>
+</li><li><a href="http://h2database.com/coverage/coverage.zip">Code Coverage Details (download, 1.3 MB)</a>
+</li><li><a href="http://www.h2database.com/automated/news.xml">Build Newsfeed</a>
+</li></ul>
+
+<h2 id="railroad">Generating Railroad Diagrams</h2>
+<p>
+The railroad diagrams of the <a href="grammar.html">SQL grammar</a> are HTML, formatted as nested tables.
+The diagrams are generated as follows:
+</p>
+<ul><li>The BNF parser (<code>org.h2.bnf.Bnf</code>) reads and parses the BNF from the file <code>help.csv</code>.
+</li><li>The page parser (<code>org.h2.server.web.PageParser</code>) reads the template HTML file and fills in the diagrams.
+</li><li>The rail images (one straight, four junctions, two turns) are generated using a simple Java application.
+</li></ul>
+<p>
+To generate railroad diagrams for other grammars, see the package <code>org.h2.jcr</code>.
+This package is used to generate the SQL-2 railroad diagrams for the JCR 2.0 specification.
+</p>
+
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>
+

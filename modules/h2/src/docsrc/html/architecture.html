@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+Architecture
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1>Architecture</h1>
+<a href="#introduction">
+    Introduction</a><br />
+<a href="#top_down">
+    Top-down overview</a><br />
+<a href="#jdbc">
+    JDBC driver</a><br />
+<a href="#connection">
+    Connection/session management</a><br />
+<a href="#command">
+    Command execution and planning</a><br />
+<a href="#table">
+    Table/index/constraints</a><br />
+<a href="#transaction">
+    Undo log, redo log, and transactions layer</a><br />
+<a href="#btree">
+    B-tree engine and page-based storage allocation</a><br />
+<a href="#filesystem">
+    Filesystem abstraction</a><br />
+
+<h2 id="introduction">Introduction</h2>
+<p>
+H2 implements an embedded and standalone ANSI-SQL89 compliant SQL engine on top of a B-tree based disk store.
+</p>
+<p>
+As of October 2013, Thomas is still working on our next-generation storage engine called MVStore. This will
+in time replace the B-tree based storage engine.
+</p>
+
+<h2 id="top_down">Top-down Overview</h2>
+<p>
+Working from the top down, the layers look like this:
+<ul><li>JDBC driver.
+</li><li>Connection/session management.
+</li><li>SQL Parser.
+</li><li>Command execution and planning.
+</li><li>Table/Index/Constraints.
+</li><li>Undo log, redo log, and transactions layer.
+</li><li>B-tree engine and page-based storage allocation.
+</li><li>Filesystem abstraction.
+</li></ul>
+</p>
+
+<h2 id="jdbc">JDBC Driver</h2>
+<p>
+The JDBC driver implementation lives in <code>org.h2.jdbc, org.h2.jdbcx</code>
+</p>
+
+<h2 id="connection">Connection/session management</h2>
+<p>
+The primary classes of interest are:
+<table class="main">
+<tr><th>Package</th><th>Description</th></tr>
+<tr><td>org.h2.engine.Database</td><td>the root/global class</td></tr>
+<tr><td>org.h2.engine.SessionInterface</td>
+    <td>abstracts over the differences between embedded and remote sessions</td></tr>
+<tr><td>org.h2.engine.Session</td>
+    <td>local/embedded session</td></tr>
+<tr><td>org.h2.engine.SessionRemote</td>
+    <td>remote session</td></tr>
+</table>
+</p>
+
+<h2 id="jdbc">Parser</h2>
+<p>
+The parser lives in <code>org.h2.command.Parser</code>. It uses a straightforward recursive-descent design.
+</p>
+<p>
+See Wikipedia <a href="https://en.wikipedia.org/wiki/Recursive_descent_parser">Recursive descent parser</a> page.
+</p>
+
+
+<h2 id="command">Command execution and planning</h2>
+<p>
+Unlike other databases, we do not have an intermediate step where we generate some kind of IR (intermediate representation) of the query.
+The parser class directly generates a command execution object.
+Then we run some optimisation steps over the command to possibly generate a more efficient command.
+
+The primary packages of interest are:
+<table class="main">
+<tr><th>Package</th><th>Description</th></tr>
+<tr><td>org.h2.command.ddl</td><td>Commands that modify schema data structures</td></tr>
+<tr><td>org.h2.command.dml</td><td>Commands that modify data</td></tr>
+</table>
+</p>
+
+<h2 id="table">Table/Index/Constraints</h2>
+<p>
+One thing to note here is that indexes are simply stored as special kinds of tables.
+</p>
+<p>
+The primary packages of interest are:
+<table class="main">
+<tr><th>Package</th><th>Description</th></tr>
+<tr><td>org.h2.table</td><td>Implementations of different kinds of tables</td></tr>
+<tr><td>org.h2.index</td><td>Implementations of different kinds of indices</td></tr>
+</table>
+</p>
+
+<h2 id="transaction">Undo log, redo log, and transactions layer</h2>
+<p>
+We have a transaction log, which is shared among all sessions. See also
+<a href="https://en.wikipedia.org/wiki/Transaction_log">https://en.wikipedia.org/wiki/Transaction_log</a>
+<a href="http://h2database.com/html/grammar.html#set_log">http://h2database.com/html/grammar.html#set_log</a>
+</p>
+<p>
+We also have an undo log, which is per session, to undo an operation (an update that fails for example)
+and to rollback a transaction.
+Theoretically, the transaction log could be used, but for simplicity, H2 currently uses it's
+own "list of operations" (usually in-memory).
+</p>
+<p>
+With the MVStore, this is no longer needed (just the transaction log).
+</p>
+
+<h2 id="btree">B-tree engine and page-based storage allocation.</h2>
+<p>
+The primary package of interest is <code>org.h2.store</code>.
+</p>
+<p>
+This implements a storage mechanism which allocates pages of storage (typically 2k in size)
+and also implements a b-tree over those pages to allow fast retrieval and update.
+</p>
+
+<h2 id="filesystem">Filesystem abstraction.</h2>
+<p>
+The primary class of interest is <code>org.h2.store.FileStore</code>.
+</p>
+<p>
+This implements an abstraction of a random-access file.
+This allows the higher layers to treat in-memory vs. on-disk vs. zip-file databases the same.
+</p>
+
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>

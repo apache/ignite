@@ -38,7 +38,7 @@ public final class GridSqlKeyword extends GridSqlElement {
         this.keyword = keyword;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
         return keyword;
     }

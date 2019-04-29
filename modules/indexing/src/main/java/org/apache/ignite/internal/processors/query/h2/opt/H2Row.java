@@ -33,18 +33,13 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP
  */
 public abstract class H2Row implements Row, MvccVersionAware {
     /** {@inheritDoc} */
-    @Override public void setKeyAndVersion(SearchRow old) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getVersion() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void setKey(long key) {
         // No-op, may be set in H2 INFORMATION_SCHEMA.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setKey(SearchRow row) {
+        setKey(row.getKey());
     }
 
     /** {@inheritDoc} */
@@ -54,16 +49,6 @@ public abstract class H2Row implements Row, MvccVersionAware {
 
     /** {@inheritDoc} */
     @Override public int getMemory() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Row getCopy() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setVersion(int version) {
         throw new UnsupportedOperationException();
     }
 
@@ -80,21 +65,6 @@ public abstract class H2Row implements Row, MvccVersionAware {
     /** {@inheritDoc} */
     @Override public void setDeleted(boolean deleted) {
         throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setSessionId(int sessionId) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getSessionId() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void commit() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

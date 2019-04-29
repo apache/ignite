@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import javax.cache.CacheException;
 import org.h2.command.dml.SelectUnion;
-import org.h2.util.StatementBuilder;
 
 /**
  * Select query with UNION.
@@ -100,9 +99,9 @@ public class GridSqlUnion extends GridSqlQuery {
         throw new IllegalStateException();
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN \n" : "");
+        StringBuilder buff = new StringBuilder(explain() ? "EXPLAIN \n" : "");
 
         buff.append('(').append(left.getSQL()).append(')');
 

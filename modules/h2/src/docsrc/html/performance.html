@@ -1,0 +1,893 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+Performance
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1>Performance</h1>
+<a href="#performance_comparison">
+    Performance Comparison</a><br />
+<a href="#poleposition_benchmark">
+    PolePosition Benchmark</a><br />
+<a href="#database_performance_tuning">
+    Database Performance Tuning</a><br />
+<a href="#built_in_profiler">
+    Using the Built-In Profiler</a><br />
+<a href="#application_profiling">
+    Application Profiling</a><br />
+<a href="#database_profiling">
+    Database Profiling</a><br />
+<a href="#explain_plan">
+    Statement Execution Plans</a><br />
+<a href="#storage_and_indexes">
+    How Data is Stored and How Indexes Work</a><br />
+<a href="#fast_import">
+    Fast Database Import</a><br />
+
+<h2 id="performance_comparison">Performance Comparison</h2>
+<p>
+In many cases H2 is faster than other
+(open source and not open source) database engines.
+Please note this is mostly a single connection benchmark run on one computer,
+with many very simple operations running against the database.
+This benchmark does not include very complex queries.
+The embedded mode of H2 is faster than the client-server mode because
+the per-statement overhead is greatly reduced.
+</p>
+
+<h3>Embedded</h3>
+<table class="main">
+<tr><th>Test Case</th><th>Unit</th><th>H2</th><th>HSQLDB</th><th>Derby</th></tr>
+<tr><td>Simple: Init</td><td>ms</td><td>1019</td><td>1907</td><td>8280</td></tr>
+<tr><td>Simple: Query (random)</td><td>ms</td><td>1304</td><td>873</td><td>1912</td></tr>
+<tr><td>Simple: Query (sequential)</td><td>ms</td><td>835</td><td>1839</td><td>5415</td></tr>
+<tr><td>Simple: Update (sequential)</td><td>ms</td><td>961</td><td>2333</td><td>21759</td></tr>
+<tr><td>Simple: Delete (sequential)</td><td>ms</td><td>950</td><td>1922</td><td>32016</td></tr>
+<tr><td>Simple: Memory Usage</td><td>MB</td><td>21</td><td>10</td><td>8</td></tr>
+<tr><td>BenchA: Init</td><td>ms</td><td>919</td><td>2133</td><td>7528</td></tr>
+<tr><td>BenchA: Transactions</td><td>ms</td><td>1219</td><td>2297</td><td>8541</td></tr>
+<tr><td>BenchA: Memory Usage</td><td>MB</td><td>12</td><td>15</td><td>7</td></tr>
+<tr><td>BenchB: Init</td><td>ms</td><td>905</td><td>1993</td><td>8049</td></tr>
+<tr><td>BenchB: Transactions</td><td>ms</td><td>1091</td><td>583</td><td>1165</td></tr>
+<tr><td>BenchB: Memory Usage</td><td>MB</td><td>17</td><td>11</td><td>8</td></tr>
+<tr><td>BenchC: Init</td><td>ms</td><td>2491</td><td>4003</td><td>8064</td></tr>
+<tr><td>BenchC: Transactions</td><td>ms</td><td>1979</td><td>803</td><td>2840</td></tr>
+<tr><td>BenchC: Memory Usage</td><td>MB</td><td>19</td><td>22</td><td>9</td></tr>
+<tr><td>Executed statements</td><td>#</td><td>1930995</td><td>1930995</td><td>1930995</td></tr>
+<tr><td>Total time</td><td>ms</td><td>13673</td><td>20686</td><td>105569</td></tr>
+<tr><td>Statements per second</td><td>#</td><td>141226</td><td>93347</td><td>18291</td></tr>
+</table>
+
+<h3>Client-Server</h3>
+<table class="main">
+<tr><th>Test Case</th><th>Unit</th><th>H2 (Server)</th><th>HSQLDB</th><th>Derby</th><th>PostgreSQL</th><th>MySQL</th></tr>
+<tr><td>Simple: Init</td><td>ms</td><td>16338</td><td>17198</td><td>27860</td><td>30156</td><td>29409</td></tr>
+<tr><td>Simple: Query (random)</td><td>ms</td><td>3399</td><td>2582</td><td>6190</td><td>3315</td><td>3342</td></tr>
+<tr><td>Simple: Query (sequential)</td><td>ms</td><td>21841</td><td>18699</td><td>42347</td><td>30774</td><td>32611</td></tr>
+<tr><td>Simple: Update (sequential)</td><td>ms</td><td>6913</td><td>7745</td><td>28576</td><td>32698</td><td>11350</td></tr>
+<tr><td>Simple: Delete (sequential)</td><td>ms</td><td>8051</td><td>9751</td><td>42202</td><td>44480</td><td>16555</td></tr>
+<tr><td>Simple: Memory Usage</td><td>MB</td><td>22</td><td>11</td><td>9</td><td>0</td><td>1</td></tr>
+<tr><td>BenchA: Init</td><td>ms</td><td>12996</td><td>14720</td><td>24722</td><td>26375</td><td>26060</td></tr>
+<tr><td>BenchA: Transactions</td><td>ms</td><td>10134</td><td>10250</td><td>18452</td><td>21453</td><td>15877</td></tr>
+<tr><td>BenchA: Memory Usage</td><td>MB</td><td>13</td><td>15</td><td>9</td><td>0</td><td>1</td></tr>
+<tr><td>BenchB: Init</td><td>ms</td><td>15264</td><td>16889</td><td>28546</td><td>31610</td><td>29747</td></tr>
+<tr><td>BenchB: Transactions</td><td>ms</td><td>3017</td><td>3376</td><td>1842</td><td>2771</td><td>1433</td></tr>
+<tr><td>BenchB: Memory Usage</td><td>MB</td><td>17</td><td>12</td><td>11</td><td>1</td><td>1</td></tr>
+<tr><td>BenchC: Init</td><td>ms</td><td>14020</td><td>10407</td><td>17655</td><td>19520</td><td>17532</td></tr>
+<tr><td>BenchC: Transactions</td><td>ms</td><td>5076</td><td>3160</td><td>6411</td><td>6063</td><td>4530</td></tr>
+<tr><td>BenchC: Memory Usage</td><td>MB</td><td>19</td><td>21</td><td>11</td><td>1</td><td>1</td></tr>
+<tr><td>Executed statements</td><td>#</td><td>1930995</td><td>1930995</td><td>1930995</td><td>1930995</td><td>1930995</td></tr>
+<tr><td>Total time</td><td>ms</td><td>117049</td><td>114777</td><td>244803</td><td>249215</td><td>188446</td></tr>
+<tr><td>Statements per second</td><td>#</td><td>16497</td><td>16823</td><td>7887</td><td>7748</td><td>10246</td></tr>
+</table>
+
+<h3>Benchmark Results and Comments</h3>
+
+<h4>H2</h4>
+<p>
+Version 1.4.177 (2014-04-12) was used for the test.
+For most operations, the performance of H2 is about the same as for HSQLDB.
+One situation where H2 is slow is large result sets, because they are buffered to
+disk if more than a certain number of records are returned.
+The advantage of buffering is: there is no limit on the result set size.
+</p>
+
+<h4>HSQLDB</h4>
+<p>
+Version 2.3.2 was used for the test.
+Cached tables are used in this test (<code>hsqldb.default_table_type=cached</code>),
+and the write delay is 1 second (<code>SET WRITE_DELAY 1</code>).
+</p>
+
+<h4>Derby</h4>
+<p>
+Version 10.10.1.1 was used for the test. Derby is clearly the slowest embedded database in this test.
+This seems to be a structural problem, because all operations are really slow.
+It will be hard for the developers of Derby to improve the performance to a reasonable level.
+A few problems have been identified: leaving autocommit on is a problem for Derby.
+If it is switched off during the whole test, the results are about 20% better for Derby.
+Derby calls <code>FileChannel.force(false)</code>, but only twice per log file (not on each commit).
+Disabling this call improves performance for Derby by about 2%.
+Unlike H2, Derby does not call <code>FileDescriptor.sync()</code> on each checkpoint.
+Derby supports a testing mode (system property <code>derby.system.durability=test</code>)
+where durability is disabled. According to the documentation, this setting should be used for testing only,
+as the database may not recover after a crash. Enabling this setting improves performance
+by a factor of 2.6 (embedded mode) or 1.4 (server mode). Even if enabled, Derby is still less
+than half as fast as H2 in default mode.
+</p>
+
+<h4>PostgreSQL</h4>
+<p>
+Version 9.1.5 was used for the test.
+The following options where changed in <code>postgresql.conf:
+fsync = off, commit_delay = 1000</code>.
+PostgreSQL is run in server mode.
+The memory usage number is incorrect, because only the memory usage of the JDBC driver is measured.
+</p>
+
+<h4>MySQL</h4>
+<p>
+Version 5.1.65-log was used for the test.
+MySQL was run with the InnoDB backend.
+The setting <code>innodb_flush_log_at_trx_commit</code>
+(found in the <code>my.ini / my.cnf</code> file) was set to 0. Otherwise (and by default), MySQL is slow
+(around 140 statements per second in this test) because it tries to flush the data to disk for each commit.
+For small transactions (when autocommit is on) this is really slow.
+But many use cases use small or relatively small transactions.
+Too bad this setting is not listed in the configuration wizard,
+and it always overwritten when using the wizard.
+You need to change this setting manually in the file <code>my.ini / my.cnf</code>, and then restart the service.
+The memory usage number is incorrect, because only the memory usage of the JDBC driver is measured.
+</p>
+
+<h4>Firebird</h4>
+<p>
+Firebird 1.5 (default installation) was tested, but the results are not published currently.
+It is possible to run the performance test with the Firebird database,
+and any information on how to configure Firebird for higher performance are welcome.
+</p>
+
+<h4>Why Oracle / MS SQL Server / DB2 are Not Listed</h4>
+<p>
+The license of these databases does not allow to publish benchmark results.
+This doesn't mean that they are fast. They are in fact quite slow,
+and need a lot of memory. But you will need to test this yourself.
+SQLite was not tested because the JDBC driver doesn't support transactions.
+</p>
+
+<h3>About this Benchmark</h3>
+
+<h4>How to Run</h4>
+<p>
+This test was as follows:
+</p>
+<pre>
+build benchmark
+</pre>
+
+<h4>Separate Process per Database</h4>
+<p>
+For each database, a new process is started, to ensure the previous test does not impact
+the current test.
+</p>
+
+<h4>Number of Connections</h4>
+<p>
+This is mostly a single-connection benchmark.
+BenchB uses multiple connections; the other tests use one connection.
+</p>
+
+<h4>Real-World Tests</h4>
+<p>
+Good benchmarks emulate real-world use cases. This benchmark includes 4 test cases:
+BenchSimple uses one table and many small updates / deletes.
+BenchA is similar to the TPC-A test, but single connection / single threaded (see also: www.tpc.org).
+BenchB is similar to the TPC-B test, using multiple connections (one thread per connection).
+BenchC is similar to the TPC-C test, but single connection / single threaded.
+</p>
+
+<h4>Comparing Embedded with Server Databases</h4>
+<p>
+This is mainly a benchmark for embedded databases (where the application runs in the same
+virtual machine as the database engine). However MySQL and PostgreSQL are not Java
+databases and cannot be embedded into a Java application.
+For the Java databases, both embedded and server modes are tested.
+</p>
+
+<h4>Test Platform</h4>
+<p>
+This test is run on Mac OS X 10.6. No virus scanner was used, and disk indexing was disabled.
+The JVM used is Sun JDK 1.6.
+</p>
+
+<h4>Multiple Runs</h4>
+<p>
+When a Java benchmark is run first, the code is not fully compiled and
+therefore runs slower than when running multiple times. A benchmark
+should always run the same test multiple times and ignore the first run(s).
+This benchmark runs three times, but only the last run is measured.
+</p>
+
+<h4>Memory Usage</h4>
+<p>
+It is not enough to measure the time taken, the memory usage is important as well.
+Performance can be improved by using a bigger cache, but the amount of memory is limited.
+HSQLDB tables are kept fully in memory by default; this benchmark
+uses 'disk based' tables for all databases.
+Unfortunately, it is not so easy to calculate the memory usage of PostgreSQL
+and MySQL, because they run in a different process than the test. This benchmark currently
+does not print memory usage of those databases.
+</p>
+
+<h4>Delayed Operations</h4>
+<p>
+Some databases delay some operations (for example flushing the buffers)
+until after the benchmark is run. This benchmark waits between
+each database tested, and each database runs in a different process (sequentially).
+</p>
+
+<h4>Transaction Commit / Durability</h4>
+<p>
+Durability means transaction committed to the database will not be lost.
+Some databases (for example MySQL) try to enforce this by default by
+calling <code>fsync()</code> to flush the buffers, but
+most hard drives don't actually flush all data. Calling the method slows down transaction commit a lot,
+but doesn't always make data durable. When comparing the results, it is important to
+think about the effect. Many database suggest to 'batch' operations when possible.
+This benchmark switches off autocommit when loading the data, and calls commit after each 1000
+inserts. However many applications need 'short' transactions at runtime (a commit after each update).
+This benchmark commits after each update / delete in the simple benchmark, and after each
+business transaction in the other benchmarks. For databases that support delayed commits,
+a delay of one second is used.
+</p>
+
+<h4>Using Prepared Statements</h4>
+<p>
+Wherever possible, the test cases use prepared statements.
+</p>
+
+<h4>Currently Not Tested: Startup Time</h4>
+<p>
+The startup time of a database engine is important as well for embedded use.
+This time is not measured currently.
+Also, not tested is the time used to create a database and open an existing database.
+Here, one (wrapper) connection is opened at the start,
+and for each step a new connection is opened and then closed.
+</p>
+
+<h2 id="poleposition_benchmark">PolePosition Benchmark</h2>
+<p>
+The PolePosition is an open source benchmark. The algorithms are all quite simple.
+It was developed / sponsored by db4o.
+This test was not run for a longer time, so please be aware that the results below
+are for older database versions (H2 version 1.1, HSQLDB 1.8, Java 1.4).
+</p>
+<table class="main">
+<tr><th>Test Case</th><th>Unit</th><th>H2</th><th>HSQLDB</th><th>MySQL</th></tr>
+<tr><td>Melbourne write</td><td>ms</td><td>369</td><td>249</td><td>2022</td></tr>
+<tr><td>Melbourne read</td><td>ms</td><td>47</td><td>49</td><td>93</td></tr>
+<tr><td>Melbourne read_hot</td><td>ms</td><td>24</td><td>43</td><td>95</td></tr>
+<tr><td>Melbourne delete</td><td>ms</td><td>147</td><td>133</td><td>176</td></tr>
+<tr><td>Sepang write</td><td>ms</td><td>965</td><td>1201</td><td>3213</td></tr>
+<tr><td>Sepang read</td><td>ms</td><td>765</td><td>948</td><td>3455</td></tr>
+<tr><td>Sepang read_hot</td><td>ms</td><td>789</td><td>859</td><td>3563</td></tr>
+<tr><td>Sepang delete</td><td>ms</td><td>1384</td><td>1596</td><td>6214</td></tr>
+<tr><td>Bahrain write</td><td>ms</td><td>1186</td><td>1387</td><td>6904</td></tr>
+<tr><td>Bahrain query_indexed_string</td><td>ms</td><td>336</td><td>170</td><td>693</td></tr>
+<tr><td>Bahrain query_string</td><td>ms</td><td>18064</td><td>39703</td><td>41243</td></tr>
+<tr><td>Bahrain query_indexed_int</td><td>ms</td><td>104</td><td>134</td><td>678</td></tr>
+<tr><td>Bahrain update</td><td>ms</td><td>191</td><td>87</td><td>159</td></tr>
+<tr><td>Bahrain delete</td><td>ms</td><td>1215</td><td>729</td><td>6812</td></tr>
+<tr><td>Imola retrieve</td><td>ms</td><td>198</td><td>194</td><td>4036</td></tr>
+<tr><td>Barcelona write</td><td>ms</td><td>413</td><td>832</td><td>3191</td></tr>
+<tr><td>Barcelona read</td><td>ms</td><td>119</td><td>160</td><td>1177</td></tr>
+<tr><td>Barcelona query</td><td>ms</td><td>20</td><td>5169</td><td>101</td></tr>
+<tr><td>Barcelona delete</td><td>ms</td><td>388</td><td>319</td><td>3287</td></tr>
+<tr><td>Total</td><td>ms</td><td>26724</td><td>53962</td><td>87112</td></tr>
+</table>
+<p>
+There are a few problems with the PolePosition test:
+</p>
+<ul><li>
+HSQLDB uses in-memory tables by default while H2 uses persistent tables. The HSQLDB version
+included in PolePosition does not support changing this, so you need to replace
+<code>poleposition-0.20/lib/hsqldb.jar</code> with a newer version (for example
+<code>hsqldb-1.8.0.7.jar</code>),
+and then use the setting
+<code>hsqldb.connecturl=jdbc:hsqldb:file:data/hsqldb/dbbench2;hsqldb.default_table_type=cached;sql.enforce_size=true</code>
+in the file <code>Jdbc.properties</code>.
+</li><li>HSQLDB keeps the database open between tests, while H2 closes the database (losing all the cache).
+To change that, use the database URL <code>jdbc:h2:file:data/h2/dbbench;DB_CLOSE_DELAY=-1</code>
+</li><li>The amount of cache memory is quite important, specially for the PolePosition test.
+Unfortunately, the PolePosition test does not take this into account.
+</li></ul>
+
+<h2 id="database_performance_tuning">Database Performance Tuning</h2>
+
+<h3>Keep Connections Open or Use a Connection Pool</h3>
+<p>
+If your application opens and closes connections a lot (for example, for each request),
+you should consider using a  <a href="tutorial.html#connection_pool">connection pool</a>.
+Opening a connection using <code>DriverManager.getConnection</code> is specially slow
+if the database is closed. By default the database is closed if the last connection is closed.
+</p><p>
+If you open and close connections a lot but don't want to use a connection pool,
+consider keeping a 'sentinel' connection open for as long as the application runs,
+or use delayed database closing. See also
+<a href="features.html#closing_a_database">Closing a database</a>.
+</p>
+
+<h3>Use a Modern JVM</h3>
+<p>
+Newer JVMs are faster. Upgrading to the latest version of your JVM can provide a "free" boost to performance.
+Switching from the default Client JVM to the Server JVM using the <code>-server</code> command-line
+option improves performance at the cost of a slight increase in start-up time.
+</p>
+
+<h3>Virus Scanners</h3>
+<p>
+Some virus scanners scan files every time they are accessed.
+It is very important for performance that database files are not scanned for viruses.
+The database engine never interprets the data stored in the files as programs,
+that means even if somebody would store a virus in a database file, this would
+be harmless (when the virus does not run, it cannot spread).
+Some virus scanners allow to exclude files by suffix. Ensure files ending with <code>.db</code> are not scanned.
+</p>
+
+<h3>Using the Trace Options</h3>
+<p>
+If the performance hot spots are in the database engine, in many cases the performance
+can be optimized by creating additional indexes, or changing the schema. Sometimes the
+application does not directly generate the SQL statements, for example if an O/R mapping tool
+is used. To view the SQL statements and JDBC API calls, you can use the trace options.
+For more information, see <a href="features.html#trace_options">Using the Trace Options</a>.
+</p>
+
+<h3>Index Usage</h3>
+<p>
+This database uses indexes to improve the performance of
+<code>SELECT, UPDATE, DELETE</code>.
+If a column is used in the <code>WHERE</code> clause of a query, and if an index exists on this column,
+then the index can be used. Multi-column indexes are used if all or the first columns of the index are used.
+Both equality lookup and range scans are supported.
+Indexes are used to order result sets, but only if the condition uses the same index or no index at all.
+The results are sorted in memory if required.
+Indexes are created automatically for primary key and unique constraints.
+Indexes are also created for foreign key constraints, if required.
+For other columns, indexes need to be created manually using the <code>CREATE INDEX</code> statement.
+</p>
+
+<h3>Index Hints</h3>
+<p>
+If you have determined that H2 is not using the optimal index for your query, you can use index hints to force
+H2 to use specific indexes.
+</p>
+<pre>
+SELECT * FROM TEST USE INDEX (index_name_1, index_name_2) WHERE X=1
+</pre>
+<p>Only indexes in the list will be used when choosing an index to use on the given table. There
+is no significance to order in this list.
+</p><p>
+It is possible that no index in the list is chosen, in which case a full table scan will be used.
+</p>
+<p>An empty list of index names forces a full table scan to be performed.</p>
+<p>Each index in the list must exist.</p>
+
+<h3>How Data is Stored Internally</h3>
+<p>
+For persistent databases, if a table is created with a single column primary key of type <code>BIGINT, INT, SMALLINT, TINYINT</code>,
+then the data of the table is organized in this way. This is sometimes also called a "clustered index" or
+"index organized table".
+</p><p>
+H2 internally stores table data and indexes in the form of b-trees.
+Each b-tree stores entries as a list of unique keys (one or more columns) and data (zero or more columns).
+The table data is always organized in the form of a "data b-tree" with a single column key of type <code>long</code>.
+If a single column primary key of type <code>BIGINT, INT, SMALLINT, TINYINT</code> is specified when creating the table
+(or just after creating the table, but before inserting any rows),
+then this column is used as the key of the data b-tree.
+If no primary key has been specified, if the primary key column is of another data type,
+or if the primary key contains more than one column,
+then a hidden auto-increment column of type <code>BIGINT</code> is added to the table,
+which is used as the key for the data b-tree.
+All other columns of the table are stored within the data area of this data b-tree
+(except for large <code>BLOB, CLOB</code> columns, which are stored externally).
+</p><p>
+For each additional index, one new "index b-tree" is created. The key of this b-tree consists of the indexed columns,
+plus the key of the data b-tree. If a primary key is created after the table has been created, or if the primary key
+contains multiple column, or if the primary key is not of the data types listed above, then the primary key
+is stored in a new index b-tree.
+</p>
+
+<h3>Optimizer</h3>
+<p>
+This database uses a cost based optimizer. For simple and queries and queries with medium complexity
+(less than 7 tables in the join), the expected cost (running time) of all possible plans is calculated,
+and the plan with the lowest cost is used. For more complex queries, the algorithm first tries
+all possible combinations for the first few tables, and the remaining tables added using a greedy algorithm
+(this works well for most joins). Afterwards a genetic algorithm is used to test at most 2000 distinct plans.
+Only left-deep plans are evaluated.
+</p>
+
+<h3>Expression Optimization</h3>
+<p>
+After the statement is parsed, all expressions are simplified automatically if possible. Operations
+are evaluated only once if all parameters are constant. Functions are also optimized, but only
+if the function is constant (always returns the same result for the same parameter values).
+If the <code>WHERE</code> clause is always false, then the table is not accessed at all.
+</p>
+
+<h3>COUNT(*) Optimization</h3>
+<p>
+If the query only counts all rows of a table, then the data is not accessed.
+However, this is only possible if no <code>WHERE</code> clause is used, that means it only works for
+queries of the form <code>SELECT COUNT(*) FROM table</code>.
+</p>
+
+<h3>Updating Optimizer Statistics / Column Selectivity</h3>
+<p>
+When executing a query, at most one index per join can be used.
+If the same table is joined multiple times, for each join only one index is used
+(the same index could be used for both joins, or each join could use a different index).
+Example: for the query
+<code>SELECT * FROM TEST T1, TEST T2 WHERE T1.NAME='A' AND T2.ID=T1.ID</code>,
+two index can be used, in this case the index on NAME for T1 and the index on ID for T2.
+</p><p>
+If a table has multiple indexes, sometimes more than one index could be used.
+Example: if there is a table <code>TEST(ID, NAME, FIRSTNAME)</code> and an index on each column,
+then two indexes could be used for the query <code>SELECT * FROM TEST WHERE NAME='A' AND FIRSTNAME='B'</code>,
+the index on NAME or the index on FIRSTNAME. It is not possible to use both indexes at the same time.
+Which index is used depends on the selectivity of the column. The selectivity describes the 'uniqueness' of
+values in a column. A selectivity of 100 means each value appears only once, and a selectivity of 1 means
+the same value appears in many or most rows. For the query above, the index on NAME should be used
+if the table contains more distinct names than first names.
+</p><p>
+The SQL statement <code>ANALYZE</code> can be used to automatically estimate the selectivity of the columns in the tables.
+This command should be run from time to time to improve the query plans generated by the optimizer.
+</p>
+
+<h3>In-Memory (Hash) Indexes</h3>
+<p>
+Using in-memory indexes, specially in-memory hash indexes, can speed up
+queries and data manipulation.
+</p>
+<p>In-memory indexes are automatically used
+for in-memory databases, but can also be created for persistent databases
+using <code>CREATE MEMORY TABLE</code>. In many cases,
+the rows itself will also be kept in-memory. Please note this may cause memory
+problems for large tables.
+</p>
+<p>
+In-memory hash indexes are backed by a hash table and are usually faster than
+regular indexes. However, hash indexes only supports direct lookup (<code>WHERE ID = ?</code>)
+but not range scan (<code>WHERE ID &lt; ?</code>). To use hash indexes, use HASH as in:
+<code>CREATE UNIQUE HASH INDEX</code> and
+<code>CREATE TABLE ...(ID INT PRIMARY KEY HASH,...)</code>.
+</p>
+
+<h3>Use Prepared Statements</h3>
+<p>
+If possible, use prepared statements with parameters.
+</p>
+
+<h3>Prepared Statements and IN(...)</h3>
+<p>
+Avoid generating SQL statements with a variable size IN(...) list.
+Instead, use a prepared statement with arrays as in the following example:
+</p>
+<pre>
+PreparedStatement prep = conn.prepareStatement(
+    "SELECT * FROM TEST WHERE ID = ANY(?)");
+prep.setObject(1, new Object[] { "1", "2" });
+ResultSet rs = prep.executeQuery();
+</pre>
+
+<h3>Optimization Examples</h3>
+<p>
+See <code>src/test/org/h2/samples/optimizations.sql</code> for a few examples of queries
+that benefit from special optimizations built into the database.
+</p>
+
+<h3>Cache Size and Type</h3>
+<p>
+By default the cache size of H2 is quite small. Consider using a larger cache size, or enable
+the second level soft reference cache. See also <a href="features.html#cache_settings">Cache Settings</a>.
+</p>
+
+<h3>Data Types</h3>
+<p>
+Each data type has different storage and performance characteristics:
+</p>
+<ul><li>The <code>DECIMAL/NUMERIC</code> type is slower
+    and requires more storage than the <code>REAL</code> and <code>DOUBLE</code> types.
+</li><li>Text types are slower to read, write, and compare than numeric types and generally require more storage.
+</li><li>See <a href="advanced.html#large_objects">Large Objects</a> for information on
+    <code>BINARY</code> vs. <code>BLOB</code>
+    and <code>VARCHAR</code> vs. <code>CLOB</code> performance.
+</li><li>Parsing and formatting takes longer for the
+    <code>TIME</code>, <code>DATE</code>, and
+    <code>TIMESTAMP</code> types than the numeric types.
+</li><li><code>SMALLINT/TINYINT/BOOLEAN</code> are not significantly smaller or faster
+    to work with than <code>INTEGER</code> in most modes.
+</li></ul>
+
+<h3>Sorted Insert Optimization</h3>
+<p>
+To reduce disk space usage and speed up table creation, an
+optimization for sorted inserts is available. When used, b-tree pages
+are split at the insertion point. To use this optimization, add <code>SORTED</code>
+before the <code>SELECT</code> statement:
+</p>
+<pre>
+CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR) AS
+    SORTED SELECT X, SPACE(100) FROM SYSTEM_RANGE(1, 100);
+INSERT INTO TEST
+    SORTED SELECT X, SPACE(100) FROM SYSTEM_RANGE(101, 200);
+</pre>
+
+<h2 id="built_in_profiler">Using the Built-In Profiler</h2>
+<p>
+A very simple Java profiler is built-in. To use it, use the following template:
+</p>
+<pre>
+import org.h2.util.Profiler;
+Profiler prof = new Profiler();
+prof.startCollecting();
+// .... some long running process, at least a few seconds
+prof.stopCollecting();
+System.out.println(prof.getTop(3));
+</pre>
+
+<h2 id="application_profiling">Application Profiling</h2>
+
+<h3>Analyze First</h3>
+<p>
+Before trying to optimize performance, it is important to understand where the problem is (what part of the application is slow).
+Blind optimization or optimization based on guesses should be avoided, because usually it is not an efficient strategy.
+There are various ways to analyze an application. Sometimes two implementations can be compared using
+<code>System.currentTimeMillis()</code>. But this does not work for complex applications with many modules, and for memory problems.
+</p>
+<p>
+A simple way to profile an application is to use the built-in profiling tool of java. Example:
+</p>
+<pre>
+java -Xrunhprof:cpu=samples,depth=16 com.acme.Test
+</pre>
+<p>
+Unfortunately, it is only possible to profile the application from start to end. Another solution is to create
+a number of full thread dumps. To do that, first run <code>jps -l</code> to get the process id, and then
+run <code>jstack &lt;pid&gt;</code> or <code>kill -QUIT &lt;pid&gt;</code> (Linux) or press
+Ctrl+C (Windows).
+</p>
+<p>
+A simple profiling tool is included in H2. To use it, the application needs to be changed slightly. Example:
+</p>
+<pre>
+import org.h2.util;
+...
+Profiler profiler = new Profiler();
+profiler.startCollecting();
+// application code
+System.out.println(profiler.getTop(3));
+</pre>
+<p>
+The profiler is built into the H2 Console tool, to analyze databases that open slowly.
+To use it, run the H2 Console, and then click on 'Test Connection'.
+Afterwards, click on "Test successful" and you get the most common stack traces,
+which helps to find out why it took so long to connect. You will only get the stack traces
+if opening the database took more than a few seconds.
+</p>
+
+<h2 id="database_profiling">Database Profiling</h2>
+<p>
+The <code>ConvertTraceFile</code> tool generates SQL statement statistics at the end of the SQL script file.
+The format used is similar to the profiling data generated when using <code>java -Xrunhprof</code>.
+For this to work, the trace level needs to be 2 or higher (<code>TRACE_LEVEL_FILE=2</code>).
+The easiest way to set the trace level is to append the setting to the database URL, for example:
+<code>jdbc:h2:~/test;TRACE_LEVEL_FILE=2</code> or <code>jdbc:h2:tcp://localhost/~/test;TRACE_LEVEL_FILE=2</code>.
+As an example, execute the following script using the H2 Console:
+</p>
+<pre>
+SET TRACE_LEVEL_FILE 2;
+DROP TABLE IF EXISTS TEST;
+CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR(255));
+@LOOP 1000 INSERT INTO TEST VALUES(?, ?);
+SET TRACE_LEVEL_FILE 0;
+</pre>
+<p>
+After running the test case, convert the <code>.trace.db</code> file using the <code>ConvertTraceFile</code> tool.
+The trace file is located in the same directory as the database file.
+</p>
+<pre>
+java -cp h2*.jar org.h2.tools.ConvertTraceFile
+    -traceFile "~/test.trace.db" -script "~/test.sql"
+</pre>
+<p>
+The generated file <code>test.sql</code> will contain the SQL statements as well as the
+following profiling data (results vary):
+</p>
+<pre>
+-----------------------------------------
+-- SQL Statement Statistics
+-- time: total time in milliseconds (accumulated)
+-- count: how many times the statement ran
+-- result: total update count or row count
+-----------------------------------------
+-- self accu    time   count  result sql
+--  62%  62%     158    1000    1000 INSERT INTO TEST VALUES(?, ?);
+--  37% 100%      93       1       0 CREATE TABLE TEST(ID INT PRIMARY KEY...
+--   0% 100%       0       1       0 DROP TABLE IF EXISTS TEST;
+--   0% 100%       0       1       0 SET TRACE_LEVEL_FILE 3;
+</pre>
+
+<h2 id="explain_plan">Statement Execution Plans</h2>
+<p>
+The SQL statement <code>EXPLAIN</code> displays the indexes and optimizations the database uses for a statement.
+The following statements support <code>EXPLAIN</code>: <code>SELECT, UPDATE, DELETE, MERGE, INSERT</code>.
+The following query shows that the database uses the primary key index to search for rows:
+</p>
+<pre>
+EXPLAIN SELECT * FROM TEST WHERE ID=1;
+SELECT
+    TEST.ID,
+    TEST.NAME
+FROM PUBLIC.TEST
+    /* PUBLIC.PRIMARY_KEY_2: ID = 1 */
+WHERE ID = 1
+</pre>
+<p>
+For joins, the tables in the execution plan are sorted in the order they are processed.
+The following query shows the database first processes the table <code>INVOICE</code> (using the primary key).
+For each row, it will additionally check that the value of the column <code>AMOUNT</code> is larger than zero,
+and for those rows the database will search in the table <code>CUSTOMER</code> (using the primary key).
+The query plan contains some redundancy so it is a valid statement.
+</p>
+<pre>
+CREATE TABLE CUSTOMER(ID IDENTITY, NAME VARCHAR);
+CREATE TABLE INVOICE(ID IDENTITY,
+    CUSTOMER_ID INT REFERENCES CUSTOMER(ID),
+    AMOUNT NUMBER);
+
+EXPLAIN SELECT I.ID, C.NAME FROM CUSTOMER C, INVOICE I
+WHERE I.ID=10 AND AMOUNT>0 AND C.ID=I.CUSTOMER_ID;
+
+SELECT
+    I.ID,
+    C.NAME
+FROM PUBLIC.INVOICE I
+    /* PUBLIC.PRIMARY_KEY_9: ID = 10 */
+    /* WHERE (I.ID = 10)
+        AND (AMOUNT > 0)
+    */
+INNER JOIN PUBLIC.CUSTOMER C
+    /* PUBLIC.PRIMARY_KEY_5: ID = I.CUSTOMER_ID */
+    ON 1=1
+WHERE (C.ID = I.CUSTOMER_ID)
+    AND ((I.ID = 10)
+    AND (AMOUNT > 0))
+</pre>
+
+<h3>Displaying the Scan Count</h3>
+<p>
+<code>EXPLAIN ANALYZE</code> additionally shows the scanned rows per table and pages read from disk per table or index.
+This will actually execute the query, unlike <code>EXPLAIN</code> which only prepares it.
+The following query scanned 1000 rows, and to do that had to read 85 pages from the data area of the table.
+Running the query twice will not list the pages read from disk, because they are now in the cache.
+The <code>tableScan</code> means this query doesn't use an index.
+</p>
+<pre>
+EXPLAIN ANALYZE SELECT * FROM TEST;
+SELECT
+    TEST.ID,
+    TEST.NAME
+FROM PUBLIC.TEST
+    /* PUBLIC.TEST.tableScan */
+    /* scanCount: 1000 */
+/*
+total: 85
+TEST.TEST_DATA read: 85 (100%)
+*/
+</pre>
+<p>
+The cache will prevent the pages are read twice. H2 reads all columns of the row
+unless only the columns in the index are read. Except for large CLOB and BLOB, which are not store in the table.
+</p>
+
+<h3>Special Optimizations</h3>
+<p>
+For certain queries, the database doesn't need to read all rows, or doesn't need to sort the result even if <code>ORDER BY</code> is used.
+</p><p>
+For queries of the form <code>SELECT COUNT(*), MIN(ID), MAX(ID) FROM TEST</code>, the query plan includes the line
+<code>/* direct lookup */</code> if the data can be read from an index.
+</p><p>
+For queries of the form <code>SELECT DISTINCT CUSTOMER_ID FROM INVOICE</code>, the query plan includes the line
+<code>/* distinct */</code> if there is an non-unique or multi-column index on this column, and if this column has a low selectivity.
+</p><p>
+For queries of the form <code>SELECT * FROM TEST ORDER BY ID</code>, the query plan includes the line
+<code>/* index sorted */</code> to indicate there is no separate sorting required.
+</p><p>
+For queries of the form <code>SELECT * FROM TEST GROUP BY ID ORDER BY ID</code>, the query plan includes the line
+<code>/* group sorted */</code> to indicate there is no separate sorting required.
+</p>
+
+<h2 id="storage_and_indexes">How Data is Stored and How Indexes Work</h2>
+<p>
+Internally, each row in a table is identified by a unique number, the row id.
+The rows of a table are stored with the row id as the key.
+The row id is a number of type long.
+If a table has a single column primary key of type <code>INT</code> or <code>BIGINT</code>,
+then the value of this column is the row id, otherwise the database generates the row id automatically.
+There is a (non-standard) way to access the row id: using the <code>_ROWID_</code> pseudo-column:
+</p>
+<pre>
+CREATE TABLE ADDRESS(FIRST_NAME VARCHAR,
+    NAME VARCHAR, CITY VARCHAR, PHONE VARCHAR);
+INSERT INTO ADDRESS VALUES('John', 'Miller', 'Berne', '123 456 789');
+INSERT INTO ADDRESS VALUES('Philip', 'Jones', 'Berne', '123 012 345');
+SELECT _ROWID_, * FROM ADDRESS;
+</pre>
+<p>
+The data is stored in the database as follows:
+</p>
+<table>
+<tr><th>_ROWID_</th><th>FIRST_NAME</th><th>NAME</th><th>CITY</th><th>PHONE</th></tr>
+<tr><td>1</td><td>John</td><td>Miller</td><td>Berne</td><td>123 456 789</td></tr>
+<tr><td>2</td><td>Philip</td><td>Jones</td><td>Berne</td><td>123 012 345</td></tr>
+</table>
+<p>
+Access by row id is fast because the data is sorted by this key.
+Please note the row id is not available until after the row was added (that means, it can not be used in computed columns or constraints).
+If the query condition does not contain the row id (and if no other index can be used), then all rows of the table are scanned.
+A table scan iterates over all rows in the table, in the order of the row id.
+To find out what strategy the database uses to retrieve the data, use <code>EXPLAIN SELECT</code>:
+</p>
+<pre>
+SELECT * FROM ADDRESS WHERE NAME = 'Miller';
+
+EXPLAIN SELECT PHONE FROM ADDRESS WHERE NAME = 'Miller';
+SELECT
+    PHONE
+FROM PUBLIC.ADDRESS
+    /* PUBLIC.ADDRESS.tableScan */
+WHERE NAME = 'Miller';
+</pre>
+
+<h3>Indexes</h3>
+<p>
+An index internally is basically just a table that contains the indexed column(s), plus the row id:
+</p>
+<pre>
+CREATE INDEX INDEX_PLACE ON ADDRESS(CITY, NAME, FIRST_NAME);
+</pre>
+<p>
+In the index, the data is sorted by the indexed columns.
+So this index contains the following data:
+</p>
+<table>
+<tr><th>CITY</th><th>NAME</th><th>FIRST_NAME</th><th>_ROWID_</th></tr>
+<tr><td>Berne</td><td>Jones</td><td>Philip</td><td>2</td></tr>
+<tr><td>Berne</td><td>Miller</td><td>John</td><td>1</td></tr>
+</table>
+<p>
+When the database uses an index to query the data, it searches the index for the given data,
+and (if required) reads the remaining columns in the main data table (retrieved using the row id).
+An index on city, name, and first name (multi-column index) allows to quickly search for rows when the city, name, and first name are known.
+If only the city and name, or only the city is known, then this index is also used (so creating an additional index on just the city is not needed).
+This index is also used when reading all rows, sorted by the indexed columns.
+However, if only the first name is known, then this index is not used:
+</p>
+<pre>
+EXPLAIN SELECT PHONE FROM ADDRESS
+    WHERE CITY = 'Berne' AND NAME = 'Miller'
+    AND FIRST_NAME = 'John';
+SELECT
+    PHONE
+FROM PUBLIC.ADDRESS
+    /* PUBLIC.INDEX_PLACE: FIRST_NAME = 'John'
+        AND CITY = 'Berne'
+        AND NAME = 'Miller'
+     */
+WHERE (FIRST_NAME = 'John')
+    AND ((CITY = 'Berne')
+    AND (NAME = 'Miller'));
+
+EXPLAIN SELECT PHONE FROM ADDRESS WHERE CITY = 'Berne';
+SELECT
+    PHONE
+FROM PUBLIC.ADDRESS
+    /* PUBLIC.INDEX_PLACE: CITY = 'Berne' */
+WHERE CITY = 'Berne';
+
+EXPLAIN SELECT * FROM ADDRESS ORDER BY CITY, NAME, FIRST_NAME;
+SELECT
+    ADDRESS.FIRST_NAME,
+    ADDRESS.NAME,
+    ADDRESS.CITY,
+    ADDRESS.PHONE
+FROM PUBLIC.ADDRESS
+    /* PUBLIC.INDEX_PLACE */
+ORDER BY 3, 2, 1
+/* index sorted */;
+
+EXPLAIN SELECT PHONE FROM ADDRESS WHERE FIRST_NAME = 'John';
+SELECT
+    PHONE
+FROM PUBLIC.ADDRESS
+    /* PUBLIC.ADDRESS.tableScan */
+WHERE FIRST_NAME = 'John';
+</pre>
+<p>
+If your application often queries the table for a phone number, then it makes sense to create
+an additional index on it:
+</p>
+<pre>
+CREATE INDEX IDX_PHONE ON ADDRESS(PHONE);
+</pre>
+<p>
+This index contains the phone number, and the row id:
+</p>
+<table>
+<tr><th>PHONE</th><th>_ROWID_</th></tr>
+<tr><td>123 012 345</td><td>2</td></tr>
+<tr><td>123 456 789</td><td>1</td></tr>
+</table>
+
+<h3>Using Multiple Indexes</h3>
+<p>
+Within a query, only one index per logical table is used.
+Using the condition <code>PHONE = '123 567 789' OR CITY = 'Berne'</code>
+would use a table scan instead of first using the index on the phone number and then the index on the city.
+It makes sense to write two queries and combine then using <code>UNION</code>.
+In this case, each individual query uses a different index:
+</p>
+<pre>
+EXPLAIN SELECT NAME FROM ADDRESS WHERE PHONE = '123 567 789'
+UNION SELECT NAME FROM ADDRESS WHERE CITY = 'Berne';
+
+(SELECT
+    NAME
+FROM PUBLIC.ADDRESS
+    /* PUBLIC.IDX_PHONE: PHONE = '123 567 789' */
+WHERE PHONE = '123 567 789')
+UNION
+(SELECT
+    NAME
+FROM PUBLIC.ADDRESS
+    /* PUBLIC.INDEX_PLACE: CITY = 'Berne' */
+WHERE CITY = 'Berne')
+</pre>
+
+<h2 id="fast_import">Fast Database Import</h2>
+<p>
+To speed up large imports, consider using the following options temporarily:
+</p>
+<ul><li><code>SET LOG 0</code> (disabling the transaction log)
+</li><li><code>SET CACHE_SIZE</code> (a large cache is faster)
+</li><li><code>SET LOCK_MODE 0</code> (disable locking)
+</li><li><code>SET UNDO_LOG 0</code> (disable the session undo log)
+</li></ul>
+<p>
+These options can be set in the database URL:
+<code>jdbc:h2:~/test;LOG=0;CACHE_SIZE=65536;LOCK_MODE=0;UNDO_LOG=0</code>.
+Most of those options are not recommended for regular use, that means you need to reset them after use.
+</p>
+<p>
+If you have to import a lot of rows, use a PreparedStatement or use CSV import.
+Please note that <code>CREATE TABLE(...) ... AS SELECT ...</code>
+is faster than <code>CREATE TABLE(...); INSERT INTO ... SELECT ...</code>.
+</p>
+
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>

@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
-import org.h2.table.RegularTable;
+import org.h2.table.PageStoreTable;
 import org.h2.table.Table;
 
 /**
@@ -34,6 +34,6 @@ public class GridH2DefaultTableEngine implements TableEngine {
         if (data.isHidden && data.id == 0 && "SYS".equals(data.tableName))
             return new GridH2MetaTable(data);
 
-        return new RegularTable(data);
+        return new PageStoreTable(data);
     }
 }

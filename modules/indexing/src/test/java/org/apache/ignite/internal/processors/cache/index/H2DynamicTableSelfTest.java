@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
+import org.h2.jdbc.JdbcSQLSyntaxErrorException;
 import org.h2.value.DataType;
 import org.junit.Test;
 
@@ -491,14 +492,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                 return null;
             }
-        }, JdbcSQLException.class);
+        }, JdbcSQLSyntaxErrorException.class);
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @SuppressWarnings("ConstantConditions")
             @Override public Object call() throws Exception {
                 throw (Exception)e.getCause();
             }
-        }, JdbcSQLException.class, "Table \"" + checkedTblName + "\" not found");
+        }, JdbcSQLSyntaxErrorException.class, "Table \"" + checkedTblName + "\" not found");
     }
 
     /**
@@ -674,7 +675,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
                         try {
                             colTypes.add(Class.forName(DataType.getTypeClassName(DataType
-                                .convertSQLTypeToValueType(rs.getInt("DATA_TYPE")))));
+                                .convertSQLTypeToValueType(rs.getInt("DATA_TYPE")), false)));
                         }
                         catch (ClassNotFoundException e) {
                             throw new AssertionError(e);
@@ -1536,7 +1537,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                     while (colsRs.next())
                         resCols.put(colsRs.getString("COLUMN_NAME"),
                             DataType.getTypeClassName(DataType.convertSQLTypeToValueType(colsRs
-                                .getShort("DATA_TYPE"))));
+                                .getShort("DATA_TYPE")), false));
                 }
 
                 try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM T")) {

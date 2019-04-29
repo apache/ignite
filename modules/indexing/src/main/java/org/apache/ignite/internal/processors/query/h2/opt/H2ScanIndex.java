@@ -17,8 +17,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-
+import org.h2.command.dml.AllColumnsForPlan;
 import org.h2.engine.Database;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
@@ -50,8 +49,12 @@ public class H2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /**
      * @param delegate Delegate.
+     * @param tbl Table.
+     * @param name  Index name.
      */
-    public H2ScanIndex(D delegate) {
+    public H2ScanIndex(D delegate, Table tbl, String name) {
+        super(tbl, 0, name, null, IndexType.createScan(false));
+
         this.delegate = delegate;
     }
 
@@ -89,11 +92,6 @@ public class H2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public final void close(Session ses) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void commit(int operation, Row row) {
         // No-op.
     }
 
@@ -248,8 +246,8 @@ public class H2ScanIndex<D extends BaseIndex> extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public String getSQL() {
-        return delegate().getSQL();
+    @Override public String getSQL(boolean alwaysQuote) {
+        return delegate().getSQL(alwaysQuote);
     }
 
     /** {@inheritDoc} */
@@ -283,8 +281,8 @@ public class H2ScanIndex<D extends BaseIndex> extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
+        AllColumnsForPlan allColumnsSet) {
         long rows = getRowCountApproximation();
 
         return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);

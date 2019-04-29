@@ -69,7 +69,6 @@
         <guava.version>25.1-jre</guava.version>
         <guava14.version>14.0.1</guava14.version>
         <guava16.version>16.0.1</guava16.version>
-        <h2.version>1.4.197</h2.version>
         <hadoop.version>2.9.1</hadoop.version>
         <hamcrest.version>1.2</hamcrest.version>
         <httpclient.version>4.5.1</httpclient.version>
@@ -209,23 +208,6 @@
             <email>vozerov at gridgain dot com</email>
         </developer>
     </developers>
-
-    <repositories>
-        <repository>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-                <checksumPolicy>ignore</checksumPolicy>
-            </snapshots>
-            <id>h2database.com</id>
-            <name>Snapshot repository on h2database.com</name>
-            <url>http://h2database.com/m2-repo</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
 
     <dependencyManagement>
         <dependencies>
@@ -1017,6 +999,11 @@
                                         <exclude>**/web-console/frontend/node_modules/**</exclude>
                                         <exclude>**/web-console/frontend/**/*.png</exclude>
                                         <exclude>**/web-console/frontend/**/*.svg</exclude>
+                                        <!-- H2 forked module. -->
+                                        <exclude>**/org/h2/**</exclude>
+                                        <exclude>src/docsrc/**</exclude>
+                                        <exclude>src/test/tools/WEB-INF/console.html</exclude>
+                                        <exclude>src/test/tools/WEB-INF/web.xml</exclude>
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
                                         <!-- Checkstyle -->

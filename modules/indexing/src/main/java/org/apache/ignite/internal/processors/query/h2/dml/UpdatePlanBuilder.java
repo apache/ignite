@@ -531,7 +531,7 @@ public final class UpdatePlanBuilder {
 
             h2Cols[i] = h2Col;
 
-            colTypes[i] = h2Col.getType();
+            colTypes[i] = h2Col.getType().getValueType();
             int colId = h2Col.getColumnId();
 
             if (desc.isKeyColumn(colId)) {

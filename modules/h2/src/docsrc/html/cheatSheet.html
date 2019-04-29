@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+H2 Database Engine
+</title>
+<style type="text/css">
+td, input, select, textarea, body, td, th {
+    font: 13px Arial, sans-serif;
+}
+h1, h2, h3, h4, h5 {
+    font: 13px Arial, sans-serif;
+    font-weight: bold;
+}
+h1 {
+    background-color: #0000bb;
+    padding: 2px 4px 2px 4px;
+    margin-bottom: 0px;
+    color: #fff;
+    font-size: 19px;
+    line-height: normal;
+}
+h2 {
+    font-size: 16px;
+}
+a.link {
+    text-decoration: underline;
+    color: blue;
+}
+a.link:hover {
+    text-decoration: underline;
+    color: blue;
+}
+a {
+    text-decoration: none;
+    color: black;
+}
+a:hover {
+    text-decoration: underline;
+    color: blue;
+}
+td, input, select, textarea, body, code, pre {
+    font: 13px Arial, sans-serif;
+}
+pre {
+    background-color: #ece9d8;
+    border: 1px solid #aca899;
+    padding: 6px;
+
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+    border-radius: 4px;
+
+    -moz-box-shadow: 2px 2px 2px #aca899;
+    -webkit-box-shadow: 2px 2px 2px #aca899;
+    -khtml-box-shadow: 2px 2px 2px #aca899;
+    -o-box-shadow: 2px 2px 2px #aca899;
+    box-shadow: 2px 2px 2px #aca899;
+}
+code {
+    background-color: #ece9d8;
+    padding: 0px 4px;
+
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -khtml-border-radius: 4px;
+    border-radius: 4px;
+}
+table {
+    background-color: #ffffff;
+    border-collapse: collapse;
+    border: 0px solid #aca899;
+}
+th {
+    text-align: left;
+    background-color: #ece9d8;
+    border: 1px solid #aca899;
+    padding: 2px;
+}
+td {
+    background-color: #ffffff;
+    text-align: left;
+    vertical-align: top;
+    border: 0px solid #aca899;
+    padding: 2px;
+}
+ul, ol {
+    list-style-position: outside;
+    padding-left: 20px;
+}
+li {
+    margin-top: 2px;
+}
+</style>
+</head><body>
+
+<div style="width:780px; margin:0 auto;">
+
+<h1>H2 Database Engine Cheat Sheet</h1>
+<div style="float:left; margin:5px; width:370px;">
+
+<h2>Using H2</h2>
+<ul><li><a href="http://h2database.com">H2</a> is
+    <a href="https://github.com/h2database/h2database">open source</a>,
+    <a href="license.html">free to use and distribute</a>.
+</li><li><a href="http://h2database.com/html/download.html">Download</a>:
+    <a href="http://repo1.maven.org/maven2/com/h2database/h2/${version}/h2-${version}.jar" class="link">jar</a>,
+    <a href="http://www.h2database.com/h2-setup-${versionDate}.exe" class="link">installer (Windows)</a>,
+    <a href="http://www.h2database.com/h2-${versionDate}.zip" class="link">zip</a>.
+</li><li>To start the
+    <a href="quickstart.html#h2_console">H2 Console tool</a>, double click the jar file, or
+    run <code>java -jar h2*.jar</code>, <code>h2.bat</code>, or <code>h2.sh</code>.
+</li><li><a href="tutorial.html#creating_new_databases">A new database is automatically created</a>
+    <a href="features.html#database_only_if_exists">by default</a>.
+</li><li><a href="features.html#closing_a_database">Closing the last connection closes the database</a>.
+</li></ul>
+
+<h2>Documentation</h2>
+<p>
+Reference:
+<a href="grammar.html" class="link">SQL grammar</a>,
+<a href="functions.html" class="link">functions</a>,
+<a href="datatypes.html" class="link">data types</a>,
+<a href="tutorial.html#command_line_tools" class="link">tools</a>,
+<a href="../javadoc/index.html" class="link">API</a>
+<br />
+<a href="features.html">Features</a>:
+<a href="tutorial.html#fulltext" class="link">fulltext search</a>,
+<a href="features.html#file_encryption" class="link">encryption</a>,
+<a href="features.html#read_only" class="link">read-only</a>
+<a href="features.html#database_in_zip" class="link">(zip/jar)</a>,
+<a href="tutorial.html#csv" class="link">CSV</a>,
+<a href="features.html#auto_reconnect" class="link">auto-reconnect</a>,
+<a href="features.html#triggers" class="link">triggers</a>,
+<a href="features.html#user_defined_functions" class="link">user functions</a>
+</p>
+
+<h2><a href="features.html#database_url">Database URLs</a></h2>
+<p>
+<b><a href="features.html#connection_modes">Embedded</a></b><br />
+<code>jdbc:h2:~/test</code> 'test' in the user home directory<br />
+<code>jdbc:h2:/data/test</code> 'test' in the directory /data<br />
+<code>jdbc:h2:./test</code> in the current(!) working directory<br />
+</p><p>
+<b><a href="features.html#in_memory_databases">In-Memory</a></b><br />
+<code>jdbc:h2:mem:test</code> multiple connections in one process<br />
+<code>jdbc:h2:mem:</code> unnamed private; one connection<br />
+</p><p>
+<b><a href="tutorial.html#using_server">Server Mode</a></b><br />
+<code>jdbc:h2:tcp://localhost/~/test</code> user home dir<br />
+<code>jdbc:h2:tcp://localhost//data/test</code> absolute dir<br />
+<a href="tutorial.html#using_server">Server start</a>:<code>java -cp *.jar org.h2.tools.Server</code>
+</p><p>
+<b><a href="features.html#database_url">Settings</a></b><br />
+<code>jdbc:h2:..;MODE=MySQL</code> <a href="features.html#compatibility" >compatibility (or HSQLDB,...)</a><br />
+<code>jdbc:h2:..;TRACE_LEVEL_FILE=3</code> <a href="features.html#trace_options">log to *.trace.db</a><br />
+</p>
+
+</div>
+<div style="float:right; padding:5px; width:370px;">
+
+<h2><a href="tutorial.html#connecting_using_jdbc">Using the JDBC API</a></h2>
+<pre>
+Connection conn = DriverManager.
+    getConnection("jdbc:h2:~/test");
+conn.close();
+</pre>
+
+<h2><a href="tutorial.html#connection_pool">Connection Pool</a></h2>
+<pre>
+import org.h2.jdbcx.JdbcConnectionPool;
+JdbcConnectionPool cp = JdbcConnectionPool.
+    create("jdbc:h2:~/test", "sa", "sa");
+Connection conn = cp.getConnection();
+conn.close(); cp.dispose();
+</pre>
+
+<h2><a href="build.html#maven2">Maven 2</a></h2>
+<pre>
+&lt;dependency&gt;
+    &lt;groupId&gt;com.h2database&lt;/groupId&gt;
+    &lt;artifactId&gt;h2&lt;/artifactId&gt;
+    &lt;version&gt;${version}&lt;/version&gt;
+&lt;/dependency&gt;
+</pre>
+
+<h2><a href="tutorial.html#using_hibernate">Hibernate</a></h2>
+<p>
+hibernate.cfg.xml (or use the HSQLDialect):
+</p>
+<pre>
+&lt;property name="dialect"&gt;
+    org.hibernate.dialect.H2Dialect
+&lt;/property&gt;
+</pre>
+
+<h2><a href="tutorial.html#using_toplink">TopLink and Glassfish</a></h2>
+<p>
+Datasource class: <code>org.h2.jdbcx.JdbcDataSource</code><br />
+<code>oracle.toplink.essentials.platform.</code><br />
+<code>database.H2Platform</code>
+</p>
+
+</div>
+
+</div>
+
+</body></html>

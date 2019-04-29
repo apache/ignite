@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head><meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+Frequently Asked Questions
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1 id="faq_index">Frequently Asked Questions</h1>
+
+<a href="#support">
+    I Have a Problem or Feature Request</a><br />
+<a href="#known_bugs">
+    Are there Known Bugs? When is the Next Release?</a><br />
+<a href="#open_source">
+    Is this Database Engine Open Source?</a><br />
+<a href="#commercial_support">
+    Is Commercial Support Available?</a><br />
+<a href="#create_database">
+    How to Create a New Database?</a><br />
+<a href="#connect">
+    How to Connect to a Database?</a><br />
+<a href="#database_files">
+    Where are the Database Files Stored?</a><br />
+<a href="#size_limit">
+    What is the Size Limit (Maximum Size) of a Database?</a><br />
+<a href="#reliable">
+    Is it Reliable?</a><br />
+<a href="#slow_open">
+    Why is Opening my Database Slow?</a><br />
+<a href="#query_slow">
+    My Query is Slow</a><br />
+<a href="#database_slow">
+    H2 is Very Slow</a><br />
+<a href="#column_names_incorrect">
+    Column Names are Incorrect?</a><br />
+<a href="#float_is_double">
+    Float is Double?</a><br />
+<a href="#how_to_translate">
+    How to Translate this Project?</a><br />
+<a href="#how_to_contribute">
+    How to Contribute to this Project?</a><br />
+
+<h3 id="support">I Have a Problem or Feature Request</h3>
+<p>
+Please read the <a href="build.html#support">support checklist</a>.
+</p>
+
+<h3 id="known_bugs">Are there Known Bugs? When is the Next Release?</h3>
+<p>
+Usually, bugs get fixes as they are found. There is a release every few weeks.
+Here is the list of known and confirmed issues:
+</p>
+<ul><li>When opening a database file in a timezone that has different
+    daylight saving rules: the time part of dates where the daylight saving doesn't match
+    will differ. This is not a problem within regions that use the same rules (such as, within
+    USA, or within Europe), even if the timezone itself is different. As a workaround, export the
+    database to a SQL script using the old timezone, and create a new database in the new
+    timezone.
+</li><li>Tomcat and Glassfish 3 set most static fields (final or non-final) to <code>null</code> when
+    unloading a web application. This can cause a <code>NullPointerException</code> in H2 versions
+    1.1.107 and older, and may still not work in newer versions. Please report it if you
+    run into this issue. In Tomcat &gt;= 6.0 this behavior can be disabled by setting the
+    system property <code>org.apache.catalina.loader.WebappClassLoader.ENABLE_CLEAR_REFERENCES=false</code>,
+    however Tomcat may then run out of memory. A known workaround is to
+    put the <code>h2*.jar</code> file in a shared <code>lib</code> directory
+    (<code>common/lib</code>).
+</li><li>Some problems have been found with right outer join. Internally, it is converted
+    to left outer join, which does not always produce the same results as other databases
+    when used in combination with other joins. This problem is fixed in H2 version 1.3.
+</li></ul>
+<p>
+For a complete list, see <a href="https://github.com/h2database/h2database/issues">Open Issues</a>.
+</p>
+
+<h3 id="open_source">Is this Database Engine Open Source?</h3>
+<p>
+Yes. It is free to use and distribute, and the source code is included.
+See also under license.
+</p>
+
+<h3 id="commercial_support">Is Commercial Support Available?</h3>
+<p>
+No, currently commercial support is not available.
+</p>
+
+<h3 id="create_database">How to Create a New Database?</h3>
+<p>
+By default, a new database is automatically created if it does not yet exist when
+<a href="features.html#database_url">embedded</a> URL is used.
+See <a href="tutorial.html#creating_new_databases">Creating New Databases</a>.
+</p>
+
+<h3 id="connect">How to Connect to a Database?</h3>
+<p>
+The database driver is <code>org.h2.Driver</code>,
+and the database URL starts with <code>jdbc:h2:</code>.
+To connect to a database using JDBC, use the following code:
+</p>
+<pre>
+Connection conn = DriverManager.getConnection("jdbc:h2:~/test", "sa", "");
+</pre>
+
+<h3 id="database_files">Where are the Database Files Stored?</h3>
+<p>
+When using database URLs like <code>jdbc:h2:~/test</code>,
+the database is stored in the user directory.
+For Windows, this is usually
+<code>C:\Documents and Settings\&lt;userName&gt;</code> or
+<code>C:\Users\&lt;userName&gt;</code>.
+If the base directory is not set (as in <code>jdbc:h2:./test</code>),
+the database files are stored in the directory where the application is started
+(the current working directory).
+When using the H2 Console application from the start menu,
+this is <code>&lt;Installation Directory&gt;/bin</code>.
+The base directory can be set in the database URL.
+A fixed or relative path can be used. When using the URL
+<code>jdbc:h2:file:./data/sample</code>, the database is stored in the directory
+<code>data</code> (relative to the current working directory).
+The directory is created automatically if it does not yet exist.
+It is also possible to use the fully qualified directory name (and for Windows, drive name).
+Example: <code>jdbc:h2:file:C:/data/test</code>
+</p>
+
+<h3 id="size_limit">What is the Size Limit (Maximum Size) of a Database?</h3>
+<p>
+See <a href="advanced.html#limits_limitations">Limits and Limitations</a>.
+</p>
+
+<h3 id="reliable">Is it Reliable?</h3>
+<p>
+That is not easy to say. It is still a quite new product. A lot of tests have been written,
+and the code coverage of these tests is higher than 80% for each package.
+Randomized stress tests are run regularly. But there are probably still
+bugs that have not yet been found (as with most software). Some features are known
+to be dangerous, they are only supported for situations where performance is more important
+than reliability. Those dangerous features are:
+</p>
+<ul><li>Disabling the transaction log or FileDescriptor.sync() using LOG=0 or LOG=1.
+</li><li>Using the transaction isolation level <code>READ_UNCOMMITTED</code>
+    (<code>LOCK_MODE 0</code>) while at the same time using multiple
+    connections.
+</li><li>Disabling database file protection using (setting <code>FILE_LOCK</code> to
+    <code>NO</code> in the database URL).
+</li><li>Disabling referential integrity using <code>SET REFERENTIAL_INTEGRITY FALSE</code>.
+</li></ul>
+<p>
+In addition to that, running out of memory should be avoided.
+In older versions, OutOfMemory errors while using the database could corrupt a databases.
+</p>
+<p>
+This database is well tested using automated test cases. The tests run every night
+and run for more than one hour. But not all areas of this database are equally well tested.
+When using one of the following features for production, please ensure your use case
+is well tested (if possible with automated test cases). The areas that are not well tested are:
+</p>
+<ul>
+<li>Platforms other than Windows, Linux, Mac OS X, or runtime environments other than Oracle / OpenJDK 7, 8, 9.
+</li><li>The features <code>AUTO_SERVER</code> and <code>AUTO_RECONNECT</code>.
+</li><li>Cluster mode, 2-phase commit, savepoints.
+</li><li>Fulltext search.
+</li><li>Operations on LOBs over 2 GB.
+</li><li>The optimizer may not always select the best plan.
+</li><li>Using the ICU4J collator.
+</li></ul>
+<p>
+Areas considered experimental are:
+</p>
+<ul>
+<li>The PostgreSQL server
+</li><li>Clustering (there are cases were transaction isolation can be broken
+    due to timing issues, for example one session overtaking another session).
+</li><li>Multi-threading within the old PageStore engine using <code>SET MULTI_THREADED=1</code>.
+    Default MVStore engine is multi-threaded by default.
+</li><li>Compatibility modes for other databases (only some features are implemented).
+</li><li>The soft reference cache (<code>CACHE_TYPE=SOFT_LRU</code>). It might not improve performance,
+    and out of memory issues have been reported.
+</li></ul>
+<p>
+Some users have reported that after a power failure, the database cannot be opened sometimes.
+In this case, use a backup of the database or the Recover tool. Please report such problems.
+The plan is that the database automatically recovers in all situations.
+</p>
+
+<h3 id="slow_open">Why is Opening my Database Slow?</h3>
+<p>
+To find out what the problem is, use the H2 Console and click on "Test Connection"
+instead of "Login". After the "Login Successful" appears, click on it (it's a link).
+This will list the top stack traces. Then either analyze this yourself, or
+post those stack traces in the Google Group.
+</p>
+<p>
+Other possible reasons are: the database is very big (many GB), or contains linked tables
+that are slow to open.
+</p>
+
+<h3 id="query_slow">My Query is Slow</h3>
+<p>
+Slow <code>SELECT</code> (or <code>DELETE, UPDATE, MERGE</code>)
+statement can have multiple reasons. Follow this checklist:
+</p>
+<ul>
+<li>Run <code>ANALYZE</code> (see documentation for details).
+</li><li>Run the query with <code>EXPLAIN</code> and check if indexes are used
+    (see documentation for details).
+</li><li>If required, create additional indexes and try again using
+    <code>ANALYZE</code> and <code>EXPLAIN</code>.
+</li><li>If it doesn't help please report the problem.
+</li>
+</ul>
+
+
+<h3 id="database_slow">H2 is Very Slow</h3>
+<p>
+By default, H2 closes the database when the last connection is closed.
+If your application closes the only connection after each operation,
+the database is opened and closed a lot, which is quite slow.
+There are multiple ways to solve this problem, see
+<a href="performance.html#database_performance_tuning">Database Performance Tuning</a>.
+</p>
+
+<h3 id="column_names_incorrect">Column Names are Incorrect?</h3>
+<p>
+For the query <code>SELECT ID AS X FROM TEST</code> the method
+<code>ResultSetMetaData.getColumnName()</code> returns <code>ID</code>, I expect it to
+return <code>X</code>. What's wrong?
+</p>
+<p>
+This is not a bug. According the JDBC specification, the method
+<code>ResultSetMetaData.getColumnName()</code> should return the name of the column
+and not the alias name. If you need the alias name, use
+<a href="https://docs.oracle.com/javase/7/docs/api/java/sql/ResultSetMetaData.html#getColumnLabel(int)"><code>ResultSetMetaData.getColumnLabel()</code></a>.
+Some other database don't work like this yet (they don't follow the JDBC specification).
+If you need compatibility with those databases, use the <a href="features.html#compatibility">Compatibility Mode</a>,
+or append <a href="http://www.h2database.com/javadoc/org/h2/engine/DbSettings.html#ALIAS_COLUMN_NAME"><code>;ALIAS_COLUMN_NAME=TRUE</code></a> to the database URL.
+</p>
+<p>
+This also applies to DatabaseMetaData calls that return a result set.
+The columns in the JDBC API are column labels, not column names.
+</p>
+
+<h3 id="float_is_double">Float is Double?</h3>
+<p>
+For a table defined as <code>CREATE TABLE TEST(X FLOAT)</code> the method
+<code>ResultSet.getObject()</code> returns a <code>java.lang.Double</code>, I expect it to
+return a <code>java.lang.Float</code>. What's wrong?
+</p>
+<p>
+This is not a bug. According the JDBC specification, the JDBC data type <code>FLOAT</code>
+is equivalent to <code>DOUBLE</code>, and both are mapped to <code>java.lang.Double</code>.
+See also
+<a href="https://docs.oracle.com/javase/1.5.0/docs/guide/jdbc/getstart/mapping.html#1055162">
+Mapping SQL and Java Types - 8.3.10 FLOAT</a>.</p>
+<p>Use REAL or FLOAT(24) data type for <code>java.lang.Float</code> values.</p>
+
+<h3 id="how_to_translate">How to Translate this Project?</h3>
+<p>
+For more information, see
+<a href="build.html#translating">Build/Translating</a>.
+</p>
+
+<h3 id="how_to_contribute">How to Contribute to this Project?</h3>
+<p>
+There are various way to help develop an open source project like H2. The first step could be to
+<a href="build.html#translating">translate</a> the error messages and the GUI to your native language.
+Then, you could
+<a href="build.html#providing_patches">provide patches</a>.
+Please start with small patches. That could be adding a test case to improve the
+<a href="build.html#automated">code coverage</a> (the target code coverage for this project is 90%, higher is better).
+You will have to <a href="build.html">develop, build and run the tests</a>.
+Once you are familiar with the code, you could implement missing features from the
+<a href="http://www.h2database.com/html/roadmap.html">feature request list</a>.
+I suggest to start with very small features that are easy to implement.
+Keep in mind to provide test cases as well.
+</p>
+
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>

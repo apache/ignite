@@ -727,8 +727,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan: \n" + plan);
 
-            assertTrue(plan.contains("USE INDEX (PERSON2_ORGID_IDX)"));
-            assertTrue(plan.contains("/* \"pers\".PERSON2_ORGID_IDX:"));
+            assertTrue(plan.contains("USE INDEX (\"PERSON2_ORGID_IDX\")"));
+            assertTrue(plan.contains("/* pers.PERSON2_ORGID_IDX:"));
 
             select = "select 1 from Person2 use index (\"PERSON2_NAME_IDX\") where name = '' and orgId = 1";
 
@@ -736,8 +736,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
             X.println("Plan: \n" + plan);
 
-            assertTrue(plan.contains("USE INDEX (PERSON2_NAME_IDX)"));
-            assertTrue(plan.contains("/* \"pers\".PERSON2_NAME_IDX:"));
+            assertTrue(plan.contains("USE INDEX (\"PERSON2_NAME_IDX\")"));
+            assertTrue(plan.contains("/* pers.PERSON2_NAME_IDX:"));
         }
         finally {
             c.destroy();

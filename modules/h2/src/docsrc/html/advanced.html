@@ -1,0 +1,1968 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+Advanced
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1>Advanced</h1>
+<a href="#result_sets">
+    Result Sets</a><br />
+<a href="#large_objects">
+    Large Objects</a><br />
+<a href="#linked_tables">
+    Linked Tables</a><br />
+<a href="#spatial_features">
+    Spatial Features</a><br />
+<a href="#recursive_queries">
+    Recursive Queries</a><br />
+<a href="#updatable_views">
+    Updatable Views</a><br />
+<a href="#transaction_isolation">
+    Transaction Isolation</a><br />
+<a href="#mvcc">
+    Multi-Version Concurrency Control (MVCC)</a><br />
+<a href="#clustering">
+    Clustering / High Availability</a><br />
+<a href="#two_phase_commit">
+    Two Phase Commit</a><br />
+<a href="#compatibility">
+    Compatibility</a><br />
+<a href="#keywords">
+    Keywords / Reserved Words</a><br />
+<a href="#standards_compliance">
+    Standards Compliance</a><br />
+<a href="#windows_service">
+    Run as Windows Service</a><br />
+<a href="#odbc_driver">
+    ODBC Driver</a><br />
+<a href="#microsoft_dot_net">
+    Using H2 in Microsoft .NET</a><br />
+<a href="#acid">
+    ACID</a><br />
+<a href="#durability_problems">
+    Durability Problems</a><br />
+<a href="#using_recover_tool">
+    Using the Recover Tool</a><br />
+<a href="#file_locking_protocols">
+    File Locking Protocols</a><br />
+<a href="#passwords">
+    Using Passwords</a><br />
+<a href="#password_hash">
+    Password Hash</a><br />
+<a href="#sql_injection">
+    Protection against SQL Injection</a><br />
+<a href="#remote_access">
+    Protection against Remote Access</a><br />
+<a href="#restricting_classes">
+    Restricting Class Loading and Usage</a><br />
+<a href="#security_protocols">
+    Security Protocols</a><br />
+<a href="#tls_connections">
+    TLS Connections</a><br />
+<a href="#uuid">
+    Universally Unique Identifiers (UUID)</a><br />
+<a href="#system_properties">
+    Settings Read from System Properties</a><br />
+<a href="#server_bind_address">
+    Setting the Server Bind Address</a><br />
+<a href="#file_system">
+    Pluggable File System</a><br />
+<a href="#file_system_split">
+    Split File System</a><br />
+<a href="#database_upgrade">
+    Database Upgrade</a><br />
+<a href="#java_objects_serialization">
+    Java Objects Serialization</a><br />
+<a href="#custom_data_types_handler_api">
+    Custom Data Types Handler API</a><br />
+<a href="#limits_limitations">
+    Limits and Limitations</a><br />
+<a href="#glossary_links">
+    Glossary and Links</a><br />
+
+<h2 id="result_sets">Result Sets</h2>
+
+<h3>Statements that Return a Result Set</h3>
+<p>
+The following statements return a result set: <code>SELECT, EXPLAIN, CALL, SCRIPT, SHOW, HELP</code>.
+All other statements return an update count.
+</p>
+
+<h3>Limiting the Number of Rows</h3>
+<p>
+Before the result is returned to the application, all rows are read by the database.
+Server side cursors are not supported currently.
+If only the first few rows are interesting for the application, then the
+result set size should be limited to improve the performance.
+This can be done using <code>FETCH</code> in a query
+(example: <code>SELECT * FROM TEST FETCH FIRST 100 ROWS ONLY</code>),
+or by using <code>Statement.setMaxRows(max)</code>.
+</p>
+
+<h3>Large Result Sets and External Sorting</h3>
+<p>
+For large result set, the result is buffered to disk. The threshold can be defined using the statement
+<code>SET MAX_MEMORY_ROWS</code>.
+If <code>ORDER BY</code> is used, the sorting is done using an
+external sort algorithm.
+In this case, each block of rows is sorted using quick sort, then written to disk;
+when reading the data, the blocks are merged together.
+</p>
+
+<h2 id="large_objects">Large Objects</h2>
+
+<h3>Storing and Reading Large Objects</h3>
+<p>
+If it is possible that the objects don't fit into memory, then the data type
+CLOB (for textual data) or BLOB (for binary data) should be used.
+For these data types, the objects are not fully read into memory, by using streams.
+To store a BLOB, use <code>PreparedStatement.setBinaryStream</code>. To store a CLOB, use
+<code>PreparedStatement.setCharacterStream</code>. To read a BLOB, use <code>ResultSet.getBinaryStream</code>,
+and to read a CLOB, use <code>ResultSet.getCharacterStream</code>.
+When using the client/server mode, large BLOB and CLOB data is stored in a temporary file
+on the client side.
+</p>
+
+<h3>When to use CLOB/BLOB</h3>
+<p>
+By default, this database stores large LOB (CLOB and BLOB) objects separate from the main table data.
+Small LOB objects are stored in-place, the threshold can be set using
+<a href="commands.html#set_max_length_inplace_lob" class="notranslate" >MAX_LENGTH_INPLACE_LOB</a>,
+but there is still an overhead to use CLOB/BLOB. Because of this, BLOB and CLOB
+should never be used for columns with a maximum size below about 200 bytes.
+The best threshold depends on the use case; reading in-place objects is faster
+than reading from separate files, but slows down the performance of operations
+that don't involve this column.
+</p>
+
+<h3>Large Object Compression</h3>
+<p>
+The following feature is only available for the PageStore storage engine.
+For the MVStore engine (the default for H2 version 1.4.x),
+append <code>;COMPRESS=TRUE</code> to the database URL instead.
+CLOB and BLOB values can be compressed by using
+<a href="commands.html#set_compress_lob" class="notranslate" >SET COMPRESS_LOB</a>.
+The LZF algorithm is faster but needs more disk space. By default compression is disabled, which usually speeds up write
+operations. If you store many large compressible values such as XML, HTML, text, and uncompressed binary files,
+then compressing can save a lot of disk space (sometimes more than 50%), and read operations may even be faster.
+</p>
+
+<h2 id="linked_tables">Linked Tables</h2>
+<p>
+This database supports linked tables, which means tables that don't exist in the current database but
+are just links to another database. To create such a link, use the
+<code>CREATE LINKED TABLE</code> statement:
+</p>
+<pre>
+CREATE LINKED TABLE LINK('org.postgresql.Driver', 'jdbc:postgresql:test', 'sa', 'sa', 'TEST');
+</pre>
+<p>
+You can then access the table in the usual way.
+Whenever the linked table is accessed, the database issues specific queries over JDBC.
+Using the example above, if you issue the query <code>SELECT * FROM LINK WHERE ID=1</code>,
+then the following query is run against the PostgreSQL database: <code>SELECT * FROM TEST WHERE ID=?</code>.
+The same happens for insert and update statements.
+Only simple statements are executed against the target database, that means no joins
+(queries that contain joins are converted to simple queries).
+Prepared statements are used where possible.
+</p>
+<p>
+To view the statements that are executed against the target table, set the trace level to 3.
+</p>
+<p>
+If multiple linked tables point to the same database (using the same database URL), the connection
+is shared. To disable this, set the system property <code>h2.shareLinkedConnections=false</code>.
+</p>
+<p>
+The statement <a href="commands.html#create_linked_table" class="notranslate" >CREATE LINKED TABLE</a>
+supports an optional schema name parameter.
+</p>
+<p>
+The following are not supported because they may result in a deadlock:
+creating a linked table to the same database,
+and creating a linked table to another database using the server mode if the other database is open in the same server
+(use the embedded mode instead).
+</p>
+<p>
+Data types that are not supported in H2 are also not supported for linked tables,
+for example unsigned data types if the value is outside the range of the signed type.
+In such cases, the columns needs to be cast to a supported type.
+</p>
+
+<h2 id="updatable_views">Updatable Views</h2>
+<p>
+By default, views are not updatable.
+To make a view updatable, use an "instead of" trigger as follows:
+</p>
+<pre>
+CREATE TRIGGER TRIGGER_NAME
+INSTEAD OF INSERT, UPDATE, DELETE
+ON VIEW_NAME
+FOR EACH ROW CALL "com.acme.TriggerClassName";
+</pre>
+<p>
+Update the base table(s) within the trigger as required.
+For details, see the sample application <code>org.h2.samples.UpdatableView</code>.
+</p>
+
+<h2 id="transaction_isolation">Transaction Isolation</h2>
+<p>
+Please note that most data definition language (DDL) statements,
+such as "create table", commit the current transaction.
+See the <a href="commands.html">Commands</a> for details.
+</p>
+<p>
+Transaction isolation is provided for all data manipulation language (DML) statements.
+</p>
+<p>
+Please note that with default MVStore storage engine table level locking is not used.
+Instead, rows are locked for update, and read committed is used in all cases
+except for explicitly selected read uncommitted transaction isolation level.
+</p>
+<p>
+This database supports the following transaction isolation levels:
+</p>
+<ul>
+<li><b>Read Committed</b><br />
+    This is the default level.
+    Read locks are released immediately after executing the statement, but write locks are kept until the transaction commits.
+    Higher concurrency is possible when using this level.<br />
+    To enable, execute the SQL statement <code>SET LOCK_MODE 3</code><br />
+    or append <code>;LOCK_MODE=3</code> to the database URL: <code>jdbc:h2:~/test;LOCK_MODE=3</code>
+</li><li>
+<b>Serializable</b><br />
+    Both read locks and write locks are kept until the transaction commits.
+    To enable, execute the SQL statement <code>SET LOCK_MODE 1</code><br />
+    or append <code>;LOCK_MODE=1</code> to the database URL: <code>jdbc:h2:~/test;LOCK_MODE=1</code>
+</li><li><b>Read Uncommitted</b><br />
+    This level means that transaction isolation is disabled.
+    This level is not supported by PageStore engine if multi-threaded mode is enabled.
+    <br />
+    To enable, execute the SQL statement <code>SET LOCK_MODE 0</code><br />
+    or append <code>;LOCK_MODE=0</code> to the database URL: <code>jdbc:h2:~/test;LOCK_MODE=0</code>
+</li>
+</ul>
+<p>
+When using the isolation level 'serializable', dirty reads, non-repeatable reads, and phantom reads are prohibited.
+</p>
+<ul>
+<li><b>Dirty Reads</b><br />
+    Means a connection can read uncommitted changes made by another connection.<br />
+    Possible with: read uncommitted
+</li><li><b>Non-Repeatable Reads</b><br />
+    A connection reads a row, another connection changes a row and commits,
+    and the first connection re-reads the same row and gets the new result.<br />
+    Possible with: read uncommitted, read committed
+</li><li><b>Phantom Reads</b><br />
+    A connection reads a set of rows using a condition, another connection
+    inserts a row that falls in this condition and commits, then the first connection
+    re-reads using the same condition and gets the new row.<br />
+    Possible with: read uncommitted, read committed
+</li>
+</ul>
+
+<h3 id="mvcc">Multi-Version Concurrency Control (MVCC)</h3>
+<p>
+With default MVStore engine delete, insert and update operations only issue a shared lock on the table.
+An exclusive lock is still used when adding or removing columns or when dropping the table.
+Connections only 'see' committed data, and own changes. That means, if connection A updates
+a row but doesn't commit this change yet, connection B will see the old value.
+Only when the change is committed, the new value is visible by other connections
+(read committed). If multiple connections concurrently try to lock or update the same row, the
+database waits until it can apply the change, but at most until the lock timeout expires.
+</p>
+
+<h3>Table Level Locking (PageStore engine)</h3>
+<p>
+With PageStore engine to make sure all connections only see consistent data, table level locking is used.
+This mechanism does not allow high concurrency, but is very fast.
+Shared locks and exclusive locks are supported.
+Before reading from a table, the database tries to add a shared lock to the table
+(this is only possible if there is no exclusive lock on the object by another connection).
+If the shared lock is added successfully, the table can be read. It is allowed that
+other connections also have a shared lock on the same object. If a connection wants
+to write to a table (update or delete a row), an exclusive lock is required. To get the
+exclusive lock, other connection must not have any locks on the object. After the
+connection commits, all locks are released.
+This database keeps all locks in memory.
+When a lock is released, and multiple connections are waiting for it, one of them is picked at random.
+</p>
+
+<h3>Lock Timeout</h3>
+<p>
+If a connection cannot get a lock on an object, the connection waits for some amount
+of time (the lock timeout). During this time, hopefully the connection holding the
+lock commits and it is then possible to get the lock. If this is not possible because
+the other connection does not release the lock for some time, the unsuccessful
+connection will get a lock timeout exception. The lock timeout can be set individually
+for each connection.
+</p>
+
+<h2 id="clustering">Clustering / High Availability</h2>
+<p>
+This database supports a simple clustering / high availability mechanism. The architecture is:
+two database servers run on two different computers, and on both computers is a copy of the
+same database. If both servers run, each database operation is executed on both computers.
+If one server fails (power, hardware or network failure), the other server can still continue to work.
+From this point on, the operations will be executed only on one server until the other server
+is back up.
+</p><p>
+Clustering can only be used in the server mode (the embedded mode does not support clustering).
+The cluster can be re-created using the <code>CreateCluster</code> tool without stopping
+the remaining server. Applications that are still connected are automatically disconnected,
+however when appending <code>;AUTO_RECONNECT=TRUE</code>, they will recover from that.
+</p><p>
+To initialize the cluster, use the following steps:
+</p>
+<ul>
+<li>Create a database
+</li><li>Use the <code>CreateCluster</code> tool to copy the database to
+    another location and initialize the clustering.
+    Afterwards, you have two databases containing the same data.
+</li><li>Start two servers (one for each copy of the database)
+</li><li>You are now ready to connect to the databases with the client application(s)
+</li></ul>
+
+<h3>Using the CreateCluster Tool</h3>
+<p>
+To understand how clustering works, please try out the following example.
+In this example, the two databases reside on the same computer, but usually, the
+databases will be on different servers.
+</p>
+<ul>
+<li>Create two directories: <code>server1, server2</code>.
+    Each directory will simulate a directory on a computer.
+</li><li>Start a TCP server pointing to the first directory.
+    You can do this using the command line:
+<pre>
+java org.h2.tools.Server
+    -tcp -tcpPort 9101
+    -baseDir server1
+</pre>
+</li><li>Start a second TCP server pointing to the second directory.
+    This will simulate a server running on a second (redundant) computer.
+    You can do this using the command line:
+<pre>
+java org.h2.tools.Server
+    -tcp -tcpPort 9102
+    -baseDir server2
+</pre>
+</li><li>Use the <code>CreateCluster</code> tool to initialize clustering.
+    This will automatically create a new, empty database if it does not exist.
+    Run the tool on the command line:
+<pre>
+java org.h2.tools.CreateCluster
+    -urlSource jdbc:h2:tcp://localhost:9101/~/test
+    -urlTarget jdbc:h2:tcp://localhost:9102/~/test
+    -user sa
+    -serverList localhost:9101,localhost:9102
+</pre>
+</li><li>You can now connect to the databases using
+an application or the H2 Console using the JDBC URL
+<code>jdbc:h2:tcp://localhost:9101,localhost:9102/~/test</code>
+</li><li>If you stop a server (by killing the process),
+you will notice that the other machine continues to work,
+and therefore the database is still accessible.
+</li><li>To restore the cluster, you first need to delete the
+database that failed, then restart the server that was stopped,
+and re-run the <code>CreateCluster</code> tool.
+</li></ul>
+
+<h3>Detect Which Cluster Instances are Running</h3>
+<p>
+To find out which cluster nodes are currently running, execute the following SQL statement:
+</p>
+<pre>
+SELECT VALUE FROM INFORMATION_SCHEMA.SETTINGS WHERE NAME='CLUSTER'
+</pre>
+<p>
+If the result is <code>''</code> (two single quotes), then the cluster mode is disabled. Otherwise, the list of
+servers is returned, enclosed in single quote. Example: <code>'server1:9191,server2:9191'</code>.
+</p>
+
+<p>
+It is also possible to get the list of servers by using Connection.getClientInfo().
+</p>
+
+<p>
+The property list returned from <code>getClientInfo()</code> contains a <code>numServers</code> property that returns the
+number of servers that are in the connection list. To get the actual servers, <code>getClientInfo()</code> also has
+properties <code>server0</code>..<code>serverX</code>, where serverX is the number of servers minus 1.
+</p>
+
+<p>
+Example: To get the 2nd server in the connection list one uses <code>getClientInfo('server1')</code>.
+<b>Note:</b> The <code>serverX</code> property only returns IP addresses and ports and not hostnames.
+</p>
+
+<h3>Clustering Algorithm and Limitations</h3>
+<p>
+Read-only queries are only executed against the first cluster node, but all other statements are
+executed against all nodes. There is currently no load balancing made to avoid problems with
+transactions. The following functions may yield different results on different cluster nodes and must be
+executed with care: <code>UUID(), RANDOM_UUID(), SECURE_RAND(), SESSION_ID(),
+MEMORY_FREE(), MEMORY_USED(), CSVREAD(), CSVWRITE(), RAND()</code> [when not using a seed].
+Those functions should not be used directly in modifying statements
+(for example <code>INSERT, UPDATE, MERGE</code>). However, they can be used
+in read-only statements and the result can then be used for modifying statements.
+Using auto-increment and identity columns is currently not supported.
+Instead, sequence values need to be manually requested and then used to insert data (using two statements).
+</p>
+<p>
+When using the cluster modes, result sets are read fully in memory by the client, so that
+there is no problem if the server dies that executed the query. Result sets must fit in memory
+on the client side.
+</p>
+<p>
+The SQL statement <code>SET AUTOCOMMIT FALSE</code> is not supported in the cluster mode.
+To disable autocommit, the method <code>Connection.setAutoCommit(false)</code> needs to be called.
+</p>
+<p>
+It is possible that a transaction from one connection overtakes a transaction from a different connection.
+Depending on the operations, this might result in different results, for example when
+conditionally incrementing a value in a row.
+</p>
+
+<h2 id="two_phase_commit">Two Phase Commit</h2>
+<p>
+The two phase commit protocol is supported. 2-phase-commit works as follows:
+</p>
+<ul>
+<li>Autocommit needs to be switched off
+</li><li>A transaction is started, for example by inserting a row
+</li><li>The transaction is marked 'prepared' by executing the SQL statement
+    <code>PREPARE COMMIT transactionName</code>
+</li><li>The transaction can now be committed or rolled back
+</li><li>If a problem occurs before the transaction was successfully committed or rolled back
+    (for example because a network problem occurred), the transaction is in the state 'in-doubt'
+</li><li>When re-connecting to the database, the in-doubt transactions can be listed
+    with <code>SELECT * FROM INFORMATION_SCHEMA.IN_DOUBT</code>
+</li><li>Each transaction in this list must now be committed or rolled back by executing
+    <code>COMMIT TRANSACTION transactionName</code> or
+    <code>ROLLBACK TRANSACTION transactionName</code>
+</li><li>The database needs to be closed and re-opened to apply the changes
+</li></ul>
+
+<h2 id="compatibility">Compatibility</h2>
+<p>
+This database is (up to a certain point) compatible to other databases such as HSQLDB, MySQL and PostgreSQL.
+There are certain areas where H2 is incompatible.
+</p>
+
+<h3>Transaction Commit when Autocommit is On</h3>
+<p>
+At this time, this database engine commits a transaction (if autocommit is switched on) just before returning the result.
+For a query, this means the transaction is committed even before the application scans through the result set, and before the result set is closed.
+Other database engines may commit the transaction in this case when the result set is closed.
+</p>
+
+<h2 id="keywords">Keywords / Reserved Words</h2>
+<p>
+There is a list of keywords that can't be used as identifiers (table names, column names and so on),
+unless they are quoted (surrounded with double quotes).
+The following tokens are keywords in H2:
+</p>
+<table class="main">
+<thead>
+<tr>
+<th>Keyword</th>
+<th>H2</th>
+<th>SQL:&#8203;2011</th>
+<th>SQL:&#8203;2008</th>
+<th>SQL:&#8203;2003</th>
+<th>SQL:&#8203;1999</th>
+<th>SQL-92</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>ALL</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>AND</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>ARRAY</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td></td></tr>
+<tr><td>AS</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>BETWEEN</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>NR</td><td>+</td></tr>
+<tr><td>BOTH</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>CASE</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>CHECK</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>CONSTRAINT</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>CROSS</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>CURRENT_DATE</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>CURRENT_TIME</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>CURRENT_TIMESTAMP</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>CURRENT_USER</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>DISTINCT</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>EXCEPT</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>EXISTS</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>NR</td><td>+</td></tr>
+<tr><td>FALSE</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>FETCH</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>FILTER</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td></td><td></td></tr>
+<tr><td>FOR</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>FOREIGN</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>FROM</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>FULL</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>GROUP</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>GROUPS</td>
+<td>CS</td><td>+</td><td></td><td></td><td></td><td></td></tr>
+<tr><td>HAVING</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>IF</td>
+<td>+</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>ILIKE</td>
+<td>CS</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>IN</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>INNER</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>INTERSECT</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>INTERSECTS</td>
+<td>+</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>INTERVAL</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>IS</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>JOIN</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>LEADING</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>LEFT</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>LIKE</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>LIMIT</td>
+<td>+</td><td></td><td></td><td></td><td>+</td><td></td></tr>
+<tr><td>LOCALTIME</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td></td></tr>
+<tr><td>LOCALTIMESTAMP</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td></td></tr>
+<tr><td>MINUS</td>
+<td>+</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>NATURAL</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>NOT</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>NULL</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>OFFSET</td>
+<td>+</td><td>+</td><td>+</td><td></td><td></td><td></td></tr>
+<tr><td>ON</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>OR</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>ORDER</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>OVER</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td></td><td></td></tr>
+<tr><td>PARTITION</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td></td><td></td></tr>
+<tr><td>PRIMARY</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>QUALIFY</td>
+<td>+</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>RANGE</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td></td><td></td></tr>
+<tr><td>REGEXP</td>
+<td>CS</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>RIGHT</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>ROW</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td></td></tr>
+<tr><td>_ROWID_</td>
+<td>+</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>ROWNUM</td>
+<td>+</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>ROWS</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>SELECT</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>SYSDATE</td>
+<td>CS</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>SYSTIME</td>
+<td>CS</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>SYSTIMESTAMP</td>
+<td>CS</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>TABLE</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>TODAY</td>
+<td>CS</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>TOP</td>
+<td>CS</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>TRAILING</td>
+<td>CS</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>TRUE</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>UNION</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>UNIQUE</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>VALUES</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>WHERE</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+<tr><td>WINDOW</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td></td><td></td></tr>
+<tr><td>WITH</td>
+<td>+</td><td>+</td><td>+</td><td>+</td><td>+</td><td>+</td></tr>
+</tbody>
+</table>
+<p>
+Some keywords in H2 are context-sensitive (CS), such keywords may be used as identifiers in some places,
+but cannot be used as identifiers in others.
+Most keywords in H2 are also reserved (+) or non-reserved (NR) words in the SQL Standard.
+Newer versions of H2 may have more keywords than older ones.
+</p>
+
+<h2 id="standards_compliance">Standards Compliance</h2>
+<p>
+This database tries to be as much standard compliant as possible. For the SQL language, ANSI/ISO is the main
+standard. There are several versions that refer to the release date: SQL-92, SQL:1999, and SQL:2003.
+Unfortunately, the standard documentation is not freely available. Another problem is that important features
+are not standardized. Whenever this is the case, this database tries to be compatible to other databases.
+</p>
+
+<h3>Supported Character Sets, Character Encoding, and Unicode</h3>
+<p>
+H2 internally uses Unicode, and supports all character encoding systems and character sets supported by the virtual machine you use.
+</p>
+
+<h2 id="windows_service">Run as Windows Service</h2>
+<p>
+Using a native wrapper / adapter, Java applications can be run as a Windows Service.
+There are various tools available to do that. The Java Service Wrapper from
+<a href="https://wrapper.tanukisoftware.org">Tanuki Software, Inc.</a>
+is included in the installation. Batch files are provided to install, start, stop and uninstall the
+H2 Database Engine Service. This service contains the TCP Server and the H2 Console web application.
+The batch files are located in the directory <code>h2/service</code>.
+</p>
+<p>
+The service wrapper bundled with H2 is a 32-bit version.
+To use a 64-bit version of Windows (x64), you need to use a 64-bit version of the wrapper,
+for example the one from
+<a href="https://www.krenger.ch/blog/java-service-wrapper-3-5-14-for-windows-x64/">
+Simon Krenger</a>.
+</p>
+<p>
+When running the database as a service, absolute path should be used.
+Using <code>~</code> in the database URL is problematic in this case,
+because it means to use the home directory of the current user.
+The service might run without or with the wrong user, so that
+the database files might end up in an unexpected place.
+</p>
+
+<h3>Install the Service</h3>
+<p>
+The service needs to be registered as a Windows Service first.
+To do that, double click on <code>1_install_service.bat</code>.
+If successful, a command prompt window will pop up and disappear immediately. If not, a message will appear.
+</p>
+
+<h3>Start the Service</h3>
+<p>
+You can start the H2 Database Engine Service using the service manager of Windows,
+or by double clicking on <code>2_start_service.bat</code>.
+Please note that the batch file does not print an error message if the service is not installed.
+</p>
+
+<h3>Connect to the H2 Console</h3>
+<p>
+After installing and starting the service, you can connect to the H2 Console application using a browser.
+Double clicking on <code>3_start_browser.bat</code> to do that. The
+default port (8082) is hard coded in the batch file.
+</p>
+
+<h3>Stop the Service</h3>
+<p>
+To stop the service, double click on <code>4_stop_service.bat</code>.
+Please note that the batch file does not print an error message if the service is not installed or started.
+</p>
+
+<h3>Uninstall the Service</h3>
+<p>
+To uninstall the service, double click on <code>5_uninstall_service.bat</code>.
+If successful, a command prompt window will pop up and disappear immediately. If not, a message will appear.
+</p>
+
+<h3>Additional JDBC drivers</h3>
+<p>
+To use other databases (for example MySQL), the location of the JDBC drivers of those databases need to be
+added to the environment variables <code>H2DRIVERS</code>  or <code>CLASSPATH</code> before
+installing the service. Multiple drivers can be set; each entry needs to be separated with a <code>;</code>
+(Windows) or <code>:</code>  (other operating systems). Spaces in the path names are supported.
+The settings must not be quoted.
+</p>
+
+<h2 id="odbc_driver">ODBC Driver</h2>
+<p>
+This database does not come with its own ODBC driver at this time,
+but it supports the PostgreSQL network protocol.
+Therefore, the PostgreSQL ODBC driver can be used.
+Support for the PostgreSQL network protocol is quite new and should be viewed
+as experimental. It should not be used for production applications.
+</p>
+<p>
+To use the PostgreSQL ODBC driver on 64 bit versions of Windows,
+first run <code>c:/windows/syswow64/odbcad32.exe</code>.
+At this point you set up your DSN just like you would on any other system.
+See also:
+<a href="https://www.postgresql.org/message-id/dg76q0$khn$1@sea.gmane.org">Re: ODBC Driver on Windows 64 bit</a>
+</p>
+
+<h3>ODBC Installation</h3>
+<p>
+First, the ODBC driver must be installed.
+Any recent PostgreSQL ODBC driver should work, however version 8.2 (<code>psqlodbc-08_02*</code>) or newer is recommended.
+The Windows version of the PostgreSQL ODBC driver is available at
+<a href="https://www.postgresql.org/ftp/odbc/versions/msi/">https://www.postgresql.org/ftp/odbc/versions/msi/</a>.
+</p>
+
+<h3>Starting the Server</h3>
+<p>
+After installing the ODBC driver, start the H2 Server using the command line:
+</p>
+<pre>
+java -cp h2*.jar org.h2.tools.Server
+</pre>
+<p>
+The PG Server (PG for PostgreSQL protocol) is started as well.
+By default, databases are stored in the current working directory where the server is started.
+Use <code>-baseDir</code> to save databases in another directory, for example the user home directory:
+</p>
+<pre>
+java -cp h2*.jar org.h2.tools.Server -baseDir ~
+</pre>
+<p>
+The PG server can be started and stopped from within a Java application as follows:
+</p>
+<pre>
+Server server = Server.createPgServer("-baseDir", "~");
+server.start();
+...
+server.stop();
+</pre>
+<p>
+By default, only connections from localhost are allowed. To allow remote connections, use
+<code>-pgAllowOthers</code> when starting the server.
+</p>
+<p>
+To map an ODBC database name to a different JDBC database name,
+use the option <code>-key</code> when starting the server.
+Please note only one mapping is allowed. The following will map the ODBC database named
+<code>TEST</code> to the database URL <code>jdbc:h2:~/data/test;cipher=aes</code>:
+</p>
+<pre>
+java org.h2.tools.Server -pg -key TEST "~/data/test;cipher=aes"
+</pre>
+
+<h3>ODBC Configuration</h3>
+<p>
+After installing the driver, a new Data Source must be added. In Windows,
+run <code>odbcad32.exe</code> to open the Data Source Administrator. Then click on 'Add...'
+and select the PostgreSQL Unicode driver. Then click 'Finish'.
+You will be able to change the connection properties.
+The property column represents the property key in the <code>odbc.ini</code> file
+(which may be different from the GUI).
+</p>
+<table class="main">
+<tr><th>Property</th><th>Example</th><th>Remarks</th></tr>
+<tr><td>Data Source</td><td>H2 Test</td><td>The name of the ODBC Data Source</td></tr>
+<tr><td>Database</td><td>~/test;ifexists=true</td>
+    <td>
+        The database name. This can include connections settings.
+        By default, the database is stored in the current working directory
+        where the Server is started except when the -baseDir setting is used.
+        The name must be at least 3 characters.
+    </td></tr>
+<tr><td>Servername</td><td>localhost</td><td>The server name or IP address.<br />By default, only remote connections are allowed</td></tr>
+<tr><td>Username</td><td>sa</td><td>The database user name.</td></tr>
+<tr><td>SSL</td><td>false (disabled)</td><td>At this time, SSL is not supported.</td></tr>
+<tr><td>Port</td><td>5435</td><td>The port where the PG Server is listening.</td></tr>
+<tr><td>Password</td><td>sa</td><td>The database password.</td></tr>
+</table>
+<p>
+To improve performance, please enable 'server side prepare' under Options / Datasource / Page 2 / Server side prepare.
+</p>
+<p>
+Afterwards, you may use this data source.
+</p>
+
+<h3>PG Protocol Support Limitations</h3>
+<p>
+At this time, only a subset of the PostgreSQL network protocol is implemented.
+Also, there may be compatibility problems on the SQL level, with the catalog, or with text encoding.
+Problems are fixed as they are found.
+Currently, statements can not be canceled when using the PG protocol.
+Also, H2 does not provide index meta over ODBC.
+</p>
+<p>
+PostgreSQL ODBC Driver Setup requires a database password; that means it
+is not possible to connect to H2 databases without password. This is a limitation
+of the ODBC driver.
+</p>
+
+<h3>Security Considerations</h3>
+<p>
+Currently, the PG Server does not support challenge response or encrypt passwords.
+This may be a problem if an attacker can listen to the data transferred between the ODBC driver
+and the server, because the password is readable to the attacker.
+Also, it is currently not possible to use encrypted SSL connections.
+Therefore the ODBC driver should not be used where security is important.
+</p>
+<p>
+The first connection that opens a database using the PostgreSQL server needs to be an administrator user.
+Subsequent connections don't need to be opened by an administrator.
+</p>
+
+<h3>Using Microsoft Access</h3>
+<p>
+When using Microsoft Access to edit data in a linked H2 table, you may need to enable the following option:
+Tools - Options - Edit/Find - ODBC fields.
+</p>
+
+<h2 id="microsoft_dot_net">Using H2 in Microsoft .NET</h2>
+<p>
+The database can be used from Microsoft .NET even without using Java, by using IKVM.NET.
+You can access a H2 database on .NET using the JDBC API, or using the ADO.NET interface.
+</p>
+
+<h3>Using the ADO.NET API on .NET</h3>
+<p>
+An implementation of the ADO.NET interface is available in the open source project
+<a href="https://code.google.com/archive/p/h2sharp/">H2Sharp</a>.
+</p>
+
+<h3>Using the JDBC API on .NET</h3>
+<ul><li>Install the .NET Framework from <a href="https://www.microsoft.com">Microsoft</a>.
+    Mono has not yet been tested.
+</li><li>Install <a href="http://www.ikvm.net">IKVM.NET</a>.
+</li><li>Copy the <code>h2*.jar</code> file to <code>ikvm/bin</code>
+</li><li>Run the H2 Console using:
+    <code>ikvm -jar h2*.jar</code>
+</li><li>Convert the H2 Console to an <code>.exe</code> file using:
+    <code>ikvmc -target:winexe h2*.jar</code>.
+    You may ignore the warnings.
+</li><li>Create a <code>.dll</code> file using (change the version accordingly):
+    <code>ikvmc.exe -target:library -version:1.0.69.0 h2*.jar</code>
+</li></ul>
+<p>
+If you want your C# application use H2, you need to add the <code>h2.dll</code> and the
+<code>IKVM.OpenJDK.ClassLibrary.dll</code> to your C# solution. Here some sample code:
+</p>
+<pre>
+using System;
+using java.sql;
+
+class Test
+{
+    static public void Main()
+    {
+        org.h2.Driver.load();
+        Connection conn = DriverManager.getConnection("jdbc:h2:~/test", "sa", "sa");
+        Statement stat = conn.createStatement();
+        ResultSet rs = stat.executeQuery("SELECT 'Hello World'");
+        while (rs.next())
+        {
+            Console.WriteLine(rs.getString(1));
+        }
+    }
+}
+</pre>
+
+<h2 id="acid">ACID</h2>
+<p>
+In the database world, ACID stands for:
+</p>
+<ul>
+<li>Atomicity: transactions must be atomic, meaning either all tasks are performed or none.
+</li><li>Consistency: all operations must comply with the defined constraints.
+</li><li>Isolation: transactions must be isolated from each other.
+</li><li>Durability: committed transaction will not be lost.
+</li></ul>
+
+<h3>Atomicity</h3>
+<p>
+Transactions in this database are always atomic.
+</p>
+
+<h3>Consistency</h3>
+<p>
+By default, this database is always in a consistent state.
+Referential integrity rules are enforced except when
+explicitly disabled.
+</p>
+
+<h3>Isolation</h3>
+<p>
+For H2, as with most other database systems, the default isolation level is 'read committed'.
+This provides better performance, but also means that transactions are not completely isolated.
+H2 supports the transaction isolation levels 'serializable', 'read committed', and 'read uncommitted'.
+</p>
+
+<h3>Durability</h3>
+<p>
+This database does not guarantee that all committed transactions survive a power failure.
+Tests show that all databases sometimes lose transactions on power failure (for details, see below).
+Where losing transactions is not acceptable, a laptop or UPS (uninterruptible power supply) should be used.
+If durability is required for all possible cases of hardware failure, clustering should be used,
+such as the H2 clustering mode.
+</p>
+
+<h2 id="durability_problems">Durability Problems</h2>
+<p>
+Complete durability means all committed transaction survive a power failure.
+Some databases claim they can guarantee durability, but such claims are wrong.
+A durability test was run against H2, HSQLDB, PostgreSQL, and Derby.
+All of those databases sometimes lose committed transactions.
+The test is included in the H2 download, see <code>org.h2.test.poweroff.Test</code>.
+</p>
+
+<h3>Ways to (Not) Achieve Durability</h3>
+<p>
+Making sure that committed transactions are not lost is more complicated than it seems first.
+To guarantee complete durability, a database must ensure that the log record is on the hard drive
+before the commit call returns. To do that, databases use different methods. One
+is to use the 'synchronous write' file access mode. In Java, <code>RandomAccessFile</code>
+supports the modes <code>rws</code> and <code>rwd</code>:
+</p>
+<ul>
+<li><code>rwd</code>: every update to the file's content is written synchronously to the underlying storage device.
+</li><li><code>rws</code>: in addition to <code>rwd</code>, every update to the metadata is written synchronously.</li>
+</ul>
+<p>
+A test (<code>org.h2.test.poweroff.TestWrite</code>) with one of those modes achieves
+around 50 thousand write operations per second.
+Even when the operating system write buffer is disabled, the write rate is around 50 thousand operations per second.
+This feature does not force changes to disk because it does not flush all buffers.
+The test updates the same byte in the file again and again. If the hard drive was able to write at this rate,
+then the disk would need to make at least 50 thousand revolutions per second, or 3 million RPM
+(revolutions per minute). There are no such hard drives. The hard drive used for the test is about 7200 RPM,
+or about 120 revolutions per second. There is an overhead, so the maximum write rate must be lower than that.
+</p>
+<p>
+Calling <code>fsync</code> flushes the buffers. There are two ways to do that in Java:
+</p>
+<ul>
+<li><code>FileDescriptor.sync()</code>. The documentation says that this forces all system
+buffers to synchronize with the underlying device.
+This method is supposed to return after all in-memory modified copies of buffers associated with this file descriptor
+have been written to the physical medium.
+</li><li><code>FileChannel.force()</code>. This method is supposed
+to force any updates to this channel's file to be written to the storage device that contains it.
+</li></ul>
+<p>
+By default, MySQL calls <code>fsync</code> for each commit. When using one of those methods, only around 60 write operations
+per second can be achieved, which is consistent with the RPM rate of the hard drive used.
+Unfortunately, even when calling <code>FileDescriptor.sync()</code> or
+<code>FileChannel.force()</code>,
+data is not always persisted to the hard drive, because most hard drives do not obey
+<code>fsync()</code>: see
+<a href="https://hardware.slashdot.org/story/05/05/13/0529252/your-hard-drive-lies-to-you">Your Hard Drive Lies to You</a>.
+In Mac OS X, <code>fsync</code> does not flush hard drive buffers. See
+<a href="https://lists.apple.com/archives/darwin-dev/2005/Feb/msg00072.html">Bad fsync?</a>.
+So the situation is confusing, and tests prove there is a problem.
+</p>
+<p>
+Trying to flush hard drive buffers is hard, and if you do the performance is very bad.
+First you need to make sure that the hard drive actually flushes all buffers.
+Tests show that this can not be done in a reliable way.
+Then the maximum number of transactions is around 60 per second.
+Because of those reasons, the default behavior of H2 is to delay writing committed transactions.
+</p>
+<p>
+In H2, after a power failure, a bit more than one second of committed transactions may be lost.
+To change the behavior, use <code>SET WRITE_DELAY</code> and
+<code>CHECKPOINT SYNC</code>.
+Most other databases support commit delay as well.
+In the performance comparison, commit delay was used for all databases that support it.
+</p>
+
+<h3>Running the Durability Test</h3>
+<p>
+To test the durability / non-durability of this and other databases, you can use the test application
+in the package <code>org.h2.test.poweroff</code>.
+Two computers with network connection are required to run this test.
+One computer just listens, while the test application is run (and power is cut) on the other computer.
+The computer with the listener application opens a TCP/IP port and listens for an incoming connection.
+The second computer first connects to the listener, and then created the databases and starts inserting
+records. The connection is set to 'autocommit', which means after each inserted record a commit is performed
+automatically. Afterwards, the test computer notifies the listener that this record was inserted successfully.
+The listener computer displays the last inserted record number every 10 seconds. Now, switch off the power
+manually, then restart the computer, and run the application again. You will find out that in most cases,
+none of the databases contains all the records that the listener computer knows about. For details, please
+consult the source code of the listener and test application.
+</p>
+
+<h2 id="using_recover_tool">Using the Recover Tool</h2>
+<p>
+The <code>Recover</code> tool can be used to extract the contents of a database file, even if the database is corrupted.
+It also extracts the content of the transaction log and large objects (CLOB or BLOB).
+To run the tool, type on the command line:
+</p>
+<pre>
+java -cp h2*.jar org.h2.tools.Recover
+</pre>
+<p>
+For each database in the current directory, a text file will be created.
+This file contains raw insert statements (for the data) and data definition (DDL) statements to recreate
+the schema of the database. This file can be executed using the <code>RunScript</code> tool or a
+<code>RUNSCRIPT FROM</code> SQL statement. The script includes at least one
+<code>CREATE USER</code> statement. If you run the script against a database that was created with the same
+user, or if there are conflicting users, running the script will fail. Consider running the script
+against a database that was created with a user name that is not in the script.
+</p>
+<p>
+The <code>Recover</code> tool creates a SQL script from database file. It also processes the transaction log.
+</p>
+<p>
+To verify the database can recover at any time, append <code>;RECOVER_TEST=64</code>
+to the database URL in your test environment. This will simulate an application crash after each 64 writes to the database file.
+A log file named <code>databaseName.h2.db.log</code> is created that lists the operations.
+The recovery is tested using an in-memory file system, that means it may require a larger heap setting.
+</p>
+
+<h2 id="file_locking_protocols">File Locking Protocols</h2>
+<p>
+Multiple concurrent connections to the same database are supported, however a database file
+can only be open for reading and writing (in embedded mode) by one process at the same time.
+Otherwise, the processes would overwrite each others data and corrupt the database file.
+To protect against this problem, whenever a database is opened, a lock file is created
+to signal other processes that the database is in use. If the database is closed, or if the process that opened
+the database stops normally, this lock file is deleted.
+</p><p>
+In special cases (if the process did not terminate normally, for example because
+there was a power failure), the lock file is not deleted by the process that created it.
+That means the existence of the lock file is not a safe protocol for file locking.
+However, this software uses a challenge-response protocol to protect the database
+files. There are two methods (algorithms) implemented to provide both security
+(that is, the same database files cannot be opened by two processes at the same time)
+and simplicity (that is, the lock file does not need to be deleted manually by the user).
+The two methods are 'file method' and 'socket methods'.
+</p>
+<p>
+The file locking protocols (except the file locking method 'FS')
+have the following limitation: if a shared file system is used,
+and the machine with the lock owner is sent to sleep (standby or hibernate),
+another machine may take over. If the machine that originally held the lock
+wakes up, the database may become corrupt. If this situation can occur,
+the application must ensure the database is closed when the application
+is put to sleep.
+</p>
+
+<h3>File Locking Method 'File'</h3>
+<p>
+The default method for database file locking for version 1.3 and older is the 'File Method'.
+The algorithm is:
+</p>
+<ul>
+<li>If the lock file does not exist, it is created (using the atomic operation
+<code>File.createNewFile</code>).
+Then, the process waits a little bit (20 ms) and checks the file again. If the file was changed
+during this time, the operation is aborted. This protects against a race condition
+when one process deletes the lock file just after another one create it, and a third process creates
+the file again. It does not occur if there are only two writers.
+</li><li>
+If the file can be created, a random number is inserted together with the locking method
+('file'). Afterwards, a watchdog thread is started that
+checks regularly (every second once by default) if the file was deleted or modified by
+another (challenger) thread / process. Whenever that occurs, the file is overwritten with the
+old data. The watchdog thread runs with high priority so that a change to the lock file does
+not get through undetected even if the system is very busy. However, the watchdog thread
+does use very little resources (CPU time), because it waits most of the time. Also, the watchdog only reads from the hard disk
+and does not write to it.
+</li><li>
+If the lock file exists and was recently modified, the process waits for some time (up to two seconds).
+If it was still changed, an exception is thrown (database is locked). This is done to eliminate race conditions with many concurrent
+writers. Afterwards, the file is overwritten with a new version (challenge).
+After that, the thread waits for 2 seconds.
+If there is a watchdog thread protecting the file, he will overwrite the change
+and this process will fail to lock the database.
+However, if there is no watchdog thread, the lock file will still be as written by
+this thread. In this case, the file is deleted and atomically created again.
+The watchdog thread is started in this case and the file is locked.
+</li></ul>
+<p>
+This algorithm is tested with over 100 concurrent threads. In some cases, when there are
+many concurrent threads trying to lock the database, they block each other (meaning
+the file cannot be locked by any of them) for some time. However, the file never gets
+locked by two threads at the same time. However using that many concurrent threads
+/ processes is not the common use case. Generally, an application should throw an error
+to the user if it cannot open a database, and not try again in a (fast) loop.
+</p>
+
+<h3>File Locking Method 'Socket'</h3>
+<p>
+There is a second locking mechanism implemented, but disabled by default.
+To use it, append <code>;FILE_LOCK=SOCKET</code> to the database URL.
+The algorithm is:
+</p>
+<ul>
+<li>If the lock file does not exist, it is created.
+Then a server socket is opened on a defined port, and kept open.
+The port and IP address of the process that opened the database is written
+into the lock file.
+</li><li>If the lock file exists, and the lock method is 'file', then the software switches
+to the 'file' method.
+</li><li>If the lock file exists, and the lock method is 'socket', then the process
+checks if the port is in use. If the original process is still running, the port is in use
+and this process throws an exception (database is in use). If the original process
+died (for example due to a power failure, or abnormal termination of the virtual machine),
+then the port was released. The new process deletes the lock file and starts again.
+</li></ul>
+<p>
+This method does not require a watchdog thread actively polling (reading) the same
+file every second. The problem with this method is, if the file is stored on a network
+share, two processes (running on different computers) could still open the same
+database files, if they do not have a direct TCP/IP connection.
+</p>
+
+<h3>File Locking Method 'FS'</h3>
+<p>
+This is the default mode for version 1.4 and newer.
+This database file locking mechanism uses native file system lock on the database file.
+No *.lock.db file is created in this case, and no background thread is started.
+This mechanism may not work on all systems as expected.
+Some systems allow to lock the same file multiple times within the same virtual machine,
+and on some system native file locking is not supported or files are not unlocked after a power failure.
+</p>
+<p>
+To enable this feature, append <code>;FILE_LOCK=FS</code> to the database URL.
+</p>
+<p>
+This feature is relatively new. When using it for production, please ensure
+your system does in fact lock files as expected.
+</p>
+
+<h2 id="passwords">Using Passwords</h2>
+
+<h3>Using Secure Passwords</h3>
+<p>
+Remember that weak passwords can be broken regardless of the encryption and security protocols.
+Don't use passwords that can be found in a dictionary. Appending numbers does not make passwords
+secure. A way to create good passwords that can be remembered is: take the first
+letters of a sentence, use upper and lower case characters, and creatively include special characters
+(but it's more important to use a long password than to use special characters).
+Example:
+</p><p>
+<code>i'sE2rtPiUKtT</code> from the sentence <code>it's easy to remember this password if you know the trick</code>.
+</p>
+
+<h3>Passwords: Using Char Arrays instead of Strings</h3>
+<p>
+Java strings are immutable objects and cannot be safely 'destroyed' by the application.
+After creating a string, it will remain in the main memory of the computer at least
+until it is garbage collected. The garbage collection cannot be controlled by the application,
+and even if it is garbage collected the data may still remain in memory.
+It might also be possible that the part of memory containing the password
+is swapped to disk (if not enough main memory is available), which is
+a problem if the attacker has access to the swap file of the operating system.
+</p><p>
+It is a good idea to use char arrays instead of strings for passwords.
+Char arrays can be cleared (filled with zeros) after use, and therefore the
+password will not be stored in the swap file.
+</p><p>
+This database supports using char arrays instead of string to pass user and file passwords.
+The following code can be used to do that:
+</p>
+<pre>
+import java.sql.*;
+import java.util.*;
+public class Test {
+    public static void main(String[] args) throws Exception {
+        String url = "jdbc:h2:~/test";
+        Properties prop = new Properties();
+        prop.setProperty("user", "sa");
+        System.out.print("Password?");
+        char[] password = System.console().readPassword();
+        prop.put("password", password);
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url, prop);
+        } finally {
+            Arrays.fill(password, (char) 0);
+        }
+        conn.close();
+    }
+}
+</pre>
+<p>
+When using Swing, use <code>javax.swing.JPasswordField</code>.
+</p>
+
+<h3>Passing the User Name and/or Password in the URL</h3>
+<p>
+Instead of passing the user name as a separate parameter as in
+<code>
+Connection conn = DriverManager.
+    getConnection("jdbc:h2:~/test", "sa", "123");
+</code>
+the user name (and/or password) can be supplied in the URL itself:
+<code>
+Connection conn = DriverManager.
+    getConnection("jdbc:h2:~/test;USER=sa;PASSWORD=123");
+</code>
+The settings in the URL override the settings passed as a separate parameter.
+</p>
+
+<h2 id="password_hash">Password Hash</h2>
+<p>
+Sometimes the database password needs to be stored in a configuration file
+(for example in the <code>web.xml</code> file).
+In addition to connecting with the plain text password,
+this database supports connecting with the password hash.
+This means that only the hash of the password (and not the plain text password)
+needs to be stored in the configuration file.
+This will only protect others from reading or re-constructing the plain text password
+(even if they have access to the configuration file);
+it does not protect others from accessing the database using the password hash.
+</p>
+<p>
+To connect using the password hash instead of plain text password, append
+<code>;PASSWORD_HASH=TRUE</code> to the database URL, and replace
+the password with the password hash. To calculate the password hash from a plain text password,
+run the following command within the H2 Console tool:
+<code>@password_hash &lt;upperCaseUserName&gt; &lt;password&gt;</code>.
+As an example, if the user name is <code>sa</code> and the password is
+<code>test</code>, run the command
+<code>@password_hash SA test</code>.
+Then use the resulting password hash as you would use the plain text password.
+When using an encrypted database, then the user password and file password
+need to be hashed separately. To calculate the hash of the file password, run:
+<code>@password_hash file &lt;filePassword&gt;</code>.
+</p>
+
+<h2 id="sql_injection">Protection against SQL Injection</h2>
+<h3>What is SQL Injection</h3>
+<p>
+This database engine provides a solution for the security vulnerability known as 'SQL Injection'.
+Here is a short description of what SQL injection means.
+Some applications build SQL statements with embedded user input such as:
+</p>
+<pre>
+String sql = "SELECT * FROM USERS WHERE PASSWORD='"+pwd+"'";
+ResultSet rs = conn.createStatement().executeQuery(sql);
+</pre>
+<p>
+If this mechanism is used anywhere in the application, and user input is not correctly filtered or encoded,
+it is possible for a user to inject SQL functionality or statements by using specially built input
+such as (in this example) this password: <code>' OR ''='</code>.
+In this case the statement becomes:
+</p>
+<pre>
+SELECT * FROM USERS WHERE PASSWORD='' OR ''='';
+</pre>
+<p>
+Which is always true no matter what the password stored in the database is.
+For more information about SQL Injection, see <a href="#glossary_links">Glossary and Links</a>.
+</p>
+
+<h3>Disabling Literals</h3>
+<p>
+SQL Injection is not possible if user input is not directly embedded in SQL statements.
+A simple solution for the problem above is to use a prepared statement:
+</p>
+<pre>
+String sql = "SELECT * FROM USERS WHERE PASSWORD=?";
+PreparedStatement prep = conn.prepareStatement(sql);
+prep.setString(1, pwd);
+ResultSet rs = prep.executeQuery();
+</pre>
+<p>
+This database provides a way to enforce usage of parameters when passing user input
+to the database. This is done by disabling embedded literals in SQL statements.
+To do this, execute the statement:
+</p>
+<pre>
+SET ALLOW_LITERALS NONE;
+</pre>
+<p>
+Afterwards, SQL statements with text and number literals are not allowed any more.
+That means, SQL statement of the form <code>WHERE NAME='abc'</code>
+or <code>WHERE CustomerId=10</code> will fail.
+It is still possible to use prepared statements and parameters as described above. Also, it is still possible to generate
+SQL statements dynamically, and use the Statement API, as long as the SQL statements
+do not include literals.
+There is also a second mode where number literals are allowed:
+<code>SET ALLOW_LITERALS NUMBERS</code>.
+To allow all literals, execute <code>SET ALLOW_LITERALS ALL</code>
+(this is the default setting). Literals can only be enabled or disabled by an administrator.
+</p>
+
+<h3>Using Constants</h3>
+<p>
+Disabling literals also means disabling hard-coded 'constant' literals. This database supports
+defining constants using the <code>CREATE CONSTANT</code> command.
+Constants can be defined only
+when literals are enabled, but used even when literals are disabled. To avoid name clashes
+with column names, constants can be defined in other schemas:
+</p>
+<pre>
+CREATE SCHEMA CONST AUTHORIZATION SA;
+CREATE CONSTANT CONST.ACTIVE VALUE 'Active';
+CREATE CONSTANT CONST.INACTIVE VALUE 'Inactive';
+SELECT * FROM USERS WHERE TYPE=CONST.ACTIVE;
+</pre>
+<p>
+Even when literals are enabled, it is better to use constants instead
+of hard-coded number or text literals in queries or views. With constants, typos are found at compile
+time, the source code is easier to understand and change.
+</p>
+
+<h3>Using the ZERO() Function</h3>
+<p>
+It is not required to create a constant for the number 0 as there is already a built-in function <code>ZERO()</code>:
+</p>
+<pre>
+SELECT * FROM USERS WHERE LENGTH(PASSWORD)=ZERO();
+</pre>
+
+<h2 id="remote_access">Protection against Remote Access</h2>
+<p>
+By default this database does not allow connections from other machines when starting the H2 Console,
+the TCP server, or the PG server. Remote access can be enabled using the command line
+options <code>-webAllowOthers, -tcpAllowOthers, -pgAllowOthers</code>.
+</p>
+<p>
+If you enable remote access using
+<code>-tcpAllowOthers</code> or <code>-pgAllowOthers</code>,
+please also consider using the options <code>-baseDir</code>,
+so that remote users can not create new databases
+or access existing databases with weak passwords.
+When using the option <code>-baseDir</code>, only databases within that directory may be accessed.
+Ensure the existing accessible databases are protected using strong passwords.
+</p>
+<p>
+If you enable remote access using <code>-webAllowOthers</code>,
+please ensure the web server can only be accessed from trusted networks.
+The options <code>-baseDir</code> don't protect
+access to the tools section, prevent remote shutdown of the web server,
+changes to the preferences, the saved connection settings,
+or access to other databases accessible from the system.
+</p>
+
+<h2 id="restricting_classes">Restricting Class Loading and Usage</h2>
+<p>
+By default there is no restriction on loading classes and executing Java code for admins.
+That means an admin may call system functions such as
+<code>System.setProperty</code> by executing:
+</p>
+<pre>
+CREATE ALIAS SET_PROPERTY FOR "java.lang.System.setProperty";
+CALL SET_PROPERTY('abc', '1');
+CREATE ALIAS GET_PROPERTY FOR "java.lang.System.getProperty";
+CALL GET_PROPERTY('abc');
+</pre>
+<p>
+To restrict users (including admins) from loading classes and executing code,
+the list of allowed classes can be set in the system property
+<code>h2.allowedClasses</code>
+in the form of a comma separated list of classes or patterns (items ending with <code>*</code>).
+By default all classes are allowed. Example:
+</p>
+<pre>
+java -Dh2.allowedClasses=java.lang.Math,com.acme.*
+</pre>
+<p>
+This mechanism is used for all user classes, including database event listeners,
+trigger classes, user-defined functions, user-defined aggregate functions, and JDBC
+driver classes (with the exception of the H2 driver) when using the H2 Console.
+</p>
+
+<h2 id="security_protocols">Security Protocols</h2>
+<p>
+The following paragraphs document the security protocols used in this database.
+These descriptions are very technical and only intended for security experts that already know
+the underlying security primitives.
+</p>
+
+<h3>User Password Encryption</h3>
+<p>
+When a user tries to connect to a database, the combination of
+user name, @, and password are hashed using SHA-256, and this hash value
+is transmitted to the database.
+This step does not protect against an attacker that re-uses the value if he is able to listen to the
+(unencrypted) transmission between the client and the server.
+But, the passwords are never transmitted as plain text,
+even when using an unencrypted connection between client and server.
+That means if a user reuses the same password for different things,
+this password is still protected up to some point. See also
+'RFC 2617 - HTTP Authentication: Basic and Digest Access Authentication'
+for more information.
+</p><p>
+When a new database or user is created, a new random salt value is generated.
+The size of the salt is 64 bits. Using the random salt reduces the risk of an
+attacker pre-calculating hash values for many different (commonly used) passwords.
+</p><p>
+The combination of user-password hash value (see above) and salt is hashed
+using SHA-256. The resulting value is stored in the database.
+When a user tries to connect to the database, the database combines
+user-password hash value with the stored salt value and calculates the
+hash value. Other products use multiple iterations (hash the hash value again and again),
+but this is not done in this product to reduce the risk of denial of service attacks
+(where the attacker tries to connect with bogus passwords, and the server
+spends a lot of time calculating the hash value for each password).
+The reasoning is: if the attacker has access to the hashed passwords, he also has
+access to the data in plain text, and therefore does not need the password any more.
+If the data is protected by storing it on another computer and only accessible remotely,
+then the iteration count is not required at all.
+</p>
+
+<h3>File Encryption</h3>
+<p>
+The database files can be encrypted using the AES-128 algorithm.
+</p><p>
+When a user tries to connect to an encrypted database, the combination of
+<code>file@</code> and the file password is hashed using SHA-256. This hash value is
+transmitted to the server.
+</p><p>
+When a new database file is created, a new cryptographically secure
+random salt value is generated. The size of the salt is 64 bits.
+The combination of the file password hash and the salt value is hashed 1024 times
+using SHA-256. The reason for the iteration is to make it harder for an attacker to
+calculate hash values for common passwords.
+</p><p>
+The resulting hash value is used as the key for the block cipher algorithm.
+Then, an initialization vector (IV) key
+is calculated by hashing the key again using SHA-256.
+This is to make sure the IV is unknown to the attacker.
+The reason for using a secret IV is to protect against watermark attacks.
+</p><p>
+Before saving a block of data (each block is 8 bytes long), the following operations are executed:
+first, the IV is calculated by encrypting the block number with the IV key (using the same
+block cipher algorithm). This IV is combined with the plain text using XOR. The resulting data is
+encrypted using the AES-128 algorithm.
+</p><p>
+When decrypting, the operation is done in reverse. First, the block is decrypted using the key,
+and then the IV is calculated combined with the decrypted text using XOR.
+</p><p>
+Therefore, the block cipher mode of operation is CBC (cipher-block chaining), but each chain
+is only one block long. The advantage over the ECB (electronic codebook) mode is that patterns
+in the data are not revealed, and the advantage over multi block CBC is that flipped cipher text bits
+are not propagated to flipped plaintext bits in the next block.
+</p><p>
+Database encryption is meant for securing the database while it is not in use (stolen laptop and so on).
+It is not meant for cases where the attacker has access to files while the database is in use.
+When he has write access, he can for example replace pieces of files with pieces of older versions
+and manipulate data like this.
+</p><p>
+File encryption slows down the performance of the database engine. Compared to unencrypted mode,
+database operations take about 2.5 times longer using AES (embedded mode).
+</p>
+
+<h3>Wrong Password / User Name Delay</h3>
+<p>
+To protect against remote brute force password attacks, the delay after each unsuccessful
+login gets double as long. Use the system properties <code>h2.delayWrongPasswordMin</code>
+and <code>h2.delayWrongPasswordMax</code> to change the minimum (the default is 250 milliseconds)
+or maximum delay (the default is 4000 milliseconds, or 4 seconds). The delay only
+applies for those using the wrong password. Normally there is no delay for a user that knows the correct
+password, with one exception: after using the wrong password, there is a delay of up to (randomly distributed)
+the same delay as for a wrong password. This is to protect against parallel brute force attacks,
+so that an attacker needs to wait for the whole delay. Delays are synchronized. This is also required
+to protect against parallel attacks.
+</p>
+<p>
+There is only one exception message for both wrong user and for wrong password,
+to make it harder to get the list of user names. It is not possible from the stack trace to see
+if the user name was wrong or the password.
+</p>
+
+<h3>HTTPS Connections</h3>
+<p>
+The web server supports HTTP and HTTPS connections using <code>SSLServerSocket</code>.
+There is a default self-certified certificate to support an easy starting point, but
+custom certificates are supported as well.
+</p>
+
+<h2 id="tls_connections">TLS Connections</h2>
+<p>
+Remote TLS connections are supported using the Java Secure Socket Extension
+(<code>SSLServerSocket, SSLSocket</code>). By default, anonymous TLS is enabled.
+</p>
+<p>
+To use your own keystore, set the system properties <code>javax.net.ssl.keyStore</code> and
+<code>javax.net.ssl.keyStorePassword</code> before starting the H2 server and client.
+See also <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html#CustomizingStores">
+Customizing the Default Key and Trust Stores, Store Types, and Store Passwords</a>
+for more information.
+</p>
+<p>
+To disable anonymous TLS, set the system property <code>h2.enableAnonymousTLS</code> to false.
+</p>
+
+<h2 id="uuid">Universally Unique Identifiers (UUID)</h2>
+<p>
+This database supports UUIDs. Also supported is a function to create new UUIDs using
+a cryptographically strong pseudo random number generator.
+With random UUIDs, the chance of two having the same value can be calculated
+using the probability theory. See also 'Birthday Paradox'.
+Standardized randomly generated UUIDs have 122 random bits.
+4 bits are used for the version (Randomly generated UUID), and 2 bits for the variant (Leach-Salz).
+This database supports generating such UUIDs using the built-in function
+<code>RANDOM_UUID()</code> or <code>UUID()</code>.
+Here is a small program to estimate the probability of having two identical UUIDs
+after generating a number of values:
+</p>
+<pre>
+public class Test {
+    public static void main(String[] args) throws Exception {
+        double x = Math.pow(2, 122);
+        for (int i = 35; i &lt; 62; i++) {
+            double n = Math.pow(2, i);
+            double p = 1 - Math.exp(-(n * n) / 2 / x);
+            System.out.println("2^" + i + "=" + (1L &lt;&lt; i) +
+                    " probability: 0" +
+                    String.valueOf(1 + p).substring(1));
+        }
+    }
+}
+</pre>
+<p>
+Some values are:
+</p>
+<table class="main">
+<tr><th>Number of UUIs</th><th>Probability of Duplicates</th></tr>
+<tr><td>2^36=68'719'476'736</td><td>0.000'000'000'000'000'4</td></tr>
+<tr><td>2^41=2'199'023'255'552</td><td>0.000'000'000'000'4</td></tr>
+<tr><td>2^46=70'368'744'177'664</td><td>0.000'000'000'4</td></tr>
+</table>
+<p>
+To help non-mathematicians understand what those numbers mean, here a comparison:
+one's annual risk of being hit by a meteorite is estimated to be one chance in 17 billion,
+that means the probability is about 0.000'000'000'06.
+</p>
+
+<h2 id="spatial_features">Spatial Features</h2>
+<p>
+H2 supports the geometry data type and spatial indexes.
+Here is an example SQL script to create a table with a spatial column and index:
+</p>
+<pre>
+CREATE TABLE GEO_TABLE(GID SERIAL, THE_GEOM GEOMETRY);
+INSERT INTO GEO_TABLE(THE_GEOM) VALUES
+    ('POINT(500 505)'),
+    ('LINESTRING(550 551, 525 512, 565 566)'),
+    ('POLYGON ((550 521, 580 540, 570 564, 512 566, 550 521))');
+CREATE SPATIAL INDEX GEO_TABLE_SPATIAL_INDEX
+    ON GEO_TABLE(THE_GEOM);
+</pre>
+<p>
+To query the table using geometry envelope intersection,
+use the operation <code>&amp;&amp;</code>, as in PostGIS:
+</p>
+<pre>
+SELECT * FROM GEO_TABLE
+    WHERE THE_GEOM &amp;&amp;
+    'POLYGON ((490 490, 536 490, 536 515, 490 515, 490 490))';
+</pre>
+<p>
+You can verify that the spatial index is used using the "explain plan" feature:
+</p>
+<pre>
+EXPLAIN SELECT * FROM GEO_TABLE
+    WHERE THE_GEOM &amp;&amp;
+    'POLYGON ((490 490, 536 490, 536 515, 490 515, 490 490))';
+-- Result
+SELECT
+    "GEO_TABLE"."GID",
+    "GEO_TABLE"."THE_GEOM"
+FROM "PUBLIC"."GEO_TABLE"
+    /* PUBLIC.GEO_TABLE_SPATIAL_INDEX:
+    THE_GEOM &amp;&amp;
+    'POLYGON ((490 490, 536 490, 536 515, 490 515, 490 490))'::Geometry */
+WHERE INTERSECTS("THE_GEOM",
+    'POLYGON ((490 490, 536 490, 536 515, 490 515, 490 490))'::Geometry)
+</pre>
+<p>
+For persistent databases, the spatial index is stored on disk;
+for in-memory databases, the index is kept in memory.
+</p>
+
+<h2 id="recursive_queries">Recursive Queries</h2>
+<p>
+H2 has experimental support for recursive queries using so called "common table expressions" (CTE).
+Examples:
+</p>
+<pre>
+WITH RECURSIVE T(N) AS (
+    SELECT 1
+    UNION ALL
+    SELECT N+1 FROM T WHERE N&lt;10
+)
+SELECT * FROM T;
+-- returns the values 1 .. 10
+
+WITH RECURSIVE T(N) AS (
+    SELECT 1
+    UNION ALL
+    SELECT N*2 FROM T WHERE N&lt;10
+)
+SELECT * FROM T;
+-- returns the values 1, 2, 4, 8, 16
+
+CREATE TABLE FOLDER(ID INT PRIMARY KEY, NAME VARCHAR(255), PARENT INT);
+
+INSERT INTO FOLDER VALUES(1, null, null), (2, 'src', 1),
+(3, 'main', 2), (4, 'org', 3), (5, 'test', 2);
+
+WITH LINK(ID, NAME, LEVEL) AS (
+    SELECT ID, NAME, 0 FROM FOLDER WHERE PARENT IS NULL
+    UNION ALL
+    SELECT FOLDER.ID, IFNULL(LINK.NAME || '/', '') || FOLDER.NAME, LEVEL + 1
+    FROM LINK INNER JOIN FOLDER ON LINK.ID = FOLDER.PARENT
+)
+SELECT NAME FROM LINK WHERE NAME IS NOT NULL ORDER BY ID;
+-- src
+-- src/main
+-- src/main/org
+-- src/test
+</pre>
+<p>
+Limitations: Recursive queries need to be of the type <code>UNION ALL</code>,
+and the recursion needs to be on the second part of the query.
+No tables or views with the name of the table expression may exist.
+Different table expression names need to be used when using multiple distinct table
+expressions within the same transaction and for the same session.
+All columns of the table expression are of type <code>VARCHAR</code>,
+and may need to be cast to the required data type.
+Views with recursive queries are not supported.
+Subqueries and <code>INSERT INTO ... FROM</code> with recursive queries are not supported.
+Parameters are only supported within the last <code>SELECT</code> statement
+(a workaround is to use session variables like <code>@start</code>
+within the table expression).
+The syntax is:
+</p>
+<pre>
+WITH RECURSIVE recursiveQueryName(columnName, ...) AS (
+    nonRecursiveSelect
+    UNION ALL
+    recursiveSelect
+)
+select
+</pre>
+
+<h2 id="system_properties">Settings Read from System Properties</h2>
+<p>
+Some settings of the database can be set on the command line using
+<code>-DpropertyName=value</code>. It is usually not required to change those settings manually.
+The settings are case sensitive.
+Example:
+</p>
+<pre>
+java -Dh2.serverCachedObjects=256 org.h2.tools.Server
+</pre>
+<p>
+The current value of the settings can be read in the table
+<code>INFORMATION_SCHEMA.SETTINGS</code>.
+</p>
+<p>
+For a complete list of settings, see
+<a href="http://www.h2database.com/javadoc/org/h2/engine/SysProperties.html">SysProperties</a>.
+</p>
+
+<h2 id="server_bind_address">Setting the Server Bind Address</h2>
+<p>
+Usually server sockets accept connections on any/all local addresses.
+This may be a problem on multi-homed hosts.
+To bind only to one address, use the system property <code>h2.bindAddress</code>.
+This setting is used for both regular server sockets and for TLS server sockets.
+IPv4 and IPv6 address formats are supported.
+</p>
+
+<h2 id="file_system">Pluggable File System</h2>
+<p>
+This database supports a pluggable file system API.
+The file system implementation is selected using a file name prefix.
+Internally, the interfaces are very similar to the Java 7 NIO2 API, but do not (yet) use or require Java 7.
+The following file systems are included:
+</p>
+<ul><li><code>zip:</code>  read-only zip-file based file system. Format: <code>zip:/zipFileName!/fileName</code>.
+</li><li><code>split:</code> file system that splits files in 1 GB files (stackable with other file systems).
+</li><li><code>nio:</code> file system that uses <code>FileChannel</code> instead of <code>RandomAccessFile</code> (faster in some operating systems).
+</li><li><code>nioMapped:</code> file system that uses memory mapped files (faster in some operating systems).
+    Please note that there currently is a file size limitation of 2 GB when using this file system.
+    To work around this limitation, combine it with the split file system: <code>split:nioMapped:test</code>.
+</li><li><code>async:</code> experimental file system that uses <code>AsynchronousFileChannel</code> instead of <code>RandomAccessFile</code> (faster in some operating systems).
+</li><li><code>memFS:</code> in-memory file system (slower than mem; experimental; mainly used for testing the database engine itself).
+</li><li><code>memLZF:</code> compressing in-memory file system (slower than memFS but uses less memory; experimental; mainly used for testing the database engine itself).
+</li><li><code>nioMemFS:</code> stores data outside of the VM's heap - useful for large memory DBs without incurring GC costs.
+</li>
+<li>
+    <code>nioMemLZF:</code> stores compressed data outside of the VM's heap -
+    useful for large memory DBs without incurring GC costs.
+    Use "nioMemLZF:12:" to tweak the % of blocks that are stored uncompressed.
+    If you size this to your working set correctly,
+    compressed storage is roughly the same performance as uncompressed.
+    The default value is 1%.
+</li></ul>
+<p>
+As an example, to use the <code>nio</code> file system with PageStore storage engine,
+use the following database URL: <code>jdbc:h2:nio:~/test;MV_STORE=FALSE</code>.
+With MVStore storage engine nio file system is used by default.
+</p>
+<p>
+To register a new file system, extend the classes <code>org.h2.store.fs.FilePath, FileBase</code>,
+and call the method <code>FilePath.register</code> before using it.
+</p>
+<p>
+For input streams (but not for random access files), URLs may be used in addition to the registered file systems.
+Example: <code>jar:file:///c:/temp/example.zip!/org/example/nested.csv</code>.
+To read a stream from the classpath, use the prefix <code>classpath:</code>, as in
+<code>classpath:/org/h2/samples/newsfeed.sql</code>.
+</p>
+
+<h2 id="file_system_split">Split File System</h2>
+<p>
+The file system prefix <code>split:</code> is used to split logical files into multiple physical files,
+for example so that a database can get larger than the maximum file system size of the operating system.
+If the logical file is larger than the maximum file size, then the file is split as follows:
+</p>
+<ul><li><code>&lt;fileName&gt;</code> (first block, is always created)
+</li><li><code>&lt;fileName&gt;.1.part</code> (second block)
+</li></ul>
+<p>
+More physical files (<code>*.2.part, *.3.part</code>) are automatically created / deleted if needed.
+The maximum physical file size of a block is 2^30 bytes, which is also called 1 GiB or 1 GB.
+However this can be changed if required, by specifying the block size in the file name.
+The file name format is: <code>split:&lt;x&gt;:&lt;fileName&gt;</code> where the file size per block is 2^x.
+For 1 MiB block sizes, use x = 20 (because 2^20 is 1 MiB).
+The following file name means the logical file is split into 1 MiB blocks: <code>split:20:test.h2.db</code>.
+An example database URL for this case is <code>jdbc:h2:split:20:~/test</code>.
+</p>
+
+<h2 id="database_upgrade">Database Upgrade</h2>
+<p>
+In version 1.2, H2 introduced a new file store implementation which is incompatible to the one used in versions &lt; 1.2.
+To automatically convert databases to the new file store, it is necessary to include an additional jar file.
+The file can be found at <a href="http://h2database.com/h2mig_pagestore_addon.jar">http://h2database.com/h2mig_pagestore_addon.jar</a> .
+If this file is in the classpath, every connect to an older database will result in a conversion process.
+</p>
+<p>
+The conversion itself is done internally via <code>'script to'</code> and <code>'runscript from'</code>. After the conversion process, the files will be
+renamed from
+</p>
+<ul>
+<li><code>dbName.data.db</code> to <code>dbName.data.db.backup</code>
+</li><li><code>dbName.index.db</code> to <code>dbName.index.db.backup</code>
+</li></ul>
+<p>
+by default. Also, the temporary script will be written to the database directory instead of a temporary directory.
+Both defaults can be customized via
+</p>
+<ul>
+<li><code>org.h2.upgrade.DbUpgrade.setDeleteOldDb(boolean)</code>
+</li><li><code>org.h2.upgrade.DbUpgrade.setScriptInTmpDir(boolean)</code>
+</li></ul>
+<p>
+prior opening a database connection.
+</p>
+<p>
+Since version 1.2.140 it is possible to let the old h2 classes (v 1.2.128) connect to the database.
+The automatic upgrade .jar file must be present, and the URL must start with <code>jdbc:h2v1_1:</code>
+(the JDBC driver class is <code>org.h2.upgrade.v1_1.Driver</code>).
+If the database should automatically connect using the old version if a database with the old format exists
+(without upgrade), and use the new version otherwise, then append <code>;NO_UPGRADE=TRUE</code>
+to the database URL.
+Please note the old driver did not process the system property <code>"h2.baseDir"</code> correctly,
+so that using this setting is not supported when upgrading.
+</p>
+
+<h2 id="java_objects_serialization">Java Objects Serialization</h2>
+<p>
+Java objects serialization is enabled by default for columns of type <code>OTHER</code>, using standard Java serialization/deserialization semantics.
+</p>
+<p>
+To disable this feature set the system property <code>h2.serializeJavaObject=false</code> (default: true).
+</p>
+<p>
+Serialization and deserialization of java objects is customizable both at system level and at database level providing a
+<a href="http://www.h2database.com/javadoc/org/h2/api/JavaObjectSerializer.html">JavaObjectSerializer</a> implementation:
+</p>
+<ul>
+<li>
+At system level set the system property <code>h2.javaObjectSerializer</code> with the
+Fully Qualified Name of the <code>JavaObjectSerializer</code> interface implementation.
+It will be used over the entire JVM session to (de)serialize java objects being stored in column of type OTHER.
+Example <code>h2.javaObjectSerializer=com.acme.SerializerClassName</code>.
+</li>
+<li>
+At database level execute the SQL statement <code>SET JAVA_OBJECT_SERIALIZER 'com.acme.SerializerClassName'</code>
+or append <code>;JAVA_OBJECT_SERIALIZER='com.acme.SerializerClassName'</code> to the database URL: <code>jdbc:h2:~/test;JAVA_OBJECT_SERIALIZER='com.acme.SerializerClassName'</code>.
+<p>
+Please note that this SQL statement can only be executed before any tables are defined.
+</p>
+</li>
+</ul>
+
+<h2 id="custom_data_types_handler_api">Custom Data Types Handler API</h2>
+<p>
+It is possible to extend the type system of the database by providing your own implementation
+of minimal required API basically consisting of type identification and conversion routines.
+</p>
+<p>
+In order to enable this feature, set the system property <code>h2.customDataTypesHandler</code> (default: null) to the fully qualified name of the class providing
+<a href="http://www.h2database.com/javadoc/org/h2/api/CustomDataTypesHandler.html">CustomDataTypesHandler</a> interface implementation. <br />
+The instance of that class will be created by H2 and used to:
+</p>
+<ul>
+<li>resolve the names and identifiers of extrinsic data types.
+</li>
+<li>convert values of extrinsic data types to and from values of built-in types.
+</li>
+<li>provide order of the data types.
+</li>
+</ul>
+<p>This is a system-level setting, i.e. affects all the databases.</p>
+
+<p><b>Note: </b>Please keep in mind that this feature may not possibly provide the same ABI stability level as other features as it exposes many of the H2 internals. You may be required to update your code occasionally due to internal changes in H2 if you are going to use this feature.
+</p>
+
+
+<h2 id="limits_limitations">Limits and Limitations</h2>
+<p>
+This database has the following known limitations:
+</p>
+<ul>
+<li>Database file size limit:
+    4 TB (using the default page size of 2 KB) or higher (when using a larger page size).
+    This limit is including CLOB and BLOB data.
+</li><li>The maximum file size for FAT or FAT32 file systems is 4 GB.
+    That means when using FAT or FAT32, the limit is 4 GB for the data. This is the limitation of the file system.
+    The database does provide a workaround for this problem, it is to use the file name prefix <code>split:</code>.
+    In that case files are split into files of 1 GB by default.
+    An example database URL is: <code>jdbc:h2:split:~/test</code>.
+</li><li>The maximum number of rows per table is 2^64.
+</li><li>The maximum number of open transactions is 65535.
+</li><li>Main memory requirements: The larger the database, the more main memory is required.
+    With the current storage mechanism (the page store),
+    the minimum main memory required is around 1 MB for each 8 GB database file size.
+</li><li>Limit on the complexity of SQL statements.
+Statements of the following form will result in a stack overflow exception:
+<pre>
+SELECT * FROM DUAL WHERE X = 1
+OR X = 2 OR X = 2 OR X = 2 OR X = 2 OR X = 2
+-- repeat previous line 500 times --
+</pre>
+</li><li>There is no limit for the following entities, except the memory and storage capacity:
+    maximum identifier length (table name, column name, and so on);
+    maximum number of tables, columns, indexes, triggers, and other database objects;
+    maximum statement length, number of parameters per statement, tables per statement, expressions
+    in order by, group by, having, and so on;
+    maximum rows per query;
+    maximum columns per table, columns per index, indexes per table, lob columns per table, and so on;
+    maximum row length, index row length, select row length;
+    maximum length of a varchar column, decimal column, literal in a statement.
+</li><li>Querying from the metadata tables is slow if there are many tables (thousands).
+</li><li>For limitations on data types, see the documentation of the respective Java data type
+    or the data type documentation of this database.
+</li></ul>
+
+<h2 id="glossary_links">Glossary and Links</h2>
+<table class="main">
+    <tr>
+        <th>Term</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>AES-128</td>
+        <td>A block encryption algorithm. See also: <a
+            href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard">Wikipedia:
+        Advanced Encryption Standard</a></td>
+    </tr>
+    <tr>
+        <td>Birthday Paradox</td>
+        <td>Describes the higher than expected probability that two
+        persons in a room have the same birthday. Also valid for randomly
+        generated UUIDs. See also: <a
+            href="https://en.wikipedia.org/wiki/Birthday_problem">Wikipedia:
+        Birthday problem</a></td>
+    </tr>
+    <tr>
+        <td>Digest</td>
+        <td>Protocol to protect a password (but not to protect data).
+        See also: <a href="https://www.ietf.org/rfc/rfc2617.txt">RFC
+        2617: HTTP Digest Access Authentication</a></td>
+    </tr>
+    <tr>
+        <td>HTTPS</td>
+        <td>A protocol to provide security to HTTP connections. See
+        also: <a href="https://www.ietf.org/rfc/rfc2818.txt">RFC 2818:
+        HTTP Over TLS</a></td>
+    </tr>
+    <tr>
+        <td>Modes of Operation</td>
+        <td><a
+            href="https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation">Wikipedia:
+        Block cipher mode of operation</a></td>
+    </tr>
+    <tr>
+        <td>Salt</td>
+        <td>Random number to increase the security of passwords. See
+        also: <a href="https://en.wikipedia.org/wiki/Key_derivation_function">Wikipedia:
+        Key derivation function</a></td>
+    </tr>
+    <tr>
+        <td>SHA-256</td>
+        <td>A cryptographic one-way hash function. See also: <a
+            href="https://en.wikipedia.org/wiki/Secure_Hash_Algorithms">Wikipedia:
+            Secure Hash Algorithms</a></td>
+    </tr>
+    <tr>
+        <td>SQL Injection</td>
+        <td>A security vulnerability where an application embeds SQL
+        statements or expressions in user input. See also: <a
+            href="https://en.wikipedia.org/wiki/SQL_injection">Wikipedia:
+        SQL injection</a></td>
+    </tr>
+    <tr>
+        <td>Watermark Attack</td>
+        <td>Security problem of certain encryption programs where the
+        existence of certain data can be proven without decrypting. For more
+        information, search in the internet for 'watermark attack
+        cryptoloop'</td>
+    </tr>
+    <tr>
+        <td>SSL/TLS</td>
+        <td>Secure Sockets Layer / Transport Layer Security. See also:
+        <a href="https://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html">Java Secure Socket
+        Extension (JSSE)</a></td>
+    </tr>
+</table>
+
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>

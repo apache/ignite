@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="H2 is free SQL database written in Java" />
+<title>
+H2 Database Engine
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<link rel="alternate" type="application/atom+xml" title="H2 Newsfeed (Atom)" href="http://www.h2database.com/html/newsfeed-atom.xml" />
+<link rel="alternate" type="application/rss+xml" title="H2 Newsfeed (RSS)" href="http://www.h2database.com/html/newsfeed-rss.xml" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1>H2 Database Engine</h1>
+<p>
+Welcome to H2, the Java SQL database. The main features of H2 are:
+</p>
+<ul>
+<li>Very fast, open source, JDBC API
+</li><li>Embedded and server modes; in-memory databases
+</li><li>Browser based Console application
+</li><li>Small footprint: around 2 MB jar file size
+</li></ul>
+
+<table style="border: 0px; width: 470px;">
+    <tr><td style="border: 0px; background-color: #eee;">
+        <table style="border: 0px; margin: 0px 7px 12px 7px;">
+            <tr><td style="border: 0px; background-color: #eee;" colspan="2">
+                <h2 style="margin-top: 1em;">Download</h2>
+                Version ${version} (${versionDate})
+            </td></tr>
+            <tr><td style="border: 0px; background-color: #eee;">
+                <a href="http://www.h2database.com/h2-setup-${versionDate}.exe"><img src="images/download-2.png" alt="Download this database" width="22" height="22"/></a>
+            </td><td style="vertical-align: middle; border: 0px; background-color: #eee;">
+                <a href="http://www.h2database.com/h2-setup-${versionDate}.exe">Windows Installer (5 MB)</a>
+            </td></tr>
+            <tr><td style="border: 0px; background-color: #eee;">
+                <a href="http://www.h2database.com/h2-${versionDate}.zip"><img src="images/download-2.png" alt="Download this database" width="22" height="22"/></a>
+            </td><td style="vertical-align: middle; border: 0px; background-color: #eee;">
+                <a href="http://www.h2database.com/h2-${versionDate}.zip">All Platforms (zip, 8 MB)</a>
+            </td></tr>
+            <tr><td style="border: 0px; background-color: #eee;" colspan="2">
+                <a href="download.html">All Downloads</a>
+            </td></tr>
+        </table>
+    </td>
+    <td style="border: 0px;">&nbsp;&nbsp;&nbsp;</td>
+    <td style="border: 0px; background-color: #eee;">
+        <table style="border: 0px; margin: 0px 7px 12px 7px;">
+            <tr><td style="border: 0px; background-color: #eee;">
+                <h2 style="margin-top: 1em;">Support</h2>
+                <p>
+                    <a href="https://stackoverflow.com/questions/tagged/h2">Stack Overflow (tag H2)</a><br /><br />
+                    <a href="https://groups.google.com/forum/#!forum/h2-database">Google Group English</a>,
+                    <a href="https://groups.google.com/forum/#!forum/h2-database-jp">Japanese</a><br /><br />
+                    For non-technical issues, use: <br />
+                    <script type="text/javascript">
+                    <!--
+                    var c = 'support ';
+                    var d = 'd&#98;';
+                    var e = 'at ';
+                    var f = '.&#99;&#111;&#109;';
+                    var g = 'h2database';
+                    document.write(d + c + '<!-'+'- x -' + '->' + e + '<span style="display:none"> (no sp<!-'+'- -'+'->am please) </span>' + g + f);
+                    //-->
+                    </script>
+                </p>
+            </td></tr>
+        </table>
+    </td></tr>
+
+<tr><td colspan="3" style="border: 0px; padding: 5px 0px 15px 0px;">
+    <h2 style="margin-top: 1em;">Features</h2>
+    <table style="width: 470px;"><tr class="notranslate">
+        <th></th>
+        <th>H2</th>
+        <th><a href="http://db.apache.org/derby">Derby</a></th>
+        <th><a href="http://hsqldb.org">HSQLDB</a></th>
+        <th><a href="https://www.mysql.com/">MySQL</a></th>
+        <th><a href="https://www.postgresql.org/">PostgreSQL</a></th>
+        </tr><tr>
+        <td>Pure Java</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        <td class="compareN">No</td>
+        <td class="compareN">No</td>
+        </tr><tr>
+        <td>Memory Mode</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        <td class="compareN">No</td>
+        <td class="compareN">No</td>
+        </tr><tr>
+        <td>Encrypted Database</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        <td class="compareN">No</td>
+        <td class="compareN">No</td>
+        </tr><tr>
+        <td>ODBC Driver</td>
+        <td class="compareY">Yes</td>
+        <td class="compareN">No</td>
+        <td class="compareN">No</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        </tr><tr>
+        <td>Fulltext Search</td>
+        <td class="compareY">Yes</td>
+        <td class="compareN">No</td>
+        <td class="compareN">No</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        </tr><tr>
+        <td>Multi Version Concurrency</td>
+        <td class="compareY">Yes</td>
+        <td class="compareN">No</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        <td class="compareY">Yes</td>
+        </tr><tr>
+        <td>Footprint (embedded)</td>
+        <td>~2 MB</td>
+        <td>~3 MB</td>
+        <td>~1.5 MB</td>
+        <td>&#8212;</td>
+        <td>&#8212;</td>
+        </tr><tr>
+        <td>Footprint (client)</td>
+        <td>~500 KB</td>
+        <td>~600 KB</td>
+        <td>~1.5 MB</td>
+        <td>~1 MB</td>
+        <td>~700 KB</td>
+        </tr>
+    </table>
+</td></tr>
+
+<tr><td colspan="3" style="border: 0px; background-color: #eee;">
+    <table style="border: 0px; margin: 0px 7px 0px 7px;">
+        <tr><td style="border: 0px; background-color: #eee;">
+            <h2 style="margin-top: 1em;">News</h2>
+            <p>
+            <b>Newsfeeds:</b>
+            <a href="http://www.h2database.com/html/newsfeed-atom.xml">Full text (Atom)</a>
+            or <a href="http://www.h2database.com/html/newsfeed-rss.xml">Header only (RSS)</a>.
+            </p><p>
+                <b>Email Newsletter:</b> Subscribe to
+                <a href="https://groups.google.com/forum/#!forum/h2database-news/join">
+                H2 Database News (Google account required)</a>
+                to get informed about new releases.
+                Your email address is only used in this context.
+            </p>
+        </td></tr>
+    </table>
+</td></tr>
+
+<tr><td colspan="3" style="border: 0px">&nbsp;</td></tr>
+
+<tr><td colspan="3" style="border: 0px; background-color: #eee;">
+    <table style="border: 0px; margin: 0px 7px 5px 7px;">
+        <tr><td style="border: 0px; background-color: #eee;">
+            <h2 style="margin-top: 1em;">Contribute</h2>
+            <p>
+            You can contribute to the development of H2 by sending feedback and bug
+            reports, or translate the H2 Console application (for details, start the H2 Console
+            and select Options / Translate).
+            To donate money, click on the PayPal button below. You will be listed as a <a href="http://h2database.com/html/history.html#supporters">supporter</a>:
+            </p>
+            <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+            <p>
+            <input type="hidden" name="cmd" value="_s-xclick"/>
+            <input type="image" src="images/paypal-donate.png" width="108" height="108" name="submit" alt="PayPal icon"/>
+            <input type="hidden" name="encrypted" value="-----BEGIN PKCS7-----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-----END PKCS7-----"/>
+            </p>
+            </form>
+        </td></tr>
+    </table>
+</td></tr>
+
+</table>
+
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>

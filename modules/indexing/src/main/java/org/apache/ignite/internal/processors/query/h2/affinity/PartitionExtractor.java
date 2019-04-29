@@ -638,20 +638,20 @@ public class PartitionExtractor {
         if (rightConst != null) {
             int part = partResolver.partition(
                 rightConst.value().getObject(),
-                leftCol0.getType(),
+                leftCol0.getType().getValueType(),
                 tbl.cacheName()
             );
 
             return new PartitionConstantNode(tbl0, part);
         }
         else if (rightParam != null) {
-            int colType = leftCol0.getType();
+            int colType = leftCol0.getType().getValueType();
 
             return new PartitionParameterNode(
                 tbl0,
                 partResolver,
                 rightParam.index(),
-                leftCol0.getType(),
+                leftCol0.getType().getValueType(),
                 mappedType(colType)
             );
         }
@@ -787,8 +787,10 @@ public class PartitionExtractor {
             return null;
 
         // Check columns type
-        if (!(leftCol.column().getType() == Value.BYTE || leftCol.column().getType() == Value.SHORT ||
-            leftCol.column().getType() == Value.INT || leftCol.column().getType() == Value.LONG))
+        int leftColValueType = leftCol.column().getType().getValueType();
+
+        if (!(leftColValueType == Value.BYTE || leftColValueType == Value.SHORT ||
+            leftColValueType == Value.INT || leftColValueType == Value.LONG))
             return null;
 
         // Try parse left AST right value (value to the right of '>' or '>=').
@@ -835,7 +837,7 @@ public class PartitionExtractor {
             return null;
 
         for (long i = leftLongVal; i <= rightLongVal; i++) {
-            int part = partResolver.partition(i , leftCol.column().getType(), tbl0.cacheName());
+            int part = partResolver.partition(i , leftColValueType, tbl0.cacheName());
 
             parts.add(new PartitionConstantNode(tbl0, part));
 

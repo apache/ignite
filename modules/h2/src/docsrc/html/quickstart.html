@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+and the EPL 1.0 (http://h2database.com/html/license.html).
+Initial Developer: H2 Group
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>
+Quickstart
+</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" />
+<!-- [search] { -->
+<script type="text/javascript" src="navigation.js"></script>
+</head><body onload="frameMe();">
+<table class="content"><tr class="content"><td class="content"><div class="contentDiv">
+<!-- } -->
+
+<h1>Quickstart</h1>
+<a href="#embedding">
+    Embedding H2 in an Application</a><br />
+<a href="#h2_console">
+    The H2 Console Application</a><br />
+
+<h2 id="embedding">Embedding H2 in an Application</h2>
+<p>
+This database can be used in embedded mode, or in server mode. To use it in embedded mode, you need to:
+</p>
+<ul>
+<li>Add the <code>h2*.jar</code> to the classpath (H2 does not have any dependencies)
+</li><li>Use the JDBC driver class: <code>org.h2.Driver</code>
+</li><li>The database URL <code>jdbc:h2:~/test</code> opens the database <code>test</code> in your user home directory
+</li><li>A new database is automatically created
+</li></ul>
+
+<h2 id="h2_console">The H2 Console Application</h2>
+<p>
+The Console lets you access a SQL database using a browser interface.
+<br />
+<img src="images/console-2.png"
+    width="535" height="179"
+    alt="Web Browser - H2 Console Server - H2 Database" />
+<br />
+If you don't have Windows XP, or if something does not work as expected,
+please see the detailed description in the <a href="tutorial.html">Tutorial</a>.
+</p>
+
+<h3>Step-by-Step</h3>
+
+<h4>Installation</h4>
+<p>
+Install the software using the Windows Installer (if you did not yet do that).
+</p>
+
+<h4>Start the Console</h4>
+<p>
+Click [Start], [All Programs], [H2], and [H2 Console (Command Line)]:<br />
+<img class="screenshot" src="images/quickstart-1.png" alt="Screenshot: start H2 Console" /><br />
+A new console window appears:<br />
+<img class="screenshot" src="images/quickstart-2.png" alt="Screenshot: H2 running" /><br />
+Also, a new browser page should open with the URL <a href="http://localhost:8082" class="notranslate">http://localhost:8082</a>.
+You may get a security warning from the firewall. If you don't want other computers in the network to access the database
+on your machine, you can let the firewall block these connections. Only local connections are required at this time.
+</p>
+
+<h4>Login</h4>
+<p>
+Select [Generic H2] and click [Connect]:<br />
+    <img class="screenshot" src="images/quickstart-3.png" alt="Screenshot: login" /><br />
+    You are now logged in.
+</p>
+
+<h4>Sample</h4>
+<p>
+Click on the [Sample SQL Script]:<br />
+    <img class="screenshot" src="images/quickstart-4.png" alt="Screenshot: click on the sample SQL script" /><br />
+    The SQL commands appear in the command area.<br />
+</p>
+
+<h4>Execute</h4>
+<p>
+Click [Run]<br />
+<img class="screenshot" src="images/quickstart-5.png" alt="Screenshot: click Run" /><br />
+On the left side, a new entry TEST is added below the database icon.
+The operations and results of the statements are shown below the script.<br />
+<img class="screenshot" src="images/quickstart-6.png" alt="Screenshot: see the result" /><br />
+</p>
+
+<h4>Disconnect</h4>
+<p>
+Click on [Disconnect]:<br />
+<img src="images/icon_disconnect.gif" alt="Disconnect icon" /><br />
+to close the connection.
+</p>
+
+<h4>End</h4>
+<p>
+Close the console window.
+For more information, see the <a href="tutorial.html">Tutorial</a>.
+</p>
+
+<!-- [close] { --></div></td></tr></table><!-- } --><!-- analytics --></body></html>
+

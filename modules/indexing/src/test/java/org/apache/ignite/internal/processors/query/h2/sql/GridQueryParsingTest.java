@@ -432,7 +432,6 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("insert into Person(name) values(null)");
         checkQuery("insert into Person() values()");
         checkQuery("insert into Person(name) values(null), (null)");
-        checkQuery("insert into Person(name) values(null),");
         checkQuery("insert into Person(name, parentName) values(null, null), (?, ?)");
         checkQuery("insert into Person(old, name) values(5, 'John',), (6, 'Jack')");
         checkQuery("insert into Person(old, name) values(5 * 3, null,)");
@@ -442,7 +441,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("insert into Person(old, name, parentName) values" +
             "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
             "(?, 'AlexanderPushkin', null)," +
-            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null),");
+            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null)");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
             "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
@@ -806,7 +805,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
             assertNotNull(val);
 
             assertEquals(col.getValue().columnName(), val.columnName());
-            assertEquals(col.getValue().column().getType(), val.column().getType());
+            assertEquals(col.getValue().column().getType().getValueType(), val.column().getType().getValueType());
         }
 
         assertEquals(exp.ifNotExists(), actual.ifNotExists());
@@ -884,7 +883,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
             GridSqlColumn col = actual.columns()[i];
 
             assertEquals(expCol.columnName(), col.columnName());
-            assertEquals(expCol.column().getType(), col.column().getType());
+            assertEquals(expCol.column().getType().getValueType(), col.column().getType().getValueType());
         }
 
         assertEquals(exp.ifNotExists(), actual.ifNotExists());
@@ -1079,7 +1078,7 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
 
         System.out.println(normalizeSql(res));
 
-        assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(), prepared.getSQL()), res);
+        assertSqlEquals(U.firstNotNull(prepared.getPlanSQL(true), prepared.getSQL()), res);
     }
 
     @QuerySqlFunction

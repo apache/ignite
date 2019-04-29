@@ -415,7 +415,7 @@ public class InlineIndexHelper {
         if (this.type != type)
             throw new UnsupportedOperationException("Invalid fast index type: " + type);
 
-        type = Value.getHigherOrder(type, v.getType());
+        type = Value.getHigherOrder(type, v.getType().getValueType());
 
         switch (type) {
             case Value.BOOLEAN:
@@ -825,10 +825,10 @@ public class InlineIndexHelper {
      * @return Calculated inline size for given value.
      */
     public int inlineSizeOf(Value val){
-        if (val.getType() == Value.NULL)
+        if (val.getType().getValueType() == Value.NULL)
             return 1;
 
-        if (val.getType() != type)
+        if (val.getType().getValueType() != type)
             throw new UnsupportedOperationException("value type doesn't match");
 
         switch (type) {
@@ -875,70 +875,72 @@ public class InlineIndexHelper {
             return 0;
         }
 
-        if (val.getType() == Value.NULL) {
+        int valType = val.getType().getValueType();
+
+        if (valType == Value.NULL) {
             PageUtils.putByte(pageAddr, off, (byte)Value.NULL);
             return 1;
         }
 
-        if (val.getType() != type)
+        if (valType != type)
             throw new UnsupportedOperationException("value type doesn't match");
 
         switch (type) {
             case Value.BOOLEAN:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putByte(pageAddr, off + 1, (byte)(val.getBoolean() ? 1 : 0));
                 return size + 1;
 
             case Value.BYTE:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putByte(pageAddr, off + 1, val.getByte());
                 return size + 1;
 
             case Value.SHORT:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putShort(pageAddr, off + 1, val.getShort());
                 return size + 1;
 
             case Value.INT:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putInt(pageAddr, off + 1, val.getInt());
                 return size + 1;
 
             case Value.LONG:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putLong(pageAddr, off + 1, val.getLong());
                 return size + 1;
 
             case Value.FLOAT: {
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putInt(pageAddr, off + 1, Float.floatToIntBits(val.getFloat()));
                 return size + 1;
             }
 
             case Value.DOUBLE: {
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putLong(pageAddr, off + 1, Double.doubleToLongBits(val.getDouble()));
                 return size + 1;
             }
 
             case Value.TIME:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putLong(pageAddr, off + 1, ((ValueTime)val).getNanos());
                 return size + 1;
 
             case Value.DATE:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putLong(pageAddr, off + 1, ((ValueDate)val).getDateValue());
                 return size + 1;
 
             case Value.TIMESTAMP:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putLong(pageAddr, off + 1, ((ValueTimestamp)val).getDateValue());
                 PageUtils.putLong(pageAddr, off + 9, ((ValueTimestamp)val).getTimeNanos());
                 return size + 1;
 
             case Value.UUID:
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
                 PageUtils.putLong(pageAddr, off + 1, ((ValueUuid)val).getHigh());
                 PageUtils.putLong(pageAddr, off + 9, ((ValueUuid)val).getLow());
                 return size + 1;
@@ -962,7 +964,7 @@ public class InlineIndexHelper {
                     return 0;
                 }
                 else {
-                    PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                    PageUtils.putByte(pageAddr, off, (byte)valType);
                     PageUtils.putShort(pageAddr, off + 1, size);
                     PageUtils.putBytes(pageAddr, off + 3, s);
                     return s.length + 3;
@@ -974,7 +976,7 @@ public class InlineIndexHelper {
              {
                 short size;
 
-                PageUtils.putByte(pageAddr, off, (byte)val.getType());
+                PageUtils.putByte(pageAddr, off, (byte)valType);
 
                  byte[] bytes = val.getBytes();
 
@@ -995,7 +997,7 @@ public class InlineIndexHelper {
             }
 
             default:
-                throw new UnsupportedOperationException("no get operation for fast index type " + type);
+                throw new UnsupportedOperationException("no get operation for fast index type " + this.type);
         }
     }
 
@@ -1035,10 +1037,10 @@ public class InlineIndexHelper {
             case Value.STRING_IGNORECASE:
             case Value.BYTES:
             case Value.JAVA_OBJECT:
-                if (shortVal.getType() == Value.NULL || v2.getType() == Value.NULL)
+                if (shortVal.getType().getValueType() == Value.NULL || v2.getType().getValueType() == Value.NULL)
                     return true;
 
-                if (c == 0 && shortVal.getType() != Value.NULL && v2.getType() != Value.NULL)
+                if (c == 0 && shortVal.getType().getValueType() != Value.NULL && v2.getType().getValueType() != Value.NULL)
                     return false;
 
                 int l1;

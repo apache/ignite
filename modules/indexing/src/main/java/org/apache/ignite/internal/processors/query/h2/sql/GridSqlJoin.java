@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
-import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,9 +98,9 @@ public class GridSqlJoin extends GridSqlElement {
         return leftOuter;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}  */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder();
+        StringBuilder buff = new StringBuilder();
 
         buff.append(leftTable().getSQL());
 

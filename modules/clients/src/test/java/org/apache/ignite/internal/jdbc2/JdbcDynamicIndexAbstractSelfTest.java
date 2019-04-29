@@ -151,10 +151,10 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
             assertEquals(F.asList(
                 Collections.singletonList("SELECT\n" +
-                    "    ID\n" +
-                    "FROM \"default\".PERSON\n" +
-                    "    /* \"default\".IDX: ID = 5 */\n" +
-                    "WHERE ID = 5")
+                    "    \"ID\"\n" +
+                    "FROM \"default\".\"PERSON\"\n" +
+                    "    /* default.IDX: ID = 5 */\n" +
+                    "WHERE \"ID\" = 5")
             ), locRes);
         }
 
@@ -209,10 +209,10 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
             assertEquals(F.asList(
                 Collections.singletonList("SELECT\n" +
-                    "    ID\n" +
-                    "FROM \"default\".PERSON\n" +
-                    "    /* \"default\".PERSON.__SCAN_ */\n" +
-                    "WHERE ID = 5")
+                    "    \"ID\"\n" +
+                    "FROM \"default\".\"PERSON\"\n" +
+                    "    /* default.PERSON.__SCAN_ */\n" +
+                    "WHERE \"ID\" = 5")
             ), locRes);
         }
 

@@ -1,0 +1,171 @@
+/*
+ * Copyright 2004-2019 H2 Group. Multiple-Licensed under the MPL 2.0,
+ * and the EPL 1.0 (http://h2database.com/html/license.html).
+ * Initial Developer: H2 Group
+ */
+
+td, input, select, textarea, body, code, pre, td, th {
+    font: 13px/1.4 Arial, sans-serif;
+    font-weight: normal;
+}
+
+pre {
+    background-color: #ece9d8;
+    border: 1px solid rgb(172, 168, 153);
+    padding: 4px;
+}
+
+body {
+    margin: 0px;
+    max-width: 800px;
+}
+
+h1 {
+    background-color: #0000bb;
+    padding: 2px 4px 2px 4px;
+    margin-top: 11px;
+    color: #fff;
+    font-size: 22px;
+    line-height: normal;
+}
+
+h2 {
+    font-size: 19px;
+}
+
+h3 {
+    font-size: 16px;
+}
+
+h4 {
+    font-size: 13px;
+}
+
+hr {
+    color: #CCC;
+    background-color: #CCC;
+    height: 1px;
+    border: 0px solid blue;
+}
+
+.menu {
+    margin: 10px 10px 10px 10px;
+}
+
+.block {
+    border: 0px;
+}
+
+.titleOff {
+    display: none;
+}
+
+.detail {
+    border: 0px;
+    display: none;
+}
+
+.detailOn {
+    border: 0px;
+}
+
+td.return {
+    white-space:nowrap;
+    width: 1%;
+}
+
+td.method {
+    width: 99%;
+}
+
+.deprecated {
+    text-decoration: line-through;
+}
+
+.methodText {
+    color: #000000;
+    font-weight: normal;
+    margin: 0px 0px 0px 20px;
+}
+
+.method {
+}
+
+.fieldText {
+    margin: 6px 20px 6px 20px;
+}
+
+.methodName {
+    font-weight: bold;
+}
+
+.itemTitle {
+}
+
+.item {
+    margin: 0px 0px 0px 20px;
+}
+
+table {
+    background-color: #ffffff;
+    border-collapse: collapse;
+    border: 1px solid #aca899;
+}
+
+th {
+    text-align: left;
+    background-color: #ece9d8;
+    border: 1px solid #aca899;
+    padding: 2px;
+}
+
+td {
+    background-color: #ffffff;
+    text-align: left;
+    vertical-align:top;
+    border: 1px solid #aca899;
+    padding: 2px;
+}
+
+
+ul, ol {
+    list-style-position: outside;
+    padding-left: 20px;
+}
+
+li {
+    margin-top: 8px;
+    line-height: 100%;
+}
+
+a {
+    text-decoration: none;
+    color: #0000ff;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+table.content {
+    width: 100%;
+    height: 100%;
+    border: 0px;
+}
+
+tr.content {
+    border:0px;
+    border-left:1px solid #aca899;
+}
+
+td.content {
+    border:0px;
+    border-left:1px solid #aca899;
+}
+
+.contentDiv {
+    margin:10px;
+}
+
+
+
