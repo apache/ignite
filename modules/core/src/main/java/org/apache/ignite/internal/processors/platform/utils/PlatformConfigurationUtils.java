@@ -61,6 +61,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
@@ -1923,6 +1924,11 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             res.setCheckpointReadLockTimeout(in.readLong());
 
+        res.setWalPageCompression(DiskPageCompression.fromOrdinal(in.readInt()));
+
+        if (in.readBoolean())
+            res.setWalPageCompressionLevel(in.readInt());
+
         int cnt = in.readInt();
 
         if (cnt > 0) {
@@ -2055,6 +2061,15 @@ public class PlatformConfigurationUtils {
             if (cfg.getCheckpointReadLockTimeout() != null) {
                 w.writeBoolean(true);
                 w.writeLong(cfg.getCheckpointReadLockTimeout());
+            }
+            else
+                w.writeBoolean(false);
+
+            w.writeInt(cfg.getWalPageCompression().ordinal());
+
+            if (cfg.getWalPageCompressionLevel() != null) {
+                w.writeBoolean(true);
+                w.writeInt(cfg.getWalPageCompressionLevel());
             }
             else
                 w.writeBoolean(false);

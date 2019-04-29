@@ -406,6 +406,14 @@ public abstract class PageIO {
     }
 
     /**
+     * @param pageAddr Page address.
+     * @return Compression type.
+     */
+    public static byte getCompressionType(long pageAddr) {
+        return PageUtils.getByte(pageAddr, COMPRESSION_TYPE_OFF);
+    }
+
+    /**
      * @param page Page buffer.
      * @param compressedSize Compressed size.
      */
@@ -422,6 +430,14 @@ public abstract class PageIO {
     }
 
     /**
+     * @param pageAddr Page address.
+     * @return Compressed size.
+     */
+    public static short getCompressedSize(long pageAddr) {
+        return PageUtils.getShort(pageAddr, COMPRESSED_SIZE_OFF);
+    }
+
+    /**
      * @param page Page buffer.
      * @param compactedSize Compacted size.
      */
@@ -435,6 +451,14 @@ public abstract class PageIO {
      */
     public static short getCompactedSize(ByteBuffer page) {
         return page.getShort(COMPACTED_SIZE_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Compacted size.
+     */
+    public static short getCompactedSize(long pageAddr) {
+        return PageUtils.getShort(pageAddr, COMPACTED_SIZE_OFF);
     }
 
     /**
@@ -840,9 +864,8 @@ public abstract class PageIO {
         assert pageSize <= out.remaining();
         assert pageSize == page.remaining();
 
-        page.mark();
-        out.put(page).flip();
-        page.reset();
+        PageHandler.copyMemory(page, 0, out, 0, pageSize);
+        out.limit(pageSize);
     }
 
     /**
@@ -858,7 +881,14 @@ public abstract class PageIO {
             .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
             .a("\n],\n");
 
-        io.printPage(addr, pageSize, sb);
+        if (getCompressionType(addr) != 0) {
+            sb.a("CompressedPage[\n\tcompressionType=").a(getCompressionType(addr))
+                .a(",\n\tcompressedSize=").a(getCompressedSize(addr))
+                .a(",\n\tcompactedSize=").a(getCompactedSize(addr))
+                .a("\n]");
+        }
+        else
+            io.printPage(addr, pageSize, sb);
 
         return sb.toString();
     }
