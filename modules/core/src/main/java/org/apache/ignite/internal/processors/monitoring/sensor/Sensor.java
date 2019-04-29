@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
 import java.util.Map;
-import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
 
 /**
  *

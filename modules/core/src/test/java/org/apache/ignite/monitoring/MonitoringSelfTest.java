@@ -24,6 +24,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.monitoring.HttpPullExposerSpi;
+import org.apache.ignite.spi.monitoring.jmx.JmxPullExposerSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class MonitoringSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
-        cfg.setMonitoringExposerSpi(new HttpPullExposerSpi());
+        cfg.setMonitoringExposerSpi(new HttpPullExposerSpi(), new JmxPullExposerSpi());
 
         return cfg;
     }
@@ -56,7 +57,7 @@ public class MonitoringSelfTest extends GridCommonAbstractTest {
         executeTask(grid, "testBroadcast2");
         executeTask(grid, "anotherBroadcast");
 
-        Thread.sleep(60_000L);
+        Thread.sleep(120_000L);
     }
 
     private void executeTask(Ignite grid, String name) {

@@ -69,12 +69,10 @@ public class IgniteSpiMBeanAdapter implements IgniteSpiManagementMBean {
 
         startTimestamp = spiSensors.longSensor("startTimestamp", spiAdapter.getStartTstamp());
 
-        upTime = spiSensors.longSensor("upTime", new LongClosureSensor.LongClosure() {
-            @Override public long call() {
-                final long startTstamp = startTimestamp.getValue();
+        upTime = spiSensors.longSensor("upTime", () -> {
+            final long startTstamp = startTimestamp.getValue();
 
-                return startTstamp == 0 ? 0 : U.currentTimeMillis() - startTstamp;
-            }
+            return startTstamp == 0 ? 0 : U.currentTimeMillis() - startTstamp;
         });
 
         localNodeId = spiSensors.sensor("localNodeId", () -> spiAdapter.ignite.cluster().localNode().id());

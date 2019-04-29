@@ -30,4 +30,6 @@ public interface MonitoringList<Id, Row> extends Iterable<ListRow<Id, Row>> {
     void update(Id id, Row row);
 
     void remove(Id id);
+
+    Class<Row> rowClass();
 }

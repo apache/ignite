@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.function.DoubleSupplier;
+
 /**
  *
  */
 public class DoubleClosureSensor extends AbstractSensor {
-    private final DoubleClosure sensorValue;
+    private final DoubleSupplier sensorValue;
 
-    public DoubleClosureSensor(String name, DoubleClosure sensorValue) {
+    public DoubleClosureSensor(String name, DoubleSupplier sensorValue) {
         super(name);
 
         this.sensorValue = sensorValue;
@@ -31,17 +33,12 @@ public class DoubleClosureSensor extends AbstractSensor {
 
     public double getValue() {
         try {
-            return sensorValue.call();
+            return sensorValue.getAsDouble();
         }
         catch (Exception e) {
             e.printStackTrace();
 
             return 0;
         }
-    }
-
-
-    public static interface DoubleClosure {
-        public double call();
     }
 }

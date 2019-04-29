@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.monitoring.sensor;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.function.DoubleSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  *
@@ -62,7 +64,7 @@ public class SensorGroupImpl<Name> implements SensorGroup<Name> {
         return sensor;
     }
 
-    @Override public LongClosureSensor longSensor(String name, LongClosureSensor.LongClosure sensorValue) {
+    @Override public LongClosureSensor longSensor(String name, LongSupplier sensorValue) {
         LongClosureSensor sensor = new LongClosureSensor(name, sensorValue);
 
         Sensor old = sensors.putIfAbsent(name, sensor);
@@ -72,7 +74,7 @@ public class SensorGroupImpl<Name> implements SensorGroup<Name> {
         return sensor;
     }
 
-    @Override public DoubleClosureSensor doubleSensor(String name, DoubleClosureSensor.DoubleClosure sensorValue) {
+    @Override public DoubleClosureSensor doubleSensor(String name, DoubleSupplier sensorValue) {
         DoubleClosureSensor sensor = new DoubleClosureSensor(name, sensorValue);
 
         Sensor old = sensors.putIfAbsent(name, sensor);
@@ -94,7 +96,7 @@ public class SensorGroupImpl<Name> implements SensorGroup<Name> {
         return sensor;
     }
 
-    @Override public <T> ClosureSensor<T> sensor(String name, Callable<T> value) {
+    @Override public <T> ClosureSensor<T> sensor(String name, Supplier<T> value) {
             ClosureSensor<T> sensor = new ClosureSensor<>(name, value);
 
             Sensor old = sensors.putIfAbsent(name, sensor);
@@ -114,5 +116,9 @@ public class SensorGroupImpl<Name> implements SensorGroup<Name> {
 
     @Override public Collection<Sensor> getSensors() {
         return sensors.values();
+    }
+
+    @Override public Sensor findSensor(String name) {
+        return sensors.get(name);
     }
 }

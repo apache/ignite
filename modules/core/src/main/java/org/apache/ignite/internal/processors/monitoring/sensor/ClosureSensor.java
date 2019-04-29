@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
-import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 /**
  *
  */
 public class ClosureSensor<T> extends AbstractSensor {
-    private final Callable<T> sensorValue;
+    private final Supplier<T> sensorValue;
 
-    public ClosureSensor(String name, Callable<T> sensorValue) {
+    public ClosureSensor(String name, Supplier<T> sensorValue) {
         super(name);
 
         this.sensorValue = sensorValue;
@@ -33,7 +33,7 @@ public class ClosureSensor<T> extends AbstractSensor {
 
     public T getValue() {
         try {
-            return sensorValue.call();
+            return sensorValue.get();
         }
         catch (Exception e) {
             e.printStackTrace();

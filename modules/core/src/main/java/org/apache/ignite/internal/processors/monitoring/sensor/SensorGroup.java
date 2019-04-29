@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
 import java.util.Collection;
-import java.util.concurrent.Callable;
+import java.util.function.DoubleSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  *
@@ -28,11 +30,13 @@ public interface SensorGroup<Name> {
 
     public Collection<Sensor> getSensors();
 
+    public Sensor findSensor(String name);
+
     public <T> TypedSensor<T> sensor(String name);
 
     public <T> TypedSensor<T> sensor(String name, T value);
 
-    public <T> ClosureSensor<T> sensor(String name, Callable<T> value);
+    public <T> ClosureSensor<T> sensor(String name, Supplier<T> value);
 
     public LongSensor longSensor(String name);
 
@@ -42,7 +46,7 @@ public interface SensorGroup<Name> {
 
     public DoubleSensor doubleSensor(String name, double value);
 
-    public LongClosureSensor longSensor(String name, LongClosureSensor.LongClosure sensorValue);
+    public LongClosureSensor longSensor(String name, LongSupplier sensorValue);
 
-    public DoubleClosureSensor doubleSensor(String name, DoubleClosureSensor.DoubleClosure sensorValue);
+    public DoubleClosureSensor doubleSensor(String name, DoubleSupplier sensorValue);
 }

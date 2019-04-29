@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.monitoring;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
@@ -26,17 +29,24 @@ import org.apache.ignite.internal.processors.monitoring.lists.MonitoringList;
 import org.apache.ignite.internal.processors.monitoring.lists.MonitoringListImpl;
 import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroupImpl;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.monitoring.MonitoringExposerSpi;
 
 /**
  *
  */
 public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerSpi> {
-    Map<MonitoringGroup, SensorGroup> sensors = new HashMap<>();
+    private Map<MonitoringGroup, SensorGroup> sensors = new HashMap<>();
 
-    Map<String, SensorGroup> sensorGroups = new HashMap<>();
+    private Map<String, SensorGroup> sensorGrps = new HashMap<>();
 
-    Map<MonitoringGroup, Map<String, MonitoringList<?, ?>>> lists = new HashMap<>();
+    private Map<MonitoringGroup, Map<String, MonitoringList<?, ?>>> lists = new HashMap<>();
+
+    private List<Consumer<SensorGroup<String>>> sensorGrpCreationLsnrs = new ArrayList<>();
+
+    private List<Consumer<SensorGroup<MonitoringGroup>>> sensorsCreationLsnrs = new ArrayList<>();
+
+    private List<Consumer<T2<MonitoringGroup, MonitoringList<?, ?>>>> listCreationLsnrs = new ArrayList<>();
 
     /**
      * @param ctx Kernal context.
@@ -53,6 +63,7 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         startSpi();
     }
 
+    /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
     }
 
@@ -61,22 +72,33 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         stopSpi();
     }
 
-    public SensorGroup<MonitoringGroup> sensors(MonitoringGroup group) {
-        return sensors.computeIfAbsent(group, g -> new SensorGroupImpl(group));
+    public SensorGroup<MonitoringGroup> sensors(MonitoringGroup grp) {
+        SensorGroup<MonitoringGroup> sensorGrp = sensors.computeIfAbsent(grp, g -> new SensorGroupImpl(grp));
+
+        notifyListeners(sensorGrp, sensorsCreationLsnrs);
+
+        return sensorGrp;
     }
 
     public SensorGroup<String> sensorsGroup(String name) {
-        return sensorGroups.computeIfAbsent(name, n -> new SensorGroupImpl(name));
+        SensorGroup<String> grp = sensorGrps.computeIfAbsent(name, n -> new SensorGroupImpl(name));
+
+        notifyListeners(grp, sensorGrpCreationLsnrs);
+
+        return grp;
     }
 
-    public <Id, Row> MonitoringList<Id, Row> list(MonitoringGroup group, String name) {
-        Map<String, MonitoringList<?, ?>> lists = this.lists.computeIfAbsent(group, g -> new HashMap<>());
+    public <Id, Row> MonitoringList<Id, Row> list(
+        MonitoringGroup grp, String name, Class<Row> rowClass) {
+        Map<String, MonitoringList<?, ?>> lists = this.lists.computeIfAbsent(grp, g -> new HashMap<>());
 
-        MonitoringList<Id, Row> list = new MonitoringListImpl<>(group, name);
+        MonitoringList<Id, Row> list = new MonitoringListImpl<>(grp, name);
 
         MonitoringList<?, ?> old = lists.putIfAbsent(name, list);
 
         assert old == null;
+
+        notifyListeners(new T2(grp, list), listCreationLsnrs);
 
         return list;
     }
@@ -86,10 +108,33 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
     }
 
     public Map<String, SensorGroup> sensorGroups() {
-        return sensorGroups;
+        return sensorGrps;
     }
 
     public Map<MonitoringGroup, Map<String, MonitoringList<?, ?>>> lists() {
         return lists;
+    }
+
+    public void addSensorGroupCreationListener(Consumer<SensorGroup<String>> lsnr) {
+        sensorGrpCreationLsnrs.add(lsnr);
+    }
+
+    public void addSensorsCreationListener(Consumer<SensorGroup<MonitoringGroup>> lsnr) {
+        sensorsCreationLsnrs.add(lsnr);
+    }
+
+    public void addListCreationListener(Consumer<T2<MonitoringGroup, MonitoringList<?, ?>>> lsnr) {
+        listCreationLsnrs.add(lsnr);
+    }
+
+    private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
+        for (Consumer<T> lsnr : lsnrs) {
+            try {
+                lsnr.accept(t);
+            }
+            catch (Exception e) {
+                log.warning("Listener error", e);
+            }
+        }
     }
 }

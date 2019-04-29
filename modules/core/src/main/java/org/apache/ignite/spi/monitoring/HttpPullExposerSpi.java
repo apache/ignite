@@ -55,6 +55,7 @@ public class HttpPullExposerSpi extends IgniteSpiAdapter implements MonitoringEx
     @LoggerResource
     protected IgniteLogger log;
 
+    /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         httpSrv = new Server(new QueuedThreadPool(200, 2));
 

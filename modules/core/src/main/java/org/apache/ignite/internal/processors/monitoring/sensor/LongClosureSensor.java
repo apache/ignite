@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.function.LongSupplier;
+
 /**
  *
  */
 public class LongClosureSensor extends AbstractSensor {
-    private final LongClosure sensorValue;
+    private final LongSupplier sensorValue;
 
-    public LongClosureSensor(String name, LongClosure sensorValue) {
+    public LongClosureSensor(String name, LongSupplier sensorValue) {
         super(name);
 
         this.sensorValue = sensorValue;
@@ -31,17 +33,12 @@ public class LongClosureSensor extends AbstractSensor {
 
     public long getValue() {
         try {
-            return sensorValue.call();
+            return sensorValue.getAsLong();
         }
         catch (Exception e) {
             e.printStackTrace();
 
             return 0;
         }
-    }
-
-
-    public static interface LongClosure {
-        public long call();
     }
 }
