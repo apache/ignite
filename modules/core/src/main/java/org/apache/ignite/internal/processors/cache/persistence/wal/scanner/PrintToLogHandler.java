@@ -18,39 +18,43 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.StandardOpenOption;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.DEFAULT_WAL_RECORD_PREFIX;
 
 /**
- * Holder of {@link ScannerHandlers}.
+ * Handler which print record to log.
  */
-public class ScannerHandlers {
+class PrintToLogHandler implements ScannerHandler {
     /** */
-    public static final String DEFAULT_WAL_RECORD_PREFIX = "Next WAL record :: ";
+    private final IgniteLogger log;
+
+    /** */
+    private final StringBuilder resultString = new StringBuilder();
 
     /**
      * @param log Logger.
-     * @return Handler which write record to log.
      */
-    public static ScannerHandler printToLog(IgniteLogger log) {
-        return new PrintToLogHandler(log);
+    public PrintToLogHandler(IgniteLogger log) {
+        this.log = log;
     }
 
-    /**
-     * @param file File to write.
-     * @return Handler which write record to file.
-     */
-    public static ScannerHandler printToFile(File file) {
-        return new PrintToFileHandler(file, null);
+    /** {@inheritDoc} */
+    @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
+        resultString.append(DEFAULT_WAL_RECORD_PREFIX).append(record.get2()).append("\n");
     }
 
-    /**
-     * @param file File to write.
-     * @param ioFactory IO factory.
-     * @return Handler which write record to file.
-     */
-    public static ScannerHandler printToFile(File file, FileIOFactory ioFactory) {
-        return new PrintToFileHandler(file, ioFactory);
+    /** {@inheritDoc} */
+    @Override public void finish() {
+        log.info(resultString.toString());
     }
-
 }

@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.DEFAULT_WAL_RECORD_PREFIX;
+
 /**
  * Handler which print record to file.
  */
@@ -55,7 +57,7 @@ class PrintToFileHandler implements ScannerHandler {
     @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
         initIfRequired();
 
-        byte[] writes = ("Found record :: " + record.get2() + "\n").getBytes(Charset.forName("utf-8"));
+        byte[] writes = (DEFAULT_WAL_RECORD_PREFIX + record.get2() + "\n").getBytes(Charset.forName("utf-8"));
 
         int written = 0;
 
