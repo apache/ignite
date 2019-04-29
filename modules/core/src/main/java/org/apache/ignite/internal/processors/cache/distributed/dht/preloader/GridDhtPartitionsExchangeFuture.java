@@ -4908,13 +4908,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext diagCtx) {
         if (!isDone()) {
-            ClusterNode crd;
-            Set<UUID> remaining;
+            final ClusterNode crd;
+            final Set<UUID> remaining;
+            final InitNewCoordinatorFuture newCrdFut;
 
             synchronized (mux) {
                 crd = this.crd;
                 remaining = new HashSet<>(this.remaining);
+                newCrdFut = this.newCrdFut;
             }
+
+            if(newCrdFut != null)
+                newCrdFut.addDiagnosticRequest(diagCtx);
 
             if (crd != null) {
                 if (!crd.isLocal()) {
