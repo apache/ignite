@@ -21,6 +21,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,8 +32,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 import static java.util.Arrays.stream;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.withIteratorParameters;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
@@ -46,7 +49,7 @@ public class DebugProcessor extends GridProcessorAdapter {
     /** Time formatter for dump file name. */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
     /** Folder name for store debug info. **/
-    private static final String DEFAULT_TARGET_FOLDER = "debug";
+    static final String DEFAULT_TARGET_FOLDER = "debug";
 
     /** Full path for store dubug info. */
     private final Path debugPath;
@@ -83,15 +86,17 @@ public class DebugProcessor extends GridProcessorAdapter {
      * @param builder Parameters of dumping.
      * @throws IgniteCheckedException If scanning was failed.
      */
-    public void dumpPageHistory(DebugPageBuilder builder) throws IgniteCheckedException {
+    public void dumpPageHistory(@NotNull DebugPageBuilder builder) throws IgniteCheckedException {
         ScannerHandler action = null;
 
         for (DebugAction mode : builder.actions) {
             if (action == null)
-                action = toHandler(mode, builder.dumpFileOrFolder);
+                action = toHandler(mode, builder.dumpFolder);
             else
-                action = action.andThen(toHandler(mode, builder.dumpFileOrFolder));
+                action = action.andThen(toHandler(mode, builder.dumpFolder));
         }
+
+        requireNonNull(action, "Should be configured at least one action");
 
         log.info("Starting to scan : " + builder.pageIds);
 
@@ -101,18 +106,18 @@ public class DebugProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param mode Mode for converting.
+     * @param action Action for converting.
      * @param customFile File to store debug info.
      * @return {@link ScannerHandler} for handle records.
      */
-    private ScannerHandler toHandler(DebugAction mode, File customFile) {
-        switch (mode) {
+    private ScannerHandler toHandler(DebugAction action, File customFile) {
+        switch (action) {
             case PRINT_TO_LOG:
                 return printToLog(log);
             case PRINT_TO_FILE:
                 return printToFile(debugFile(customFile));
             default:
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("Unknown debug action : " + action);
         }
     }
 
@@ -124,19 +129,21 @@ public class DebugProcessor extends GridProcessorAdapter {
      */
     private File debugFile(File customFile) {
         if (customFile == null)
-            return debugFileName(debugPath);
+            return finilizeFile(debugPath);
 
-        if (customFile.isFile())
-            return customFile;
+        if (customFile.isAbsolute())
+            return finilizeFile(customFile.toPath());
 
-        return debugFileName(customFile.toPath());
+        return finilizeFile(debugPath.resolve(customFile.toPath()));
     }
 
     /**
      * @param debugPath Path to debug file.
      * @return File to store debug info.
      */
-    private File debugFileName(Path debugPath) {
+    private File finilizeFile(Path debugPath) {
+        debugPath.toFile().mkdirs();
+
         return debugPath.resolve(LocalDateTime.now().format(TIME_FORMATTER) + ".txt").toFile();
     }
 
@@ -145,11 +152,11 @@ public class DebugProcessor extends GridProcessorAdapter {
      */
     public static class DebugPageBuilder {
         /** Pages for searching in WAL. */
-        List<Long> pageIds;
+        List<Long> pageIds = new ArrayList<>();
         /** Action after which should be executed after WAL scanning . */
         Set<DebugAction> actions = new HashSet<>();
-        /** File or folder for dump debug info. */
-        File dumpFileOrFolder;
+        /** Folder for dump debug info. */
+        File dumpFolder;
 
         /**
          * @param pageIds Pages for searching in WAL.
@@ -165,7 +172,7 @@ public class DebugProcessor extends GridProcessorAdapter {
          * @param pageIds Pages for searching in WAL.
          * @return This instance for chaining.
          */
-        public DebugPageBuilder pageIds(List<Long> pageIds) {
+        public DebugPageBuilder pageIds(@NotNull List<Long> pageIds) {
             this.pageIds = pageIds;
 
             return this;
@@ -175,18 +182,18 @@ public class DebugProcessor extends GridProcessorAdapter {
          * @param action Action after which should be executed after WAL scanning .
          * @return This instance for chaining.
          */
-        public DebugPageBuilder addAction(DebugAction action) {
+        public DebugPageBuilder addAction(@NotNull DebugAction action) {
             this.actions.add(action);
 
             return this;
         }
 
         /**
-         * @param file File or folder for dump debug info.
+         * @param file Folder for dump debug info.
          * @return This instance for chaining.
          */
-        public DebugPageBuilder fileOrFolderForDump(File file) {
-            this.dumpFileOrFolder = file;
+        public DebugPageBuilder folderForDump(@NotNull File file) {
+            this.dumpFolder = file;
 
             return this;
         }
