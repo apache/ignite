@@ -36,9 +36,6 @@ public enum IgniteFeatures {
     /** Cache metrics v2 support. */
     CACHE_METRICS_V2(1),
 
-    /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(2),
-
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
