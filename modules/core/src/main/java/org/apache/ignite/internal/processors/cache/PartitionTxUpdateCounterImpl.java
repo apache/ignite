@@ -201,17 +201,14 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         initCntr = get();
     }
 
-    /** {@inheritDoc} */
     private Item poll() {
         return queue.pollFirst();
     }
 
-    /** {@inheritDoc} */
     private Item peek() {
         return queue.isEmpty() ? null : queue.first();
     }
 
-    /** {@inheritDoc} */
     private boolean offer(Item item) {
         if (queue.size() == MAX_MISSED_UPDATES) // Should trigger failure handler.
             throw new IgniteException("Too many gaps [cntr=" + this + ']');
@@ -295,7 +292,6 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         }
     }
 
-    /** {@inheritDoc} */
     private @Nullable TreeSet<Item> fromBytes(@Nullable byte[] raw) {
         if (raw == null)
             return new TreeSet<>();
@@ -435,7 +431,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return "Counter [lwm=" + get() + ", holes=" + queue +
             ", maxApplied=" + highestAppliedCounter() + ", hwm=" + reserveCntr.get() + ']';
     }

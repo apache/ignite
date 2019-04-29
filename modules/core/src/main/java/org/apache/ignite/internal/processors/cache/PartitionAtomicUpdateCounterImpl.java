@@ -84,10 +84,6 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
      * @param delta Delta.
      */
     @Override public void updateInitial(long start, long delta) {
-        long cntr0 = get();
-
-        assert start >= cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + start;
-
         try {
             update(start + delta);
         }
@@ -158,7 +154,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return "Counter [init=" + initCntr + ", val=" + get() + ']';
     }
 }
