@@ -51,7 +51,7 @@ export class FormField {
     async selectOption(label) {
         await t
             .click(this.control)
-            .click(Selector('.bssm-item-button').withText(label));
+            .click(this.control.find('option').withText(label));
     }
     /**
      * Get error element by error type
