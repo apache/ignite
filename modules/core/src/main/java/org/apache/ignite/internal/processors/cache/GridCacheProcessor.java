@@ -3467,12 +3467,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            validateRmtRegions(node).forEach(error -> {
-                if (errorMsg.length() > 0)
-                    errorMsg.append("\n");
+            if (!node.isClient()) {
+                validateRmtRegions(node).forEach(error -> {
+                    if (errorMsg.length() > 0)
+                        errorMsg.append("\n");
 
-                errorMsg.append(error);
-            });
+                    errorMsg.append(error);
+                });
+            }
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
