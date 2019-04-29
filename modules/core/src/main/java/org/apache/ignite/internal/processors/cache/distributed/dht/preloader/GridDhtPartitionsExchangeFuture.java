@@ -826,6 +826,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.cache().registrateProxyRestart(resolveCacheRequests(exchActions), afterLsnrCompleteFut);
 
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onInitBeforeTopologyLock(this);
+
             updateTopologies(crdNode);
 
             timeBag.finishGlobalStage("Determine exchange type");
@@ -869,13 +872,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onInitAfterTopologyLock(this);
+
             if (exchLog.isInfoEnabled())
                 exchLog.info("Finished exchange init [topVer=" + topVer + ", crd=" + crdNode + ']');
         }
         catch (IgniteInterruptedCheckedException e) {
-            assert cctx.kernalContext().isStopping();
+            assert cctx.kernalContext().isStopping() || cctx.kernalContext().clientDisconnected();
 
-            onDone(new IgniteCheckedException("Node stopped"));
+            if (cctx.kernalContext().clientDisconnected())
+                onDone(new IgniteCheckedException("Client disconnected"));
+            else
+                onDone(new IgniteCheckedException("Node stopped"));
 
             throw e;
         }
@@ -2152,6 +2161,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (err == null)
             cctx.coordinators().onExchangeDone(events().discoveryCache());
 
+        for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+            comp.onDoneBeforeTopologyUnlock(this);
+
         // Create and destory caches and cache proxies.
         cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
@@ -2242,6 +2254,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
             }
+
+            for (PartitionsExchangeAware comp : cctx.exchange().exchangeAwareComponents())
+                comp.onDoneAfterTopologyUnlock(this);
 
             if (firstDiscoEvt instanceof DiscoveryCustomEvent)
                 ((DiscoveryCustomEvent)firstDiscoEvt).customMessage(null);
