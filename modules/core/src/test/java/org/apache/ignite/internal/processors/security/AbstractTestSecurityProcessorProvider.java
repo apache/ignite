@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.impl;
+package org.apache.ignite.internal.processors.security;
 
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -35,17 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Security processor provider for tests.
  */
-public class TestSecurityProcessorProvider implements PluginProvider {
-    /** Security plugin configuration. */
-    TestSecurityPluginConfiguration cfg;
-
-    /**
-     * @param cfg Plugin configuration.
-     */
-    public TestSecurityProcessorProvider(TestSecurityPluginConfiguration cfg) {
-        this.cfg = Objects.requireNonNull(cfg);
-    }
-
+public abstract class AbstractTestSecurityProcessorProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestSecurityProcessorProvider";
@@ -76,10 +65,16 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     @SuppressWarnings("unchecked")
     @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
         if (cls.isAssignableFrom(GridSecurityProcessor.class))
-            return cfg.build(((IgniteEx)ctx.grid()).context());
+            return securityProcessor(((IgniteEx)ctx.grid()).context());
 
         return null;
     }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @return {@link GridSecurityProcessor} istance.
+     */
+    protected abstract GridSecurityProcessor securityProcessor(GridKernalContext ctx);
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
@@ -119,14 +114,5 @@ public class TestSecurityProcessorProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
         // No-op.
-    }
-
-    /**
-     * Gets plugin configuration.
-     *
-     * @return Plugin configuration.
-     */
-    public TestSecurityPluginConfiguration getConfiguration() {
-        return cfg;
     }
 }

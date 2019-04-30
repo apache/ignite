@@ -19,11 +19,9 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessorProvider;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -42,7 +40,7 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1120_000);
 
-        cfg.setPlugins(new TestSecurityProcessorProvider(TestReconnectProcessor::new));
+        cfg.setPlugins(new TestReconnectProcessorProvider());
 
         return cfg;
     }
