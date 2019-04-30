@@ -190,13 +190,14 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     private void print(Consumer<String> printer, boolean printExceptionMessages) {
         boolean noMatchingCaches = false;
 
-        for (Exception e : exceptions.values())
+        for (Exception e : exceptions.values()) {
             if (e instanceof NoMatchingCachesException) {
                 noMatchingCaches = true;
                 succeeded = false;
 
                 break;
             }
+        }
 
         if (succeeded) {
             if (!F.isEmpty(exceptions)) {

@@ -63,6 +63,9 @@ public class PagesListInitNewPageRecord extends InitNewPageRecord {
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
+     * @param ioType IO type.
+     * @param ioVer IO version.
+     * @param newPageId New page ID.
      * @param prevPageId Previous page ID.
      * @param addDataPageId Optional page ID to add.
      * @param log Logger for case data is invalid. Can be {@code null}, but is needed when processing existing storage.

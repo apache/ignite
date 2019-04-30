@@ -42,11 +42,12 @@ public interface RecordDataSerializer {
      *
      * @param type Record type.
      * @param in Buffer to read.
+     * @param size Record size (0 if unknown).
      * @return WAL record.
      * @throws IOException In case of I/O problems.
      * @throws IgniteCheckedException If it's unable to read record.
      */
-    WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException;
+    WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in, int size) throws IOException, IgniteCheckedException;
 
     /**
      * Writes record data to buffer {@code buf}.

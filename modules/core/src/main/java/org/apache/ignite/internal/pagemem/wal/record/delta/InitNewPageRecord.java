@@ -71,7 +71,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
         int partId = PageIdUtils.partId(pageId);
 
         if (newPartId == 0 && newPartId != partId) {
-            U.warn(null, "Partition consistency warning: " +
+            U.warn(log, "Partition consistency warning: " +
                 "newPageId=" + Long.toHexString(newPageId) + " (newPartId: 0) " +
                 "pageId=" + Long.toHexString(pageId) + " (partId: " + partId + ")");
 
