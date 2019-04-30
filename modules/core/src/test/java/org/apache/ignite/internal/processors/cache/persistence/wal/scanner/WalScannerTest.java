@@ -68,7 +68,7 @@ public class WalScannerTest {
      */
     @Test
     public void shouldFindCorrectRecords() throws Exception {
-        //given: Iterator with random value and value which should be find by scanner.
+        // given: Iterator with random value and value which should be find by scanner.
         long expPageId = 984;
 
         PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId, 1), new byte[0], 10);
@@ -88,16 +88,16 @@ public class WalScannerTest {
         IgniteWalIteratorFactory mockedFactory = mock(IgniteWalIteratorFactory.class);
         when(mockedFactory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        //Test scanner handler for holding found value instead of printing its.
+        // Test scanner handler for holding found value instead of printing its.
         List<WALRecord> holder = new ArrayList<>();
         ScannerHandler recordCaptor = (rec) -> holder.add(rec.get2());
 
-        //when: Scanning WAL for searching expected page.
+        // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), mockedFactory)
             .findAllRecordsFor(Sets.newHashSet(expPageId))
             .forEach(recordCaptor);
 
-        //then: Should be find only expected value.
+        // then: Should be find only expected value.
         assertEquals(holder.size(), 3);
 
         assertEquals(expPageSnapshot, holder.get(0));
@@ -110,7 +110,7 @@ public class WalScannerTest {
      */
     @Test
     public void shouldFindCorrectRecordsForMoreThanOnePages() throws Exception {
-        //given: Iterator with random value and value which should be find by scanner with several ids.
+        // given: Iterator with random value and value which should be find by scanner with several ids.
         long expPageId1 = 984;
         long expPageId2 = 9584;
         long expPageId3 = 98344;
@@ -138,12 +138,12 @@ public class WalScannerTest {
         List<WALRecord> holder = new ArrayList<>();
         ScannerHandler recordCaptor = (rec) -> holder.add(rec.get2());
 
-        //when: Scanning WAL for searching expected page.
+        // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), mockedFactory)
             .findAllRecordsFor(Sets.newHashSet(expPageId1, expPageId2, expPageId3))
             .forEach(recordCaptor);
 
-        //then: Should be find only expected value.
+        // then: Should be find only expected value.
         assertEquals(holder.size(), 4);
 
         assertEquals(expPageSnapshot, holder.get(0));
@@ -157,7 +157,7 @@ public class WalScannerTest {
      */
     @Test
     public void shouldDumpToLogFoundRecord() throws Exception {
-        //given: Test logger for interception of logging.
+        // given: Test logger for interception of logging.
         long expPageId = 984;
 
         IgniteLogger log = mock(IgniteLogger.class);
@@ -174,12 +174,12 @@ public class WalScannerTest {
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        //when: Scanning WAL for searching expected page.
+        // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), factory)
             .findAllRecordsFor(Sets.newHashSet(expPageId))
             .forEach(printToLog(log));
 
-        //then: Should be find only expected value from log.
+        // then: Should be find only expected value from log.
         List<String> actualRecords = valCapture.getAllValues();
 
         assertEquals(actualRecords.size(), 1);
@@ -194,7 +194,7 @@ public class WalScannerTest {
      */
     @Test
     public void shouldDumpToFileFoundRecord() throws Exception {
-        //given: File for dumping records.
+        // given: File for dumping records.
         File targetFile = Paths.get(U.defaultWorkDirectory(), TEST_DUMP_FILE).toFile();
 
         long expectedPageId = 984;
@@ -210,7 +210,7 @@ public class WalScannerTest {
 
         List<String> actualRecords = null;
         try {
-            //when: Scanning WAL for searching expected page.
+            // when: Scanning WAL for searching expected page.
             buildWalScanner(withIteratorParameters(), factory)
                 .findAllRecordsFor(Sets.newHashSet(expectedPageId))
                 .forEach(printToFile(targetFile));
@@ -221,7 +221,7 @@ public class WalScannerTest {
             targetFile.delete();
         }
 
-        //then: Should be find only expected value from file.
+        // then: Should be find only expected value from file.
         assertEquals(actualRecords.size(), 3);
 
         assertTrue(actualRecords.get(0), actualRecords.get(0).contains("PageSnapshot ["));
@@ -234,7 +234,7 @@ public class WalScannerTest {
      */
     @Test
     public void shouldDumpToFileAndLogFoundRecord() throws Exception {
-        //given: File for dumping records and test logger for interception of records.
+        // given: File for dumping records and test logger for interception of records.
         File targetFile = Paths.get(U.defaultWorkDirectory(), TEST_DUMP_FILE).toFile();
 
         long expPageId = 984;
@@ -255,7 +255,7 @@ public class WalScannerTest {
 
         List<String> actualFileRecords = null;
         try {
-            //when: Scanning WAL for searching expected page.
+            // when: Scanning WAL for searching expected page.
             buildWalScanner(withIteratorParameters(), factory)
                 .findAllRecordsFor(Sets.newHashSet(expPageId))
                 .forEach(printToLog(log).andThen(printToFile(targetFile)));
@@ -266,14 +266,14 @@ public class WalScannerTest {
             targetFile.delete();
         }
 
-        //then: Should be find only expected value from file.
+        // then: Should be find only expected value from file.
         assertEquals(actualFileRecords.size(), 3);
 
         assertTrue(actualFileRecords.get(0), actualFileRecords.get(0).contains("PageSnapshot ["));
         assertTrue(actualFileRecords.get(1), actualFileRecords.get(1).contains("CheckpointRecord ["));
         assertTrue(actualFileRecords.get(2), actualFileRecords.get(2).contains("FixCountRecord ["));
 
-        //then: Should be find only expected value from log.
+        // then: Should be find only expected value from log.
         List<String> actualLogRecords = valCapture.getAllValues();
 
         assertEquals(actualLogRecords.size(), 1);

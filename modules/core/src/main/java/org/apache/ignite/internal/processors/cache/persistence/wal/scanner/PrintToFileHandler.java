@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -33,6 +33,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.scanne
 
 /**
  * Handler which print record to file.
+ *
+ * This is not thread safe. Can be used only one time.
  */
 class PrintToFileHandler implements ScannerHandler {
     /** */
@@ -57,7 +59,7 @@ class PrintToFileHandler implements ScannerHandler {
     @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
         initIfRequired();
 
-        byte[] writes = (DEFAULT_WAL_RECORD_PREFIX + record.get2() + "\n").getBytes(Charset.forName("utf-8"));
+        byte[] writes = (DEFAULT_WAL_RECORD_PREFIX + record.get2() + "\n").getBytes(StandardCharsets.UTF_8);
 
         int written = 0;
 
@@ -89,8 +91,12 @@ class PrintToFileHandler implements ScannerHandler {
             return;
 
         try {
-            fileToWrite.force();
-            fileToWrite.close();
+            try {
+                fileToWrite.force();
+            }
+            finally {
+                fileToWrite.close();
+            }
         }
         catch (IOException ex) {
             throw new IgniteException(ex);

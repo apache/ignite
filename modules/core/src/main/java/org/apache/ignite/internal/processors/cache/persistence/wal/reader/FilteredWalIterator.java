@@ -22,7 +22,6 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -49,7 +48,7 @@ public class FilteredWalIterator extends GridCloseableIteratorAdapter<IgniteBiTu
         this.filter = filter == null ? (r) -> true : filter;
         this.delegateWalIter = walIterator;
 
-        //Initiate iterator by first record.
+        // Initiate iterator by first record.
         onNext();
     }
 

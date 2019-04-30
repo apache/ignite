@@ -52,5 +52,4 @@ public class ScannerHandlers {
     public static ScannerHandler printToFile(File file, FileIOFactory ioFactory) {
         return new PrintToFileHandler(file, ioFactory);
     }
-
 }

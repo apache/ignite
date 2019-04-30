@@ -17,29 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.StandardOpenOption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.DEFAULT_WAL_RECORD_PREFIX;
 
 /**
  * Handler which print record to log.
+ *
+ * This is not thread safe. Can be used only one time.
  */
 class PrintToLogHandler implements ScannerHandler {
     /** */
     private final IgniteLogger log;
 
     /** */
-    private final StringBuilder resultString = new StringBuilder();
+    private StringBuilder resultString = new StringBuilder();
 
     /**
      * @param log Logger.
@@ -50,11 +46,27 @@ class PrintToLogHandler implements ScannerHandler {
 
     /** {@inheritDoc} */
     @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
+        ensureNotFinished();
+
         resultString.append(DEFAULT_WAL_RECORD_PREFIX).append(record.get2()).append("\n");
     }
 
     /** {@inheritDoc} */
     @Override public void finish() {
-        log.info(resultString.toString());
+        ensureNotFinished();
+
+        String msg = resultString.toString();
+
+        resultString = null;
+
+        log.info(msg);
+    }
+
+    /**
+     *
+     */
+    private void ensureNotFinished() {
+        if (resultString == null)
+            throw new IgniteException("This handler has been already finished.");
     }
 }

@@ -39,6 +39,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.EXCHANGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
@@ -145,7 +146,7 @@ public class FilteredWalIteratorTest {
             when(mockedIter.hasNext()).thenReturn(true, hasNextReturn);
             when(mockedIter.next()).thenReturn(TEST_RECORD, tuples.toArray(new IgniteBiTuple[] {}));
 
-            res.add(new Object[] {testCaseName, mockedIter, filter, tuples.stream().filter(filter).collect(Collectors.toList())});
+            res.add(new Object[] {testCaseName, mockedIter, filter, tuples.stream().filter(filter).collect(toList())});
         }
 
         return res;
