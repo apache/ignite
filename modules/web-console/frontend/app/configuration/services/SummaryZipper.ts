@@ -30,7 +30,7 @@ export default function SummaryZipperService($q: ng.IQService) {
         };
 
         worker.onerror = (err) => {
-            defer.reject(err);
+            defer.reject(new Error(err.message));
             worker.terminate();
         };
 
