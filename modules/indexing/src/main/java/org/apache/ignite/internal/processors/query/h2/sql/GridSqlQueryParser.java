@@ -73,7 +73,6 @@ import org.h2.expression.BinaryOperation;
 import org.h2.expression.Expression;
 import org.h2.expression.ExpressionColumn;
 import org.h2.expression.ExpressionList;
-import org.h2.expression.IntervalOperation;
 import org.h2.expression.Parameter;
 import org.h2.expression.Subquery;
 import org.h2.expression.UnaryOperation;

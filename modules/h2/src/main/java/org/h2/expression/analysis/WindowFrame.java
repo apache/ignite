@@ -27,7 +27,7 @@ import org.h2.value.ValueNull;
  */
 public final class WindowFrame {
 
-    private static abstract class Itr implements Iterator<Value[]> {
+    private abstract static class Itr implements Iterator<Value[]> {
 
         final ArrayList<Value[]> orderedRows;
 

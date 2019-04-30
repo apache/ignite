@@ -49,7 +49,7 @@ public class GAGrid {
     private IgniteCache<Long, Chromosome> populationCache;
     /** Gene cache */
     private IgniteCache<Long, Gene> geneCache;
-   
+
 
     /**
      * @param cfg GAConfiguration
@@ -175,7 +175,7 @@ public class GAGrid {
         double averageFitnessScore = calculateAverageFitness();
 
         Long key = map.keySet().iterator().next();
-        	
+
         fittestChomosome = populationCache.get(key);
 
         // while NOT terminateCondition met
@@ -199,7 +199,7 @@ public class GAGrid {
             map = getChromosomesByFittest();
 
             key = map.keySet().iterator().next();
-            
+
             // Retreive the first chromosome from the list
             fittestChomosome = populationCache.get(key);
 
@@ -219,7 +219,7 @@ public class GAGrid {
      */
     private LinkedHashMap<Long,Double> getChromosomesByFittest() {
         LinkedHashMap<Long, Double> orderChromKeysByFittest = new LinkedHashMap<>();
-    	
+
         String orderDirection = "desc";
 
         if (!cfg.isHigherFitnessValFitter())
@@ -229,15 +229,15 @@ public class GAGrid {
 
         // Execute query to retrieve keys for ALL Chromosomes by fittnessScore
         QueryCursor<List<?>> cursor = populationCache.query(new SqlFieldsQuery(fittestSQL));
-    
+
         List<List<?>> res = cursor.getAll();
-          		
+
         for (List row : res) {
             Long key = (Long)row.get(0);
             Double fitnessScore = (Double)row.get(1);
             orderChromKeysByFittest.put(key, fitnessScore);
         }
-        
+
         return orderChromKeysByFittest;
     }
 
@@ -279,7 +279,7 @@ public class GAGrid {
 
     }
 
-  
+
 
     /**
      * Perform mutation
@@ -329,16 +329,16 @@ public class GAGrid {
 
         return keys.subList(truncateCnt, keys.size());
     }
-    
+
     /**
-     * Roulette Wheel selection 
+     * Roulette Wheel selection
      *
      * @param map Map of keys/fitness scores
      * @return List of primary Keys for respective chromosomes that will breed
      */
     private List<Long> selectByRouletteWheel(LinkedHashMap map) {
         List<Long> populationKeys = this.ignite.compute().execute(new RouletteWheelSelectionTask(this.cfg), map);
-    	
+
         return populationKeys;
     }
 
@@ -417,10 +417,10 @@ public class GAGrid {
                 copyFitterChromosomesToPopulation(fittestKeys, selectedKeys);
 
                 // copy more fit keys to rest of population
-                break; 
+                break;
             case SELECTION_METHOD_ROULETTE_WHEEL:
               selectedKeys = this.selectByRouletteWheel(map);
-            	
+
             default:
                 break;
         }

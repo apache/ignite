@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.h2.jdbc.JdbcSQLException;
 import org.h2.jdbc.JdbcSQLSyntaxErrorException;
 import org.h2.value.DataType;
 import org.junit.Test;

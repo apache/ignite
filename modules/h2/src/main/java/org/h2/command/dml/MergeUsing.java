@@ -40,7 +40,7 @@ public class MergeUsing extends Prepared {
     /**
      * Abstract WHEN command of the MERGE statement.
      */
-    public static abstract class When {
+    public abstract static class When {
 
         /**
          * The parent MERGE statement.

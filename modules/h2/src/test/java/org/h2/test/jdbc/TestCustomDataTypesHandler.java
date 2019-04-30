@@ -37,16 +37,15 @@ import org.h2.value.ValueString;
  * Tests {@link CustomDataTypesHandler}.
  */
 public class TestCustomDataTypesHandler extends TestDb {
-
     /**
      * The database name.
      */
-    public final static String DB_NAME = "customDataTypes";
+    public static final String DB_NAME = "customDataTypes";
 
     /**
      * The system property name.
      */
-    public final static String HANDLER_NAME_PROPERTY = "h2.customDataTypesHandler";
+    public static final String HANDLER_NAME_PROPERTY = "h2.customDataTypesHandler";
 
     /**
      * Run just this test.
@@ -170,13 +169,13 @@ public class TestCustomDataTypesHandler extends TestDb {
     public static class TestOnlyCustomDataTypesHandler implements CustomDataTypesHandler {
 
         /** Type name for complex number */
-        public final static String COMPLEX_DATA_TYPE_NAME = "complex";
+        public static final String COMPLEX_DATA_TYPE_NAME = "complex";
 
         /** Type id for complex number */
-        public final static int COMPLEX_DATA_TYPE_ID = 1000;
+        public static final int COMPLEX_DATA_TYPE_ID = 1000;
 
         /** Order for complex number data type */
-        public final static int COMPLEX_DATA_TYPE_ORDER = 100_000;
+        public static final int COMPLEX_DATA_TYPE_ORDER = 100_000;
 
         /** Cached DataType instance for complex number */
         public final DataType complexDataType;
@@ -434,10 +433,10 @@ public class TestCustomDataTypesHandler extends TestDb {
         private static final long serialVersionUID = 1L;
 
         /** */
-        public final static DecimalFormat REAL_FMT = new DecimalFormat("###.###");
+        public static final DecimalFormat REAL_FMT = new DecimalFormat("###.###");
 
         /** */
-        public final static DecimalFormat IMG_FMT = new DecimalFormat("+###.###i;-###.###i");
+        public static final DecimalFormat IMG_FMT = new DecimalFormat("+###.###i;-###.###i");
 
         /**
          * Real part

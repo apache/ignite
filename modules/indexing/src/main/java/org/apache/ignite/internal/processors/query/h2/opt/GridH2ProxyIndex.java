@@ -29,11 +29,9 @@ import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
-import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -41,7 +39,6 @@ import java.util.List;
  * Delegates the calls to underlying normal index
  */
 public class GridH2ProxyIndex extends BaseIndex {
-
     /** Underlying normal index */
     protected Index idx;
 
