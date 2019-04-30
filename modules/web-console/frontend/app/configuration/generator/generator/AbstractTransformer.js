@@ -49,13 +49,13 @@ export default class AbstractTransformer {
         const cur = props[curIdx];
 
         // Empty line after.
-        if (_.includes(['MAP', 'COLLECTION', 'ARRAY'], cur.clsName) || (cur.clsName === 'BEAN' && cur.value.isComplex()))
+        if (_.includes(['MAP', 'COLLECTION', 'ARRAY', 'ENUM_COLLECTION'], cur.clsName) || (cur.clsName === 'BEAN' && cur.value.isComplex()))
             return sb.emptyLine();
 
         const next = props[curIdx + 1];
 
         // Empty line before.
-        if (_.includes(['MAP', 'COLLECTION', 'ARRAY'], next.clsName) || (next.clsName === 'BEAN' && next.value.isComplex()))
+        if (_.includes(['MAP', 'COLLECTION', 'ARRAY', 'ENUM_COLLECTION'], next.clsName) || (next.clsName === 'BEAN' && next.value.isComplex()))
             return sb.emptyLine();
     }
 
@@ -360,6 +360,7 @@ export default class AbstractTransformer {
                     break;
                 case 'ARRAY':
                 case 'COLLECTION':
+                case 'ENUM_COLLECTION':
                     if (_.find(prop.items, (item) => this.hasProperties(item)))
                         return true;
 
