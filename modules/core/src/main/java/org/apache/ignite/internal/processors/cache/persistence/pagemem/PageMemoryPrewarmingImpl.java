@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.PrewarmingConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -315,19 +316,24 @@ public class PageMemoryPrewarmingImpl implements PageMemoryPrewarming {
                 }
 
                 if (pageIdxSupplier == PrewarmingConfiguration.WHOLE_PARTITION) {
-                    // TODO
-                    /*try {
-                        if (ctx.cache().cache(grpName).localPreloadPartition(partId)) {
-                            IgnitePageStoreManager pageStoreMgr = ctx.pageStore();
+                    try {
+                        IgnitePageStoreManager pageStoreMgr = ctx.pageStore();
 
-                            if (pageStoreMgr != null)
-                                pagesPrewarmed.addAndGet(pageStoreMgr.pages(CU.cacheId(grpName), partId));
+                        if (pageStoreMgr != null) {
+                            int pageCnt = pageStoreMgr.pages(cacheId, partId);
+
+                            for (int pageIdx = 0; pageIdx < pageCnt; pageIdx++) {
+                                consumer.accept(cacheId, PageIdUtils.pageId(partId, pageIdx));
+
+                                if (breakCond != null && breakCond.getAsBoolean())
+                                    return;
+                            }
                         }
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to preload partition [id=" + partId +
-                            "] of cache group [name=" + grpName + "]", e);
-                    }*/
+                            "] of cache group [name=" + cacheName + "]", e);
+                    }
                 }
                 else {
                     int[] pageIdxArr = pageIdxSupplier.get();
