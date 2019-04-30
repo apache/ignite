@@ -1,8 +1,12 @@
 package org.apache.ignite.ml.naivebayes.compound;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -19,6 +23,9 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     private static final double LABEL_2 = 2.;
 
     private static final Map<Integer, double[]> data = new HashMap<>();
+
+    /** */
+    private static final double[][] BINARIZED_DATA_THRESHOLDS = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 
     static {
         data.put(0, new double[] {6, 180, 12, 0, 0, 1, 1, 1, LABEL_1});
@@ -44,12 +51,22 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     /** Initialization {@code CompoundNaiveBayesTrainer}. */
     @Before
     public void createTrainer() {
-        trainer = new CompoundNaiveBayesTrainer();
+        trainer = new CompoundNaiveBayesTrainer()
+                .setLabels(new double[]{LABEL_1, LABEL_2})
+                .setClsProbabilities(new double[] {.5, .5})
+                .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
+                        .setBucketThresholds(BINARIZED_DATA_THRESHOLDS)
+                        .withEquiprobableClasses()
+                        .setSkipFeature(f -> f <=2));
     }
 
     @Test /** */
     public void test(){
-//        trainer.
+        CompoundNaiveBayesModel model = trainer.fit(
+                new LocalDatasetBuilder<>(data, parts),
+                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
+                (k, v) -> v[v.length - 1]
+        );
     }
 
 }

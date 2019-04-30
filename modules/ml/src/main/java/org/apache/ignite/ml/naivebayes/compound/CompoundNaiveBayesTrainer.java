@@ -35,9 +35,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     /** Labels. */
     private double[] labels;
     private GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
-    private Predicate<Integer> gaussianSkipFeature;
     private DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
-    private Predicate<Integer> discreteSkipFeature;
 
     @Override public <K, V> CompoundNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
         FeatureLabelExtractor<K, V, Double> extractor) {
@@ -63,18 +61,44 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor);
         }
 
-        gaussianNaiveBayesTrainer.setSkipFeature(gaussianSkipFeature);
-        GaussianNaiveBayesModel gaussianNaiveBayesModel = gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor);
-        discreteNaiveBayesTrainer.setSkipFeature(discreteSkipFeature);
-        DiscreteNaiveBayesModel discreteNaiveBayesModel = discreteNaiveBayesTrainer.fit(datasetBuilder, extractor);
+        GaussianNaiveBayesModel gaussianNaiveBayesModel = gaussianNaiveBayesTrainer == null
+                ? null
+                : gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor);
+
+        DiscreteNaiveBayesModel discreteNaiveBayesModel = discreteNaiveBayesTrainer == null
+                ? null
+                : discreteNaiveBayesTrainer.fit(datasetBuilder, extractor);
 
         return CompoundNaiveBayesModel.builder()
             .withLabels(labels)
             .wirhPriorProbabilities(clsProbabilities)
             .withGaussianModel(gaussianNaiveBayesModel)
-            .withDiscreteSkipFuture(gaussianSkipFeature)
+            .withDiscreteSkipFuture(discreteNaiveBayesTrainer.getSkipFeature())
             .withDiscreteModel(discreteNaiveBayesModel)
-            .withDiscreteSkipFuture(discreteSkipFeature)
             .build();
+    }
+
+    /** */
+    public CompoundNaiveBayesTrainer setClsProbabilities(double[] clsProbabilities) {
+        this.clsProbabilities = clsProbabilities.clone();
+        return this;
+    }
+
+    /** */
+    public CompoundNaiveBayesTrainer setLabels(double[] labels) {
+        this.labels = labels.clone();
+        return this;
+    }
+
+    /** */
+    public CompoundNaiveBayesTrainer setGaussianNaiveBayesTrainer(GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer) {
+        this.gaussianNaiveBayesTrainer = gaussianNaiveBayesTrainer;
+        return this;
+    }
+
+    /** */
+    public CompoundNaiveBayesTrainer setDiscreteNaiveBayesTrainer(DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer) {
+        this.discreteNaiveBayesTrainer = discreteNaiveBayesTrainer;
+        return this;
     }
 }
