@@ -17,12 +17,9 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
-import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
@@ -61,21 +58,23 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor);
         }
 
-        GaussianNaiveBayesModel gaussianNaiveBayesModel = gaussianNaiveBayesTrainer == null
-                ? null
-                : gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor);
+        CompoundNaiveBayesModel.Builder builder = CompoundNaiveBayesModel.builder()
+                .withLabels(labels)
+                .wirhPriorProbabilities(clsProbabilities);
 
-        DiscreteNaiveBayesModel discreteNaiveBayesModel = discreteNaiveBayesTrainer == null
-                ? null
-                : discreteNaiveBayesTrainer.fit(datasetBuilder, extractor);
+        if (gaussianNaiveBayesTrainer != null) {
+            builder
+                    .withGaussianModel(gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor))
+                    .withGaussianSkipFuture(gaussianNaiveBayesTrainer.getSkipFeature());
+        }
 
-        return CompoundNaiveBayesModel.builder()
-            .withLabels(labels)
-            .wirhPriorProbabilities(clsProbabilities)
-            .withGaussianModel(gaussianNaiveBayesModel)
-            .withDiscreteSkipFuture(discreteNaiveBayesTrainer.getSkipFeature())
-            .withDiscreteModel(discreteNaiveBayesModel)
-            .build();
+        if (discreteNaiveBayesTrainer != null) {
+            builder
+                    .withDiscreteModel(discreteNaiveBayesTrainer.fit(datasetBuilder, extractor))
+                    .withDiscreteSkipFuture(discreteNaiveBayesTrainer.getSkipFeature());
+        }
+
+        return builder.build();
     }
 
     /** */

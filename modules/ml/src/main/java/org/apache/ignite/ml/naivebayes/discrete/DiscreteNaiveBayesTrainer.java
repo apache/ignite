@@ -231,6 +231,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
         return this;
     }
 
+    /** */
     public Predicate<Integer> getSkipFeature() {
         return skipFeature;
     }
