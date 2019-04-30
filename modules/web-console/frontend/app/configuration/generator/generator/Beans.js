@@ -188,7 +188,12 @@ export class Bean extends EmptyBean {
                 keyClsName: dflt.keyClsName,
                 keyField: dflt.keyField || 'name',
                 valClsName: dflt.valClsName,
+                valClsNameShow: dflt.valClsNameShow,
+                valItemClsName: dflt.valItemClsName,
                 valField: dflt.valField || 'value',
+                keyClsGenericType: dflt.keyClsGenericType,
+                isKeyClsGenericTypeExtended: dflt.isKeyClsGenericTypeExtended,
+                valClsGenericType: dflt.valClsGenericType,
                 entries
             });
         }
@@ -356,6 +361,21 @@ export class Bean extends EmptyBean {
 
     /**
      * @param {String} id
+     * @param {String} name
+     * @param {Array} items
+     * @param {String} typeClsName
+     * @param {String} implClsName
+     * @returns {Bean}
+     */
+    enumCollectionProperty(id, name, items, typeClsName, implClsName = 'java.util.ArrayList') {
+        if (items && items.length)
+            this.properties.push({id, name, items, clsName: 'ENUM_COLLECTION', typeClsName, implClsName});
+
+        return this;
+    }
+
+    /**
+     * @param {String} id
      * @param {String} model
      * @param {String} [name]
      * @param {Boolean} [ordered]
@@ -378,10 +398,12 @@ export class Bean extends EmptyBean {
                 keyField: dflt.keyField || 'name',
                 valClsName: dflt.valClsName,
                 valClsNameShow: dflt.valClsNameShow,
+                valItemClsName: dflt.valItemClsName,
                 valField: dflt.valField || 'value',
                 entries,
                 keyClsGenericType: dflt.keyClsGenericType,
-                isKeyClsGenericTypeExtended: dflt.isKeyClsGenericTypeExtended
+                isKeyClsGenericTypeExtended: dflt.isKeyClsGenericTypeExtended,
+                valClsGenericType: dflt.valClsGenericType
             });
         }
 
