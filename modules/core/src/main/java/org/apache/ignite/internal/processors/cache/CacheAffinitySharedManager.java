@@ -2382,6 +2382,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     @Nullable private WaitRebalanceInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
+        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
+
         final WaitRebalanceInfo waitRebalanceInfo = new WaitRebalanceInfo(evts.lastServerEventVersion());
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
@@ -2399,7 +2401,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     grpAdded,
                     grpHolder.affinity(),
                     crd ? waitRebalanceInfo : null,
-                    latePrimary);
+                    latePrimary,
+                    affCache);
 
                 if (crd && grpAdded) {
                     AffinityAssignment aff = grpHolder.aff.cachedAffinity(grpHolder.aff.lastVersion());
@@ -2460,13 +2463,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param aff Affinity.
      * @param rebalanceInfo Rebalance information.
      * @param latePrimary If {@code true} delays primary assignment if it is not owner.
+     * @param affCache Already calculated assignments (to reduce data stored in history).
      */
     private void initAffinityOnNodeJoin(
         ExchangeDiscoveryEvents evts,
         boolean addedOnExchnage,
         GridAffinityAssignmentCache aff,
         WaitRebalanceInfo rebalanceInfo,
-        boolean latePrimary
+        boolean latePrimary,
+        Map<Object, List<List<ClusterNode>>> affCache
     ) {
         if (addedOnExchnage) {
             if (!aff.lastVersion().equals(evts.topologyVersion()))
@@ -2480,79 +2485,61 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert affTopVer.topologyVersion() > 0 : "Affinity is not initialized [grp=" + aff.cacheOrGroupName() +
             ", topVer=" + affTopVer + ", node=" + cctx.localNodeId() + ']';
 
-        assert aff.idealAssignmentRaw() != null : "Previous assignment is not available.";
+        List<List<ClusterNode>> curAff = aff.assignments(affTopVer);
 
-        IdealAffinityAssignment idealAssignment = aff.calculate(evts.topologyVersion(), evts, evts.discoveryCache());
-        List<List<ClusterNode>> curAssignment = aff.assignments(affTopVer);
+        assert aff.idealAssignment() != null : "Previous assignment is not available.";
+
+        List<List<ClusterNode>> idealAssignment = aff.calculate(evts.topologyVersion(), evts, evts.discoveryCache()).assignment();
         List<List<ClusterNode>> newAssignment = null;
 
         if (latePrimary) {
-            BitSet processedPartitions = new BitSet(curAssignment.size());
+            for (int p = 0; p < idealAssignment.size(); p++) {
+                List<ClusterNode> newNodes = idealAssignment.get(p);
+                List<ClusterNode> curNodes = curAff.get(p);
 
-            // Late affinity assignment to changed primaries.
-            for (ClusterNode joinedNode : evts.joinedServerNodes()) {
-                Set<Integer> primaries = idealAssignment.idealPrimaries(joinedNode);
+                ClusterNode curPrimary = !curNodes.isEmpty() ? curNodes.get(0) : null;
+                ClusterNode newPrimary = !newNodes.isEmpty() ? newNodes.get(0) : null;
 
-                for (int p : primaries) {
-                    List<ClusterNode> curNodes = curAssignment.get(p);
-
-                    if (curNodes.isEmpty())
-                        continue;
-
-                    ClusterNode curPrimary = curNodes.get(0);
-
+                if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
                     assert cctx.discovery().node(evts.topologyVersion(), curPrimary.id()) != null : curPrimary;
 
-                    List<ClusterNode> idealNodes = idealAssignment.assignment().get(p);
-
-                    List<ClusterNode> newNodes = latePrimaryAssignment(aff,
+                    List<ClusterNode> nodes0 = latePrimaryAssignment(aff,
                         p,
                         curPrimary,
-                        idealNodes,
+                        newNodes,
                         rebalanceInfo);
 
                     if (newAssignment == null)
-                        newAssignment = new ArrayList<>(idealAssignment.assignment());
+                        newAssignment = new ArrayList<>(idealAssignment);
 
-                    newAssignment.set(p, newNodes);
-
-                    processedPartitions.set(p);
-                }
-            }
-
-            Set<Integer> partitionsWithChangedPrimary = aff.partitionPrimariesDifferentToIdeal(affTopVer);
-
-            for (int p : partitionsWithChangedPrimary) {
-                // Already processed above.
-                if (processedPartitions.get(p))
-                    continue;
-
-                List<ClusterNode> curNodes = curAssignment.get(p);
-
-                if (curNodes.isEmpty())
-                    continue;
-
-                List<ClusterNode> idealOwners = idealAssignment.assignment().get(p);
-
-                if (!curNodes.get(0).equals(idealOwners.get(0))) {
-                    List<ClusterNode> newNodes = latePrimaryAssignment(aff,
-                        p,
-                        curNodes.get(0),
-                        idealOwners,
-                        rebalanceInfo);
-
-                    if (newAssignment == null)
-                        newAssignment = new ArrayList<>(idealAssignment.assignment());
-
-                    newAssignment.set(p, newNodes);
+                    newAssignment.set(p, nodes0);
                 }
             }
         }
 
         if (newAssignment == null)
-            newAssignment = idealAssignment.assignment();
+            newAssignment = idealAssignment;
 
-        aff.initialize(evts.topologyVersion(), newAssignment);
+        aff.initialize(evts.topologyVersion(), cachedAssignment(aff, newAssignment, affCache));
+    }
+
+    /**
+     * @param aff Assignment cache.
+     * @param assign Assignment.
+     * @param affCache Assignments already calculated for other caches.
+     * @return Assignment.
+     */
+    private List<List<ClusterNode>> cachedAssignment(GridAffinityAssignmentCache aff,
+        List<List<ClusterNode>> assign,
+        Map<Object, List<List<ClusterNode>>> affCache) {
+        List<List<ClusterNode>> assign0 = affCache.get(aff.similarAffinityKey());
+
+        if (assign0 != null && assign0.equals(assign))
+            assign = assign0;
+        else
+            affCache.put(aff.similarAffinityKey(), assign);
+
+        return assign;
     }
 
     /**
