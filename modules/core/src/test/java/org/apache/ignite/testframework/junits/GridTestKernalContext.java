@@ -80,8 +80,8 @@ public class GridTestKernalContext extends GridKernalContextImpl {
                 null,
                 null,
                 null,
-                cfg.getPlugins() != null && cfg.getPlugins().length > 0 ?
-                    Arrays.asList(cfg.getPlugins()) : U.allPluginProviders(),
+                cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+                    Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders(),
                 null,
                 null,
                 null,

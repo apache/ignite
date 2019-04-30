@@ -532,7 +532,7 @@ public class IgniteConfiguration {
     private String[] sqlSchemas;
 
     /** Plugin providers. */
-    private PluginProvider[] plugins;
+    private PluginProvider[] pluginProvs;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -626,7 +626,7 @@ public class IgniteConfiguration {
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
-        plugins = cfg.getPlugins();
+        pluginProvs = cfg.getPluginProviders();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         qryPoolSize = cfg.getQueryThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
@@ -2862,7 +2862,7 @@ public class IgniteConfiguration {
      * @param pluginCfgs Plugin configurations.
      * @return {@code this} for chaining.
      * @see PluginProvider
-     * @deprecated Since {@link PluginProvider}s can be setted explicitly via {@link #setPlugins(PluginProvider[])}
+     * @deprecated Since {@link PluginProvider}s can be set explicitly via {@link #setPluginProviders(PluginProvider[])}
      * it's preferable to store {@link PluginConfiguration} as a part of {@link PluginProvider}.
      */
     @Deprecated
@@ -3212,18 +3212,18 @@ public class IgniteConfiguration {
      *
      * @return Plugin providers.
      */
-    public PluginProvider[] getPlugins() {
-        return plugins;
+    public PluginProvider[] getPluginProviders() {
+        return pluginProvs;
     }
 
     /**
      * Sets plugin providers.
      *
-     * @param plugins Plugin providers.
+     * @param pluginProvs Plugin providers.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setPlugins(PluginProvider... plugins) {
-        this.plugins = plugins;
+    public IgniteConfiguration setPluginProviders(PluginProvider... pluginProvs) {
+        this.pluginProvs = pluginProvs;
 
         return this;
     }

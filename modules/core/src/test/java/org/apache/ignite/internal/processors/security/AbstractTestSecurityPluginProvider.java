@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Security processor provider for tests.
  */
-public abstract class AbstractTestSecurityProcessorProvider implements PluginProvider {
+public abstract class AbstractTestSecurityPluginProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Override public String name() {
         return "TestSecurityProcessorProvider";

@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.spi.discovery.TestReconnectProcessorProvider;
+import org.apache.ignite.spi.discovery.TestReconnectSecurityPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -70,7 +70,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
         if(secEnabled)
-            cfg.setPlugins(new TestReconnectProcessorProvider());
+            cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
 
         return cfg;
     }

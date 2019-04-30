@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "IncludeProperties",
             "isAutoActivationEnabled",  // IGNITE-7301
             "NetworkCompressionLevel",
-            "Plugins"
+            "PluginProviders"
         };
 
         /// <summary>

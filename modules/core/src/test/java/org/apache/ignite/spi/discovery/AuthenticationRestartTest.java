@@ -40,7 +40,7 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1120_000);
 
-        cfg.setPlugins(new TestReconnectProcessorProvider());
+        cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
 
         return cfg;
     }

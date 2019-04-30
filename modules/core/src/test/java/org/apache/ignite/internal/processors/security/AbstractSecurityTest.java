@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.Arrays;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,10 +44,10 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /**
      * @param instanceName Instance name.
-     * @param prov Security plugin provider.
+     * @param pluginProv Security plugin provider.
      */
     protected IgniteConfiguration getConfiguration(String instanceName,
-        AbstractTestSecurityProcessorProvider prov) throws Exception {
+        AbstractTestSecurityPluginProvider pluginProv) throws Exception {
 
         return getConfiguration(instanceName)
             .setDataStorageConfiguration(
@@ -60,24 +57,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
                     )
             )
             .setAuthenticationEnabled(true)
-            .setPlugins(prov);
-    }
-
-    /**
-     * @param login Login.
-     * @param pwd Password.
-     * @param prmSet Security permission set.
-     * @return Security plugin provider.
-     */
-    protected AbstractTestSecurityProcessorProvider pluginProvider(String login, String pwd, SecurityPermissionSet prmSet,
-        TestSecurityData... clientData) {
-        return new AbstractTestSecurityProcessorProvider() {
-            @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-                return new TestSecurityProcessor(ctx,
-                    new TestSecurityData(login, pwd, prmSet),
-                    Arrays.asList(clientData));
-            }
-        };
+            .setPluginProviders(pluginProv);
     }
 
     /** */
@@ -96,6 +76,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      * @param isClient Is client.
      */
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
-        return startGrid(getConfiguration(login, pluginProvider(login, "", prmSet)).setClientMode(isClient));
+        return startGrid(getConfiguration(login, new TestSecurityPluginProvider(login, "", prmSet))
+                .setClientMode(isClient));
     }
 }
