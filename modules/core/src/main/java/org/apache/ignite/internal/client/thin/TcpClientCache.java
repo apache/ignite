@@ -37,10 +37,8 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 
 import static java.util.AbstractMap.SimpleEntry;
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 
 /**
  * Implementation of {@link ClientCache} over TCP protocol.
@@ -134,7 +132,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             this::writeCacheInfo,
             res -> {
                 try {
-                    return serDes.cacheConfiguration(res, DEFAULT_VER);
+                    return serDes.cacheConfiguration(res, res.clientChannel().serverVersion());
                 }
                 catch (IOException e) {
                     return null;
@@ -425,7 +423,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         if (qry == null)
             throw new NullPointerException("qry");
 
-        Consumer<BinaryOutputStream> qryWriter = out -> {
+        Consumer<PayloadOutputStream> qryWriter = out -> {
             writeCacheInfo(out);
             serDes.write(qry, out);
         };
@@ -442,7 +440,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** Handle scan query. */
     private QueryCursor<Cache.Entry<K, V>> scanQuery(ScanQuery<K, V> qry) {
-        Consumer<BinaryOutputStream> qryWriter = out -> {
+        Consumer<PayloadOutputStream> qryWriter = out -> {
             writeCacheInfo(out);
 
             if (qry.getFilter() == null)
@@ -469,7 +467,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** Handle SQL query. */
     private QueryCursor<Cache.Entry<K, V>> sqlQuery(SqlQuery qry) {
-        Consumer<BinaryOutputStream> qryWriter = out -> {
+        Consumer<PayloadOutputStream> qryWriter = out -> {
             writeCacheInfo(out);
             serDes.writeObject(out, qry.getType());
             serDes.writeObject(out, qry.getSql());
@@ -492,7 +490,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** Write cache ID and flags. */
-    private void writeCacheInfo(BinaryOutputStream out) {
+    private void writeCacheInfo(PayloadOutputStream out) {
         out.writeInt(cacheId);
         out.writeByte((byte)(keepBinary ? 1 : 0));
     }

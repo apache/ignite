@@ -35,6 +35,15 @@ public class ClientConnectionException extends ClientException {
     }
 
     /**
+     * Constructs a new exception with the specified detail message.
+     *
+     * @param msg the detail message.
+     */
+    public ClientConnectionException(String msg) {
+        super(msg);
+    }
+
+    /**
      * Constructs a new exception with the specified cause.
      *
      * @param cause the cause.
