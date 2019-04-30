@@ -2231,7 +2231,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             reuseList,
             H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
             H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled),
-            ctx.failure()
+            ctx.failure(),
+            null
         ) {
             @Override protected int compare(BPlusIO io, long pageAddr, int idx, H2Row row) {
                 throw new AssertionError();

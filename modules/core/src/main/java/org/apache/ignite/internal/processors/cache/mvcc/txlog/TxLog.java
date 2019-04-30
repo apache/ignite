@@ -163,9 +163,11 @@ public class TxLog implements DbCheckpointListener {
                     pageMemory,
                     wal,
                     reuseListRoot,
-                    isNew);
+                    isNew,
+                    null
+                );
 
-                tree = new TxLogTree(pageMemory, wal, treeRoot, reuseList, ctx.failure(), isNew);
+                tree = new TxLogTree(pageMemory, wal, treeRoot, reuseList, ctx.failure(), isNew, null);
 
                 ((GridCacheDatabaseSharedManager)mgr).addCheckpointListener(this);
             }
@@ -182,7 +184,7 @@ public class TxLog implements DbCheckpointListener {
             if ((treeRoot = reuseList1.takeRecycledPage()) == 0L)
                 treeRoot = pageMemory.allocatePage(TX_LOG_CACHE_ID, INDEX_PARTITION, FLAG_IDX);
 
-            tree = new TxLogTree(pageMemory, null, treeRoot, reuseList1, ctx.failure(), true);
+            tree = new TxLogTree(pageMemory, null, treeRoot, reuseList1, ctx.failure(), true, null);
         }
     }
 

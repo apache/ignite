@@ -50,9 +50,10 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         PageMemory pageMem,
         long metaPageId,
         ReuseList reuseList,
-        boolean initNew)
-        throws IgniteCheckedException {
-        super(name,
+        boolean initNew
+    ) throws IgniteCheckedException {
+        super(
+            name,
             grp.groupId(),
             pageMem,
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
@@ -61,7 +62,9 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             reuseList,
             grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
             grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS,
-            grp.shared().kernalContext().failure());
+            grp.shared().kernalContext().failure(),
+            null
+        );
 
         this.grp = grp;
 

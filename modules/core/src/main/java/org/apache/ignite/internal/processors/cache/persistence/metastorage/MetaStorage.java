@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -245,14 +246,33 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
-            freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
-                regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
-                reuseListRoot.isAllocated());
+            freeList = new FreeListImpl(
+                METASTORAGE_CACHE_ID,
+                "metastorage",
+                regionMetrics,
+                dataRegion,
+                null,
+                wal,
+                reuseListRoot.pageId().pageId(),
+                reuseListRoot.isAllocated(),
+                null
+            );
 
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
-            tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), failureProcessor, partId);
+            tree = new MetastorageTree(
+                METASTORAGE_CACHE_ID,
+                dataRegion.pageMemory(),
+                wal,
+                rmvId,
+                freeList,
+                rowStore,
+                treeRoot.pageId().pageId(),
+                treeRoot.isAllocated(),
+                failureProcessor,
+                partId,
+                null
+            );
 
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
@@ -663,10 +683,28 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     /** */
     public class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
         /** {@inheritDoc} */
-        FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
+        FreeListImpl(
+            int cacheId,
+            String name,
+            DataRegionMetricsImpl regionMetrics,
+            DataRegion dataRegion,
             ReuseList reuseList,
-            IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+            IgniteWriteAheadLogManager wal,
+            long metaPageId,
+            boolean initNew,
+            PageLockListener lockLsnr
+        ) throws IgniteCheckedException {
+            super(
+                cacheId,
+                name,
+                regionMetrics,
+                dataRegion,
+                reuseList,
+                wal,
+                metaPageId,
+                initNew,
+                lockLsnr
+            );
         }
 
         /** {@inheritDoc} */

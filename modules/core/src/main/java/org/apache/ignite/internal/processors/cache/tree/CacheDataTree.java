@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -92,7 +93,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(name,
+        super(
+            name,
             grp.groupId(),
             grp.dataRegion().pageMemory(),
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
@@ -101,7 +103,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             reuseList,
             innerIO(grp),
             leafIO(grp),
-            grp.shared().kernalContext().failure());
+            grp.shared().kernalContext().failure(),
+            DataStructure.NOOP_LSNR
+        );
 
         assert rowStore != null;
 
