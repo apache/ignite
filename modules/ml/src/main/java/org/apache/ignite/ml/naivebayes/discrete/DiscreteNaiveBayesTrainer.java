@@ -52,7 +52,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     private double[][] bucketThresholds;
 
     /** Check it the feature should be skipped. By defaut all feature are processed. */
-    Predicate<Integer> skipFeature = i -> false;
+    private Predicate<Integer> skipFeature = i -> false;
 
     /** {@inheritDoc} */
     @Override public <K, V> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -98,9 +98,14 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                     int size = features.size();
                     if (!res.valuesInBucketPerLbl.containsKey(lb)) {
                         valuesInBucket = new long[size][];
+                        int index = 0;
                         for (int i = 0; i < size; i++) {
-                            valuesInBucket[i] = new long[bucketThresholds[i].length + 1];
-                            Arrays.fill(valuesInBucket[i], 0L);
+                            if (skipFeature.test(i)) {
+                                continue;
+                            }
+                            valuesInBucket[index] = new long[bucketThresholds[index].length + 1];
+                            Arrays.fill(valuesInBucket[index], 0L);
+                            ++index;
                         }
                         res.valuesInBucketPerLbl.put(lb, valuesInBucket);
                     }
@@ -112,20 +117,22 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
                     valuesInBucket = res.valuesInBucketPerLbl.get(lb);
 
+                    int index = 0;
                     for (int j = 0; j < size; j++) {
                         if (skipFeature.test(j)) {
                             continue;
                         }
                         double x = features.get(j);
-                        int bucketNum = toBucketNumber(x, bucketThresholds[j]);
-                        valuesInBucket[j][bucketNum] += 1;
+                        int bucketNum = toBucketNumber(x, bucketThresholds[index]);
+                        valuesInBucket[index][bucketNum] += 1;
+                        ++index;
                     }
                 }
                 return res;
             })) {
             DiscreteNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
                 if (a == null)
-                    return b == null ? new DiscreteNaiveBayesSumsHolder() : b;
+                    return b;
                 if (b == null)
                     return a;
                 return a.merge(b);
@@ -154,13 +161,16 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 int cnt = sumsHolder.featureCountersPerLbl.get(label);
                 long[][] sum = sumsHolder.valuesInBucketPerLbl.get(label);
 
+                int index = 0;
                 for (int i = 0; i < featureCnt; i++) {
-
-                    int bucketsCnt = sum[i].length;
-                    probabilities[lbl][i] = new double[bucketsCnt];
+                    if (skipFeature.test(i))
+                        continue;
+                    int bucketsCnt = sum[index].length;
+                    probabilities[lbl][index] = new double[bucketsCnt];
 
                     for (int j = 0; j < bucketsCnt; j++)
-                        probabilities[lbl][i][j] = (double)sum[i][j] / cnt;
+                        probabilities[lbl][index][j] = (double)sum[index][j] / cnt;
+                    ++index;
                 }
 
                 if (equiprobableClasses)
@@ -219,6 +229,10 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     public DiscreteNaiveBayesTrainer setBucketThresholds(double[][] bucketThresholds) {
         this.bucketThresholds = bucketThresholds;
         return this;
+    }
+
+    public Predicate<Integer> getSkipFeature() {
+        return skipFeature;
     }
 
     /** Sets predicate to skip features. */
