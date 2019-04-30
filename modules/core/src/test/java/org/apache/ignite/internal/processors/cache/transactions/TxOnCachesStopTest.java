@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCacheRestartingException;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -55,8 +54,6 @@ import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 
-import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
-
 /**
  *
  */
@@ -83,8 +80,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setIncludeEventTypes(EVT_CACHE_STOPPED);
-
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(ipFinder);
 
@@ -108,7 +103,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         destroyCacheCfg = ccfg1;
 
-        CacheConfiguration ccfg2 = new CacheConfiguration();
+        CacheConfiguration<Integer, byte[]> ccfg2 = new CacheConfiguration<>();
 
         ccfg2.setName(CACHE_2_NAME);
         ccfg2.setBackups(1);
