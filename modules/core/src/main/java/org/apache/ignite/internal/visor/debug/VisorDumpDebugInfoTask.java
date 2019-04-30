@@ -28,23 +28,23 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
- * Creates thread dump.
+ * Creates debug info dump.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorDumpPageHistoryTask extends VisorOneNodeTask<VisorDumpPageHistoryTaskArg, Void> {
+public class VisorDumpDebugInfoTask extends VisorOneNodeTask<VisorDumpDebugInfoArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorDumpPageHistoryJob job(VisorDumpPageHistoryTaskArg arg) {
-        return new VisorDumpPageHistoryJob(arg, debug);
+    @Override protected VisorDumpDebugInfoJob job(VisorDumpDebugInfoArg arg) {
+        return new VisorDumpDebugInfoJob(arg, debug);
     }
 
     /**
-     * Job that take thread dump on node.
+     * Job that take debug info dump.
      */
-    private static class VisorDumpPageHistoryJob extends VisorJob<VisorDumpPageHistoryTaskArg, Void> {
+    private static class VisorDumpDebugInfoJob extends VisorJob<VisorDumpDebugInfoArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -52,22 +52,36 @@ public class VisorDumpPageHistoryTask extends VisorOneNodeTask<VisorDumpPageHist
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorDumpPageHistoryJob(VisorDumpPageHistoryTaskArg arg, boolean debug) {
+        private VisorDumpDebugInfoJob(VisorDumpDebugInfoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorDumpPageHistoryTaskArg arg) {
+        @Override protected Void run(VisorDumpDebugInfoArg arg) {
             DebugProcessor debug = ignite.context().debug();
 
+            if (arg.operation == VisorDumpDebugInfoOperation.PAGE_HISTORY)
+                dumpPageHistory(arg, debug);
+
+            return null;
+        }
+
+        /**
+         * @param arg Job arguments for dumping.
+         * @param debug Debug processor for execution.
+         */
+        private void dumpPageHistory(VisorDumpDebugInfoArg arg, DebugProcessor debug) {
             DebugProcessor.DebugPageBuilder builder = new DebugProcessor.DebugPageBuilder()
                 .pageIds(arg.getPageIds());
 
-            if (arg.getFileToDump() != null)
-                builder.fileOrFolderForDump(new File(arg.getFileToDump()));
+            if (arg.getPathToDump() != null)
+                builder.fileOrFolderForDump(new File(arg.getPathToDump()));
 
-            for (VisorDumpPageHistoryTaskArg.DumpAction action : arg.getDumpActions()) {
-                builder.addAction(toInner(action));
+            for (VisorDumpDebugInfoArg.DumpAction action : arg.getDumpActions()) {
+                DebugProcessor.DebugAction convertedAction = toInner(action);
+
+                if (convertedAction != null)
+                    builder.addAction(convertedAction);
             }
 
             try {
@@ -76,11 +90,15 @@ public class VisorDumpPageHistoryTask extends VisorOneNodeTask<VisorDumpPageHist
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-
-            return null;
         }
 
-        private DebugProcessor.DebugAction toInner(VisorDumpPageHistoryTaskArg.DumpAction action) {
+        /**
+         * Converting visor action to inner debug action.
+         *
+         * @param action Action for converting.
+         * @return Inner debug action.
+         */
+        private DebugProcessor.DebugAction toInner(VisorDumpDebugInfoArg.DumpAction action) {
             switch (action) {
                 case PRINT_TO_LOG:
                     return DebugProcessor.DebugAction.PRINT_TO_LOG;
@@ -93,7 +111,7 @@ public class VisorDumpPageHistoryTask extends VisorOneNodeTask<VisorDumpPageHist
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorDumpPageHistoryJob.class, this);
+            return S.toString(VisorDumpDebugInfoJob.class, this);
         }
     }
 }

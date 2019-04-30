@@ -5481,9 +5481,8 @@ public abstract class IgniteUtils {
      * @param in Input.
      * @return Deserialized list.
      * @throws IOException If deserialization failed.
-     * @throws ClassNotFoundException If deserialized class could not be found.
      */
-    @Nullable public static <E extends Enum> List<E> readEnumList(ObjectInput in, Class<E> claz) throws IOException, ClassNotFoundException {
+    @Nullable public static <E extends Enum> List<E> readEnumList(ObjectInput in, Class<E> claz) throws IOException {
         int size = in.readInt();
 
         // Check null flag.
@@ -5492,10 +5491,31 @@ public abstract class IgniteUtils {
 
         List<E> col = new ArrayList<>(size);
 
-        for (int i = 0; i < size; i++)
-            col.add((E)claz.getEnumConstants()[in.readByte()] );
+        for (int i = 0; i < size; i++) {
+            E enumInst = readEnum(in, claz);
+
+            if (enumInst != null)
+                col.add(enumInst);
+        }
 
         return col;
+    }
+
+    /**
+     * @param in Input.
+     * @return Deserialized enum.
+     * @throws IOException If deserialization failed.
+     */
+    @Nullable public static <E extends Enum> E readEnum(ObjectInput in, Class<E> claz) throws IOException {
+        E[] constants = claz.getEnumConstants();
+
+        byte order = in.readByte();
+
+        //Skipping too high order for backward compatibility.
+        if (order < constants.length)
+            return constants[order];
+
+        return null;
     }
 
     /**

@@ -31,7 +31,7 @@ import org.apache.ignite.mxbean.DebugMXBean;
  */
 public class DebugMXBeanImpl implements DebugMXBean {
 
-    private final DebugProcessor debug;
+    private DebugProcessor debug;
 
     /**
      * @param ctx Context.
@@ -50,7 +50,7 @@ public class DebugMXBeanImpl implements DebugMXBean {
         if (dumpToFile)
             builder.addAction(DebugProcessor.DebugAction.PRINT_TO_FILE);
 
-        if (dumpToFile)
+        if (dumpToLog)
             builder.addAction(DebugProcessor.DebugAction.PRINT_TO_LOG);
 
         try {
@@ -59,5 +59,14 @@ public class DebugMXBeanImpl implements DebugMXBean {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    @Override public void dumpPageHistory(boolean dumpToFile, boolean dumpToLog, long... pageIds) {
+        dumpPageHistory(dumpToFile, dumpToLog, null, pageIds);
+    }
+
+    //For Test only.
+    void debugProcessor(DebugProcessor debug) {
+        this.debug = debug;
     }
 }

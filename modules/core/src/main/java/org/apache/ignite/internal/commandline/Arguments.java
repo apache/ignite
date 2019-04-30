@@ -51,7 +51,7 @@ public class Arguments {
     private BaselineArguments baselineArgs;
 
     /**
-     * Arguments for baseline command.
+     * Arguments for debug command.
      */
     private DebugArguments debugArgs;
 
@@ -113,6 +113,7 @@ public class Arguments {
      * @param user User.
      * @param pwd Password.
      * @param baselineArgs Baseline args.
+     * @param debugArgs Debug args.
      * @param txArg TX arg.
      * @param cacheArgs --cache subcommand arguments.
      * @param walAct WAL action.
@@ -227,6 +228,9 @@ public class Arguments {
         return baselineArgs;
     }
 
+    /**
+     * @return Debug arguments.
+     */
     public DebugArguments getDebugArgs() {
         return debugArgs;
     }

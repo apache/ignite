@@ -20,28 +20,30 @@ package org.apache.ignite.internal.processors.maintain;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
+import java.io.File;
 import java.lang.management.ManagementFactory;
-import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.DebugMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.maintain.DebugProcessor.DEFAULT_TARGET_FOLDER;
+
 /** */
 public class DebugMXBeanTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    private static final String CACHE_NAME = "cache0";
+    /** **/
+    private static final String TEST_DUMP_FILE = "custom";
+
+    /** One time instantiated debug bean for test. **/
+    private static DebugMXBean debugBean;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -58,62 +60,83 @@ public class DebugMXBeanTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         stopAllGrids();
 
         cleanPersistenceDir();
-    }
 
-    /** */
-    @Test
-    public void testDebugPage() throws Exception {
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER, false));
+
         Ignite ignite = startGrid();
 
         ignite.cluster().active(true);
 
-        ignite.createCache(CACHE_NAME);
-        try (IgniteDataStreamer<Integer, Integer> st = ignite.dataStreamer(CACHE_NAME)) {
-            st.allowOverwrite(true);
+        debugBean = debugMxBean();
+    }
 
-            for (int i = 0; i < 10_000; i++)
-                st.addData(i, i);
-        }
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
-        DebugMXBean debugBean = bltMxBean();
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER, false));
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void shouldDumpInfoOnlyToLog() throws Exception {
+        debugBean.dumpPageHistory(false, true, 2323);
 
-        List<FileWALPointer> wal = new ArrayList<>();
+        Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER);
 
-        String workDir = U.defaultWorkDirectory();
+        assertEquals(0, path.toFile().listFiles((dir, name) -> name.endsWith("txt")).length);
+    }
 
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory();
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void shouldDumpInfoOnlyToLogAndFile() throws Exception {
+        long[] expectedPages = {2323, 44564, 456456};
+        debugBean.dumpPageHistory(true, true, expectedPages);
 
-        long pageId = 0;
-        try (WALIterator it = factory.iterator(
-            new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .filesOrDirs(workDir)
-        )) {
-            while (it.hasNext()) {
-                WALRecord record = it.next().get2();
+        Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER);
 
-                if (record instanceof PageSnapshot) {
-                    pageId = ((PageSnapshot)record).fullPageId().pageId();
-                }
-            }
-        }
+        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith("txt"))[0];
 
+        List<String> records = Files.readAllLines(dumpFile.toPath());
 
+        assertTrue(records.size() > 0);
 
-        debugBean.dumpPageHistory(true, true, null, pageId);
+        assertTrue(records.stream().anyMatch(line -> line.contains("CheckpointRecord")));
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void shouldDumpInfoOnlyToCustomFile() throws Exception {
+        debugBean.dumpPageHistory(true, false, TEST_DUMP_FILE, 49984);
+
+        Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER, TEST_DUMP_FILE);
+
+        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith("txt"))[0];
+
+        List<String> records = Files.readAllLines(dumpFile.toPath());
+
+        assertTrue(records.size() > 0);
+
+        assertTrue(records.stream().anyMatch(line -> line.contains("CheckpointRecord")));
     }
 
     /**
      *
      */
-    private DebugMXBean bltMxBean() throws Exception {
+    private DebugMXBean debugMxBean() throws Exception {
         ObjectName mBeanName = U.makeMBeanName(getTestIgniteInstanceName(), "Debug",
             DebugMXBeanImpl.class.getSimpleName());
 

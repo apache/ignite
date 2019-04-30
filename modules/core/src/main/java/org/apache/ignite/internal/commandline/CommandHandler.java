@@ -103,9 +103,10 @@ import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
-import org.apache.ignite.internal.visor.debug.VisorDumpPageHistoryTaskArg;
-import org.apache.ignite.internal.visor.debug.VisorDumpOperation;
-import org.apache.ignite.internal.visor.debug.VisorDumpPageHistoryTask;
+import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoArg;
+import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoOperation;
+import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoTask;
+import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoArg.DumpAction;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -155,6 +156,7 @@ import org.apache.ignite.transactions.TransactionState;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
@@ -1278,20 +1280,24 @@ public class CommandHandler {
         return null;
     }
 
-
     /**
-     * Change baseline.
+     * Dump debug info.
      *
      * @param client Client.
-     * @param baselineArgs Baseline action arguments.
-     * @throws Throwable If failed to execute baseline action.
+     * @param debugArgs Debug action arguments.
+     * @throws Throwable If failed to execute debug action.
      */
-    private void debug(GridClient client, DebugArguments baselineArgs) throws Throwable {
+    private void debug(GridClient client, DebugArguments debugArgs) throws Throwable {
         try {
-            executeTask(client, VisorDumpPageHistoryTask.class, toVisorArguments(baselineArgs));
+            executeTaskByNameOnNode(
+                client, VisorDumpDebugInfoTask.class.getName(), toVisorArguments(debugArgs), BROADCAST_UUID
+            );
+
+            log("Dump of " + debugArgs.getCmd().text() + " was successfully "
+                + debugArgs.getDumpActions().stream().map(DumpAction::name).collect(joining(" and ")));
         }
         catch (Throwable e) {
-            log("Failed to execute baseline command='" + baselineArgs.getCmd().text() + "'", e);
+            log("Failed to execute baseline command='" + debugArgs.getCmd().text() + "'", e);
 
             throw e;
         }
@@ -1303,9 +1309,12 @@ public class CommandHandler {
      * @param args Argument from command line.
      * @return Task argument.
      */
-    private VisorDumpPageHistoryTaskArg toVisorArguments(DebugArguments args) {
-        return new VisorDumpPageHistoryTaskArg(args.getCmd() == DebugCommand.PAGE_HISTORY ? VisorDumpOperation.PAGE : null,
-            args.getPageIds(), args.getFileToDump(), args.getDumpActions()
+    private VisorDumpDebugInfoArg toVisorArguments(DebugArguments args) {
+        return new VisorDumpDebugInfoArg(
+            args.getCmd() == DebugCommand.PAGE_HISTORY ? VisorDumpDebugInfoOperation.PAGE_HISTORY : null,
+            args.getPageIds(),
+            args.getPathToDump(),
+            args.getDumpActions()
         );
     }
 
@@ -2415,15 +2424,15 @@ public class CommandHandler {
     }
 
     /**
-     * Parses and validates baseline arguments.
+     * Parses and validates debug arguments.
      *
-     * @return --baseline subcommand arguments in case validation is successful.
+     * @return --debug subcommand arguments in case validation is successful.
      */
     private DebugArguments parseAndValidateDebugArgs() {
-        DebugCommand cmd = DebugCommand.of(nextArg("Expected baseline action"));
+        DebugCommand cmd = DebugCommand.of(nextArg("Expected debug action"));
 
         if (cmd == null)
-            throw new IllegalArgumentException("Expected correct baseline action");
+            throw new IllegalArgumentException("Expected correct debug action");
 
         DebugArguments.Builder debugArgs = new DebugArguments.Builder(cmd);
 
@@ -2431,27 +2440,32 @@ public class CommandHandler {
             case PAGE_HISTORY:
                 do {
                     DebugPageCommandArg debugPageArg = CommandArgUtils.of(
-                        nextArg("Expected one of auto-adjust arguments"), DebugPageCommandArg.class
+                        nextArg("Expected one of page_history arguments"), DebugPageCommandArg.class
                     );
 
                     if (debugPageArg == null)
-                        throw new IllegalArgumentException("Expected one of auto-adjust arguments");
+                        throw new IllegalArgumentException("Expected valid page_history arguments");
 
                     if (debugPageArg == DebugPageCommandArg.PAGE_IDS)
-                        debugArgs.withPageIds(nextListArg("pageIds").stream().map(Long::valueOf).collect(toList()));
+                        debugArgs.withPageIds(nextListArg("page_ids value").stream().map(Long::valueOf).collect(toList()));
 
                     if (debugPageArg == DebugPageCommandArg.PRINT_TO_LOG_ACTION)
-                        debugArgs.addDumpAction(VisorDumpPageHistoryTaskArg.DumpAction.PRINT_TO_LOG);
+                        debugArgs.addDumpAction(DumpAction.PRINT_TO_LOG);
 
                     if (debugPageArg == DebugPageCommandArg.PRINT_TO_FILE_ACTION)
-                        debugArgs.addDumpAction(VisorDumpPageHistoryTaskArg.DumpAction.PRINT_TO_FILE);
+                        debugArgs.addDumpAction(DumpAction.PRINT_TO_FILE);
 
                     if (debugPageArg == DebugPageCommandArg.DUMP_PATH)
-                        debugArgs.withFileToDump(nextArg("DumpPath"));
+                        debugArgs.withPathToDump(nextArg("dump_path"));
                 }
                 while (hasNextSubArg());
 
-                return debugArgs.build();
+                DebugArguments args = debugArgs.build();
+
+                if (args.getDumpActions().isEmpty())
+                    throw new IllegalArgumentException("Expected at least one dump actions");
+
+                return args;
         }
 
         return debugArgs.build();

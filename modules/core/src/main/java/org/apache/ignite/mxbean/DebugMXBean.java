@@ -22,6 +22,10 @@ package org.apache.ignite.mxbean;
  */
 public interface DebugMXBean {
     /** */
-    @MXBeanDescription("Dump page history.")
+    @MXBeanDescription("Dump page history to custom path.")
     void dumpPageHistory(boolean dumpToFile, boolean dumpToLog, String filePath, long... pageIds);
+
+    /** */
+    @MXBeanDescription("Dump page history.")
+    void dumpPageHistory(boolean dumpToFile, boolean dumpToLog, long... pageIds);
 }

@@ -20,15 +20,14 @@ package org.apache.ignite.internal.visor.debug;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Baseline operation types.
+ * Dump debug info operation types.
  **/
-public enum VisorDumpOperation {
-    /** Collect baseline information. */
-    PAGE;
-
+public enum VisorDumpDebugInfoOperation {
+    /** Dump page history information. */
+    PAGE_HISTORY;
 
     /** Enumerated values. */
-    private static final VisorDumpOperation[] VALS = values();
+    private static final VisorDumpDebugInfoOperation[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -36,7 +35,7 @@ public enum VisorDumpOperation {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static VisorDumpOperation fromOrdinal(int ord) {
+    @Nullable public static VisorDumpDebugInfoOperation fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }
