@@ -982,6 +982,30 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     }
 
     /**
+     * Test if poll operation works accross threads for the same queue
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGet() throws Exception {
+        IgniteEx ignite = grid(0);
+
+        IgniteQueue<BinaryObject> queue = ignite.queue("q0", 10, config(false));
+
+        if (BINARY_QUEUE_MODE)
+            queue = queue.withKeepBinary();
+
+        queue.add(sameHashBinObj(ignite, 0));
+        queue.add(sameHashBinObj(ignite, 1));
+
+        GridTestUtils.runAsync((Callable<BinaryObject>)queue::poll).get();
+    }
+
+    private static BinaryObject sameHashBinObj(Ignite ignite, int i) {
+        return ignite.binary().toBinary(new SameHashItem(Integer.toString(i)));
+    }
+
+    /**
      *  Test class with the same hash code.
      */
     protected static class SameHashItem implements Serializable {

@@ -429,24 +429,6 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /** {@inheritDoc} */
     @Override public <V1> IgniteQueue<V1> withKeepBinary() {
-        CacheOperationContext opCtx = cctx.operationContextPerCall();
-
-        if (opCtx != null && opCtx.isKeepBinary())
-            return (GridCacheQueueAdapter<V1>)this;
-
-        opCtx = opCtx == null ? new CacheOperationContext(
-            false,
-            null,
-            true,
-            null,
-            false,
-            null,
-            false,
-            DFLT_ALLOW_ATOMIC_OPS_IN_TX)
-            : opCtx.keepBinary();
-
-        cctx.operationContextPerCall(opCtx);
-
         return (GridCacheQueueAdapter<V1>)this;
     }
 
