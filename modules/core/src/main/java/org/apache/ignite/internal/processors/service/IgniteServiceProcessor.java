@@ -79,6 +79,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.services.ServiceMonitoringInfo;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -92,6 +93,7 @@ import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
+import static org.apache.ignite.internal.processors.monitoring.MonitoringGroup.SERVICE;
 
 /**
  * Ignite service processor.
@@ -182,7 +184,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     /** Disconnected flag. */
     private volatile boolean disconnected;
 
-    MonitoringList<UUID, ServiceConfiguration> monitoringServices;
+    MonitoringList<UUID, ServiceMonitoringInfo> monitoringServices;
 
     /**
      * @param ctx Kernal context.
@@ -233,7 +235,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             });
 
-        monitoringServices = ctx.monitoring().list(MonitoringGroup.SERVICE, "services");
+        monitoringServices = ctx.monitoring().list(SERVICE, "services", ServiceMonitoringInfo.class);
     }
 
     /** {@inheritDoc} */
@@ -1603,7 +1605,16 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         else {
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
-                            monitoringServices.add(reqSrvcId.globalId(), snd.id().toString(), cfg);
+                            monitoringServices.add(
+                                reqSrvcId.globalId(),
+                                snd.id().toString(),
+                                new ServiceMonitoringInfo(
+                                    cfg.getName(),
+                                    cfg.getTotalCount(),
+                                    cfg.getMaxPerNodeCount(),
+                                    cfg.getCacheName()
+                                )
+                            );
 
                             registeredServices.put(reqSrvcId, desc);
 

@@ -26,4 +26,6 @@ public interface Sensor {
     String getName();
 
     Map<String, String> getLabels();
+
+    String stringValue();
 }

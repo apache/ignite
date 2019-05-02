@@ -27,35 +27,38 @@ import org.jetbrains.annotations.NotNull;
 /**
  *
  */
-public class MonitoringListImpl<Id, Data> implements MonitoringList<Id, Data> {
+public class MonitoringListImpl<Id, Row> implements MonitoringList<Id, Row> {
     private String name;
 
     private MonitoringGroup group;
 
-    private Map<Id, ListRow<Id, Data>> rows = new HashMap<>();
+    private Map<Id, ListRow<Id, Row>> rows = new HashMap<>();
 
-    public MonitoringListImpl(MonitoringGroup group, String name) {
+    private Class<Row> rowClass;
+
+    public MonitoringListImpl(MonitoringGroup group, String name, Class<Row> rowClass) {
         this.name = name;
         this.group = group;
+        this.rowClass = rowClass;
     }
 
     @Override public String getName() {
         return name;
     }
 
-    @Override public void add(Id id, String sessionId, Data data) {
-        ListRow<Id, Data> old = rows.putIfAbsent(id, new ListRowImpl<>(id, sessionId, data));
+    @Override public void add(Id id, String sessionId, Row data) {
+        ListRow<Id, Row> old = rows.putIfAbsent(id, new ListRowImpl<>(id, sessionId, data));
 
         assert old == null;
     }
 
-    @Override public void add(Id id, String sessionId, String name, Data data) {
-        ListRow<Id, Data> old = rows.putIfAbsent(id, new NamedListRowImpl<>(id, sessionId, name, data));
+    @Override public void add(Id id, String sessionId, String name, Row data) {
+        ListRow<Id, Row> old = rows.putIfAbsent(id, new NamedListRowImpl<>(id, sessionId, name, data));
 
         assert old == null;
     }
 
-    @Override public void update(Id id, Data data) {
+    @Override public void update(Id id, Row data) {
         if (!rows.containsKey(id))
             return; //TODO: should we throw an exception here?
 
@@ -66,11 +69,15 @@ public class MonitoringListImpl<Id, Data> implements MonitoringList<Id, Data> {
         rows.remove(id);
     }
 
-    @NotNull @Override public Iterator<ListRow<Id, Data>> iterator() {
+    @Override public Class<Row> rowClass() {
+        return rowClass;
+    }
+
+    @NotNull @Override public Iterator<ListRow<Id, Row>> iterator() {
         return rows.values().iterator();
     }
 
-    public Collection<ListRow<Id, Data>> getRows() {
+    public Collection<ListRow<Id, Row>> getRows() {
         return rows.values();
     }
 }

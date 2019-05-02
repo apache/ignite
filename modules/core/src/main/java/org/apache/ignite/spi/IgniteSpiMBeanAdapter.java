@@ -18,7 +18,9 @@
 package org.apache.ignite.spi;
 
 import java.text.DateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
@@ -60,7 +62,9 @@ public class IgniteSpiMBeanAdapter implements IgniteSpiManagementMBean {
 
         GridMonitoringManager mon = ((IgniteEx)spiAdapter.ignite).context().monitoring();
 
-        SensorGroup<String> spiSensors = mon.sensorsGroup(name);
+        SensorGroup<String> spiSensors = mon.sensorsGroup(name,
+            new HashSet<>(Arrays.asList("startTimestampFormatted", "upTimeFormatted", "startTimestamp",
+                "upTime", "localNodeId", "igniteHome")));
 
         startTimestampFormatted = spiSensors.sensor("startTimestampFormatted",
             () -> DateFormat.getDateTimeInstance().format(new Date(spiAdapter.getStartTstamp())));

@@ -87,7 +87,13 @@ public class JmxPullExposerSpi extends IgniteSpiAdapter implements MonitoringExp
     }
 
     private void onListCreation(T2<MonitoringGroup, MonitoringList<?, ?>> list) {
-        System.out.println("JmxPullExposerSpi.onListCreation - " + list.get1() + "-" + list.get2().getName());
+        try {
+            registerMBean("lists", list.get2().getName(), new ListMBean(list.get2()), ListMBean.class,
+                ((IgniteEx)ignite()).context());
+        }
+        catch (IgniteCheckedException e) {
+            log.error("MBean for group " + list.get1() + " and list " + list.get2().getName() + " can't be created.", e);
+        }
     }
 
     private <T> void registerMBean(String grp, String name, T impl, Class<T> itf,

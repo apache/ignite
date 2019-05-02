@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.monitoring.lists;
 /**
  *
  */
-public class ComputeTaskInfo {
+public class ComputeTaskMonitoringInfo {
     private String taskClasName;
 
     private long startTime;
@@ -29,7 +29,7 @@ public class ComputeTaskInfo {
 
     private String execName;
 
-    public ComputeTaskInfo(String taskClasName, long startTime, long timeout, String execName) {
+    public ComputeTaskMonitoringInfo(String taskClasName, long startTime, long timeout, String execName) {
         this.taskClasName = taskClasName;
         this.startTime = startTime;
         this.timeout = timeout;

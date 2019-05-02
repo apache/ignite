@@ -38,4 +38,8 @@ public class LongTimeSensor extends AbstractTimeSensor {
 
         this.timestamp = timestamp;
     }
+
+    @Override public String stringValue() {
+        return "ts=" + timestamp + ",value=" + value;
+    }
 }

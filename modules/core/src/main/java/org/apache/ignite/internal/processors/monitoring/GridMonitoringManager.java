@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -72,27 +73,26 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         stopSpi();
     }
 
-    public SensorGroup<MonitoringGroup> sensors(MonitoringGroup grp) {
-        SensorGroup<MonitoringGroup> sensorGrp = sensors.computeIfAbsent(grp, g -> new SensorGroupImpl(grp));
+    public SensorGroup<MonitoringGroup> sensors(MonitoringGroup grp, Set<String> names) {
+        SensorGroup<MonitoringGroup> sensorGrp = sensors.computeIfAbsent(grp, g -> new SensorGroupImpl(grp, names));
 
         notifyListeners(sensorGrp, sensorsCreationLsnrs);
 
         return sensorGrp;
     }
 
-    public SensorGroup<String> sensorsGroup(String name) {
-        SensorGroup<String> grp = sensorGrps.computeIfAbsent(name, n -> new SensorGroupImpl(name));
+    public SensorGroup<String> sensorsGroup(String name, Set<String> names) {
+        SensorGroup<String> grp = sensorGrps.computeIfAbsent(name, n -> new SensorGroupImpl(name, names));
 
         notifyListeners(grp, sensorGrpCreationLsnrs);
 
         return grp;
     }
 
-    public <Id, Row> MonitoringList<Id, Row> list(
-        MonitoringGroup grp, String name, Class<Row> rowClass) {
+    public <Id, Row> MonitoringList<Id, Row> list(MonitoringGroup grp, String name, Class<Row> rowClass) {
         Map<String, MonitoringList<?, ?>> lists = this.lists.computeIfAbsent(grp, g -> new HashMap<>());
 
-        MonitoringList<Id, Row> list = new MonitoringListImpl<>(grp, name);
+        MonitoringList<Id, Row> list = new MonitoringListImpl<>(grp, name, rowClass);
 
         MonitoringList<?, ?> old = lists.putIfAbsent(name, list);
 

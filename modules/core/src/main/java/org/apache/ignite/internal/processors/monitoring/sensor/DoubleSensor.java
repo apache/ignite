@@ -44,4 +44,8 @@ public class DoubleSensor extends AbstractSensor {
     public void set(long value) {
         this.value = value;
     }
+
+    @Override public String stringValue() {
+        return ((Double)value).toString();
+    }
 }

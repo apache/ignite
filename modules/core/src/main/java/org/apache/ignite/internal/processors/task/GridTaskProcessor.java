@@ -66,7 +66,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
-import org.apache.ignite.internal.processors.monitoring.lists.ComputeTaskInfo;
+import org.apache.ignite.internal.processors.monitoring.lists.ComputeTaskMonitoringInfo;
 import org.apache.ignite.internal.processors.monitoring.lists.MonitoringList;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -140,7 +140,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
-    private final MonitoringList<UUID, ComputeTaskInfo> tasksMonitoring;
+    private final MonitoringList<UUID, ComputeTaskMonitoringInfo> tasksMonitoring;
 
     /**
      * @param ctx Kernal context.
@@ -152,7 +152,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
         discoLsnr = new TaskDiscoveryListener();
 
-        tasksMonitoring = ctx.monitoring().list(MonitoringGroup.COMPUTE, "tasks");
+        tasksMonitoring = ctx.monitoring().list(MonitoringGroup.COMPUTE, "tasks", ComputeTaskMonitoringInfo.class);
     }
 
     /** {@inheritDoc} */
@@ -747,7 +747,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         UUID taskId = UUID.randomUUID();
 
         tasksMonitoring.add(taskId, sesId.toString(), taskName,
-            new ComputeTaskInfo(taskClsName, startTime, timeout0, execName));
+            new ComputeTaskMonitoringInfo(taskClsName, startTime, timeout0, execName));
 
         fut.listen(f -> {
             tasks.remove(taskId);

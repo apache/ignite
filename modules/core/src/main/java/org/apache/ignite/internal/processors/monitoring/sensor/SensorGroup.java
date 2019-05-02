@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.function.DoubleSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -30,7 +32,9 @@ public interface SensorGroup<Name> {
 
     public Collection<Sensor> getSensors();
 
-    public Sensor findSensor(String name);
+    public Set<String> names();
+
+    @Nullable public Sensor findSensor(String name);
 
     public <T> TypedSensor<T> sensor(String name);
 

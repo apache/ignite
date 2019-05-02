@@ -41,4 +41,8 @@ public class ClosureSensor<T> extends AbstractSensor {
             return null;
         }
     }
+
+    @Override public String stringValue() {
+        return getValue().toString();
+    }
 }
