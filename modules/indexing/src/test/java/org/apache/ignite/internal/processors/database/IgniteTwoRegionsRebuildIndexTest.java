@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests the case when preformed index rebuild for created by client in-memory cache.
@@ -93,6 +94,7 @@ public class IgniteTwoRegionsRebuildIndexTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRebuildIndexes() throws Exception {
         startGrid("server");
         Ignite client = startGrid("client");

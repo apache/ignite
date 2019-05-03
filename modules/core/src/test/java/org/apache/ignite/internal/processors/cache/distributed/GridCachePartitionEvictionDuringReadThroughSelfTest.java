@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -83,9 +84,8 @@ public class GridCachePartitionEvictionDuringReadThroughSelfTest extends GridCom
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPartitionRent() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5759");
-
         startGrid(DATA_READ_GRID_IDX);
 
         final AtomicBoolean done = new AtomicBoolean();

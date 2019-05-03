@@ -17,31 +17,31 @@
 
 package org.apache.ignite.internal.processors.sql;
 
-import junit.framework.TestCase;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConnectorConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * SQL connector configuration validation tests.
  */
 @SuppressWarnings("deprecation")
-public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstractTest {
+public class SqlConnectorConfigurationValidationSelfTest extends AbstractIndexingCommonTest {
     /** Node index generator. */
     private static final AtomicInteger NODE_IDX_GEN = new AtomicInteger();
 
@@ -58,6 +58,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDefault() throws Exception {
         check(new SqlConnectorConfiguration(), true);
         assertJdbc(null, SqlConnectorConfiguration.DFLT_PORT);
@@ -68,6 +69,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testHost() throws Exception {
         check(new SqlConnectorConfiguration().setHost("126.0.0.1"), false);
 
@@ -84,6 +86,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPort() throws Exception {
         check(new SqlConnectorConfiguration().setPort(-1), false);
         check(new SqlConnectorConfiguration().setPort(0), false);
@@ -103,6 +106,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPortRange() throws Exception {
         check(new SqlConnectorConfiguration().setPortRange(-1), false);
 
@@ -118,6 +122,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSocketBuffers() throws Exception {
         check(new SqlConnectorConfiguration().setSocketSendBufferSize(-4 * 1024), false);
         check(new SqlConnectorConfiguration().setSocketReceiveBufferSize(-4 * 1024), false);
@@ -134,6 +139,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMaxOpenCusrorsPerConnection() throws Exception {
         check(new SqlConnectorConfiguration().setMaxOpenCursorsPerConnection(-1), false);
 
@@ -149,6 +155,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testThreadPoolSize() throws Exception {
         check(new SqlConnectorConfiguration().setThreadPoolSize(0), false);
         check(new SqlConnectorConfiguration().setThreadPoolSize(-1), false);
@@ -163,7 +170,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
      * @param sqlCfg SQL configuration.
      * @param success Success flag. * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     private void check(SqlConnectorConfiguration sqlCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration();
 
@@ -218,7 +225,7 @@ public class SqlConnectorConfigurationValidationSelfTest extends GridCommonAbstr
 
                 assertTrue(rs.next());
 
-                TestCase.assertEquals(1, rs.getInt(1));
+                Assert.assertEquals(1, rs.getInt(1));
             }
         }
     }

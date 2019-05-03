@@ -21,7 +21,8 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Partition data builder that builds {@link LabelPartitionDataOnHeap}.
@@ -35,28 +36,31 @@ public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
 
-    /** Extractor of Y vector value. */
-    private final IgniteBiFunction<K, V, Double> yExtractor;
+    /** Upstream preprocessor. */
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Constructs a new instance of Label partition data builder.
      *
-     * @param yExtractor Extractor of Y vector value.
+     * @param preprocessor Upstream preprocessor (can return vectori with zero size).
      */
-    public LabelPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, Double> yExtractor) {
-        this.yExtractor = yExtractor;
+    public LabelPartitionDataBuilderOnHeap(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
-    @Override public LabelPartitionDataOnHeap build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
-                                        C ctx) {
+    @Override public LabelPartitionDataOnHeap build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize,
+        C ctx) {
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            y[ptr] = yExtractor.apply(entry.getKey(), entry.getValue());
+            y[ptr] = (double) preprocessor.apply(entry.getKey(), entry.getValue()).label();
 
             ptr++;
         }

@@ -38,6 +38,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Tests the REST client-server connectivity with various configurations.
@@ -122,6 +123,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOneNodeDefaultHostAndPort() throws Exception {
         startRestNode("grid1", null, null);
 
@@ -136,6 +138,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      * Simple test of address list filtering.
      * @throws Exception If failed.
      */
+    @Test
     public void testResolveReachableOneAddress() throws Exception {
         InetAddress addr = InetAddress.getByAddress(new byte[] {127, 0, 0, 1} );
 
@@ -151,6 +154,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testOneNodeLoopbackHost() throws Exception {
         startRestNode("grid1", LOOPBACK_IP, defaultRestPort());
 
@@ -164,6 +168,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testOneNodeZeroIpv4Address() throws Exception {
         startRestNode("grid1", WILDCARD_IP, defaultRestPort());
 
@@ -208,6 +213,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testTwoNodesDefaultHostAndPort() throws Exception {
         startRestNode("grid1", null, null);
         startRestNode("grid2", null, null);
@@ -256,6 +262,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      *
      * @throws Exception If error occurs.
      */
+    @Test
     public void testRefreshTopologyOnNodeLeft() throws Exception {
         startRestNode("grid1", null, null);
         startRestNode("grid2", null, null);

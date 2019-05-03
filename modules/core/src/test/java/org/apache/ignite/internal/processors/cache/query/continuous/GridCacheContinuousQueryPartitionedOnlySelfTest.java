@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -42,6 +43,7 @@ public class GridCacheContinuousQueryPartitionedOnlySelfTest extends GridCacheCo
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testInternalKey() throws Exception {
         // Disabled since data structures are not allowed in partitioned only mode.
     }

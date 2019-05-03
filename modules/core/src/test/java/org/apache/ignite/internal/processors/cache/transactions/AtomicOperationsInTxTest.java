@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -61,16 +62,10 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEnablingAtomicOperationDuringTransaction() throws Exception {
         GridTestUtils.assertThrows(log, (Callable<IgniteCache>)() -> {
             try (Transaction tx = grid(0).transactions().txStart()) {
@@ -85,6 +80,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllowedAtomicOperations() throws Exception {
         checkOperations(true);
     }
@@ -92,6 +88,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAllowedAtomicOperations() throws Exception {
         checkOperations(false);
     }

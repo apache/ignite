@@ -112,11 +112,12 @@ namespace Apache.Ignite.Benchmarks.Binary
                 mem.Release();
             }
         }
+
         /// <summary>
         /// Write address.
         /// </summary>
-        /// <param name="state">State.</param>
-        private void WriteTestModel(BenchmarkState state)
+        // ReSharper disable once UnusedMember.Local
+        private void WriteTestModel()
         {
             var mem = _memMgr.Allocate();
 

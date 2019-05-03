@@ -31,11 +31,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMetricsAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -48,9 +46,6 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
 
     /** Cache mode. */
     protected CacheMode cacheMode;
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -73,12 +68,6 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         CacheConfiguration<Integer, String> cacheCfg1 = defaultCacheConfiguration();
 
@@ -106,6 +95,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlFieldsQueryMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -119,6 +109,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlFieldsQueryNotFullyFetchedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -133,6 +124,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlFieldsQueryFailedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -146,6 +138,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testScanQueryMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -159,6 +152,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testScanQueryNotFullyFetchedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -173,6 +167,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testScanQueryFailedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -186,6 +181,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlQueryMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -199,6 +195,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlQueryNotFullyFetchedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -209,23 +206,11 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
     }
 
     /**
-     * Test metrics for failed Scan queries.
-     *
-     * @throws Exception In case of error.
-     */
-    public void testSqlQueryFailedMetrics() throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
-
-        SqlQuery qry = new SqlQuery<>("Long", "from Long");
-
-        checkQueryFailedMetrics(cache, qry);
-    }
-
-    /**
      * Test metrics for Sql queries.
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testTextQueryMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -239,6 +224,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testTextQueryNotFullyFetchedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -253,6 +239,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testTextQueryFailedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -266,6 +253,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlFieldsCrossCacheQueryMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -279,6 +267,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlFieldsCrossCacheQueryNotFullyFetchedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -293,6 +282,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testSqlFieldsCrossCacheQueryFailedMetrics() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 
@@ -326,6 +316,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
      *
      * @throws Exception In case of error.
      */
+    @Test
     public void testQueryMetricsMultithreaded() throws Exception {
         IgniteCache<Integer, String> cache = grid(0).context().cache().jcache("A");
 

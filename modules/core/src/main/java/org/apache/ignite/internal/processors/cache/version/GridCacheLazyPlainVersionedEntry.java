@@ -98,7 +98,6 @@ public class GridCacheLazyPlainVersionedEntry<K, V> extends GridCachePlainVersio
      * @param keepBinary Flag to keep binary if needed.
      * @return the value corresponding to this entry
      */
-    @SuppressWarnings("unchecked")
     public V value(boolean keepBinary) {
         if (val == null)
             val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);

@@ -27,6 +27,7 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.igfs.IgfsMode;
+import org.junit.Test;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -39,6 +40,7 @@ public class IgfsAttributesSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSerialization() throws Exception {
         Map<String, IgfsMode> pathModes = new HashMap<>();
 

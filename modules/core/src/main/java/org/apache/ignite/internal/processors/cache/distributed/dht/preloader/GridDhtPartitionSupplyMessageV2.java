@@ -101,7 +101,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
         }
 
         switch (writer.state()) {
-            case 12:
+            case 13:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
@@ -123,7 +123,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
             return false;
 
         switch (reader.state()) {
-            case 12:
+            case 13:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -148,6 +148,6 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 }

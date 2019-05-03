@@ -39,6 +39,7 @@ import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Job stealing test.
@@ -65,6 +66,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         ignite1 = null;
+        ignite2 = null;
 
         stopGrid(1);
         stopGrid(2);
@@ -75,6 +77,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
      *
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testTwoJobs() throws IgniteCheckedException {
         ignite1.compute().execute(JobStealingTask.class, null);
     }

@@ -28,24 +28,32 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestThread;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Test cases for multi-threaded tests.
  */
-@SuppressWarnings({"ProhibitedExceptionThrown"})
 public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /** Grid. */
-    private Ignite ignite;
+    private static Ignite ignite;
 
     /**
      *
      */
     public GridCacheLocalLockSelfTest() {
         super(true /*start grid. */);
+    }
+
+    /** */
+    @Before
+    public void beforeGridCacheLocalLockSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
     }
 
     /** {@inheritDoc} */
@@ -60,6 +68,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
+
         IgniteConfiguration cfg = super.getConfiguration();
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -80,6 +90,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test failed.
      */
+    @Test
     public void testLockReentry() throws IgniteCheckedException {
         IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -125,6 +136,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLock() throws Throwable {
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -135,7 +147,6 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         final Lock lock = cache.lock(1);
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
-            @SuppressWarnings({"CatchGenericClass"})
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for.key 1");
 
@@ -172,7 +183,6 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         });
 
         GridTestThread t2 = new GridTestThread(new Callable<Object>() {
-            @SuppressWarnings({"CatchGenericClass"})
             @Nullable @Override public Object call() throws Exception {
                 info("Waiting for latch1...");
 
@@ -243,6 +253,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testLockAndPut() throws Throwable {
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 

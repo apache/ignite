@@ -28,8 +28,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -54,6 +54,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIgniteVersionLogging() throws Exception {
         int gridCnt = 4;
 
@@ -64,7 +65,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         try {
             startGridsMultiThreaded(gridCnt);
 
-            lsnr.check();
+            assertTrue(lsnr.check());
         } finally {
             stopAllGrids();
         }
@@ -73,6 +74,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks that re-register works fine.
      */
+    @Test
     public void testUnregister() {
         String msg = "catch me";
 
@@ -88,8 +90,8 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info(msg);
 
-        lsnr1.check();
-        lsnr2.check();
+        assertTrue(lsnr1.check());
+        assertTrue(lsnr2.check());
 
         // Repeat these steps to ensure that the state is cleared during registration.
         log.registerListener(lsnr1);
@@ -101,13 +103,14 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info(msg);
 
-        lsnr1.check();
-        lsnr2.check();
+        assertTrue(lsnr1.check());
+        assertTrue(lsnr2.check());
     }
 
     /**
      * Ensures that listener will be re-registered only once.
      */
+    @Test
     public void testRegister() {
         AtomicInteger cntr = new AtomicInteger();
 
@@ -124,30 +127,26 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Checks basic API.
      */
+    @Test
     public void testBasicApi() {
-        String errMsg = "Word started with \"a\" not found.";
-
-        LogListener lsnr = LogListener.matches(Pattern.compile("a[a-z]+")).orError(errMsg)
+        LogListener lsnr = LogListener.matches(Pattern.compile("a[a-z]+"))
             .andMatches("Exception message.").andMatches(".java:").build();
 
         log.registerListener(lsnr);
 
         log.info("Something new.");
 
-        assertThrows(log(), () -> {
-            lsnr.check();
-
-            return null;
-        }, AssertionError.class, errMsg);
+        assertFalse(lsnr.check());
 
         log.error("There was an error.", new RuntimeException("Exception message."));
 
-        lsnr.check();
+        assertTrue(lsnr.check());
     }
 
     /**
      * Checks blank lines matching.
      */
+    @Test
     public void testEmptyLine() {
         LogListener emptyLineLsnr = LogListener.matches("").build();
 
@@ -155,10 +154,11 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info("");
 
-        emptyLineLsnr.check();
+        assertTrue(emptyLineLsnr.check());
     }
 
     /** */
+    @Test
     public void testPredicateExceptions() {
         LogListener lsnr = LogListener.matches(msg -> {
             assertFalse(msg.contains("Target"));
@@ -176,7 +176,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         // Check custom exception.
         LogListener lsnr2 = LogListener.matches(msg -> {
             throw new IllegalStateException("Illegal state");
-        }).orError("ignored blah-blah").build();
+        }).build();
 
         log.registerListener(lsnr2);
 
@@ -189,6 +189,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
     /**
      * Validates listener range definition.
      */
+    @Test
     public void testRange() {
         String msg = "range";
 
@@ -201,23 +202,24 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info(msg);
         log.info(msg);
 
-        lsnr2.check();
-        lsnr2_3.check();
+        assertTrue(lsnr2.check());
+        assertTrue(lsnr2_3.check());
 
         log.info(msg);
 
-        assertThrowsWithCause(lsnr2::check, AssertionError.class);
+        assertFalse(lsnr2.check());
 
-        lsnr2_3.check();
+        assertTrue(lsnr2_3.check());
 
         log.info(msg);
 
-        assertThrowsWithCause(lsnr2_3::check, AssertionError.class);
+        assertFalse(lsnr2_3.check());
     }
 
     /**
      * Checks that substring was not found in the log messages.
      */
+    @Test
     public void testNotPresent() {
         String msg = "vacuum";
 
@@ -227,16 +229,17 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info("1");
 
-        notPresent.check();
+        assertTrue(notPresent.check());
 
         log.info(msg);
 
-        assertThrowsWithCause(notPresent::check, AssertionError.class);
+        assertFalse(notPresent.check());
     }
 
     /**
      * Checks that the substring is found at least twice.
      */
+    @Test
     public void testAtLeast() {
         String msg = "at least";
 
@@ -246,16 +249,17 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info(msg);
 
-        assertThrowsWithCause(atLeast2::check, AssertionError.class);
+        assertFalse(atLeast2.check());
 
         log.info(msg);
 
-        atLeast2.check();
+        assertTrue(atLeast2.check());
     }
 
     /**
      * Checks that the substring is found no more than twice.
      */
+    @Test
     public void testAtMost() {
         String msg = "at most";
 
@@ -263,21 +267,22 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.registerListener(atMost2);
 
-        atMost2.check();
+        assertTrue(atMost2.check());
 
         log.info(msg);
         log.info(msg);
 
-        atMost2.check();
+        assertTrue(atMost2.check());
 
         log.info(msg);
 
-        assertThrowsWithCause(atMost2::check, AssertionError.class);
+        assertFalse(atMost2.check());
     }
 
     /**
      * Checks that only last value is taken into account.
      */
+    @Test
     public void testMultiRange() {
         String msg = "multi range";
 
@@ -287,9 +292,9 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 6; i++) {
             if (i < 4)
-                atMost3.check();
+                assertTrue(atMost3.check());
             else
-                assertThrowsWithCause(atMost3::check, AssertionError.class);
+                assertFalse(atMost3.check());
 
             log.info(msg);
         }
@@ -302,15 +307,16 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
             log.info(msg);
 
             if (i == 4)
-                lsnr4.check();
+                assertTrue(lsnr4.check());
             else
-                assertThrowsWithCause(lsnr4::check, AssertionError.class);
+                assertFalse(lsnr4.check());
         }
     }
 
     /**
      * Checks that matches are counted for each message.
      */
+    @Test
     public void testMatchesPerMessage() {
         LogListener lsnr = LogListener.matches("aa").times(4).build();
 
@@ -319,7 +325,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info("aabaab");
         log.info("abaaab");
 
-        lsnr.check();
+        assertTrue(lsnr.check());
 
         LogListener newLineLsnr = LogListener.matches("\n").times(5).build();
 
@@ -327,7 +333,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
 
         log.info("\n1\n2\n\n3\n");
 
-        newLineLsnr.check();
+        assertTrue(newLineLsnr.check());
 
         LogListener regexpLsnr = LogListener.matches(Pattern.compile("(?i)hi|hello")).times(3).build();
 
@@ -336,7 +342,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info("Hi! Hello!");
         log.info("Hi folks");
 
-        regexpLsnr.check();
+        assertTrue(regexpLsnr.check());
     }
 
     /**
@@ -344,11 +350,14 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreaded() throws Exception {
         int iterCnt = 50_000;
         int threadCnt = 6;
         int total = threadCnt * iterCnt;
         int rndNum = ThreadLocalRandom.current().nextInt(iterCnt);
+
+        ListeningTestLogger log = new ListeningTestLogger();
 
         LogListener lsnr = LogListener.matches("abba").times(total)
             .andMatches(Pattern.compile("(?i)abba")).times(total * 2)
@@ -369,13 +378,14 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
             }
         }, threadCnt, "test-listening-log");
 
-        lsnr.check();
-        mtLsnr.check();
+        assertTrue(lsnr.check());
+        assertTrue(mtLsnr.check());
     }
 
     /**
      * Check "echo" logger.
      */
+    @Test
     public void testEchoLogger() {
         IgniteLogger echo = new StringLogger();
 

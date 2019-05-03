@@ -39,6 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -83,6 +84,7 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeadlock() throws Exception {
         startGrids(2);
 

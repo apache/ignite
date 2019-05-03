@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Test;
 
 /**
  * Tests for property {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE}.
@@ -96,6 +97,7 @@ public abstract class IncludeSensitiveAbstractTest extends GridCacheAbstractSelf
      *
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         IgniteCache<Long, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

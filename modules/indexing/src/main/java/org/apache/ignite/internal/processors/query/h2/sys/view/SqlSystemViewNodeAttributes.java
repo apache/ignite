@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.F;
@@ -79,30 +78,31 @@ public class SqlSystemViewNodeAttributes extends SqlAbstractLocalSystemView {
             List<Row> rows = new ArrayList<>();
 
             for (ClusterNode node : nodes) {
-                if (node.attributes().containsKey(attrName))
+                if (node.attributes().containsKey(attrName)) {
                     rows.add(
-                        createRow(ses, rows.size(),
+                        createRow(
+                            ses,
                             node.id(),
                             attrName,
                             node.attribute(attrName)
                         )
                     );
+                }
             }
 
             return rows.iterator();
         }
         else {
-            AtomicLong rowKey = new AtomicLong();
-
             return F.concat(F.iterator(nodes,
                 node -> F.iterator(node.attributes().entrySet(),
-                    attr -> createRow(ses,
-                        rowKey.incrementAndGet(),
+                    attr -> createRow(
+                        ses,
                         node.id(),
                         attr.getKey(),
                         attr.getValue()),
                     true).iterator(),
-                true));
+                true)
+            );
         }
     }
 }

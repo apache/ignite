@@ -41,11 +41,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -55,9 +53,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
  *
  */
 public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Cancel latch. */
     private static CountDownLatch cancelLatch;
 
@@ -80,12 +75,6 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new CommunicationSpi());
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
-
         return cfg;
     }
 
@@ -106,6 +95,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTask() throws Exception {
         Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
 
@@ -119,6 +109,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskException() throws Exception {
         Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
 

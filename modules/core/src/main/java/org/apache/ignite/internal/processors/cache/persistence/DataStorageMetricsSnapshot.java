@@ -101,6 +101,12 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** */
     private long totalAllocatedSize;
 
+    /** */
+    private long storageSize;
+
+    /** */
+    private long sparseStorageSize;
+
     /**
      * @param metrics Metrics.
      */
@@ -131,6 +137,8 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         offHeapSize = metrics.getOffHeapSize();
         offHeadUsedSize = metrics.getOffheapUsedSize();
         totalAllocatedSize = metrics.getTotalAllocatedSize();
+        storageSize = metrics.getStorageSize();
+        sparseStorageSize = metrics.getSparseStorageSize();
     }
 
     /** {@inheritDoc} */
@@ -261,6 +269,16 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** {@inheritDoc} */
     @Override public long getCheckpointBufferSize(){
         return checkpointBufferSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getStorageSize() {
+        return storageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseStorageSize() {
+        return sparseStorageSize;
     }
 
     /** {@inheritDoc} */

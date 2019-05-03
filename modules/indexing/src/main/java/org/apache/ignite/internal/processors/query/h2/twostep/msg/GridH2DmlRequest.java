@@ -254,6 +254,15 @@ public class GridH2DmlRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
+     * Checks if data page scan enabled.
+     *
+     * @return {@code true} If data page scan enabled, {@code false} if not, and {@code null} if not set.
+     */
+    public Boolean isDataPageScanEnabled() {
+        return GridH2QueryRequest.isDataPageScanEnabled(flags);
+    }
+
+    /**
      * @return Timeout.
      */
     public int timeout() {

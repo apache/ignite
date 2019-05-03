@@ -496,7 +496,6 @@ final class ClientUtils {
     }
 
     /** Read Ignite binary object from input stream. */
-    @SuppressWarnings("unchecked")
     <T> T readObject(BinaryInputStream in, boolean keepBinary) {
         Object val = marsh.unmarshal(in);
 

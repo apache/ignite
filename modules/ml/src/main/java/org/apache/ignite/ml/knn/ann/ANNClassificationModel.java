@@ -69,7 +69,7 @@ public class ANNClassificationModel extends NNClassificationModel  {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
             return classify(neighbors, v, stgy);
     }

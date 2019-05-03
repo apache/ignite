@@ -110,12 +110,10 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
                 return hasPred ? F.size(map.keySet(), preds) : map.size();
             }
 
-            @SuppressWarnings({"unchecked"})
             @Override public boolean remove(Object o) {
                 throw new UnsupportedOperationException("Remove is not support for readonly map view.");
             }
 
-            @SuppressWarnings({"unchecked"})
             @Override public boolean contains(Object o) {
                 return F.isAll((Entry<K, V>)o, entryPred) && map.entrySet().contains(o);
             }
@@ -132,7 +130,6 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public V1 get(Object key) {
         if (GridFunc.isAll((K)key, preds)) {
             V v = map.get(key);
@@ -155,7 +152,6 @@ public class TransformMapView<K, V1, V> extends GridSerializableMap<K, V1> {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public boolean containsKey(Object key) {
         return GridFunc.isAll((K)key, preds) && map.containsKey(key);
     }

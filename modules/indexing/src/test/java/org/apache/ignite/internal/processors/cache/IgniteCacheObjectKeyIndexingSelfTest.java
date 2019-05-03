@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test index behavior when key is of plain Object type per indexing settings.
@@ -52,6 +53,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
     }
 
     /** */
+    @Test
     public void testObjectKeyHandling() throws Exception {
         Ignite ignite = grid();
 
@@ -92,7 +94,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
                 Arrays.asList(uid, "C")
             )
         );
-        
+
         cache.remove(uid);
 
         // Removal has worked for both keys although the table was the same and keys were of different type
@@ -107,7 +109,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
         assertEquals(num, grid().cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("select count(*) from TestObject")).getAll()
             .get(0).get(0));
     }
-    
+
     /** */
     private static class TestObject {
         /** */

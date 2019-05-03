@@ -25,6 +25,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
@@ -55,6 +56,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryEventStorage() throws Exception {
         MemoryEventStorageSpi spi = getSpi();
 
@@ -101,7 +103,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"NullableProblems"})
+    @Test
     public void testFilter() throws Exception {
         MemoryEventStorageSpi spi = getSpi();
 

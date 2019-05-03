@@ -442,7 +442,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.io().removeUserMessageListener(topic, p);
                     }
 
-                    @SuppressWarnings("deprecation")
                     @Override public void addMessageListener(GridMessageListener lsnr, String topic) {
                         A.notNull(lsnr, "lsnr");
                         A.notNull(topic, "topic");
@@ -450,7 +449,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         ctx.io().addMessageListener(topic, lsnr);
                     }
 
-                    @SuppressWarnings("deprecation")
                     @Override public boolean removeMessageListener(GridMessageListener lsnr, String topic) {
                         A.notNull(lsnr, "lsnr");
                         A.notNull(topic, "topic");

@@ -26,8 +26,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
 
@@ -58,6 +58,7 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsert() throws Exception {
         int cnt = update("insert into Integer(_key, _val) values(1, 1),(2, 2)");
 
@@ -68,8 +69,8 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
         try {
             update("insert into Integer(_key, _val) values(3, 3),(1, 1)");
         } catch (CacheException e) {
-            assertTrue(e.getCause() instanceof IgniteSQLException);
-            assertEquals(IgniteQueryErrorCode.DUPLICATE_KEY, ((IgniteSQLException)e.getCause()).statusCode());
+            assertTrue(e.getCause() instanceof TransactionDuplicateKeyException);
+            assertTrue(e.getMessage().startsWith("Duplicate key during INSERT ["));
         }
 
         assertEquals(asSet(asList(1, 1), asList(2, 2)), query("select * from Integer"));
@@ -78,6 +79,7 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMerge() throws Exception {
         {
             int cnt = update("merge into Integer(_key, _val) values(1, 1),(2, 2)");
@@ -97,6 +99,7 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testUpdate() throws Exception {
         {
             int cnt = update("update Integer set _val = 42 where _key = 42");
@@ -139,6 +142,7 @@ public class CacheMvccDmlSimpleTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDelete() throws Exception {
         {
             int cnt = update("delete from Integer where _key = 42");

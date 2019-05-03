@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test for {@link org.apache.ignite.thread.IgniteThread}.
@@ -33,6 +34,7 @@ public class GridThreadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAssertion() throws Exception {
         Collection<IgniteThread> ts = new ArrayList<>();
 

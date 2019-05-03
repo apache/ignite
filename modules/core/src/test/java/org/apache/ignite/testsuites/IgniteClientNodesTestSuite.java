@@ -17,28 +17,18 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientNodeConcurrentStart;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheManyClientsTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-/**
- *
- */
-public class IgniteClientNodesTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception In case of error.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Client Nodes Reconnect Test Suite");
-
-        suite.addTest(IgniteClientReconnectTestSuite.suite());
-
-        suite.addTestSuite(IgniteCacheManyClientsTest.class);
-        suite.addTestSuite(IgniteCacheClientNodeConcurrentStart.class);
-        suite.addTestSuite(IgniteCacheClientReconnectTest.class);
-
-        return suite;
-    }
+/** */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IgniteCacheManyClientsTest.class,
+    IgniteCacheClientNodeConcurrentStart.class,
+    IgniteCacheClientReconnectTest.class
+})
+public class IgniteClientNodesTestSuite {
 }

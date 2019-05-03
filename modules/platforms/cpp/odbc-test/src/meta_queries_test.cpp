@@ -26,10 +26,6 @@
 #include <string>
 #include <algorithm>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignition.h"
@@ -412,6 +408,49 @@ BOOST_AUTO_TEST_CASE(TestDdlColumnsMeta)
     CheckStringColumn(stmt, 2, "\"PUBLIC\"");
     CheckStringColumn(stmt, 3, "TESTTABLE");
     CheckStringColumn(stmt, 4, "TESTCOLUMN");
+
+    ret = SQLFetch(stmt);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestDdlColumnsMetaEscaped)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLCHAR createTable[] = "create table ESG_FOCUS(id int primary key, TEST_COLUMN varchar)";
+    SQLRETURN ret = SQLExecDirect(stmt, createTable, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR empty[] = "";
+    SQLCHAR table[] = "ESG\\_FOCUS";
+
+    ret = SQLColumns(stmt, empty, SQL_NTS, empty, SQL_NTS, table, SQL_NTS, empty, SQL_NTS);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "ESG_FOCUS");
+    CheckStringColumn(stmt, 4, "ID");
+
+    ret = SQLFetch(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    CheckStringColumn(stmt, 1, "");
+    CheckStringColumn(stmt, 2, "\"PUBLIC\"");
+    CheckStringColumn(stmt, 3, "ESG_FOCUS");
+    CheckStringColumn(stmt, 4, "TEST_COLUMN");
 
     ret = SQLFetch(stmt);
 

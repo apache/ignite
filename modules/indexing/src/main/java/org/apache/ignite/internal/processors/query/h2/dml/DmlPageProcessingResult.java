@@ -38,7 +38,6 @@ public final class DmlPageProcessingResult {
     private final SQLException ex;
 
     /** */
-    @SuppressWarnings("ConstantConditions")
     public DmlPageProcessingResult(long cnt, Object[] errKeys, @Nullable SQLException ex) {
         this.cnt = cnt;
         this.errKeys = U.firstNotNull(errKeys, X.EMPTY_OBJECT_ARRAY);

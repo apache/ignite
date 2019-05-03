@@ -93,6 +93,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
     private volatile Collection<DataRegionMetrics> regionMetrics;
 
+    /** */
+    private volatile long storageSize;
+
+    /** */
+    private volatile long sparseStorageSize;
+
     /**
      * @param metricsEnabled Metrics enabled flag.
      * @param rateTimeInterval Rate time interval.
@@ -485,6 +491,16 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         return metricsEnabled;
     }
 
+    /** {@inheritDoc} */
+    @Override public long getStorageSize() {
+        return storageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSparseStorageSize() {
+        return sparseStorageSize;
+    }
+
     /**
      * @param lockWaitDuration Lock wait duration.
      * @param markDuration Mark duration.
@@ -503,7 +519,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long duration,
         long totalPages,
         long dataPages,
-        long cowPages
+        long cowPages,
+        long storageSize,
+        long sparseStorageSize
     ) {
         if (metricsEnabled) {
             lastCpLockWaitDuration = lockWaitDuration;
@@ -514,6 +532,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             lastCpTotalPages = totalPages;
             lastCpDataPages = dataPages;
             lastCpCowPages = cowPages;
+            this.storageSize = storageSize;
+            this.sparseStorageSize = sparseStorageSize;
 
             totalCheckpointTime.addAndGet(duration);
         }

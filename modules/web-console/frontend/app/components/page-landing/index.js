@@ -17,6 +17,7 @@
 
 import angular from 'angular';
 
+import baseTemplate from './public.pug';
 import template from './template.pug';
 import './style.scss';
 
@@ -26,25 +27,22 @@ export default angular
         'ignite-console.user'
     ])
     .component('pageLanding', {
-        template,
-        controller: class LandingController {
-            static images = [
-                '/images/page-landing-carousel-1.png',
-                '/images/page-landing-carousel-2.png',
-                '/images/page-landing-carousel-3.png'
-            ];
-
-            $onInit() {
-                this.images = LandingController.images;
-            }
-        }
+        template
     })
     .config(['$stateProvider', function($stateProvider) {
         // set up the states
         $stateProvider
         .state('landing', {
             url: '/',
-            template: '<page-landing></page-landing>',
+            views: {
+                '@': {
+                    template: baseTemplate
+                },
+                'page@landing': {
+                    component: 'pageLanding'
+                }
+            },
+            // template: '<page-landing></page-landing>',
             redirectTo: (trans) => {
                 return trans.injector().get('User').read()
                     .then(() => {

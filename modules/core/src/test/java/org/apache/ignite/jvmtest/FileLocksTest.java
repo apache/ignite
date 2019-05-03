@@ -21,18 +21,19 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
 import javax.swing.JOptionPane;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 /**
  * Java file locks test.
  */
-public class FileLocksTest extends TestCase {
+public class FileLocksTest {
     /** File path (on Windows file will be created under the root directory of the current drive). */
     private static final String LOCK_FILE_PATH = "/test-java-file-lock-tmp.bin";
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteLocks() throws Exception {
         final File file = new File(LOCK_FILE_PATH);
 
@@ -77,6 +78,7 @@ public class FileLocksTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReadLocks() throws Exception {
         final File file = new File(LOCK_FILE_PATH);
 

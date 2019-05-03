@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition;
 
+import org.apache.ignite.ml.composition.bagging.BaggingTest;
 import org.apache.ignite.ml.composition.boosting.GDBTrainerTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregatorTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregatorTest;
@@ -25,13 +26,15 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.composition package.
+ * Test suite for all ensemble models tests.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     GDBTrainerTest.class,
     MeanValuePredictionsAggregatorTest.class,
     OnMajorityPredictionsAggregatorTest.class,
+    BaggingTest.class,
+    StackingTest.class,
     WeightedPredictionsAggregatorTest.class
 })
 public class CompositionTestSuite {

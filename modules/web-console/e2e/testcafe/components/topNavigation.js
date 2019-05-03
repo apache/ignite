@@ -17,5 +17,7 @@
 
 import {Selector} from 'testcafe';
 
-export const configureNavButton = Selector('.wch-nav-item').withText('Configure');
-export const queriesNavButton = Selector('.wch-nav-item').withText('Queries');
+export const toggleMenuButton = Selector('.web-console-header__togle-menu-button');
+
+export const configureNavButton = Selector('.web-console-sidebar-navigation__link[title="Configuration"]');
+export const queriesNavButton = Selector('.web-console-sidebar-navigation__link[title="Queries"]');

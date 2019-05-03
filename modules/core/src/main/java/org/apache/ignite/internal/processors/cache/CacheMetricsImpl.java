@@ -24,9 +24,9 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -969,17 +969,20 @@ public class CacheMetricsImpl implements CacheMetrics {
         boolean isEmpty;
 
         try {
+            final GridCacheAdapter<?, ?> cache = cctx.cache();
+
+            if (cache != null) {
+                offHeapEntriesCnt = cache.offHeapEntriesCount();
+
+                size = cache.localSize(null);
+                sizeLong = cache.localSizeLong(null);
+            }
+
             if (cctx.isLocal()) {
-                if (cctx.cache() != null) {
-                    offHeapEntriesCnt = cctx.cache().offHeapEntriesCount();
-
+                if (cache != null) {
                     offHeapPrimaryEntriesCnt = offHeapEntriesCnt;
-                    offHeapBackupEntriesCnt = offHeapEntriesCnt;
 
-                    size = cctx.cache().size();
-                    sizeLong = cctx.cache().sizeLong();
-
-                    heapEntriesCnt = sizeLong;
+                    heapEntriesCnt = cache.sizeLong();
                 }
             }
             else {
@@ -988,8 +991,8 @@ public class CacheMetricsImpl implements CacheMetrics {
                 Set<Integer> primaries = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer);
                 Set<Integer> backups = cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
-                if (cctx.isNear() && cctx.cache() != null)
-                    heapEntriesCnt = cctx.cache().nearSize();
+                if (cctx.isNear() && cache != null)
+                    heapEntriesCnt = cache.nearSize();
 
                 for (GridDhtLocalPartition part : cctx.topology().currentLocalPartitions()) {
                     // Partitions count.
@@ -1002,25 +1005,18 @@ public class CacheMetricsImpl implements CacheMetrics {
                         movingPartCnt++;
 
                     // Offheap entries count
-                    if (cctx.cache() == null)
+                    if (cache == null)
                         continue;
 
                     long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
 
-                    offHeapEntriesCnt += cacheSize;
-
                     if (primaries.contains(part.id()))
                         offHeapPrimaryEntriesCnt += cacheSize;
-
-                    if (backups.contains(part.id()))
+                    else if (backups.contains(part.id()))
                         offHeapBackupEntriesCnt += cacheSize;
-
-                    size = (int)offHeapEntriesCnt;
 
                     heapEntriesCnt += part.publicSize(cctx.cacheId());
                 }
-
-                sizeLong = offHeapEntriesCnt;
             }
         }
         catch (Exception e) {

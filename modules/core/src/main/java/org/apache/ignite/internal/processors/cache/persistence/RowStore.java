@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
 
 /**
  * Data store for H2 rows.
@@ -69,19 +70,19 @@ public class RowStore {
      * @param link Row link.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeRow(long link) throws IgniteCheckedException {
+    public void removeRow(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 
         if (rowCacheCleaner != null)
             rowCacheCleaner.remove(link);
 
         if (!persistenceEnabled)
-            freeList.removeDataRowByLink(link);
+            freeList.removeDataRowByLink(link, statHolder);
         else {
             ctx.database().checkpointReadLock();
 
             try {
-                freeList.removeDataRowByLink(link);
+                freeList.removeDataRowByLink(link, statHolder);
             }
             finally {
                 ctx.database().checkpointReadUnlock();
@@ -93,14 +94,14 @@ public class RowStore {
      * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRow(CacheDataRow row) throws IgniteCheckedException {
+    public void addRow(CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled)
-            freeList.insertDataRow(row);
+            freeList.insertDataRow(row, statHolder);
         else {
             ctx.database().checkpointReadLock();
 
             try {
-                freeList.insertDataRow(row);
+                freeList.insertDataRow(row, statHolder);
 
                 assert row.link() != 0L;
             }
@@ -116,13 +117,13 @@ public class RowStore {
      * @return {@code True} if was able to update row.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean updateRow(long link, CacheDataRow row) throws IgniteCheckedException {
+    public boolean updateRow(long link, CacheDataRow row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
 
         if (rowCacheCleaner != null)
             rowCacheCleaner.remove(link);
 
-        return freeList.updateDataRow(link, row);
+        return freeList.updateDataRow(link, row, statHolder);
     }
 
     /**
@@ -133,14 +134,15 @@ public class RowStore {
      * @param arg Page handler argument.
      * @throws IgniteCheckedException If failed.
      */
-    public <S, R> void updateDataRow(long link, PageHandler<S, R> pageHnd, S arg) throws IgniteCheckedException {
+    public <S, R> void updateDataRow(long link, PageHandler<S, R> pageHnd, S arg,
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
         if (!persistenceEnabled)
-            freeList.updateDataRow(link, pageHnd, arg);
+            freeList.updateDataRow(link, pageHnd, arg, statHolder);
         else {
             ctx.database().checkpointReadLock();
 
             try {
-                freeList.updateDataRow(link, pageHnd, arg);
+                freeList.updateDataRow(link, pageHnd, arg, statHolder);
             }
             finally {
                 ctx.database().checkpointReadUnlock();

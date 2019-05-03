@@ -131,14 +131,14 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
             IndexStorage indexStorage = ((GridCacheOffheapManager)grp.offheap()).getIndexStorage();
 
             //TODO: IGNITE-5874: replace with some check-method to avoid unnecessary page allocation.
-            RootPage pendingRootPage = indexStorage.getOrAllocateForTree(PENDING_ENTRIES_TREE_NAME);
+            RootPage pendingRootPage = indexStorage.allocateIndex(PENDING_ENTRIES_TREE_NAME);
 
             if (pendingRootPage.isAllocated()) {
                 log.info("No pending tree found for cache group: [grpId=" + grp.groupId() +
                     ", grpName=" + grp.name() + ']');
 
                 // Nothing to do here as just allocated tree is obviously empty.
-                indexStorage.dropRootPage(PENDING_ENTRIES_TREE_NAME);
+                indexStorage.dropIndex(PENDING_ENTRIES_TREE_NAME);
 
                 return;
             }

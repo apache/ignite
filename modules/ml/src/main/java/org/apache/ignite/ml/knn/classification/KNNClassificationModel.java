@@ -38,6 +38,9 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
 
 /**
  * kNN algorithm model to solve multi-class classification task.
+ *
+ * NOTE: This model is especial, because it takes dataset as an input.
+ * The dataset (or datasets in case of model updating) are closing automatically.
  */
 public class KNNClassificationModel extends NNClassificationModel implements Exportable<KNNModelFormat> {
     /** */
@@ -58,7 +61,7 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
         if (!datasets.isEmpty()) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
@@ -143,5 +146,17 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     public void copyStateFrom(KNNClassificationModel mdl) {
         this.copyParametersFrom(mdl);
         datasets.addAll(mdl.datasets);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        for (int i = 0; i < datasets.size(); i++) {
+            try {
+                datasets.get(i).close();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

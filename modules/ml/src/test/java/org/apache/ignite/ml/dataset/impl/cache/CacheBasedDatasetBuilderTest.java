@@ -26,8 +26,10 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for {@link CacheBasedDatasetBuilder}.
@@ -45,10 +47,6 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -61,13 +59,15 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
     /**
      * Tests that partitions of the dataset cache are placed on the same nodes as upstream cache.
      */
+    @Test
     public void testBuild() {
         IgniteCache<Integer, String> upstreamCache = createTestCache(100, 10);
         CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
         CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build(
-            (upstream, upstreamSize) -> upstreamSize,
-            (upstream, upstreamSize, ctx) -> null
+            TestUtils.testEnvBuilder(),
+            (env, upstream, upstreamSize) -> upstreamSize,
+            (env, upstream, upstreamSize, ctx) -> null
         );
 
         Affinity<Integer> upstreamAffinity = ignite.affinity(upstreamCache.getName());
@@ -89,6 +89,7 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
     /**
      * Tests that predicate works correctly.
      */
+    @Test
     public void testBuildWithPredicate() {
         CacheConfiguration<Integer, Integer> upstreamCacheConfiguration = new CacheConfiguration<>();
         upstreamCacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 1));
@@ -105,14 +106,15 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
         );
 
         CacheBasedDataset<Integer, Integer, Long, AutoCloseable> dataset = builder.build(
-            (upstream, upstreamSize) -> {
+            TestUtils.testEnvBuilder(),
+            (env, upstream, upstreamSize) -> {
                 UpstreamEntry<Integer, Integer> entry = upstream.next();
                 assertEquals(Integer.valueOf(2), entry.getKey());
                 assertEquals(Integer.valueOf(2), entry.getValue());
                 assertFalse(upstream.hasNext());
                 return 0L;
             },
-            (upstream, upstreamSize, ctx) -> {
+            (env, upstream, upstreamSize, ctx) -> {
                 UpstreamEntry<Integer, Integer> entry = upstream.next();
                 assertEquals(Integer.valueOf(2), entry.getKey());
                 assertEquals(Integer.valueOf(2), entry.getValue());

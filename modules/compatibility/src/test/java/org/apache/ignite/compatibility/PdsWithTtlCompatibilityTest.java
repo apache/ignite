@@ -43,6 +43,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Test PendingTree upgrading to per-partition basis. Test fill cache with persistence enabled and with ExpirePolicy
@@ -84,6 +85,7 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeStartByOldVersionPersistenceData_2_1() throws Exception {
         doTestStartupWithOldVersion("2.1.0");
     }

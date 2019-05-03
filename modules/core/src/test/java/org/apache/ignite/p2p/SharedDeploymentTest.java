@@ -27,6 +27,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.util.Collection;
+import org.junit.Test;
 
 /**
  */
@@ -50,6 +51,7 @@ public class SharedDeploymentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDeploymentFromSecondAndThird() throws Exception {
         try {
             startGrid(1);

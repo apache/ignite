@@ -19,15 +19,17 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -35,6 +37,60 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgnitePdsBinarySortObjectFieldsTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "ignitePdsBinarySortObjectFieldsTestCache";
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setConsistentId(gridName);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+                .setPersistenceEnabled(true)));
+
+        return cfg;
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS, value = "true")
+    public void testGivenCacheWithPojoValueAndPds_WhenPut_ThenNoHangup() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        final IgniteCache<Long, Value> cache = ignite.getOrCreateCache(
+            new CacheConfiguration<Long, Value>(CACHE_NAME)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(32)));
+
+        GridTestUtils.assertTimeout(5, TimeUnit.SECONDS, () -> cache.put(1L, new Value(1L)));
+
+        assertEquals(1, cache.size());
+    }
 
     /**
      * Value.
@@ -79,72 +135,5 @@ public class IgnitePdsBinarySortObjectFieldsTest extends GridCommonAbstractTest 
         @Override public String toString() {
             return "Value [val=" + val + ']';
         }
-    }
-
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setConsistentId(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-
-        super.afterTest();
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    public void testGivenCacheWithPojoValueAndPds_WhenPut_ThenNoHangup() throws Exception {
-        System.setProperty("IGNITE_BINARY_SORT_OBJECT_FIELDS", "true");
-
-        GridTestUtils.assertTimeout(5, TimeUnit.SECONDS, new Runnable() {
-            @Override public void run() {
-                IgniteEx ignite;
-
-                try {
-                    ignite = startGrid(0);
-                }
-                catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-
-                ignite.active(true);
-
-                IgniteCache<Long, Value> cache = ignite.getOrCreateCache(
-                    new CacheConfiguration<Long, Value>(CACHE_NAME)
-                );
-
-                cache.put(1L, new Value(1L));
-
-                assertEquals(1, cache.size());
-            }
-        });
     }
 }

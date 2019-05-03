@@ -38,23 +38,20 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.MvccFeatureChecker.assertMvccWriteConflict;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 public class CacheStartOnJoinTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Iteration. */
     private static final int ITERATIONS = 3;
 
@@ -92,7 +89,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
             }
         };
 
-        testSpi.setIpFinder(ipFinder);
+        testSpi.setIpFinder(sharedStaticIpFinder);
         testSpi.setJoinTimeout(60_000);
 
         cfg.setDiscoverySpi(testSpi);
@@ -128,6 +125,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentClientsStart1() throws Exception {
         concurrentClientsStart(false);
     }
@@ -135,6 +133,7 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentClientsStart2() throws Exception {
         concurrentClientsStart(true);
     }
@@ -184,7 +183,18 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
                     if (createCache) {
                         for (int c = 0; c < 5; c++) {
                             for (IgniteCache cache : node.getOrCreateCaches(cacheConfigurations())) {
-                                cache.put(c, c);
+                                boolean updated = false;
+
+                                while (!updated) {
+                                    try {
+                                        cache.put(c, c);
+
+                                        updated = true;
+                                    }
+                                    catch (Exception e) {
+                                        assertMvccWriteConflict(e);
+                                    }
+                                }
 
                                 assertEquals(c, cache.get(c));
                             }

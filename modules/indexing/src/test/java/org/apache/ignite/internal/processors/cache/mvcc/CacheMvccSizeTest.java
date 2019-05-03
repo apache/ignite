@@ -32,8 +32,9 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 
@@ -100,6 +101,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSql() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -116,10 +118,8 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
                     personTbl.query(q("insert into person values(1, 'a')"));
                 }
                 catch (Exception e) {
-                    if (e.getCause() instanceof IgniteSQLException) {
-                        assertEquals(IgniteQueryErrorCode.DUPLICATE_KEY,
-                            ((IgniteSQLException)e.getCause()).statusCode());
-                    }
+                    if (e.getCause() instanceof TransactionDuplicateKeyException)
+                        assertTrue(e.getMessage().startsWith("Duplicate key during INSERT ["));
                     else {
                         e.printStackTrace();
 
@@ -215,6 +215,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteConcurrent() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -263,6 +264,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testWriteConflictDoesNotChangeSize() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -316,6 +318,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDeleteChangesSizeAfterUnlock() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -362,6 +365,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testDataStreamerModifiesReplicatedCacheSize() throws Exception {
         startGridsMultiThreaded(2);
 
@@ -391,6 +395,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSizeIsConsistentAfterRebalance() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -415,6 +420,7 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSizeIsConsistentAfterRebalanceDuringInsert() throws Exception {
         IgniteEx ignite = startGrid(0);
 

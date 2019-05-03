@@ -80,6 +80,9 @@ public final class IgniteQueryErrorCode {
     /** Conversion failure. */
     public static final int CONVERSION_FAILED = 3013;
 
+    /** Query canceled. */
+    public static final int QUERY_CANCELED = 3014;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -105,6 +108,12 @@ public final class IgniteQueryErrorCode {
 
     /** Attempt to INSERT, UPDATE or MERGE value that exceed maximum column length. */
     public static final int TOO_LONG_VALUE = 4008;
+
+    /** Attempt to INSERT, UPDATE or MERGE value which scale exceed maximum DECIMAL column scale. */
+    public static final int VALUE_SCALE_OUT_OF_RANGE = 4009;
+
+    /** Attempt to INSERT, UPDATE or MERGE value which scale exceed maximum DECIMAL column scale. */
+    public static final int KEY_SCALE_OUT_OF_RANGE = 4010;
 
     /* 5xxx - transactions related runtime errors. */
 
@@ -151,6 +160,8 @@ public final class IgniteQueryErrorCode {
             case DUPLICATE_KEY:
             case TOO_LONG_KEY:
             case TOO_LONG_VALUE:
+            case KEY_SCALE_OUT_OF_RANGE:
+            case VALUE_SCALE_OUT_OF_RANGE:
                 return SqlStateCode.CONSTRAINT_VIOLATION;
 
             case NULL_KEY:
@@ -184,6 +195,9 @@ public final class IgniteQueryErrorCode {
 
             case TRANSACTION_SERIALIZATION_ERROR:
                 return SqlStateCode.SERIALIZATION_FAILURE;
+
+            case QUERY_CANCELED:
+                return SqlStateCode.QUERY_CANCELLED;
 
             default:
                 return SqlStateCode.INTERNAL_ERROR;

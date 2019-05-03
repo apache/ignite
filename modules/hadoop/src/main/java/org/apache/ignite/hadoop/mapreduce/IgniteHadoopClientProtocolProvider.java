@@ -111,7 +111,6 @@ public class IgniteHadoopClientProtocolProvider extends ClientProtocolProvider {
      * @return Client.
      * @throws IOException If failed.
      */
-    @SuppressWarnings("unchecked")
     private MapReduceClient client(String clusterName, Collection<String> addrs) throws IOException {
         while (true) {
             MapReduceClient cli = cliMap.get(clusterName);

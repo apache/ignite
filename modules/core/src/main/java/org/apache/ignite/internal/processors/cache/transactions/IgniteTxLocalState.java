@@ -57,4 +57,9 @@ public interface IgniteTxLocalState extends IgniteTxState {
      * @param partId Partition id.
      */
     public void touchPartition(int cacheId, int partId);
+
+    /**
+     * @return Recovery mode flag.
+     */
+    public boolean recovery();
 }

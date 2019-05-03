@@ -1085,7 +1085,6 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param userVer User version.
          * @param sampleClsName Sample class name.
          */
-        @SuppressWarnings({"TypeMayBeWeakened"})
         SharedDeployment(DeploymentMode depMode,
             GridDeploymentClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, String sampleClsName) {

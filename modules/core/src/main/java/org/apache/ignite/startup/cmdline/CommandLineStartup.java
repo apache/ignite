@@ -194,7 +194,6 @@ public final class CommandLineStartup {
      * @param arg Command line argument.
      * @return {@code true} if given argument is a help argument, {@code false} otherwise.
      */
-    @SuppressWarnings({"IfMayBeConditional"})
     private static boolean isHelp(String arg) {
         String s;
 

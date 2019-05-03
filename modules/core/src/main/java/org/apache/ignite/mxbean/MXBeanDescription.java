@@ -34,5 +34,5 @@ public @interface MXBeanDescription {
      *
      * Description for Mbean.
      */
-    @SuppressWarnings({"JavaDoc"}) public String value();
+    public String value();
 }

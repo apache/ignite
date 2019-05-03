@@ -23,7 +23,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 /**
  * Adaptive load balancing SPI start-stop test.
  */
-@SuppressWarnings({"JUnitTestCaseWithNoTests"})
 @GridSpiTest(spi = AdaptiveLoadBalancingSpi.class, group = "LoadBalancing SPI")
 public class GridAdaptiveLoadBalancingSpiStartStopSelfTest extends
     GridSpiStartStopAbstractTest<AdaptiveLoadBalancingSpi> {

@@ -40,6 +40,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Indexing Spi transactional query test
@@ -71,6 +72,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxClient() throws Exception {
         IgniteEx client = startGrid("client");
 
@@ -80,6 +82,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 
@@ -87,6 +90,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** */
+    @Test
     public void testIndexingSpiWithTxNotLocal() throws Exception {
         IgniteEx ignite = (IgniteEx)primaryNode(0, DEFAULT_CACHE_NAME);
 
@@ -96,7 +100,6 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void doTestIndexingSpiWithTx(IgniteEx ignite, int key) throws Exception {
         final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 

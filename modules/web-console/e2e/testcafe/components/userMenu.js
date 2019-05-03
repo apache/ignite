@@ -17,7 +17,7 @@
 
 import {Selector, t} from 'testcafe';
 
-const _selector = Selector('[ignite-userbar]');
+const _selector = Selector('user-menu');
 
 export const userMenu = {
     _selector,

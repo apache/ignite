@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -205,6 +206,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception On error.
      */
+    @Test
     public void testReadFailoverAfterStopMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
@@ -259,6 +261,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception On error.
      */
+    @Test
     public void testReadFailoverWhileStoppingMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
@@ -340,6 +343,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception On error.
      */
+    @Test
     public void testWriteFailoverAfterStopMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 
@@ -434,6 +438,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception
      */
+    @Test
     public void testWriteFailoverWhileStoppingMultipleNodes() throws Exception {
         final IgfsImpl igfs0 = nodeDatas[0].igfsImpl;
 

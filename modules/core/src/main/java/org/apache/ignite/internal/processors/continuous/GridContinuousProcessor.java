@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -295,7 +296,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.cacheObjects().onContinuousProcessorStarted(ctx);
 
-        ctx.service().onContinuousProcessorStarted(ctx);
+        if (ctx.service() instanceof GridServiceProcessor)
+            ((GridServiceProcessor)ctx.service()).onContinuousProcessorStarted(ctx);
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor started.");
@@ -811,7 +813,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param prjPred Projection predicate.
      * @return Future.
      */
-    @SuppressWarnings("TooBroadScope")
     public IgniteInternalFuture<UUID> startRoutine(GridContinuousHandler hnd,
         boolean locOnly,
         int bufSize,
@@ -1422,8 +1423,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 GridCacheAdapter cache = ctx.cache().internalCache(hnd0.cacheName());
 
                 if (cache != null && !cache.isLocal() && cache.context().userCache())
-                    req.addUpdateCounters(ctx.localNodeId(),
-                        toCountersMap(cache.context().topology().localUpdateCounters(false, false)));
+                    req.addUpdateCounters(ctx.localNodeId(), hnd0.updateCounters());
             }
         }
 
@@ -1564,7 +1564,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                                 if (cache != null && !cache.isLocal() && cache.context().userCache()) {
                                     CachePartitionPartialCountersMap cntrsMap =
-                                        cache.context().topology().localUpdateCounters(false, false);
+                                        cache.context().topology().localUpdateCounters(false);
 
                                     cntrs = U.marshal(marsh, cntrsMap);
                                 }
@@ -1712,7 +1712,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             if (interval > 0) {
                 IgniteThread checker = new IgniteThread(new GridWorker(ctx.igniteInstanceName(), "continuous-buffer-checker", log) {
-                    @SuppressWarnings("ConstantConditions")
                     @Override protected void body() {
                         long interval0 = interval;
 
@@ -2371,7 +2370,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             routineId = U.readUuid(in);
             prjPred = (IgnitePredicate<ClusterNode>)in.readObject();
@@ -2504,7 +2502,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                         if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
                             cntrsPerNode.put(ctx.localNodeId(),
-                                toCountersMap(cctx.topology().localUpdateCounters(false, false)));
+                                toCountersMap(cctx.topology().localUpdateCounters(false)));
 
                         routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
                     }

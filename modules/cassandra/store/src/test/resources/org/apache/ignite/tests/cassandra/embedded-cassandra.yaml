@@ -29,6 +29,7 @@ commitlog_directory: ./data/commitlog
 hints_directory: ./data/hints
 data_file_directories:
     - ./data/data
+cdc_raw_directory: ./data/cdc
 
 num_tokens: 256
 hinted_handoff_enabled: true

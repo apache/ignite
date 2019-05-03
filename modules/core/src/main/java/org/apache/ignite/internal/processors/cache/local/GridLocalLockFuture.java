@@ -100,7 +100,6 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     private GridCacheVersion lockVer;
 
     /** Error. */
-    @SuppressWarnings("UnusedDeclaration")
     private volatile Throwable err;
 
     /** Timeout object. */
@@ -443,7 +442,6 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ThrowableInstanceNeverThrown"})
     @Override public boolean cancel() {
         if (onCancelled()) {
             // Remove all locks.
@@ -495,7 +493,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"ThrowableInstanceNeverThrown", "ForLoopReplaceableByForEach"})
+        @SuppressWarnings({"ForLoopReplaceableByForEach"})
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);

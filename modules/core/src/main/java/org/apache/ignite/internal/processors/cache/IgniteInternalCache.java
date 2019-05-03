@@ -215,7 +215,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param <V1> Cache value type.
      * @return Base cache for this projection.
      */
-    @SuppressWarnings({"ClassReferencesSubclass"})
     public <K1, V1> IgniteInternalCache<K1, V1> cache();
 
     /**
@@ -302,11 +301,10 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * @param key Key.
      * @param peekModes Peek modes.
-     * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V localPeek(K key, CachePeekMode[] peekModes, @Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public V localPeek(K key, CachePeekMode[] peekModes)
         throws IgniteCheckedException;
 
     /**

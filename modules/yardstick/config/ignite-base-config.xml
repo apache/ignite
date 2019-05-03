@@ -127,6 +127,9 @@
                             <value>org.apache.ignite.yardstick.cache.model.Person</value>
 
                             <value>java.lang.Integer</value>
+                            <value>org.apache.ignite.yardstick.cache.model.PersonNoIndex</value>
+
+                            <value>java.lang.Integer</value>
                             <value>org.apache.ignite.yardstick.cache.model.SampleValue</value>
 
                             <value>java.lang.Integer</value>

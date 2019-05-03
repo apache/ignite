@@ -69,7 +69,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
     }
 
     /** {@inheritDoc} */
-    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException {
+    @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) {
         throw new UnsupportedOperationException();
     }
 

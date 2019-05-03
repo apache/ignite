@@ -48,7 +48,6 @@ public class PlatformComputeBinarizableArgTask extends ComputeTaskAdapter<Object
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     @Nullable @Override public Integer reduce(List<ComputeJobResult> results) {
         ComputeJobResult res = results.get(0);
 

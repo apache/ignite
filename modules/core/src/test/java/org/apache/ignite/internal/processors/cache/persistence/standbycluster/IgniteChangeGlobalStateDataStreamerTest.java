@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.junit.Test;
 
 /**
  *
@@ -38,6 +39,7 @@ public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeActivateAndActivateDataStreamer() throws Exception {
         Ignite ig1 = primary(0);
         Ignite ig2 = primary(1);

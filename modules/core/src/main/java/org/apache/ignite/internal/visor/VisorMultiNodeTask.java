@@ -105,7 +105,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
                     map.put(job(taskArg), node);
 
             if (map.isEmpty())
-                ignite.log().error("No mapped jobs: [task=" + getClass().getName() +
+                ignite.log().warning("No mapped jobs: [task=" + getClass().getName() +
                     ", topVer=" + ignite.cluster().topologyVersion() +
                     ", jobNids=" + nodeIds +
                     ", subGrid=" + U.toShortString(subgrid) + "]");

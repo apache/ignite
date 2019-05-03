@@ -36,30 +36,15 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
  */
 public class BinaryObjectTypeCompatibilityTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final Random RANDOM = new Random(System.currentTimeMillis());
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)igniteCfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        return igniteCfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -69,6 +54,7 @@ public class BinaryObjectTypeCompatibilityTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCompatibilityWithObject() throws Exception {
         Ignite ignite = startGrid();
 
@@ -162,7 +148,6 @@ public class BinaryObjectTypeCompatibilityTest extends GridCommonAbstractTest {
      * @param <T> Result type.
      * @return Deserialized value, if {@link BinaryObject} was provided, or the same object otherwise.
      */
-    @SuppressWarnings("unchecked")
     private <T> T deserialize(Object obj) {
         if (obj instanceof BinaryObject)
             return ((BinaryObject)obj).deserialize();

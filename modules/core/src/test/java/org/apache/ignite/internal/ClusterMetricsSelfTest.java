@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
@@ -69,6 +70,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of error.
      */
+    @Test
     public void testEmptyProjection() throws Exception {
         try {
             grid(0).cluster().forPredicate(F.<ClusterNode>alwaysFalse()).metrics();
@@ -83,6 +85,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testTaskExecution() {
         for (int i = 0; i < ITER_CNT; i++) {
             info("Starting new iteration: " + i);

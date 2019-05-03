@@ -1,0 +1,177 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'query'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Queries & Indexing
+    panel-description
+        | Cache queries settings.
+        a.link-success(href="https://apacheignite-sql.readme.io/docs/select" target="_blank") More info
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +form-field__text({
+                    label: 'SQL schema name:',
+                    model: `${model}.sqlSchema`,
+                    name: '"sqlSchema"',
+                    placeholder: 'Input schema name',
+                    tip: 'Cache group name.<br/>\
+                          Caches with the same group name share single underlying "physical" cache (partition set), but are logically isolated.'
+                })
+
+            //- Removed in ignite 2.0
+            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                +form-field__number({
+                    label: 'On-heap cache for off-heap indexes:',
+                    model: `${model}.sqlOnheapRowCacheSize`,
+                    name: '"sqlOnheapRowCacheSize"',
+                    placeholder: '10240',
+                    min: '1',
+                    tip: 'Specify any custom name to be used as SQL schema for current cache. This name will correspond to SQL ANSI-99 standard.\
+                          Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.\
+                          When SQL schema is not specified, quoted cache name should used instead.<br/>\
+                          For example:\
+                          <ul>\
+                            <li>\
+                            Query without schema names (quoted cache names will be used):\
+                            SELECT * FROM "PersonsCache".Person p INNER JOIN "OrganizationsCache".Organization o on p.org = o.id\
+                            </li>\
+                            <li>\
+                                The same query using schema names "Persons" and "Organizations":\
+                                SELECT * FROM Persons.Person p INNER JOIN Organizations.Organization o on p.org = o.id\
+                            </li>\
+                          </ul>'
+                })
+
+            //- Deprecated in ignite 2.1
+            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.1.0"])')
+                +form-field__number({
+                    label: 'Long query timeout:',
+                    model: `${model}.longQueryWarningTimeout`,
+                    name: '"longQueryWarningTimeout"',
+                    placeholder: '3000',
+                    min: '0',
+                    tip: 'Timeout in milliseconds after which long query warning will be printed'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'History size:',
+                    model: `${model}.queryDetailMetricsSize`,
+                    name: '"queryDetailMetricsSize"',
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Size of queries detail metrics that will be stored in memory for monitoring purposes'
+                })
+            .pc-form-grid-col-60
+                mixin caches-query-list-sql-functions()
+                    .ignite-form-field
+                        -let items = `${model}.sqlFunctionClasses`;
+
+                        list-editable(
+                            ng-model=items
+                            list-editable-cols=`::[{
+                                name: 'SQL functions:',
+                                tip: 'Collections of classes with user-defined functions for SQL queries'
+                            }]`
+                        )
+                            list-editable-item-view {{ $item }}
+
+                            list-editable-item-edit
+                                +list-java-class-field('SQL function', '$item', '"sqlFunction"', items)
+                                    +form-field__error({ error: 'igniteUnique', message: 'SQL function with such class name already exists!' })
+
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`$editLast((${items} = ${items} || []).push(""))`
+                                    label-single='SQL function'
+                                    label-multiple='SQL functions'
+                                )
+
+                - var form = '$parent.form'
+                +caches-query-list-sql-functions
+                - var form = 'query'
+
+            //- Removed in ignite 2.0
+            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                +form-field__checkbox({
+                    label: 'Snapshotable index',
+                    model: `${model}.snapshotableIndex`,
+                    name: '"snapshotableIndex"',
+                    tip: 'Flag indicating whether SQL indexes should support snapshots'
+                })
+
+            //- Since ignite 2.0
+            .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
+                +form-field__number({
+                    label: 'Query parallelism',
+                    model: `${model}.queryParallelism`,
+                    name: '"queryParallelism"',
+                    placeholder: '1',
+                    min: '1',
+                    tip: 'A hint to query execution engine on desired degree of parallelism within a single node'
+                })
+            .pc-form-grid-col-30(ng-if-end)
+                +form-field__number({
+                    label: 'SQL index max inline size:',
+                    model: `${model}.sqlIndexMaxInlineSize`,
+                    name: '"sqlIndexMaxInlineSize"',
+                    placeholder: '-1',
+                    min: '-1',
+                    tip: 'Maximum inline size for sql indexes'
+                })
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.4.0")')
+                +form-field__checkbox({
+                    label: 'Onheap cache enabled',
+                    model: `${model}.sqlOnheapCacheEnabled`,
+                    name: '"sqlOnheapCacheEnabled"',
+                    tip: 'When enabled, Ignite will cache SQL rows as they are accessed by query engine'
+                })
+            .pc-form-grid-col-60(ng-if-end)
+                +form-field__number({
+                    label: 'Onheap cache max size:',
+                    model: `${model}.sqlOnheapCacheMaxSize`,
+                    name: '"SqlOnheapCacheMaxSize"',
+                    disabled: `!${model}.sqlOnheapCacheEnabled`,
+                    placeholder: '0',
+                    min: '0',
+                    tip: 'Maximum SQL on-heap cache'
+                })
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Max query iterators count:',
+                    model: `${model}.maxQueryIteratorsCount`,
+                    name: '"MaxQueryIteratorsCount"',
+                    placeholder: '1024',
+                    min: '1',
+                    tip: 'Maximum number of query iterators that can be stored'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Escape table and filed names',
+                    model: `${model}.sqlEscapeAll`,
+                    name: '"sqlEscapeAll"',
+                    tip: 'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\
+                         This enforces case sensitivity for field names and also allows having special characters in table and field names.<br/>\
+                         Escaped names will be used for creation internal structures in Ignite SQL engine.'
+                })
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheQuery', 'domains')

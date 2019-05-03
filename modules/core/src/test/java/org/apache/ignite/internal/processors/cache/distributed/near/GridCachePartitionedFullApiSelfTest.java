@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -56,6 +57,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdate() throws Exception {
         if (gridCount() > 1) {
             IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);

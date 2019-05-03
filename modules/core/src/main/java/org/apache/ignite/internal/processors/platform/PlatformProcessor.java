@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheS
 /**
  * Platform processor.
  */
-@SuppressWarnings({"UnusedDeclaration", "UnnecessaryInterfaceModifier"})
+@SuppressWarnings({"UnnecessaryInterfaceModifier"})
 public interface PlatformProcessor extends GridProcessor {
     /**
      * Gets owning Ignite instance.

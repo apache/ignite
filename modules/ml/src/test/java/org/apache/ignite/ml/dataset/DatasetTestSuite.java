@@ -36,16 +36,16 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     DatasetWrapperTest.class,
-    ComputeUtilsTest.class,
     DatasetAffinityFunctionWrapperTest.class,
     PartitionDataStorageTest.class,
-    CacheBasedDatasetBuilderTest.class,
-    CacheBasedDatasetTest.class,
     LocalDatasetBuilderTest.class,
     SimpleDatasetTest.class,
     SimpleLabeledDatasetTest.class,
-    ObjectHistogramTest.class
+    DatasetWrapperTest.class,
+    ObjectHistogramTest.class,
+    ComputeUtilsTest.class,
+    CacheBasedDatasetBuilderTest.class,
+    CacheBasedDatasetTest.class
 })
 public class DatasetTestSuite {
-    // No-op.
 }

@@ -1502,7 +1502,6 @@ public class JdbcResultSet implements ResultSet {
      * @return Casted field value.
      * @throws SQLException In case of error.
      */
-    @SuppressWarnings("unchecked")
     private <T> T getTypedValue(int colIdx, Class<T> cls) throws SQLException {
         ensureNotClosed();
         ensureHasCurrentRow();

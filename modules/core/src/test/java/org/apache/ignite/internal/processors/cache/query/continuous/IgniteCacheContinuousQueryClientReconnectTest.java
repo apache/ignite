@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.resources.LoggerResource;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -75,6 +76,7 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClient() throws Exception {
         Ignite client = grid(serverCount());
 
@@ -118,6 +120,7 @@ public class IgniteCacheContinuousQueryClientReconnectTest extends IgniteClientR
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReconnectClientAndLeftRouter() throws Exception {
         if (!tcpDiscovery())
             return;

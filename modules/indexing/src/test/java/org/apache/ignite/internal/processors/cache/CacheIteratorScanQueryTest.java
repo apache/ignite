@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import javax.cache.Cache;
 import java.util.Collections;
 import java.util.List;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -74,6 +75,7 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanQuery() throws Exception {
         Ignite server = startGrid(0);
 
@@ -107,6 +109,7 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryGetAllClientSide() throws Exception {
         Ignite server = startGrid(0);
 

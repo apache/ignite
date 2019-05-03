@@ -95,6 +95,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailover() throws Exception {
         testPutAllFailover(Test.PUT_ALL);
     }
@@ -102,6 +103,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailoverPessimisticTx() throws Exception {
         if (atomicityMode() == CacheAtomicityMode.ATOMIC)
             return;
@@ -112,6 +114,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAllFailoverAsync() throws Exception {
         testPutAllFailover(Test.PUT_ALL_ASYNC);
     }

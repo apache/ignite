@@ -27,11 +27,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -44,14 +44,16 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Near-only cache node startup test.
  */
 public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
-    /** Shared ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Near only flag. */
     private boolean cilent;
 
     /** Use cache flag. */
     private boolean cache = true;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -71,42 +73,43 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(cacheCfg);
         }
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setForceServerMode(true);
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         return cfg;
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupFirstOneNode() throws Exception {
         checkStartupNearNode(0, 2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupLastOneNode() throws Exception {
         checkStartupNearNode(1, 2);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupFirstTwoNodes() throws Exception {
         checkStartupNearNode(0, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupInMiddleTwoNodes() throws Exception {
         checkStartupNearNode(1, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testStartupLastTwoNodes() throws Exception {
         checkStartupNearNode(2, 3);
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testKeyMapping() throws Exception {
         try {
             cache = true;
@@ -129,6 +132,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testKeyMappingOnComputeNode() throws Exception {
         try {
             cache = true;
@@ -160,6 +164,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testNodeLeave() throws Exception {
         try {
             cache = true;
@@ -170,8 +175,10 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                 Ignite ignite = startGrid(i);
 
                 if (cilent)
-                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
+                    ignite.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
             }
+
+            awaitPartitionMapExchange();
 
             for (int i = 0; i < 10; i++)
                 grid(1).cache(DEFAULT_CACHE_NAME).put(i, i);

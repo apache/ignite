@@ -70,7 +70,6 @@ public final class GridDhtTxQueryResultsEnlistFuture extends GridDhtTxQueryAbstr
             threadId,
             nearFutId,
             nearMiniId,
-            null,
             tx,
             timeout,
             cctx);

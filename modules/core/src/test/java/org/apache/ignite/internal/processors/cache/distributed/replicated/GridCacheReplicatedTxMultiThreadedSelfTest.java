@@ -20,12 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteTxMultiThreadedAbstractTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.log4j.Level;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -34,23 +29,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for replicated transactions.
  */
 public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThreadedAbstractTest {
-    /** Cache debug flag. */
-    private static final boolean CACHE_DEBUG = false;
-
-    /** Log to file flag. */
-    private static final boolean LOG_TO_FILE = true;
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TransactionConfiguration tCfg = new TransactionConfiguration();
-
-        tCfg.setTxSerializableEnabled(true);
 
         c.setTransactionConfiguration(tCfg);
 
@@ -63,15 +46,6 @@ public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThr
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         c.setCacheConfiguration(cc);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
-
-        if (CACHE_DEBUG)
-            resetLog4j(Level.DEBUG, LOG_TO_FILE, GridCacheProcessor.class.getPackage().getName());
 
         return c;
     }

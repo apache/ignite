@@ -204,9 +204,9 @@ class GridDeploymentCommunication {
             // since it was already performed before (and was successful).
             if (!(ldr instanceof GridDeploymentClassLoader)) {
                 // First check for @GridNotPeerDeployable annotation.
-                try {
-                    String clsName = req.resourceName().replace('/', '.');
+                String clsName = req.resourceName().replace('/', '.');
 
+                try {
                     int idx = clsName.indexOf(".class");
 
                     if (idx >= 0)
@@ -228,8 +228,10 @@ class GridDeploymentCommunication {
                         return;
                     }
                 }
-                catch (ClassNotFoundException ignore) {
-                    // Safely ignore it here - resource wasn't a class name.
+                catch (LinkageError | ClassNotFoundException e) {
+                    U.warn(log, "Failed to resolve class: " + clsName, e);
+                    // Defined errors can be safely ignored here, because of resource which is able to be not a class name.
+                    // Unsuccessful response will be sent below if the resource failed to be loaded.
                 }
             }
 
@@ -351,7 +353,6 @@ class GridDeploymentCommunication {
      * @return Either response value or {@code null} if timeout occurred.
      * @throws IgniteCheckedException Thrown if there is no connection with remote node.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     GridDeploymentResponse sendResourceRequest(final String rsrcName, IgniteUuid clsLdrId,
         final ClusterNode dstNode, long threshold) throws IgniteCheckedException {
         assert rsrcName != null;

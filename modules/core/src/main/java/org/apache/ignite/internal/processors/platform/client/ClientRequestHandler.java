@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
-import org.apache.ignite.internal.processors.security.SecurityContextHolder;
+import org.apache.ignite.plugin.security.SecurityException;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
 
 /**
  * Thin client request handler.
@@ -34,33 +37,35 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** Auth context. */
     private final AuthorizationContext authCtx;
 
+    /** Protocol version. */
+    ClientListenerProtocolVersion ver;
+
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
+     * @param authCtx Authentication context.
+     * @param ver Protocol version.
      */
-    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx) {
+    ClientRequestHandler(ClientConnectionContext ctx, AuthorizationContext authCtx, ClientListenerProtocolVersion ver) {
         assert ctx != null;
 
         this.ctx = ctx;
         this.authCtx = authCtx;
+        this.ver = ver;
     }
 
     /** {@inheritDoc} */
     @Override public ClientListenerResponse handle(ClientListenerRequest req) {
-        if (authCtx != null) {
-            AuthorizationContext.context(authCtx);
-            SecurityContextHolder.set(ctx.securityContext());
-        }
-
         try {
             return ((ClientRequest)req).process(ctx);
         }
-        finally {
-            if (authCtx != null)
-                AuthorizationContext.clear();
-
-            SecurityContextHolder.clear();
+        catch (SecurityException ex) {
+            throw new IgniteClientException(
+                ClientStatus.SECURITY_VIOLATION,
+                "Client is not authorized to perform this operation",
+                ex
+            );
         }
     }
 
@@ -78,5 +83,25 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public void writeHandshake(BinaryWriterExImpl writer) {
         writer.writeBoolean(true);
+
+        if (ver.compareTo(VER_1_4_0) >= 0) {
+            writer.writeUuid(ctx.kernalContext().localNodeId());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCancellationCommand(int cmdId) {
+        return false;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void registerRequest(long reqId, int cmdType) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unregisterRequest(long reqId) {
+        // No-op.
     }
 }

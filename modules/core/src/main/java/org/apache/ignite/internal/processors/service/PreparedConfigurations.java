@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -24,18 +25,18 @@ import org.apache.ignite.services.ServiceConfiguration;
 /**
  * Result of services validation before deployment.
  */
-class PreparedConfigurations {
+class PreparedConfigurations<T extends Serializable> {
     /** */
     final List<ServiceConfiguration> cfgs;
 
     /** */
-    final List<GridServiceDeploymentFuture> failedFuts;
+    final List<GridServiceDeploymentFuture<T>> failedFuts;
 
     /**
      * @param cfgs Configurations to deploy.
      * @param failedFuts Finished futures for failed configurations.
      */
-    PreparedConfigurations(List<ServiceConfiguration> cfgs, List<GridServiceDeploymentFuture> failedFuts) {
+    PreparedConfigurations(List<ServiceConfiguration> cfgs, List<GridServiceDeploymentFuture<T>> failedFuts) {
         this.cfgs = cfgs;
         this.failedFuts = failedFuts;
     }

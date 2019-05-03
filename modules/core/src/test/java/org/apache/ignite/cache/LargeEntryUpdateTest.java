@@ -31,6 +31,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -95,6 +96,7 @@ public class LargeEntryUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryUpdate() throws Exception {
         try (Ignite ignite = startGrid()) {
             for (int i = 0; i < CACHE_COUNT; ++i) {

@@ -71,7 +71,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "BusyWait"})
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void readLock() throws IllegalStateException {
         if (stackTrace == null)
             stackTrace = stackTrace();

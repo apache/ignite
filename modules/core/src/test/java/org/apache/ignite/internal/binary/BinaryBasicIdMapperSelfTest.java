@@ -20,6 +20,7 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -28,6 +29,7 @@ public class BinaryBasicIdMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLowerCase() throws Exception {
         BinaryBasicIdMapper mapper = new BinaryBasicIdMapper(true);
 
@@ -40,6 +42,7 @@ public class BinaryBasicIdMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDefaultCase() throws Exception {
         BinaryBasicIdMapper mapper = new BinaryBasicIdMapper(false);
 

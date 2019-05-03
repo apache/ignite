@@ -68,6 +68,9 @@ import org.jetbrains.annotations.Nullable;
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
+    /** Default instance. */
+    public static final JdkMarshaller DEFAULT = new JdkMarshaller();
+
     /** Class name filter. */
     private final IgnitePredicate<String> clsFilter;
 
@@ -124,7 +127,6 @@ public class JdkMarshaller extends AbstractNodeNameAwareMarshaller {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override protected <T> T unmarshal0(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 

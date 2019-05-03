@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
-import junit.framework.TestCase;
+import java.util.function.Predicate;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -34,32 +40,37 @@ import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_FIRST;
-import static org.apache.ignite.internal.commandline.CommandHandler.VI_CHECK_THROUGH;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Tests Command Handler parsing arguments.
  */
-public class CommandHandlerParsingTest extends TestCase {
-    /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+public class CommandHandlerParsingTest {
+    /** */
+    @Before
+    public void setUp() throws Exception {
         System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
-
-        super.setUp();
     }
 
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
+    /** */
+    @After
+    public void tearDown() throws Exception {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
-
-        super.tearDown();
     }
 
     /**
      * validate_indexes command arguments parsing and validation
      */
+    @Test
     public void testValidateIndexArguments() {
         CommandHandler hnd = new CommandHandler();
 
@@ -72,12 +83,12 @@ public class CommandHandlerParsingTest extends TestCase {
             CacheArguments args = hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VALIDATE_INDEXES.text(),
                     "cache1, cache2",
                     nodeId.toString(),
-                    VI_CHECK_FIRST,
+                    CHECK_FIRST.toString(),
                     Integer.toString(expectedCheckFirst),
-                    VI_CHECK_THROUGH,
+                    CHECK_THROUGH.toString(),
                     Integer.toString(expectedCheckThrough)
                 )
             ).cacheArgs();
@@ -97,9 +108,9 @@ public class CommandHandlerParsingTest extends TestCase {
             CacheArguments args = hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
+                    VALIDATE_INDEXES.text(),
                     nodeId.toString(),
-                    VI_CHECK_THROUGH,
+                    CHECK_THROUGH.toString(),
                     Integer.toString(expectedParam)
                 )
             ).cacheArgs();
@@ -117,8 +128,8 @@ public class CommandHandlerParsingTest extends TestCase {
             hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
-                    CacheCommand.VALIDATE_INDEXES.text(),
-                    VI_CHECK_FIRST,
+                    VALIDATE_INDEXES.text(),
+                    CHECK_FIRST.toString(),
                     "0"
                 )
             );
@@ -130,7 +141,7 @@ public class CommandHandlerParsingTest extends TestCase {
         }
 
         try {
-            hnd.parseAndValidate(Arrays.asList(CACHE.text(), CacheCommand.VALIDATE_INDEXES.text(), VI_CHECK_THROUGH));
+            hnd.parseAndValidate(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
 
             fail("Expected exception hasn't been thrown");
         }
@@ -142,6 +153,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Test that experimental command (i.e. WAL command) is disabled by default.
      */
+    @Test
     public void testExperimentalCommandIsDisabled() {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
@@ -167,8 +179,48 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     /**
+     * Tests parsing and validation for the SSL arguments.
+     */
+    @Test
+    public void testParseAndValidateSSLArguments() {
+        CommandHandler hnd = new CommandHandler();
+
+        for (Command cmd : Command.values()) {
+
+            if (cmd == Command.CACHE || cmd == Command.WAL)
+                continue; // --cache subcommand requires its own specific arguments.
+
+            try {
+                hnd.parseAndValidate(asList("--truststore"));
+
+                fail("expected exception: Expected truststore");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            Arguments args = hnd.parseAndValidate(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
+                "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
+                "--ssl-key-algorithm", "testSSLKeyAlgorithm", "--ssl-protocol", "testSSLProtocol", cmd.text()));
+
+            assertEquals("testSSLProtocol", args.sslProtocol());
+            assertEquals("testSSLKeyAlgorithm", args.sslKeyAlgorithm());
+            assertEquals("testKeystore", args.sslKeyStorePath());
+            assertArrayEquals("testKeystorePassword".toCharArray(), args.sslKeyStorePassword());
+            assertEquals("testKeystoreType", args.sslKeyStoreType());
+            assertEquals("testTruststore", args.sslTrustStorePath());
+            assertArrayEquals("testTruststorePassword".toCharArray(), args.sslTrustStorePassword());
+            assertEquals("testTruststoreType", args.sslTrustStoreType());
+
+            assertEquals(cmd, args.command());
+        }
+    }
+
+
+    /**
      * Tests parsing and validation for user and password arguments.
      */
+    @Test
     public void testParseAndValidateUserAndPassword() {
         CommandHandler hnd = new CommandHandler();
 
@@ -194,28 +246,10 @@ public class CommandHandlerParsingTest extends TestCase {
                 e.printStackTrace();
             }
 
-            try {
-                hnd.parseAndValidate(asList("--user", "testUser", cmd.text()));
-
-                fail("expected exception: Both user and password should be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                hnd.parseAndValidate(asList("--password", "testPass", cmd.text()));
-
-                fail("expected exception: Both user and password should be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
             Arguments args = hnd.parseAndValidate(asList("--user", "testUser", "--password", "testPass", cmd.text()));
 
-            assertEquals("testUser", args.user());
-            assertEquals("testPass", args.password());
+            assertEquals("testUser", args.getUserName());
+            assertEquals("testPass", args.getPassword());
             assertEquals(cmd, args.command());
         }
     }
@@ -223,6 +257,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests parsing and validation  of WAL commands.
      */
+    @Test
     public void testParseAndValidateWalActions() {
         CommandHandler hnd = new CommandHandler();
 
@@ -262,6 +297,7 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * Tests that the auto confirmation flag was correctly parsed.
      */
+    @Test
     public void testParseAutoConfirmationFlag() {
         CommandHandler hnd = new CommandHandler();
 
@@ -296,15 +332,15 @@ public class CommandHandlerParsingTest extends TestCase {
                         assertEquals(cmd, args.command());
                         assertEquals(DFLT_HOST, args.host());
                         assertEquals(DFLT_PORT, args.port());
-                        assertEquals(baselineAct, args.baselineAction());
-                        assertEquals("c_id1,c_id2", args.baselineArguments());
+                        assertEquals(baselineAct, args.baselineArguments().getCmd().text());
+                        assertEquals(Arrays.asList("c_id1","c_id2"), args.baselineArguments().getConsistentIds());
                         assertEquals(true, args.autoConfirmation());
                     }
 
                     break;
                 }
                 case TX: {
-                    args = hnd.parseAndValidate(asList(cmd.text(), "xid", "xid1", "minDuration", "10", "kill", "--yes"));
+                    args = hnd.parseAndValidate(asList(cmd.text(), "--xid", "xid1", "--min-duration", "10", "--kill", "--yes"));
 
                     assertEquals(cmd, args.command());
                     assertEquals(DFLT_HOST, args.host());
@@ -323,6 +359,7 @@ public class CommandHandlerParsingTest extends TestCase {
      * Tests host and port arguments.
      * Tests connection settings arguments.
      */
+    @Test
     public void testConnectionSettings() {
         CommandHandler hnd = new CommandHandler();
 
@@ -377,12 +414,11 @@ public class CommandHandlerParsingTest extends TestCase {
     /**
      * test parsing dump transaction arguments
      */
-    @SuppressWarnings("Null")
+    @Test
     public void testTransactionArguments() {
         CommandHandler hnd = new CommandHandler();
-        Arguments args;
 
-        args = hnd.parseAndValidate(asList("--tx"));
+        hnd.parseAndValidate(asList("--tx"));
 
         try {
             hnd.parseAndValidate(asList("--tx", "minDuration"));
@@ -440,8 +476,8 @@ public class CommandHandlerParsingTest extends TestCase {
         catch (IllegalArgumentException ignored) {
         }
 
-        args = hnd.parseAndValidate(asList("--tx", "minDuration", "120", "minSize", "10", "limit", "100", "order", "SIZE",
-            "servers"));
+        Arguments args = hnd.parseAndValidate(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE",
+            "--servers"));
 
         VisorTxTaskArg arg = args.transactionArguments();
 
@@ -451,8 +487,8 @@ public class CommandHandlerParsingTest extends TestCase {
         assertEquals(VisorTxSortOrder.SIZE, arg.getSortOrder());
         assertEquals(VisorTxProjection.SERVER, arg.getProjection());
 
-        args = hnd.parseAndValidate(asList("--tx", "minDuration", "130", "minSize", "1", "limit", "60", "order", "DURATION",
-            "clients"));
+        args = hnd.parseAndValidate(asList("--tx", "--min-duration", "130", "--min-size", "1", "--limit", "60", "--order", "DURATION",
+            "--clients"));
 
         arg = args.transactionArguments();
 
@@ -462,11 +498,132 @@ public class CommandHandlerParsingTest extends TestCase {
         assertEquals(VisorTxSortOrder.DURATION, arg.getSortOrder());
         assertEquals(VisorTxProjection.CLIENT, arg.getProjection());
 
-        args = hnd.parseAndValidate(asList("--tx", "nodes", "1,2,3"));
+        args = hnd.parseAndValidate(asList("--tx", "--nodes", "1,2,3"));
 
         arg = args.transactionArguments();
 
         assertNull(arg.getProjection());
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+    }
+
+    /**
+     * Test parsing arguments by find_garbage command.
+     */
+    @Test
+    public void testFindAndDeleteGarbage() {
+        CommandHandler hnd = new CommandHandler();
+
+        String nodeId = UUID.randomUUID().toString();
+        String delete = FindAndDeleteGarbageArg.DELETE.toString();
+        String groups = "group1,grpoup2,group3";
+
+        List<List<String>> lists = generateArgumentList(
+            "find_garbage",
+            new T2<>(nodeId, false),
+            new T2<>(delete, false),
+            new T2<>(groups, false)
+        );
+
+        for (List<String> list : lists) {
+            Arguments arg = hnd.parseAndValidate(list);
+
+            CacheArguments args = arg.cacheArgs();
+
+            if (list.contains(nodeId))
+                assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId().toString());
+            else
+                assertNull(args.nodeId());
+
+            assertEquals(list.contains(delete), args.delete());
+
+            if (list.contains(groups))
+                assertEquals(3, args.groups().size());
+            else
+                assertNull(args.groups());
+        }
+    }
+
+    /**
+     * @param subcommand Cache subcommand.
+     * @param optional List of arguments, where second param is this argument is stopping one or not.
+     *  Every argument treated as optional.
+     *
+     * @return List of every possible combinations of the arguments {[], [1], [2], [3], [1,2], [2,1], [1.3], [3,1], [1,2,3]...}.
+     */
+    private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>...optional) {
+        List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
+
+        ArrayList<List<String>> res = new ArrayList<>();
+
+        ArrayList<String> empty = new ArrayList<>();
+
+        empty.add(CACHE.text());
+        empty.add(subcommand);
+
+        res.add(empty);
+
+        for (List<T2<String, Boolean>> list : lists) {
+            ArrayList<String> arg = new ArrayList<>(empty);
+
+            list.forEach(x -> arg.add(x.get1()));
+
+            res.add(arg);
+        }
+
+        return res;
+    }
+
+    /**
+     * @param source Source of elements.
+     * @param stopFunc Stop function.
+     */
+    private <T> List<List<T>> generateAllCombinations(List<T> source, Predicate<T> stopFunc) {
+        List<List<T>> res = new ArrayList<>();
+
+        for (int i = 0; i < source.size(); i++) {
+            List<T> sourceCopy = new ArrayList<>(source);
+
+            T removed = sourceCopy.remove(i);
+
+            generateAllCombinations(Collections.singletonList(removed), sourceCopy, stopFunc, res);
+        }
+
+        return res;
+    }
+
+
+    /**
+     * @param res Intermidiate result.
+     * @param source Source of left elements.
+     * @param stopFunc Stop function.
+     * @param acc Ready result accumulator.
+     */
+    private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
+        acc.add(res);
+
+        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1)))
+            return;
+
+        if (source.size() == 1) {
+            List<T> list = new ArrayList<>(res);
+
+            list.add(source.get(0));
+
+            acc.add(list);
+
+            return;
+        }
+
+        for (int i = 0; i < source.size(); i++) {
+            ArrayList<T> res0 = new ArrayList<>(res);
+
+            List<T> sourceCopy = new ArrayList<>(source);
+
+            T removed = sourceCopy.remove(i);
+
+            res0.add(removed);
+
+            generateAllCombinations(res0, sourceCopy, stopFunc, acc);
+        }
     }
 }

@@ -35,13 +35,15 @@ module.exports.factory = (mongo) => {
         /**
          * Update page activities.
          *
-         * @param {String} owner - User ID
+         * @param {Object} user - User.
          * @param {String} action - Action string presentation.
          * @param {String} group - Action group string presentation.
          * @param {Date} [now] - Optional date to save in activity.
-         * @returns {Promise.<mongo.ObjectId>} that resolve activity
+         * @returns {Promise.<mongo.ObjectId>} that resolve activity.
          */
-        static merge(owner, {action, group}, now = new Date()) {
+        static merge(user, {action, group}, now = new Date()) {
+            const owner = user._id;
+
             mongo.Account.findById(owner)
                 .then((user) => {
                     user.lastActivity = new Date();

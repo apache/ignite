@@ -1230,7 +1230,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void flush() throws CacheException {
         lock(true);
 
@@ -1444,7 +1443,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (!ctx.security().enabled())
             return;
 
-        ctx.security().authorize(cacheName, perm, null);
+        ctx.security().authorize(cacheName, perm);
     }
 
     /**
@@ -2287,7 +2286,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
                             false);
 
-                        entry.touch(topVer);
+                        entry.touch();
 
                         CU.unwindEvicts(cctx);
 

@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
@@ -173,6 +174,7 @@ public abstract class IgniteDbMemoryLeakAbstractTest extends IgniteDbAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMemoryLeak() throws Exception {
         final IgniteEx ignite = grid(0);
 

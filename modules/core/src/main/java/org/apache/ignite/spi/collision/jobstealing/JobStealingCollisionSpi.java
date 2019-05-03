@@ -253,7 +253,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private volatile int activeJobsThreshold = DFLT_ACTIVE_JOBS_THRESHOLD;
 
     /** Configuration parameter defining waiting job count threshold for stealing to start. */
-    @SuppressWarnings("RedundantFieldInitialization")
     private volatile int waitJobsThreshold = DFLT_WAIT_JOBS_THRESHOLD;
 
     /** Message expire time configuration parameter. */
@@ -571,7 +570,6 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
-                @SuppressWarnings("fallthrough")
                 @Override public void onEvent(Event evt) {
                     assert evt instanceof DiscoveryEvent;
 

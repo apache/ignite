@@ -21,6 +21,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.junit.Test;
 
 /**
  * Local atomic cache metrics test with tck specific.
@@ -29,6 +30,7 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testEntryProcessorRemove() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -63,6 +65,7 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCacheStatistics() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -103,6 +106,7 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConditionReplace() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -153,6 +157,7 @@ public class GridCacheAtomicLocalTckMetricsSelfTestImpl extends GridCacheAtomicL
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPutIfAbsent() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

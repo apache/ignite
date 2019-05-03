@@ -70,8 +70,8 @@ public class IgniteStableBaselineBinObjFieldsQuerySelfTest extends IgniteBinaryO
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         cleanPersistenceDir();
+
+        super.afterTestsStopped();
     }
 }

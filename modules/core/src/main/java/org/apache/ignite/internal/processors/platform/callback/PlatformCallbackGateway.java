@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 /**
  * Gateway to all platform-dependent callbacks. Implementers might extend this class and provide additional callbacks.
  */
-@SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
 public class PlatformCallbackGateway {
     /** Environment pointer. */
     protected final long envPtr;

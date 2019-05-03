@@ -134,7 +134,6 @@ final class TestBinaryClient {
 
         // Start socket reader thread.
         rdr = new Thread(new Runnable() {
-            @SuppressWarnings("InfiniteLoopStatement")
             @Override public void run() {
                 try {
                     ByteArrayOutputStream buf = new ByteArrayOutputStream();
@@ -226,7 +225,7 @@ final class TestBinaryClient {
         rdr.start();
     }
 
-    /** {@inheritDoc} */
+    /** */
     public void shutdown() throws IgniteCheckedException {
         try {
             if (rdr != null) {

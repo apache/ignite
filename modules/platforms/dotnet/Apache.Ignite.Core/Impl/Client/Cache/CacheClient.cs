@@ -206,6 +206,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
+        [Obsolete]
         public IQueryCursor<ICacheEntry<TK, TV>> Query(SqlQuery sqlQuery)
         {
             IgniteArgumentCheck.NotNull(sqlQuery, "sqlQuery");
@@ -671,6 +672,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes the SQL query.
         /// </summary>
+        [Obsolete]
         private static void WriteSqlQuery(IBinaryRawWriter writer, SqlQuery qry)
         {
             Debug.Assert(qry != null);
@@ -680,7 +682,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             QueryBase.WriteQueryArgs(writer, qry.Arguments);
             writer.WriteBoolean(qry.EnableDistributedJoins);
             writer.WriteBoolean(qry.Local);
+#pragma warning disable 618
             writer.WriteBoolean(qry.ReplicatedOnly);
+#pragma warning restore 618
             writer.WriteInt(qry.PageSize);
             writer.WriteTimeSpanAsLong(qry.Timeout);
         }
@@ -705,7 +709,9 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             writer.WriteBoolean(qry.EnableDistributedJoins);
             writer.WriteBoolean(qry.Local);
+#pragma warning disable 618
             writer.WriteBoolean(qry.ReplicatedOnly);
+#pragma warning restore 618
             writer.WriteBoolean(qry.EnforceJoinOrder);
             writer.WriteBoolean(qry.Colocated);
             writer.WriteBoolean(qry.Lazy);

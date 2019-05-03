@@ -18,7 +18,6 @@
 package org.apache.ignite.yardstick.upload.model;
 
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  * Describes value_type for data model, defined in {@link QueryFactory#createTable()}.

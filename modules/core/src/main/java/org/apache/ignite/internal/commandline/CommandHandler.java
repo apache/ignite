@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -33,9 +37,11 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
@@ -50,8 +56,18 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
+import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.commandline.baseline.AutoAdjustCommandArg;
+import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
+import org.apache.ignite.internal.commandline.baseline.BaselineCommand;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
+import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTask;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskArg;
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
@@ -64,11 +80,14 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.baseline.VisorBaselineAutoAdjustSettings;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
@@ -82,12 +101,22 @@ import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceJobResult;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTask;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
+import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
+import org.apache.ignite.internal.visor.tx.FetchNearXidVersionTask;
+import org.apache.ignite.internal.visor.tx.TxKeyLockType;
+import org.apache.ignite.internal.visor.tx.TxMappingType;
+import org.apache.ignite.internal.visor.tx.TxVerboseId;
+import org.apache.ignite.internal.visor.tx.TxVerboseInfo;
+import org.apache.ignite.internal.visor.tx.TxVerboseKey;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
@@ -95,6 +124,8 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
+import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
@@ -113,10 +144,16 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
+import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
+import org.apache.ignite.ssl.SslContextFactory;
+import org.apache.ignite.transactions.TransactionState;
 
+import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
@@ -129,21 +166,36 @@ import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
+import static org.apache.ignite.internal.commandline.baseline.BaselineCommand.of;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.CONTENTION;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.DISTRIBUTION;
+import static org.apache.ignite.internal.commandline.cache.CacheCommand.FIND_AND_DELETE_GARBAGE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VERIFY;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.RESET_LOST_PARTITIONS;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.VALIDATE_INDEXES;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
-import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.VERSION;
+import static org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg.USER_ATTRIBUTES;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CHECK_CRC;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.CONFIG;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.GROUP;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.OUTPUT_FORMAT;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
+import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.ALL;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.NOT_PERSISTENT;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.PERSISTENT;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.SYSTEM;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.USER;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
  * Class that execute several commands passed via command line.
@@ -174,32 +226,72 @@ public class CommandHandler {
     private static final String CMD_AUTO_CONFIRMATION = "--yes";
 
     /** */
-    protected static final String CMD_PING_INTERVAL = "--ping-interval";
+    private static final String CMD_PING_INTERVAL = "--ping-interval";
 
     /** */
-    protected static final String CMD_PING_TIMEOUT = "--ping-timeout";
+    private static final String CMD_PING_TIMEOUT = "--ping-timeout";
+
+    /** One cache filter option should used message. */
+    public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
+        EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
+
+    // SSL configuration section
 
     /** */
-    private static final String CMD_DUMP = "--dump";
+    private static final String CMD_SSL_PROTOCOL = "--ssl-protocol";
 
     /** */
-    private static final String CMD_SKIP_ZEROS = "--skipZeros";
+    private static final String CMD_SSL_KEY_ALGORITHM = "--ssl-key-algorithm";
 
     /** */
-    private static final String CMD_USER_ATTRIBUTES = "--user-attributes";
+    private static final String CMD_SSL_CIPHER_SUITES = "--ssl-cipher-suites";
+
+    /** */
+    private static final String CMD_KEYSTORE = "--keystore";
+
+    /** */
+    private static final String CMD_KEYSTORE_PASSWORD = "--keystore-password";
+
+    /** */
+    private static final String CMD_KEYSTORE_TYPE = "--keystore-type";
+
+    /** */
+    private static final String CMD_TRUSTSTORE = "--truststore";
+
+    /** */
+    private static final String CMD_TRUSTSTORE_PASSWORD = "--truststore-password";
+
+    /** */
+    private static final String CMD_TRUSTSTORE_TYPE = "--truststore-type";
 
     /** List of optional auxiliary commands. */
     private static final Set<String> AUX_COMMANDS = new HashSet<>();
 
     static {
         AUX_COMMANDS.add(CMD_HELP);
+
         AUX_COMMANDS.add(CMD_HOST);
         AUX_COMMANDS.add(CMD_PORT);
+
         AUX_COMMANDS.add(CMD_PASSWORD);
         AUX_COMMANDS.add(CMD_USER);
+
         AUX_COMMANDS.add(CMD_AUTO_CONFIRMATION);
+
         AUX_COMMANDS.add(CMD_PING_INTERVAL);
         AUX_COMMANDS.add(CMD_PING_TIMEOUT);
+
+        AUX_COMMANDS.add(CMD_SSL_PROTOCOL);
+        AUX_COMMANDS.add(CMD_SSL_KEY_ALGORITHM);
+        AUX_COMMANDS.add(CMD_SSL_CIPHER_SUITES);
+
+        AUX_COMMANDS.add(CMD_KEYSTORE);
+        AUX_COMMANDS.add(CMD_KEYSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_KEYSTORE_TYPE);
+
+        AUX_COMMANDS.add(CMD_TRUSTSTORE);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_PASSWORD);
+        AUX_COMMANDS.add(CMD_TRUSTSTORE_TYPE);
     }
 
     /** Broadcast uuid. */
@@ -207,27 +299,6 @@ public class CommandHandler {
 
     /** */
     public static final String CONFIRM_MSG = "y";
-
-    /** */
-    private static final String BASELINE_ADD = "add";
-
-    /** */
-    private static final String BASELINE_REMOVE = "remove";
-
-    /** */
-    private static final String BASELINE_COLLECT = "collect";
-
-    /** */
-    private static final String BASELINE_SET = "set";
-
-    /** */
-    private static final String BASELINE_SET_VERSION = "version";
-
-    /** Parameter name for validate_indexes command. */
-    static final String VI_CHECK_FIRST = "checkFirst";
-
-    /** Parameter name for validate_indexes command. */
-    static final String VI_CHECK_THROUGH = "checkThrough";
 
     /** */
     static final String WAL_PRINT = "print";
@@ -266,58 +337,61 @@ public class CommandHandler {
     private static final String VALIDATE_INDEXES_TASK = "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask";
 
     /** */
-    private static final String TX_LIMIT = "limit";
+    private static final String TX_LIMIT = "--limit";
 
     /** */
-    private static final String TX_ORDER = "order";
+    private static final String TX_ORDER = "--order";
 
     /** */
-    public static final String CMD_TX_ORDER_START_TIME = "START_TIME";
+    private static final String TX_SERVERS = "--servers";
 
     /** */
-    private static final String TX_SERVERS = "servers";
+    private static final String TX_CLIENTS = "--clients";
 
     /** */
-    private static final String TX_CLIENTS = "clients";
+    private static final String TX_DURATION = "--min-duration";
 
     /** */
-    private static final String TX_DURATION = "minDuration";
+    private static final String TX_SIZE = "--min-size";
 
     /** */
-    private static final String TX_SIZE = "minSize";
+    private static final String TX_LABEL = "--label";
 
     /** */
-    private static final String TX_LABEL = "label";
+    private static final String TX_NODES = "--nodes";
 
     /** */
-    private static final String TX_NODES = "nodes";
+    private static final String TX_XID = "--xid";
 
     /** */
-    private static final String TX_XID = "xid";
+    private static final String TX_KILL = "--kill";
 
     /** */
-    private static final String TX_KILL = "kill";
-
-    /** */
-    private static final String OUTPUT_FORMAT = "--output-format";
-
-    /** */
-    private static final String CONFIG = "--config";
+    private static final String TX_INFO = "--info";
 
     /** Utility name. */
     private static final String UTILITY_NAME = "control.sh";
 
     /** Common options. */
-    private static final String COMMON_OPTIONS = String.join(" ", op(CMD_HOST, "HOST_OR_IP"), op(CMD_PORT, "PORT"), op(CMD_USER, "USER"), op(CMD_PASSWORD, "PASSWORD"), op(CMD_PING_INTERVAL, "PING_INTERVAL"), op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+    private static final String COMMON_OPTIONS = j(" ", getCommonOptions());
 
     /** Utility name with common options. */
-    private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = String.join(" ", UTILITY_NAME, COMMON_OPTIONS);
+    private static final String UTILITY_NAME_WITH_COMMON_OPTIONS = j(" ", UTILITY_NAME, COMMON_OPTIONS);
 
     /** Indent for help output. */
     private static final String INDENT = "  ";
 
+    /** Double indent. */
+    private static final String DOUBLE_INDENT = INDENT + INDENT;
+
     /** */
     private static final String NULL = "null";
+
+    /** */
+    private static final String NODE_ID = "nodeId";
+
+    /** */
+    private static final String OP_NODE_ID = op(NODE_ID);
 
     /** */
     private Iterator<String> argsIt;
@@ -334,6 +408,37 @@ public class CommandHandler {
     /** Check if experimental commands are enabled. Default {@code false}. */
     private final boolean enableExperimental = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
 
+    /** Console instance. Public access needs for tests. */
+    public GridConsole console = GridConsoleAdapter.getInstance();
+
+    /**
+     * Creates list of common utility options.
+     *
+     * @return Array of common utility options.
+     */
+    private static String[] getCommonOptions() {
+        List<String> list = new ArrayList<>(32);
+
+        list.add(op(CMD_HOST, "HOST_OR_IP"));
+        list.add(op(CMD_PORT, "PORT"));
+        list.add(op(CMD_USER, "USER"));
+        list.add(op(CMD_PASSWORD, "PASSWORD"));
+        list.add(op(CMD_PING_INTERVAL, "PING_INTERVAL"));
+        list.add(op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+
+        list.add(op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
+        list.add(op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
+        list.add(op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
+        list.add(op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
+        list.add(op(CMD_KEYSTORE, "KEYSTORE_PATH"));
+        list.add(op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
+        list.add(op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
+        list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
+        list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+
+        return list.toArray(new String[0]);
+    }
+
     /**
      * Output specified string to console.
      *
@@ -344,24 +449,26 @@ public class CommandHandler {
     }
 
     /**
-     * Adds indent to begin of input string.
+     * Adds indent to begin of object's string representation.
      *
-     * @param s Input string.
+     * @param o Input object.
      * @return Indented string.
      */
-    private static String i(String s) {
-        return i(s, 1);
+    private static String i(Object o) {
+        return i(o, 1);
     }
 
     /**
-     * Adds specified indents to begin of input string.
+     * Adds specified indents to begin of object's string representation.
      *
-     * @param s Input string.
+     * @param o Input object.
      * @param indentCnt Number of indents.
      * @return Indented string.
      */
-    private static String i(String s, int indentCnt) {
+    private static String i(Object o, int indentCnt) {
         assert indentCnt >= 0;
+
+        String s = o == null ? null : o.toString();
 
         switch (indentCnt) {
             case 0:
@@ -371,14 +478,15 @@ public class CommandHandler {
                 return INDENT + s;
 
             default:
-                SB sb = new SB(s.length() + indentCnt * INDENT.length());
+                int sLen = s == null ? 4 : s.length();
+
+                SB sb = new SB(sLen + indentCnt * INDENT.length());
 
                 for (int i = 0; i < indentCnt; i++)
                     sb.a(INDENT);
 
                 return sb.a(s).toString();
         }
-
     }
 
     /**
@@ -466,7 +574,7 @@ public class CommandHandler {
                 break;
 
             case BASELINE:
-                if (!BASELINE_COLLECT.equals(args.baselineAction()))
+                if (BaselineCommand.COLLECT != args.baselineArguments().getCmd())
                     str = "Warning: the command will perform changes in baseline.";
 
                 break;
@@ -579,6 +687,40 @@ public class CommandHandler {
     }
 
     /**
+     * @param client Client.
+     * @return List of hosts.
+     */
+    private Stream<IgniteBiTuple<GridClientNode, String>> listHosts(GridClient client) throws GridClientException {
+        return client.compute()
+            .nodes(GridClientNode::connectable)
+            .stream()
+            .flatMap(node -> Stream.concat(
+                node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
+            ).map(addr -> new IgniteBiTuple<>(node, addr + ":" + node.tcpPort())));
+    }
+
+    /**
+     * @param client Client.
+     * @return List of hosts.
+     */
+    private Stream<IgniteBiTuple<GridClientNode, List<String>>> listHostsByClientNode(
+        GridClient client
+    ) throws GridClientException {
+        return client.compute().nodes(GridClientNode::connectable).stream()
+            .map(
+                node -> new IgniteBiTuple<>(
+                    node,
+                    Stream.concat(
+                        node.tcpAddresses() == null ? Stream.empty() : node.tcpAddresses().stream(),
+                        node.tcpHostNames() == null ? Stream.empty() : node.tcpHostNames().stream()
+                    )
+                        .map(addr -> addr + ":" + node.tcpPort()).collect(Collectors.toList())
+                )
+            );
+    }
+
+    /**
      * @param client Client
      * @param taskClsName Task class name.
      * @param taskArgs Task args.
@@ -586,7 +728,11 @@ public class CommandHandler {
      * @return Task result.
      * @throws GridClientException If failed to execute task.
      */
-    private <R> R executeTaskByNameOnNode(GridClient client, String taskClsName, Object taskArgs, UUID nodeId
+    private <R> R executeTaskByNameOnNode(
+        GridClient client,
+        String taskClsName,
+        Object taskArgs,
+        UUID nodeId
     ) throws GridClientException {
         GridClientCompute compute = client.compute();
 
@@ -606,22 +752,34 @@ public class CommandHandler {
         GridClientNode node = null;
 
         if (nodeId == null) {
-            Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
-
             // Prefer node from connect string.
-            String origAddr = clientCfg.getServers().iterator().next();
+            final String cfgAddr = clientCfg.getServers().iterator().next();
 
-            for (GridClientNode clientNode : nodes) {
-                Iterator<String> it = F.concat(clientNode.tcpAddresses().iterator(), clientNode.tcpHostNames().iterator());
+            String[] parts = cfgAddr.split(":");
 
-                while (it.hasNext()) {
-                    if (origAddr.equals(it.next() + ":" + clientNode.tcpPort())) {
-                        node = clientNode;
+            if (DFLT_HOST.equals(parts[0])) {
+                InetAddress addr;
 
-                        break;
-                    }
+                try {
+                    addr = IgniteUtils.getLocalHost();
                 }
+                catch (IOException e) {
+                    throw new GridClientException("Can't get localhost name.", e);
+                }
+
+                if (addr.isLoopbackAddress())
+                    throw new GridClientException("Can't find localhost name.");
+
+                String origAddr = addr.getHostName() + ":" + parts[1];
+
+                node = listHosts(client).filter(tuple -> origAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
+
+                if (node == null)
+                    node = listHostsByClientNode(client).filter(tuple -> tuple.get2().size() == 1 && cfgAddr.equals(tuple.get2().get(0))).
+                        findFirst().map(IgniteBiTuple::get1).orElse(null);
             }
+            else
+                node = listHosts(client).filter(tuple -> cfgAddr.equals(tuple.get2())).findFirst().map(IgniteBiTuple::get1).orElse(null);
 
             // Otherwise choose random node.
             if (node == null)
@@ -662,7 +820,7 @@ public class CommandHandler {
      * @param client Client.
      * @param cacheArgs Cache args.
      */
-    private void cache(GridClient client, CacheArguments cacheArgs) throws Throwable {
+    private Object cache(GridClient client, CacheArguments cacheArgs) throws Throwable {
         switch (cacheArgs.command()) {
             case HELP:
                 printCacheHelp();
@@ -694,32 +852,39 @@ public class CommandHandler {
 
                 break;
 
+            case FIND_AND_DELETE_GARBAGE:
+                return findAndDeleteGarbage(client, cacheArgs);
+
             default:
                 cacheView(client, cacheArgs);
 
                 break;
         }
+
+        return null;
     }
 
-    /**
-     *
-     */
+    /** */
     private void printCacheHelp() {
-        log(i("The '" + CACHE.text() + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:"));
+        log(i("The '" + CACHE + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:"));
         nl();
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE.text() + "[subcommand] <subcommand_parameters>"));
+        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + CACHE + " [subcommand] <subcommand_parameters>"));
         nl();
-        log(i("The subcommands that take [nodeId] as an argument ('" + LIST.text() + "', '" + CONTENTION.text() + "' and '" + VALIDATE_INDEXES.text() + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node."));
+        log(i("The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node."));
         nl();
         nl();
         log(i("Subcommands:"));
 
-        usageCache(LIST, "regexPattern", "[groups|seq]", "[nodeId]", op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE.text()));
-        usageCache(CONTENTION, "minQueueSize", "[nodeId]", "[maxPrint]");
-        usageCache(IDLE_VERIFY, op(CMD_DUMP), op(CMD_SKIP_ZEROS), "[cache1,...,cacheN]");
-        usageCache(VALIDATE_INDEXES, "[cache1,...,cacheN]", "[nodeId]", op(or(VI_CHECK_FIRST + " N", VI_CHECK_THROUGH + " K")));
-        usageCache(DISTRIBUTION, or("nodeId", NULL), "[cacheName1,...,cacheNameN]", op(CMD_USER_ATTRIBUTES, "attName1,...,attrNameN"));
-        usageCache(RESET_LOST_PARTITIONS, "cacheName1,...,cacheNameN");
+        String CACHES = "cacheName1,...,cacheNameN";
+
+        usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+        usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
+        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC), op(EXCLUDE_CACHES, CACHES),
+            op(CACHE_FILTER, or(ALL, USER, SYSTEM, PERSISTENT, NOT_PERSISTENT)), op(CACHES));
+        usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
+        usageCache(DISTRIBUTION, or(NODE_ID, NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
+        usageCache(RESET_LOST_PARTITIONS, CACHES);
+        usageCache(FIND_AND_DELETE_GARBAGE, op(GROUPS), OP_NODE_ID, op(FindAndDeleteGarbageArg.DELETE));
         nl();
     }
 
@@ -740,7 +905,7 @@ public class CommandHandler {
             log("Contention check failed on nodes:");
 
             for (Map.Entry<UUID, Exception> e : res.exceptions().entrySet()) {
-                log("Node ID = " + e.getKey());
+                log("Node ID: " + e.getKey());
 
                 log("Exception message:");
                 log(e.getValue().getMessage());
@@ -759,42 +924,41 @@ public class CommandHandler {
     private void cacheValidateIndexes(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
             cacheArgs.caches(),
+            cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null,
             cacheArgs.checkFirst(),
             cacheArgs.checkThrough()
         );
 
-        UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
-
         VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
-            client, VALIDATE_INDEXES_TASK, taskArg, nodeId);
+            client, VALIDATE_INDEXES_TASK, taskArg, null);
 
-        if (!F.isEmpty(taskRes.exceptions())) {
-            log("Index validation failed on nodes:");
-
-            for (Map.Entry<UUID, Exception> e : taskRes.exceptions().entrySet()) {
-                log("Node ID = " + e.getKey());
-
-                log("Exception message:");
-                log(e.getValue().getMessage());
-                nl();
-            }
-        }
-
-        boolean errors = false;
+        boolean errors = printErrors(taskRes.exceptions(), "Index validation failed on nodes:");
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
+            if (!nodeEntry.getValue().hasIssues())
+                continue;
+
+            errors = true;
+
+            log("Index issues found on node " + nodeEntry.getKey() + ":");
+
+            Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
+
+            if (!integrityCheckFailures.isEmpty()) {
+                for (IndexIntegrityCheckIssue is : integrityCheckFailures)
+                    log(i(is));
+            }
+
             Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
 
             for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : partRes.entrySet()) {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
-                    errors = true;
-
-                    log(e.getKey().toString() + " " + e.getValue().toString());
+                    log(i(j(" ", e.getKey(), e.getValue())));
 
                     for (IndexValidationIssue is : res.issues())
-                        log(is.toString());
+                        log(i(is, 2));
                 }
             }
 
@@ -804,20 +968,20 @@ public class CommandHandler {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
-                    errors = true;
-
-                    log("SQL Index " + e.getKey() + " " + e.getValue().toString());
+                    log(i(j(" ", "SQL Index", e.getKey(), e.getValue())));
 
                     for (IndexValidationIssue is : res.issues())
-                        log(is.toString());
+                        log(i(is, 2));
                 }
             }
         }
 
         if (!errors)
-            log("validate_indexes has finished, no issues found.");
+            log("no issues found.");
         else
-            log("validate_indexes has finished with errors (listed above).");
+            log("issues found (listed above).");
+
+        nl();
     }
 
     /**
@@ -873,9 +1037,85 @@ public class CommandHandler {
      * @param client Client.
      * @param cacheArgs Cache args.
      */
+    private VisorFindAndDeleteGarbageInPersistenceTaskResult findAndDeleteGarbage(
+        GridClient client,
+        CacheArguments cacheArgs
+    ) throws GridClientException {
+        checkFeatureSupportedByCluster(client, IgniteFeatures.FIND_AND_DELETE_GARBAGE_COMMAND, false);
+
+        VisorFindAndDeleteGarbageInPersistenceTaskArg taskArg = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
+            cacheArgs.groups(),
+            cacheArgs.delete(),
+            cacheArgs.nodeId() != null ? Collections.singleton(cacheArgs.nodeId()) : null
+        );
+
+        VisorFindAndDeleteGarbageInPersistenceTaskResult taskRes = executeTask(
+            client, VisorFindAndDeleteGarbageInPersistenceTask.class, taskArg);
+
+        printErrors(taskRes.exceptions(), "Scanning for garbage failed on nodes:");
+
+        for (Map.Entry<UUID, VisorFindAndDeleteGarbageInPersistenceJobResult> nodeEntry : taskRes.result().entrySet()) {
+            if (!nodeEntry.getValue().hasGarbage()) {
+                log("Node "+ nodeEntry.getKey() + " - garbage not found.");
+
+                continue;
+            }
+
+            log("Garbage found on node " + nodeEntry.getKey() + ":");
+
+            VisorFindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
+
+            Map<Integer, Map<Integer, Long>> grpPartErrorsCount = value.checkResult();
+
+            if (!grpPartErrorsCount.isEmpty()) {
+                for (Map.Entry<Integer, Map<Integer, Long>> entry : grpPartErrorsCount.entrySet()) {
+                    for (Map.Entry<Integer, Long> e : entry.getValue().entrySet()) {
+                        log(i("Group=" + entry.getKey() +
+                            ", partition=" + e.getKey() +
+                            ", count of keys=" + e.getValue()));
+                    }
+                }
+            }
+
+            nl();
+        }
+
+        return taskRes;
+    }
+
+    /**
+     * @param exceptions Exception per node.
+     * @param msg Message to print before errors if at least one presented.
+     * @return True if found any error.
+     */
+    private boolean printErrors(Map<UUID, Exception> exceptions, String msg) {
+        if (!F.isEmpty(exceptions)) {
+            log(msg);
+
+            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+                log(i("Node ID: " + e.getKey()));
+
+                log(i("Exception message:"));
+                log(i(e.getValue().getMessage(), 2));
+                nl();
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param client Client.
+     * @param cacheArgs Cache args.
+     */
     private void legacyCacheIdleVerify(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         VisorIdleVerifyTaskResult res = executeTask(
-            client, VisorIdleVerifyTask.class, new VisorIdleVerifyTaskArg(cacheArgs.caches()));
+            client,
+            VisorIdleVerifyTask.class,
+            new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.idleCheckCrc())
+        );
 
         Map<PartitionKey, List<PartitionHashRecord>> conflicts = res.getConflicts();
 
@@ -924,10 +1164,9 @@ public class CommandHandler {
             executeTaskByNameOnNode(client, VisorCacheConfigurationCollectorTask.class.getName(), taskArg, nodeId);
 
         Map<String, Integer> cacheToMapped =
-            viewRes.cacheInfos().stream().collect(Collectors.toMap(x -> x.getCacheName(), x -> x.getMapped()));
+            viewRes.cacheInfos().stream().collect(Collectors.toMap(CacheInfo::getCacheName, CacheInfo::getMapped));
 
         printCachesConfig(res, cacheArgs.outputFormat(), cacheToMapped);
-
     }
 
     /**
@@ -1009,7 +1248,6 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheResetLostPartitions(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-
         CacheResetLostPartitionsTaskArg taskArg = new CacheResetLostPartitionsTaskArg(cacheArgs.caches());
 
         CacheResetLostPartitionsTaskResult res = executeTaskByNameOnNode(client, CacheResetLostPartitionsTask.class.getName(), taskArg, null);
@@ -1022,11 +1260,15 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheIdleVerifyDump(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        String path = executeTask(
-            client,
-            VisorIdleVerifyDumpTask.class,
-            new VisorIdleVerifyDumpTaskArg(cacheArgs.caches(), cacheArgs.isSkipZeros())
+        VisorIdleVerifyDumpTaskArg arg = new VisorIdleVerifyDumpTaskArg(
+            cacheArgs.caches(),
+            cacheArgs.excludeCaches(),
+            cacheArgs.isSkipZeros(),
+            cacheArgs.getCacheFilterEnum(),
+            cacheArgs.idleCheckCrc()
         );
+
+        String path = executeTask(client, VisorIdleVerifyDumpTask.class, arg);
 
         log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
     }
@@ -1037,7 +1279,10 @@ public class CommandHandler {
      */
     private void cacheIdleVerifyV2(GridClient client, CacheArguments cacheArgs) throws GridClientException {
         IdleVerifyResultV2 res = executeTask(
-            client, VisorIdleVerifyTaskV2.class, new VisorIdleVerifyTaskArg(cacheArgs.caches()));
+            client,
+            VisorIdleVerifyTaskV2.class,
+            new VisorIdleVerifyTaskArg(cacheArgs.caches(), cacheArgs.excludeCaches(), cacheArgs.idleCheckCrc())
+        );
 
         res.print(System.out::print);
     }
@@ -1046,64 +1291,59 @@ public class CommandHandler {
      * Change baseline.
      *
      * @param client Client.
-     * @param baselineAct Baseline action to execute.  @throws GridClientException If failed to execute baseline
-     * action.
      * @param baselineArgs Baseline action arguments.
      * @throws Throwable If failed to execute baseline action.
      */
-    private void baseline(GridClient client, String baselineAct, String baselineArgs) throws Throwable {
-        switch (baselineAct) {
-            case BASELINE_ADD:
-                baselineAdd(client, baselineArgs);
-                break;
+    private void baseline(GridClient client, BaselineArguments baselineArgs) throws Throwable {
+        try {
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, toVisorArguments(baselineArgs));
 
-            case BASELINE_REMOVE:
-                baselineRemove(client, baselineArgs);
-                break;
+            baselinePrint0(res);
+        }
+        catch (Throwable e) {
+            log("Failed to execute baseline command='" + baselineArgs.getCmd().text() + "'", e);
 
-            case BASELINE_SET:
-                baselineSet(client, baselineArgs);
-                break;
-
-            case BASELINE_SET_VERSION:
-                baselineVersion(client, baselineArgs);
-                break;
-
-            case BASELINE_COLLECT:
-                baselinePrint(client);
-                break;
+            throw e;
         }
     }
 
     /**
      * Prepare task argument.
      *
-     * @param op Operation.
-     * @param s Argument from command line.
+     * @param args Argument from command line.
      * @return Task argument.
      */
-    private VisorBaselineTaskArg arg(VisorBaselineOperation op, String s) {
-        switch (op) {
+    private VisorBaselineTaskArg toVisorArguments(BaselineArguments args) {
+        VisorBaselineAutoAdjustSettings settings = args.getCmd() == BaselineCommand.AUTO_ADJUST
+            ? new VisorBaselineAutoAdjustSettings(args.getEnableAutoAdjust(), args.getSoftBaselineTimeout())
+            : null;
+
+        return new VisorBaselineTaskArg(toVisorOperation(args.getCmd()), args.getTopVer(), args.getConsistentIds(), settings);
+    }
+
+    /**
+     * Convert {@link BaselineCommand} to {@link VisorBaselineOperation}.
+     *
+     * @param baselineCommand Baseline command for convertion.
+     * @return {@link VisorBaselineOperation}.
+     */
+    private VisorBaselineOperation toVisorOperation(BaselineCommand baselineCommand) {
+        switch (baselineCommand) {
             case ADD:
+                return VisorBaselineOperation.ADD;
+            case AUTO_ADJUST:
+                return VisorBaselineOperation.AUTOADJUST;
             case REMOVE:
+                return VisorBaselineOperation.REMOVE;
             case SET:
-                List<String> consistentIds = getConsistentIds(s);
-
-                return new VisorBaselineTaskArg(op, -1, consistentIds);
-
+                return VisorBaselineOperation.SET;
             case VERSION:
-                try {
-                    long topVer = Long.parseLong(s);
-
-                    return new VisorBaselineTaskArg(op, topVer, null);
-                }
-                catch (NumberFormatException e) {
-                    throw new IllegalArgumentException("Invalid topology version: " + s, e);
-                }
-
-            default:
-                return new VisorBaselineTaskArg(op, -1, null);
+                return VisorBaselineOperation.VERSION;
+            case COLLECT:
+                return VisorBaselineOperation.COLLECT;
         }
+
+        return null;
     }
 
     /**
@@ -1130,11 +1370,41 @@ public class CommandHandler {
     private void baselinePrint0(VisorBaselineTaskResult res) {
         log("Cluster state: " + (res.isActive() ? "active" : "inactive"));
         log("Current topology version: " + res.getTopologyVersion());
+        VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
+
+        if (autoAdjustSettings != null) {
+            log("Baseline auto adjustment " + (TRUE.equals(autoAdjustSettings.getEnabled()) ? "enabled" : "disabled")
+                + ": softTimeout=" + autoAdjustSettings.getSoftTimeout()
+            );
+        }
+
+        if (autoAdjustSettings.enabled) {
+            if (res.isBaselineAdjustInProgress())
+                log("Baseline auto-adjust is in progress");
+            else if (res.getRemainingTimeToBaselineAdjust() < 0)
+                log("Baseline auto-adjust are not scheduled");
+            else
+                log("Baseline auto-adjust will happen in '" + res.getRemainingTimeToBaselineAdjust() + "' ms");
+        }
+
         nl();
 
         Map<String, VisorBaselineNode> baseline = res.getBaseline();
 
         Map<String, VisorBaselineNode> srvs = res.getServers();
+
+        // if task runs on a node with VisorBaselineNode of old version (V1) we'll get order=null for all nodes.
+
+        String crdStr = srvs.values().stream()
+            // check for not null
+            .filter(node -> node.getOrder() != null)
+            .min(Comparator.comparing(VisorBaselineNode::getOrder))
+            // format
+            .map(crd -> " (Coordinator: ConsistentId=" + crd.getConsistentId() + ", Order=" + crd.getOrder() + ")")
+            .orElse("");
+
+        log("Current topology version: " + res.getTopologyVersion() + crdStr);
+        nl();
 
         if (F.isEmpty(baseline))
             log("Baseline nodes not found.");
@@ -1142,9 +1412,13 @@ public class CommandHandler {
             log("Baseline nodes:");
 
             for (VisorBaselineNode node : baseline.values()) {
-                boolean online = srvs.containsKey(node.getConsistentId());
+                VisorBaselineNode srvNode = srvs.get(node.getConsistentId());
 
-                log(i("ConsistentID=" + node.getConsistentId() + ", STATE=" + (online ? "ONLINE" : "OFFLINE"), 2));
+                String state = ", State=" + (srvNode != null ? "ONLINE" : "OFFLINE");
+
+                String order = srvNode != null ? ", Order=" + srvNode.getOrder() : "";
+
+                log(i("ConsistentId=" + node.getConsistentId() + state + order, 2));
             }
 
             log(DELIM);
@@ -1165,100 +1439,10 @@ public class CommandHandler {
                 log("Other nodes:");
 
                 for (VisorBaselineNode node : others)
-                    log(i("ConsistentID=" + node.getConsistentId(), 2));
+                    log(i("ConsistentId=" + node.getConsistentId() + ", Order=" + node.getOrder(), 2));
 
                 log("Number of other nodes: " + others.size());
             }
-        }
-    }
-
-    /**
-     * Print current baseline.
-     *
-     * @param client Client.
-     */
-    private void baselinePrint(GridClient client) throws GridClientException {
-        VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(COLLECT, ""));
-
-        baselinePrint0(res);
-    }
-
-    /**
-     * Add nodes to baseline.
-     *
-     * @param client Client.
-     * @param baselineArgs Baseline action arguments.
-     * @throws Throwable If failed to add nodes to baseline.
-     */
-    private void baselineAdd(GridClient client, String baselineArgs) throws Throwable {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(ADD, baselineArgs));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to add nodes to baseline.");
-
-            throw e;
-        }
-    }
-
-    /**
-     * Remove nodes from baseline.
-     *
-     * @param client Client.
-     * @param consistentIds Consistent IDs.
-     * @throws Throwable If failed to remove nodes from baseline.
-     */
-    private void baselineRemove(GridClient client, String consistentIds) throws Throwable {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(REMOVE, consistentIds));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to remove nodes from baseline.");
-
-            throw e;
-        }
-    }
-
-    /**
-     * Set baseline.
-     *
-     * @param client Client.
-     * @param consistentIds Consistent IDs.
-     * @throws Throwable If failed to set baseline.
-     */
-    private void baselineSet(GridClient client, String consistentIds) throws Throwable {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(SET, consistentIds));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to set baseline.");
-
-            throw e;
-        }
-    }
-
-    /**
-     * Set baseline by topology version.
-     *
-     * @param client Client.
-     * @param arg Argument from command line.
-     */
-    private void baselineVersion(GridClient client, String arg) throws GridClientException {
-        try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(VERSION, arg));
-
-            baselinePrint0(res);
-        }
-        catch (Throwable e) {
-            log("Failed to set baseline with specified topology version.");
-
-            throw e;
         }
     }
 
@@ -1270,6 +1454,12 @@ public class CommandHandler {
      */
     private void transactions(GridClient client, VisorTxTaskArg arg) throws GridClientException {
         try {
+            if (arg.getOperation() == VisorTxOperation.INFO) {
+                transactionInfo(client, arg);
+
+                return;
+            }
+
             Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg);
 
             lastOperationRes = res;
@@ -1287,13 +1477,7 @@ public class CommandHandler {
 
                 ClusterNode key = entry.getKey();
 
-                log(key.getClass().getSimpleName() + " [id=" + key.id() +
-                    ", addrs=" + key.addresses() +
-                    ", order=" + key.order() +
-                    ", ver=" + key.version() +
-                    ", isClient=" + key.isClient() +
-                    ", consistentId=" + key.consistentId() +
-                    "]");
+                log(nodeDescription(key));
 
                 for (VisorTxInfo info : entry.getValue().getInfos())
                     log(info.toUserString());
@@ -1303,6 +1487,259 @@ public class CommandHandler {
             log("Failed to perform operation.");
 
             throw e;
+        }
+    }
+
+    /**
+     * Provides text descrition of a cluster node.
+     *
+     * @param node Node.
+     */
+    private static String nodeDescription(ClusterNode node) {
+        return node.getClass().getSimpleName() + " [id=" + node.id() +
+            ", addrs=" + node.addresses() +
+            ", order=" + node.order() +
+            ", ver=" + node.version() +
+            ", isClient=" + node.isClient() +
+            ", consistentId=" + node.consistentId() +
+            "]";
+    }
+
+    /**
+     * Executes --tx --info command.
+     *
+     * @param client Client.
+     * @param arg Argument.
+     */
+    private void transactionInfo(GridClient client, VisorTxTaskArg arg) throws GridClientException {
+        checkFeatureSupportedByCluster(client, IgniteFeatures.TX_INFO_COMMAND, true);
+
+        GridCacheVersion nearXidVer = executeTask(client, FetchNearXidVersionTask.class, arg.txInfoArgument());
+
+        boolean histMode = false;
+
+        if (nearXidVer != null) {
+            log("Resolved transaction near XID version: " + nearXidVer);
+
+            arg.txInfoArgument(new TxVerboseId(null, nearXidVer));
+        }
+        else {
+            log("Active transactions not found.");
+
+            if (arg.txInfoArgument().gridCacheVersion() != null) {
+                log("Will try to peek history to find out whether transaction was committed / rolled back.");
+
+                histMode = true;
+            }
+            else {
+                log("You can specify transaction in GridCacheVersion format in order to peek history " +
+                    "to find out whether transaction was committed / rolled back.");
+
+                return;
+            }
+        }
+
+        Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg);
+
+        lastOperationRes = res;
+
+        if (histMode)
+            printTxInfoHistoricalResult(res);
+        else
+            printTxInfoResult(res);
+
+
+    }
+
+    /**
+     * Prints result of --tx --info command to output.
+     *
+     * @param res Response.
+     */
+    private void printTxInfoResult(Map<ClusterNode, VisorTxTaskResult> res) {
+        String lb = null;
+
+        Map<Integer, String> usedCaches = new HashMap<>();
+        Map<Integer, String> usedCacheGroups = new HashMap<>();
+        VisorTxInfo firstInfo = null;
+        TxVerboseInfo firstVerboseInfo = null;
+        Set<TransactionState> states = new HashSet<>();
+
+        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+            for (VisorTxInfo info : entry.getValue().getInfos()) {
+                assert info.getTxVerboseInfo() != null;
+
+                if (lb == null)
+                    lb = info.getLabel();
+
+                if (firstInfo == null) {
+                    firstInfo = info;
+                    firstVerboseInfo = info.getTxVerboseInfo();
+                }
+
+                usedCaches.putAll(info.getTxVerboseInfo().usedCaches());
+                usedCacheGroups.putAll(info.getTxVerboseInfo().usedCacheGroups());
+                states.add(info.getState());
+            }
+        }
+
+        String indent = "";
+
+        nl();
+        log(indent + "Transaction detailed info:");
+
+        printTransactionDetailedInfo(
+            res, usedCaches, usedCacheGroups, firstInfo, firstVerboseInfo, states, indent + DOUBLE_INDENT);
+    }
+
+    /**
+     * Prints detailed info about transaction to output.
+     *
+     * @param res Response.
+     * @param usedCaches Used caches.
+     * @param usedCacheGroups Used cache groups.
+     * @param firstInfo First info.
+     * @param firstVerboseInfo First verbose info.
+     * @param states States.
+     * @param indent Indent.
+     */
+    private void printTransactionDetailedInfo(Map<ClusterNode, VisorTxTaskResult> res, Map<Integer, String> usedCaches,
+        Map<Integer, String> usedCacheGroups, VisorTxInfo firstInfo, TxVerboseInfo firstVerboseInfo,
+        Set<TransactionState> states, String indent) {
+        log(indent + "Near XID version: " + firstVerboseInfo.nearXidVersion());
+        log(indent + "Near XID version (UUID): " + firstInfo.getNearXid());
+        log(indent + "Isolation: " + firstInfo.getIsolation());
+        log(indent + "Concurrency: " + firstInfo.getConcurrency());
+        log(indent + "Timeout: " + firstInfo.getTimeout());
+        log(indent + "Initiator node: " + firstVerboseInfo.nearNodeId());
+        log(indent + "Initiator node (consistent ID): " + firstVerboseInfo.nearNodeConsistentId());
+        log(indent + "Label: " + firstInfo.getLabel());
+        log(indent + "Topology version: " + firstInfo.getTopologyVersion());
+        log(indent + "Used caches (ID to name): " + usedCaches);
+        log(indent + "Used cache groups (ID to name): " + usedCacheGroups);
+        log(indent + "States across the cluster: " + states);
+        log(indent + "Transaction topology: ");
+
+        printTransactionTopology(res, indent + DOUBLE_INDENT);
+    }
+
+    /**
+     * Prints transaction topology to output.
+     *
+     * @param res Response.
+     * @param indent Indent.
+     */
+    private void printTransactionTopology(Map<ClusterNode, VisorTxTaskResult> res, String indent) {
+        for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+            log(indent + nodeDescription(entry.getKey()) + ':');
+
+            printTransactionMappings(indent + DOUBLE_INDENT, entry);
+        }
+    }
+
+    /**
+     * Prints transaction mappings for specific cluster node to output.
+     *
+     * @param indent Indent.
+     * @param entry Entry.
+     */
+    private void printTransactionMappings(String indent, Map.Entry<ClusterNode, VisorTxTaskResult> entry) {
+        for (VisorTxInfo info : entry.getValue().getInfos()) {
+            TxVerboseInfo verboseInfo = info.getTxVerboseInfo();
+
+            if (verboseInfo != null) {
+                log(indent + "Mapping [type=" + verboseInfo.txMappingType() + "]:");
+
+                printTransactionMapping(indent + DOUBLE_INDENT, info, verboseInfo);
+            }
+            else {
+                log(indent + "Mapping [type=HISTORICAL]:");
+
+                log(indent + DOUBLE_INDENT + "State: " + info.getState());
+            }
+        }
+    }
+
+    /**
+     * Prints specific transaction mapping to output.
+     *
+     * @param indent Indent.
+     * @param info Info.
+     * @param verboseInfo Verbose info.
+     */
+    private void printTransactionMapping(String indent, VisorTxInfo info, TxVerboseInfo verboseInfo) {
+        log(indent + "XID version (UUID): " + info.getXid());
+        log(indent + "State: " + info.getState());
+
+        if (verboseInfo.txMappingType() == TxMappingType.REMOTE) {
+            log(indent + "Primary node: " + verboseInfo.dhtNodeId());
+            log(indent + "Primary node (consistent ID): " + verboseInfo.dhtNodeConsistentId());
+        }
+
+        if (!F.isEmpty(verboseInfo.localTxKeys())) {
+            log(indent + "Mapped keys:");
+
+            printTransactionKeys(indent + DOUBLE_INDENT, verboseInfo);
+        }
+    }
+
+    /**
+     * Prints keys of specific transaction mapping to output.
+     *
+     * @param indent Indent.
+     * @param verboseInfo Verbose info.
+     */
+    private void printTransactionKeys(String indent, TxVerboseInfo verboseInfo) {
+        for (TxVerboseKey txVerboseKey : verboseInfo.localTxKeys()) {
+            log(indent + (txVerboseKey.read() ? "Read" : "Write") +
+                " [lock=" + txVerboseKey.lockType() + "]: " + txVerboseKey.txKey());
+
+            if (txVerboseKey.lockType() == TxKeyLockType.AWAITS_LOCK)
+                log(indent + DOUBLE_INDENT + "Lock owner XID: " + txVerboseKey.ownerVersion());
+        }
+    }
+
+    /**
+     * Prints results of --tx --info to output in case requested transaction is not active.
+     *
+     * @param res Response.
+     */
+    private void printTxInfoHistoricalResult(Map<ClusterNode, VisorTxTaskResult> res) {
+        if (F.isEmpty(res))
+            log("Transaction was not found in history across the cluster.");
+        else {
+            log("Transaction was found in completed versions history of the following nodes:");
+
+            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+                log(DOUBLE_INDENT + nodeDescription(entry.getKey()) + ':');
+                log(DOUBLE_INDENT + DOUBLE_INDENT + "State: " + entry.getValue().getInfos().get(0).getState());
+            }
+        }
+    }
+
+    /**
+     * Checks that all cluster nodes support specified feature.
+     *
+     * @param client Client.
+     * @param feature Feature.
+     * @param validateClientNodes Whether client nodes should be checked as well.
+     */
+    private static void checkFeatureSupportedByCluster(
+        GridClient client,
+        IgniteFeatures feature,
+        boolean validateClientNodes
+    ) throws GridClientException {
+        Collection<GridClientNode> nodes = validateClientNodes ?
+            client.compute().nodes() :
+            client.compute().nodes(GridClientNode::connectable);
+
+        for (GridClientNode node : nodes) {
+            byte[] featuresAttrBytes = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_FEATURES);
+
+            if (!IgniteFeatures.nodeSupports(featuresAttrBytes, feature)) {
+                throw new IllegalStateException("Failed to execute command: cluster contains node that " +
+                    "doesn't support feature [nodeId=" + node.nodeId() + ", feature=" + feature + ']');
+            }
         }
     }
 
@@ -1475,7 +1912,7 @@ public class CommandHandler {
      */
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log(i(UTILITY_NAME_WITH_COMMON_OPTIONS + " " + cmd.text() + " " + String.join(" ", args), 2));
+        log(i(j(" ", UTILITY_NAME, cmd, j(" ", args)), 2));
         nl();
     }
 
@@ -1499,7 +1936,7 @@ public class CommandHandler {
     private void usageCache(int indentsNum, CacheCommand cmd, String... args) {
         log(i(DELIM, indentsNum));
         nl();
-        log(i(CACHE.text() + " " + cmd.text() + " " + String.join(" ", args), indentsNum++));
+        log(i(j(" ", CACHE, cmd, j(" ", args)), indentsNum++));
         nl();
         log(i(getCacheSubcommandDesc(cmd), indentsNum));
         nl();
@@ -1567,7 +2004,14 @@ public class CommandHandler {
                 return "Show the keys that are point of contention for multiple transactions.";
 
             case IDLE_VERIFY:
-                return "Verify counters and hash sums of primary and backup partitions for the specified caches on an idle cluster and print out the differences, if any.";
+                return "Verify counters and hash sums of primary and backup partitions for the specified caches/cache " +
+                    "groups on an idle cluster and print out the differences, if any. When no parameters are specified, " +
+                    "all user caches are verified. Cache filtering options configure the set of caches that will be " +
+                    "processed by " + IDLE_VERIFY + " command. If cache names are specified, in form of regular " +
+                    "expressions, only matching caches will be verified. Caches matched by regexes specified after " +
+                    EXCLUDE_CACHES + " parameter will be excluded from verification. Using parameter " + CACHE_FILTER +
+                    " you can verify: only " + USER + " caches, only user " + PERSISTENT + " caches, only user " +
+                    NOT_PERSISTENT + " caches, only " + SYSTEM + " caches, or " + ALL + " of the above.";
 
             case VALIDATE_INDEXES:
                 return "Validate indexes on an idle cluster and print out the keys that are missing in the indexes.";
@@ -1577,6 +2021,9 @@ public class CommandHandler {
 
             case RESET_LOST_PARTITIONS:
                 return "Reset the state of lost partitions for the specified caches.";
+
+            case FIND_AND_DELETE_GARBAGE:
+                return "Find and optionally delete garbage from shared cache groups which could be left after cache destroy.";
 
             default:
                 throw new IllegalArgumentException("Unknown command: " + cmd);
@@ -1593,13 +2040,25 @@ public class CommandHandler {
         Map<String, String> map = U.newLinkedHashMap(16);
         switch (cmd) {
             case LIST:
-                map.put(CONFIG, "print a all configuration parameters for each cache.");
-                map.put(OUTPUT_FORMAT + " " + MULTI_LINE.text(), "print configuration parameters per line. This option has effect only when used with " + CONFIG + " and without [groups|seq].");
+                map.put(CONFIG.toString(), "print all configuration parameters for each cache.");
+                map.put(OUTPUT_FORMAT + " " + MULTI_LINE, "print configuration parameters per line. This option has effect only when used with " + CONFIG + " and without " + op(or(GROUP, SEQUENCE)) + ".");
+                map.put(GROUP.toString(), "print information about groups.");
+                map.put(SEQUENCE.toString(), "print information about sequences.");
 
                 break;
             case VALIDATE_INDEXES:
-                map.put(VI_CHECK_FIRST + " N", "validate only the first N keys");
-                map.put(VI_CHECK_THROUGH + " K", "validate every Kth key");
+                map.put(CHECK_FIRST + " N", "validate only the first N keys");
+                map.put(CHECK_THROUGH + " K", "validate every Kth key");
+
+                break;
+
+            case IDLE_VERIFY:
+                map.put(CHECK_CRC.toString(), "check the CRC-sum of pages stored on disk before verifying data consistency in partitions between primary and backup nodes.");
+
+                break;
+
+            case FIND_AND_DELETE_GARBAGE:
+                map.put(FindAndDeleteGarbageArg.DELETE.toString(), "remove found garbage or not");
 
                 break;
         }
@@ -1609,34 +2068,64 @@ public class CommandHandler {
     /**
      * Join input parameters with space and wrap optional braces {@code []}.
      *
-     * @param param First input parameter.
      * @param params Other input parameter.
      * @return Joined parameters wrapped optional braces.
      */
-    private static String op(String param, String... params) {
-        if (params == null || params.length == 0)
-            return "[" + param + "]";
+    private static String op(Object... params) {
+        return j(new SB(), "[", " ", params).a("]").toString();
+    }
 
-        return "[" + param + " " + String.join(" ", params) + "]";
+    /**
+     * Join input parameters with specified {@code delimeter} between them.
+     *
+     * @param delimeter Specified delimeter.
+     * @param params Other input parameter.
+     * @return Joined paramaters with specified {@code delimeter}.
+     */
+    private static String j(String delimeter, Object... params) {
+        return j(new SB(), "", delimeter, params).toString();
+    }
+
+    /**
+     * Join input parameters with specified {@code delimeter} between them and append to the end {@code delimeter}.
+     *
+     * @param sb Specified string builder.
+     * @param sbDelimeter Delimeter between {@code sb} and appended {@code param}.
+     * @param delimeter Specified delimeter.
+     * @param params Other input parameter.
+     * @return SB with appended to the end joined paramaters with specified {@code delimeter}.
+     */
+    private static SB j(SB sb, String sbDelimeter, String delimeter, Object... params) {
+        if (!F.isEmpty(params)) {
+            sb.a(sbDelimeter);
+
+            for (Object par : params)
+                sb.a(par).a(delimeter);
+
+            sb.setLength(sb.length() - delimeter.length());
+        }
+
+        return sb;
     }
 
     /**
      * Concatenates input parameters to single string with OR delimiter {@code |}.
      *
-     * @param param1 First parameter.
      * @param params Remaining parameters.
      * @return Concatenated string.
      */
-    private static String or(String param1, String... params) {
-        if (params.length == 0)
-            return param1;
+    private static String or(Object... params) {
+        return j("|", params);
+    }
 
-        SB sb = new SB(param1);
-
-        for (String param : params)
-            sb.a("|").a(param);
-
-        return sb.toString();
+    /**
+     * Join input parameters with space and wrap grouping braces {@code ()}.
+     *
+     * @param params Input parameter.
+     * @return Joined parameters wrapped grouped braces.
+     */
+    private static String g(Object... params) {
+        return j(new SB(), "(", " ", params).a(")").toString();
     }
 
     /**
@@ -1688,10 +2177,6 @@ public class CommandHandler {
 
         String pwd = null;
 
-        String baselineAct = "";
-
-        String baselineArgs = "";
-
         Long pingInterval = DFLT_PING_INTERVAL;
 
         Long pingTimeout = DFLT_PING_TIMEOUT;
@@ -1704,11 +2189,34 @@ public class CommandHandler {
 
         CacheArguments cacheArgs = null;
 
+        BaselineArguments baselineArgs = null;
+
         List<Command> commands = new ArrayList<>();
 
         initArgIterator(rawArgs);
 
         VisorTxTaskArg txArgs = null;
+
+        String sslProtocol = DFLT_SSL_PROTOCOL;
+
+        String sslCipherSuites = "";
+
+        String sslKeyAlgorithm = SslContextFactory.DFLT_KEY_ALGORITHM;
+
+        String sslKeyStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        String sslKeyStorePath = null;
+
+        char sslKeyStorePassword[] = null;
+
+        String sslTrustStoreType = SslContextFactory.DFLT_STORE_TYPE;
+
+        String sslTrustStorePath = null;
+
+        char sslTrustStorePassword[] = null;
+
+        final String pwdArgWarnFmt = "Warning: %s is insecure. " +
+            "Whenever possible, use interactive prompt for password (just discard %s option).";
 
         while (hasNextArg()) {
             String str = nextArg("").toLowerCase();
@@ -1734,20 +2242,7 @@ public class CommandHandler {
                     case BASELINE:
                         commands.add(BASELINE);
 
-                        baselineAct = BASELINE_COLLECT; //default baseline action
-
-                        str = peekNextArg();
-
-                        if (str != null) {
-                            str = str.toLowerCase();
-
-                            if (BASELINE_ADD.equals(str) || BASELINE_REMOVE.equals(str) ||
-                                BASELINE_SET.equals(str) || BASELINE_SET_VERSION.equals(str)) {
-                                baselineAct = nextArg("Expected baseline action");
-
-                                baselineArgs = nextArg("Expected baseline arguments");
-                            }
-                        }
+                        baselineArgs = parseAndValidateBaselineArgs();
 
                         break;
 
@@ -1820,6 +2315,57 @@ public class CommandHandler {
                     case CMD_PASSWORD:
                         pwd = nextArg("Expected password");
 
+                        log(format(pwdArgWarnFmt, CMD_PASSWORD, CMD_PASSWORD));
+
+                        break;
+
+                    case CMD_SSL_PROTOCOL:
+                        sslProtocol = nextArg("Expected SSL protocol");
+
+                        break;
+
+                    case CMD_SSL_CIPHER_SUITES:
+                        sslCipherSuites = nextArg("Expected SSL cipher suites");
+
+                        break;
+
+                    case CMD_SSL_KEY_ALGORITHM:
+                        sslKeyAlgorithm = nextArg("Expected SSL key algorithm");
+
+                        break;
+
+                    case CMD_KEYSTORE:
+                        sslKeyStorePath = nextArg("Expected SSL key store path");
+
+                        break;
+
+                    case CMD_KEYSTORE_PASSWORD:
+                        sslKeyStorePassword = nextArg("Expected SSL key store password").toCharArray();
+
+                        log(format(pwdArgWarnFmt, CMD_KEYSTORE_PASSWORD, CMD_KEYSTORE_PASSWORD));
+
+                        break;
+
+                    case CMD_KEYSTORE_TYPE:
+                        sslKeyStoreType = nextArg("Expected SSL key store type");
+
+                        break;
+
+                    case CMD_TRUSTSTORE:
+                        sslTrustStorePath = nextArg("Expected SSL trust store path");
+
+                        break;
+
+                    case CMD_TRUSTSTORE_PASSWORD:
+                        sslTrustStorePassword = nextArg("Expected SSL trust store password").toCharArray();
+
+                        log(format(pwdArgWarnFmt, CMD_TRUSTSTORE_PASSWORD, CMD_TRUSTSTORE_PASSWORD));
+
+                        break;
+
+                    case CMD_TRUSTSTORE_TYPE:
+                        sslTrustStoreType = nextArg("Expected SSL trust store type");
+
                         break;
 
                     case CMD_AUTO_CONFIRMATION:
@@ -1843,14 +2389,64 @@ public class CommandHandler {
 
         Command cmd = commands.get(0);
 
-        boolean hasUsr = F.isEmpty(user);
-        boolean hasPwd = F.isEmpty(pwd);
+        return new Arguments(cmd, host, port, user, pwd,
+            baselineArgs,
+            txArgs, cacheArgs,
+            walAct, walArgs,
+            pingTimeout, pingInterval, autoConfirmation,
+            sslProtocol, sslCipherSuites,
+            sslKeyAlgorithm, sslKeyStorePath, sslKeyStorePassword, sslKeyStoreType,
+            sslTrustStorePath, sslTrustStorePassword, sslTrustStoreType);
+    }
 
-        if (hasUsr != hasPwd)
-            throw new IllegalArgumentException("Both user and password should be specified");
+    /**
+     * Parses and validates baseline arguments.
+     *
+     * @return --baseline subcommand arguments in case validation is successful.
+     */
+    private BaselineArguments parseAndValidateBaselineArgs() {
+        if (!hasNextSubArg())
+            return new BaselineArguments.Builder(BaselineCommand.COLLECT).build();
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
-            pingTimeout, pingInterval, autoConfirmation);
+        BaselineCommand cmd = of(nextArg("Expected baseline action"));
+
+        if (cmd == null)
+            throw new IllegalArgumentException("Expected correct baseline action");
+
+        BaselineArguments.Builder baselineArgs = new BaselineArguments.Builder(cmd);
+
+        switch (cmd) {
+            case ADD:
+            case REMOVE:
+            case SET:
+                return baselineArgs
+                    .withConsistentIds(getConsistentIds(nextArg("Expected list of consistent ids")))
+                    .build();
+            case VERSION:
+                return baselineArgs
+                    .withTopVer(nextLongArg("topology version"))
+                    .build();
+            case AUTO_ADJUST:
+                do {
+                    AutoAdjustCommandArg autoAdjustArg = CommandArgUtils.of(
+                        nextArg("Expected one of auto-adjust arguments"), AutoAdjustCommandArg.class
+                    );
+
+                    if (autoAdjustArg == null)
+                        throw new IllegalArgumentException("Expected one of auto-adjust arguments");
+
+                    if (autoAdjustArg == AutoAdjustCommandArg.ENABLE || autoAdjustArg == AutoAdjustCommandArg.DISABLE)
+                        baselineArgs.withEnable(autoAdjustArg == AutoAdjustCommandArg.ENABLE);
+
+                    if (autoAdjustArg == AutoAdjustCommandArg.TIMEOUT)
+                        baselineArgs.withSoftBaselineTimeout(nextLongArg("soft timeout"));
+                }
+                while (hasNextSubArg());
+
+                return baselineArgs.build();
+        }
+
+        return baselineArgs.build();
     }
 
     /**
@@ -1859,7 +2455,7 @@ public class CommandHandler {
      * @return --cache subcommand arguments in case validation is successful.
      */
     private CacheArguments parseAndValidateCacheArgs() {
-        if (!hasNextCacheArg()) {
+        if (!hasNextSubArg()) {
             throw new IllegalArgumentException("Arguments are expected for --cache subcommand, " +
                 "run --cache help for more info.");
         }
@@ -1880,42 +2476,74 @@ public class CommandHandler {
                 break;
 
             case IDLE_VERIFY:
-                int idleVerifyArgsCnt = 3;
+                int idleVerifyArgsCnt = 5;
 
-                while (hasNextCacheArg() && idleVerifyArgsCnt-- > 0) {
+                while (hasNextSubArg() && idleVerifyArgsCnt-- > 0) {
                     String nextArg = nextArg("");
 
-                    if (CMD_DUMP.equals(nextArg))
-                        cacheArgs.dump(true);
-                    else if (CMD_SKIP_ZEROS.equals(nextArg))
-                        cacheArgs.skipZeros(true);
-                    else
+                    IdleVerifyCommandArg arg = CommandArgUtils.of(nextArg, IdleVerifyCommandArg.class);
+
+                    if (arg == null)
                         parseCacheNames(nextArg, cacheArgs);
+                    else {
+                        switch (arg) {
+                            case DUMP:
+                                cacheArgs.dump(true);
+
+                                break;
+
+                            case SKIP_ZEROS:
+                                cacheArgs.skipZeros(true);
+
+                                break;
+
+                            case CHECK_CRC:
+                                cacheArgs.idleCheckCrc(true);
+
+                                break;
+
+                            case CACHE_FILTER:
+                                String filter = nextArg("The cache filter should be specified. The following " +
+                                    "values can be used: " + Arrays.toString(CacheFilterEnum.values()) + '.');
+
+                                cacheArgs.setCacheFilterEnum(CacheFilterEnum.valueOf(filter.toUpperCase()));
+
+                                break;
+
+                            case EXCLUDE_CACHES:
+                                parseExcludeCacheNames(nextArg("Specify caches, which will be excluded."),
+                                    cacheArgs);
+
+                                break;
+                        }
+                    }
                 }
                 break;
 
             case CONTENTION:
                 cacheArgs.minQueueSize(Integer.parseInt(nextArg("Min queue size expected")));
 
-                if (hasNextCacheArg())
+                if (hasNextSubArg())
                     cacheArgs.nodeId(UUID.fromString(nextArg("")));
 
-                if (hasNextCacheArg())
+                if (hasNextSubArg())
                     cacheArgs.maxPrint(Integer.parseInt(nextArg("")));
                 else
                     cacheArgs.maxPrint(10);
 
                 break;
 
-            case VALIDATE_INDEXES:
+            case VALIDATE_INDEXES: {
                 int argsCnt = 0;
 
-                while (hasNextCacheArg() && argsCnt++ < 4) {
-                    String arg = nextArg("");
+                while (hasNextSubArg() && argsCnt++ < 4) {
+                    String nextArg = nextArg("");
 
-                    if (VI_CHECK_FIRST.equals(arg) || VI_CHECK_THROUGH.equals(arg)) {
-                        if (!hasNextCacheArg())
-                            throw new IllegalArgumentException("Numeric value for '" + arg + "' parameter expected.");
+                    ValidateIndexesCommandArg arg = CommandArgUtils.of(nextArg, ValidateIndexesCommandArg.class);
+
+                    if (arg == CHECK_FIRST || arg == CHECK_THROUGH) {
+                        if (!hasNextSubArg())
+                            throw new IllegalArgumentException("Numeric value for '" + nextArg + "' parameter expected.");
 
                         int numVal;
 
@@ -1926,17 +2554,14 @@ public class CommandHandler {
                         }
                         catch (IllegalArgumentException e) {
                             throw new IllegalArgumentException(
-                                "Not numeric value was passed for '"
-                                    + arg
-                                    + "' parameter: "
-                                    + numStr
+                                "Not numeric value was passed for '" + nextArg + "' parameter: " + numStr
                             );
                         }
 
                         if (numVal <= 0)
-                            throw new IllegalArgumentException("Value for '" + arg + "' property should be positive.");
+                            throw new IllegalArgumentException("Value for '" + nextArg + "' property should be positive.");
 
-                        if (VI_CHECK_FIRST.equals(arg))
+                        if (arg == CHECK_FIRST)
                             cacheArgs.checkFirst(numVal);
                         else
                             cacheArgs.checkThrough(numVal);
@@ -1945,7 +2570,7 @@ public class CommandHandler {
                     }
 
                     try {
-                        cacheArgs.nodeId(UUID.fromString(arg));
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
 
                         continue;
                     }
@@ -1953,20 +2578,23 @@ public class CommandHandler {
                         //No-op.
                     }
 
-                    parseCacheNames(arg, cacheArgs);
+                    parseCacheNames(nextArg, cacheArgs);
                 }
 
                 break;
+            }
 
             case DISTRIBUTION:
                 String nodeIdStr = nextArg("Node id expected or null");
                 if (!NULL.equals(nodeIdStr))
                     cacheArgs.nodeId(UUID.fromString(nodeIdStr));
 
-                while (hasNextCacheArg()) {
+                while (hasNextSubArg()) {
                     String nextArg = nextArg("");
 
-                    if (CMD_USER_ATTRIBUTES.equals(nextArg)) {
+                    DistributionCommandArg arg = CommandArgUtils.of(nextArg, DistributionCommandArg.class);
+
+                    if (arg == USER_ATTRIBUTES) {
                         nextArg = nextArg("User attributes are expected to be separated by commas");
 
                         Set<String> userAttrs = new HashSet<>();
@@ -1976,7 +2604,7 @@ public class CommandHandler {
 
                         cacheArgs.setUserAttributes(userAttrs);
 
-                        nextArg = (hasNextCacheArg()) ? nextArg("") : null;
+                        nextArg = (hasNextSubArg()) ? nextArg("") : null;
 
                     }
 
@@ -1998,35 +2626,37 @@ public class CommandHandler {
 
                 OutputFormat outputFormat = SINGLE_LINE;
 
-                while (hasNextCacheArg()) {
-                    String tmp = nextArg("").toLowerCase();
+                while (hasNextSubArg()) {
+                    String nextArg = nextArg("").toLowerCase();
 
-                    switch (tmp) {
-                        case "groups":
-                            cacheCmd = GROUPS;
+                    ListCommandArg arg = CommandArgUtils.of(nextArg, ListCommandArg.class);
+                    if (arg != null) {
+                        switch (arg) {
+                            case GROUP:
+                                cacheCmd = GROUPS;
 
-                            break;
+                                break;
 
-                        case "seq":
-                            cacheCmd = SEQ;
+                            case SEQUENCE:
+                                cacheCmd = SEQ;
 
-                            break;
+                                break;
 
-                        case OUTPUT_FORMAT:
-                            String tmp2 = nextArg("output format must be defined!").toLowerCase();
+                            case OUTPUT_FORMAT:
+                                String tmp2 = nextArg("output format must be defined!").toLowerCase();
 
-                            outputFormat = OutputFormat.fromConsoleName(tmp2);
+                                outputFormat = OutputFormat.fromConsoleName(tmp2);
 
-                            break;
+                                break;
 
-                        case CONFIG:
-                            cacheArgs.fullConfig(true);
+                            case CONFIG:
+                                cacheArgs.fullConfig(true);
 
-                            break;
-
-                        default:
-                            cacheArgs.nodeId(UUID.fromString(tmp));
+                                break;
+                        }
                     }
+                    else
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
                 }
 
                 cacheArgs.cacheCommand(cacheCmd);
@@ -2034,38 +2664,91 @@ public class CommandHandler {
 
                 break;
 
+            case FIND_AND_DELETE_GARBAGE: {
+                int argsCnt = 0;
+
+                while (hasNextSubArg() && argsCnt++ < 3) {
+                    String nextArg = nextArg("");
+
+                    FindAndDeleteGarbageArg arg = CommandArgUtils.of(nextArg, FindAndDeleteGarbageArg.class);
+
+                    if (arg == FindAndDeleteGarbageArg.DELETE) {
+                        cacheArgs.delete(true);
+
+                        continue;
+                    }
+
+                    try {
+                        cacheArgs.nodeId(UUID.fromString(nextArg));
+
+                        continue;
+                    }
+                    catch (IllegalArgumentException ignored) {
+                        //No-op.
+                    }
+
+                    cacheArgs.groups(parseCacheNames(nextArg));
+                }
+
+                break;
+            }
+
             default:
                 throw new IllegalArgumentException("Unknown --cache subcommand " + cmd);
         }
 
-        if (hasNextCacheArg())
+        if (hasNextSubArg())
             throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + peekNextArg());
 
         return cacheArgs;
     }
 
     /**
-     * @return <code>true</code> if there's next argument for --cache subcommand.
+     * @return <code>true</code> if there's next argument for subcommand.
      */
-    private boolean hasNextCacheArg() {
+    private boolean hasNextSubArg() {
         return hasNextArg() && Command.of(peekNextArg()) == null && !AUX_COMMANDS.contains(peekNextArg());
     }
 
     /**
+     * @param cacheNames Cache names string.
      * @param cacheArgs Cache args.
      */
     private void parseCacheNames(String cacheNames, CacheArguments cacheArgs) {
+        cacheArgs.caches(parseCacheNames(cacheNames));
+    }
+
+    /**
+     * @param cacheNames Cache names arg.
+     * @param cacheArgs Cache args.
+     */
+    private void parseExcludeCacheNames(String cacheNames, CacheArguments cacheArgs) {
+        cacheArgs.excludeCaches(parseCacheNames(cacheNames));
+    }
+
+    /**
+     * @param cacheNames Cache names string.
+     */
+    private Set<String> parseCacheNames(String cacheNames) {
         String[] cacheNamesArr = cacheNames.split(",");
+
         Set<String> cacheNamesSet = new HashSet<>();
 
         for (String cacheName : cacheNamesArr) {
             if (F.isEmpty(cacheName))
                 throw new IllegalArgumentException("Non-empty cache names expected.");
 
+            try {
+                Pattern.compile(cacheName);
+            }
+            catch (PatternSyntaxException e) {
+                throw new RuntimeException(format("Invalid cache name regexp '%s': %s", cacheName, e.getMessage()));
+            }
+
             cacheNamesSet.add(cacheName.trim());
         }
 
-        cacheArgs.caches(cacheNamesSet);
+        return cacheNamesSet;
     }
 
     /**
@@ -2114,6 +2797,8 @@ public class CommandHandler {
 
         boolean end = false;
 
+        TxVerboseId txVerboseId = null;
+
         do {
             String str = peekNextArg();
 
@@ -2125,12 +2810,13 @@ public class CommandHandler {
                     nextArg("");
 
                     limit = (int)nextLongArg(TX_LIMIT);
+
                     break;
 
                 case TX_ORDER:
                     nextArg("");
 
-                    sortOrder = VisorTxSortOrder.fromString(nextArg(TX_ORDER));
+                    sortOrder = VisorTxSortOrder.valueOf(nextArg(TX_ORDER).toUpperCase());
 
                     break;
 
@@ -2138,30 +2824,35 @@ public class CommandHandler {
                     nextArg("");
 
                     proj = VisorTxProjection.SERVER;
+
                     break;
 
                 case TX_CLIENTS:
                     nextArg("");
 
                     proj = VisorTxProjection.CLIENT;
+
                     break;
 
                 case TX_NODES:
                     nextArg("");
 
                     consistentIds = getConsistentIds(nextArg(TX_NODES));
+
                     break;
 
                 case TX_DURATION:
                     nextArg("");
 
                     duration = nextLongArg(TX_DURATION) * 1000L;
+
                     break;
 
                 case TX_SIZE:
                     nextArg("");
 
                     size = (int)nextLongArg(TX_SIZE);
+
                     break;
 
                 case TX_LABEL:
@@ -2182,12 +2873,23 @@ public class CommandHandler {
                     nextArg("");
 
                     xid = nextArg(TX_XID);
+
                     break;
 
                 case TX_KILL:
                     nextArg("");
 
                     op = VisorTxOperation.KILL;
+
+                    break;
+
+                case TX_INFO:
+                    nextArg("");
+
+                    op = VisorTxOperation.INFO;
+
+                    txVerboseId = TxVerboseId.fromString(nextArg(TX_INFO));
+
                     break;
 
                 default:
@@ -2199,7 +2901,8 @@ public class CommandHandler {
         if (proj != null && consistentIds != null)
             throw new IllegalArgumentException("Projection can't be used together with list of consistent ids.");
 
-        return new VisorTxTaskArg(op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder);
+        return new VisorTxTaskArg(
+            op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder, txVerboseId);
     }
 
     /**
@@ -2218,6 +2921,37 @@ public class CommandHandler {
         }
         catch (NumberFormatException ignored) {
             throw new IllegalArgumentException("Invalid value for " + lb + ": " + str);
+        }
+    }
+
+    /**
+     * Requests password from console with message.
+     *
+     * @param msg Message.
+     * @return Password.
+     */
+    private char[] requestPasswordFromConsole(String msg) {
+        if (console == null)
+            throw new UnsupportedOperationException("Failed to securely read password (console is unavailable): " + msg);
+        else
+            return console.readPassword(msg);
+    }
+
+    /**
+     * Requests user data from console with message.
+     *
+     * @param msg Message.
+     * @return Input user data.
+     */
+    private String requestDataFromConsole(String msg) {
+        if (console != null)
+            return console.readLine(msg);
+        else {
+            Scanner scanner = new Scanner(System.in);
+
+            log(msg);
+
+            return scanner.nextLine();
         }
     }
 
@@ -2332,6 +3066,104 @@ public class CommandHandler {
     }
 
     /**
+     * Split string into items.
+     *
+     * @param s String to process.
+     * @param delim Delimiter.
+     * @return List with items.
+     */
+    private List<String> split(String s, String delim) {
+        if (F.isEmpty(s))
+            return Collections.emptyList();
+
+        return Arrays.stream(s.split(delim))
+            .map(String::trim)
+            .filter(item -> !item.isEmpty())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @return Transaction command options.
+     */
+    private String[] getTxOptions() {
+        List<String> list = new ArrayList<>();
+
+        list.add(op(TX_XID, "XID"));
+        list.add(op(TX_DURATION, "SECONDS"));
+        list.add(op(TX_SIZE, "SIZE"));
+        list.add(op(TX_LABEL, "PATTERN_REGEX"));
+        list.add(op(or(TX_SERVERS, TX_CLIENTS)));
+        list.add(op(TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"));
+        list.add(op(TX_LIMIT, "NUMBER"));
+        list.add(op(TX_ORDER, or(VisorTxSortOrder.values())));
+        list.add(op(TX_KILL));
+        list.add(op(TX_INFO));
+        list.add(op(CMD_AUTO_CONFIRMATION));
+
+        return list.toArray(new String[list.size()]);
+    }
+
+    /** */
+    private void printHelp() {
+        final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
+
+        log("Control.sh is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:");
+        nl();
+
+        log(i(j(" ", UTILITY_NAME_WITH_COMMON_OPTIONS, op("command"), "<command_parameters>")));
+        nl();
+        nl();
+
+        log("This utility can do the following commands:");
+
+        usage(i("Activate cluster:"), ACTIVATE);
+        usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Print current cluster state:"), STATE);
+        usage(i("Print cluster baseline topology:"), BASELINE);
+        usage(i("Add nodes into baseline topology:"), BASELINE, BaselineCommand.ADD.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Remove nodes from baseline topology:"), BASELINE, BaselineCommand.REMOVE.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline topology:"), BASELINE, BaselineCommand.SET.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline topology based on version:"), BASELINE, BaselineCommand.VERSION.text() + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+        usage(i("Set baseline autoadjustment settings:"), BASELINE, BaselineCommand.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
+        usage(i("List or kill transactions:"), TX, getTxOptions());
+        usage(i("Print detailed information (topology and key lock ownership) about specific transaction:"),
+            TX, TX_INFO, or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
+                "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));
+
+        if (enableExperimental) {
+            usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
+            usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+        }
+
+        log(i("View caches information in a cluster. For more details type:"));
+        log(i(j(" ", UTILITY_NAME, CACHE, HELP), 2));
+        nl();
+
+        log("By default commands affecting the cluster require interactive confirmation.");
+        log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
+        nl();
+
+        log("Default values:");
+        log(i("HOST_OR_IP=" + DFLT_HOST, 2));
+        log(i("PORT=" + DFLT_PORT, 2));
+        log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
+        log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
+        log(i("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2));
+        log(i("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2));
+        log(i("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+        log(i("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2));
+
+        nl();
+
+        log("Exit codes:");
+        log(i(EXIT_CODE_OK + " - successful execution.", 2));
+        log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2));
+        log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2));
+        log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2));
+        log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2));
+    }
+
+    /**
      * Parse and execute command.
      *
      * @param rawArgs Arguments to parse and execute.
@@ -2341,48 +3173,12 @@ public class CommandHandler {
         log("Control utility [ver. " + ACK_VER_STR + "]");
         log(COPYRIGHT);
         log("User: " + System.getProperty("user.name"));
+        log("Time: " + LocalDateTime.now());
         log(DELIM);
 
         try {
             if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
-                log("This utility can do the following commands:");
-
-                usage(i("Activate cluster:"), ACTIVATE);
-                usage(i("Deactivate cluster:"), DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
-                usage(i("Print current cluster state:"), STATE);
-                usage(i("Print cluster baseline topology:"), BASELINE);
-                usage(i("Add nodes into baseline topology:"), BASELINE, BASELINE_ADD, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Remove nodes from baseline topology:"), BASELINE, BASELINE_REMOVE, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Set baseline topology:"), BASELINE, BASELINE_SET, "consistentId1[,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-                usage(i("Set baseline topology based on version:"), BASELINE, BASELINE_SET_VERSION + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
-                usage(i("List or kill transactions:"), TX, op(TX_XID, "XID"), op(TX_DURATION, "SECONDS"), op(TX_SIZE, "SIZE"), op(TX_LABEL, "PATTERN_REGEX"), op(or(TX_SERVERS, TX_CLIENTS)), op(TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"), op(TX_LIMIT, "NUMBER"), op(TX_ORDER, or("DURATION", "SIZE", CMD_TX_ORDER_START_TIME)), op(TX_KILL), op(CMD_AUTO_CONFIRMATION));
-
-                if (enableExperimental) {
-                    usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-                    usage(i("Delete unused archived wal segments on each node:"), WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN] ", op(CMD_AUTO_CONFIRMATION));
-                }
-
-                log(i("View caches information in a cluster. For more details type:"));
-                log(i(String.join(" ", UTILITY_NAME, CACHE.text(), HELP.text()), 2));
-                nl();
-
-                log("By default commands affecting the cluster require interactive confirmation.");
-                log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
-                nl();
-
-                log("Default values:");
-                log(i("HOST_OR_IP=" + DFLT_HOST, 2));
-                log(i("PORT=" + DFLT_PORT, 2));
-                log(i("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2));
-                log(i("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2));
-                nl();
-
-                log("Exit codes:");
-                log(i(EXIT_CODE_OK + " - successful execution.", 2));
-                log(i(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2));
-                log(i(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2));
-                log(i(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2));
-                log(i(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2));
+                printHelp();
 
                 return EXIT_CODE_OK;
             }
@@ -2409,50 +3205,136 @@ public class CommandHandler {
 
             clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
-            if (!F.isEmpty(args.user())) {
-                clientCfg.setSecurityCredentialsProvider(
-                    new SecurityCredentialsBasicProvider(new SecurityCredentials(args.user(), args.password())));
-            }
+            boolean tryConnectAgain = true;
 
-            try (GridClient client = GridClientFactory.start(clientCfg)) {
-                switch (args.command()) {
-                    case ACTIVATE:
-                        activate(client);
+            boolean suppliedAuth = !F.isEmpty(args.getUserName()) && !F.isEmpty(args.getPassword());
 
-                        break;
+            int tryConnectMaxCount = 3;
 
-                    case DEACTIVATE:
-                        deactivate(client);
+            while (tryConnectAgain) {
+                tryConnectAgain = false;
 
-                        break;
+                if (!F.isEmpty(args.getUserName())) {
+                    SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
 
-                    case STATE:
-                        state(client);
+                    if (securityCredential == null) {
+                        securityCredential = new SecurityCredentialsBasicProvider(
+                            new SecurityCredentials(args.getUserName(), args.getPassword()));
 
-                        break;
+                        clientCfg.setSecurityCredentialsProvider(securityCredential);
+                    }
+                    final SecurityCredentials credential = securityCredential.credentials();
+                    credential.setLogin(args.getUserName());
+                    credential.setPassword(args.getPassword());
+                }
 
-                    case BASELINE:
-                        baseline(client, args.baselineAction(), args.baselineArguments());
+                if (!F.isEmpty(args.sslKeyStorePath())) {
+                    GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
-                        break;
+                    List<String> sslProtocols = split(args.sslProtocol(), ",");
 
-                    case TX:
-                        transactions(client, args.transactionArguments());
+                    String sslProtocol = F.isEmpty(sslProtocols) ? DFLT_SSL_PROTOCOL : sslProtocols.get(0);
 
-                        break;
+                    factory.setProtocol(sslProtocol);
+                    factory.setKeyAlgorithm(args.sslKeyAlgorithm());
 
-                    case CACHE:
-                        cache(client, args.cacheArgs());
+                    if (sslProtocols.size() > 1)
+                        factory.setProtocols(sslProtocols);
 
-                        break;
+                    factory.setCipherSuites(split(args.getSslCipherSuites(), ","));
 
-                    case WAL:
-                        wal(client, args.walAction(), args.walArguments());
+                    factory.setKeyStoreFilePath(args.sslKeyStorePath());
 
-                        break;
+                    if (args.sslKeyStorePassword() != null)
+                        factory.setKeyStorePassword(args.sslKeyStorePassword());
+                    else
+                        factory.setKeyStorePassword(requestPasswordFromConsole("SSL keystore password: "));
+
+                    factory.setKeyStoreType(args.sslKeyStoreType());
+
+                    if (F.isEmpty(args.sslTrustStorePath()))
+                        factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
+                    else {
+                        factory.setTrustStoreFilePath(args.sslTrustStorePath());
+
+                        if (args.sslTrustStorePassword() != null)
+                            factory.setTrustStorePassword(args.sslTrustStorePassword());
+                        else
+                            factory.setTrustStorePassword(requestPasswordFromConsole("SSL truststore password: "));
+
+                        factory.setTrustStoreType(args.sslTrustStoreType());
+                    }
+
+                    clientCfg.setSslContextFactory(factory);
+                }
+
+                try (GridClient client = GridClientFactory.start(clientCfg)) {
+                    // If connection is unsuccessful, fail before doing any operations:
+                    if (!client.connected())
+                        client.throwLastError();
+
+                    switch (args.command()) {
+                        case ACTIVATE:
+                            activate(client);
+
+                            break;
+
+                        case DEACTIVATE:
+                            deactivate(client);
+
+                            break;
+
+                        case STATE:
+                            state(client);
+
+                            break;
+
+                        case BASELINE:
+                            baseline(client, args.baselineArguments());
+
+                            break;
+
+                        case TX:
+                            transactions(client, args.transactionArguments());
+
+                            break;
+
+                        case CACHE:
+                            lastOperationRes = cache(client, args.cacheArgs());
+
+                            break;
+
+                        case WAL:
+                            wal(client, args.walAction(), args.walArguments());
+
+                            break;
+                    }
+                }
+                catch (Throwable e) {
+                    if (tryConnectMaxCount > 0 && isAuthError(e)) {
+                        log(suppliedAuth ?
+                            "Authentication error, please try again." : "This cluster requires authentication.");
+
+                        if (F.isEmpty(args.getUserName()))
+                            args.setUserName(requestDataFromConsole("user: "));
+
+                        args.setPassword(new String(requestPasswordFromConsole("password: ")));
+
+                        suppliedAuth = true;
+
+                        tryConnectAgain = true;
+
+                        tryConnectMaxCount--;
+                    }
+                    else {
+                        if (tryConnectMaxCount == 0)
+                            throw new GridClientAuthenticationException("Authentication error, maximum number of " +
+                                "retries exceeded");
+
+                        throw e;
+                    }
                 }
             }
-
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
@@ -2483,7 +3365,6 @@ public class CommandHandler {
      *
      * @return Last operation result;
      */
-    @SuppressWarnings("unchecked")
     public <T> T getLastOperationResult() {
         return (T)lastOperationRes;
     }

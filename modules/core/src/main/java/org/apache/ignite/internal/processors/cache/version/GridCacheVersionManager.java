@@ -60,7 +60,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     private volatile GridCacheVersion last;
 
     /** Data center ID. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private byte dataCenterId;
 
     /** */

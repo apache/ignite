@@ -47,11 +47,13 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFre
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
@@ -79,6 +81,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_1024() throws Exception {
         checkInsertDeleteSingleThreaded(1024);
     }
@@ -86,6 +89,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_2048() throws Exception {
         checkInsertDeleteSingleThreaded(2048);
     }
@@ -93,6 +97,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_4096() throws Exception {
         checkInsertDeleteSingleThreaded(4096);
     }
@@ -100,6 +105,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_8192() throws Exception {
         checkInsertDeleteSingleThreaded(8192);
     }
@@ -107,6 +113,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_16384() throws Exception {
         checkInsertDeleteSingleThreaded(16384);
     }
@@ -114,6 +121,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_1024() throws Exception {
         checkInsertDeleteMultiThreaded(1024);
     }
@@ -121,6 +129,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_2048() throws Exception {
         checkInsertDeleteMultiThreaded(2048);
     }
@@ -128,6 +137,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_4096() throws Exception {
         checkInsertDeleteMultiThreaded(4096);
     }
@@ -135,6 +145,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_8192() throws Exception {
         checkInsertDeleteMultiThreaded(8192);
     }
@@ -142,6 +153,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_16384() throws Exception {
         checkInsertDeleteMultiThreaded(16384);
     }
@@ -163,7 +175,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
             TestDataRow row = new TestDataRow(keySize, valSize);
 
-            list.insertDataRow(row);
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
             assertTrue(row.link() != 0L);
 
@@ -206,7 +218,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
                         TestDataRow row = new TestDataRow(keySize, valSize);
 
-                        list.insertDataRow(row);
+                        list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
                         assertTrue(row.link() != 0L);
 
@@ -224,7 +236,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
                                 TestDataRow rmvd = stored.remove(row.link);
 
                                 if (rmvd != null) {
-                                    list.removeDataRowByLink(row.link);
+                                    list.removeDataRowByLink(row.link, IoStatisticsHolderNoOp.INSTANCE);
 
                                     break;
                                 }
@@ -254,7 +266,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
             TestDataRow row = new TestDataRow(keySize, valSize);
 
-            list.insertDataRow(row);
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
             assertTrue(row.link() != 0L);
 
@@ -289,7 +301,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
                 TestDataRow row = new TestDataRow(keySize, valSize);
 
-                list.insertDataRow(row);
+                list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
                 assertTrue(row.link() != 0L);
 
@@ -307,7 +319,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
                     assertTrue(rmvd == row);
 
-                    list.removeDataRowByLink(row.link);
+                    list.removeDataRowByLink(row.link, IoStatisticsHolderNoOp.INSTANCE);
                 }
             }
         }

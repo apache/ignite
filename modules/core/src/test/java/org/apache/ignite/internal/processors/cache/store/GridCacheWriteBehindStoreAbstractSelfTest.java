@@ -123,7 +123,6 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
         final AtomicInteger operations = new AtomicInteger();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.
                 Set<Integer> set = new HashSet<>();

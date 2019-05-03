@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -81,7 +82,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 /**
  * Platform utility methods.
  */
-@SuppressWarnings({"UnusedDeclaration", "unchecked"})
 public class PlatformUtils {
     /** Node attribute: platform. */
     public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
@@ -620,7 +620,6 @@ public class PlatformUtils {
      * @param ex Error.
      * @param writer Writer.
      */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
         writer.writeObjectDetached(ex.getClass().getName());
 
@@ -731,7 +730,6 @@ public class PlatformUtils {
      * @param err Error.
      * @return Error data.
      */
-    @SuppressWarnings("UnusedDeclaration")
     public static byte[] errorData(Throwable err) {
         if (err instanceof PlatformExtendedException) {
             PlatformContext ctx = ((PlatformExtendedException)err).context();
@@ -850,7 +848,6 @@ public class PlatformUtils {
      *
      * @return Marshaller.
      */
-    @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         BinaryContext ctx =
             new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
@@ -1269,6 +1266,21 @@ public class PlatformUtils {
         }
 
         return attrs;
+    }
+
+    /**
+     * Write binary productVersion.
+     *
+     * @param out Writer.
+     * @param productVersion IgniteProductVersion.
+     */
+    public static void writeNodeVersion(BinaryRawWriterEx out, IgniteProductVersion productVersion) {
+        out.writeByte(productVersion.major());
+        out.writeByte(productVersion.minor());
+        out.writeByte(productVersion.maintenance());
+        out.writeString(productVersion.stage());
+        out.writeLong(productVersion.revisionTimestamp());
+        out.writeByteArray(productVersion.revisionHash());
     }
 
     /**

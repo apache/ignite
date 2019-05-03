@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.Test;
 
 /**
  * JDBC version mismatch test.
@@ -53,6 +54,7 @@ public class JdbcVersionMismatchSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersionMismatchJdbc() throws Exception {
         try (Connection conn1 = connect(); Connection conn2 = connect()) {
             conn1.setAutoCommit(false);

@@ -30,17 +30,20 @@ export default {
         gridHeight: '<?',
         tabName: '<?',
         tableTitle: '<?',
+        maxRowsToShow: '<?',
 
         // Input Events.
         items: '<',
         columnDefs: '<',
         categories: '<?',
+        singleSelect: '<?',
         oneWaySelection: '<?',
         rowIdentityKey: '@?',
         selectedRows: '<?',
         selectedRowsId: '<?',
 
         // Output events.
-        onSelectionChange: '&?'
+        onSelectionChange: '&?',
+        onApiRegistered: '&?'
     }
 };

@@ -34,16 +34,13 @@ import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.VectorizedViewMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.structures.Dataset;
 import org.apache.ignite.ml.structures.DatasetRow;
 import org.apache.ignite.ml.structures.FeatureMetadata;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -92,17 +89,7 @@ public class CollectionsTest {
 
         test(new KNNClassificationModel(null).withK(1), new KNNClassificationModel(null).withK(2));
 
-        LogRegressionMultiClassModel mdl = new LogRegressionMultiClassModel();
-        mdl.add(1, new LogisticRegressionModel(new DenseVector(), 1.0));
-        test(mdl, new LogRegressionMultiClassModel());
-
-        test(new LinearRegressionModel(null, 1.0), new LinearRegressionModel(null, 0.5));
-
-        SVMLinearMultiClassClassificationModel mdl1 = new SVMLinearMultiClassClassificationModel();
-        mdl1.add(1, new SVMLinearBinaryClassificationModel(new DenseVector(), 1.0));
-        test(mdl1, new SVMLinearMultiClassClassificationModel());
-
-        test(new SVMLinearBinaryClassificationModel(null, 1.0), new SVMLinearBinaryClassificationModel(null, 0.5));
+        test(new SVMLinearClassificationModel(null, 1.0), new SVMLinearClassificationModel(null, 0.5));
 
         test(new ANNClassificationModel(new LabeledVectorSet<>(), new ANNClassificationTrainer.CentroidStat()),
             new ANNClassificationModel(new LabeledVectorSet<>(1, 1, true), new ANNClassificationTrainer.CentroidStat()));

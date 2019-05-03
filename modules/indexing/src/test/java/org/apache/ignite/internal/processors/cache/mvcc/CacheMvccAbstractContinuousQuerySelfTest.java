@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryAbstractSelfTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
@@ -42,22 +44,29 @@ public abstract class CacheMvccAbstractContinuousQuerySelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testInternalKey() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    public void testExpired() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7311");
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7311")
+    @Test
+    @Override public void testExpired() throws Exception {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    public void testLoadCache() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7954");
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7954")
+    @Test
+    @Override public void testLoadCache() throws Exception {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    public void testEvents() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9321");
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9321")
+    @Test
+    @Override public void testEvents() throws Exception {
+        // No-op.
     }
 }

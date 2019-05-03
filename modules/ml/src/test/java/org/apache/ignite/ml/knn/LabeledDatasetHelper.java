@@ -17,12 +17,13 @@
 
 package org.apache.ignite.ml.knn;
 
+import org.apache.ignite.ml.structures.LabeledVectorSet;
+import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 
 /**
  * Base class for decision trees test.
@@ -35,7 +36,7 @@ public class LabeledDatasetHelper {
      * Loads labeled dataset from file with .txt extension.
      *
      * @param rsrcPath path to dataset.
-     * @return null if path is incorrect.
+     * @return Null if path is incorrect.
      */
     public static LabeledVectorSet loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
         try {

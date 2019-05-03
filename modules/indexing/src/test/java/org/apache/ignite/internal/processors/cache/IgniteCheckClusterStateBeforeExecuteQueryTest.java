@@ -24,10 +24,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
@@ -35,15 +33,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  *
  */
 public class IgniteCheckClusterStateBeforeExecuteQueryTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         DataStorageConfiguration pCfg = new DataStorageConfiguration();
 
@@ -73,6 +65,7 @@ public class IgniteCheckClusterStateBeforeExecuteQueryTest extends GridCommonAbs
     /**
      * @throws Exception On failed.
      */
+    @Test
     public void testDynamicSchemaChangesPersistence() throws Exception {
         final IgniteEx ig = startGrid(0);
 

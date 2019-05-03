@@ -19,12 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteTxSingleThreadedAbstractTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.log4j.Level;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -33,42 +28,19 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for replicated transactions.
  */
 public class GridCacheReplicatedTxSingleThreadedSelfTest extends IgniteTxSingleThreadedAbstractTest {
-    /** Cache debug flag. */
-    private static final boolean CACHE_DEBUG = false;
-
-    /** Log to file flag. */
-    private static final boolean LOG_TO_FILE = true;
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
+     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        c.getTransactionConfiguration().setTxSerializableEnabled(true);
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setEvictionPolicy(null);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setCacheMode(REPLICATED);
+        cfg.setCacheConfiguration(ccfg);
 
-        cc.setEvictionPolicy(null);
-
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-
-        c.setCacheConfiguration(cc);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
-
-        if (CACHE_DEBUG)
-            resetLog4j(Level.DEBUG, LOG_TO_FILE, GridCacheProcessor.class.getPackage().getName());
-
-        return c;
+        return cfg;
     }
 
     /** {@inheritDoc} */

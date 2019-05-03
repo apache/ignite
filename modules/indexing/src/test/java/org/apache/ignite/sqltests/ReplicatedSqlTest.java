@@ -19,6 +19,8 @@ package org.apache.ignite.sqltests;
 
 import java.util.Arrays;
 import java.util.List;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Includes all base sql test plus tests that make sense in replicated mode.
@@ -45,6 +47,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Checks distributed INNER JOIN of replicated and replicated tables.
      */
+    @Test
     public void testInnerDistributedJoinReplicatedReplicated() {
         checkInnerDistJoinWithReplicated(DEP_TAB);
     }
@@ -52,6 +55,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Checks distributed INNER JOIN of partitioned and replicated tables.
      */
+    @Test
     public void testInnerDistJoinPartitionedReplicated() {
         checkInnerDistJoinWithReplicated(DEP_PART_TAB);
     }
@@ -90,6 +94,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Checks distributed INNER JOIN of replicated and partitioned tables.
      */
+    @Test
     public void testMixedInnerDistJoinReplicatedPartitioned() {
         checkInnerDistJoinReplicatedWith(DEP_PART_TAB);
     }
@@ -129,6 +134,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Checks distributed LEFT JOIN of replicated and replicated tables.
      */
+    @Test
     public void testLeftDistributedJoinReplicatedReplicated() {
         checkLeftDistributedJoinWithReplicated(DEP_TAB);
     }
@@ -136,6 +142,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Checks distributed LEFT JOIN of partitioned and replicated tables.
      */
+    @Test
     public void testLeftDistributedJoinPartitionedReplicated() {
         setExplain(true);
         checkLeftDistributedJoinWithReplicated(DEP_PART_TAB);
@@ -144,9 +151,9 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Checks distributed LEFT JOIN of replicated and partitioned tables.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8732")
+    @Test
     public void testLeftDistributedJoinReplicatedPartitioned() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8732");
-
         checkLeftDistributedJoinReplicatedWith(DEP_PART_TAB);
     }
 
@@ -215,6 +222,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Checks distributed RIGHT JOIN of replicated and replicated tables.
      */
+    @Test
     public void testRightDistributedJoinReplicatedReplicated() {
         checkRightDistributedJoinWithReplicated(DEP_TAB);
     }
@@ -222,15 +230,16 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Checks distributed RIGHT JOIN of partitioned and replicated tables.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8732")
+    @Test
     public void testRightDistributedJoinPartitionedReplicated() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8732");
-
         checkRightDistributedJoinWithReplicated(DEP_PART_TAB);
     }
 
     /**
      * Checks distributed RIGHT JOIN of replicated and partitioned tables.
      */
+    @Test
     public void testRightDistributedJoinReplicatedPartitioned() {
         setExplain(true);
         checkRightDistributedJoinReplicatedWith(DEP_PART_TAB);
@@ -304,6 +313,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Check INNER JOIN with collocated data of replicated and partitioned tables.
      */
+    @Test
     public void testInnerJoinReplicatedPartitioned() {
         checkInnerJoinEmployeeDepartment(DEP_PART_TAB);
     }
@@ -311,6 +321,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Check INNER JOIN with collocated data of partitioned and replicated tables.
      */
+    @Test
     public void testInnerJoinPartitionedReplicated() {
         checkInnerJoinDepartmentEmployee(DEP_PART_TAB);
     }
@@ -318,15 +329,16 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Check LEFT JOIN with collocated data of replicated and partitioned tables.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8732")
+    @Test
     public void testLeftJoinReplicatedPartitioned() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8732");
-
         checkLeftJoinEmployeeDepartment(DEP_PART_TAB);
     }
 
     /**
      * Check LEFT JOIN with collocated data of partitioned and replicated tables.
      */
+    @Test
     public void testLeftJoinPartitionedReplicated() {
         checkLeftJoinDepartmentEmployee(DEP_PART_TAB);
     }
@@ -334,6 +346,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Check RIGHT JOIN with collocated data of replicated and partitioned tables.
      */
+    @Test
     public void testRightJoinReplicatedPartitioned() {
         checkRightJoinEmployeeDepartment(DEP_PART_TAB);
     }
@@ -341,9 +354,9 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Check RIGHT JOIN with collocated data of partitioned and replicated tables.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8732")
+    @Test
     public void testRightJoinPartitionedReplicated() {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8732");
-
         checkRightJoinDepartmentEmployee(DEP_PART_TAB);
     }
 }
