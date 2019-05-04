@@ -69,8 +69,6 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSc
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlFieldsQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheSqlQueryRequest;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_3_0;
-
 /**
  * Thin client message parser.
  */
@@ -352,15 +350,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_CACHE_DESTROY:
                 return new ClientCacheDestroyRequest(reader);
 
-            case OP_CACHE_NODE_PARTITIONS: {
-                if (ver.compareTo(VER_1_3_0) >= 0)
-                    break;
-
+            case OP_CACHE_NODE_PARTITIONS:
                 return new ClientCacheNodePartitionsRequest(reader);
-            }
-
-            case OP_CACHE_PARTITIONS:
-                return new ClientCachePartitionsRequest(reader);
 
             case OP_CACHE_PARTITIONS:
                 return new ClientCachePartitionsRequest(reader);
