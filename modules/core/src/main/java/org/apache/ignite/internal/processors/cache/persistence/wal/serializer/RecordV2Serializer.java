@@ -160,7 +160,8 @@ public class RecordV2Serializer implements RecordSerializer {
                 return new MarshalledRecord(recType, ptr, buf);
             }
             else {
-                WALRecord rec = dataSerializer.readRecord(recType, in);
+                WALRecord rec = dataSerializer.readRecord(recType, in, ptr.length() - REC_TYPE_SIZE -
+                    FILE_WAL_POINTER_SIZE - CRC_SIZE);
 
                 rec.position(ptr);
 
