@@ -439,8 +439,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         int minorVer = 1;
 
-        if (initiallyActive && persistenceEnabled()) {
+        if (initiallyActive) {
             ignite(0).cluster().active(true);
+
+            awaitPartitionMapExchange();
 
             minorVer++;
         }
@@ -1389,6 +1391,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param exp {@code True} if expect that cache is started on node.
      */
     void checkCache(Ignite node, String cacheName, boolean exp) throws IgniteCheckedException {
+        GridTestUtils.waitForCondition(
+            () -> ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture() != null,
+            1000
+        );
+
         ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture().get();
 
         ((IgniteEx)node).context().state().publicApiActiveState(true);
@@ -1406,7 +1413,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     final void checkNoCaches(int nodes) {
         for (int i = 0; i < nodes; i++) {
-            grid(i).context().state().publicApiActiveState(true);
+            assertFalse(grid(i).context().state().publicApiActiveState(true));
 
             GridCacheProcessor cache = ((IgniteEx)ignite(i)).context().cache();
 

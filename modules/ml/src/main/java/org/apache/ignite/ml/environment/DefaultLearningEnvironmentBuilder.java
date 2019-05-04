@@ -53,7 +53,7 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
         parallelismStgy = constant(NoParallelismStrategy.INSTANCE);
         loggingFactory = constant(NoOpLogger.factory());
         seed = constant(new Random().nextLong());
-        rngSupplier = constant(new Random());
+        rngSupplier = p -> new Random();
     }
 
     /** {@inheritDoc} */

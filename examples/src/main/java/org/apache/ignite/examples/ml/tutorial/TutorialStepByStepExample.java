@@ -34,6 +34,5 @@ public class TutorialStepByStepExample {
         Step_7_Split_train_test.main(args);
         Step_8_CV.main(args);
         Step_8_CV_with_Param_Grid.main(args);
-        Step_9_Go_to_LogReg.main(args);
     }
 }

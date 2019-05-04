@@ -23,7 +23,7 @@ export default class PageConfigureAdvancedController {
         { text: 'IGFS', sref: 'base.configuration.edit.advanced.igfs' }
     ];
 
-    menuItems: Array<{text: string, sref: string}>
+    menuItems: Array<{text: string, sref: string}>;
 
     $onInit() {
         this.menuItems = this.constructor.menuItems;

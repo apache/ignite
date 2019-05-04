@@ -147,6 +147,7 @@ import sidebar from './components/web-console-sidebar';
 import permanentNotifications from './components/permanent-notifications';
 import signupConfirmation from './components/page-signup-confirmation';
 import noDataCmp from './components/no-data';
+import globalProgressBar from './components/global-progress-line';
 
 import igniteServices from './services';
 
@@ -175,8 +176,6 @@ export default angular
         'ui.grid.saveState',
         'ui.grid.selection',
         'ui.router',
-        'ui.router.state.events',
-        'ui.carousel',
         // Base modules.
         'ignite-console.core',
         'ignite-console.ace',
@@ -249,7 +248,8 @@ export default angular
         permanentNotifications.name,
         timedRedirection.name,
         signupConfirmation.name,
-        noDataCmp.name
+        noDataCmp.name,
+        globalProgressBar.name
     ])
     .service('$exceptionHandler', $exceptionHandler)
     // Directives.
@@ -369,11 +369,11 @@ export default angular
         }
     ])
     .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
-    /**
-    * @param {ng.IRootScopeService} $root
-    * @param {ng.IHttpService} $http
-    * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
-    */
+        /**
+         * @param {ng.IRootScopeService} $root
+         * @param {ng.IHttpService} $http
+         * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
+         */
         ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
             $root.revertIdentity = () => {
                 $http.get('/api/v1/admin/revert/identity')
@@ -385,8 +385,8 @@ export default angular
         }
     ])
     .run(['IgniteIcon',
-    /**
-    * @param {import('./components/ignite-icon/service').default} IgniteIcon
-    */
+        /**
+         * @param {import('./components/ignite-icon/service').default} IgniteIcon
+         */
         (IgniteIcon) => IgniteIcon.registerIcons(icons)
     ]);

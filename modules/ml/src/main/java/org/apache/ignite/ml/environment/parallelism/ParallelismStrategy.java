@@ -17,9 +17,11 @@
 
 package org.apache.ignite.ml.environment.parallelism;
 
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.functions.IgniteSupplier;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
  * Specifies the behaviour of processes in ML-algorithms that can may be parallelized such as parallel learning in
@@ -54,4 +56,10 @@ public interface ParallelismStrategy {
             results.add(submit(task));
         return results;
     }
+
+    /** On default pool. */
+    public static IgniteFunction<Integer, Type> ON_DEFAULT_POOL = part -> Type.ON_DEFAULT_POOL;
+
+    /** No parallelism. */
+    public static IgniteFunction<Integer, Type> NO_PARALLELISM = part -> Type.NO_PARALLELISM;
 }

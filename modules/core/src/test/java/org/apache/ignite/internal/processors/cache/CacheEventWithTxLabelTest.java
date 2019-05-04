@@ -130,13 +130,6 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10270", MvccFeatureChecker.forcedMvcc());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * Check all cases for passing transaction label in cash event.
      *

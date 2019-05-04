@@ -67,12 +67,15 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
@@ -94,7 +97,7 @@ public class QueryUtils {
     public static final String DFLT_SCHEMA = "PUBLIC";
 
     /** Schema for system view. */
-    public static final String SCHEMA_SYS = "IGNITE";
+    public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE, false) ? "IGNITE" : "SYS";
 
     /** Schema for system view. */
     public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
@@ -1501,6 +1504,11 @@ public class QueryUtils {
 
             sqlState = IgniteQueryErrorCode.codeToSqlState(code);
         }
+        else if (e instanceof TransactionAlreadyCompletedException){
+            code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
         else {
             sqlState = SqlStateCode.INTERNAL_ERROR;
 
@@ -1538,6 +1546,35 @@ public class QueryUtils {
         String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
 
         return str.matches(regex);
+    }
+
+    /**
+     * Get field name by alias.
+     *
+     * @param entity Query entity.
+     * @param alias Filed's alias.
+     * @return Field name.
+     */
+    public static String fieldNameByAlias(QueryEntity entity, String alias) {
+        if (!F.isEmpty(entity.getAliases())) {
+            for (Map.Entry<String, String> aliasEntry : entity.getAliases().entrySet()) {
+                if (F.eq(aliasEntry.getValue(), alias))
+                    return aliasEntry.getKey();
+            }
+        }
+
+        return alias;
+    }
+
+    /**
+     * Remove field by alias.
+     *
+     * @param entity Query entity.
+     * @param alias Filed's alias.
+     * @return {@code true} if the field is removed. Otherwise returns {@code false}.
+     */
+    public static boolean removeField(QueryEntity entity, String alias) {
+        return entity.getFields().remove(fieldNameByAlias(entity, alias)) != null;
     }
 
     /**

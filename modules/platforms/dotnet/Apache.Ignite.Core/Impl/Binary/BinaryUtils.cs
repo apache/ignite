@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Ticks for Java epoch. */
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
 
-        /** Bindig flags for static search. */
+        /** Binding flags for static search. */
         private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** System marshaller. */
@@ -407,6 +407,26 @@ namespace Apache.Ignite.Core.Impl.Binary
             int low = stream.ReadInt();
 
             return new DateTime(JavaDateTicks + high * TimeSpan.TicksPerMillisecond + low / 100, DateTimeKind.Utc);
+        }
+
+        /// <summary>
+        /// Convert Java ticks to DateTime.
+        /// </summary>
+        /// <param name="javaTicks">Ticks.</param>
+        /// <returns>Resulting DateTime.</returns>
+        public static DateTime JavaTicksToDateTime(long javaTicks)
+        {
+            return new DateTime(JavaDateTicks + javaTicks * 1000, DateTimeKind.Utc);
+        }
+
+        /// <summary>
+        /// Convert DateTime struct to Java ticks
+        /// <param name="dateTime">DateTime to convert</param>
+        /// </summary>
+        /// <returns>Ticks count</returns>
+        public static long DateTimeToJavaTicks(DateTime dateTime)
+        {
+            return (dateTime.Ticks - JavaDateTicks) / 1000;
         }
 
         /// <summary>

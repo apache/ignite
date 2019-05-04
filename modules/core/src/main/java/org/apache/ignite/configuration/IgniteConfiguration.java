@@ -225,18 +225,6 @@ public class IgniteConfiguration {
     /** Default time interval between MVCC vacuum runs in milliseconds. */
     public static final long DFLT_MVCC_VACUUM_FREQUENCY = 5000;
 
-    /** Default of initial value of manual baseline control or auto adjusting baseline. */
-    public static final boolean DFLT_INIT_BASELINE_AUTO_ADJUST_ENABLED = false;
-
-    /**
-     * Initial value of time which we would wait before the actual topology change since last discovery event(node
-     * join/exit).
-     */
-    public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT = 0;
-
-    /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
-    public static final long DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT = 0;
-
     /** Default SQL query history size. */
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = 1000;
 
@@ -541,18 +529,6 @@ public class IgniteConfiguration {
 
     /** SQL schemas to be created on node start. */
     private String[] sqlSchemas;
-
-    /** Initial value of manual baseline control or auto adjusting baseline. */
-    private boolean initBaselineAutoAdjustEnabled = DFLT_INIT_BASELINE_AUTO_ADJUST_ENABLED;
-
-    /**
-     * Initial value of time which we would wait before the actual topology change since last discovery event(node
-     * join/exit).
-     */
-    private long initBaselineAutoAdjustTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_TIMEOUT;
-
-    /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
-    private long initBaselineAutoAdjustMaxTimeout = DFLT_INIT_BASELINE_AUTO_ADJUST_MAX_TIMEOUT;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -3220,59 +3196,6 @@ public class IgniteConfiguration {
         this.sqlSchemas = sqlSchemas;
 
         return this;
-    }
-
-    /**
-     * Gets initial value of manual baseline control or auto adjusting baseline. This value would be used only if it
-     * have not been changed earlier in real time.
-     *
-     * @return {@code true} if auto adjusting baseline enabled.
-     */
-    public boolean isInitBaselineAutoAdjustEnabled() {
-        return initBaselineAutoAdjustEnabled;
-    }
-
-    /**
-     * Sets initial value of manual baseline control or auto adjusting baseline.
-     */
-    public void setInitBaselineAutoAdjustEnabled(boolean initBaselineAutoAdjustEnabled) {
-        this.initBaselineAutoAdjustEnabled = initBaselineAutoAdjustEnabled;
-    }
-
-    /**
-     * Gets initial value of time which we would wait before the actual topology change. But it would be reset if new
-     * discovery event happened. (node join/exit). This value would be used only if it have not been changed earlier in
-     * real time.
-     *
-     * @return Timeout of wait the actual topology change.
-     */
-    public long getInitBaselineAutoAdjustTimeout() {
-        return initBaselineAutoAdjustTimeout;
-    }
-
-    /**
-     * Sets initial value of time which we would wait before the actual topology change.
-     */
-    public void setInitBaselineAutoAdjustTimeout(long initBaselineAutoAdjustTimeout) {
-        this.initBaselineAutoAdjustTimeout = initBaselineAutoAdjustTimeout;
-    }
-
-    /**
-     * Gets initial value of time which we would wait from the first discovery event in the chain. If we achieved it
-     * than we would change BLAT right away (no matter were another node join/exit happened or not). This value would be
-     * used only if it have not been changed earlier in real time.
-     *
-     * @return Timeout of wait the actual topology change.
-     */
-    public long getInitBaselineAutoAdjustMaxTimeout() {
-        return initBaselineAutoAdjustMaxTimeout;
-    }
-
-    /**
-     * Sets initial value of time which we would wait from the first discovery event in the chain.
-     */
-    public void setInitBaselineAutoAdjustMaxTimeout(long initBaselineAutoAdjustMaxTimeout) {
-        this.initBaselineAutoAdjustMaxTimeout = initBaselineAutoAdjustMaxTimeout;
     }
 
     /** {@inheritDoc} */

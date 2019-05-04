@@ -416,6 +416,36 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
+            public long GetSizeLong(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetSizeLong(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<long> GetSizeLongAsync(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetLocalSizeLong(params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
+            public long GetLocalSizeLong(int partition, params CachePeekMode[] modes)
+            {
+                throw new NotImplementedException();
+            }
+
             public IQueryCursor<ICacheEntry<int, int>> Query(QueryBase qry)
             {
                 throw new NotImplementedException();

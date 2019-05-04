@@ -47,4 +47,10 @@ public interface IgniteRebalanceIterator extends GridCloseableIterator<CacheData
      * @param partId Partition ID.
      */
     public void setPartitionMissing(int partId);
+
+    /**
+     * Return next element without moving iterator cursor to the next one.
+     * @return Next element or {@code Null} if there is no more elements.
+     */
+    public CacheDataRow peek();
 }

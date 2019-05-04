@@ -25,22 +25,28 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
- * Example that shows how to implement your own algorithm
- * (<a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient</a> descent trainer for linear regression)
- * which uses dataset as an underlying infrastructure.
+ * Example that shows how to implement your own algorithm (<a href="https://en.wikipedia.org/wiki/Gradient_descent">gradient</a>
+ * descent trainer for linear regression) which uses dataset as an underlying infrastructure.
  * <p>
  * Code in this example launches Ignite grid and fills the cache with simple test data.</p>
  * <p>
- * After that it creates an algorithm specific dataset to perform linear regression as described in more detail below.</p>
+ * After that it creates an algorithm specific dataset to perform linear regression as described in more detail
+ * below.</p>
  * <p>
  * Finally, this example trains linear regression model using gradient descent and outputs the result.</p>
  * <p>
@@ -52,13 +58,12 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  * {@link DatasetWrapper}) in a sequential manner.</p>
  * <p>
  * In this example we need to implement gradient descent. This is iterative method that involves calculation of gradient
- * on every step. In according with the common idea we define
- * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificDataset} - extended version of {@code Dataset} with
- * {@code gradient} method. As a result our gradient descent method looks like a simple loop where every iteration
- * includes call of the {@code gradient} method. In the example we want to keep iteration number as well for logging.
- * Iteration number cannot be recovered from the {@code upstream} data and we need to keep it in the custom
- * partition {@code context} which is represented by
- * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.</p>
+ * on every step. In according with the common idea we define {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificDataset}
+ * - extended version of {@code Dataset} with {@code gradient} method. As a result our gradient descent method looks
+ * like a simple loop where every iteration includes call of the {@code gradient} method. In the example we want to keep
+ * iteration number as well for logging. Iteration number cannot be recovered from the {@code upstream} data and we need
+ * to keep it in the custom partition {@code context} which is represented by {@link
+ * AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.</p>
  */
 public class AlgorithmSpecificDatasetExample {
     /** Run example. */
@@ -66,49 +71,62 @@ public class AlgorithmSpecificDatasetExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Algorithm Specific Dataset example started.");
 
-            IgniteCache<Integer, Person> persons = createCache(ignite);
+            IgniteCache<Integer, Vector> persons = null;
+            try {
+                persons = createCache(ignite);
 
-            // Creates a algorithm specific dataset to perform linear regression. Here we define the way features and
-            // labels are extracted, and partition data and context are created.
-            try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
-                ignite,
-                persons,
-                (env, upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
-                new SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext>(
-                    (k, v) -> VectorUtils.of(v.getAge()),
-                    (k, v) -> new double[] {v.getSalary()}
-                ).andThen((data, ctx) -> {
-                    double[] features = data.getFeatures();
-                    int rows = data.getRows();
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1);
 
-                    // Makes a copy of features to supplement it by columns with values equal to 1.0.
-                    double[] a = new double[features.length + rows];
 
-                    for (int i = 0; i < rows; i++)
-                        a[i] = 1.0;
+                IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
 
-                    System.arraycopy(features, 0, a, rows, features.length);
+                //NOTE: This class is part of Developer API and all lambdas should be loaded on server manually.
+                Preprocessor<Integer, Vector> preprocessor = new PatchedPreprocessor<>(func, vectorizer);
+                // Creates a algorithm specific dataset to perform linear regression. Here we define the way features and
+                // labels are extracted, and partition data and context are created.
+                SimpleLabeledDatasetDataBuilder<Integer, Vector, AlgorithmSpecificPartitionContext> builder =
+                    new SimpleLabeledDatasetDataBuilder<>(preprocessor);
 
-                    return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
-                })
-            ).wrap(AlgorithmSpecificDataset::new)) {
-                // Trains linear regression model using gradient descent.
-                double[] linearRegressionMdl = new double[2];
+                try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
+                    ignite,
+                    persons,
+                    (env, upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
+                    builder.andThen((data, ctx) -> {
+                        double[] features = data.getFeatures();
+                        int rows = data.getRows();
 
-                for (int i = 0; i < 1000; i++) {
-                    double[] gradient = dataset.gradient(linearRegressionMdl);
+                        // Makes a copy of features to supplement it by columns with values equal to 1.0.
+                        double[] a = new double[features.length + rows];
 
-                    if (BLAS.getInstance().dnrm2(gradient.length, gradient, 1) < 1e-4)
-                        break;
+                        for (int i = 0; i < rows; i++)
+                            a[i] = 1.0;
 
-                    for (int j = 0; j < gradient.length; j++)
-                        linearRegressionMdl[j] -= 0.1 / persons.size() * gradient[j];
+                        System.arraycopy(features, 0, a, rows, features.length);
+
+                        return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
+                    })
+                ).wrap(AlgorithmSpecificDataset::new)) {
+                    // Trains linear regression model using gradient descent.
+                    double[] linearRegressionMdl = new double[2];
+
+                    for (int i = 0; i < 1000; i++) {
+                        double[] gradient = dataset.gradient(linearRegressionMdl);
+
+                        if (BLAS.getInstance().dnrm2(gradient.length, gradient, 1) < 1e-4)
+                            break;
+
+                        for (int j = 0; j < gradient.length; j++)
+                            linearRegressionMdl[j] -= 0.1 / persons.size() * gradient[j];
+                    }
+
+                    System.out.println("Linear Regression Model: " + Arrays.toString(linearRegressionMdl));
                 }
 
-                System.out.println("Linear Regression Model: " + Arrays.toString(linearRegressionMdl));
+                System.out.println(">>> Algorithm Specific Dataset example completed.");
             }
-
-            System.out.println(">>> Algorithm Specific Dataset example completed.");
+            finally {
+                persons.destroy();
+            }
         }
     }
 
@@ -189,18 +207,18 @@ public class AlgorithmSpecificDatasetExample {
     }
 
     /** */
-    private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
-        CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+    private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
+        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
 
-        IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+        IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new Person("Mike", 1, 1));
-        persons.put(2, new Person("John", 2, 2));
-        persons.put(3, new Person("George", 3, 3));
-        persons.put(4, new Person("Karl", 4, 4));
+        persons.put(1, new DenseVector(new Serializable[]{"Mike", 42, 10000}));
+        persons.put(2, new DenseVector(new Serializable[]{"John", 32, 64000}));
+        persons.put(3, new DenseVector(new Serializable[]{"George", 53, 120000}));
+        persons.put(4, new DenseVector(new Serializable[]{"Karl", 24, 70000}));
 
         return persons;
     }

@@ -50,11 +50,6 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         grid(0).destroyCache(DEFAULT_CACHE_NAME);
 

@@ -99,6 +99,13 @@ public class HandshakeMessage implements Message {
         return nodeId;
     }
 
+    /**
+     * @return Message size in bytes.
+     */
+    public int getMessageSize() {
+        return MESSAGE_FULL_SIZE;
+    }
+
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.

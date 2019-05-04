@@ -20,6 +20,7 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
@@ -50,6 +51,9 @@ public class CommandArgFactory {
 
             case VALIDATE_INDEXES:
                 return ValidateIndexesCommandArg.values();
+
+            case FIND_AND_DELETE_GARBAGE:
+                return FindAndDeleteGarbageArg.values();
         }
 
         throw new IllegalArgumentException("Unknown cache command " + cmd);

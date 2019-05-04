@@ -21,7 +21,6 @@
 #include <stdint.h>
 
 #include <string>
-#include <set>
 
 namespace ignite
 {
@@ -88,7 +87,7 @@ namespace ignite
                  * Compare to another value.
                  *
                  * @param other Instance to compare to.
-                 * @return Zero if equeals, negative number if less and positive if more.
+                 * @return Zero if equals, negative number if less and positive if more.
                  */
                 int32_t Compare(const ProtocolVersion& other) const;
 
@@ -133,7 +132,7 @@ namespace ignite
                  *
                  * @param val1 First value.
                  * @param val2 Second value.
-                 * @return True if gretter.
+                 * @return True if greater.
                  */
                 friend bool operator>(const ProtocolVersion& val1, const ProtocolVersion& val2);
 
@@ -142,7 +141,7 @@ namespace ignite
                  *
                  * @param val1 First value.
                  * @param val2 Second value.
-                 * @return True if gretter or equal.
+                 * @return True if greater or equal.
                  */
                 friend bool operator>=(const ProtocolVersion& val1, const ProtocolVersion& val2);
 

@@ -26,8 +26,8 @@ import java.util.Objects;
 public class DistributedComparableProperty<T extends Comparable<T> & Serializable> extends DistributedProperty<T> {
 
     /** {@inheritDoc} */
-    DistributedComparableProperty(String name, T initVal) {
-        super(name, initVal);
+    DistributedComparableProperty(String name) {
+        super(name);
     }
 
     /** */

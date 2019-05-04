@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -71,6 +72,17 @@ public class OdbcUtils {
         String ptrn0 = removeQuotationMarksIfNeeded(ptrn.toUpperCase());
 
         return SqlListenerUtils.translateSqlWildcardsToRegex(ptrn0);
+    }
+
+    /**
+     * Prepare client's schema for processing.
+     * @param schema Schema.
+     * @return Prepared schema.
+     */
+    public static String prepareSchema(String schema) {
+        String schema0 = removeQuotationMarksIfNeeded(schema);
+
+        return F.isEmpty(schema0) ? QueryUtils.DFLT_SCHEMA : schema0;
     }
 
     /**

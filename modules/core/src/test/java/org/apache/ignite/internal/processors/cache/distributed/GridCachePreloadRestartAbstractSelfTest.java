@@ -195,7 +195,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      */
     @Test
     public void testDisabledPreloadRestart() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10261", MvccFeatureChecker.forcedMvcc());
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-11417", MvccFeatureChecker.forcedMvcc());
 
         preloadMode = NONE;
 

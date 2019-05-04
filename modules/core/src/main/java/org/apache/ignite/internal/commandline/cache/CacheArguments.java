@@ -33,6 +33,9 @@ public class CacheArguments {
     /** Caches. */
     private Set<String> caches;
 
+    /** Caches. */
+    private Set<String> groups;
+
     /** Exclude caches or groups. */
     private Set<String> excludeCaches;
 
@@ -76,10 +79,13 @@ public class CacheArguments {
     private boolean fullConfig;
 
     /** Cache filter. */
-    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+    private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.DEFAULT;
 
     /** Check CRC sum on idle verify. */
     private boolean idleCheckCrc;
+
+    /** Delete garbage flag. */
+    private boolean delete;
 
     /**
      * @return Gets filter of caches, which will by checked.
@@ -323,5 +329,33 @@ public class CacheArguments {
      */
     public void idleCheckCrc(boolean idleCheckCrc) {
         this.idleCheckCrc = idleCheckCrc;
+    }
+
+    /**
+     * @return Set of groups to run operation on.
+     */
+    public Set<String> groups() {
+        return groups;
+    }
+
+    /**
+     * @param groups Set of groups to run operation on.
+     */
+    public void groups(Set<String> groups) {
+        this.groups = groups;
+    }
+
+    /**
+     * @return Delete found garbage or not.
+     */
+    public boolean delete() {
+        return delete;
+    }
+
+    /**
+     * @param delete Delete found garbage or not.
+     */
+    public void delete(boolean delete) {
+        this.delete = delete;
     }
 }

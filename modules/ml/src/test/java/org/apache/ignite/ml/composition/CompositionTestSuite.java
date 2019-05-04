@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.composition;
 
+import org.apache.ignite.ml.composition.bagging.BaggingTest;
 import org.apache.ignite.ml.composition.boosting.GDBTrainerTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.MeanValuePredictionsAggregatorTest;
 import org.apache.ignite.ml.composition.predictionsaggregator.OnMajorityPredictionsAggregatorTest;

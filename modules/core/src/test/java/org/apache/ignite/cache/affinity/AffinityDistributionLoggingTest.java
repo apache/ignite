@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -60,27 +61,9 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /** Backups number. */
     private int backups = 0;
 
-    /** For storing original value of system property. */
-    private String tempProp;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        tempProp = System.getProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        if (tempProp != null)
-            System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, tempProp);
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
-
-        System.clearProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
 
         stopAllGrids();
     }
@@ -104,9 +87,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, value = "0")
     public void test2PartitionsIdealDistributionIsNotLogged() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0");
-
         nodes = 2;
         parts = 2;
         backups = 1;
@@ -120,9 +102,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, value = "0.0")
     public void test120PartitionsIdeadDistributionIsNotLogged() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
-
         nodes = 3;
         parts = 120;
         backups = 2;
@@ -136,9 +117,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, value = "50.0")
     public void test5PartitionsNotIdealDistributionIsLogged() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "50.0");
-
         nodes = 4;
         parts = 5;
         backups = 3;
@@ -152,9 +132,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, value = "0.0")
     public void test5PartitionsNotIdealDistributionSuppressedLoggingOnClientNode() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
-
         nodes = 4;
         parts = 5;
         backups = 3;
@@ -168,9 +147,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, value = "50.0")
     public void test7PartitionsNotIdealDistributionSuppressedLogging() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "50.0");
-
         nodes = 3;
         parts = 7;
         backups = 0;
@@ -184,9 +162,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, value = "65")
     public void test5PartitionsNotIdealDistributionSuppressedLogging() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "65");
-
         nodes = 4;
         parts = 5;
         backups = 3;

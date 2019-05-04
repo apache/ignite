@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.ACTUALIZE;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.CLUSTER_WIDE_UPDATE;
@@ -155,23 +154,20 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * Create and attach new long property.
      *
      * @param name Name of property.
-     * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    @Override public DistributedLongProperty registerLong(String name, Long initVal) {
-        return registerProperty(new DistributedLongProperty(name, initVal));
+    @Override public DistributedLongProperty registerLong(String name) {
+        return registerProperty(new DistributedLongProperty(name));
     }
 
     /**
      * Create and attach new boolean property.
      *
      * @param name Name of property.
-     * @param initVal Initial value of property.
      * @return Attached new property.
      */
-    @Override public DistributedBooleanProperty registerBoolean(String name,
-        Boolean initVal) {
-        return registerProperty(new DistributedBooleanProperty(name, initVal));
+    @Override public DistributedBooleanProperty registerBoolean(String name) {
+        return registerProperty(new DistributedBooleanProperty(name));
     }
 
     /**
@@ -240,8 +236,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
             log.error("Can not read value of property '" + prop.getName() + "'", e);
         }
 
-        if (readVal != null)
-            prop.localUpdate(readVal);
+        prop.localUpdate(readVal);
     }
 
     /**
@@ -253,8 +248,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      */
     private void doClusterWideUpdate(DistributedProperty prop) {
         prop.onReadyForUpdate(
-            (IgniteThrowableBiConsumer<String, Serializable>)(key, value) ->
-                distributedMetastorage.write(toMetaStorageKey(key), value)
+            (key, newValue) -> distributedMetastorage.writeAsync(toMetaStorageKey(key), newValue)
         );
     }
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -359,6 +358,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
                 return new ClientCacheNodePartitionsRequest(reader);
             }
+
+            case OP_CACHE_PARTITIONS:
+                return new ClientCachePartitionsRequest(reader);
 
             case OP_CACHE_PARTITIONS:
                 return new ClientCachePartitionsRequest(reader);

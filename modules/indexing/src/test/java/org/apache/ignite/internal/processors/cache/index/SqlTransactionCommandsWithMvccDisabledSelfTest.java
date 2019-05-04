@@ -36,14 +36,6 @@ public class SqlTransactionCommandsWithMvccDisabledSelfTest extends AbstractSche
             "atomicity=transactional\"");
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-
     /**
      * @throws Exception if failed.
      */

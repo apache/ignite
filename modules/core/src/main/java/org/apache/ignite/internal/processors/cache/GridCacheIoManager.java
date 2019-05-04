@@ -44,6 +44,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
@@ -590,7 +591,22 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 processMessage(nodeId, cacheMsg, c);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to process message [senderId=" + nodeId + ", messageType=" + cacheMsg.getClass() + ']', e);
+            String msgStr;
+
+            try {
+                msgStr = String.valueOf(cacheMsg);
+            }
+            catch (Throwable e0) {
+                String clsName = cacheMsg.getClass().getName();
+
+                U.error(log, "Failed to log message due to an error: " + clsName, e0);
+
+                msgStr = clsName + "(failed to log message)";
+            }
+
+            U.error(log, "Failed to process message [senderId=" + nodeId + ", msg=" + msgStr + ']', e);
+
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -1476,6 +1492,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         for (Iterator<ListenerKey> iter = msgHandlers.clsHandlers.keySet().iterator(); iter.hasNext(); ) {
             ListenerKey key = iter.next();
+
+            if (key.msgCls.equals(GridDhtAffinityAssignmentResponse.class))
+                continue;
 
             if (key.hndId == hndId)
                 iter.remove();

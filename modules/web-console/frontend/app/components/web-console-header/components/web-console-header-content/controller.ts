@@ -18,7 +18,8 @@
 import {StateService} from '@uirouter/angularjs';
 
 export default class WebConsoleHeaderContent {
-    static $inject = ['$rootScope', '$state']
+    static $inject = ['$rootScope', '$state'];
+
     constructor(
         private $rootScope: ng.IRootScopeService,
         private $state: StateService

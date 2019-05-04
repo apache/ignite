@@ -22,16 +22,23 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Session;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.LazyResult;
 import org.h2.result.ResultInterface;
@@ -65,12 +72,6 @@ class MapQueryResult {
     private final IgniteH2Indexing h2;
 
     /** */
-    private final ResultInterface res;
-
-    /** */
-    private final ResultSet rs;
-
-    /** */
     private final GridCacheContext<?, ?> cctx;
 
     /** */
@@ -80,13 +81,16 @@ class MapQueryResult {
     private final UUID qrySrcNodeId;
 
     /** */
-    private final int cols;
+    private volatile Result res;
+
+    /** */
+    private final IgniteLogger log;
+
+    /** */
+    private final Object[] params;
 
     /** */
     private int page;
-
-    /** */
-    private final int rowCnt;
 
     /** */
     private boolean cpNeeded;
@@ -94,51 +98,40 @@ class MapQueryResult {
     /** */
     private volatile boolean closed;
 
-    /** */
-    private final Object[] params;
+    /** H2 session. */
+    private final Session ses;
 
-    /** Lazy worker. */
-    private final MapQueryLazyWorker lazyWorker;
+    /** Detached connection. Used for lazy execution to prevent connection sharing. */
+    private ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable detachedConn;
+
+    /** */
+    private final ReentrantLock lock = new ReentrantLock();
 
     /**
-     * @param rs Result set.
+     * @param h2 H2 indexing.
      * @param cctx Cache context.
      * @param qrySrcNodeId Query source node.
      * @param qry Query.
      * @param params Query params.
-     * @param lazyWorker Lazy worker.
+     * @param conn H2 connection wrapper.
+     * @param log Logger.
      */
-    MapQueryResult(IgniteH2Indexing h2, ResultSet rs, @Nullable GridCacheContext cctx,
-        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, @Nullable MapQueryLazyWorker lazyWorker) {
+    MapQueryResult(IgniteH2Indexing h2, @Nullable GridCacheContext cctx,
+        UUID qrySrcNodeId, GridCacheSqlQuery qry, Object[] params, H2ConnectionWrapper conn, IgniteLogger log) {
         this.h2 = h2;
         this.cctx = cctx;
         this.qry = qry;
         this.params = params;
         this.qrySrcNodeId = qrySrcNodeId;
         this.cpNeeded = F.eq(h2.kernalContext().localNodeId(), qrySrcNodeId);
-        this.lazyWorker = lazyWorker;
+        this.log = log;
 
-        if (rs != null) {
-            this.rs = rs;
+        ses = H2Utils.session(conn.connection());
+    }
 
-            try {
-                res = (ResultInterface)RESULT_FIELD.get(rs);
-            }
-            catch (IllegalAccessException e) {
-                throw new IllegalStateException(e); // Must not happen.
-            }
-
-            rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
-            cols = res.getVisibleColumnCount();
-        }
-        else {
-            this.rs = null;
-            this.res = null;
-            this.cols = -1;
-            this.rowCnt = -1;
-
-            closed = true;
-        }
+    /** */
+    void openResult(ResultSet rs) {
+        res = new Result(rs);
     }
 
     /**
@@ -152,14 +145,18 @@ class MapQueryResult {
      * @return Row count.
      */
     int rowCount() {
-        return rowCnt;
+        assert res != null;
+
+        return res.rowCnt;
     }
 
     /**
      * @return Column ocunt.
      */
     int columnCount() {
-        return cols;
+        assert res != null;
+
+        return res.cols;
     }
 
     /**
@@ -175,11 +172,13 @@ class MapQueryResult {
      * @param dataPageScanEnabled If data page scan is enabled.
      * @return {@code true} If there are no more rows available.
      */
-    synchronized boolean fetchNextPage(List<Value[]> rows, int pageSize, Boolean dataPageScanEnabled) {
-        assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
+    boolean fetchNextPage(List<Value[]> rows, int pageSize, Boolean dataPageScanEnabled) {
+        assert lock.isHeldByCurrentThread();
 
         if (closed)
             return true;
+
+        assert res != null;
 
         boolean readEvt = cctx != null && cctx.name() != null && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
@@ -189,10 +188,10 @@ class MapQueryResult {
 
         try {
             for (int i = 0; i < pageSize; i++) {
-                if (!res.next())
+                if (!res.res.next())
                     return true;
 
-                Value[] row = res.currentRow();
+                Value[] row = res.res.currentRow();
 
                 if (cpNeeded) {
                     boolean copied = false;
@@ -241,10 +240,13 @@ class MapQueryResult {
                         row(row)));
                 }
 
-                rows.add(res.currentRow());
+                rows.add(res.res.currentRow());
             }
 
-            return !res.hasNext();
+            if (detachedConn == null && res.res.hasNext())
+                detachedConn = h2.connections().detachThreadConnection();
+
+            return !res.res.hasNext();
         }
         finally {
             CacheDataTree.setDataPageScanEnabled(false);
@@ -267,31 +269,101 @@ class MapQueryResult {
     /**
      * Close the result.
      */
-    public void close() {
-        if (lazyWorker != null && MapQueryLazyWorker.currentWorker() == null) {
-            lazyWorker.submit(new Runnable() {
-                @Override public void run() {
-                    close();
-                }
-            });
+    void close() {
+        assert lock.isHeldByCurrentThread();
 
-            lazyWorker.awaitStop();
-
+        if (closed)
             return;
+
+        closed = true;
+
+        if (res != null)
+            res.close();
+
+        if (detachedConn != null)
+            detachedConn.recycle();
+
+        detachedConn = null;
+    }
+
+    /** */
+    public void lock() {
+        if (!lock.isHeldByCurrentThread())
+            lock.lock();
+    }
+
+    /** */
+    public void lockTables() {
+        if (ses.isLazyQueryExecution() && !closed)
+            GridH2Table.readLockTables(ses);
+    }
+
+    /** */
+    public void unlock() {
+        if (lock.isHeldByCurrentThread())
+            lock.unlock();
+    }
+
+    /** */
+    public void unlockTables() {
+        if (ses.isLazyQueryExecution())
+            GridH2Table.unlockTables(ses);
+    }
+
+    /**
+     *
+     */
+    public void checkTablesVersions() {
+        if (ses.isLazyQueryExecution())
+            GridH2Table.checkTablesVersions(ses);
+    }
+
+    /** */
+    private class Result {
+        /** */
+        private final ResultInterface res;
+
+        /** */
+        private final ResultSet rs;
+
+        /** */
+        private final int cols;
+
+        /** */
+        private final int rowCnt;
+
+        /**
+         * Constructor.
+         *
+         * @param rs H2 result set.
+         */
+        Result(ResultSet rs) {
+            if (rs != null) {
+                this.rs = rs;
+
+                try {
+                    res = (ResultInterface)RESULT_FIELD.get(rs);
+                }
+                catch (IllegalAccessException e) {
+                    throw new IllegalStateException(e); // Must not happen.
+                }
+
+                rowCnt = (res instanceof LazyResult) ? -1 : res.getRowCount();
+                cols = res.getVisibleColumnCount();
+            }
+            else {
+                this.rs = null;
+                this.res = null;
+                this.cols = -1;
+                this.rowCnt = -1;
+
+                closed = true;
+            }
         }
 
-        synchronized (this) {
-            assert lazyWorker == null || lazyWorker == MapQueryLazyWorker.currentWorker();
-
-            if (closed)
-                return;
-
-            closed = true;
-
-            U.closeQuiet(rs);
-
-            if (lazyWorker != null)
-                lazyWorker.stop(false);
+        /** */
+        void close() {
+            U.close(rs, log);
         }
     }
 }

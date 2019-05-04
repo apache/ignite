@@ -1041,6 +1041,22 @@ public class GridNioServer<T> {
         clientWorkers.get(balanceIdx).offer(req);
     }
 
+    /**
+     * Stop polling for write availability if write queue is empty.
+     */
+    private void stopPollingForWrite(SelectionKey key, GridSelectorNioSessionImpl ses) {
+        if (ses.procWrite.get()) {
+            ses.procWrite.set(false);
+
+            if (ses.writeQueue().isEmpty()) {
+                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
+                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+            }
+            else
+                ses.procWrite.set(true);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNioServer.class, this);
@@ -1076,11 +1092,11 @@ public class GridNioServer<T> {
         }
 
         /**
-        * Processes read-available event on the key.
-        *
-        * @param key Key that is ready to be read.
-        * @throws IOException If key read failed.
-        */
+         * Processes read-available event on the key.
+         *
+         * @param key Key that is ready to be read.
+         * @throws IOException If key read failed.
+         */
         @Override protected void processRead(SelectionKey key) throws IOException {
             if (skipRead) {
                 try {
@@ -1144,11 +1160,11 @@ public class GridNioServer<T> {
         }
 
         /**
-        * Processes write-ready event on the key.
-        *
-        * @param key Key that is ready to be written.
-        * @throws IOException If write failed.
-        */
+         * Processes write-ready event on the key.
+         *
+         * @param key Key that is ready to be written.
+         * @throws IOException If write failed.
+         */
         @Override protected void processWrite(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
@@ -1165,16 +1181,7 @@ public class GridNioServer<T> {
                     req = ses.pollFuture();
 
                     if (req == null) {
-                        if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
-
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
-                            else
-                                ses.procWrite.set(true);
-                        }
+                        stopPollingForWrite(key, ses);
 
                         break;
                     }
@@ -1356,10 +1363,14 @@ public class GridNioServer<T> {
             boolean handshakeFinished = sslFilter.lock(ses);
 
             try {
-                writeSslSystem(ses, sockCh);
+                boolean writeFinished = writeSslSystem(ses, sockCh);
 
-                if (!handshakeFinished)
+                if (!handshakeFinished) {
+                    if (writeFinished)
+                        stopPollingForWrite(key, ses);
+
                     return;
+                }
 
                 ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
 
@@ -1399,16 +1410,7 @@ public class GridNioServer<T> {
                             req = ses.pollFuture();
 
                             if (req == null && buf.position() == 0) {
-                                if (ses.procWrite.get()) {
-                                    ses.procWrite.set(false);
-
-                                    if (ses.writeQueue().isEmpty()) {
-                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                                    }
-                                    else
-                                        ses.procWrite.set(true);
-                                }
+                                stopPollingForWrite(key, ses);
 
                                 break;
                             }
@@ -1421,7 +1423,7 @@ public class GridNioServer<T> {
                     List<SessionWriteRequest> pendingRequests = new ArrayList<>(2);
 
                     if (req != null) {
-                        msg = (Message) req.message();
+                        msg = (Message)req.message();
 
                         assert msg != null;
 
@@ -1448,7 +1450,7 @@ public class GridNioServer<T> {
                         if (req == null)
                             break;
 
-                        msg = (Message) req.message();
+                        msg = (Message)req.message();
 
                         assert msg != null;
 
@@ -1535,8 +1537,10 @@ public class GridNioServer<T> {
          * @param ses NIO session.
          * @param sockCh Socket channel.
          * @throws IOException If failed.
+         *
+         * @return {@code True} if there's nothing else to write (last buffer is written and queue is empty).
          */
-        private void writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
+        private boolean writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
             throws IOException {
             ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
 
@@ -1555,8 +1559,10 @@ public class GridNioServer<T> {
                 if (!buf.hasRemaining())
                     queue.poll();
                 else
-                    break;
+                    return false;
             }
+
+            return true;
         }
 
         /**
@@ -1608,16 +1614,7 @@ public class GridNioServer<T> {
                     req = ses.pollFuture();
 
                     if (req == null && buf.position() == 0) {
-                        if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
-
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
-                            else
-                                ses.procWrite.set(true);
-                        }
+                        stopPollingForWrite(key, ses);
 
                         return;
                     }
@@ -1717,6 +1714,7 @@ public class GridNioServer<T> {
 
     /**
      * Notifies SessionWriteRequests and it's messages when requests were actually written.
+     *
      * @param ses GridNioSession.
      * @param requests SessionWriteRequests.
      */
@@ -2118,7 +2116,7 @@ public class GridNioServer<T> {
                                 StringBuilder sb = new StringBuilder();
 
                                 try {
-                                    dumpStats(sb, p, p!= null);
+                                    dumpStats(sb, p, p != null);
                                 }
                                 finally {
                                     req.onDone(sb.toString());
@@ -2380,7 +2378,7 @@ public class GridNioServer<T> {
          * @throws ClosedByInterruptException If this thread was interrupted while reading data.
          */
         private void processSelectedKeysOptimized(SelectionKey[] keys) throws ClosedByInterruptException {
-            for (int i = 0; ; i ++) {
+            for (int i = 0; ; i++) {
                 final SelectionKey key = keys[i];
 
                 if (key == null)
@@ -2544,7 +2542,7 @@ public class GridNioServer<T> {
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    close(ses,  e);
+                    close(ses, e);
                 }
             }
         }
@@ -3003,7 +3001,7 @@ public class GridNioServer<T> {
             if (log.isDebugEnabled())
                 log.debug("Processing keys in accept worker: " + keys.size());
 
-            for (Iterator<SelectionKey> iter = keys.iterator(); iter.hasNext();) {
+            for (Iterator<SelectionKey> iter = keys.iterator(); iter.hasNext(); ) {
                 SelectionKey key = iter.next();
 
                 iter.remove();
@@ -3530,7 +3528,8 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+        @Override public void onExceptionCaught(GridNioSession ses,
+            IgniteCheckedException ex) throws IgniteCheckedException {
             proceedExceptionCaught(ses, ex);
         }
 

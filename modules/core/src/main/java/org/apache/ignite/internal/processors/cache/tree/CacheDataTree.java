@@ -145,8 +145,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         Object x
     ) throws IgniteCheckedException {
         // If there is a group of caches, lower and upper bounds will not be null here.
-        if (lower == null && upper == null && grp.persistenceEnabled() && dataPageScanEnabled.get() &&
-            (c == null || c instanceof MvccDataPageClosure))
+        if (lower == null
+                && upper == null
+                && grp.persistenceEnabled()
+                && dataPageScanEnabled.get()
+                && (c == null || c instanceof MvccDataPageClosure))
             return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 
         lastFindWithDataPageScan = FALSE;
@@ -330,7 +333,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<CacheSearchRow> iox, long pageAddr, int idx, CacheSearchRow row)
         throws IgniteCheckedException {
-        assert !grp.mvccEnabled() || row.mvccCoordinatorVersion() != 0
+        assert !grp.mvccEnabled() || row.mvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA
             || (row.getClass() == SearchRow.class && row.key() == null) : row;
 
         RowLinkIO io = (RowLinkIO)iox;

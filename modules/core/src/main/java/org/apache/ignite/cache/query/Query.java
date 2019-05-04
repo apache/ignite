@@ -31,8 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <ul>
  * <li><b>SQL Fields query.</b>Provides SQL way with full syntax to access cache data.
  * See {@link SqlFieldsQuery} for details.</li>
- * <li><b>SQL query.</b> Provides SQL way with simplified syntax to access cache data.
- *  See {@link SqlQuery} for details.</li>
  * <li><b>Full-text query.</b> Uses full-text search engine based on Apache Lucene engine.
  * See {@link TextQuery} for details.</li>
  * <li><b>Scan query.</b> Provides effective and flexible way to full cache\partition scan.

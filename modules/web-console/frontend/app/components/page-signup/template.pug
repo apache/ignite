@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+global-progress-line(is-loading='$ctrl.isLoading')
+
 h3.public-page__title Don't Have An Account?
 form(name='$ctrl.form' novalidate ng-submit='$ctrl.signup()')
     form-signup(
@@ -24,6 +26,7 @@ form(name='$ctrl.form' novalidate ng-submit='$ctrl.signup()')
     footer.full-width.form-footer
         button.btn-ignite.btn-ignite--primary(
             type='submit'
+            ng-disabled='$ctrl.isLoading'
         ) Sign Up
 footer.page-signup__has-account-message
     | Already have an account? #[a(ui-sref='signin') Sign in here]

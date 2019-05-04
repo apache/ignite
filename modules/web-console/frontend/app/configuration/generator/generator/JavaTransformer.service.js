@@ -17,6 +17,8 @@
 
 import {nonEmpty} from 'app/utils/lodashMixins';
 
+import { Bean } from './Beans';
+
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
 import VersionService from 'app/services/Version.service';
@@ -316,6 +318,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                     sb.emptyLine();
 
                     break;
+
                 default:
                     if (this._isBean(arg.clsName) && arg.value.isComplex()) {
                         this.constructBean(sb, arg.value, vars, limitLines);
@@ -383,6 +386,12 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
     static _toObject(clsName, val) {
         const items = _.isArray(val) ? val : [val];
 
+        if (clsName === 'EVENTS') {
+            const lastIdx = items.length - 1;
+
+            return [..._.map(items, (v, idx) => (idx === 0 ? 'new int[] {' : ' ') + v.label + (lastIdx === idx ? '}' : ''))];
+        }
+
         return _.map(items, (item) => {
             if (_.isNil(item))
                 return 'null';
@@ -400,6 +409,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 case 'java.lang.String':
                     return `"${item.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
                 case 'PATH':
+                case 'PATH_ARRAY':
                     return `"${item.replace(/\\/g, '\\\\')}"`;
                 case 'java.lang.Class':
                     return `${this.javaTypes.shortClassName(item)}.class`;
@@ -412,7 +422,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 case 'PROPERTY_INT':
                     return `Integer.parseInt(props.getProperty("${item}"))`;
                 default:
-                    if (this._isBean(clsName)) {
+                    if (this._isBean(clsName) || val instanceof Bean) {
                         if (item.isComplex())
                             return item.id;
 
@@ -516,9 +526,14 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         const keyClsName = this.javaTypes.shortClassName(map.keyClsName);
         const valClsName = this.javaTypes.shortClassName(map.valClsName);
 
+        const genericTypeShort = map.keyClsGenericType ? this.javaTypes.shortClassName(map.keyClsGenericType) : '';
+        const keyClsGeneric = map.keyClsGenericType ?
+            map.isKeyClsGenericTypeExtended ? `<? extends ${genericTypeShort}>` : `<${genericTypeShort}>`
+            : '';
+
         const mapClsName = map.ordered ? 'LinkedHashMap' : 'HashMap';
 
-        const type = `${mapClsName}<${keyClsName}, ${valClsName}>`;
+        const type = `${mapClsName}<${keyClsName}${keyClsGeneric}, ${valClsName}>`;
 
         sb.append(`${this.varInit(type, map.id, vars)} = new ${mapClsName}<>();`);
 
@@ -542,7 +557,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                     sb.append(`${map.id}.put(${key}, ${this._toObject(map.valClsName, _.head(val))});`);
             }
             else
-                sb.append(`${map.id}.put(${key}, ${this._toObject(map.valClsName, val)});`);
+                sb.append(`${map.id}.put(${key}, ${this._toObject(map.valClsNameShow || map.valClsName, val)});`);
         });
     }
 
@@ -614,6 +629,13 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                         this._setArray(sb, id, prop, vars, limitLines);
 
                     break;
+                case 'PATH_ARRAY':
+                    if (prop.varArg)
+                        this._setVarArg(sb, id, prop, this._toObject(prop.clsName, prop.items), limitLines);
+                    else
+                        this._setArray(sb, id, prop, this._toObject(prop.clsName, prop.items), limitLines);
+
+                    break;
                 case 'COLLECTION':
                     const nonBean = !this._isBean(prop.typeClsName);
 
@@ -640,7 +662,10 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                         if (nonBean) {
                             _.forEach(this._toObject(colTypeClsName, prop.items), (item) => {
-                                sb.append(`${prop.id}.add("${item}");`);
+                                if (this.javaTypesNonEnum.nonEnum(prop.typeClsName))
+                                    sb.append(`${prop.id}.add("${item}");`);
+                                else
+                                    sb.append(`${prop.id}.add(${item});`);
 
                                 sb.emptyLine();
                             });
@@ -723,6 +748,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         imports.push(prop.ordered ? 'java.util.LinkedHashMap' : 'java.util.HashMap');
         imports.push(prop.keyClsName);
         imports.push(prop.valClsName);
+
+        if (prop.keyClsGenericType)
+            imports.push(prop.keyClsGenericType);
 
         return imports;
     }
@@ -838,6 +866,16 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                     });
 
                     break;
+
+                case 'MAP':
+                    if (prop.valClsNameShow === 'EVENTS') {
+                        _.forEach(prop.entries, (lnr) => {
+                            _.forEach(lnr.eventTypes, (type) => imports.push(`${type.class}.${type.label}`));
+                        });
+                    }
+
+                    break;
+
                 default:
                     // No-op.
             }

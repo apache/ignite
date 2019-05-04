@@ -21,8 +21,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
-import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -45,8 +43,6 @@ public class IgnitePdsDataRegionMetricsTxTest extends IgnitePdsDataRegionMetrics
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10662")
     @Test
     @Override public void testMemoryUsageMultipleNodes() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10583", MvccFeatureChecker.forcedMvcc());
-
         super.testMemoryUsageMultipleNodes();
     }
 }

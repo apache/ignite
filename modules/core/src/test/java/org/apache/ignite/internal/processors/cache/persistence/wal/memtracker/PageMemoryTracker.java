@@ -39,7 +39,6 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -254,6 +253,10 @@ public class PageMemoryTracker implements IgnitePlugin {
                         throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
                 }
 
+                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    /* No-op. */
+                }
+
                 @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
                     /* No-op. */
                 }
@@ -421,7 +424,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             page.lock();
 
             try {
-                PageUtils.putBytes(page.address(), 0, snapshot.pageData());
+                GridUnsafe.copyMemory(GridUnsafe.bufferAddress(snapshot.pageDataBuffer()), page.address(), pageSize);
 
                 page.changeHistory().clear();
 

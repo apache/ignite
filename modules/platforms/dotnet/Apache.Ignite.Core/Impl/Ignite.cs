@@ -92,7 +92,12 @@ namespace Apache.Ignite.Core.Impl
             DisableWal = 27,
             EnableWal = 28,
             IsWalEnabled = 29,
-            SetTxTimeoutOnPartitionMapExchange = 30
+            SetTxTimeoutOnPartitionMapExchange = 30,
+            GetNodeVersion = 31,
+            IsBaselineAutoAdjustmentEnabled = 32,
+            SetBaselineAutoAdjustmentEnabled = 33,
+            GetBaselineAutoAdjustTimeout = 34,
+            SetBaselineAutoAdjustTimeout = 35
         }
 
         /** */
@@ -234,6 +239,12 @@ namespace Apache.Ignite.Core.Impl
         public ICompute GetCompute()
         {
             return _prj.ForServers().GetCompute();
+        }
+
+        /** <inheritdoc /> */
+        public IgniteProductVersion GetVersion()
+        {
+            return Target.OutStream((int) Op.GetNodeVersion, r => new IgniteProductVersion(r));
         }
 
         /** <inheritdoc /> */
@@ -421,7 +432,6 @@ namespace Apache.Ignite.Core.Impl
         public ICache<TK, TV> GetCache<TK, TV>(string name)
         {
             IgniteArgumentCheck.NotNull(name, "name");
-
 
             return GetCache<TK, TV>(DoOutOpObject((int) Op.GetCache, w => w.WriteString(name)));
         }
@@ -840,10 +850,35 @@ namespace Apache.Ignite.Core.Impl
             return DoOutOp((int) Op.IsWalEnabled, w => w.WriteString(cacheName)) == True;
         }
 
+        /** <inheritdoc /> */
         public void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout)
         {
             DoOutOp((int) Op.SetTxTimeoutOnPartitionMapExchange, 
                 (BinaryWriter w) => w.WriteLong((long) timeout.TotalMilliseconds));
+        }
+
+        /** <inheritdoc /> */
+        public bool IsBaselineAutoAdjustEnabled()
+        {
+            return DoOutOp((int) Op.IsBaselineAutoAdjustmentEnabled, s => s.ReadBool()) == True;
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineAutoAdjustEnabledFlag(bool isBaselineAutoAdjustEnabled)
+        {
+            DoOutOp((int) Op.SetBaselineAutoAdjustmentEnabled, w => w.WriteBoolean(isBaselineAutoAdjustEnabled));
+        }
+
+        /** <inheritdoc /> */
+        public long GetBaselineAutoAdjustTimeout()
+        {
+            return DoOutOp((int) Op.GetBaselineAutoAdjustTimeout, s => s.ReadLong());
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineAutoAdjustTimeout(long baselineAutoAdjustTimeout)
+        {
+            DoOutInOp((int) Op.SetBaselineAutoAdjustTimeout, baselineAutoAdjustTimeout);
         }
 
         /** <inheritdoc /> */

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -37,12 +38,16 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
+import org.h2.table.Column;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.join.CollocationModel.isCollocated;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
@@ -109,13 +114,13 @@ public class GridSqlQuerySplitter {
     private final List<GridCacheSqlQuery> mapSqlQrys = new ArrayList<>();
 
     /** */
-    private Object[] params;
+    private int paramsCnt;
 
     /** */
     private final boolean collocatedGrpBy;
 
-    /** */
-    private final boolean distributedJoins;
+    /** Whether partition extraction is possible. */
+    private final boolean canExtractPartitions;
 
     /** */
     private final IdentityHashMap<GridSqlAst, GridSqlAlias> uniqueFromAliases = new IdentityHashMap<>();
@@ -124,18 +129,28 @@ public class GridSqlQuerySplitter {
     private final PartitionExtractor extractor;
 
     /**
-     * @param params Query parameters.
+     * @param paramsCnt Parameters count.
      * @param collocatedGrpBy If it is a collocated GROUP BY query.
      * @param distributedJoins Distributed joins flag.
+     * @param locSplit Local split flag.
      * @param extractor Partition extractor.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public GridSqlQuerySplitter(Object[] params, boolean collocatedGrpBy, boolean distributedJoins,
-        PartitionExtractor extractor) {
-        this.params = params;
+    public GridSqlQuerySplitter(
+        int paramsCnt,
+        boolean collocatedGrpBy,
+        boolean distributedJoins,
+        boolean locSplit,
+        PartitionExtractor extractor
+    ) {
+        this.paramsCnt = paramsCnt;
         this.collocatedGrpBy = collocatedGrpBy;
-        this.distributedJoins = distributedJoins;
         this.extractor = extractor;
+
+        // Partitions *CANNOT* be extracted if:
+        // 1) Distributed joins are enabled (https://issues.apache.org/jira/browse/IGNITE-10971)
+        // 2) This is a local query with split (https://issues.apache.org/jira/browse/IGNITE-11316)
+        canExtractPartitions = !distributedJoins && !locSplit;
     }
 
     /**
@@ -165,36 +180,42 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param conn Connection.
-     * @param prepared Prepared.
-     * @param params Parameters.
+     * @param qry Query.
+     * @param originalSql Original SQL query string.
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
-     * @param partExtractor Partition extractor.
+     * @param locSplit Whether this is a split for local query.
+     * @param idx Indexing.
+     * @param paramsCnt Parameters count.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
      */
     public static GridCacheTwoStepQuery split(
         Connection conn,
-        Prepared prepared,
-        Object[] params,
+        GridSqlQuery qry,
+        String originalSql,
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        PartitionExtractor partExtractor
+        boolean locSplit,
+        IgniteH2Indexing idx,
+        int paramsCnt
     ) throws SQLException, IgniteCheckedException {
         SplitterContext.set(distributedJoins);
 
         try {
             return split0(
                 conn,
-                prepared,
-                params,
+                qry,
+                originalSql,
                 collocatedGrpBy,
                 distributedJoins,
                 enforceJoinOrder,
-                partExtractor
+                locSplit,
+                idx,
+                paramsCnt
             );
         }
         finally {
@@ -204,40 +225,40 @@ public class GridSqlQuerySplitter {
 
     /**
      * @param conn Connection.
-     * @param prepared Prepared.
-     * @param params Parameters.
+     * @param qry Query.
+     * @param originalSql Original SQL query string.
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
      * @param enforceJoinOrder Enforce join order.
-     * @param partExtractor Partition extractor.
+     * @param locSplit Whether this is a split for local query.
+     * @param idx Indexing.
+     * @param paramsCnt Parameters count.
      * @return Two step query.
      * @throws SQLException If failed.
      * @throws IgniteCheckedException If failed.
      */
-    public static GridCacheTwoStepQuery split0(
+    private static GridCacheTwoStepQuery split0(
         Connection conn,
-        Prepared prepared,
-        Object[] params,
+        GridSqlQuery qry,
+        String originalSql,
         boolean collocatedGrpBy,
         boolean distributedJoins,
         boolean enforceJoinOrder,
-        PartitionExtractor partExtractor
+        boolean locSplit,
+        IgniteH2Indexing idx,
+        int paramsCnt
     ) throws SQLException, IgniteCheckedException {
-        if (params == null)
-            params = GridCacheSqlQuery.EMPTY_PARAMS;
-
-        // Here we will just do initial query parsing. Do not use optimized
-        // subqueries because we do not have unique FROM aliases yet.
-        GridSqlQuery qry = GridSqlQueryParser.parseQuery(prepared, false);
-
-        String originalSql = prepared.getSQL();
-
         final boolean explain = qry.explain();
 
         qry.explain(false);
 
-        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(params, collocatedGrpBy, distributedJoins,
-            partExtractor);
+        GridSqlQuerySplitter splitter = new GridSqlQuerySplitter(
+            paramsCnt,
+            collocatedGrpBy,
+            distributedJoins,
+            locSplit,
+            idx.partitionExtractor()
+        );
 
         // Normalization will generate unique aliases for all the table filters in FROM.
         // Also it will collect all tables and schemas from the query.
@@ -246,15 +267,10 @@ public class GridSqlQuerySplitter {
         // Here we will have correct normalized AST with optimized join order.
         // The distributedJoins parameter is ignored because it is not relevant for
         // the REDUCE query optimization.
-        qry = GridSqlQueryParser.parseQuery(
-            H2Utils.optimize(conn, qry.getSQL(), params, false, enforceJoinOrder),
-            true
-        );
-
-        boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+        qry = GridSqlQueryParser.parseQuery(prepare(conn, qry.getSQL(), false, enforceJoinOrder), true);
 
         // Do the actual query split. We will update the original query AST, need to be careful.
-        splitter.splitQuery(qry, forUpdate);
+        splitter.splitQuery(qry);
 
         assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
         assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
@@ -266,8 +282,7 @@ public class GridSqlQuerySplitter {
             boolean allCollocated = true;
 
             for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
-                Prepared prepared0 = H2Utils.optimize(conn, mapSqlQry.query(), mapSqlQry.parameters(params),
-                    true, enforceJoinOrder);
+                Prepared prepared0 = prepare(conn, mapSqlQry.query(), true, enforceJoinOrder);
 
                 allCollocated &= isCollocated((Query)prepared0);
 
@@ -279,31 +294,32 @@ public class GridSqlQuerySplitter {
                 distributedJoins = false;
         }
 
+        List<Integer> cacheIds = H2Utils.collectCacheIds(idx, null, splitter.tbls);
+        boolean mvccEnabled = H2Utils.collectMvccEnabled(idx, cacheIds);
+
+        H2Utils.checkQuery(idx, cacheIds, splitter.tbls);
+
         // Setup resulting two step query and return it.
-        GridCacheTwoStepQuery twoStepQry = new GridCacheTwoStepQuery(originalSql, splitter.tbls);
-
-        twoStepQry.reduceQuery(splitter.rdcSqlQry);
-
-        for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys)
-            twoStepQry.addMapQuery(mapSqlQry);
-
-        twoStepQry.skipMergeTable(splitter.skipMergeTbl);
-        twoStepQry.explain(explain);
-        twoStepQry.distributedJoins(distributedJoins);
-
-        // all map queries must have non-empty derivedPartitions to use this feature.
-        twoStepQry.derivedPartitions(splitter.extractor.mergeMapQueries(twoStepQry.mapQueries()));
-
-        twoStepQry.forUpdate(forUpdate);
-
-        return twoStepQry;
+        return new GridCacheTwoStepQuery(
+            originalSql,
+            paramsCnt,
+            splitter.tbls,
+            splitter.rdcSqlQry,
+            splitter.mapSqlQrys,
+            splitter.skipMergeTbl,
+            explain,
+            distributedJoins,
+            splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
+            cacheIds,
+            mvccEnabled,
+            locSplit
+        );
     }
 
     /**
      * @param qry Optimized and normalized query to split.
-     * @param forUpdate {@code SELECT FOR UPDATE} flag.
      */
-    private void splitQuery(GridSqlQuery qry, boolean forUpdate) throws IgniteCheckedException {
+    private void splitQuery(GridSqlQuery qry) throws IgniteCheckedException {
         // Create a fake parent AST element for the query to allow replacing the query in the parent by split.
         GridSqlSubquery fakeQryParent = new GridSqlSubquery(qry);
 
@@ -338,15 +354,6 @@ public class GridSqlQuerySplitter {
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryParent.subquery();
 
-        // Reset SELECT FOR UPDATE flag for reduce query.
-        if (forUpdate) {
-            assert qry instanceof GridSqlSelect;
-
-            GridSqlSelect sel = (GridSqlSelect)qry;
-
-            sel.forUpdate(false);
-        }
-
         String rdcQry = qry.getSQL();
 
         SplitterUtils.checkNoDataTablesInReduceQuery(qry, rdcQry);
@@ -356,7 +363,7 @@ public class GridSqlQuerySplitter {
 
         skipMergeTbl = qry.skipMergeTable();
 
-        setupParameters(rdcSqlQry, qry, params);
+        setupParameters(rdcSqlQry, qry, paramsCnt);
     }
 
     /**
@@ -1183,7 +1190,6 @@ public class GridSqlQuerySplitter {
 
         // -- HAVING
         if (havingCol >= 0 && !collocatedGrpBy) {
-            // TODO IGNITE-1140 - Find aggregate functions in HAVING clause or rewrite query to put all aggregates to SELECT clause.
             // We need to find HAVING column in reduce query.
             for (int i = visibleCols; i < rdcQry.allColumns(); i++) {
                 GridSqlAst c = rdcQry.column(i);
@@ -1206,7 +1212,6 @@ public class GridSqlQuerySplitter {
             // If collocatedGrpBy is true, then aggregateFound is always false.
             if (aggregateFound) // Ordering over aggregates does not make sense.
                 mapQry.clearSort(); // Otherwise map sort will be used by offset-limit.
-            // TODO IGNITE-1141 - Check if sorting is done over aggregated expression, otherwise we can sort and use offset-limit.
         }
 
         // -- LIMIT
@@ -1241,28 +1246,52 @@ public class GridSqlQuerySplitter {
         // Setup resulting map query.
         GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
 
-        setupParameters(map, mapQry, params);
+        setupParameters(map, mapQry, paramsCnt);
 
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
         map.partitioned(SplitterUtils.hasPartitionedTables(mapQry));
         map.hasSubQueries(SplitterUtils.hasSubQueries(mapQry));
 
-        if (map.isPartitioned() && !distributedJoins)
+        if (map.isPartitioned() && canExtractPartitions)
             map.derivedPartitions(extractor.extract(mapQry));
 
         mapSqlQrys.add(map);
     }
 
     /**
+     * Retrieves _KEY column from SELECT. This column is used for SELECT FOR UPDATE statements.
+     *
+     * @param sel Select statement.
+     * @return Key column alias.
+     */
+    public static GridSqlAlias keyColumn(GridSqlSelect sel) {
+        GridSqlAst from = sel.from();
+
+        GridSqlTable tbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+            ((GridSqlElement)from).child();
+
+        GridH2Table gridTbl = tbl.dataTable();
+
+        Column h2KeyCol = gridTbl.getColumn(QueryUtils.KEY_COL);
+
+        GridSqlColumn keyCol = new GridSqlColumn(h2KeyCol, tbl, h2KeyCol.getName());
+        keyCol.resultType(GridSqlType.fromColumn(h2KeyCol));
+
+        GridSqlAlias al = SplitterUtils.alias(QueryUtils.KEY_FIELD_NAME, keyCol);
+
+        return al;
+    }
+
+    /**
      * @param sqlQry Query.
      * @param qryAst Select AST.
-     * @param params All parameters.
+     * @param paramsCnt Number of parameters.
      */
-    private static void setupParameters(GridCacheSqlQuery sqlQry, GridSqlQuery qryAst, Object[] params) {
+    private static void setupParameters(GridCacheSqlQuery sqlQry, GridSqlQuery qryAst, int paramsCnt) {
         TreeSet<Integer> paramIdxs = new TreeSet<>();
 
-        SplitterUtils.findParamsQuery(qryAst, params, paramIdxs);
+        SplitterUtils.findParamsQuery(qryAst, paramsCnt, paramIdxs);
 
         int[] paramIdxsArr = new int[paramIdxs.size()];
 
@@ -1284,22 +1313,27 @@ public class GridSqlQuerySplitter {
 
         for (int i = 0; i < cols.size(); i++) {
             GridSqlAst col = cols.get(i);
-            GridSqlType t = col.resultType();
 
-            if (t == null)
-                throw new NullPointerException("Column type: " + col);
-
-            if (t == GridSqlType.UNKNOWN)
-                throw new IllegalStateException("Unknown type: " + col);
-
+            GridSqlAst colUnwrapped;
             String alias;
 
-            if (col instanceof GridSqlAlias)
-                alias = ((GridSqlAlias)col).alias();
-            else
-                alias = columnName(i);
+            if (col instanceof GridSqlAlias) {
+                colUnwrapped = col.child();
 
-            if (res.put(alias, t) != null)
+                alias = ((GridSqlAlias)col).alias();
+            }
+            else {
+                colUnwrapped = col;
+
+                alias = columnName(i);
+            }
+
+            GridSqlType type = colUnwrapped.resultType();
+
+            if (type == null)
+                throw new NullPointerException("Column type: " + col);
+
+            if (res.put(alias, type) != null)
                 throw new IllegalStateException("Alias already exists: " + alias);
         }
 
@@ -1717,5 +1751,23 @@ public class GridSqlQuerySplitter {
 
         // Replace in original expression aggregate with reduce aggregate.
         parentExpr.child(aggIdx, rdcAgg);
+    }
+
+    /**
+     * Get optimized prepared statement.
+     *
+     * @param c Connection.
+     * @param qry Parsed query.
+     * @param enforceJoinOrder Enforce join order.
+     * @return Optimized prepared command.
+     * @throws SQLException If failed.
+     */
+    public static Prepared prepare(Connection c, String qry, boolean distributedJoins,
+        boolean enforceJoinOrder) throws SQLException {
+        H2Utils.setupConnection(c, distributedJoins, enforceJoinOrder);
+
+        try (PreparedStatement s = c.prepareStatement(qry)) {
+            return GridSqlQueryParser.prepared(s);
+        }
     }
 }

@@ -47,21 +47,22 @@ export const reducer = (state = defaults, action, root) => {
                 : Object.assign({}, action.cluster, {
                     _id: -1,
                     space: defaultSpace(root),
-                    name: uniqueName('Cluster', [...root.list.clusters.values()])
+                    name: uniqueName('New cluster', [...root.list.clusters.values()], ({name, i}) => `${name} (${i})`)
                 });
-            const value = Object.assign({}, state, {
+
+            return Object.assign({}, state, {
                 clusterID: cluster._id,
                 cluster,
                 newClusterCaches: [],
                 oldClusterCaches: existingCaches(root.list.caches, cluster)
             });
-            return value;
         }
+
         case ADD_NEW_CACHE: {
             const cache = {
                 _id: action._id,
                 space: defaultSpace(root),
-                name: uniqueName('Cache', [...root.list.caches.values(), ...state.newClusterCaches]),
+                name: uniqueName('New cache', [...root.list.caches.values(), ...state.newClusterCaches], ({name, i}) => `${name} (${i})`),
                 cacheMode: 'PARTITIONED',
                 atomicityMode: 'ATOMIC',
                 readFromBackup: true,
@@ -71,14 +72,16 @@ export const reducer = (state = defaults, action, root) => {
                 cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}},
                 memoryPolicyName: 'default'
             };
-            const value = Object.assign({}, state, {
+
+            return Object.assign({}, state, {
                 newClusterCaches: [...state.newClusterCaches, cache]
             });
-            return value;
         }
+
         case REMOVE_CACHE: {
             const cache = action.cache;
-            const value = Object.assign({}, state, {
+
+            return Object.assign({}, state, {
                 newClusterCaches: isNewItem(cache)
                     ? state.newClusterCaches.filter((c) => c._id !== cache._id)
                     : state.newClusterCaches,
@@ -86,17 +89,20 @@ export const reducer = (state = defaults, action, root) => {
                     ? state.oldClusterCaches
                     : state.oldClusterCaches.filter((c) => c._id !== cache._id)
             });
-            return value;
         }
+
         case SET_SELECTED_CACHES: {
             const value = Object.assign({}, state, {
                 cluster: Object.assign({}, state.cluster, {
                     caches: [...action.cacheIDs.filter((id) => id)]
                 })
             });
+
             value.oldClusterCaches = existingCaches(root.list.caches, value.cluster);
+
             return value;
         }
+
         default:
             return state;
     }

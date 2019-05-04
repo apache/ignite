@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -38,6 +39,8 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * and allows convenient way of converting it to and from {@link DiscoveryDataBag} objects.
  */
 public class DiscoveryDataPacket implements Serializable {
+    /** Local file header signature(read as a little-endian number). */
+    private static int ZIP_HEADER_SIGNATURE = 0x04034b50;
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -79,15 +82,16 @@ public class DiscoveryDataPacket implements Serializable {
      * @param marsh Marsh.
      * @param log Logger.
      */
-    public void marshalGridNodeData(DiscoveryDataBag bag, UUID nodeId, Marshaller marsh, IgniteLogger log) {
-        marshalData(bag.commonData(), commonData, marsh, log);
+    public void marshalGridNodeData(DiscoveryDataBag bag, UUID nodeId, Marshaller marsh, boolean isCompressionEnabled,
+        int compressionLevel, IgniteLogger log) {
+        marshalData(bag.commonData(), commonData, marsh, isCompressionEnabled, compressionLevel, log);
 
         Map<Integer, Serializable> locNodeSpecificData = bag.localNodeSpecificData();
 
         if (locNodeSpecificData != null) {
             Map<Integer, byte[]> marshLocNodeSpecificData = U.newHashMap(locNodeSpecificData.size());
 
-            marshalData(locNodeSpecificData, marshLocNodeSpecificData, marsh, log);
+            marshalData(locNodeSpecificData, marshLocNodeSpecificData, marsh, isCompressionEnabled, compressionLevel, log);
 
             filterDuplicatedData(marshLocNodeSpecificData);
 
@@ -101,8 +105,21 @@ public class DiscoveryDataPacket implements Serializable {
      * @param marsh Marsh.
      * @param log Logger.
      */
-    public void marshalJoiningNodeData(DiscoveryDataBag bag, Marshaller marsh, IgniteLogger log) {
-        marshalData(bag.joiningNodeData(), joiningNodeData, marsh, log);
+    public void marshalJoiningNodeData(DiscoveryDataBag bag, Marshaller marsh, boolean isCompressionEnabled,
+        int compressionLevel, IgniteLogger log) {
+        marshalData(bag.joiningNodeData(), joiningNodeData, marsh, isCompressionEnabled, compressionLevel, log);
+    }
+
+    /**
+     * @return {@code true} if joining node data was transferred via network in zipped format.
+     */
+    public boolean isJoiningDataZipped(){
+        for (Map.Entry<Integer, byte[]> entry : joiningNodeData.entrySet()) {
+            if (isZipped(entry.getValue()))
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -112,18 +129,15 @@ public class DiscoveryDataPacket implements Serializable {
      * @param log Logger.
      */
     public DiscoveryDataBag unmarshalGridData(
-            Marshaller marsh,
-            ClassLoader clsLdr,
-            boolean clientNode,
-            IgniteLogger log
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
     ) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
-        if (commonData != null && !commonData.isEmpty()) {
-            Map<Integer, Serializable> unmarshCommonData = unmarshalData(commonData, marsh, clsLdr, clientNode, log);
-
-            dataBag.commonData(unmarshCommonData);
-        }
+        if (commonData != null && !commonData.isEmpty())
+            dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log));
 
         if (nodeSpecificData != null && !nodeSpecificData.isEmpty()) {
             Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = U.newLinkedHashMap(nodeSpecificData.size());
@@ -134,9 +148,10 @@ public class DiscoveryDataPacket implements Serializable {
                 if (nodeBinData == null || nodeBinData.isEmpty())
                     continue;
 
-                Map<Integer, Serializable> unmarshData = unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log);
-
-                unmarshNodeSpecData.put(nodeBinEntry.getKey(), unmarshData);
+                unmarshNodeSpecData.put(
+                    nodeBinEntry.getKey(),
+                    unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log)
+                );
             }
 
             dataBag.nodeSpecificData(unmarshNodeSpecData);
@@ -152,20 +167,15 @@ public class DiscoveryDataPacket implements Serializable {
      * @param log Logger.
      */
     public DiscoveryDataBag unmarshalJoiningNodeData(
-            Marshaller marsh,
-            ClassLoader clsLdr,
-            boolean clientNode,
-            IgniteLogger log
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
     ) {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            unmarshalledJoiningNodeData = unmarshalData(
-                    joiningNodeData,
-                    marsh,
-                    clsLdr,
-                    clientNode,
-                    log);
+            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log);
 
             dataBag.joiningNodeData(unmarshalledJoiningNodeData);
         }
@@ -267,29 +277,56 @@ public class DiscoveryDataPacket implements Serializable {
      * @param log Logger.
      */
     private Map<Integer, Serializable> unmarshalData(
-            Map<Integer, byte[]> src,
-            Marshaller marsh,
-            ClassLoader clsLdr,
-            boolean clientNode,
-            IgniteLogger log
+        Map<Integer, byte[]> src,
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
     ) {
         Map<Integer, Serializable> res = U.newHashMap(src.size());
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
             try {
-                Serializable compData = marsh.unmarshal(binEntry.getValue(), clsLdr);
+                Serializable compData = isZipped(binEntry.getValue()) ?
+                    U.unmarshalZip(marsh, binEntry.getValue(), clsLdr) :
+                    U.unmarshal(marsh, binEntry.getValue(), clsLdr);
                 res.put(binEntry.getKey(), compData);
             }
             catch (IgniteCheckedException e) {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
-                        X.hasCause(e, ClassNotFoundException.class) && clientNode)
+                    X.hasCause(e, ClassNotFoundException.class) && clientNode)
                     U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
-                else
-                    U.error(log, "Failed to unmarshal discovery data for component: "  + binEntry.getKey(), e);
+                else if (binEntry.getKey() < GridComponent.DiscoveryDataExchangeType.VALUES.length)
+                    U.error(log, "Failed to unmarshal discovery data for component: " + binEntry.getKey(), e);
+                else {
+                    U.warn(log, "Failed to unmarshal discovery data." +
+                        " Component " + binEntry.getKey() + " is not found.");
+                }
             }
         }
 
         return res;
+    }
+
+    /**
+     * @param value Value to check.
+     * @return {@code true} if value is zipped.
+     */
+    private boolean isZipped(byte[] value) {
+        return value != null && value.length > 3 && makeInt(value) == ZIP_HEADER_SIGNATURE;
+    }
+
+    /**
+     * Make int from first 4 bytes in little-endian byte order.
+     *
+     * @param b Source of bytes.
+     * @return Made int.
+     */
+    private static int makeInt(byte[] b) {
+        return (((b[3]) << 24) |
+            ((b[2] & 0xff) << 16) |
+            ((b[1] & 0xff) << 8) |
+            ((b[0] & 0xff)));
     }
 
     /**
@@ -302,6 +339,8 @@ public class DiscoveryDataPacket implements Serializable {
             Map<Integer, Serializable> src,
             Map<Integer, byte[]> target,
             Marshaller marsh,
+            boolean isCompressionEnabled,
+            int compressionLevel,
             IgniteLogger log
     ) {
         //may happen if nothing was collected from components,
@@ -311,11 +350,28 @@ public class DiscoveryDataPacket implements Serializable {
 
         for (Map.Entry<Integer, Serializable> entry : src.entrySet()) {
             try {
-                target.put(entry.getKey(), marsh.marshal(entry.getValue()));
+                target.put(entry.getKey(), isCompressionEnabled ?
+                    U.zip(U.marshal(marsh, entry.getValue()), compressionLevel) :
+                    U.marshal(marsh, entry.getValue()));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to marshal discovery data " +
                         "[comp=" + entry.getKey() + ", data=" + entry.getValue() + ']', e);
+            }
+        }
+    }
+
+    /**
+     * @param log Logger.
+     */
+    public void unzipData(IgniteLogger log) {
+        for (Map.Entry<Integer, byte[]> entry : joiningNodeData.entrySet()) {
+            try {
+                entry.setValue(U.unzip(entry.getValue()));
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to unzip discovery data " +
+                    "[comp=" + entry.getKey() + ']', e);
             }
         }
     }

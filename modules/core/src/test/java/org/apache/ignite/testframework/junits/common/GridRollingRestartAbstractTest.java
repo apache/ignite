@@ -35,7 +35,7 @@ import java.io.StringWriter;
  */
 public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractTest {
     /** Thread that shuts down and restarts Grid nodes for this test. */
-    protected static RollingRestartThread rollingRestartThread;
+    protected static volatile RollingRestartThread rollingRestartThread;
 
     /** Default predicate used to determine if a Grid node should be restarted. */
     protected final IgnitePredicate<Ignite> dfltRestartCheck = new IgnitePredicate<Ignite>() {

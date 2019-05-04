@@ -26,7 +26,7 @@ import {
     reducer
 } from './reducer';
 
-suite.skip('page-configure-basic component reducer', () => {
+suite('page-configure-basic component reducer', () => {
     test('Default state', () => {
         assert.deepEqual(reducer(void 0, {}), {
             clusterID: -1,
@@ -35,6 +35,7 @@ suite.skip('page-configure-basic component reducer', () => {
             oldClusterCaches: []
         });
     });
+
     test('SET_CLUSTER action', () => {
         const root = {
             list: {
@@ -43,6 +44,7 @@ suite.skip('page-configure-basic component reducer', () => {
                 spaces: new Map([[0, {}]])
             }
         };
+
         const defaultCluster = {
             _id: null,
             discovery: {
@@ -62,6 +64,7 @@ suite.skip('page-configure-basic component reducer', () => {
             },
             caches: []
         };
+
         assert.deepEqual(
             reducer(void 0, {type: SET_CLUSTER, _id: -1, cluster: defaultCluster}, root),
             {
@@ -76,6 +79,7 @@ suite.skip('page-configure-basic component reducer', () => {
             },
             'inits new cluster if _id is fake'
         );
+
         assert.deepEqual(
             reducer(void 0, {type: SET_CLUSTER, _id: 1}, root),
             {
@@ -87,6 +91,7 @@ suite.skip('page-configure-basic component reducer', () => {
             'inits new cluster if _id is real'
         );
     });
+
     test('ADD_NEW_CACHE action', () => {
         const state = {
             clusterID: -1,
@@ -94,12 +99,14 @@ suite.skip('page-configure-basic component reducer', () => {
             newClusterCaches: [{name: 'New cache (1)'}],
             oldClusterCaches: []
         };
+
         const root = {
             list: {
                 caches: new Map([[1, {name: 'New cache'}]]),
                 spaces: new Map([[1, {}]])
             }
         };
+
         const defaultCache = {
             _id: null,
             space: null,
@@ -113,6 +120,7 @@ suite.skip('page-configure-basic component reducer', () => {
             cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}},
             memoryPolicyName: 'default'
         };
+
         assert.deepEqual(
             reducer(state, {type: ADD_NEW_CACHE, _id: -1}, root),
             {
@@ -131,16 +139,19 @@ suite.skip('page-configure-basic component reducer', () => {
             'adds new cache'
         );
     });
+
     test('REMOVE_CACHE action', () => {
         const state = {
             newClusterCaches: [{_id: -1}],
             oldClusterCaches: [{_id: 1}]
         };
+
         assert.deepEqual(
             reducer(state, {type: REMOVE_CACHE, cache: {_id: null}}),
             state,
             'removes nothing if there\'s no matching cache'
         );
+
         assert.deepEqual(
             reducer(state, {type: REMOVE_CACHE, cache: {_id: -1}}),
             {
@@ -149,6 +160,7 @@ suite.skip('page-configure-basic component reducer', () => {
             },
             'removes new cluster cache'
         );
+
         assert.deepEqual(
             reducer(state, {type: REMOVE_CACHE, cache: {_id: 1}}),
             {
@@ -158,19 +170,23 @@ suite.skip('page-configure-basic component reducer', () => {
             'removes old cluster cache'
         );
     });
+
     test('SET_SELECTED_CACHES action', () => {
         const state = {
             cluster: {caches: []},
             oldClusterCaches: []
         };
+
         const root = {
             list: {caches: new Map([[1, {_id: 1}], [2, {_id: 2}], [3, {_id: 3}]])}
         };
+
         assert.deepEqual(
             reducer(state, {type: SET_SELECTED_CACHES, cacheIDs: []}, root),
             state,
             'select no caches if action.cacheIDs is empty'
         );
+
         assert.deepEqual(
             reducer(state, {type: SET_SELECTED_CACHES, cacheIDs: [1]}, root),
             {
@@ -179,6 +195,7 @@ suite.skip('page-configure-basic component reducer', () => {
             },
             'selects existing cache'
         );
+
         assert.deepEqual(
             reducer(state, {type: SET_SELECTED_CACHES, cacheIDs: [1, 2, 3]}, root),
             {

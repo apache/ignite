@@ -145,7 +145,9 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
         if (ver.compareTo(VER_2_5_0) >= 0) {
             user = reader.readString();
             passwd = reader.readString();
+        }
 
+        if (ver.compareTo(VER_2_7_0) >= 0) {
             byte nestedTxModeVal = reader.readByte();
 
             nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);

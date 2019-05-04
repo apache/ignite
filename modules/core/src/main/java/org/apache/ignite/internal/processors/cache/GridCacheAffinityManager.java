@@ -137,7 +137,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     public List<List<ClusterNode>> idealAssignment() {
         assert !cctx.isLocal();
 
-        return aff.idealAssignment();
+        return aff.idealAssignmentRaw();
     }
 
     /**

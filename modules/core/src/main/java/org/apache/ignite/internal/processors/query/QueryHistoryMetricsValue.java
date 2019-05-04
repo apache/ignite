@@ -23,10 +23,10 @@ package org.apache.ignite.internal.processors.query;
  */
 class QueryHistoryMetricsValue {
     /** Number of executions. */
-    private final int execs;
+    private final long execs;
 
     /** Number of failures. */
-    private final int failures;
+    private final long failures;
 
     /** Minimum time of execution. */
     private final long minTime;
@@ -44,7 +44,7 @@ class QueryHistoryMetricsValue {
      * @param maxTime Max time of execution.
      * @param lastStartTime Last start time of execution.
      */
-    public QueryHistoryMetricsValue(int execs, int failures, long minTime, long maxTime, long lastStartTime) {
+    public QueryHistoryMetricsValue(long execs, long failures, long minTime, long maxTime, long lastStartTime) {
         this.execs = execs;
         this.failures = failures;
         this.minTime = minTime;
@@ -57,7 +57,7 @@ class QueryHistoryMetricsValue {
      *
      * @return Number of executions.
      */
-    public int execs() {
+    public long execs() {
         return execs;
     }
 
@@ -66,7 +66,7 @@ class QueryHistoryMetricsValue {
      *
      * @return Number of times a query execution failed.
      */
-    public int failures() {
+    public long failures() {
         return failures;
     }
 

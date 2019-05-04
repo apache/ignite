@@ -43,6 +43,7 @@ export default {
         selectedRowsId: '<?',
 
         // Output events.
-        onSelectionChange: '&?'
+        onSelectionChange: '&?',
+        onApiRegistered: '&?'
     }
 };

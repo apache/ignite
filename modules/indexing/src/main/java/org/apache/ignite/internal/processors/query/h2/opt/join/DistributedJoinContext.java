@@ -30,9 +30,6 @@ import java.util.UUID;
  * Context for distributed joins.
  */
 public class DistributedJoinContext {
-    /** Local flag. */
-    private final boolean loc;
-
     /** */
     private final AffinityTopologyVersion topVer;
 
@@ -69,7 +66,6 @@ public class DistributedJoinContext {
     /**
      * Constructor.
      *
-     * @param loc Local flag.
      * @param topVer Topology version.
      * @param partsMap Partitions map.
      * @param originNodeId ID of the node started the query.
@@ -78,22 +74,20 @@ public class DistributedJoinContext {
      * @param pageSize Pahe size.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public DistributedJoinContext(boolean loc, AffinityTopologyVersion topVer, Map<UUID, int[]> partsMap,
-        UUID originNodeId, long qryId, int segment, int pageSize) {
-        this.loc = loc;
+    public DistributedJoinContext(
+        AffinityTopologyVersion topVer,
+        Map<UUID, int[]> partsMap,
+        UUID originNodeId,
+        long qryId,
+        int segment,
+        int pageSize
+    ) {
         this.topVer = topVer;
         this.partsMap = partsMap;
         this.originNodeId = originNodeId;
         this.qryId = qryId;
         this.segment = segment;
         this.pageSize = pageSize;
-    }
-
-    /**
-     * @return Local flag.
-     */
-    public boolean local() {
-        return loc;
     }
 
     /**

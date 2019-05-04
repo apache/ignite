@@ -42,8 +42,8 @@ import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
@@ -111,18 +111,17 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
 
     /** {@inheritDoc} */
     @Override public <K, V> ModelsComposition fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+                                                  Preprocessor<K, V> preprocessor) {
         List<TreeRoot> models = null;
         try (Dataset<EmptyContext, BootstrappedDatasetPartition> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new BootstrappedDatasetBuilder<>(extractor, amountOfTrees, subSampleSize))) {
+            new BootstrappedDatasetBuilder<>(preprocessor, amountOfTrees, subSampleSize))) {
 
-            if(!init(dataset))
+            if (!init(dataset))
                 return buildComposition(Collections.emptyList());
             models = fit(dataset);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -219,7 +218,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         Queue<TreeNode> treesQueue = createRootsQueue();
         ArrayList<TreeRoot> roots = initTrees(treesQueue);
         Map<Integer, BucketMeta> histMeta = computeHistogramMeta(meta, dataset);
-        if(histMeta.isEmpty())
+        if (histMeta.isEmpty())
             return Collections.emptyList();
 
         ImpurityHistogramsComputer<S> histogramsComputer = createImpurityHistogramsComputer();
@@ -246,10 +245,10 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
 
     /** {@inheritDoc} */
     @Override protected <K, V> ModelsComposition updateModel(ModelsComposition mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+                                                             Preprocessor<K, V> preprocessor) {
 
         ArrayList<IgniteModel<Vector, Double>> oldModels = new ArrayList<>(mdl.getModels());
-        ModelsComposition newModels = fit(datasetBuilder, extractor);
+        ModelsComposition newModels = fit(datasetBuilder, preprocessor);
         oldModels.addAll(newModels.getModels());
 
         return new ModelsComposition(oldModels, mdl.getPredictionsAggregator());
@@ -258,12 +257,12 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     /**
      * Split node with NodeId if need.
      *
-     * @param learningQueue Learning queue.
-     * @param nodesToLearn Nodes to learn at current iteration.
+     * @param learningQueue          Learning queue.
+     * @param nodesToLearn           Nodes to learn at current iteration.
      * @param nodeImpurityHistograms Impurity histograms on current iteration.
      */
     private void split(Queue<TreeNode> learningQueue, Map<NodeId, TreeNode> nodesToLearn,
-        ImpurityHistogramsComputer.NodeImpurityHistograms<S> nodeImpurityHistograms) {
+                       ImpurityHistogramsComputer.NodeImpurityHistograms<S> nodeImpurityHistograms) {
 
         TreeNode cornerNode = nodesToLearn.get(nodeImpurityHistograms.getNodeId());
         Optional<NodeSplit> bestSplit = nodeImpurityHistograms.findBestSplit();
@@ -271,8 +270,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         if (needSplit(cornerNode, bestSplit)) {
             List<TreeNode> children = bestSplit.get().split(cornerNode);
             learningQueue.addAll(children);
-        }
-        else {
+        } else {
             if (bestSplit.isPresent())
                 bestSplit.get().createLeaf(cornerNode);
             else {
@@ -316,16 +314,16 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
     /**
      * Compute bucket metas based on feature metas and learning dataset.
      *
-     * @param meta Features meta.
+     * @param meta    Features meta.
      * @param dataset Dataset.
      * @return bucket metas.
      */
     private Map<Integer, BucketMeta> computeHistogramMeta(List<FeatureMeta> meta,
-        Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
+                                                          Dataset<EmptyContext, BootstrappedDatasetPartition> dataset) {
 
         List<NormalDistributionStatistics> stats = new NormalDistributionStatisticsComputer()
             .computeStatistics(meta, dataset);
-        if(stats == null)
+        if (stats == null)
             return Collections.emptyMap();
 
         Map<Integer, BucketMeta> bucketsMeta = new HashMap<>();
@@ -381,7 +379,7 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
      * Check current note for the need for splitting.
      *
      * @param parentNode Parent node.
-     * @param split Best node split.
+     * @param split      Best node split.
      * @return true if split is needed.
      */
     boolean needSplit(TreeNode parentNode, Optional<NodeSplit> split) {

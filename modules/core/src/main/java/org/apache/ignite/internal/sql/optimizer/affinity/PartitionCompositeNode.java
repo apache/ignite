@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Composite node which consists of two child nodes and a relation between them.
@@ -56,14 +55,21 @@ public class PartitionCompositeNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) throws IgniteCheckedException {
-        Collection<Integer> leftParts = left.apply(args);
-        Collection<Integer> rightParts = right.apply(args);
+    @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args)
+        throws IgniteCheckedException {
+        Collection<Integer> leftParts = left.apply(cliCtx, args);
+        Collection<Integer> rightParts = right.apply(cliCtx, args);
+
+        // Failed to resolve partitions on both sides, return.
+        if (leftParts == null && rightParts == null)
+            return null;
 
         if (op == PartitionCompositeNodeOperator.AND) {
-            // () and (...) -> ()
-            if (leftParts == null || rightParts == null)
-                return null;
+            // (ALL) and (...) -> (...)
+            if (leftParts == null)
+                return rightParts;
+            else if (rightParts == null)
+                return leftParts;
 
             // (A, B) and (B, C) -> (B)
             leftParts = new HashSet<>(leftParts);
@@ -73,11 +79,9 @@ public class PartitionCompositeNode implements PartitionNode {
         else {
             assert op == PartitionCompositeNodeOperator.OR;
 
-            // () or (...) -> (...)
-            if (leftParts == null)
-                return rightParts;
-            else if (rightParts == null)
-                return leftParts;
+            // (ALL) or (...) -> (ALL)
+            if (leftParts == null || rightParts == null)
+                return null;
 
             // (A, B) or (B, C) -> (A, B, C)
             leftParts = new HashSet<>(leftParts);
@@ -349,7 +353,7 @@ public class PartitionCompositeNode implements PartitionNode {
             return left;
 
         // If both sides are constants from the same table and they are not equal, this is empty set.
-        if (left.constant() && right.constant() && F.eq(left.table().alias(), right.tbl.alias()))
+        if (left.constant() && right.constant() && F.eq(left.table().alias(), right.table().alias()))
             // X and Y -> NONE
             return PartitionNoneNode.INSTANCE;
 
@@ -385,8 +389,36 @@ public class PartitionCompositeNode implements PartitionNode {
         return new PartitionGroupNode(nodes);
     }
 
+    /**
+     * @return Left node.
+     */
+    public PartitionNode left() {
+        return left;
+    }
+
+    /**
+     * @return Right node.
+     */
+    public PartitionNode right() {
+        return right;
+    }
+
+    /**
+     * @return Operator.
+     */
+    public PartitionCompositeNodeOperator operator() {
+        return op;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionCompositeNode.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
+        String leftCacheName = left.cacheName();
+
+        return leftCacheName != null ? leftCacheName : right.cacheName();
     }
 }

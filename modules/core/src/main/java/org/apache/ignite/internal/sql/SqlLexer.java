@@ -239,7 +239,14 @@ public class SqlLexer implements SqlLexerToken {
     /**
      * @return {@code True} if end of data is reached.
      */
-    private boolean eod() {
+    public boolean eod() {
         return pos == inputChars.length - 1;
+    }
+
+    /**
+     * @return Current lexer position.
+     */
+    public int position() {
+        return pos;
     }
 }

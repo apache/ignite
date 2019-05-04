@@ -128,6 +128,14 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
     }
 
     /**
+     * @return {@code true} If any lost partitions was detected.
+     */
+    public boolean hasLostPartitions() {
+        return grpValidRes.values().stream()
+            .anyMatch(CacheGroupValidation::hasLostPartitions);
+    }
+
+    /**
      * Cache group validation result.
      */
     protected static class CacheGroupValidation {

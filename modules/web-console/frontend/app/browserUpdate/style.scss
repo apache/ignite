@@ -20,7 +20,7 @@
 #buorg.buorg {
     background-color: $brand-warning;
     line-height: 16px;
-    font-family: Roboto, sans-serif;
+    font-family: inherit;
 
     a {
         @extend .btn-ignite;

@@ -23,7 +23,7 @@ import {html} from 'jsondiffpatch/public/build/jsondiffpatch-formatters.js';
 import 'jsondiffpatch/public/formatters-styles/html.css';
 
 export class IgniteObjectDiffer<T> {
-    diffPatcher: DiffPatcher
+    diffPatcher: DiffPatcher;
 
     constructor() {
         this.diffPatcher = new DiffPatcher({

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 import java.util.List;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -33,22 +34,47 @@ import org.h2.table.IndexColumn;
  * We need indexes on an not affinity nodes. The index shouldn't contains any data.
  */
 public class H2TreeClientIndex extends H2TreeIndexBase {
+    /** */
+    private final int inlineSize;
+
     /**
-     * @param tbl Table.
+     * @param table Table.
      * @param name Index name.
      * @param pk Primary key.
      * @param colsList Index columns.
+     * @param inlineSize Inline size.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public H2TreeClientIndex(GridH2Table tbl, String name, boolean pk, List<IndexColumn> colsList) {
-        super(tbl);
+    public H2TreeClientIndex(GridH2Table table, String name, boolean pk, List<IndexColumn> colsList, int inlineSize) {
+        super(table);
+
+        this.table = table;
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
 
-        IndexColumn.mapColumns(cols, tbl);
+        this.inlineSize = calculateInlineSize(cols, inlineSize, table.cacheInfo().config());
 
-        initBaseIndex(tbl, 0, name, cols,
+        IndexColumn.mapColumns(cols, table);
+
+        initBaseIndex(table, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+    }
+
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return inlineSize;
+    }
+
+    /**
+     * @param cols Index columns.
+     * @param inlineSize Inline size.
+     * @param cacheConf Cache configuration.
+     * @return Calculated inline size for given indexed columns.
+     */
+    private int calculateInlineSize(IndexColumn[] cols, int inlineSize, CacheConfiguration<?, ?> cacheConf) {
+        List<InlineIndexHelper> inlineCols = getAvailableInlineColumns(cols);
+
+        return computeInlineSize(inlineCols, inlineSize, cacheConf);
     }
 
     /** {@inheritDoc} */

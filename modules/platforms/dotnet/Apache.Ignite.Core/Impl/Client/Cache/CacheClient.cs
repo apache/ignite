@@ -206,6 +206,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /** <inheritDoc /> */
+        [Obsolete]
         public IQueryCursor<ICacheEntry<TK, TV>> Query(SqlQuery sqlQuery)
         {
             IgniteArgumentCheck.NotNull(sqlQuery, "sqlQuery");
@@ -703,6 +704,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes the SQL query.
         /// </summary>
+        [Obsolete]
         private static void WriteSqlQuery(IBinaryRawWriter writer, SqlQuery qry)
         {
             Debug.Assert(qry != null);

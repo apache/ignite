@@ -71,8 +71,4 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
         startGrid(cfg);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
 }

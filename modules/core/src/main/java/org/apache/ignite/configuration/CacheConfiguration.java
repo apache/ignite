@@ -191,6 +191,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default SQL on-heap cache size. */
     public static final int DFLT_SQL_ONHEAP_CACHE_MAX_SIZE = 0;
 
+    /** Default disk page compression algorithm. */
+    public static final DiskPageCompression DFLT_DISK_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
+
     /** Cache name. */
     private String name;
 
@@ -215,6 +218,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private EvictionPolicy evictPlc;
 
     /** Cache eviction policy factory. */
+    @SerializeSeparately
     private Factory evictPlcFactory;
 
     /** */
@@ -227,6 +231,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private int sqlOnheapCacheMaxSize = DFLT_SQL_ONHEAP_CACHE_MAX_SIZE;
 
     /** Eviction filter. */
+    @SerializeSeparately
     private EvictionFilter<?, ?> evictFilter;
 
     /** Eager ttl flag. */
@@ -245,6 +250,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheWriteSynchronizationMode writeSync;
 
     /** */
+    @SerializeSeparately
     private Factory storeFactory;
 
     /** */
@@ -360,6 +366,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private TopologyValidator topValidator;
 
     /** Cache store session listeners. */
+    @SerializeSeparately
     private Factory<? extends CacheStoreSessionListener>[] storeSesLsnrs;
 
     /** Query entities. */
@@ -2315,7 +2322,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see #getDiskPageCompressionLevel
      */
     public DiskPageCompression getDiskPageCompression() {
-        return diskPageCompression;
+        return diskPageCompression == null ? DFLT_DISK_PAGE_COMPRESSION : diskPageCompression;
     }
 
     /**

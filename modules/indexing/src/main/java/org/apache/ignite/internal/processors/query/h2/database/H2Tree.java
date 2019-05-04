@@ -324,7 +324,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     /**
      * @return Inline size.
      */
-    private int inlineSize() {
+    public int inlineSize() {
         return inlineSize;
     }
 

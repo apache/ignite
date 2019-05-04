@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.cache.NodeWithFilterRestartTest;
 import org.apache.ignite.internal.ClusterMetricsSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
 import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
@@ -46,12 +47,13 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCa
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
+import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustInMemoryTest;
+import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustTest;
 import org.apache.ignite.internal.processors.cluster.GridAddressResolverSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
-
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -88,6 +90,8 @@ import org.junit.runners.Suite;
     IgniteConcurrentEntryProcessorAccessStopTest.class,
     GridUpdateNotifierSelfTest.class,
     GridAddressResolverSelfTest.class,
+    BaselineAutoAdjustInMemoryTest.class,
+    BaselineAutoAdjustTest.class,
     IgniteUpdateNotifierPerClusterSettingSelfTest.class,
     GridLocalEventListenerSelfTest.class,
     IgniteTopologyPrintFormatSelfTest.class,
@@ -95,6 +99,7 @@ import org.junit.runners.Suite;
     LongJVMPauseDetectorTest.class,
     ClusterMetricsSelfTest.class,
     DeploymentRequestOfUnknownClassProcessingTest.class,
+    NodeWithFilterRestartTest.class
 })
 public class IgniteKernalSelfTestSuite {
 }

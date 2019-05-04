@@ -21,6 +21,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -112,8 +113,27 @@ public class RunningQueryManager {
         GridRunningQueryInfo qry = runs.remove(qryId);
 
         //We need to collect query history only for SQL queries.
-        if (qry != null && isSqlQuery(qry))
+        if (qry != null && isSqlQuery(qry)) {
+            qry.runningFuture().onDone();
+
             qryHistTracker.collectMetrics(qry, failed);
+        }
+    }
+
+    /**
+     * Return SQL queries which executing right now.
+     *
+     * @return List of SQL running queries.
+     */
+    public List<GridRunningQueryInfo> runningSqlQueries() {
+        List<GridRunningQueryInfo> res = new ArrayList<>();
+
+        for (GridRunningQueryInfo run : runs.values()) {
+            if (isSqlQuery(run))
+                res.add(run);
+        }
+
+        return res;
     }
 
     /**
@@ -130,7 +150,7 @@ public class RunningQueryManager {
      * Return long running user queries.
      *
      * @param duration Duration of long query.
-     * @return List of queries which running longer than given duration.
+     * @return Collection of queries which running longer than given duration.
      */
     public Collection<GridRunningQueryInfo> longRunningQueries(long duration) {
         Collection<GridRunningQueryInfo> res = new ArrayList<>();
@@ -185,6 +205,15 @@ public class RunningQueryManager {
      */
     public Map<QueryHistoryMetricsKey, QueryHistoryMetrics> queryHistoryMetrics() {
         return qryHistTracker.queryHistoryMetrics();
+    }
+
+    /**
+     * Gets info about running query by their id.
+     * @param qryId
+     * @return Running query info or {@code null} in case no running query for given id.
+     */
+    public @Nullable GridRunningQueryInfo runningQueryInfo(Long qryId) {
+        return runs.get(qryId);
     }
 
     /**

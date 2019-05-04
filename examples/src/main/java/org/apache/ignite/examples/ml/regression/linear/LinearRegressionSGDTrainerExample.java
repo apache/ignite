@@ -18,18 +18,19 @@
 package org.apache.ignite.examples.ml.regression.linear;
 
 import java.io.FileNotFoundException;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -57,44 +58,40 @@ public class LinearRegressionSGDTrainerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.MORTALITY_DATA);
 
-            System.out.println(">>> Create new linear regression trainer object.");
-            LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                new RPropUpdateCalculator(),
-                RPropParameterUpdate::sumLocal,
-                RPropParameterUpdate::avg
-            ), 100000,  10, 100, 123L);
+                System.out.println(">>> Create new linear regression trainer object.");
+                LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
+                    new RPropUpdateCalculator(),
+                    RPropParameterUpdate.SUM_LOCAL,
+                    RPropParameterUpdate.AVG
+                ), 100000, 10, 100, 123L);
 
-            System.out.println(">>> Perform the training to get the model.");
-            LinearRegressionModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            );
+                System.out.println(">>> Perform the training to get the model.");
 
-            System.out.println(">>> Linear regression model: " + mdl);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
+                System.out.println(">>> Linear regression model: " + mdl);
 
-                    double prediction = mdl.predict(inputs);
+                double rmse = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    vectorizer,
+                    new RegressionMetrics()
+                );
 
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
+                System.out.println("\n>>> Rmse = " + rmse);
+
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
             }
-
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> Linear regression model over cache based dataset usage example completed.");
         }
     }
 }
