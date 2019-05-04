@@ -591,7 +591,7 @@ public class IgniteConfiguration {
         consistentId = cfg.getConsistentId();
         daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
-        dfltQryTimeout = cfg.getDfltQryTimeout();
+        dfltQryTimeout = cfg.getDefaultQueryTimeout();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
@@ -1043,10 +1043,12 @@ public class IgniteConfiguration {
      * Defines the default query timeout.
      *
      * Defaults to {@link #DFLT_QRY_TIMEOUT}.
+     * {@code 0} means there is no timeout (this
+     * is a default value)
      *
      * @return Default query timeout.
      */
-    public long getDfltQryTimeout() {
+    public long getDefaultQueryTimeout() {
         return dfltQryTimeout;
     }
 

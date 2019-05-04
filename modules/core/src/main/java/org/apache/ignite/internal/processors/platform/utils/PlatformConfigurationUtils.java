@@ -1219,7 +1219,7 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(true);
         w.writeBoolean(cfg.isClientMode());
         w.writeBoolean(true);
-        w.writeLong(cfg.getDfltQryTimeout());
+        w.writeLong(cfg.getDefaultQueryTimeout());
         w.writeIntArray(cfg.getIncludeEventTypes());
         w.writeBoolean(true);
         w.writeLong(cfg.getMetricsExpireTime());
