@@ -132,16 +132,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 writer.OnObjectWritten += (header, obj) =>
                 {
-                    if (hashCode != null)
-                    {
-                        var err = string.Format(
-                            "Composite objects are not supported. Object '{0}' contains nested object '{1}'",
-                            val,
-                            obj);
-
-                        throw new IgniteException(err);
-                    }
-
                     if (affinityKeyFieldIds != null && affinityKeyFieldIds.ContainsKey(header.TypeId))
                     {
                         var err = string.Format(
@@ -150,6 +140,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         throw new IgniteException(err);
                     }
 
+                    // In case of composite objects we need the last hash code.
                     hashCode = header.HashCode;
                 };
 

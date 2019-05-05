@@ -149,6 +149,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
         }
 
+        [Test]
+        public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
+        {
+            // TODO
+        }
+
         private sealed class MyKey
         {
             private readonly int _i;
