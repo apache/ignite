@@ -50,8 +50,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Version 1.3.0. */
         public static readonly ClientProtocolVersion Ver130 = new ClientProtocolVersion(1, 3, 0);
 
+        /** Version 1.4.0. */
+        public static readonly ClientProtocolVersion Ver140 = new ClientProtocolVersion(1, 3, 0);
+
         /** Current version. */
-        public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver130;
+        public static readonly ClientProtocolVersion CurrentProtocolVersion = Ver140;
 
         /** Handshake opcode. */
         private const byte OpHandshake = 1;
@@ -284,7 +287,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             ClientStatusCode statusCode;
 
-            if (ServerVersion.CompareTo(Ver130) >= 0)
+            if (ServerVersion.CompareTo(Ver140) >= 0)
             {
                 var flags = (ClientFlags) stream.ReadShort();
 
@@ -367,7 +370,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 if (success)
                 {
-                    if (version.CompareTo(Ver130) >= 0)
+                    if (version.CompareTo(Ver140) >= 0)
                     {
                         ServerNodeId = BinaryUtils.Marshaller.Unmarshal<Guid>(stream);
                     }
