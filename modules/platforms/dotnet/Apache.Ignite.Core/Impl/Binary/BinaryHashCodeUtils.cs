@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         throw new IgniteException(err);
                     }
 
-                    if (affinityKeyFieldIds.ContainsKey(header.TypeId))
+                    if (affinityKeyFieldIds != null && affinityKeyFieldIds.ContainsKey(header.TypeId))
                     {
                         var err = string.Format(
                             "Affinity keys are not supported. Object '{0}' has an affinity key.", obj);
