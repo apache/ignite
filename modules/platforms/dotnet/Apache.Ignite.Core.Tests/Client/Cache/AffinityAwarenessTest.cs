@@ -139,8 +139,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(6, 2)]
         public void CacheGet_UserDefinedKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
-            // TODO: Use MyKey
-            var res = _cache.Get(key);
+            var cache = Client.CreateCache<MyKey, int>("c_custom_key");
+            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => new MyKey(x, x.ToString()), x => x));
+            cache.Get(new MyKey(1, "2")); // Warm up;
+
+            var res = cache.Get(new MyKey(key, key.ToString()));
 
             Assert.AreEqual(key, res);
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
