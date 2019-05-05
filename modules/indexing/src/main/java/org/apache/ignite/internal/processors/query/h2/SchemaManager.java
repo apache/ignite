@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
@@ -128,6 +129,38 @@ public class SchemaManager {
     public void stop() {
         schemas.clear();
         cacheName2schema.clear();
+    }
+
+    /**
+     * Registers new system view.
+     *
+     * @param schema Schema to create view in.
+     * @param view System view.
+     */
+    public void createSysteView(String schema, SqlSystemView view) {
+        assert schema.equals(QueryUtils.SCHEMA_MONITORING);
+
+        boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
+
+        if (disabled) {
+            log.info("SQL system views will not be created because they are disabled (see " +
+                IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
+
+            return;
+        }
+
+        try {
+            synchronized (schemaMux) {
+                createSchema(schema, true);
+            }
+
+            try (Connection c = connMgr.connectionNoCache(schema)) {
+                SqlSystemTableEngine.registerView(c, view);
+            }
+        }
+        catch (IgniteCheckedException | SQLException e) {
+            throw new IgniteException("Failed to register system view.", e);
+        }
     }
 
     /**

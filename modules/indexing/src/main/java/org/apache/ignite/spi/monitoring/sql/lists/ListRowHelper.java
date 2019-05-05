@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.monitoring;
+package org.apache.ignite.spi.monitoring.sql.lists;
 
-import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
-import org.apache.ignite.spi.IgniteSpi;
+import org.apache.ignite.internal.processors.monitoring.lists.ListRow;
+import org.h2.table.Column;
 
 /**
  *
  */
-public interface MonitoringExposerSpi extends IgniteSpi {
-    public void onKernalStart0();
+public abstract class ListRowHelper<Id, Row> {
+    /** */
+    public abstract Column[] columns();
 
-    public void setMonitoringProcessor(GridMonitoringManager gridMonitoringManager);
+    /** */
+    public abstract Object[] row(ListRow<Id, Row> row);
+
+    /** */
+    protected abstract Class<Row> rowClass();
+
+    /** */
+    protected String key() {
+        return "id";
+    }
 }

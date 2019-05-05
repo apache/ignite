@@ -66,6 +66,8 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
+        for (MonitoringExposerSpi spi : getSpis())
+            spi.onKernalStart0();
     }
 
     /** {@inheritDoc} */

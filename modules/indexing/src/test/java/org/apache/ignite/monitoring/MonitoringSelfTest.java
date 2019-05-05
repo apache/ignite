@@ -23,8 +23,9 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.monitoring.HttpPullExposerSpi;
+import org.apache.ignite.spi.monitoring.http.HttpPullExposerSpi;
 import org.apache.ignite.spi.monitoring.jmx.JmxPullExposerSpi;
+import org.apache.ignite.spi.monitoring.sql.SqlViewPullExposerSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -42,7 +43,7 @@ public class MonitoringSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
-        cfg.setMonitoringExposerSpi(new HttpPullExposerSpi(), new JmxPullExposerSpi());
+        cfg.setMonitoringExposerSpi(new HttpPullExposerSpi(), new JmxPullExposerSpi(), new SqlViewPullExposerSpi());
 
         return cfg;
     }

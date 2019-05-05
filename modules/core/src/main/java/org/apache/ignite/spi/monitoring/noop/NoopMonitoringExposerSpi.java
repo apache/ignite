@@ -29,6 +29,10 @@ import org.jetbrains.annotations.Nullable;
  */
 @IgniteSpiNoop
 public class NoopMonitoringExposerSpi extends IgniteSpiAdapter implements MonitoringExposerSpi {
+    @Override public void onKernalStart0() {
+        // No-op.
+    }
+
     @Override public void setMonitoringProcessor(GridMonitoringManager gridMonitoringManager) {
         // No-op.
     }

@@ -75,7 +75,7 @@ public abstract class SqlAbstractSystemView implements SqlSystemView {
      * @param name Name.
      * @param type Type.
      */
-    protected static Column newColumn(String name, int type) {
+    public static Column newColumn(String name, int type) {
         return new Column(name, type);
     }
 

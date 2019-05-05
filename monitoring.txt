@@ -1,0 +1,9 @@
+* Кодогенерация для JMXHelper'ов, SQLViewHeler'ов
+* Переписать SensorGroupMBean без фиксации списка сенсоров.
+* убрать копипасту
+* JavaDocs
+* LogExposer
+* SQLViewExposer
+* тикеты для мониторинга каждого API
+* тесты
+* concurrent sensor'ы.

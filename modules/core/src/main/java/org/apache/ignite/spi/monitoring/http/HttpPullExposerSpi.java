@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.monitoring;
+package org.apache.ignite.spi.monitoring.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -27,10 +27,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.monitoring.MonitoringExposerSpi;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -85,6 +85,16 @@ public class HttpPullExposerSpi extends IgniteSpiAdapter implements MonitoringEx
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void spiStop() throws IgniteSpiException {
+        try {
+            httpSrv.stop();
+        }
+        catch (Exception e) {
+            throw new IgniteSpiException(e);
+        }
+    }
+
     private void handle(String target, Request req, HttpServletRequest srvReq,
         HttpServletResponse res) throws IOException, ServletException {
         if (target.startsWith("/ignite/monitoring")) {
@@ -122,20 +132,14 @@ public class HttpPullExposerSpi extends IgniteSpiAdapter implements MonitoringEx
         return mapper;
     }
 
-    @Override public void spiStop() throws IgniteSpiException {
-
-    }
-
-    @Override public void onClientDisconnected(IgniteFuture<?> reconnectFut) {
-
-    }
-
-    @Override public void onClientReconnected(boolean clusterRestarted) {
-
-    }
-
+    /** {@inheritDoc} */
     @Override public String getName() {
         return "HttpPullExposerSpi";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart0() {
+        // No-op.
     }
 
     @Override public void setMonitoringProcessor(GridMonitoringManager gridMonitoringManager) {

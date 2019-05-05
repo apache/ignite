@@ -64,6 +64,7 @@ public class JmxPullExposerSpi extends IgniteSpiAdapter implements MonitoringExp
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
+        // No-op.
     }
 
     private void onSensorGroupCreation(SensorGroup<String> grp) {
@@ -153,8 +154,12 @@ public class JmxPullExposerSpi extends IgniteSpiAdapter implements MonitoringExp
     }
 
     /** {@inheritDoc} */
+    @Override public void onKernalStart0() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void setMonitoringProcessor(GridMonitoringManager gridMonitoringManager) {
         this.mgr = gridMonitoringManager;
     }
-
 }
