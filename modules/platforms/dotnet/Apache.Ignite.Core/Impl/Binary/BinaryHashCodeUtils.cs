@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -127,11 +128,39 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var writer = marsh.StartMarshal(stream);
 
+                int? hashCode = null;
+
+                writer.OnObjectWritten += (header, obj) =>
+                {
+                    if (hashCode != null)
+                    {
+                        var err = string.Format(
+                            "Composite objects are not supported. Object '{0}' contains nested object '{1}'",
+                            val,
+                            obj);
+
+                        throw new IgniteException(err);
+                    }
+
+                    if (affinityKeyFieldIds.ContainsKey(header.TypeId))
+                    {
+                        var err = string.Format(
+                            "Affinity keys are not supported. Object '{0}' has an affinity key.", obj);
+
+                        throw new IgniteException(err);
+                    }
+
+                    hashCode = header.HashCode;
+                };
+
                 writer.Write(val);
 
-                // TODO: Somehow extract hash code from writer. It can be a nested AffinityMapped field.
-                // TODO: Forget AffinityKeyMapped for the first iteration
-                return writer.GetHashCode();
+                if (hashCode.HasValue)
+                {
+                    return hashCode.Value;
+                }
+
+                throw new IgniteException(string.Format("Failed to compute hash code for object '{0}'", val));
             }
         }
 

@@ -68,6 +68,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return _marsh; }
         }
 
+        internal event Action<BinaryObjectHeader, object> OnObjectWritten;
+
         /// <summary>
         /// Write named boolean value.
         /// </summary>
@@ -1269,8 +1271,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 BinaryObjectHeader.Write(header, _stream, pos);
 
-                // TODO: Callback OnObjectWritten?
-
+                if (OnObjectWritten != null)
+                {
+                    OnObjectWritten(header, obj);
+                }
 
                 Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
             }
