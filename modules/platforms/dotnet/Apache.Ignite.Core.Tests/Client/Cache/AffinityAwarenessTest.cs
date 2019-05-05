@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         // * Test topology update
 
         /** */
-        private readonly List<TestLogger> _loggers = new List<TestLogger>();
+        private readonly List<ListLogger> _loggers = new List<ListLogger>();
 
         /** */
         private ICacheClient<int, int> _cache;
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cfg = base.GetIgniteConfiguration();
 
-            var logger = new TestLogger();
+            var logger = new ListLogger();
             cfg.Logger = logger;
             _loggers.Add(logger);
 
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(4, 1)]
         [TestCase(5, 1)]
         [TestCase(6, 2)]
-        public void TestGetIsRoutedToPrimaryNode(int key, int gridIdx)
+        public void CacheGet_PrimitiveKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
             var res = _cache.Get(key);
 
@@ -130,45 +130,62 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
         }
 
-        private class TestLogger : ILogger
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
+        public void CacheGet_UserDefinedKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
-            /** */
-            private readonly List<string> _messages = new List<string>();
+            // TODO: Use MyKey
+            var res = _cache.Get(key);
 
-            /** */
-            private readonly object _lock = new object();
+            Assert.AreEqual(key, res);
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
+        }
 
-            public List<string> Messages
+        private sealed class MyKey
+        {
+            private readonly int _i;
+            private readonly string _s;
+
+            public MyKey(int i, string s)
             {
-                get
-                {
-                    lock (_lock)
-                    {
-                        return _messages.ToList();
-                    }
-                }
+                _i = i;
+                _s = s;
             }
 
-            public void Clear()
+            public int I
             {
-                lock (_lock)
-                {
-                    _messages.Clear();
-                }
+                get { return _i; }
             }
 
-            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
-                string nativeErrorInfo, Exception ex)
+            public string S
             {
-                lock (_lock)
-                {
-                    _messages.Add(message);
-                }
+                get { return _s; }
             }
 
-            public bool IsEnabled(LogLevel level)
+            private bool Equals(MyKey other)
             {
-                return level == LogLevel.Debug;
+                return _i == other._i && string.Equals(_s, other._s);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != GetType()) return false;
+                return Equals((MyKey) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (_i * 397) ^ (_s != null ? _s.GetHashCode() : 0);
+                }
             }
         }
     }
