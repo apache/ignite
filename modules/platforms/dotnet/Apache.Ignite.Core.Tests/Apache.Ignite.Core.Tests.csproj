@@ -402,6 +402,7 @@
     <Content Include="Config\Client\IgniteClientConfiguration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\Client\IgniteClientConfiguration2.xml" />
     <Content Include="Config\Client\server-with-ssl.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
