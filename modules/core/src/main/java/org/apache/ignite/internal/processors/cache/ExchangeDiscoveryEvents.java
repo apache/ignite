@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
@@ -58,13 +57,13 @@ public class ExchangeDiscoveryEvents {
     private DiscoveryEvent lastSrvEvt;
 
     /** All events. */
-    private List<DiscoveryEvent> evts = Collections.synchronizedList(new ArrayList<>());
+    private List<DiscoveryEvent> evts = new ArrayList<>();
 
-    /** Joined server nodes. */
-    private List<ClusterNode> joinedSrvNodes = Collections.synchronizedList(new ArrayList<>());
+    /** Server join flag. */
+    private boolean srvJoin;
 
-    /** Left server nodes. */
-    private List<ClusterNode> leftSrvNodes = Collections.synchronizedList(new ArrayList<>());
+    /** Sever left flag. */
+    private boolean srvLeft;
 
     /**
      * @param fut Current exchange future.
@@ -127,9 +126,9 @@ public class ExchangeDiscoveryEvents {
             srvEvtTopVer = new AffinityTopologyVersion(evt.topologyVersion(), 0);
 
             if (evt.type()== EVT_NODE_JOINED)
-                joinedSrvNodes.add(evt.eventNode());
+                srvJoin = true;
             else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
-                leftSrvNodes.add(evt.eventNode());
+                srvLeft = !node.isClient();
         }
     }
 
@@ -181,28 +180,14 @@ public class ExchangeDiscoveryEvents {
      * @return {@code True} if has event for server join.
      */
     public boolean hasServerJoin() {
-        return !joinedSrvNodes.isEmpty();
+        return srvJoin;
     }
 
     /**
      * @return {@code True} if has event for server leave.
      */
     public boolean hasServerLeft() {
-        return !leftSrvNodes.isEmpty();
-    }
-
-    /**
-     *
-     */
-    public List<ClusterNode> joinedServerNodes() {
-        return joinedSrvNodes;
-    }
-
-    /**
-     *
-     */
-    public List<ClusterNode> leftServerNodes() {
-        return leftSrvNodes;
+        return srvLeft;
     }
 
     /**
