@@ -41,7 +41,6 @@ import static org.apache.ignite.internal.commandline.cache.CacheCommands.NODE_ID
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DISTRIBUTION;
 import static org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg.USER_ATTRIBUTES;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 
 /**
  * Would collect and print info about how data is spread between nodes and partitions.
@@ -49,6 +48,7 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 public class CacheDistribution extends Command<CacheDistribution.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
+        String CACHES = "cacheName1,...,cacheNameN";
         String description = "Prints the information about partition distribution.";
 
         usageCache(logger, DISTRIBUTION, description, or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));

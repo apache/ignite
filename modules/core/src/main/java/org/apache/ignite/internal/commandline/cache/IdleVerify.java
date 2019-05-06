@@ -59,7 +59,6 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
-import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 
 /**
  *
@@ -67,6 +66,7 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 public class IdleVerify extends Command<IdleVerify.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
+        String CACHES = "cacheName1,...,cacheNameN";
         String description = "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
             "Cache filtering options configure the set of caches that will be processed by idle_verify command. " +
             "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +

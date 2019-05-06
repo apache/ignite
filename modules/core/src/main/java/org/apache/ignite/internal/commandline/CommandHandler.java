@@ -135,7 +135,6 @@ public class CommandHandler {
 
             Command command = args.command();
 
-
             if (!args.autoConfirmation() && !confirm(command.confirmationPrompt())) {
                 logger.log("Operation cancelled.");
 
