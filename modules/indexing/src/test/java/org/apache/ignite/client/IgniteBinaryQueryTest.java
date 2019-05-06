@@ -54,8 +54,8 @@ public class IgniteBinaryQueryTest {
      */
     @Test
     public void testBinaryQueries() throws Exception {
-        try (Ignite ignored = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
-             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER))
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
         ) {
             final String TYPE_NAME = "Person";
 

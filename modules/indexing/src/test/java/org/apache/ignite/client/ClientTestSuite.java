@@ -27,7 +27,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     ClientConfigurationTest.class,
     ClientCacheConfigurationTest.class,
-    ClientCacheFunctionalTest.class,
+    FunctionalTest.class,
     IgniteBinaryTest.class,
     LoadTest.class,
     ReliabilityTest.class,

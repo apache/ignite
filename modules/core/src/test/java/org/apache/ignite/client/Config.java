@@ -27,7 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /** Reusable system tests configuration. */
-public class ClientConfigurationTestConfig {
+public class Config {
     /** Host. */
     public static final String SERVER = "127.0.0.1:10800";
 

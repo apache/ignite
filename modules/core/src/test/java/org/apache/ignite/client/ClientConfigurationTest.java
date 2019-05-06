@@ -81,7 +81,7 @@ public class ClientConfigurationTest {
 
         Object desTarget = in.readObject();
 
-        assertTrue(ClientConfigurationComparers.equal(target, desTarget));
+        assertTrue(Comparers.equal(target, desTarget));
     }
 
     /**
@@ -93,12 +93,12 @@ public class ClientConfigurationTest {
         GridStringLogger gridStrLog = new GridStringLogger();
         gridStrLog.logLength(1024 * 100);
 
-        IgniteConfiguration cci = ClientConfigurationTestConfig.getServerConfiguration().setClientMode(true);
+        IgniteConfiguration cci = Config.getServerConfiguration().setClientMode(true);
         cci.setRebalanceThreadPoolSize(cci.getSystemThreadPoolSize());
         cci.setGridLogger(gridStrLog);
 
         try (
-            Ignite si = Ignition.start(ClientConfigurationTestConfig.getServerConfiguration());
+            Ignite si = Ignition.start(Config.getServerConfiguration());
             Ignite ci = Ignition.start(cci)) {
             Set<ClusterNode> collect = si.cluster().nodes().stream()
                 .filter(new Predicate<ClusterNode>() {

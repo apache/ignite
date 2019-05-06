@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
-import org.apache.ignite.client.ClientConfigurationTestConfig;
+import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -221,7 +221,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
      */
     private IgniteClient startClient(String userName) {
         return Ignition.startClient(
-            new ClientConfiguration().setAddresses(ClientConfigurationTestConfig.SERVER)
+            new ClientConfiguration().setAddresses(Config.SERVER)
                 .setUserName(userName)
                 .setUserPassword("")
         );
