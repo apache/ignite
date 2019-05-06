@@ -353,6 +353,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
             restoreStateFut.onDone();
     }
 
+    /** {@inheritDoc} */
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext diagCtx) {
         if (!isDone()) {
             synchronized (this) {
@@ -360,5 +361,14 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
                     "GridDhtPartitionsSingleMessages from nodes=" + awaited);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "InitNewCoordinatorFuture [" +
+            "initTopVer=" + initTopVer +
+            ", awaited=" + awaited +
+            ", joinedNodes=" + joinedNodes +
+            ']';
     }
 }
