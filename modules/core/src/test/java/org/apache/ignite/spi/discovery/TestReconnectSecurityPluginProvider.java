@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.impl;
+package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.plugin.PluginConfiguration;
+import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
+import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 
-/**
- * Grid security configuration for tests.
- */
-@FunctionalInterface
-public interface TestSecurityPluginConfiguration extends PluginConfiguration {
-    /**
-     * @param ctx GridKernalContext.
-     * @return GridSecurityProcessor.
-     */
-    public GridSecurityProcessor build(GridKernalContext ctx);
+/** */
+public class TestReconnectSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
+    /** {@inheritDoc} */
+    @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
+        return new TestReconnectProcessor(ctx);
+    }
 }
