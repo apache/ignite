@@ -97,7 +97,7 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
         private boolean idleCheckCrc;
 
         /** Cache filter. */
-        private CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+        private CacheFilterEnum cacheFilterEnum;
 
         /**
          *
@@ -201,7 +201,7 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
         boolean dump = false;
         boolean skipZeros = false;
         boolean idleCheckCrc = false;
-        CacheFilterEnum cacheFilterEnum = CacheFilterEnum.ALL;
+        CacheFilterEnum cacheFilterEnum = CacheFilterEnum.DEFAULT;
         Set<String> excludeCaches = null;
 
         int idleVerifyArgsCnt = 5;
