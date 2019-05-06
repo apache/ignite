@@ -1085,7 +1085,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private void localAuthentication(SecurityCredentials locCred){
         assert spi.nodeAuth != null;
-        assert locCred != null;
+//        assert locCred != null;
 
         try {
             SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
