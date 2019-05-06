@@ -167,6 +167,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
@@ -235,6 +236,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private final boolean keepStaticCacheConfiguration = IgniteSystemProperties.getBoolean(
         IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION);
+
+    /** Supports non default precision and scale for DECIMAL and VARCHAR types. */
+    private static final IgniteProductVersion PRECISION_SCALE_SINCE_VER = IgniteProductVersion.fromString("2.7.0");
 
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
@@ -685,7 +689,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ", cacheType=" + cacheType + "]");
             }
         }
-    }
+
+        Collection<QueryEntity> ents = cc.getQueryEntities();
+
+        if (ctx.discovery().discoCache() != null) {
+            boolean nonDfltPrecScaleExists = ents.stream().anyMatch(
+                e -> !F.isEmpty(e.getFieldsPrecision()) || !F.isEmpty(e.getFieldsScale()));
+
+            if (nonDfltPrecScaleExists) {
+                ClusterNode oldestNode = ctx.discovery().discoCache().oldestServerNode();
+
+                if (PRECISION_SCALE_SINCE_VER.compareTo(oldestNode.version()) > 0) {
+                    throw new IgniteCheckedException("Non default precision and scale is supported since version 2.7. " +
+                        "The node with oldest version [node=" + oldestNode + ']');
+                }
+            }
+        }
+   }
 
     /**
      * @param ctx Context.
