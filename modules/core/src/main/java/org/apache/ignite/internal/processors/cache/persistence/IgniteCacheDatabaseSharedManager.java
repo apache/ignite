@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -245,20 +246,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (DataRegion memPlc : dataRegionMap.values()) {
             DataRegionConfiguration memPlcCfg = memPlc.config();
 
-            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
+            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl)memMetricsMap.get(memPlcCfg.getName());
 
             boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
 
+            String structureName = cctx.igniteInstanceName() + "##" + memPlcCfg.getName();
+
+            PageLockListener lsnr = cctx.createPageLockListener(structureName);
+
             CacheFreeListImpl freeList = new CacheFreeListImpl(
                 0,
-                cctx.igniteInstanceName(),
+                structureName,
                 memMetrics,
                 memPlc,
                 null,
                 persistenceEnabled ? cctx.wal() : null,
                 0L,
                 true,
-                null
+                lsnr
             );
 
             freeListMap.put(memPlcCfg.getName(), freeList);

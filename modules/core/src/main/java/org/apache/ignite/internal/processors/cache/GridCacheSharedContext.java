@@ -50,8 +50,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -297,6 +299,10 @@ public class GridCacheSharedContext<K, V> {
             msgLog.info("Components activation performed in " + (System.currentTimeMillis() - time) + " ms.");
 
         ((DistributedMetaStorageImpl)kernalCtx.distributedMetastorage()).inMemoryReadyForWrite();
+    }
+
+    public PageLockListener createPageLockListener(String name){
+        return DataStructure.NOOP_LSNR;
     }
 
     /**

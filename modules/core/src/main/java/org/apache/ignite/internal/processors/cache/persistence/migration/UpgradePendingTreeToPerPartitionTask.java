@@ -45,6 +45,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.DataStructure.NOOP_LSNR;
 import static org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree.WITHOUT_KEY;
 
 /**
@@ -149,7 +150,8 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 grp.dataRegion().pageMemory(),
                 pendingRootPage.pageId().pageId(),
                 ((GridCacheOffheapManager)grp.offheap()).reuseListForIndex(null),
-                false
+                false,
+                NOOP_LSNR
             );
         }
         finally {

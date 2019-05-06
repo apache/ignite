@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
@@ -1529,6 +1530,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private CacheFreeListImpl createFreeList(RootPage reuseRoot) throws IgniteCheckedException {
             String freeListName = freeListName();
 
+            PageLockListener lsnr = ctx.createPageLockListener(freeListName);
+
             return new CacheFreeListImpl(
                 grp.groupId(),
                 freeListName,
@@ -1538,7 +1541,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 ctx.wal(),
                 reuseRoot.pageId().pageId(),
                 reuseRoot.isAllocated(),
-                null
+                lsnr
             ) {
                 /** {@inheritDoc} */
                 @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
@@ -1556,13 +1559,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ) throws IgniteCheckedException {
             String dataTreeName = dataTreeName();
 
+            PageLockListener lsnr = ctx.createPageLockListener(dataTreeName);
+
             return new CacheDataTree(
                 grp,
                 dataTreeName,
                 freeList,
                 rowStore,
                 treeRoot.pageId().pageId(),
-                treeRoot.isAllocated()) {
+                treeRoot.isAllocated(),
+                lsnr
+            ) {
                 /** {@inheritDoc} */
                 @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                     assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1578,13 +1585,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ) throws IgniteCheckedException {
             String pendingEntriesTreeName = pendingEntriesTreeName();
 
+            PageLockListener lsnr = ctx.createPageLockListener(pendingEntriesTreeName);
+
             return new PendingEntriesTree(
                 grp,
                 pendingEntriesTreeName,
                 grp.dataRegion().pageMemory(),
                 pendingTreeRoot.pageId().pageId(),
                 freeList,
-                pendingTreeRoot.isAllocated()) {
+                pendingTreeRoot.isAllocated(),
+                lsnr
+            ) {
                 /** {@inheritDoc} */
                 @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                     assert grp.shared().database().checkpointLockIsHeldByThread();

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -50,7 +51,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
         PageMemory pageMem,
         long metaPageId,
         ReuseList reuseList,
-        boolean initNew
+        boolean initNew,
+        PageLockListener lockLsnr
     ) throws IgniteCheckedException {
         super(
             name,
@@ -63,7 +65,7 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
             grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS,
             grp.shared().kernalContext().failure(),
-            null
+            lockLsnr
         );
 
         this.grp = grp;
