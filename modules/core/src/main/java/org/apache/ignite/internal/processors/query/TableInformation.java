@@ -18,9 +18,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Objects;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Information about table.
@@ -176,7 +175,7 @@ public class TableInformation {
     /**
      * @return Affinity key column name or {@code null} if not applicable.
      */
-    public String affinityKeyColumn() {
+    @Nullable public String affinityKeyColumn() {
         return affinityKeyCol;
     }
 

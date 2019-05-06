@@ -295,6 +295,26 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetTableTypes() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTableTypes();
+
+            assertTrue(rs.next());
+
+            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+
+            assertTrue(rs.next());
+
+            assertEquals("VIEW", rs.getString("TABLE_TYPE"));
+        }
+    }
+
 
     /**
      * @throws Exception If failed.

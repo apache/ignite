@@ -59,9 +59,9 @@ public class SqlSystemViewTables extends SqlAbstractLocalSystemView {
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition nameCond = conditionForColumn(TABLE_NAME, first, last);
 
-        String tblNamePattern = nameCond.isEquality() ? nameCond.valueForEquality().getString() : null;
+        String tblNamePtrn = nameCond.isEquality() ? nameCond.valueForEquality().getString() : null;
 
-        List<Row> rows = ctx.query().getIndexing().tablesInformation(null, tblNamePattern, TableType.TABLE.name())
+        List<Row> rows = ctx.query().getIndexing().tablesInformation(null, tblNamePtrn, TableType.TABLE.name())
             .stream()
             .map(tbl ->
                 createRow(ses,
