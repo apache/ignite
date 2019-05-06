@@ -401,13 +401,13 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
             cfg.setConsistentId(gridName);
 
             DataStorageConfiguration storageCfg = new DataStorageConfiguration();
-            storageCfg.setDataRegionConfigurations(regions.toArray(new DataRegionConfiguration[] {}));
+            storageCfg.setDataRegionConfigurations(regions.toArray(new DataRegionConfiguration[regions.size()]));
             cfg.setDataStorageConfiguration(storageCfg);
 
             if (dfltRegionConfiguration != null)
                 storageCfg.setDefaultDataRegionConfiguration(dfltRegionConfiguration);
 
-            cfg.setCacheConfiguration(caches.toArray(new CacheConfiguration[regions.size()]));
+            cfg.setCacheConfiguration(caches.toArray(new CacheConfiguration[caches.size()]));
 
             return startGrid(cfg);
         }
