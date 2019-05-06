@@ -117,8 +117,6 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testDropColumn() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-11604");
-
         String fieldName = "field_to_drop";
 
         int size = 10;
