@@ -139,6 +139,8 @@ public class CacheCommands extends Command<CacheSubcommands> {
         logger.nl();
         logger.logWithIndent("Subcommands:");
 
+        //TODO "Print how to use other cache commands."
+
         Arrays.stream(CacheCommandList.values()).forEach(c -> {if (c != null) c.subcommand().printUsage(logger);});
 
         logger.nl();
@@ -149,25 +151,22 @@ public class CacheCommands extends Command<CacheSubcommands> {
      * Print cache command usage with default indention.
      *
      * @param cmd Cache command.
+     * @param description Command description.
      * @param args Cache command arguments.
      */
-    protected static void usageCache(CommandLogger logger, CacheSubcommands cmd, String... args) {
-        usageCache(logger, 1, cmd, args);
-    }
+    protected static void usageCache(
+        CommandLogger logger,
+        CacheSubcommands cmd,
+        String description,
+        String... args
+    ) {
+        int indentsNum = 1;
 
-    /**
-     * Print cache command usage.
-     *
-     * @param indentsNum Number of indents.
-     * @param cmd Cache command.
-     * @param args Cache command arguments.
-     */
-    protected static void usageCache(CommandLogger logger, int indentsNum, CacheSubcommands cmd, String... args) {
         logger.logWithIndent(DELIM, indentsNum);
         logger.nl();
         logger.logWithIndent(j(" ", CACHE, cmd, j(" ", args)), indentsNum++);
         logger.nl();
-        logger.logWithIndent(cmd.description(), indentsNum);
+        logger.logWithIndent(description, indentsNum);
         logger.nl();
 
         Map<String, String> paramsDesc = createCacheArgsDesc(cmd);

@@ -24,7 +24,9 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONT
 public class CacheContention extends Command<CacheContention.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        usageCache(logger, CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
+        String description = "Show the keys that are point of contention for multiple transactions.";
+
+        usageCache(logger, CONTENTION, description, "minQueueSize", OP_NODE_ID, op("maxPrint"));
     }
 
     /**

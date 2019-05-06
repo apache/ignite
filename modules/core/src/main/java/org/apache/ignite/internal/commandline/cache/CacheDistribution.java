@@ -49,7 +49,9 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 public class CacheDistribution extends Command<CacheDistribution.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        usageCache(logger, DISTRIBUTION, or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
+        String description = "Prints the information about partition distribution.";
+
+        usageCache(logger, DISTRIBUTION, description, or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
     }
 
     /**

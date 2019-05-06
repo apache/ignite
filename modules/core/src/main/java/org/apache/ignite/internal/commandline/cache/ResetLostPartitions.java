@@ -38,8 +38,9 @@ public class ResetLostPartitions extends Command<Set<String>> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
+        String description = "Reset the state of lost partitions for the specified caches.";
 
-        usageCache(logger, RESET_LOST_PARTITIONS, CACHES);
+        usageCache(logger, RESET_LOST_PARTITIONS, description, CACHES);
     }
 
     /**

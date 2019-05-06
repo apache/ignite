@@ -70,7 +70,10 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 public class CacheViewer extends Command<CacheViewer.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        usageCache(logger, LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+        String description = "Show information about caches, groups or sequences that match a regular expression. " +
+            "When executed without parameters, this subcommand prints the list of caches.";
+
+        usageCache(logger, LIST, description, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
     }
 
     /**

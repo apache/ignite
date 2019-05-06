@@ -36,58 +36,42 @@ public enum CacheSubcommands {
     /**
      * Prints out help for the cache command.
      */
-    HELP("help", null, "Print how to use other cache commands.", null),
+    HELP("help", null, null),
 
     /**
      * Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster.
      */
-    IDLE_VERIFY("idle_verify", IdleVerifyCommandArg.class, "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
-        "Cache filtering options configure the set of caches that will be processed by idle_verify command. " +
-        "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
-        "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
-        "regexps, by cache type and after all by exclude regexps.", new IdleVerify()),
+    IDLE_VERIFY("idle_verify", IdleVerifyCommandArg.class, new IdleVerify()),
 
     /**
      * Prints info regarding caches, groups or sequences.
      */
-    LIST("list", ListCommandArg.class,
-        "Show information about caches, groups or sequences that match a regular expression. " +
-            "When executed without parameters, this subcommand prints the list of caches.", new CacheViewer()),
+    LIST("list", ListCommandArg.class, new CacheViewer()),
 
     /**
      * Validates indexes attempting to read each indexed entry.
      */
-    VALIDATE_INDEXES("validate_indexes", ValidateIndexesCommandArg.class,
-        "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
-            "Cache filtering options configure the set of caches that will be processed by " + IDLE_VERIFY + " command. " +
-            "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
-            "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
-            "regexps, by cache type and after all by exclude regexps.", new CacheValidateIndexes()),
+    VALIDATE_INDEXES("validate_indexes", ValidateIndexesCommandArg.class, new CacheValidateIndexes()),
 
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).
      */
-    CONTENTION("contention", null, "Show the keys that are point of contention for multiple transactions.",
-        new CacheContention()),
+    CONTENTION("contention", null, new CacheContention()),
 
     /**
      * Collect information on the distribution of partitions.
      */
-    DISTRIBUTION("distribution", DistributionCommandArg.class, "Prints the information about partition distribution.",
-        new CacheDistribution()),
+    DISTRIBUTION("distribution", DistributionCommandArg.class, new CacheDistribution()),
 
     /**
      * Reset lost partitions
      */
-    RESET_LOST_PARTITIONS("reset_lost_partitions", null, "Reset the state of lost partitions for the specified caches.",
-        new ResetLostPartitions()),
+    RESET_LOST_PARTITIONS("reset_lost_partitions", null, new ResetLostPartitions()),
 
     /**
      * Find and remove garbage.
      */
-    FIND_AND_DELETE_GARBAGE("find_garbage", FindAndDeleteGarbageArg.class,
-        "Find and optionally delete garbage from shared cache groups which could be left after cache destroy.",
-        new FindAndDeleteGarbage());
+    FIND_AND_DELETE_GARBAGE("find_garbage", FindAndDeleteGarbageArg.class, new FindAndDeleteGarbage());
 
 
     /** Enumerated values. */
@@ -99,26 +83,20 @@ public enum CacheSubcommands {
     /** Name. */
     private final String name;
 
-    /** Command description. */
-    private final String desc;
-
     /** Command instance for certain type. */
     private final Command command;
 
     /**
      * @param name Name.
-     * @param desc Command description.
      * @param command Command realization.
      */
     CacheSubcommands(
         String name,
         Class<? extends Enum<? extends CommandArg>> commandArgs,
-        String desc,
         Command command
     ) {
         this.name = name;
         this.commandArgs = commandArgs;
-        this.desc = desc;
         this.command = command;
     }
 
@@ -147,13 +125,6 @@ public enum CacheSubcommands {
      */
     public Command subcommand() {
         return command;
-    }
-
-    /**
-     * @return Command description.
-     */
-    public String description() {
-        return desc;
     }
 
     /**
