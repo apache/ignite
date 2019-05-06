@@ -43,7 +43,7 @@ public enum Command {
     WAL("--wal"),
 
     /** */
-    DEBUG("--debug"),
+    DIAGNOSTIC("--diagnostic"),
     ;
 
     /** Private values copy so there's no need in cloning it every time. */

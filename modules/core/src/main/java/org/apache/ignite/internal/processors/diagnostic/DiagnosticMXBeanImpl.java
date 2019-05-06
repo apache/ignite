@@ -15,31 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.maintain;
+package org.apache.ignite.internal.processors.diagnostic;
 
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.mxbean.DebugMXBean;
+import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
+import org.apache.ignite.mxbean.DiagnosticMXBean;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * {@link DiagnosticMXBean} implementation.
  */
-public class DebugMXBeanImpl implements DebugMXBean {
+public class DiagnosticMXBeanImpl implements DiagnosticMXBean {
 
     private DebugProcessor debug;
 
     /**
      * @param ctx Context.
      */
-    public DebugMXBeanImpl(GridKernalContext ctx) {
+    public DiagnosticMXBeanImpl(GridKernalContext ctx) {
         debug = ctx.debug();
     }
 
+    /** {@inheritDoc} */
     @Override public void dumpPageHistory(boolean dumpToFile, boolean dumpToLog, String filePath, long... pageIds) {
         DebugProcessor.DebugPageBuilder builder = new DebugProcessor.DebugPageBuilder()
             .pageIds(pageIds);
@@ -61,12 +60,8 @@ public class DebugMXBeanImpl implements DebugMXBean {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void dumpPageHistory(boolean dumpToFile, boolean dumpToLog, long... pageIds) {
         dumpPageHistory(dumpToFile, dumpToLog, null, pageIds);
-    }
-
-    //For Test only.
-    void debugProcessor(DebugProcessor debug) {
-        this.debug = debug;
     }
 }

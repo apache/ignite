@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.maintain;
+package org.apache.ignite.internal.processors.diagnostic;
 
 import java.util.ArrayList;
 import java.util.List;

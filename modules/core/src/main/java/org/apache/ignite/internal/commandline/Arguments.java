@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
-import org.apache.ignite.internal.commandline.debug.DebugArguments;
+import org.apache.ignite.internal.commandline.diagnostic.DiagnosticArguments;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 /**
@@ -51,9 +51,9 @@ public class Arguments {
     private BaselineArguments baselineArgs;
 
     /**
-     * Arguments for debug command.
+     * Arguments for diagnostic command.
      */
-    private DebugArguments debugArgs;
+    private DiagnosticArguments diagnosticArgs;
 
     /** Transaction arguments. */
     private final VisorTxTaskArg txArg;
@@ -113,7 +113,7 @@ public class Arguments {
      * @param user User.
      * @param pwd Password.
      * @param baselineArgs Baseline args.
-     * @param debugArgs Debug args.
+     * @param diagnosticArgs Diagnostic args.
      * @param txArg TX arg.
      * @param cacheArgs --cache subcommand arguments.
      * @param walAct WAL action.
@@ -132,7 +132,7 @@ public class Arguments {
      * @param sslTrustStoreType Truststore Type.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
-        BaselineArguments baselineArgs, DebugArguments debugArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs,
+        BaselineArguments baselineArgs, DiagnosticArguments diagnosticArgs, VisorTxTaskArg txArg, CacheArguments cacheArgs,
         String walAct, String walArgs,
         Long pingTimeout, Long pingInterval, boolean autoConfirmation,
         String sslProtocol, String sslCipherSuites, String sslKeyAlgorithm,
@@ -146,7 +146,7 @@ public class Arguments {
         this.pwd = pwd;
 
         this.baselineArgs = baselineArgs;
-        this.debugArgs = debugArgs;
+        this.diagnosticArgs = diagnosticArgs;
 
         this.txArg = txArg;
         this.cacheArgs = cacheArgs;
@@ -229,10 +229,10 @@ public class Arguments {
     }
 
     /**
-     * @return Debug arguments.
+     * @return Diagnostic arguments.
      */
-    public DebugArguments getDebugArgs() {
-        return debugArgs;
+    public DiagnosticArguments getDiagnosticArgs() {
+        return diagnosticArgs;
     }
 
     /**

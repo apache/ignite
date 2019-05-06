@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.maintain;
+package org.apache.ignite.internal.processors.diagnostic;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
@@ -31,19 +31,19 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.DebugMXBean;
+import org.apache.ignite.mxbean.DiagnosticMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.maintain.DebugProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.diagnostic.DebugProcessor.DEFAULT_TARGET_FOLDER;
 
 /** */
-public class DebugMXBeanTest extends GridCommonAbstractTest {
+public class DiagnosticMXBeanTest extends GridCommonAbstractTest {
     /** **/
     private static final String TEST_DUMP_FILE = "custom";
 
     /** One time instantiated debug bean for test. **/
-    private static DebugMXBean debugBean;
+    private static DiagnosticMXBean debugBean;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -136,15 +136,15 @@ public class DebugMXBeanTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private DebugMXBean debugMxBean() throws Exception {
+    private DiagnosticMXBean debugMxBean() throws Exception {
         ObjectName mBeanName = U.makeMBeanName(getTestIgniteInstanceName(), "Debug",
-            DebugMXBeanImpl.class.getSimpleName());
+            DiagnosticMXBeanImpl.class.getSimpleName());
 
         MBeanServer mBeanSrv = ManagementFactory.getPlatformMBeanServer();
 
         assertTrue(mBeanSrv.isRegistered(mBeanName));
 
-        Class<DebugMXBean> itfCls = DebugMXBean.class;
+        Class<DiagnosticMXBean> itfCls = DiagnosticMXBean.class;
 
         return MBeanServerInvocationHandler.newProxyInstance(mBeanSrv, mBeanName, itfCls, true);
     }

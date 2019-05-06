@@ -35,7 +35,7 @@ import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMXBeanImpl;
 import org.apache.ignite.internal.processors.cluster.BaselineAutoAdjustMXBeanImpl;
-import org.apache.ignite.internal.processors.maintain.DebugMXBeanImpl;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticMXBeanImpl;
 import org.apache.ignite.internal.stat.IoStatisticsMetricsLocalMXBeanImpl;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -45,7 +45,7 @@ import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.BaselineAutoAdjustMXBean;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.DataStorageMXBean;
-import org.apache.ignite.mxbean.DebugMXBean;
+import org.apache.ignite.mxbean.DiagnosticMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.IoStatisticsMetricsMXBean;
@@ -157,8 +157,8 @@ public class IgniteMBeansManager {
             BaselineAutoAdjustMXBean.class);
 
         // Debug
-        DebugMXBean debugMXBean = new DebugMXBeanImpl(ctx);
-        registerMBean("Debug", debugMXBean.getClass().getSimpleName(), debugMXBean,DebugMXBean.class);
+        DiagnosticMXBean diagnosticMXBean = new DiagnosticMXBeanImpl(ctx);
+        registerMBean("Debug", diagnosticMXBean.getClass().getSimpleName(), diagnosticMXBean,DiagnosticMXBean.class);
 
         // Executors
         registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);

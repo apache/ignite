@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.debug;
+package org.apache.ignite.internal.commandline.diagnostic;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 
 /**
- * {@link DebugCommand#PAGE_HISTORY} command arguments.
+ * {@link DiagnosticCommand#PAGE_HISTORY} command arguments.
  */
-public enum DebugPageCommandArg implements CommandArg {
+public enum DiagnosticPageCommandArg implements CommandArg {
     /** List of page ids. */
     PAGE_IDS("page_ids"),
     /** Custom path to dump debug info. */
@@ -36,7 +36,7 @@ public enum DebugPageCommandArg implements CommandArg {
     private final String name;
 
     /** */
-    DebugPageCommandArg(String name) {
+    DiagnosticPageCommandArg(String name) {
         this.name = name;
     }
 

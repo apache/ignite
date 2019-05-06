@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.visor.debug;
+package org.apache.ignite.internal.visor.diagnostic;
 
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.maintain.DebugProcessor;
+import org.apache.ignite.internal.processors.diagnostic.DebugProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,23 +28,23 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
- * Creates debug info dump.
+ * Creates diagnostic info dump.
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorDumpDebugInfoTask extends VisorOneNodeTask<VisorDumpDebugInfoArg, Void> {
+public class VisorDumpDiagnosticInfoTask extends VisorOneNodeTask<VisorDumpDiagnosticInfoArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorDumpDebugInfoJob job(VisorDumpDebugInfoArg arg) {
+    @Override protected VisorDumpDebugInfoJob job(VisorDumpDiagnosticInfoArg arg) {
         return new VisorDumpDebugInfoJob(arg, debug);
     }
 
     /**
-     * Job that take debug info dump.
+     * Job that take diagnostic info dump.
      */
-    private static class VisorDumpDebugInfoJob extends VisorJob<VisorDumpDebugInfoArg, Void> {
+    private static class VisorDumpDebugInfoJob extends VisorJob<VisorDumpDiagnosticInfoArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -52,15 +52,15 @@ public class VisorDumpDebugInfoTask extends VisorOneNodeTask<VisorDumpDebugInfoA
          * @param arg Formal job argument.
          * @param debug Debug flag.
          */
-        private VisorDumpDebugInfoJob(VisorDumpDebugInfoArg arg, boolean debug) {
+        private VisorDumpDebugInfoJob(VisorDumpDiagnosticInfoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(VisorDumpDebugInfoArg arg) {
+        @Override protected Void run(VisorDumpDiagnosticInfoArg arg) {
             DebugProcessor debug = ignite.context().debug();
 
-            if (arg.operation == VisorDumpDebugInfoOperation.PAGE_HISTORY)
+            if (arg.operation == VisorDumpDiagnosticInfoOperation.PAGE_HISTORY)
                 dumpPageHistory(arg, debug);
 
             return null;
@@ -68,16 +68,16 @@ public class VisorDumpDebugInfoTask extends VisorOneNodeTask<VisorDumpDebugInfoA
 
         /**
          * @param arg Job arguments for dumping.
-         * @param debug Debug processor for execution.
+         * @param debug Diagnostic processor for execution.
          */
-        private void dumpPageHistory(VisorDumpDebugInfoArg arg, DebugProcessor debug) {
+        private void dumpPageHistory(VisorDumpDiagnosticInfoArg arg, DebugProcessor debug) {
             DebugProcessor.DebugPageBuilder builder = new DebugProcessor.DebugPageBuilder()
                 .pageIds(arg.getPageIds());
 
             if (arg.getPathToDump() != null)
                 builder.fileOrFolderForDump(new File(arg.getPathToDump()));
 
-            for (VisorDumpDebugInfoArg.DumpAction action : arg.getDumpActions()) {
+            for (VisorDumpDiagnosticInfoArg.DumpAction action : arg.getDumpActions()) {
                 DebugProcessor.DebugAction convertedAction = toInner(action);
 
                 if (convertedAction != null)
@@ -98,7 +98,7 @@ public class VisorDumpDebugInfoTask extends VisorOneNodeTask<VisorDumpDebugInfoA
          * @param action Action for converting.
          * @return Inner debug action.
          */
-        private DebugProcessor.DebugAction toInner(VisorDumpDebugInfoArg.DumpAction action) {
+        private DebugProcessor.DebugAction toInner(VisorDumpDiagnosticInfoArg.DumpAction action) {
             switch (action) {
                 case PRINT_TO_LOG:
                     return DebugProcessor.DebugAction.PRINT_TO_LOG;

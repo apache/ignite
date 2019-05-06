@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.maintain;
+package org.apache.ignite.internal.processors.diagnostic;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -46,7 +46,7 @@ public class DebugProcessor extends GridProcessorAdapter {
     /** Time formatter for dump file name. */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
     /** Folder name for store debug info. **/
-    private static final String DEFAULT_TARGET_FOLDER = "debug";
+    public static final String DEFAULT_TARGET_FOLDER = "debug";
 
     /** Full path for store dubug info. */
     private final Path debugPath;

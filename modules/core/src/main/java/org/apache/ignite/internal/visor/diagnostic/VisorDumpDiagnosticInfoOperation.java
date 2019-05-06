@@ -15,17 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
+package org.apache.ignite.internal.visor.diagnostic;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
- * This interface defines JMX view on {@link org.apache.ignite.internal.processors.maintain.DebugProcessor}.
- */
-public interface DebugMXBean {
-    /** */
-    @MXBeanDescription("Dump page history to custom path.")
-    void dumpPageHistory(boolean dumpToFile, boolean dumpToLog, String filePath, long... pageIds);
+ * Dump diagnostic info operation types.
+ **/
+public enum VisorDumpDiagnosticInfoOperation {
+    /** Dump page history information. */
+    PAGE_HISTORY;
 
-    /** */
-    @MXBeanDescription("Dump page history.")
-    void dumpPageHistory(boolean dumpToFile, boolean dumpToLog, long... pageIds);
+    /** Enumerated values. */
+    private static final VisorDumpDiagnosticInfoOperation[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static VisorDumpDiagnosticInfoOperation fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

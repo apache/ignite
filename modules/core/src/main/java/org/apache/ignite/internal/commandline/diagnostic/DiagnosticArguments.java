@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.debug;
+package org.apache.ignite.internal.commandline.diagnostic;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoArg;
+import org.apache.ignite.internal.visor.diagnostic.VisorDumpDiagnosticInfoArg;
 
 /**
  * This class contains all possible arguments after parsing debug command input.
  */
-public class DebugArguments {
+public class DiagnosticArguments {
     /** Command. */
-    private DebugCommand cmd;
+    private DiagnosticCommand cmd;
     /** */
     private List<Long> pageIds;
 
@@ -36,7 +36,7 @@ public class DebugArguments {
     private String pathToDump;
 
     /** */
-    private Collection<VisorDumpDebugInfoArg.DumpAction> dumpActions;
+    private Collection<VisorDumpDiagnosticInfoArg.DumpAction> dumpActions;
 
     /**
      * @param cmd Dump command.
@@ -44,8 +44,8 @@ public class DebugArguments {
      * @param pathToDump Path to dump.
      * @param dumpActions Dump debug info actions.
      */
-    public DebugArguments(DebugCommand cmd, List<Long> pageIds, String pathToDump,
-        Collection<VisorDumpDebugInfoArg.DumpAction> dumpActions) {
+    public DiagnosticArguments(DiagnosticCommand cmd, List<Long> pageIds, String pathToDump,
+        Collection<VisorDumpDiagnosticInfoArg.DumpAction> dumpActions) {
         this.cmd = cmd;
         this.pageIds = pageIds;
         this.pathToDump = pathToDump;
@@ -55,7 +55,7 @@ public class DebugArguments {
     /**
      * @return Debug command.
      */
-    public DebugCommand getCmd() {
+    public DiagnosticCommand getCmd() {
         return cmd;
     }
 
@@ -76,28 +76,28 @@ public class DebugArguments {
     /**
      * @return Dump debug info actions.
      */
-    public Collection<VisorDumpDebugInfoArg.DumpAction> getDumpActions() {
+    public Collection<VisorDumpDiagnosticInfoArg.DumpAction> getDumpActions() {
         return dumpActions;
     }
 
     /**
-     * Builder of {@link DebugArguments}.
+     * Builder of {@link DiagnosticArguments}.
      */
     public static class Builder {
         /** Command. */
-        private DebugCommand cmd;
+        private DiagnosticCommand cmd;
         /** */
         private List<Long> pageIds;
 
         /** */
         private String fileToDump;
 
-        private Set<VisorDumpDebugInfoArg.DumpAction> dumpActions = new HashSet<>();
+        private Set<VisorDumpDiagnosticInfoArg.DumpAction> dumpActions = new HashSet<>();
 
         /**
          * @param cmd Command.
          */
-        public Builder(DebugCommand cmd) {
+        public Builder(DiagnosticCommand cmd) {
             this.cmd = cmd;
         }
 
@@ -125,17 +125,17 @@ public class DebugArguments {
          * @param dumpAction Dump one more debug action.
          * @return This instance for chaining.
          */
-        public Builder addDumpAction(VisorDumpDebugInfoArg.DumpAction dumpAction) {
+        public Builder addDumpAction(VisorDumpDiagnosticInfoArg.DumpAction dumpAction) {
             this.dumpActions.add(dumpAction);
 
             return this;
         }
 
         /**
-         * @return {@link DebugArguments}.
+         * @return {@link DiagnosticArguments}.
          */
-        public DebugArguments build() {
-            return new DebugArguments(cmd, pageIds, fileToDump, dumpActions);
+        public DiagnosticArguments build() {
+            return new DiagnosticArguments(cmd, pageIds, fileToDump, dumpActions);
         }
     }
 }

@@ -129,7 +129,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
-import static org.apache.ignite.internal.processors.maintain.DebugProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.diagnostic.DebugProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -715,37 +715,39 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test that debug page history via control.sh.
+     * Test that diagnostic page history via control.sh.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testDebugPageHistory() throws Exception {
+    public void testDiagnosticPageHistory() throws Exception {
         Ignite ignite = startGrids(1);
 
         ignite.cluster().active(true);
         try {
             assertEquals(EXIT_CODE_OK, execute(
-                "--debug", "page_history", "page_ids", "234324,3455", "print_to_log", "print_to_file"
+                "--diagnostic", "page_history", "page_ids", "234324,3455", "print_to_log", "print_to_file"
             ));
 
             checkDumpedData();
 
-            assertEquals(EXIT_CODE_OK, execute("--debug", "page_history", "page_ids", "234324,3455", "print_to_file"));
-            assertEquals(EXIT_CODE_OK, execute("--debug", "page_history", "print_to_log", "page_ids", "234324,3455"));
-            assertEquals(EXIT_CODE_OK, execute("--debug", "page_history", "print_to_log"));
+            assertEquals(EXIT_CODE_OK, execute("--diagnostic", "page_history", "page_ids", "24,3455", "print_to_file"));
+            assertEquals(EXIT_CODE_OK, execute("--diagnostic", "page_history", "print_to_log", "page_ids", "2324,345"));
+            assertEquals(EXIT_CODE_OK, execute("--diagnostic", "page_history", "print_to_log"));
         }
         finally {
             U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER, false));
         }
         //At least one action missing.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--debug", "page_history", "page_ids", "234324,3455"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--diagnostic", "page_history", "page_ids", "2324,3455"));
         //Page id format is incorrect(expected only digits).
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--debug", "page_history", "page_ids", "sdfs", "print_to_log"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(
+            "--diagnostic", "page_history", "page_ids", "ss", "print_to_log"
+        ));
         //Page id missing.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--debug", "page_history", "page_ids", "print_to_file"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--diagnostic", "page_history", "page_ids", "print_to_file"));
         //At least one subcommand missing eg. page_history.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--debug", "page_ids", "5", "print_to_file"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--diagnostic", "page_ids", "5", "print_to_file"));
     }
 
     /**

@@ -73,9 +73,9 @@ import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributi
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTask;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskArg;
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
-import org.apache.ignite.internal.commandline.debug.DebugArguments;
-import org.apache.ignite.internal.commandline.debug.DebugCommand;
-import org.apache.ignite.internal.commandline.debug.DebugPageCommandArg;
+import org.apache.ignite.internal.commandline.diagnostic.DiagnosticArguments;
+import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
+import org.apache.ignite.internal.commandline.diagnostic.DiagnosticPageCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -103,10 +103,10 @@ import org.apache.ignite.internal.visor.cache.VisorCacheEvictionConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheNearConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheStoreConfiguration;
-import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoArg;
-import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoOperation;
-import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoTask;
-import org.apache.ignite.internal.visor.debug.VisorDumpDebugInfoArg.DumpAction;
+import org.apache.ignite.internal.visor.diagnostic.VisorDumpDiagnosticInfoArg;
+import org.apache.ignite.internal.visor.diagnostic.VisorDumpDiagnosticInfoOperation;
+import org.apache.ignite.internal.visor.diagnostic.VisorDumpDiagnosticInfoTask;
+import org.apache.ignite.internal.visor.diagnostic.VisorDumpDiagnosticInfoArg.DumpAction;
 import org.apache.ignite.internal.visor.misc.VisorClusterNode;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -165,7 +165,7 @@ import static org.apache.ignite.internal.commandline.Command.ACTIVATE;
 import static org.apache.ignite.internal.commandline.Command.BASELINE;
 import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
-import static org.apache.ignite.internal.commandline.Command.DEBUG;
+import static org.apache.ignite.internal.commandline.Command.DIAGNOSTIC;
 import static org.apache.ignite.internal.commandline.Command.STATE;
 import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.commandline.Command.WAL;
@@ -1281,23 +1281,23 @@ public class CommandHandler {
     }
 
     /**
-     * Dump debug info.
+     * Dump diagnostic info.
      *
      * @param client Client.
-     * @param debugArgs Debug action arguments.
-     * @throws Throwable If failed to execute debug action.
+     * @param diagnosticArgs Diagnostic action arguments.
+     * @throws Throwable If failed to execute diagnostic action.
      */
-    private void debug(GridClient client, DebugArguments debugArgs) throws Throwable {
+    private void diagnostic(GridClient client, DiagnosticArguments diagnosticArgs) throws Throwable {
         try {
             executeTaskByNameOnNode(
-                client, VisorDumpDebugInfoTask.class.getName(), toVisorArguments(debugArgs), BROADCAST_UUID
+                client, VisorDumpDiagnosticInfoTask.class.getName(), toVisorArguments(diagnosticArgs), BROADCAST_UUID
             );
 
-            log("Dump of " + debugArgs.getCmd().text() + " was successfully "
-                + debugArgs.getDumpActions().stream().map(DumpAction::name).collect(joining(" and ")));
+            log("Dump of " + diagnosticArgs.getCmd().text() + " was successfully "
+                + diagnosticArgs.getDumpActions().stream().map(DumpAction::name).collect(joining(" and ")));
         }
         catch (Throwable e) {
-            log("Failed to execute baseline command='" + debugArgs.getCmd().text() + "'", e);
+            log("Failed to execute baseline command='" + diagnosticArgs.getCmd().text() + "'", e);
 
             throw e;
         }
@@ -1309,9 +1309,9 @@ public class CommandHandler {
      * @param args Argument from command line.
      * @return Task argument.
      */
-    private VisorDumpDebugInfoArg toVisorArguments(DebugArguments args) {
-        return new VisorDumpDebugInfoArg(
-            args.getCmd() == DebugCommand.PAGE_HISTORY ? VisorDumpDebugInfoOperation.PAGE_HISTORY : null,
+    private VisorDumpDiagnosticInfoArg toVisorArguments(DiagnosticArguments args) {
+        return new VisorDumpDiagnosticInfoArg(
+            args.getCmd() == DiagnosticCommand.PAGE_HISTORY ? VisorDumpDiagnosticInfoOperation.PAGE_HISTORY : null,
             args.getPageIds(),
             args.getPathToDump(),
             args.getDumpActions()
@@ -2155,7 +2155,7 @@ public class CommandHandler {
         CacheArguments cacheArgs = null;
 
         BaselineArguments baselineArgs = null;
-        DebugArguments debugArgs = null;
+        DiagnosticArguments diagnosticArgs = null;
 
         List<Command> commands = new ArrayList<>();
 
@@ -2212,10 +2212,10 @@ public class CommandHandler {
 
                         break;
 
-                    case DEBUG:
-                        commands.add(DEBUG);
+                    case DIAGNOSTIC:
+                        commands.add(DIAGNOSTIC);
 
-                        debugArgs = parseAndValidateDebugArgs();
+                        diagnosticArgs = parseAndValidateDiagnosticArgs();
 
                         break;
 
@@ -2364,7 +2364,7 @@ public class CommandHandler {
 
         return new Arguments(cmd, host, port, user, pwd,
             baselineArgs,
-            debugArgs,
+            diagnosticArgs,
             txArgs, cacheArgs,
             walAct, walArgs,
             pingTimeout, pingInterval, autoConfirmation,
@@ -2424,43 +2424,47 @@ public class CommandHandler {
     }
 
     /**
-     * Parses and validates debug arguments.
+     * Parses and validates diagnostic arguments.
      *
-     * @return --debug subcommand arguments in case validation is successful.
+     * @return --diagnostic subcommand arguments in case validation is successful.
      */
-    private DebugArguments parseAndValidateDebugArgs() {
-        DebugCommand cmd = DebugCommand.of(nextArg("Expected debug action"));
+    private DiagnosticArguments parseAndValidateDiagnosticArgs() {
+        DiagnosticCommand cmd = DiagnosticCommand.of(nextArg("Expected diagnostic action"));
 
         if (cmd == null)
-            throw new IllegalArgumentException("Expected correct debug action");
+            throw new IllegalArgumentException("Expected correct diagnostic action");
 
-        DebugArguments.Builder debugArgs = new DebugArguments.Builder(cmd);
+        DiagnosticArguments.Builder diagnosticArgs = new DiagnosticArguments.Builder(cmd);
 
         switch (cmd) {
             case PAGE_HISTORY:
                 do {
-                    DebugPageCommandArg debugPageArg = CommandArgUtils.of(
-                        nextArg("Expected one of page_history arguments"), DebugPageCommandArg.class
+                    DiagnosticPageCommandArg diagnosticPageArg = CommandArgUtils.of(
+                        nextArg("Expected one of page_history arguments"), DiagnosticPageCommandArg.class
                     );
 
-                    if (debugPageArg == null)
+                    if (diagnosticPageArg == null)
                         throw new IllegalArgumentException("Expected valid page_history arguments");
 
-                    if (debugPageArg == DebugPageCommandArg.PAGE_IDS)
-                        debugArgs.withPageIds(nextListArg("page_ids value").stream().map(Long::valueOf).collect(toList()));
+                    if (diagnosticPageArg == DiagnosticPageCommandArg.PAGE_IDS)
+                        diagnosticArgs.withPageIds(
+                            nextListArg("page_ids value").stream()
+                                .map(Long::valueOf)
+                                .collect(toList())
+                        );
 
-                    if (debugPageArg == DebugPageCommandArg.PRINT_TO_LOG_ACTION)
-                        debugArgs.addDumpAction(DumpAction.PRINT_TO_LOG);
+                    if (diagnosticPageArg == DiagnosticPageCommandArg.PRINT_TO_LOG_ACTION)
+                        diagnosticArgs.addDumpAction(DumpAction.PRINT_TO_LOG);
 
-                    if (debugPageArg == DebugPageCommandArg.PRINT_TO_FILE_ACTION)
-                        debugArgs.addDumpAction(DumpAction.PRINT_TO_FILE);
+                    if (diagnosticPageArg == DiagnosticPageCommandArg.PRINT_TO_FILE_ACTION)
+                        diagnosticArgs.addDumpAction(DumpAction.PRINT_TO_FILE);
 
-                    if (debugPageArg == DebugPageCommandArg.DUMP_PATH)
-                        debugArgs.withPathToDump(nextArg("dump_path"));
+                    if (diagnosticPageArg == DiagnosticPageCommandArg.DUMP_PATH)
+                        diagnosticArgs.withPathToDump(nextArg("dump_path"));
                 }
                 while (hasNextSubArg());
 
-                DebugArguments args = debugArgs.build();
+                DiagnosticArguments args = diagnosticArgs.build();
 
                 if (args.getDumpActions().isEmpty())
                     throw new IllegalArgumentException("Expected at least one dump actions");
@@ -2468,7 +2472,7 @@ public class CommandHandler {
                 return args;
         }
 
-        return debugArgs.build();
+        return diagnosticArgs.build();
     }
 
     /**
@@ -3285,8 +3289,8 @@ public class CommandHandler {
                             baseline(client, args.baselineArguments());
 
                             break;
-                        case DEBUG:
-                            debug(client, args.getDebugArgs());
+                        case DIAGNOSTIC:
+                            diagnostic(client, args.getDiagnosticArgs());
 
                             break;
 

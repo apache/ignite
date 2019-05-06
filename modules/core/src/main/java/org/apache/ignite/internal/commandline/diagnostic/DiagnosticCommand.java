@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.debug;
+package org.apache.ignite.internal.commandline.diagnostic;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Set of debug commands.
  */
-public enum DebugCommand {
+public enum DiagnosticCommand {
     /**
      * Debug page history from WAL.
      */
     PAGE_HISTORY("page_history");
 
     /** Enumerated values. */
-    private static final DebugCommand[] VALS = values();
+    private static final DiagnosticCommand[] VALS = values();
 
     /** Name. */
     private final String name;
@@ -37,7 +37,7 @@ public enum DebugCommand {
     /**
      * @param name Name.
      */
-    DebugCommand(String name) {
+    DiagnosticCommand(String name) {
         this.name = name;
     }
 
@@ -45,8 +45,8 @@ public enum DebugCommand {
      * @param text Command text.
      * @return Command for the text.
      */
-    public static DebugCommand of(String text) {
-        for (DebugCommand cmd : DebugCommand.values()) {
+    public static DiagnosticCommand of(String text) {
+        for (DiagnosticCommand cmd : DiagnosticCommand.values()) {
             if (cmd.text().equalsIgnoreCase(text))
                 return cmd;
         }
@@ -67,7 +67,7 @@ public enum DebugCommand {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static DebugCommand fromOrdinal(int ord) {
+    @Nullable public static DiagnosticCommand fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 
