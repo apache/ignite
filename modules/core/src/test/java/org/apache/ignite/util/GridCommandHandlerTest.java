@@ -2161,7 +2161,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("There are no caches matching given filter options."));
+            assertTrue(dumpWithConflicts, dumpWithConflicts.contains("There are no caches matching given filter options."));
         }
         else
             fail("Should be found dump with conflicts");
@@ -2207,8 +2207,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("idle_verify check has finished, found 32 partitions"));
-            assertTrue(dumpWithConflicts.contains("default_third"));
+            assertTrue(dumpWithConflicts, dumpWithConflicts.contains("idle_verify check has finished, found 32 partitions"));
+            assertTrue(dumpWithConflicts, dumpWithConflicts.contains("default_third"));
             assertTrue(!dumpWithConflicts.contains("shared_grp"));
         }
         else

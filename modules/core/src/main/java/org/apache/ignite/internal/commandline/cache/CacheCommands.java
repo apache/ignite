@@ -139,7 +139,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
         logger.nl();
         logger.logWithIndent("Subcommands:");
 
-        Arrays.stream(CacheCommandList.values()).forEach(c -> {if (c != null) c.subcommand().printUsage(logger);});
+        Arrays.stream(CacheCommandList.values()).forEach(c -> {if (c.subcommand() != null) c.subcommand().printUsage(logger);});
 
         logger.nl();
     }

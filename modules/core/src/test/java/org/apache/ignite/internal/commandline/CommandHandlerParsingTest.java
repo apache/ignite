@@ -611,7 +611,10 @@ public class CommandHandlerParsingTest {
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
     }
 
-
+    /**
+     * @param args Raw arg list.
+     * @return Common parameters container object.
+     */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
         return new CommonArgParser(new CommandLogger()).
             parseAndValidate(args.iterator());
