@@ -354,7 +354,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
 
-    /** */
+    /** TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11799 */
     private Map<Integer, Set<Integer>> clearingPartitions;
 
     /**
@@ -1385,7 +1385,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     GridAffinityAssignmentCache aff = grp.affinity();
 
-                    aff.initialize(initialVersion(), aff.idealAssignment());
+                    aff.initialize(initialVersion(), aff.idealAssignmentRaw());
 
                     cctx.exchange().exchangerUpdateHeartbeat();
                 }
@@ -4445,7 +4445,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             for (int i = 0; i < grp.affinity().partitions(); i++)
                 affAssignment.add(empty);
 
-            grp.affinity().idealAssignment(affAssignment);
+            grp.affinity().idealAssignment(initialVersion(), affAssignment);
 
             grp.affinity().initialize(initialVersion(), affAssignment);
 
@@ -5028,6 +5028,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param part Partition.
      */
     public boolean isClearingPartition(CacheGroupContext grp, int part) {
+        if (grp.persistenceEnabled())
+            return false;
+
         synchronized (mux) {
             if (clearingPartitions == null)
                 return false;
@@ -5043,6 +5046,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param part Partition.
      */
     public void addClearingPartition(CacheGroupContext grp, int part) {
+        if (!grp.persistenceEnabled())
+            return;
+
         synchronized (mux) {
             clearingPartitions.computeIfAbsent(grp.groupId(), k -> new HashSet()).add(part);
         }

@@ -1078,8 +1078,7 @@ public class CacheGroupContext {
                 ccfg.getAffinity(),
                 ccfg.getNodeFilter(),
                 ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL,
-                persistenceEnabled()
+                ccfg.getCacheMode() == LOCAL
             );
 
         if (ccfg.getCacheMode() != LOCAL)
