@@ -36,9 +36,6 @@ public enum IgniteFeatures {
     /** Cache metrics v2 support. */
     CACHE_METRICS_V2(1),
 
-    /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(2),
-
     /** Data paket compression. */
     DATA_PACKET_COMPRESSION(3),
 
@@ -59,9 +56,12 @@ public enum IgniteFeatures {
 
     /** Command which allow to detect and cleanup garbage which could left after destroying caches in shared groups */
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
-
+    
     /** Support of cluster read-only mode. */
-    CLUSTER_READ_ONLY_MODE(9);
+    CLUSTER_READ_ONLY_MODE(9),
+
+    /** Distributed metastorage. */
+    DISTRIBUTED_METASTORAGE(11);
 
     /**
      * Unique feature identifier.
