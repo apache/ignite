@@ -53,10 +53,6 @@ import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscovery
  * High-level "cache" command realization.
  */
 public class CacheCommands extends Command<CacheSubcommands> {
-    /** One cache filter option should used message. */
-    public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
-        EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly"; //TODO
-
     /** */
     protected static final String NODE_ID = "nodeId";
 
