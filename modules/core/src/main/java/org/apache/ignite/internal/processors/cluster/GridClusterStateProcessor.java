@@ -98,6 +98,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.STATE_PROC;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extractDataStorage;
 
 /**
  *
@@ -198,10 +199,18 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         Collection<ClusterNode> nodes = ctx.discovery().aliveServerNodes();
 
         //Any node allowed to join if cluster has at least one persist node.
-        if (nodes.stream().anyMatch(serNode -> CU.isPersistenceEnabled(extractDataStorage(serNode))))
+        if (nodes.stream().anyMatch(serNode -> CU.isPersistenceEnabled(extractDataStorage(
+            serNode,
+            ctx.marshallerContext().jdkMarshaller(),
+            U.resolveClassLoader(ctx.config()))
+        )))
             return null;
 
-        DataStorageConfiguration crdDsCfg = extractDataStorage(node);
+        DataStorageConfiguration crdDsCfg = extractDataStorage(
+            node,
+            ctx.marshallerContext().jdkMarshaller(),
+            U.resolveClassLoader(ctx.config())
+        );
 
         if (!CU.isPersistenceEnabled(crdDsCfg))
             return null;
@@ -211,27 +220,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             "Joining persistence node to in-memory cluster couldn't be allowed " +
             "due to baseline auto-adjust is enabled and timeout equal to 0"
         );
-    }
-
-    /**
-     * Extract and unmarshal data storage configuration from given node.
-     *
-     * @param node Source of data storage configuration.
-     * @return Data storage configuration for given node.
-     */
-    private DataStorageConfiguration extractDataStorage(ClusterNode node) {
-        Object dsCfgBytes = node.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
-
-        if (dsCfgBytes instanceof byte[]) {
-            try {
-                return new JdkMarshaller().unmarshal((byte[])dsCfgBytes, U.resolveClassLoader(ctx.config()));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to unmarshal remote data storage configuration [remoteNode=" + node + "]", e);
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -1433,7 +1421,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         DiscoveryDataClusterState oldState = globalState;
 
-        boolean autoAdjustBaseline = CU.isInMemoryCluster(ctx.discovery().allNodes(), ctx.config())
+        boolean isInMemoryCluster = CU.isInMemoryCluster(
+            ctx.discovery().allNodes(),
+            ctx.marshallerContext().jdkMarshaller(),
+            U.resolveClassLoader(ctx.config())
+        );
+
+        boolean autoAdjustBaseline = isInMemoryCluster
             && oldState.active()
             && !oldState.transition()
             && cluster.isBaselineAutoAdjustEnabled()
