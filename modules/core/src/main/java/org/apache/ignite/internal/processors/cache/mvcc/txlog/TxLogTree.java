@@ -41,6 +41,7 @@ public class TxLogTree extends BPlusTree<TxKey, TxRow> {
      * @throws IgniteCheckedException If fails.
      */
     public TxLogTree(
+        String name,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         long metaPageId,

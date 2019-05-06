@@ -50,6 +50,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -128,6 +129,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         Metas metas = getOrAllocateCacheMetas();
 
+        CacheDiagnosticManager diagnosticMgr = ctx.diagnostic();
+
+        String reuseListName = grp.cacheOrGroupName() + "##ReuseList";
+        String indexStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
+
         RootPage reuseListRoot = metas.reuseListRoot;
 
         reuseList = new ReuseListImpl(
@@ -137,7 +143,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated(),
-            null
+            diagnosticMgr.createPageLockTracker(reuseListName)
         );
 
         RootPage metastoreRoot = metas.treeRoot;
@@ -154,7 +160,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
             ctx.kernalContext().failure(),
-            null
+            diagnosticMgr.createPageLockTracker(indexStorageTreeName)
         );
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
