@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,9 +34,12 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
@@ -114,7 +117,7 @@ public class JdbcThinConnection implements Connection {
     private boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private final ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+    private final Set<JdbcThinStatement> stmts = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /**
      * Creates new connection.
@@ -379,6 +382,12 @@ public class JdbcThinConnection implements Connection {
 
             streamState = null;
         }
+
+        synchronized (stmtsMux) {
+            stmts.clear();
+        }
+
+        SQLException err = null;
 
         closed = true;
 
@@ -832,6 +841,15 @@ public class JdbcThinConnection implements Connection {
             res = schemaName.toUpperCase();
 
         return res;
+    }
+
+    /**
+     * @param stmt Statement to close.
+     */
+    void closeStatement(JdbcThinStatement stmt) {
+        synchronized (stmtsMux) {
+            stmts.remove(stmt);
+        }
     }
 
     /**
