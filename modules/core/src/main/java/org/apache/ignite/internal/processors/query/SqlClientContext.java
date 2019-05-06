@@ -60,6 +60,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Data page scan support for query execution. */
     private final @Nullable Boolean dataPageScanEnabled;
 
+    /** Update internal batch size. */
+    private final @Nullable Integer updateBatchSize;
+
     /** Monitor for stream operations. */
     private final Object muxStreamer = new Object();
 
@@ -103,11 +106,15 @@ public class SqlClientContext implements AutoCloseable {
      * @param replicatedOnly Replicated caches only flag.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param dataPageScanEnabled Enable scan data page mode.
+     * @param updateBatchSize Size of internal batch for DML queries.
      */
     public SqlClientContext(GridKernalContext ctx, Factory<GridWorker> orderedBatchWorkerFactory,
         boolean distributedJoins, boolean enforceJoinOrder,
         boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate,
-        @Nullable Boolean dataPageScanEnabled) {
+        @Nullable Boolean dataPageScanEnabled,
+        @Nullable Integer updateBatchSize
+        ) {
         this.ctx = ctx;
         this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;
@@ -117,6 +124,7 @@ public class SqlClientContext implements AutoCloseable {
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.dataPageScanEnabled = dataPageScanEnabled;
+        this.updateBatchSize = updateBatchSize;
 
         log = ctx.log(SqlClientContext.class.getName());
     }
@@ -224,6 +232,13 @@ public class SqlClientContext implements AutoCloseable {
      */
     public @Nullable Boolean dataPageScanEnabled() {
         return dataPageScanEnabled;
+    }
+
+    /**
+     * @return Update internal batch size.
+     */
+    public @Nullable Integer updateBatchSize() {
+        return updateBatchSize;
     }
 
     /**

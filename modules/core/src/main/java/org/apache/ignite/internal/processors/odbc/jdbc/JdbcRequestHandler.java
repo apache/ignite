@@ -171,6 +171,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param dataPageScanEnabled Enable scan data page mode.
+     * @param updateBatchSize Size of internal batch for DML queries.
      * @param actx Authentication context.
      * @param protocolVer Protocol version.
      * @param connCtx Jdbc connection context.
@@ -188,6 +190,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         boolean skipReducerOnUpdate,
         NestedTxMode nestedTxMode,
         @Nullable Boolean dataPageScanEnabled,
+        @Nullable Integer updateBatchSize,
         AuthorizationContext actx,
         ClientListenerProtocolVersion protocolVer,
         JdbcConnectionContext connCtx
@@ -212,7 +215,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             replicatedOnly,
             lazy,
             skipReducerOnUpdate,
-            dataPageScanEnabled
+            dataPageScanEnabled,
+            updateBatchSize
         );
 
         this.busyLock = busyLock;
@@ -968,6 +972,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         if (cliCtx.dataPageScanEnabled() != null)
             qry.setDataPageScanEnabled(cliCtx.dataPageScanEnabled());
+
+        if (cliCtx.updateBatchSize() != null)
+            qry.setUpdateBatchSize(cliCtx.updateBatchSize());
     }
 
     /**

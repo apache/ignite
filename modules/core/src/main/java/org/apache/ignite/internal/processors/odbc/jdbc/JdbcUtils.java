@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Various JDBC utility methods.
@@ -103,5 +104,28 @@ public class JdbcUtils {
         }
         else
             return Collections.emptyList();
+    }
+
+    /**
+     * Read nullable Integer.
+     *
+     * @param reader Binary reader.
+     * @return read value.
+     */
+    @Nullable public static Integer readNullableInteger(BinaryReaderExImpl reader) {
+        return reader.readBoolean() ? reader.readInt() : null;
+    }
+
+    /**
+     * Write nullable integer.
+     *
+     * @param writer Binary writer.
+     * @param val Integer value..
+     */
+    public static void writeNullableInteger(BinaryWriterExImpl writer, @Nullable Integer val) {
+        writer.writeBoolean(val != null);
+
+        if (val != null)
+            writer.writeInt(val);
     }
 }
