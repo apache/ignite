@@ -47,6 +47,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -246,22 +247,28 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
+            CacheDiagnosticManager diagnosticMgr = cctx.diagnostic();
+
+            String freeListName = METASTORAGE_CACHE_NAME + "##FreeList";
+            String treeName = METASTORAGE_CACHE_NAME + "##Tree";
+
             freeList = new MetaStorageFreeList(
                 METASTORAGE_CACHE_ID,
-                "metastorage",
+                freeListName,
                 regionMetrics,
                 dataRegion,
                 null,
                 wal,
                 reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated(),
-                null
+                diagnosticMgr.createPageLockTracker(freeListName)
             );
 
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
             tree = new MetastorageTree(
                 METASTORAGE_CACHE_ID,
+                treeName,
                 dataRegion.pageMemory(),
                 wal,
                 rmvId,
@@ -271,7 +278,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 treeRoot.isAllocated(),
                 failureProcessor,
                 partId,
-                null
+                diagnosticMgr.createPageLockTracker(treeName)
             );
 
             if (!readOnly)

@@ -60,6 +60,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
      */
     public MetastorageTree(
         int cacheId,
+        String name,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
@@ -72,7 +73,7 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         @Nullable PageLockListener lockLsnr
     ) throws IgniteCheckedException {
         super(
-            "Metastorage",
+            name,
             cacheId,
             pageMem,
             wal,
