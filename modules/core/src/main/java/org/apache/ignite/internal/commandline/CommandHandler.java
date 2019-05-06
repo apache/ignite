@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.commandline;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -34,39 +32,22 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
-import org.apache.ignite.internal.commandline.baseline.BaselineSubcommands;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
-import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.Commands.ACTIVATE;
-import static org.apache.ignite.internal.commandline.Commands.BASELINE;
-import static org.apache.ignite.internal.commandline.Commands.CACHE;
-import static org.apache.ignite.internal.commandline.Commands.DEACTIVATE;
-import static org.apache.ignite.internal.commandline.Commands.STATE;
-import static org.apache.ignite.internal.commandline.Commands.TX;
-import static org.apache.ignite.internal.commandline.Commands.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
-import static org.apache.ignite.internal.commandline.TxCommandArg.TX_INFO;
-import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
-import static org.apache.ignite.internal.commandline.WalCommands.WAL_PRINT;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 
 /**
@@ -452,7 +433,7 @@ public class CommandHandler {
 
         logger.log("This utility can do the following commands:");
 
-        Arrays.stream(Commands.values()).forEach(c -> c.command().printUsage(logger));
+        Arrays.stream(CommandList.values()).forEach(c -> c.command().printUsage(logger));
 
         logger.log("By default commands affecting the cluster require interactive confirmation.");
         logger.log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");

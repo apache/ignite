@@ -38,7 +38,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
-import static org.apache.ignite.internal.commandline.Commands.BASELINE;
+import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;

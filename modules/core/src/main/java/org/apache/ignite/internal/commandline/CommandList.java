@@ -22,7 +22,7 @@ import org.apache.ignite.internal.commandline.cache.CacheCommands;
 /**
  * High-level command.
  */
-public enum Commands {
+public enum CommandList {
     /** */
     ACTIVATE("--activate", new ActivateCommand()),
 
@@ -45,7 +45,7 @@ public enum Commands {
     WAL("--wal", new WalCommands());
 
     /** Private values copy so there's no need in cloning it every time. */
-    private static final Commands[] VALUES = Commands.values();
+    private static final CommandList[] VALUES = CommandList.values();
 
     /** */
     private final String text;
@@ -57,7 +57,7 @@ public enum Commands {
      * @param text Text.
      * @param command
      */
-    Commands(String text, Command command) {
+    CommandList(String text, Command command) {
         this.text = text;
         this.command = command;
     }
@@ -66,8 +66,8 @@ public enum Commands {
      * @param text Command text.
      * @return Command for the text.
      */
-    public static Commands of(String text) {
-        for (Commands cmd : VALUES) {
+    public static CommandList of(String text) {
+        for (CommandList cmd : VALUES) {
             if (cmd.text().equalsIgnoreCase(text))
                 return cmd;
         }

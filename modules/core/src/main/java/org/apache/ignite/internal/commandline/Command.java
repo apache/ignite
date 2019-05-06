@@ -87,7 +87,7 @@ public abstract class Command<T> {
      * @param desc Command description.
      * @param args Arguments.
      */
-    protected final void usage(CommandLogger logger, String desc, Commands cmd, String... args) {
+    protected final void usage(CommandLogger logger, String desc, CommandList cmd, String... args) {
         logger.logWithIndent(desc);
         logger.logWithIndent(j(" ", UTILITY_NAME, cmd, j(" ", args)), 2);
         logger.nl();

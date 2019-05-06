@@ -39,8 +39,8 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
-import static org.apache.ignite.internal.commandline.Commands.CACHE;
-import static org.apache.ignite.internal.commandline.Commands.WAL;
+import static org.apache.ignite.internal.commandline.CommandList.CACHE;
+import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.WalCommands.WAL_DELETE;
@@ -291,8 +291,8 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateSSLArguments() {
-        for (Commands cmd : Commands.values()) {
-            if (cmd == Commands.CACHE || cmd == Commands.WAL)
+        for (CommandList cmd : CommandList.values()) {
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
             try {
@@ -327,8 +327,8 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateUserAndPassword() {
-        for (Commands cmd : Commands.values()) {
-            if (cmd == Commands.CACHE || cmd == Commands.WAL)
+        for (CommandList cmd : CommandList.values()) {
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
             try {
@@ -404,10 +404,10 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAutoConfirmationFlag() {
-        for (Commands cmd : Commands.values()) {
-            if (cmd != Commands.DEACTIVATE
-                && cmd != Commands.BASELINE
-                && cmd != Commands.TX)
+        for (CommandList cmd : CommandList.values()) {
+            if (cmd != CommandList.DEACTIVATE
+                && cmd != CommandList.BASELINE
+                && cmd != CommandList.TX)
                 continue;
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
@@ -469,8 +469,8 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testConnectionSettings() {
-        for (Commands cmd : Commands.values()) {
-            if (cmd == Commands.CACHE || cmd == Commands.WAL)
+        for (CommandList cmd : CommandList.values()) {
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));

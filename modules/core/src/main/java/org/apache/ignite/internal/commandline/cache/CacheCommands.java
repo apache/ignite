@@ -32,15 +32,13 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOp
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.Commands.CACHE;
+import static org.apache.ignite.internal.commandline.CommandList.CACHE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONTENTION;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.LIST;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CHECK_CRC;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.CONFIG;
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.GROUP;
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.OUTPUT_FORMAT;
@@ -141,7 +139,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
         logger.nl();
         logger.logWithIndent("Subcommands:");
 
-        Arrays.stream(CacheCommandList.values()).forEach(c -> c.subcommand().printUsage(logger));
+        Arrays.stream(CacheCommandList.values()).forEach(c -> {if (c != null) c.subcommand().printUsage(logger);});
 
         logger.nl();
     }

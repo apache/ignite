@@ -21,9 +21,8 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.commandline.baseline.BaselineSubcommands;
 
-import static org.apache.ignite.internal.commandline.Commands.ACTIVATE;
+import static org.apache.ignite.internal.commandline.CommandList.ACTIVATE;
 
 /**
  * Activate cluster command.

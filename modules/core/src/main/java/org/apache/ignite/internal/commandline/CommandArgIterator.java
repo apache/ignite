@@ -59,7 +59,7 @@ public class CommandArgIterator {
      * @return <code>true</code> if there's next argument for subcommand.
      */
     public boolean hasNextSubArg() {
-        return hasNextArg() && Commands.of(peekNextArg()) == null &&
+        return hasNextArg() && CommandList.of(peekNextArg()) == null &&
             !commonArgumentsAndHighLevelCommandSet.contains(peekNextArg());
     }
 

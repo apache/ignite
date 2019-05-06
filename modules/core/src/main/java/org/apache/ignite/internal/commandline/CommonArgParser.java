@@ -194,12 +194,12 @@ public class CommonArgParser {
 
         CommandArgIterator argIter = new CommandArgIterator(rawArgIter, AUX_COMMANDS);
 
-        Commands command = null;
+        CommandList command = null;
 
         while (argIter.hasNextArg()) {
             String str = argIter.nextArg("").toLowerCase();
 
-            Commands cmd = Commands.of(str);
+            CommandList cmd = CommandList.of(str);
 
             if (cmd != null) {
                 if (command != null)

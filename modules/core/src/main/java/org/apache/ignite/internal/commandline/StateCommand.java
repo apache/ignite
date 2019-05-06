@@ -21,7 +21,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
-import static org.apache.ignite.internal.commandline.Commands.STATE;
+import static org.apache.ignite.internal.commandline.CommandList.STATE;
 
 /**
  * Command to print cluster state.
