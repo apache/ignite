@@ -1893,16 +1893,16 @@ public class GridCacheUtils {
     /**
      * @return {@code true} if persistence is enabled for a default data region, {@code false} if not.
      */
-    public static boolean isDefaultDataRegionPersistence(DataStorageConfiguration cfg) {
+    public static boolean isDefaultDataRegionPersistent(DataStorageConfiguration cfg) {
         if (cfg == null)
             return false;
 
-        DataRegionConfiguration defaultRegionCfg = cfg.getDefaultDataRegionConfiguration();
+        DataRegionConfiguration dfltRegionCfg = cfg.getDefaultDataRegionConfiguration();
 
-        if (defaultRegionCfg == null)
+        if (dfltRegionCfg == null)
             return false;
 
-        return defaultRegionCfg.isPersistenceEnabled();
+        return dfltRegionCfg.isPersistenceEnabled();
     }
 
     /**

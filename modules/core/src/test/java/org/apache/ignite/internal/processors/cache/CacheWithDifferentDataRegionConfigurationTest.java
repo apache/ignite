@@ -76,7 +76,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
     private static final boolean MEMORY = false;
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @After
     public void tearDown() throws Exception {
@@ -85,7 +85,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
     }
 
     /**
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @Before
     public void setUp() throws Exception {
@@ -224,6 +224,9 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
         );
     }
 
+    /**
+     *
+     */
     @Test
     public void secondNodeMustRejectJoinOnThirdNode() throws Exception {
         IgniteEx node1 = node(NODE_1)
@@ -231,7 +234,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
 
         node1.cluster().baselineAutoAdjustTimeout(1); //Hack: The way to add persistence cache into in-memory cluster
 
-        IgniteEx node2 = node(NODE_2)
+        node(NODE_2)
             .withRegion(REGION_2, PERSISTENCE)
             .start();
 
@@ -404,7 +407,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
             if (dfltRegionConfiguration != null)
                 storageCfg.setDefaultDataRegionConfiguration(dfltRegionConfiguration);
 
-            cfg.setCacheConfiguration(caches.toArray(new CacheConfiguration[] {}));
+            cfg.setCacheConfiguration(caches.toArray(new CacheConfiguration[regions.size()]));
 
             return startGrid(cfg);
         }

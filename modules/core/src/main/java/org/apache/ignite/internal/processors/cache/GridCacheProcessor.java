@@ -212,7 +212,7 @@ import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD_DUMP_PROVIDING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistence;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
@@ -1069,12 +1069,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param node
+     * @param node Remote node to check.
      * @return Data storage configuration
      */
-    private DataStorageConfiguration extractDataStorage(ClusterNode node){
+    private DataStorageConfiguration extractDataStorage(ClusterNode rmtNode) {
         return GridCacheUtils.extractDataStorage(
-            node,
+            rmtNode,
             ctx.marshallerContext().jdkMarshaller(),
             U.resolveClassLoader(ctx.config())
         );
@@ -3530,14 +3530,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DataStorageConfiguration locStorageCfg = ctx.config().getDataStorageConfiguration();
 
-        if (isDefaultDataRegionPersistence(locStorageCfg) != isDefaultDataRegionPersistence(rmtStorageCfg)) {
+        if (isDefaultDataRegionPersistent(locStorageCfg) != isDefaultDataRegionPersistent(rmtStorageCfg)) {
             errorMessages.add(String.format(
                 INVALID_REGION_CONFIGURATION_MESSAGE,
                 "DEFAULT",
                 ctx.localNodeId(),
-                isDefaultDataRegionPersistence(locStorageCfg),
+                isDefaultDataRegionPersistent(locStorageCfg),
                 rmtNode.id(),
-                isDefaultDataRegionPersistence(rmtStorageCfg)
+                isDefaultDataRegionPersistent(rmtStorageCfg)
             ));
         }
 
