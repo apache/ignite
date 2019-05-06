@@ -18,16 +18,7 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import org.apache.ignite.internal.commandline.Command;
-import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
-import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
-import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 
 /**
  *
@@ -36,49 +27,46 @@ public enum CacheCommandList {
     /**
      * Prints out help for the cache command.
      */
-    HELP("help", null, null),
+    HELP("help", null),
 
     /**
      * Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster.
      */
-    IDLE_VERIFY("idle_verify", IdleVerifyCommandArg.class, new IdleVerify()),
+    IDLE_VERIFY("idle_verify", new IdleVerify()),
 
     /**
      * Prints info regarding caches, groups or sequences.
      */
-    LIST("list", ListCommandArg.class, new CacheViewer()),
+    LIST("list", new CacheViewer()),
 
     /**
      * Validates indexes attempting to read each indexed entry.
      */
-    VALIDATE_INDEXES("validate_indexes", ValidateIndexesCommandArg.class, new CacheValidateIndexes()),
+    VALIDATE_INDEXES("validate_indexes", new CacheValidateIndexes()),
 
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).
      */
-    CONTENTION("contention", null, new CacheContention()),
+    CONTENTION("contention", new CacheContention()),
 
     /**
      * Collect information on the distribution of partitions.
      */
-    DISTRIBUTION("distribution", DistributionCommandArg.class, new CacheDistribution()),
+    DISTRIBUTION("distribution", new CacheDistribution()),
 
     /**
      * Reset lost partitions
      */
-    RESET_LOST_PARTITIONS("reset_lost_partitions", null, new ResetLostPartitions()),
+    RESET_LOST_PARTITIONS("reset_lost_partitions", new ResetLostPartitions()),
 
     /**
      * Find and remove garbage.
      */
-    FIND_AND_DELETE_GARBAGE("find_garbage", FindAndDeleteGarbageArg.class, new FindAndDeleteGarbage());
+    FIND_AND_DELETE_GARBAGE("find_garbage", new FindAndDeleteGarbage());
 
 
     /** Enumerated values. */
     private static final CacheCommandList[] VALS = values();
-
-    /** Command args definition class. */
-    private final Class<? extends Enum<? extends CommandArg>> commandArgs;
 
     /** Name. */
     private final String name;
@@ -88,12 +76,10 @@ public enum CacheCommandList {
 
     /**
      * @param name Name.
-     * @param commandArgs Command args definition class.
      * @param command Command implementation.
      */
-    CacheCommandList(String name, Class<? extends Enum<? extends CommandArg>> commandArgs, Command command) {
+    CacheCommandList(String name, Command command) {
         this.name = name;
-        this.commandArgs = commandArgs;
         this.command = command;
     }
 
@@ -122,13 +108,6 @@ public enum CacheCommandList {
      */
     public Command subcommand() {
         return command;
-    }
-
-    /**
-     * @return Command args definition class.
-     */
-    public Class<? extends Enum<? extends CommandArg> > getCommandArgs() {
-        return commandArgs;
     }
 
     /**
