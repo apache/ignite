@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.maintain;
+package org.apache.ignite.internal.processors.diagnostic;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -37,21 +37,22 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.maintain.DebugProcessor.DEFAULT_TARGET_FOLDER;
-import static org.apache.ignite.internal.processors.maintain.DebugProcessor.DebugAction.PRINT_TO_FILE;
-import static org.apache.ignite.internal.processors.maintain.DebugProcessor.DebugAction.PRINT_TO_LOG;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.FILE_FORMAT;
 
 /**
  *
  */
-public class DebugProcessorTest extends GridCommonAbstractTest {
+public class DiagnosticProcessorTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache0";
     /** Test directory for dump. */
     private static final String TEST_DUMP_PAGE_FILE = "testDumpPage";
 
-    /** One time configured debugProcessor. */
-    private static DebugProcessor debugProcessor;
+    /** One time configured diagnosticProcessor. */
+    private static DiagnosticProcessor diagnosticProcessor;
     /** One time configured page id for searching. */
     private static long expectedPageId;
 
@@ -91,7 +92,7 @@ public class DebugProcessorTest extends GridCommonAbstractTest {
                     st.addData(i, i);
             }
 
-            debugProcessor = ignite.context().debug();
+            diagnosticProcessor = ignite.context().diagnostic();
             expectedPageId = findAnyPageId();
         }
         finally {
@@ -106,19 +107,26 @@ public class DebugProcessorTest extends GridCommonAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER, false));
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        diagnosticProcessor = null;
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Test
     public void dumpPageHistoryToDefaultDir() throws Exception {
-        debugProcessor.dumpPageHistory(new DebugProcessor.DebugPageBuilder()
+        diagnosticProcessor.dumpPageHistory(new PageHistoryDiagnoster.DiagnosticPageBuilder()
             .pageIds(expectedPageId)
             .addAction(PRINT_TO_LOG)
             .addAction(PRINT_TO_FILE)
         );
 
         Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER);
-        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith("txt"))[0];
+        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith(FILE_FORMAT))[0];
 
         List<String> records = Files.readAllLines(dumpFile.toPath());
 
@@ -134,13 +142,13 @@ public class DebugProcessorTest extends GridCommonAbstractTest {
     public void dumpPageHistoryToCustomAbsoluteDir() throws Exception {
         Path path = Paths.get(U.defaultWorkDirectory(), TEST_DUMP_PAGE_FILE);
         try {
-            debugProcessor.dumpPageHistory(new DebugProcessor.DebugPageBuilder()
+            diagnosticProcessor.dumpPageHistory(new PageHistoryDiagnoster.DiagnosticPageBuilder()
                 .pageIds(expectedPageId)
                 .folderForDump(path.toFile())
                 .addAction(PRINT_TO_FILE)
             );
 
-            File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith("txt"))[0];
+            File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith(FILE_FORMAT))[0];
 
             List<String> records = Files.readAllLines(dumpFile.toPath());
 
@@ -160,13 +168,13 @@ public class DebugProcessorTest extends GridCommonAbstractTest {
     public void dumpPageHistoryToCustomRelativeDir() throws Exception {
         Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER, TEST_DUMP_PAGE_FILE);
 
-        debugProcessor.dumpPageHistory(new DebugProcessor.DebugPageBuilder()
+        diagnosticProcessor.dumpPageHistory(new PageHistoryDiagnoster.DiagnosticPageBuilder()
             .pageIds(expectedPageId)
             .folderForDump(new File(TEST_DUMP_PAGE_FILE))
             .addAction(PRINT_TO_FILE)
         );
 
-        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith("txt"))[0];
+        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith(FILE_FORMAT))[0];
 
         List<String> records = Files.readAllLines(dumpFile.toPath());
 
@@ -180,14 +188,14 @@ public class DebugProcessorTest extends GridCommonAbstractTest {
      */
     @Test
     public void dumpOnlyCheckpointRecordBecausePageIdNotSet() throws Exception {
-        debugProcessor.dumpPageHistory(new DebugProcessor.DebugPageBuilder()
+        diagnosticProcessor.dumpPageHistory(new PageHistoryDiagnoster.DiagnosticPageBuilder()
             .addAction(PRINT_TO_LOG)
             .addAction(PRINT_TO_FILE)
         );
 
         Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER);
 
-        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith("txt"))[0];
+        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith(FILE_FORMAT))[0];
 
         List<String> records = Files.readAllLines(dumpFile.toPath());
 
@@ -199,7 +207,7 @@ public class DebugProcessorTest extends GridCommonAbstractTest {
      */
     @Test(expected = NullPointerException.class)
     public void throwExceptionBecauseNotAnyActionsWasSet() throws IgniteCheckedException {
-        debugProcessor.dumpPageHistory(new DebugProcessor.DebugPageBuilder()
+        diagnosticProcessor.dumpPageHistory(new PageHistoryDiagnoster.DiagnosticPageBuilder()
             .pageIds(expectedPageId)
         );
     }

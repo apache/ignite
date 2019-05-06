@@ -23,6 +23,9 @@ package org.apache.ignite.internal.util;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -115,6 +118,31 @@ public final class IgniteStopwatch {
      */
     public static IgniteStopwatch createStarted(IgniteTicker ticker) {
         return new IgniteStopwatch(ticker).start();
+    }
+
+    /**
+     * Execution given operation and calculation it time.
+     *
+     * @param log Logger fol logging.
+     * @param operationName Operation name for logging.
+     * @param operation Operation for execution.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void logTime(
+        IgniteLogger log,
+        String operationName,
+        IgniteThrowableRunner operation
+    ) throws IgniteCheckedException {
+        long start = System.currentTimeMillis();
+
+        log.info("Operation was started: operation = " + operationName);
+        try {
+            operation.run();
+        }
+        finally {
+            log.info("Operation was finished: operation = " + operationName
+                + ", elapsedTime = " + (System.currentTimeMillis() - start) + " ms");
+        }
     }
 
     /**

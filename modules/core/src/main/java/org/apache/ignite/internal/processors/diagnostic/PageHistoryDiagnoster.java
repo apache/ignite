@@ -15,61 +15,63 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.maintain;
+package org.apache.ignite.internal.processors.diagnostic;
 
 import java.io.File;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Arrays.stream;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.withIteratorParameters;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory
+    .IteratorParametersBuilder.withIteratorParameters;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
 
 /**
- * Processor which contained helper methods for different debug cases.
+ * Diagnostic WAL page history.
  */
-public class DebugProcessor extends GridProcessorAdapter {
-    /** Time formatter for dump file name. */
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
-    /** Folder name for store debug info. **/
-    static final String DEFAULT_TARGET_FOLDER = "debug";
+public class PageHistoryDiagnoster {
+    /** Kernal context. */
+    @GridToStringExclude
+    protected final GridKernalContext ctx;
+    /** Diagnostic logger. */
+    @GridToStringExclude
+    protected final IgniteLogger log;
 
-    /** Full path for store dubug info. */
-    private final Path debugPath;
     /** Wal folders to scan. */
     private File[] walFolders;
 
+    /** Function to provide target end file to store diagnostic info. */
+    private final Function<File, File> targetFileSupplier;
+
     /**
      * @param ctx Kernal context.
+     * @param supplier Function to provide target end file to store diagnostic info.
      */
-    public DebugProcessor(GridKernalContext ctx) throws IgniteCheckedException {
-        super(ctx);
-
-        debugPath = U.resolveWorkDirectory(ctx.config().getWorkDirectory(), DEFAULT_TARGET_FOLDER, false).toPath();
-
+    public PageHistoryDiagnoster(GridKernalContext ctx, Function<File, File> supplier) {
+        log = ctx.log(getClass());
+        this.ctx = ctx;
+        targetFileSupplier = supplier;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        super.onKernalStart(active);
-
+    /**
+     * Do action on start.
+     */
+    public void onStart() {
         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ctx.cache().context().wal();
 
         SegmentRouter segmentRouter = wal.getSegmentRouter();
@@ -86,84 +88,58 @@ public class DebugProcessor extends GridProcessorAdapter {
      * @param builder Parameters of dumping.
      * @throws IgniteCheckedException If scanning was failed.
      */
-    public void dumpPageHistory(@NotNull DebugPageBuilder builder) throws IgniteCheckedException {
+    public void dumpPageHistory(
+        @NotNull PageHistoryDiagnoster.DiagnosticPageBuilder builder
+    ) throws IgniteCheckedException {
         ScannerHandler action = null;
 
-        for (DebugAction mode : builder.actions) {
+        for (DiagnosticProcessor.DiagnosticAction act : builder.actions) {
             if (action == null)
-                action = toHandler(mode, builder.dumpFolder);
+                action = toHandler(act, builder.dumpFolder);
             else
-                action = action.andThen(toHandler(mode, builder.dumpFolder));
+                action = action.andThen(toHandler(act, builder.dumpFolder));
         }
 
         requireNonNull(action, "Should be configured at least one action");
 
-        log.info("Starting to scan : " + builder.pageIds);
-
         buildWalScanner(withIteratorParameters().log(log).filesOrDirs(walFolders))
-            .findAllRecordsFor(builder.pageIds)
+            .findAllRecordsFor(stream(builder.pageIds.array()).boxed().collect(Collectors.toSet()))
             .forEach(action);
     }
 
     /**
      * @param action Action for converting.
-     * @param customFile File to store debug info.
+     * @param customFile File to store diagnostic info.
      * @return {@link ScannerHandler} for handle records.
      */
-    private ScannerHandler toHandler(DebugAction action, File customFile) {
+    private ScannerHandler toHandler(DiagnosticProcessor.DiagnosticAction action, File customFile) {
         switch (action) {
             case PRINT_TO_LOG:
                 return printToLog(log);
             case PRINT_TO_FILE:
-                return printToFile(debugFile(customFile));
+                return printToFile(targetFileSupplier.apply(customFile));
             default:
-                throw new IllegalArgumentException("Unknown debug action : " + action);
+                throw new IllegalArgumentException("Unknown diagnostic action : " + action);
         }
     }
 
     /**
-     * Resolve file to store debug info.
-     *
-     * @param customFile Custom file if customized.
-     * @return File to store debug info.
+     * Parameters for diagnostic pages.
      */
-    private File debugFile(File customFile) {
-        if (customFile == null)
-            return finilizeFile(debugPath);
-
-        if (customFile.isAbsolute())
-            return finilizeFile(customFile.toPath());
-
-        return finilizeFile(debugPath.resolve(customFile.toPath()));
-    }
-
-    /**
-     * @param debugPath Path to debug file.
-     * @return File to store debug info.
-     */
-    private File finilizeFile(Path debugPath) {
-        debugPath.toFile().mkdirs();
-
-        return debugPath.resolve(LocalDateTime.now().format(TIME_FORMATTER) + ".txt").toFile();
-    }
-
-    /**
-     * Parameters for debug pages.
-     */
-    public static class DebugPageBuilder {
+    public static class DiagnosticPageBuilder {
         /** Pages for searching in WAL. */
-        List<Long> pageIds = new ArrayList<>();
+        GridLongList pageIds = GridLongList.asList();
         /** Action after which should be executed after WAL scanning . */
-        Set<DebugAction> actions = new HashSet<>();
-        /** Folder for dump debug info. */
+        Set<DiagnosticProcessor.DiagnosticAction> actions = EnumSet.noneOf(DiagnosticProcessor.DiagnosticAction.class);
+        /** Folder for dump diagnostic info. */
         File dumpFolder;
 
         /**
          * @param pageIds Pages for searching in WAL.
          * @return This instance for chaining.
          */
-        public DebugPageBuilder pageIds(long... pageIds) {
-            this.pageIds = stream(pageIds).boxed().collect(toList());
+        public DiagnosticPageBuilder pageIds(long... pageIds) {
+            this.pageIds = GridLongList.asList(pageIds);
 
             return this;
         }
@@ -172,8 +148,8 @@ public class DebugProcessor extends GridProcessorAdapter {
          * @param pageIds Pages for searching in WAL.
          * @return This instance for chaining.
          */
-        public DebugPageBuilder pageIds(@NotNull List<Long> pageIds) {
-            this.pageIds = pageIds;
+        public DiagnosticPageBuilder pageIds(@NotNull List<Long> pageIds) {
+            this.pageIds = GridLongList.asList(pageIds.stream().mapToLong(Long::longValue).toArray());
 
             return this;
         }
@@ -182,30 +158,20 @@ public class DebugProcessor extends GridProcessorAdapter {
          * @param action Action after which should be executed after WAL scanning .
          * @return This instance for chaining.
          */
-        public DebugPageBuilder addAction(@NotNull DebugAction action) {
+        public DiagnosticPageBuilder addAction(@NotNull DiagnosticProcessor.DiagnosticAction action) {
             this.actions.add(action);
 
             return this;
         }
 
         /**
-         * @param file Folder for dump debug info.
+         * @param file Folder for dump diagnostic info.
          * @return This instance for chaining.
          */
-        public DebugPageBuilder folderForDump(@NotNull File file) {
+        public DiagnosticPageBuilder folderForDump(@NotNull File file) {
             this.dumpFolder = file;
 
             return this;
         }
-    }
-
-    /**
-     * Possible action after WAL scanning.
-     */
-    public enum DebugAction {
-        /** Print result to log. */
-        PRINT_TO_LOG,
-        /** Print result to file. */
-        PRINT_TO_FILE
     }
 }
