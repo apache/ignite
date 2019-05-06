@@ -73,10 +73,7 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
  * Class that execute several commands passed via command line.
  */
 public class CommandHandler {
-    /** One cache filter option should used message. */
-    public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
-        EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly";
-
+    /** Logger. */
     private final CommandLogger logger = new CommandLogger();
 
     /** */
@@ -117,9 +114,6 @@ public class CommandHandler {
 
     /** */
     public static final String NULL = "null";
-
-    /** Check if experimental commands are enabled. Default {@code false}. */
-    private final boolean enableExperimental = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
 
     /** Console instance. Public access needs for tests. */
     public GridConsole console = GridConsoleAdapter.getInstance();
@@ -449,8 +443,6 @@ public class CommandHandler {
 
     /** */
     private void printHelp() {
-        final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
-
         logger.log("Control.sh is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:");
         logger.nl();
 
@@ -460,28 +452,7 @@ public class CommandHandler {
 
         logger.log("This utility can do the following commands:");
 
-        usage("Activate cluster:", ACTIVATE);
-        usage("Deactivate cluster:", DEACTIVATE, op(CMD_AUTO_CONFIRMATION));
-        usage("Print current cluster state:", STATE);
-        usage("Print cluster baseline topology:", BASELINE);
-        usage("Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage("Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage("Set baseline topology:", BASELINE, BaselineSubcommands.SET.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
-        usage("Set baseline topology based on version:", BASELINE, BaselineSubcommands.VERSION.text() + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
-        usage("Set baseline autoadjustment settings:", BASELINE, BaselineSubcommands.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
-        usage("List or kill transactions:", TX, getTxOptions());
-        usage("Print detailed information (topology and key lock ownership) about specific transaction:",
-            TX, TX_INFO.argName(), or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
-                "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));
-
-        if (enableExperimental) {
-            usage("Print absolute paths of unused archived wal segments on each node:", WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-            usage("Delete unused archived wal segments on each node:", WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
-        }
-
-        logger.logWithIndent("View caches information in a cluster. For more details type:");
-        logger.logWithIndent(j(" ", UTILITY_NAME, CACHE, HELP), 2);
-        logger.nl();
+        Arrays.stream(Commands.values()).forEach(c -> c.command().printUsage(logger));
 
         logger.log("By default commands affecting the cluster require interactive confirmation.");
         logger.log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
@@ -505,40 +476,6 @@ public class CommandHandler {
         logger.logWithIndent(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2);
         logger.logWithIndent(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2);
         logger.logWithIndent(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2);
-    }
-
-
-    /**
-     * Print command usage.
-     *
-     * @param desc Command description.
-     * @param args Arguments.
-     */
-    private void usage(String desc, Commands cmd, String... args) {
-        logger.logWithIndent(desc);
-        logger.logWithIndent(j(" ", UTILITY_NAME, cmd, j(" ", args)), 2);
-        logger.nl();
-    }
-
-    /**
-     * @return Transaction command options.
-     */
-    private String[] getTxOptions() {
-        List<String> list = new ArrayList<>();
-
-        list.add(op(TxCommandArg.TX_XID, "XID"));
-        list.add(op(TxCommandArg.TX_DURATION, "SECONDS"));
-        list.add(op(TxCommandArg.TX_SIZE, "SIZE"));
-        list.add(op(TxCommandArg.TX_LABEL, "PATTERN_REGEX"));
-        list.add(op(or(TxCommandArg.TX_SERVERS, TxCommandArg.TX_CLIENTS)));
-        list.add(op(TxCommandArg.TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"));
-        list.add(op(TxCommandArg.TX_LIMIT, "NUMBER"));
-        list.add(op(TxCommandArg.TX_ORDER, or(VisorTxSortOrder.values())));
-        list.add(op(TxCommandArg.TX_KILL));
-        list.add(op(TX_INFO));
-        list.add(op(CMD_AUTO_CONFIRMATION));
-
-        return list.toArray(new String[list.size()]);
     }
 }
 

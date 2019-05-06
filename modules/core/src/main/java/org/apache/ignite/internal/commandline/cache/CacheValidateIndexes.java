@@ -38,14 +38,24 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.OP_NODE_ID;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 
 /**
  * Validate indexes command.
  */
 public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments> {
+    @Override public void printUsage(CommandLogger logger) {
+        usageCache(logger, VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
+    }
+
     /**
      * Container for command arguments.
      */

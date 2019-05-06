@@ -21,11 +21,19 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.commandline.baseline.BaselineSubcommands;
+
+import static org.apache.ignite.internal.commandline.Commands.ACTIVATE;
 
 /**
  * Activate cluster command.
  */
 public class ActivateCommand extends Command<Void> {
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        usage(logger, "Activate cluster:", ACTIVATE);
+    }
+
     /**
      * Activate cluster.
      *

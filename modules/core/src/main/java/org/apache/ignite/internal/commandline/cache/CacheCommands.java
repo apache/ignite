@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.commandline.cache;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.CommandLogger.j;
 import static org.apache.ignite.internal.commandline.CommandLogger.op;
@@ -36,18 +35,12 @@ import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.Commands.CACHE;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONTENTION;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DISTRIBUTION;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.IDLE_VERIFY;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.LIST;
-import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.RESET_LOST_PARTITIONS;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
-import static org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CHECK_CRC;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
-import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.CONFIG;
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.GROUP;
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.OUTPUT_FORMAT;
@@ -60,17 +53,28 @@ import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscovery
  * High-level "cache" command realization.
  */
 public class CacheCommands extends Command<CacheSubcommands> {
-    /** */
-    private static final String NODE_ID = "nodeId";
+    /** One cache filter option should used message. */
+    public static final String ONE_CACHE_FILTER_OPT_SHOULD_USED_MSG = "Should use only one of option: " +
+        EXCLUDE_CACHES + ", " + CACHE_FILTER + " or pass caches explicitly"; //TODO
 
     /** */
-    private static final String OP_NODE_ID = op(NODE_ID);
+    protected static final String NODE_ID = "nodeId";
+
+    /** */
+    protected static final String OP_NODE_ID = op(NODE_ID);
 
     /** */
     private CommandLogger logger;
 
     /** */
     private CacheSubcommands subcommand;
+
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        logger.logWithIndent("View caches information in a cluster. For more details type:");
+        logger.logWithIndent(j(" ", UTILITY_NAME, CACHE, HELP), 2);
+        logger.nl();
+    }
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
@@ -134,25 +138,14 @@ public class CacheCommands extends Command<CacheSubcommands> {
     private void printCacheHelp() {
         logger.logWithIndent("The '" + CACHE + " subcommand' is used to get information about and perform actions with caches. The command has the following syntax:");
         logger.nl();
-        logger.logWithIndent(CommandLogger.j(" ", CommandHandler.UTILITY_NAME, j(" ", getCommonOptions())) + " " + CACHE + " [subcommand] <subcommand_parameters>");
+        logger.logWithIndent(CommandLogger.j(" ", UTILITY_NAME, j(" ", getCommonOptions())) + " " + CACHE + " [subcommand] <subcommand_parameters>");
         logger.nl();
         logger.logWithIndent("The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES + "') will be executed on the given node or on all server nodes if the option is not specified. Other commands will run on a random server node.");
         logger.nl();
         logger.nl();
         logger.logWithIndent("Subcommands:");
 
-        String CACHES = "cacheName1,...,cacheNameN";
-
-        String GROUPS = "groupName1,...,groupNameN";
-
-        usageCache(LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
-        usageCache(CONTENTION, "minQueueSize", OP_NODE_ID, op("maxPrint"));
-        usageCache(IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
-        usageCache(VALIDATE_INDEXES, op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
-        usageCache(DISTRIBUTION, or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
-        usageCache(RESET_LOST_PARTITIONS, CACHES);
-        usageCache(FIND_AND_DELETE_GARBAGE, op(GROUPS), OP_NODE_ID, op(FindAndDeleteGarbageArg.DELETE));
+        Arrays.stream(CacheCommandList.values()).forEach(c -> c.subcommand().printUsage(logger));
 
         logger.nl();
     }
@@ -164,8 +157,8 @@ public class CacheCommands extends Command<CacheSubcommands> {
      * @param cmd Cache command.
      * @param args Cache command arguments.
      */
-    private void usageCache(CacheSubcommands cmd, String... args) {
-        usageCache(1, cmd, args);
+    protected static void usageCache(CommandLogger logger, CacheSubcommands cmd, String... args) {
+        usageCache(logger, 1, cmd, args);
     }
 
     /**
@@ -175,7 +168,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
      * @param cmd Cache command.
      * @param args Cache command arguments.
      */
-    private void usageCache(int indentsNum, CacheSubcommands cmd, String... args) {
+    protected static void usageCache(CommandLogger logger, int indentsNum, CacheSubcommands cmd, String... args) {
         logger.logWithIndent(DELIM, indentsNum);
         logger.nl();
         logger.logWithIndent(j(" ", CACHE, cmd, j(" ", args)), indentsNum++);
@@ -188,7 +181,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
         if (!paramsDesc.isEmpty()) {
             logger.logWithIndent("Parameters:", indentsNum);
 
-            usageCacheParams(paramsDesc, indentsNum + 1);
+            usageCacheParams(logger, paramsDesc, indentsNum + 1);
 
             logger.nl();
         }
@@ -200,7 +193,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
      * @param paramsDesc Cache command arguments description.
      * @param indentsNum Number of indents.
      */
-    private void usageCacheParams(Map<String, String> paramsDesc, int indentsNum) {
+    private static void usageCacheParams(CommandLogger logger, Map<String, String> paramsDesc, int indentsNum) {
         int maxParamLen = paramsDesc.keySet().stream().max(Comparator.comparingInt(String::length)).get().length();
 
         for (Map.Entry<String, String> param : paramsDesc.entrySet())
@@ -214,7 +207,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
      * @param targetLen Needed length.
      * @return String with appended spaces on the end.
      */
-    private String extendToLen(String s, int targetLen) {
+    private static String extendToLen(String s, int targetLen) {
         assert targetLen >= 0;
         assert s.length() <= targetLen;
 
@@ -238,7 +231,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
      * @param cmd Cache command.
      * @return Cache command arguments description.
      */
-    private Map<String, String> createCacheArgsDesc(CacheSubcommands cmd) {
+    private static Map<String, String> createCacheArgsDesc(CacheSubcommands cmd) {
         Map<String, String> map = U.newLinkedHashMap(16);
         switch (cmd) {
             case LIST:

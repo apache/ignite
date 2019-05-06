@@ -28,11 +28,20 @@ import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheR
 import org.apache.ignite.internal.commandline.cache.reset_lost_partitions.CacheResetLostPartitionsTaskResult;
 
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.RESET_LOST_PARTITIONS;
 
 /**
  * Command for reseting lost partition state.
  */
 public class ResetLostPartitions extends Command<Set<String>> {
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        String CACHES = "cacheName1,...,cacheNameN";
+
+        usageCache(logger, RESET_LOST_PARTITIONS, CACHES);
+    }
+
     /**
      * Command argument. Caches which lost partitions should be reseted.
      */

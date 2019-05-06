@@ -49,12 +49,28 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 import static java.lang.String.format;
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.IDLE_VERIFY;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CACHE_FILTER;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.CHECK_CRC;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
+import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 
 /**
  *
  */
 public class IdleVerify extends Command<IdleVerify.Arguments> {
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        usageCache(logger, IDLE_VERIFY, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
+            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
+    }
+
     /**
      * Container for command arguments.
      */

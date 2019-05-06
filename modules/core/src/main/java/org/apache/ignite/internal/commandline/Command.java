@@ -21,6 +21,9 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandLogger.j;
+
 /**
  * Abstract class for all control.sh commands, has already implemented methods and abstract methods.
  * Define flow how to work with command.
@@ -75,4 +78,18 @@ public abstract class Command<T> {
      * @return Command arguments which were parsed during {@link #parseArguments(CommandArgIterator)} call.
      */
     public abstract T arg();
+
+    public abstract void printUsage(CommandLogger logger);
+
+    /**
+     * Print command usage.
+     *
+     * @param desc Command description.
+     * @param args Arguments.
+     */
+    protected final void usage(CommandLogger logger, String desc, Commands cmd, String... args) {
+        logger.logWithIndent(desc);
+        logger.logWithIndent(j(" ", UTILITY_NAME, cmd, j(" ", args)), 2);
+        logger.nl();
+    }
 }

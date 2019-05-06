@@ -37,6 +37,9 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.Commands.BASELINE;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;
 
@@ -46,6 +49,18 @@ import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommand
 public class BaselineCommand extends Command<BaselineArguments> {
     /** Arguments. */
     private BaselineArguments baselineArgs;
+
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
+
+        usage(logger,"Print cluster baseline topology:", BASELINE);
+        usage(logger,"Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(logger,"Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(logger,"Set baseline topology:", BASELINE, BaselineSubcommands.SET.text(), constistIds, op(CMD_AUTO_CONFIRMATION));
+        usage(logger,"Set baseline topology based on version:", BASELINE, BaselineSubcommands.VERSION.text() + " topologyVersion", op(CMD_AUTO_CONFIRMATION));
+        usage(logger,"Set baseline autoadjustment settings:", BASELINE, BaselineSubcommands.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", op(CMD_AUTO_CONFIRMATION));
+    }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {

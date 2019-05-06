@@ -33,12 +33,23 @@ import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersist
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.OP_NODE_ID;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
 
 /**
  * Command to find and delete garbage which could left after destroying caches in shared group.
  */
 public class FindAndDeleteGarbage extends Command<FindAndDeleteGarbage.Arguments> {
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        String GROUPS = "groupName1,...,groupNameN";
+
+        usageCache(logger, FIND_AND_DELETE_GARBAGE, op(GROUPS), OP_NODE_ID, op(FindAndDeleteGarbageArg.DELETE));
+    }
+
     /**
      * Container for command arguments.
      */

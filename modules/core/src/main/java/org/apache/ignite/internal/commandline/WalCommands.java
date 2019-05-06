@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -32,8 +33,11 @@ import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandArgIterator.isCommandOrOption;
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
 import static org.apache.ignite.internal.commandline.Commands.WAL;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
 /**
@@ -58,6 +62,13 @@ public class WalCommands extends Command<T2<String, String>> {
      * Wal arguments.
      */
     private String walArgs;
+
+    @Override public void printUsage(CommandLogger logger) {
+        if (IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false)) {
+            usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
+            usage(logger,"Delete unused archived wal segments on each node:", WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+        }
+    }
 
     /**
      * Execute WAL command.

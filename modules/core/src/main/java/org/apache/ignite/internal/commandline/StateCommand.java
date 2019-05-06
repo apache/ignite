@@ -21,10 +21,17 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
+import static org.apache.ignite.internal.commandline.Commands.STATE;
+
 /**
  * Command to print cluster state.
  */
 public class StateCommand extends Command<Void> {
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        usage(logger, "Print current cluster state:", STATE);
+    }
+
     /**
      * Print cluster state.
      *

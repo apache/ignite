@@ -24,6 +24,7 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg;
@@ -32,14 +33,25 @@ import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributi
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.NULL;
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.NODE_ID;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DISTRIBUTION;
 import static org.apache.ignite.internal.commandline.cache.argument.DistributionCommandArg.USER_ATTRIBUTES;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 
 /**
  * Would collect and print info about how data is spread between nodes and partitions.
  */
 public class CacheDistribution extends Command<CacheDistribution.Arguments> {
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        usageCache(logger, DISTRIBUTION, or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
+    }
+
     /**
      * Container for command arguments.
      */

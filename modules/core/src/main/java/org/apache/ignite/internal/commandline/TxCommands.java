@@ -52,6 +52,10 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.transactions.TransactionState;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
+import static org.apache.ignite.internal.commandline.Commands.TX;
+import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.TxCommandArg.TX_INFO;
 
@@ -67,6 +71,36 @@ public class TxCommands extends Command<VisorTxTaskArg> {
 
     /** Logger. */
     private CommandLogger logger;
+
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        usage(logger,"List or kill transactions:", TX, getTxOptions());
+        usage(logger, "Print detailed information (topology and key lock ownership) about specific transaction:",
+            TX, TX_INFO.argName(), or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
+                "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));
+
+    }
+
+    /**
+     * @return Transaction command options.
+     */
+    private String[] getTxOptions() {
+        List<String> list = new ArrayList<>();
+
+        list.add(op(TxCommandArg.TX_XID, "XID"));
+        list.add(op(TxCommandArg.TX_DURATION, "SECONDS"));
+        list.add(op(TxCommandArg.TX_SIZE, "SIZE"));
+        list.add(op(TxCommandArg.TX_LABEL, "PATTERN_REGEX"));
+        list.add(op(or(TxCommandArg.TX_SERVERS, TxCommandArg.TX_CLIENTS)));
+        list.add(op(TxCommandArg.TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"));
+        list.add(op(TxCommandArg.TX_LIMIT, "NUMBER"));
+        list.add(op(TxCommandArg.TX_ORDER, or(VisorTxSortOrder.values())));
+        list.add(op(TxCommandArg.TX_KILL));
+        list.add(op(TX_INFO));
+        list.add(op(CMD_AUTO_CONFIRMATION));
+
+        return list.toArray(new String[list.size()]);
+    }
 
     /** {@inheritDoc} */
     @Override public VisorTxTaskArg arg() {

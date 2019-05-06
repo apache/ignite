@@ -48,8 +48,18 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
 
+import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
+import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.OP_NODE_ID;
+import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.LIST;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.CONFIG;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.GROUP;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.OUTPUT_FORMAT;
+import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.CACHES;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
@@ -58,6 +68,11 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
  * Command to show caches on cluster.
  */
 public class CacheViewer extends Command<CacheViewer.Arguments> {
+    /** {@inheritDoc} */
+    @Override public void printUsage(CommandLogger logger) {
+        usageCache(logger, LIST, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+    }
+
     /**
      * Container for command arguments.
      */
