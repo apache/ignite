@@ -137,7 +137,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     private RootPage reuseListRoot;
 
     /** */
-    private FreeListImpl freeList;
+    private MetaStorageFreeList freeList;
 
     /** */
     private SortedMap<String, byte[]> lastUpdates;
@@ -246,7 +246,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
-            freeList = new FreeListImpl(
+            freeList = new MetaStorageFreeList(
                 METASTORAGE_CACHE_ID,
                 "metastorage",
                 regionMetrics,
@@ -681,9 +681,9 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
     }
 
     /** */
-    public class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
+    class MetaStorageFreeList extends AbstractFreeList<MetastorageDataRow> {
         /** {@inheritDoc} */
-        FreeListImpl(
+        MetaStorageFreeList(
             int cacheId,
             String name,
             DataRegionMetricsImpl regionMetrics,

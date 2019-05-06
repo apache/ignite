@@ -65,7 +65,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -272,7 +272,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         RowStore rowStore0 = store.rowStore();
 
         if (rowStore0 != null) {
-            ((CacheFreeListImpl)rowStore0.freeList()).saveMetadata();
+            ((CacheFreeList)rowStore0.freeList()).saveMetadata();
 
             long updCntr = store.updateCounter();
             long size = store.fullSize();
@@ -1028,7 +1028,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            CacheFreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+            CacheFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1050,7 +1050,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            CacheFreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+            CacheFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1468,7 +1468,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private final int partId;
 
         /** */
-        private volatile CacheFreeListImpl freeList;
+        private volatile CacheFreeList freeList;
 
         /** */
         private PendingEntriesTree pendingTree;
@@ -1528,17 +1528,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /**
-         * Factory method for creating {@link CacheFreeListImpl}.
+         * Factory method for creating {@link CacheFreeList}.
          *
          * @param reuseRoot Meta page for free list.
          * @return Cache free list.
          */
-        private CacheFreeListImpl createFreeList(RootPage reuseRoot) throws IgniteCheckedException {
+        private CacheFreeList createFreeList(RootPage reuseRoot) throws IgniteCheckedException {
             String freeListName = freeListName();
 
             PageLockListener lsnr = ctx.diagnostic().createPageLockTracker(freeListName);
 
-            return new CacheFreeListImpl(
+            return new CacheFreeList(
                 grp.groupId(),
                 freeListName,
                 grp.dataRegion().memoryMetrics(),
@@ -1564,13 +1564,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          *
          * @param treeRoot Meta page for cache data tree.
          * @param rowStore Cache data row store.
-         * @param freeList Instance of {@link CacheFreeListImpl} for manager free pages.
+         * @param freeList Instance of {@link CacheFreeList} for manager free pages.
          * @return Cache data tree.
          */
         private CacheDataTree createDataTree(
             RootPage treeRoot,
             CacheDataRowStore rowStore,
-            CacheFreeListImpl freeList
+            CacheFreeList freeList
         ) throws IgniteCheckedException {
             String dataTreeName = dataTreeName();
 
@@ -1599,12 +1599,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * This tree needs for manage entries with TTL.
          *
          * @param pendingTreeRoot Meta page for pening entries tree.
-         * @param freeList Instance of {@link CacheFreeListImpl} for manager free pages.
+         * @param freeList Instance of {@link CacheFreeList} for manager free pages.
          * @return Pending entries tree.
          */
         private PendingEntriesTree createPendingEntriesTree(
             RootPage pendingTreeRoot,
-            CacheFreeListImpl freeList
+            CacheFreeList freeList
         ) throws IgniteCheckedException {
             String pendingEntriesTreeName = pendingEntriesTreeName();
 
@@ -1631,10 +1631,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /**
          * Factory method for creating {@link CacheDataRowStore}.
          *
-         * @param freeList Instance of {@link CacheFreeListImpl} for manager free pages.
+         * @param freeList Instance of {@link CacheFreeList} for manager free pages.
          * @return Cache data row store.
          */
-        private CacheDataRowStore createRowStore(CacheFreeListImpl freeList) {
+        private CacheDataRowStore createRowStore(CacheFreeList freeList) {
             return new CacheDataRowStore(grp, freeList, partId);
         }
 
@@ -1671,7 +1671,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
 
                     // Initialize free list.
-                    CacheFreeListImpl freeList0 = createFreeList(metas.reuseListRoot);
+                    CacheFreeList freeList0 = createFreeList(metas.reuseListRoot);
 
                     // Initialize row store.
                     CacheDataRowStore rowStore = createRowStore(freeList0);

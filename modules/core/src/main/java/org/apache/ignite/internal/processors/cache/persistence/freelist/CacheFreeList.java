@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * FreeList implementation for cache.
  */
-public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
+public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
     /**
      * @param cacheId Cache id.
      * @param name Name.
@@ -45,7 +45,7 @@ public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
      */
-    public CacheFreeListImpl(
+    public CacheFreeList(
         int cacheId,
         String name,
         DataRegionMetricsImpl regionMetrics,
