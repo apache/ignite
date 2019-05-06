@@ -1239,7 +1239,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             .map(CacheGroupContext::affinity)
             .collect(Collectors.toList());
 
-        affinityCaches = !cctx.localNode().isClient() ? affinityCaches1 : affinityCaches2;
+        affinityCaches = !cctx.kernalContext().clientNode() ? affinityCaches1 : affinityCaches2;
 
         affinityCaches.forEach(c::apply);
     }
@@ -2020,7 +2020,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
-                if (cctx.localNode().isClient() && cctx.cache().cacheGroup(desc.groupId()) == null)
+                if (cctx.kernalContext().clientNode() && cctx.cache().cacheGroup(desc.groupId()) == null)
                     return;
 
                 CacheGroupHolder cache = getOrCreateGroupHolder(evts.topologyVersion(), desc);
