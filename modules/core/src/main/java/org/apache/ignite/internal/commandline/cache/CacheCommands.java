@@ -139,8 +139,6 @@ public class CacheCommands extends Command<CacheSubcommands> {
         logger.nl();
         logger.logWithIndent("Subcommands:");
 
-        //TODO "Print how to use other cache commands."
-
         Arrays.stream(CacheCommandList.values()).forEach(c -> {if (c != null) c.subcommand().printUsage(logger);});
 
         logger.nl();
