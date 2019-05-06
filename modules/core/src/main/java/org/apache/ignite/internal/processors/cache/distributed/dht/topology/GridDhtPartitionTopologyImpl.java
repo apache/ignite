@@ -2713,7 +2713,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 long gapStart = gaps.get(j * 2);
                                 long gapStop = gaps.get(j * 2 + 1);
 
-                                if (part.group().persistenceEnabled() && part.group().walEnabled()) {
+                                if (part.group().persistenceEnabled() &&
+                                    part.group().walEnabled() &&
+                                    !part.group().mvccEnabled()) {
                                     RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                         gapStart - 1, gapStop - gapStart + 1);
 

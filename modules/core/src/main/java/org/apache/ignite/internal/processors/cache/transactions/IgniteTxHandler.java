@@ -2296,7 +2296,9 @@ public class IgniteTxHandler {
 
                                 // Need to log rolled back range for logical recovery.
                                 if (updated && rollback) {
-                                    if (part.group().persistenceEnabled() && part.group().walEnabled()) {
+                                    if (part.group().persistenceEnabled() &&
+                                        part.group().walEnabled() &&
+                                        !part.group().mvccEnabled()) {
                                         RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                             start, delta);
 
