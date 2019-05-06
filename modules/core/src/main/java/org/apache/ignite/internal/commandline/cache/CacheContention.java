@@ -26,7 +26,8 @@ public class CacheContention extends Command<CacheContention.Arguments> {
     @Override public void printUsage(CommandLogger logger) {
         String description = "Show the keys that are point of contention for multiple transactions.";
 
-        usageCache(logger, CONTENTION, description, "minQueueSize", OP_NODE_ID, op("maxPrint"));
+        usageCache(logger, CONTENTION, description, null, "minQueueSize",
+            OP_NODE_ID, op("maxPrint"));
     }
 
     /**

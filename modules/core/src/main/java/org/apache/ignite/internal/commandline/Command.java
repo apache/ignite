@@ -79,6 +79,11 @@ public abstract class Command<T> {
      */
     public abstract T arg();
 
+    /**
+     * Print info for user about command (parameters, use cases and so on).
+     *
+     * @param logger Would be used as output.
+     */
     public abstract void printUsage(CommandLogger logger);
 
     /**

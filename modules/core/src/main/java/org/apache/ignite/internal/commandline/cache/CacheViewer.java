@@ -34,6 +34,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCacheAffinityConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfiguration;
 import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
@@ -73,7 +74,16 @@ public class CacheViewer extends Command<CacheViewer.Arguments> {
         String description = "Show information about caches, groups or sequences that match a regular expression. " +
             "When executed without parameters, this subcommand prints the list of caches.";
 
-        usageCache(logger, LIST, description, "regexPattern", op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+        Map<String, String> map = U.newLinkedHashMap(16);
+
+        map.put(CONFIG.toString(), "print all configuration parameters for each cache.");
+        map.put(OUTPUT_FORMAT + " " + MULTI_LINE, "print configuration parameters per line. This option has effect only " +
+            "when used with " + CONFIG + " and without " + op(or(GROUP, SEQUENCE)) + ".");
+        map.put(GROUP.toString(), "print information about groups.");
+        map.put(SEQUENCE.toString(), "print information about sequences.");
+
+        usageCache(logger, LIST, description, map, "regexPattern",
+            op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
     }
 
     /**

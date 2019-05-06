@@ -46,9 +46,11 @@ public class FindAndDeleteGarbage extends Command<FindAndDeleteGarbage.Arguments
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String GROUPS = "groupName1,...,groupNameN";
-        String description = "Find and optionally delete garbage from shared cache groups which could be left after cache destroy.";
+        String description = "Find and optionally delete garbage from shared cache groups which could be left " +
+            "after cache destroy.";
 
-        usageCache(logger, FIND_AND_DELETE_GARBAGE, description, op(GROUPS), OP_NODE_ID, op(FindAndDeleteGarbageArg.DELETE));
+        usageCache(logger, FIND_AND_DELETE_GARBAGE, description, null,
+            op(GROUPS), OP_NODE_ID, op(FindAndDeleteGarbageArg.DELETE));
     }
 
     /**

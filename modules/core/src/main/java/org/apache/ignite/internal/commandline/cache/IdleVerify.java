@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,14 +68,23 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
-        String description = "Verify counters and hash sums of primary and backup partitions for the specified caches/cache groups on an idle cluster and print out the differences, if any. " +
+        String description = "Verify counters and hash sums of primary and backup partitions for the specified " +
+            "caches/cache groups on an idle cluster and print out the differences, if any. " +
             "Cache filtering options configure the set of caches that will be processed by idle_verify command. " +
-            "Default value for the set of cache names (or cache group names) is all cache groups. Default value for " + EXCLUDE_CACHES + " is empty set. " +
-            "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently filtered by cache name " +
+            "Default value for the set of cache names (or cache group names) is all cache groups. Default value" +
+            " for " + EXCLUDE_CACHES + " is empty set. " +
+            "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently " +
+            "filtered by cache name " +
             "regexps, by cache type and after all by exclude regexps.";
 
-        usageCache(logger, IDLE_VERIFY, description, op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC),
-            op(EXCLUDE_CACHES, CACHES), op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
+        usageCache(logger,
+            IDLE_VERIFY,
+            description,
+            Collections.singletonMap(CHECK_CRC.toString(),
+                "check the CRC-sum of pages stored on disk before verifying data " +
+                    "consistency in partitions between primary and backup nodes."),
+            op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC), op(EXCLUDE_CACHES, CACHES),
+                op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
     }
 
     /**

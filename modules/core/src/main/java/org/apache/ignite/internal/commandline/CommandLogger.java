@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
- * Logger used in command.
+ * Logger used in command handler.
  */
 public class CommandLogger {
     /** Indent for help output. */

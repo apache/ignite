@@ -423,10 +423,12 @@ public class CommandHandler {
 
     /** */
     private void printHelp() {
-        logger.log("Control.sh is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:");
+        logger.log("Control.sh is used to execute admin commands on cluster or get common cluster info. " +
+            "The command has the following syntax:");
         logger.nl();
 
-        logger.logWithIndent(j(" ", j(" ", UTILITY_NAME, j(" ", getCommonOptions())), op("command"), "<command_parameters>"));
+        logger.logWithIndent(j(" ", j(" ", UTILITY_NAME, j(" ", getCommonOptions())),
+            op("command"), "<command_parameters>"));
         logger.nl();
         logger.nl();
 
@@ -458,4 +460,3 @@ public class CommandHandler {
         logger.logWithIndent(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2);
     }
 }
-

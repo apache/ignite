@@ -51,7 +51,8 @@ public class CacheDistribution extends Command<CacheDistribution.Arguments> {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Prints the information about partition distribution.";
 
-        usageCache(logger, DISTRIBUTION, description, or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
+        usageCache(logger, DISTRIBUTION, description, null,
+            or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
     }
 
     /**

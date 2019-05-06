@@ -40,7 +40,7 @@ public class ResetLostPartitions extends Command<Set<String>> {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Reset the state of lost partitions for the specified caches.";
 
-        usageCache(logger, RESET_LOST_PARTITIONS, description, CACHES);
+        usageCache(logger, RESET_LOST_PARTITIONS, description, null, CACHES);
     }
 
     /**
