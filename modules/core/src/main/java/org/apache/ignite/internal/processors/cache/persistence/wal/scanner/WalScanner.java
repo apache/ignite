@@ -58,7 +58,7 @@ public class WalScanner {
     }
 
     /**
-     * Finding all records whose pageId is contained in given collection.
+     * Finding all page physical records whose pageId is contained in given collection.
      *
      * @param pageIds Search pages.
      * @return Final step for execution some action on result.
@@ -75,6 +75,7 @@ public class WalScanner {
 
     /**
      * @param filter Record filter.
+     * @param parametersBuilder Iterator parameters for customization.
      * @return Instance of {@link FilteredWalIterator}.
      * @throws IgniteCheckedException If initialization of iterator will be failed.
      */
@@ -99,6 +100,7 @@ public class WalScanner {
      * Factory method of {@link WalScanner}.
      *
      * @param parametersBuilder Iterator parameters for customization.
+     * @param factory Custom instance of {@link IgniteWalIteratorFactory}.
      * @return Instance of {@link WalScanner}.
      */
     public static WalScanner buildWalScanner(

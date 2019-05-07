@@ -17,19 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Decorator of {@link WALIterator} which allow filter record by {@link WALPointer} and {@link WALRecord}.
  */
-public class FilteredWalIterator extends GridCloseableIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>> implements WALIterator {
+public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>>
+    implements WALIterator {
     /** Source WAL iterator which provide data for filtering. */
     private final WALIterator delegateWalIter;
 
@@ -49,21 +51,12 @@ public class FilteredWalIterator extends GridCloseableIteratorAdapter<IgniteBiTu
         this.delegateWalIter = walIterator;
 
         // Initiate iterator by first record.
-        onNext();
+        next = nextFilteredRecord();
     }
 
     /** {@inheritDoc} **/
     @Override public Optional<WALPointer> lastRead() {
         return Optional.ofNullable(next == null ? null : next.get1());
-    }
-
-    /** {@inheritDoc} **/
-    @Override protected IgniteBiTuple<WALPointer, WALRecord> onNext() throws IgniteCheckedException {
-        IgniteBiTuple<WALPointer, WALRecord> cur = next;
-
-        next = nextFilteredRecord();
-
-        return cur;
     }
 
     /**
@@ -80,8 +73,35 @@ public class FilteredWalIterator extends GridCloseableIteratorAdapter<IgniteBiTu
         return null;
     }
 
-    /** {@inheritDoc} **/
-    @Override protected boolean onHasNext() throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    public IgniteBiTuple<WALPointer, WALRecord> nextX() throws IgniteCheckedException {
+        if (!hasNextX())
+            throw new NoSuchElementException();
+
+        IgniteBiTuple<WALPointer, WALRecord> cur = next;
+
+        next = nextFilteredRecord();
+
+        return cur;
+    }
+
+    /** {@inheritDoc} */
+    public boolean hasNextX() throws IgniteCheckedException {
         return next != null;
+    }
+
+    /** {@inheritDoc} */
+    public void removeX() throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    public void close() throws IgniteCheckedException {
+        delegateWalIter.close();
+    }
+
+    /** {@inheritDoc} */
+    public boolean isClosed() {
+        return delegateWalIter.isClosed();
     }
 }
