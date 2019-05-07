@@ -47,10 +47,12 @@ public class WalFilters {
      */
     public static Predicate<IgniteBiTuple<WALPointer, WALRecord>> pageOwner(Set<Long> pageOwnerIds) {
         return record -> {
-            if (record.get2() instanceof PageDeltaRecord)
-                return pageOwnerIds.contains(((PageDeltaRecord)record.get2()).pageId());
-            else if (record.get2() instanceof PageSnapshot)
-                return pageOwnerIds.contains(((PageSnapshot)record.get2()).fullPageId().pageId());
+            WALRecord walRecord = record.get2();
+
+            if (walRecord instanceof PageDeltaRecord)
+                return pageOwnerIds.contains(((PageDeltaRecord)walRecord).pageId());
+            else if (walRecord instanceof PageSnapshot)
+                return pageOwnerIds.contains(((PageSnapshot)walRecord).fullPageId().pageId());
 
             return false;
         };

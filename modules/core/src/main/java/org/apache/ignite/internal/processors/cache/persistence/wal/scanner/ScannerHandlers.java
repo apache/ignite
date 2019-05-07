@@ -25,13 +25,15 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
  * Holder of {@link ScannerHandlers}.
  */
 public class ScannerHandlers {
+    /** */
+    public static final String DEFAULT_WAL_RECORD_PREFIX = "Next WAL record :: ";
 
     /**
      * @param log Logger.
      * @return Handler which write record to log.
      */
     public static ScannerHandler printToLog(IgniteLogger log) {
-        return tuple -> log.info("Iterated record :: " + tuple.get2());
+        return new PrintToLogHandler(log);
     }
 
     /**
@@ -50,5 +52,4 @@ public class ScannerHandlers {
     public static ScannerHandler printToFile(File file, FileIOFactory ioFactory) {
         return new PrintToFileHandler(file, ioFactory);
     }
-
 }

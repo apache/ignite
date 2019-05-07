@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.function.Predicate;
@@ -27,10 +26,13 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.FilteredWalIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.checkpoint;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.pageOwner;
 
@@ -39,37 +41,47 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
  */
 public class WalScanner {
     /** Parameters for iterator. */
-    private final IgniteWalIteratorFactory.IteratorParametersBuilder parametersBuilder;
+    private final IteratorParametersBuilder parametersBuilder;
     /** Wal iterator factory. */
-    private final IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
+    private final IgniteWalIteratorFactory iteratorFactory;
 
     /**
      * @param parametersBuilder Parameters for iterator.
+     * @param factory Factory of iterator.
      */
-    WalScanner(IgniteWalIteratorFactory.IteratorParametersBuilder parametersBuilder) {
+    WalScanner(
+        IteratorParametersBuilder parametersBuilder,
+        IgniteWalIteratorFactory factory
+    ) {
         this.parametersBuilder = parametersBuilder;
-
-        //Only physical records make sense.
-        this.parametersBuilder.addFilter((type, pointer) -> type.purpose() == WALRecord.RecordPurpose.PHYSICAL);
+        iteratorFactory = factory == null ? new IgniteWalIteratorFactory() : factory;
     }
 
     /**
-     * Finding all records whose pageId is contained in given collection.
+     * Finding all page physical records whose pageId is contained in given collection.
      *
      * @param pageIds Search pages.
      * @return Final step for execution some action on result.
      */
-    @NotNull public WalScanner.ScanTerminateStep findAllRecordsFor(Collection<Long> pageIds) {
-        return new ScanTerminateStep(() -> iterator(pageOwner(new HashSet<>(pageIds)).or(checkpoint())));
+    @NotNull public WalScanner.ScanTerminateStep findAllRecordsFor(@NotNull Collection<Long> pageIds) {
+        requireNonNull(pageIds);
+
+        return new ScanTerminateStep(() -> iterator(
+            checkpoint().or(pageOwner(new HashSet<>(pageIds))),
+            //Only physical records make sense for this case.
+            parametersBuilder.copy().addFilter((type, pointer) -> type.purpose() == PHYSICAL)
+        ));
     }
 
     /**
      * @param filter Record filter.
+     * @param parametersBuilder Iterator parameters for customization.
      * @return Instance of {@link FilteredWalIterator}.
      * @throws IgniteCheckedException If initialization of iterator will be failed.
      */
     @NotNull private FilteredWalIterator iterator(
-        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter
+        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter,
+        IteratorParametersBuilder parametersBuilder
     ) throws IgniteCheckedException {
         return new FilteredWalIterator(iteratorFactory.iterator(parametersBuilder), filter);
     }
@@ -80,21 +92,22 @@ public class WalScanner {
      * @param parametersBuilder Iterator parameters for customization.
      * @return Instance of {@link WalScanner}.
      */
-    public static WalScanner buildWalScanner(IgniteWalIteratorFactory.IteratorParametersBuilder parametersBuilder) {
-        return new WalScanner(parametersBuilder);
+    public static WalScanner buildWalScanner(IteratorParametersBuilder parametersBuilder) {
+        return new WalScanner(parametersBuilder, null);
     }
 
     /**
-     * @param filesOrDirs Paths to files or directories.
-     * @return WalPageIteratorBuilder Self reference.
+     * Factory method of {@link WalScanner}.
+     *
+     * @param parametersBuilder Iterator parameters for customization.
+     * @param factory Custom instance of {@link IgniteWalIteratorFactory}.
+     * @return Instance of {@link WalScanner}.
      */
-    public static File[] asFiles(String... filesOrDirs) {
-        File[] filesOrDirs0 = new File[filesOrDirs.length];
-
-        for (int i = 0; i < filesOrDirs.length; i++)
-            filesOrDirs0[i] = new File(filesOrDirs[i]);
-
-        return filesOrDirs0;
+    public static WalScanner buildWalScanner(
+        IteratorParametersBuilder parametersBuilder,
+        IgniteWalIteratorFactory factory
+    ) {
+        return new WalScanner(parametersBuilder, factory);
     }
 
     /**
@@ -117,7 +130,7 @@ public class WalScanner {
          * @param handler Single record handler.
          * @throws IgniteCheckedException If iteration was failed.
          */
-        public void forEach(ScannerHandler handler) throws IgniteCheckedException {
+        public void forEach(@NotNull ScannerHandler handler) throws IgniteCheckedException {
             try (WALIterator it = iterSupplier.get()) {
                 while (it.hasNext())
                     handler.handle(it.next());
@@ -127,5 +140,4 @@ public class WalScanner {
             }
         }
     }
-
 }
