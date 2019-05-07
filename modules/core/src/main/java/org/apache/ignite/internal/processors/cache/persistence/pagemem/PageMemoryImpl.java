@@ -32,6 +32,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
@@ -81,6 +82,7 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -234,6 +236,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** Flush dirty page closure. When possible, will be called by evictPage(). */
     private final ReplacedPageWriter flushDirtyPage;
+
+    /** */
+    private final AtomicBoolean dirtyUserPagesPresent = new AtomicBoolean();
 
     /**
      * Delayed page replacement (rotation with disk) tracker. Because other thread may require exactly the same page to be loaded from store,
@@ -992,17 +997,22 @@ public class PageMemoryImpl implements PageMemoryEx {
     public long totalPages() {
         long res = 0;
 
-        for (Segment segment : segments) {
+        for (Segment segment : segments)
             res += segment.pages();
-        }
 
         return res;
     }
 
     /** {@inheritDoc} */
     @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
+        return beginCheckpointEx().get1();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteBiTuple<GridMultiCollectionWrapper<FullPageId>, Boolean> beginCheckpointEx(
+    ) throws IgniteException {
         if (segments == null)
-            return new GridMultiCollectionWrapper<>(Collections.<FullPageId>emptyList());
+            return new IgniteBiTuple<>(new GridMultiCollectionWrapper<>(Collections.emptyList()), false);
 
         Collection[] collections = new Collection[segments.length];
 
@@ -1019,10 +1029,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         memMetrics.resetDirtyPages();
 
+        boolean hasUserDirtyPages = dirtyUserPagesPresent.getAndSet(false);
+
         if (throttlingPlc != ThrottlingPolicy.DISABLED)
             writeThrottle.onBeginCheckpoint();
 
-        return new GridMultiCollectionWrapper<>(collections);
+        return new IgniteBiTuple<>(new GridMultiCollectionWrapper<FullPageId>(collections), hasUserDirtyPages);
     }
 
     /**
@@ -1616,6 +1628,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (added)
                     memMetrics.incrementDirtyPages();
             }
+
+            if (pageId.groupId() != CU.UTILITY_CACHE_GROUP_ID && !dirtyUserPagesPresent.get())
+                dirtyUserPagesPresent.set(true);
         }
         else {
             boolean rmv = segment(pageId.groupId(), pageId.pageId()).dirtyPages.remove(pageId);

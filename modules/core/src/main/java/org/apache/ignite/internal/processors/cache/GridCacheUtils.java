@@ -173,6 +173,9 @@ public class GridCacheUtils {
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
+    /** System cache group id. */
+    public static final int UTILITY_CACHE_GROUP_ID = cacheGroupId(UTILITY_CACHE_NAME, null);
+
     /** */
     public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
 
@@ -1100,6 +1103,17 @@ public class GridCacheUtils {
         }
         else
             return 1;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param grpName Group name.
+     * @return Group ID.
+     */
+    public static int cacheGroupId(String cacheName, @Nullable String grpName) {
+        assert cacheName != null;
+
+        return grpName != null ? CU.cacheId(grpName) : CU.cacheId(cacheName);
     }
 
 //    /**
