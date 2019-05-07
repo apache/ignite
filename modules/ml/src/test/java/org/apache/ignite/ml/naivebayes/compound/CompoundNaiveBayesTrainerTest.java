@@ -101,6 +101,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
             for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
                 assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
         }
+        assertArrayEquals(new double[] {.5, .5}, model.getClsProbabilities(), PRECISION);
     }
 
     private void assertGaussianModel(GaussianNaiveBayesModel model) {
