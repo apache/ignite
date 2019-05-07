@@ -19,7 +19,9 @@ package org.apache.ignite.ml.naivebayes.compound;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
+import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
@@ -53,24 +55,25 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     @Override protected <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
 
-        if (mdl != null) {
-            gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor);
-            discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor);
-        }
-
         CompoundNaiveBayesModel.Builder builder = CompoundNaiveBayesModel.builder()
                 .withLabels(labels)
                 .wirhPriorProbabilities(clsProbabilities);
 
         if (gaussianNaiveBayesTrainer != null) {
-            builder
-                    .withGaussianModel(gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor))
+            GaussianNaiveBayesModel model = (mdl == null)
+                    ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor)
+                    : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor) ;
+
+            builder.withGaussianModel(model)
                     .withGaussianSkipFuture(gaussianNaiveBayesTrainer.getSkipFeature());
         }
 
         if (discreteNaiveBayesTrainer != null) {
-            builder
-                    .withDiscreteModel(discreteNaiveBayesTrainer.fit(datasetBuilder, extractor))
+            DiscreteNaiveBayesModel model = (mdl == null)
+                    ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor)
+                    : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor) ;
+
+            builder.withDiscreteModel(model)
                     .withDiscreteSkipFuture(discreteNaiveBayesTrainer.getSkipFeature());
         }
 
