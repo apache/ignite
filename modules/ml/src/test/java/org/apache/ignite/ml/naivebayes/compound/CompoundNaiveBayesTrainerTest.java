@@ -15,6 +15,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 /** Test for {@link CompoundNaiveBayesTrainer} */
 public class CompoundNaiveBayesTrainerTest extends TrainerTest {
 
@@ -96,18 +99,18 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
             for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
-                Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
+                assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
         }
     }
 
-    private void assertGaussianModel(GaussianNaiveBayesModel model){
-        double[] priorProbabilities = new double[] {.5, .5};
+    private void assertGaussianModel(GaussianNaiveBayesModel model) {
+        double[] priorProbabilities = new double[]{.5, .5};
 
-        Assert.assertEquals(priorProbabilities[0], model.getClassProbabilities()[0], PRECISION);
-        Assert.assertEquals(priorProbabilities[1], model.getClassProbabilities()[1], PRECISION);
-        Assert.assertArrayEquals(new double[] {5.855, 176.25, 11.25, 0,0,0,0,0}, model.getMeans()[0], PRECISION);
-        Assert.assertArrayEquals(new double[] {5.4175, 132.5, 7.5, 0,0,0,0,0}, model.getMeans()[1], PRECISION);
-        double[] expectedVars = {0.026274999999999, 92.1875,0.6875,0,0,0,0,0};
-        Assert.assertArrayEquals(expectedVars, model.getVariances()[0], PRECISION);
+        assertEquals(priorProbabilities[0], model.getClassProbabilities()[0], PRECISION);
+        assertEquals(priorProbabilities[1], model.getClassProbabilities()[1], PRECISION);
+        assertArrayEquals(new double[]{5.855, 176.25, 11.25, 0, 0, 0, 0, 0}, model.getMeans()[0], PRECISION);
+        assertArrayEquals(new double[]{5.4175, 132.5, 7.5, 0, 0, 0, 0, 0}, model.getMeans()[1], PRECISION);
+        double[] expectedVars = {0.026274999999999, 92.1875, 0.6875, 0, 0, 0, 0, 0};
+        assertArrayEquals(expectedVars, model.getVariances()[0], PRECISION);
     }
 }
