@@ -250,7 +250,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
 
-            String freeListName = cctx.igniteInstanceName() + "##" + memPlcCfg.getName();
+            String freeListName = memPlcCfg.getName() + "##FreeList";
 
             PageLockListener lsnr = cctx.diagnostic().createPageLockTracker(freeListName);
 
