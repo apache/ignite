@@ -46,15 +46,24 @@ public interface ScannerHandler {
      */
     default ScannerHandler andThen(ScannerHandler then) {
         ScannerHandler thiz = this;
+
         return new ScannerHandler() {
             @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
-                thiz.handle(record);
-                then.handle(record);
+                try {
+                    thiz.handle(record);
+                }
+                finally {
+                    then.handle(record);
+                }
             }
 
             @Override public void finish() {
-                thiz.finish();
-                then.finish();
+                try {
+                    thiz.finish();
+                }
+                finally {
+                    then.finish();
+                }
             }
         };
     }
