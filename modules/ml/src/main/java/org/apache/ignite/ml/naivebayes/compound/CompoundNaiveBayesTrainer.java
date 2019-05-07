@@ -55,7 +55,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     @Override protected <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
         DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
 
-        CompoundNaiveBayesModel.Builder builder = CompoundNaiveBayesModel.builder()
+        CompoundNaiveBayesModel compoundModel = new CompoundNaiveBayesModel()
                 .withLabels(labels)
                 .wirhPriorProbabilities(clsProbabilities);
 
@@ -64,7 +64,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                     ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor)
                     : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor) ;
 
-            builder.withGaussianModel(model)
+            compoundModel.withGaussianModel(model)
                     .withGaussianSkipFuture(gaussianNaiveBayesTrainer.getSkipFeature());
         }
 
@@ -73,11 +73,11 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                     ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor)
                     : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor) ;
 
-            builder.withDiscreteModel(model)
+            compoundModel.withDiscreteModel(model)
                     .withDiscreteSkipFuture(discreteNaiveBayesTrainer.getSkipFeature());
         }
 
-        return builder.build();
+        return compoundModel;
     }
 
     /** */

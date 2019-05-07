@@ -82,11 +82,10 @@ public class CompoundNaiveBayesModelTest {
 
         Vector observation = VectorUtils.of(6, 130, 8);
 
-        CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder()
+        CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
-            .withGaussianModel(gaussianModel)
-            .build();
+            .withGaussianModel(gaussianModel);
 
         assertEquals(second, model.predict(observation), PRECISION);
     }
@@ -106,11 +105,10 @@ public class CompoundNaiveBayesModelTest {
 
         Vector observation = VectorUtils.of(2, 0, 1, 2, 0);
 
-        CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder()
+        CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
-            .withDiscreteModel(discreteModel)
-            .build();
+            .withDiscreteModel(discreteModel);
 
         assertEquals(LABEL_2, model.predict(observation), PRECISION);
     }
@@ -138,14 +136,13 @@ public class CompoundNaiveBayesModelTest {
         GaussianNaiveBayesModel gaussianModel =
             new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
 
-        CompoundNaiveBayesModel model = CompoundNaiveBayesModel.builder()
+        CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withGaussianModel(gaussianModel)
             .withGaussianSkipFuture(f -> f >= 2)
             .withDiscreteModel(discreteModel)
-            .withDiscreteSkipFuture(f -> f <= 2)
-            .build();
+            .withDiscreteSkipFuture(f -> f <= 2);
 
         Vector observation = VectorUtils.of(6, 130, 8, 2, 0, 1, 2, 0);
 

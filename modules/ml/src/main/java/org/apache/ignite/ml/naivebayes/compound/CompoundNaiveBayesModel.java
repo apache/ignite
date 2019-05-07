@@ -32,21 +32,12 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** Labels. */
     private double[] labels;
     /** Gaussian Bayes model. */
-    private final GaussianNaiveBayesModel gaussianModel;
+    private GaussianNaiveBayesModel gaussianModel;
     /** Discrete Bayes model. */
-    private final DiscreteNaiveBayesModel discreteModel;
+    private DiscreteNaiveBayesModel discreteModel;
 
-    private Predicate<Integer> gaussianSkipFeature;
-    private Predicate<Integer> discreteSkipFeature;
-
-    public CompoundNaiveBayesModel(Builder builder) {
-        priorProbabilities = builder.priorProbabilities;
-        labels = builder.labels;
-        gaussianModel = builder.gaussianModel;
-        gaussianSkipFeature = builder.gaussianSkipFeature;
-        discreteModel = builder.discreteModel;
-        discreteSkipFeature = builder.discreteSkipFeature;
-    }
+    private Predicate<Integer> gaussianSkipFeature = i -> false;
+    private Predicate<Integer> discreteSkipFeature = i -> false;
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<CompoundNaiveBayesModel, P> exporter, P path) {
@@ -118,53 +109,33 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public CompoundNaiveBayesModel wirhPriorProbabilities(double[] priorProbabilities) {
+        this.priorProbabilities = priorProbabilities.clone();
+        return this;
     }
 
-    public static class Builder {
+    public CompoundNaiveBayesModel withLabels(double[] labels) {
+        this.labels = labels.clone();
+        return this;
+    }
 
-        private double[] priorProbabilities;
-        private double[] labels;
+    public CompoundNaiveBayesModel withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
+        this.gaussianModel = gaussianModel;
+        return this;
+    }
 
-        private GaussianNaiveBayesModel gaussianModel;
-        private Predicate<Integer> gaussianSkipFeature = i -> false;
+    public CompoundNaiveBayesModel withGaussianSkipFuture(Predicate<Integer> gaussianSkipFeature) {
+        this.gaussianSkipFeature = gaussianSkipFeature;
+        return this;
+    }
 
-        private DiscreteNaiveBayesModel discreteModel;
-        private Predicate<Integer> discreteSkipFeature = i -> false;
+    public CompoundNaiveBayesModel withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
+        this.discreteModel = discreteModel;
+        return this;
+    }
 
-        public Builder wirhPriorProbabilities(double[] priorProbabilities) {
-            this.priorProbabilities = priorProbabilities.clone();
-            return this;
-        }
-
-        public Builder withLabels(double[] labels) {
-            this.labels = labels.clone();
-            return this;
-        }
-
-        public Builder withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
-            this.gaussianModel = gaussianModel;
-            return this;
-        }
-
-        public Builder withGaussianSkipFuture(Predicate<Integer> gaussianSkipFeature) {
-            this.gaussianSkipFeature = gaussianSkipFeature;
-            return this;
-        }
-
-        public Builder withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
-            this.discreteModel = discreteModel;
-            return this;
-        }
-
-        public Builder withDiscreteSkipFuture(Predicate<Integer> discreteSkipFeature) {
-            this.discreteSkipFeature = discreteSkipFeature;
-            return this;
-        }
-
-        public CompoundNaiveBayesModel build() {
-            return new CompoundNaiveBayesModel(this);
-        }
+    public CompoundNaiveBayesModel withDiscreteSkipFuture(Predicate<Integer> discreteSkipFeature) {
+        this.discreteSkipFeature = discreteSkipFeature;
+        return this;
     }
 }
