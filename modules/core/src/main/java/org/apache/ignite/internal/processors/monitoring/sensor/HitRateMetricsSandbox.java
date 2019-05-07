@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.processors.cache.ratemetrics;
+package org.apache.ignite.internal.processors.monitoring.sensor;
 
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -30,7 +30,7 @@ import javax.swing.Timer;
 import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
- * Visualization of {@link HitRateMetrics}.
+ * Visualization of {@link HitRateSensor}.
  */
 public class HitRateMetricsSandbox extends JFrame {
     /** Serial version uid. */
@@ -40,7 +40,7 @@ public class HitRateMetricsSandbox extends JFrame {
     private final JLabel rateLb = new JLabel("0.0");
 
     /** */
-    private final HitRateMetrics metrics = new HitRateMetrics(5_000, 20);
+    private final HitRateSensor metrics = new HitRateSensor(5_000, 20);
 
     /**
      * Default constructor.
@@ -57,7 +57,7 @@ public class HitRateMetricsSandbox extends JFrame {
 
         new Timer(100, new ActionListener() {
             @Override public void actionPerformed(ActionEvent evt) {
-                rateLb.setText(Double.toString(metrics.getRate()));
+                rateLb.setText(Double.toString(metrics.getValue()));
             }
         }).start();
 

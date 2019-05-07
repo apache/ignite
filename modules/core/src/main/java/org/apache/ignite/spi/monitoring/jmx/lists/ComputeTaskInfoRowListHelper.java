@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.monitoring.lists.ListRow;
  *
  */
 public class ComputeTaskInfoRowListHelper extends ListRowMBeanHelper<UUID, ComputeTaskMonitoringInfo> {
+    /** {@inheritDoc} */
     @Override protected String[] fields() {
         return new String[] {
             "id",
@@ -39,6 +40,7 @@ public class ComputeTaskInfoRowListHelper extends ListRowMBeanHelper<UUID, Compu
         };
     }
 
+    /** {@inheritDoc} */
     @Override protected OpenType[] types() {
         return new OpenType[] {
             SimpleType.STRING,
@@ -49,10 +51,12 @@ public class ComputeTaskInfoRowListHelper extends ListRowMBeanHelper<UUID, Compu
         };
     }
 
+    /** {@inheritDoc} */
     @Override protected Class<ComputeTaskMonitoringInfo> rowClass() {
         return ComputeTaskMonitoringInfo.class;
     }
 
+    /** {@inheritDoc} */
     @Override protected Map<String, Object> values(ListRow<UUID, ComputeTaskMonitoringInfo> row) {
         Map<String, Object> vals = new HashMap<>();
 

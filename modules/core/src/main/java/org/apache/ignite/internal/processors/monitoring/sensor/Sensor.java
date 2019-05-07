@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
-import java.util.Map;
-
 /**
  *
  */
 public interface Sensor {
     String getName();
 
-    Map<String, String> getLabels();
-
     String stringValue();
+
+    void reset();
 }

@@ -18,6 +18,8 @@
 package org.apache.ignite.monitoring;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -45,12 +47,22 @@ public class MonitoringSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
         cfg.setMonitoringExposerSpi(new HttpPullExposerSpi(), new JmxPullExposerSpi(), new SqlViewPullExposerSpi());
 
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                )
+        );
+
         return cfg;
     }
 
     @Test
     public void testMonitoring() throws Exception {
         Ignite grid = grid(0);
+
+        grid.cluster().active(true);
 
         deployService(grid);
 

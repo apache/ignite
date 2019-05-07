@@ -22,7 +22,10 @@ import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
  * MBean to expose {@link DataRegionMetrics} through JMX interface.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** */
     private final DataRegionMetricsImpl memMetrics;

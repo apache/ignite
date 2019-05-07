@@ -2999,7 +2999,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg), true);
+            new DataRegionMetricsImpl(null, plcCfg), true);
 
         pageMem.start();
 

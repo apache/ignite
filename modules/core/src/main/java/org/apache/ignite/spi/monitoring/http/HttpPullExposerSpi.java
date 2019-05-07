@@ -105,7 +105,6 @@ public class HttpPullExposerSpi extends IgniteSpiAdapter implements MonitoringEx
 
             Map<String, Map<?, ?>> data = new HashMap<>();
 
-            data.put("sensors", mgr.sensors());
             data.put("lists", mgr.lists());
             data.put("sensorGroups", mgr.sensorGroups());
 

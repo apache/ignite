@@ -107,7 +107,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
                     return true;
                 }
             },
-            new DataRegionMetricsImpl(new DataRegionConfiguration()),
+            new DataRegionMetricsImpl(null, new DataRegionConfiguration()),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             Mockito.mock(CheckpointWriteProgressSupplier.class)
         );

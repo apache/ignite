@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
@@ -46,7 +47,7 @@ import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
  * {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property or
  * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
  *
- * @deprecated Use {@link DataRegionMetrics} instead.
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
 @Deprecated
 public interface MemoryMetrics {

@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.processors.cache.ratemetrics;
+package org.apache.ignite.internal.processors.monitoring.sensor;
 
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Maximum relative error is 1/{@link #size}.
  * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
-public class HitRateMetrics {
+public class HitRateSensor extends AbstractSensor {
     /** Bits that store actual hit count. */
     private static final int TAG_OFFSET = 56;
 
@@ -38,10 +38,10 @@ public class HitRateMetrics {
     private static final long NO_TAG_MASK = ~(-1L << TAG_OFFSET);
 
     /** Time interval when hits are counted to calculate rate, in milliseconds. */
-    private final int rateTimeInterval;
+    private /*final*/ volatile int rateTimeInterval;
 
     /** Counters array size. */
-    private final int size;
+    private /*final*/ volatile int size;
 
     /** Tagged counters. */
     private volatile AtomicLongArray taggedCounters;
@@ -49,11 +49,18 @@ public class HitRateMetrics {
     /** Last hit times. */
     private volatile AtomicLongArray lastHitTimes;
 
+    public HitRateSensor(int rateTimeInterval, int size) {
+        this(null, rateTimeInterval, size);
+    }
+
     /**
+     * @param name Name of sensor.
      * @param rateTimeInterval Rate time interval.
      * @param size Number of counters.
      */
-    public HitRateMetrics(int rateTimeInterval, int size) {
+    public HitRateSensor(String name, int rateTimeInterval, int size) {
+        super(name);
+
         A.ensure(rateTimeInterval > 0, "should be positive");
 
         A.ensure(size > 1, "minimum is 2");
@@ -95,7 +102,7 @@ public class HitRateMetrics {
     /**
      * @return Total number of hits in last {@link #rateTimeInterval} milliseconds.
      */
-    public long getRate() {
+    public long getValue() {
         long curTs = U.currentTimeMillis();
 
         long sum = 0;
@@ -109,13 +116,24 @@ public class HitRateMetrics {
         return sum;
     }
 
-    /**
-     * Clear metrics.
-     */
-    public void clear() {
+    /** {@inheritDoc} */
+    @Override public String stringValue() {
+        return ((Long)getValue()).toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
         taggedCounters = new AtomicLongArray(size);
 
         lastHitTimes = new AtomicLongArray(size);
+    }
+
+    public void reset(int rateTimeInterval, int size) {
+        this.rateTimeInterval = rateTimeInterval;
+
+        this.size = size;
+
+        reset();
     }
 
     /**

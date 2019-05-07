@@ -17,41 +17,38 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.function.BooleanSupplier;
+
 /**
  *
  */
-public class DoubleSensor extends AbstractSensor {
-    private double value;
+public class BooleanClosureSensor extends AbstractSensor {
+    private final BooleanSupplier sensorValue;
 
-    public DoubleSensor(String name, double value) {
+    public BooleanClosureSensor(String name, BooleanSupplier sensorValue) {
         super(name);
 
-        this.value = value;
+        this.sensorValue = sensorValue;
     }
 
-    public double getValue() {
-        return value;
-    }
+    public boolean getValue() {
+        try {
+            return sensorValue.getAsBoolean();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
 
-    public void increment() {
-        value++;
-    }
-
-    public void decrement() {
-        value--;
-    }
-
-    public void set(long value) {
-        this.value = value;
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue() {
-        return ((Double)value).toString();
+        return ((Boolean)getValue()).toString();
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = 0;
+        // No-op.
     }
 }

@@ -17,26 +17,18 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
-import java.util.Map;
-import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
-
 /**
  *
  */
 abstract class AbstractSensor implements Sensor {
     private String name;
 
-    private Map<String, String> labels;
-
     public AbstractSensor(String name) {
         this.name = name;
     }
 
+    /** {@inheritDoc} */
     @Override public String getName() {
         return name;
-    }
-
-    @Override public Map<String, String> getLabels() {
-        return labels;
     }
 }

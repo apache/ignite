@@ -45,7 +45,10 @@ import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
  * why the metrics are turned off by default. To enable the collection you can use both
  * {@link DataRegionConfiguration#setMetricsEnabled(boolean)} configuration property or
  * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public interface DataRegionMetrics {
     /**
      * A name of a memory region the metrics are collected for.

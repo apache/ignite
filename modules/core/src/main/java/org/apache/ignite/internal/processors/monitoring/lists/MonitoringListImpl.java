@@ -42,22 +42,26 @@ public class MonitoringListImpl<Id, Row> implements MonitoringList<Id, Row> {
         this.rowClass = rowClass;
     }
 
+    /** {@inheritDoc} */
     @Override public String getName() {
         return name;
     }
 
+    /** {@inheritDoc} */
     @Override public void add(Id id, String sessionId, Row data) {
         ListRow<Id, Row> old = rows.putIfAbsent(id, new ListRowImpl<>(id, sessionId, data));
 
         assert old == null;
     }
 
+    /** {@inheritDoc} */
     @Override public void add(Id id, String sessionId, String name, Row data) {
         ListRow<Id, Row> old = rows.putIfAbsent(id, new NamedListRowImpl<>(id, sessionId, name, data));
 
         assert old == null;
     }
 
+    /** {@inheritDoc} */
     @Override public void update(Id id, Row data) {
         if (!rows.containsKey(id))
             return; //TODO: should we throw an exception here?
@@ -65,14 +69,17 @@ public class MonitoringListImpl<Id, Row> implements MonitoringList<Id, Row> {
         rows.get(id).setData(data);
     }
 
+    /** {@inheritDoc} */
     @Override public void remove(Id id) {
         rows.remove(id);
     }
 
+    /** {@inheritDoc} */
     @Override public Class<Row> rowClass() {
         return rowClass;
     }
 
+    /** {@inheritDoc} */
     @NotNull @Override public Iterator<ListRow<Id, Row>> iterator() {
         return rows.values().iterator();
     }

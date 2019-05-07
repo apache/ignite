@@ -24,8 +24,11 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 
 /**
  * This interface defines JMX view on {@link CacheGroupContext}.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
 @MXBeanDescription("MBean that provides access to cache group descriptor.")
+@Deprecated
 public interface CacheGroupMetricsMXBean {
     /**
      * Gets cache group id.

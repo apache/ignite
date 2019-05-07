@@ -334,7 +334,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
             null,
             pageSize,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(null, plcCfg),
             true);
 
         pageMem.start();
@@ -356,7 +356,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
         long metaPageId = pageMem.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
 
-        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg);
+        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(null, plcCfg);
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 

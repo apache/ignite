@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.monitoring.jmx;
 
 import java.util.Iterator;
-import java.util.Set;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.AttributeNotFoundException;
@@ -28,6 +27,7 @@ import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.ReflectionException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.monitoring.sensor.Sensor;
 import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 
@@ -35,14 +35,15 @@ import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
  *
  */
 public class SensorGroupMBean implements DynamicMBean {
-    private SensorGroup<?> grp;
+    private SensorGroup grp;
 
-    public SensorGroupMBean(SensorGroup<?> grp) {
+    public SensorGroupMBean(SensorGroup grp) {
         super();
 
         this.grp = grp;
     }
 
+    /** {@inheritDoc} */
     @Override public Object getAttribute(String attribute)
         throws AttributeNotFoundException, MBeanException, ReflectionException {
         Sensor sensor = grp.findSensor(attribute);
@@ -53,35 +54,64 @@ public class SensorGroupMBean implements DynamicMBean {
         return sensor.stringValue();
     }
 
+    /** {@inheritDoc} */
     @Override public MBeanInfo getMBeanInfo() {
-        Set<String> sensorNames = grp.names();
-        Iterator<String> iter = sensorNames.iterator();
+        Iterator<Sensor> iter = grp.getSensors().iterator();
 
-        MBeanAttributeInfo[] attributes = new MBeanAttributeInfo[sensorNames.size()];
+        MBeanAttributeInfo[] attributes = new MBeanAttributeInfo[grp.getSensors().size()];
 
-        int sz = sensorNames.size();
+        int sz = attributes.length;
         for (int i = 0; i < sz; i++) {
-            String name = iter.next();
+            Sensor snsr = iter.next();
 
-            attributes[i] = new MBeanAttributeInfo(name, "java.lang.String", name, true, false, false);
+            attributes[i] = new MBeanAttributeInfo(
+                snsr.getName(),
+                "java.lang.String",
+                snsr.getName(),
+                true,
+                false,
+                false);
         }
 
-        return new MBeanInfo(SensorGroup.class.getName(), grp.getName().toString(), attributes, null, null, null);
+        return new MBeanInfo(
+            SensorGroup.class.getName(),
+            grp.getName(),
+            attributes,
+            null,
+            null,
+            null);
     }
 
+    /** {@inheritDoc} */
     @Override public AttributeList getAttributes(String[] attributes) {
+        AttributeList list = new AttributeList();
+
+            try {
+                for (String attribute : attributes) {
+                    Object val = getAttribute(attribute);
+
+                    list.add(val);
+                }
+            }
+            catch (ReflectionException | MBeanException | AttributeNotFoundException e) {
+                throw new IgniteException(e);
+            }
+
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void setAttribute(Attribute attribute)
         throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
         throw new UnsupportedOperationException("setAttribute not supported.");
     }
 
+    /** {@inheritDoc} */
     @Override public AttributeList setAttributes(AttributeList attributes) {
         throw new UnsupportedOperationException("setAttributes not supported.");
     }
 
+    /** {@inheritDoc} */
     @Override public Object invoke(String actionName, Object[] params, String[] signature)
         throws MBeanException, ReflectionException {
         throw new UnsupportedOperationException("invoke not supported.");

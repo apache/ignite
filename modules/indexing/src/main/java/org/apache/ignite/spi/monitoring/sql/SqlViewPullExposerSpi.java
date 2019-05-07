@@ -55,8 +55,6 @@ public class SqlViewPullExposerSpi extends IgniteSpiAdapter implements Monitorin
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         mgr.addSensorGroupCreationListener(this::onSensorGroupCreation);
 
-        mgr.addSensorsCreationListener(this::onSensorCreation);
-
         mgr.addListCreationListener(this::onListCreation);
     }
 
@@ -66,12 +64,7 @@ public class SqlViewPullExposerSpi extends IgniteSpiAdapter implements Monitorin
     }
 
     /** */
-    private void onSensorCreation(SensorGroup<MonitoringGroup> grp) {
-        registerSystemView(new SensorGroupLocalSystemView(grp, ((IgniteEx)ignite()).context()));
-    }
-
-    /** */
-    private void onSensorGroupCreation(SensorGroup<String> grp) {
+    private void onSensorGroupCreation(SensorGroup grp) {
         registerSystemView(new SensorGroupLocalSystemView(grp, ((IgniteEx)ignite()).context()));
     }
 

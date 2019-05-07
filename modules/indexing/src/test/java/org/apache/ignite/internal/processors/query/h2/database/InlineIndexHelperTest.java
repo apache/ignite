@@ -202,7 +202,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(null, plcCfg),
             false);
 
         pageMem.start();
@@ -323,7 +323,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(null, plcCfg),
             false);
 
         pageMem.start();
@@ -375,7 +375,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(null, plcCfg),
             false);
 
         pageMem.start();
@@ -434,7 +434,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(null, plcCfg),
             false);
 
         pageMem.start();
@@ -576,7 +576,7 @@ public class InlineIndexHelperTest extends AbstractIndexingCommonTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(null, plcCfg),
             false);
 
         pageMem.start();

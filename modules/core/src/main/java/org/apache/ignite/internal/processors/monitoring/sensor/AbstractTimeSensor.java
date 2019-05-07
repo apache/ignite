@@ -29,6 +29,7 @@ public abstract class AbstractTimeSensor extends AbstractSensor implements TimeS
         this.timestamp = timestamp;
     }
 
+    /** {@inheritDoc} */
     @Override public long getTimestamp() {
         return timestamp;
     }

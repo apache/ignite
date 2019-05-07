@@ -23,8 +23,10 @@ package org.apache.ignite.internal.processors.monitoring.sensor;
 public class TypedSensor<T> extends AbstractSensor {
     private T value;
 
-    public TypedSensor(String name) {
+    public TypedSensor(String name, T value) {
         super(name);
+
+        this.value = value;
     }
 
     public T getValue() {
@@ -35,7 +37,13 @@ public class TypedSensor<T> extends AbstractSensor {
         this.value = value;
     }
 
+    /** {@inheritDoc} */
     @Override public String stringValue() {
         return value.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        // No-op.
     }
 }

@@ -22,6 +22,7 @@ package org.apache.ignite.internal.processors.monitoring;
  */
 public enum MonitoringGroup {
     CACHE,
+    CACHE_GROUP,
     COMPUTE,
     SERVICE,
     TRANSACTIONS,
@@ -30,5 +31,8 @@ public enum MonitoringGroup {
     DATA_STRUCTURES,
     MESSAGE_TOPICS,
     THIN_CLIENT_CONNECTIONS,
-    INSTANCE_INFO
+    DATA_REGIONS,
+    DATA_STORAGE,
+    SPI,
+    THREAD_POOL
 }

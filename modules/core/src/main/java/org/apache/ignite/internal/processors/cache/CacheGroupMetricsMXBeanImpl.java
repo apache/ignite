@@ -39,11 +39,15 @@ import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTrac
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
 /**
  * Management bean that provides access to {@link CacheGroupContext}.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** Cache group context. */
     private final CacheGroupContext ctx;
@@ -112,6 +116,34 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         }
         else
             this.groupPageAllocationTracker = new GroupAllocationTracker(AllocatedPageTracker.NO_OP);
+/*
+        GridMonitoringManager monMgr = ctx.shared().kernalContext().monitoring();
+
+        SensorGroup grp = monMgr.sensorsGroup(MonitoringGroup.CACHE_GROUP, ctx.name());
+
+        grp.sensor("GroupId", ctx.groupId());
+        grp.sensor("GroupName", ctx.name());
+        grp.sensor("Caches", );
+        grp.sensor("Backups", );
+        grp.sensor("Partitions", );
+        grp.sensor("MinimumNumberOfPartitionCopies", );
+        grp.sensor("MaximumNumberOfPartitionCopies", );
+        grp.sensor("LocalNodeOwningPartitionsCount", );
+        grp.sensor("LocalNodeMovingPartitionsCount", );
+        grp.sensor("LocalNodeRentingPartitionsCount", );
+        grp.sensor("LocalNodeRentingEntriesCount", );
+        grp.sensor("ClusterOwningPartitionsCount", );
+        grp.sensor("ClusterMovingPartitionsCount", );
+        grp.sensor("OwningPartitionsAllocationMap", );
+        grp.sensor("MovingPartitionsAllocationMap", );
+        grp.sensor("AffinityPartitionsAssignmentMap", );
+        grp.sensor("Type", );
+        grp.sensor("PartitionIds", );
+        grp.sensor("TotalAllocatedPages", );
+        grp.sensor("TotalAllocatedSize", );
+        grp.sensor("StorageSize", );
+        grp.sensor("SparseStorageSize", );
+ */
     }
 
     /** {@inheritDoc} */

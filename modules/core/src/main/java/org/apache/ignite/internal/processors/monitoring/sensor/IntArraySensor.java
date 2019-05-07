@@ -17,41 +17,30 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.function.Supplier;
+
 /**
  *
  */
-public class DoubleSensor extends AbstractSensor {
-    private double value;
-
-    public DoubleSensor(String name, double value) {
-        super(name);
-
-        this.value = value;
-    }
-
-    public double getValue() {
-        return value;
-    }
-
-    public void increment() {
-        value++;
-    }
-
-    public void decrement() {
-        value--;
-    }
-
-    public void set(long value) {
-        this.value = value;
+public class IntArraySensor extends ClosureSensor<int[]> {
+    /** */
+    public IntArraySensor(String name, Supplier<int[]> sensorValue) {
+        super(name, sensorValue);
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue() {
-        return ((Double)value).toString();
-    }
+        StringBuffer buf = new StringBuffer();
 
-    /** {@inheritDoc} */
-    @Override public void reset() {
-        value = 0;
+        int[] vals = getValue();
+
+        for (int i=0; i<vals.length; i++) {
+            buf.append(vals[i]);
+
+            if (i != vals.length-1)
+                buf.append(',').append(' ');
+        }
+
+        return buf.toString();
     }
 }

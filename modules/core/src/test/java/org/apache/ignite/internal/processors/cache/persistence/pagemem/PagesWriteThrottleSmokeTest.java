@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.monitoring.sensor.HitRateSensor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -128,9 +128,9 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
             final AtomicBoolean zeroDropdown = new AtomicBoolean(false);
 
-            final HitRateMetrics putRate10secs = new HitRateMetrics(10_000, 20);
+            final HitRateSensor putRate10secs = new HitRateSensor(10_000, 20);
 
-            final HitRateMetrics putRate1sec = new HitRateMetrics(1_000, 20);
+            final HitRateSensor putRate1sec = new HitRateSensor(1_000, 20);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -139,10 +139,10 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
                         while (run.get()) {
                             System.out.println(
-                                "Put rate over last 10 seconds: " + (putRate10secs.getRate() / 10) +
-                                    " puts/sec, over last 1 second: " + putRate1sec.getRate());
+                                "Put rate over last 10 seconds: " + (putRate10secs.getValue() / 10) +
+                                    " puts/sec, over last 1 second: " + putRate1sec.getValue());
 
-                            if (putRate10secs.getRate() == 0) {
+                            if (putRate10secs.getValue() == 0) {
                                 zeroDropdown.set(true);
 
                                 run.set(false);

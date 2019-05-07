@@ -17,41 +17,60 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.concurrent.atomic.DoubleAdder;
+import org.jetbrains.annotations.Nullable;
+
 /**
  *
  */
-public class DoubleSensor extends AbstractSensor {
-    private double value;
+public class DoubleConcurrentSensor extends AbstractSensor {
+    /** */
+    private DoubleAdder value;
 
-    public DoubleSensor(String name, double value) {
+    private @Nullable SensorGroup.DoubleToDoubleFunction valueProducer;
+
+    public DoubleConcurrentSensor(String name, @Nullable SensorGroup.DoubleToDoubleFunction valueProducer) {
         super(name);
 
-        this.value = value;
+        this.value = new DoubleAdder();
+        this.valueProducer = valueProducer;
     }
 
+    /** */
+    public DoubleConcurrentSensor(String name) {
+        this(name, null);
+    }
+
+    /** */
     public double getValue() {
-        return value;
+        return value.doubleValue();
     }
 
+    /** */
     public void increment() {
-        value++;
+        value.add(1);
     }
 
+    /** */
     public void decrement() {
-        value--;
+        value.add(-1);
     }
 
-    public void set(long value) {
-        this.value = value;
+    /** */
+    public void add(double x) {
+        value.add(x);
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue() {
-        return ((Double)value).toString();
+        if (valueProducer == null)
+            return value.toString();
+        else
+            return ((Double)valueProducer.apply(value.doubleValue())).toString();
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = 0;
+        value.reset();
     }
 }

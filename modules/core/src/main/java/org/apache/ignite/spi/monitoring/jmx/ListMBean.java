@@ -81,6 +81,7 @@ public class ListMBean<Id, Row> implements DynamicMBean {
         );
     }
 
+    /** {@inheritDoc} */
     @Override public Object getAttribute(String attribute)
         throws AttributeNotFoundException, MBeanException, ReflectionException {
         if (attribute.equals(LIST)) {
@@ -95,11 +96,13 @@ public class ListMBean<Id, Row> implements DynamicMBean {
         throw new IllegalArgumentException("Unknown attribute " + attribute);
     }
 
+    /** {@inheritDoc} */
     @Override public void setAttribute(Attribute attribute)
         throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
         throw new UnsupportedOperationException("setAttribute is not supported");
     }
 
+    /** {@inheritDoc} */
     @Override public AttributeList getAttributes(String[] attributes) {
         try {
             AttributeList res = new AttributeList();
@@ -117,15 +120,18 @@ public class ListMBean<Id, Row> implements DynamicMBean {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public AttributeList setAttributes(AttributeList attributes) {
         throw new UnsupportedOperationException("setAttributes is not supported");
     }
 
+    /** {@inheritDoc} */
     @Override public Object invoke(String actionName, Object[] params,
         String[] signature) throws MBeanException, ReflectionException {
         throw new UnsupportedOperationException("invoke is not supported");
     }
 
+    /** {@inheritDoc} */
     @Override public MBeanInfo getMBeanInfo() {
         return info;
     }

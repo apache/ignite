@@ -20,38 +20,33 @@ package org.apache.ignite.internal.processors.monitoring.sensor;
 /**
  *
  */
-public class DoubleSensor extends AbstractSensor {
-    private double value;
+public class FloatClosureSensor extends AbstractSensor {
+    private final SensorGroup.FloatSupplier sensorValue;
 
-    public DoubleSensor(String name, double value) {
+    public FloatClosureSensor(String name, SensorGroup.FloatSupplier sensorValue) {
         super(name);
 
-        this.value = value;
+        this.sensorValue = sensorValue;
     }
 
-    public double getValue() {
-        return value;
-    }
+    public float getValue() {
+        try {
+            return sensorValue.getAsFloat();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
 
-    public void increment() {
-        value++;
-    }
-
-    public void decrement() {
-        value--;
-    }
-
-    public void set(long value) {
-        this.value = value;
+            return 0;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue() {
-        return ((Double)value).toString();
+        return ((Float)getValue()).toString();
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = 0;
+        // No-op.
     }
 }

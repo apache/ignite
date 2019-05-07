@@ -57,8 +57,6 @@ public class JmxPullExposerSpi extends IgniteSpiAdapter implements MonitoringExp
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         mgr.addSensorGroupCreationListener(this::onSensorGroupCreation);
 
-        mgr.addSensorsCreationListener(this::onSensorCreation);
-
         mgr.addListCreationListener(this::onListCreation);
     }
 
@@ -67,19 +65,21 @@ public class JmxPullExposerSpi extends IgniteSpiAdapter implements MonitoringExp
         // No-op.
     }
 
-    private void onSensorGroupCreation(SensorGroup<String> grp) {
+    private void onSensorGroupCreation(SensorGroup grp) {
         try {
-            registerMBean("sensorGroups", grp.getName(), new SensorGroupMBean(grp), SensorGroupMBean.class,
-                ((IgniteEx)ignite()).context());
-        }
-        catch (IgniteCheckedException e) {
-            log.error("MBean for sensorGroup " + grp.getName() + " can't be created.", e);
-        }
-    }
+            String monGrp;
+            String grpName;
 
-    private void onSensorCreation(SensorGroup<MonitoringGroup> grp) {
-        try {
-            registerMBean("sensors", grp.getName().toString(), new SensorGroupMBean(grp), SensorGroupMBean.class,
+            if (grp.getName() == null) {
+                monGrp = null;
+                grpName = grp.getGroup().name();
+            }
+            else {
+                monGrp = grp.getGroup().name();
+                grpName = grp.getName();
+            }
+
+            registerMBean(monGrp, grpName, new SensorGroupMBean(grp), SensorGroupMBean.class,
                 ((IgniteEx)ignite()).context());
         }
         catch (IgniteCheckedException e) {

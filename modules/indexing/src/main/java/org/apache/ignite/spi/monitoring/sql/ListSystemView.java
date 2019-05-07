@@ -63,6 +63,8 @@ public class ListSystemView<Id, ListRow> extends SqlAbstractLocalSystemView {
             ctx,
             ROW_HELPERS.get(list.get2().rowClass()).columns());
 
+        System.out.println();
+
         this.grp = list.get1();
         this.list = list.get2();
         this.rowHelper = ROW_HELPERS.get(list.get2().rowClass());

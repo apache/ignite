@@ -18,6 +18,9 @@
 package org.apache.ignite.internal;
 
 import java.util.concurrent.ExecutorService;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 
@@ -32,8 +35,21 @@ public class StripedExecutorMXBeanAdapter implements StripedExecutorMXBean {
     /**
      * @param exec Executor service
      */
-    public StripedExecutorMXBeanAdapter(StripedExecutor exec) {
+    public StripedExecutorMXBeanAdapter(GridMonitoringManager monMgr, String name, StripedExecutor exec) {
         assert exec != null;
+
+        SensorGroup grp = monMgr.sensorsGroup(MonitoringGroup.THREAD_POOL, name);
+
+        grp.booleanSensor("detectStarvation", this::detectStarvation);
+        grp.longSensor("StripesCount", this::getStripesCount);
+        grp.booleanSensor("isShutdown", this::isShutdown);
+        grp.booleanSensor("isTerminated", this::isTerminated);
+        grp.longSensor("TotalQueueSize", this::getTotalQueueSize);
+        grp.longSensor("TotalCompletedTasksCount", this::getTotalCompletedTasksCount);
+        grp.longArraySensor("StripesCompletedTasksCounts", this::getStripesCompletedTasksCounts);
+        grp.longSensor("ActiveCount", this::getActiveCount);
+        grp.booleanArraySensor("StripesActiveStatuses", this::getStripesActiveStatuses);
+        grp.intArraySensor("StripesQueueSizes", this::getStripesQueueSizes);
 
         this.exec = exec;
     }

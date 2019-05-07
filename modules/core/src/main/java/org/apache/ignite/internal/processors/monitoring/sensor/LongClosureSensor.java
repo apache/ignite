@@ -42,7 +42,13 @@ public class LongClosureSensor extends AbstractSensor {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public String stringValue() {
         return ((Long)getValue()).toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        // No-op.
     }
 }

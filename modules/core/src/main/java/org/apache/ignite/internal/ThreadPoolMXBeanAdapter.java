@@ -22,6 +22,9 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 
@@ -36,12 +39,31 @@ public class ThreadPoolMXBeanAdapter implements ThreadPoolMXBean {
     /**
      * Creates adapter.
      *
-     * @param exec Executor service
+     * @param monMgr Monitoring manager.
+     * @param name Name of thread pool.
+     * @param exec Executor service.
      */
-    public ThreadPoolMXBeanAdapter(ExecutorService exec) {
+    public ThreadPoolMXBeanAdapter(GridMonitoringManager monMgr, String name, ExecutorService exec) {
         assert exec != null;
 
         this.exec = exec;
+
+        SensorGroup grp = monMgr.sensorsGroup(MonitoringGroup.THREAD_POOL, name);
+
+        grp.longSensor("ActiveCount", this::getActiveCount);
+        grp.longSensor("CompletedTaskCount", this::getCompletedTaskCount);
+        grp.longSensor("CorePoolSize", this::getCorePoolSize);
+        grp.longSensor("LargestPoolSize", this::getLargestPoolSize);
+        grp.longSensor("MaximumPoolSize", this::getMaximumPoolSize);
+        grp.longSensor("PoolSize", this::getPoolSize);
+        grp.longSensor("TaskCount", this::getTaskCount);
+        grp.longSensor("QueueSize", this::getQueueSize);
+        grp.longSensor("KeepAliveTime", this::getKeepAliveTime);
+        grp.booleanSensor("isShutdown", this::isShutdown);
+        grp.booleanSensor("isTerminated", this::isTerminated);
+        grp.booleanSensor("isTerminating", this::isTerminating);
+        grp.sensor("RejectedExecutionHandlerClass", this::getRejectedExecutionHandlerClass);
+        grp.sensor("ThreadFactoryClass", this::getThreadFactoryClass);
     }
 
     /** {@inheritDoc} */

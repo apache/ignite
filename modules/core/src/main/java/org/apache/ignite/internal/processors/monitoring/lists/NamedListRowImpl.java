@@ -29,6 +29,7 @@ public class NamedListRowImpl<Id, Row> extends ListRowImpl<Id, Row> implements N
         this.name = name;
     }
 
+    /** {@inheritDoc} */
     @Override public String getName() {
         return name;
     }

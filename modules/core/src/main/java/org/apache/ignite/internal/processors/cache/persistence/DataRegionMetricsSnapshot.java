@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.DataRegionMetrics;
 
 /**
- *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** */
     private String name;

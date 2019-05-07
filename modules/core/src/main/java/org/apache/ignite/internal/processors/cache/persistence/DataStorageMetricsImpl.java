@@ -17,57 +17,62 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.sensor.HitRateSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.LongAdderSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.LongSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 
 /**
- *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
-    private volatile HitRateMetrics walLoggingRate;
+    private volatile HitRateSensor walLoggingRate;
 
     /** */
-    private volatile HitRateMetrics walWritingRate;
+    private volatile HitRateSensor walWritingRate;
 
     /** */
-    private volatile HitRateMetrics walFsyncTimeDuration;
+    private volatile HitRateSensor walFsyncTimeDuration;
 
     /** */
-    private volatile HitRateMetrics walFsyncTimeNum;
+    private volatile HitRateSensor walFsyncTimeNum;
 
     /** */
-    private volatile HitRateMetrics walBuffPollSpinsNum;
+    private volatile HitRateSensor walBuffPollSpinsNum;
 
     /** */
-    private volatile long lastCpLockWaitDuration;
+    private final LongSensor lastCpLockWaitDuration;
 
     /** */
-    private volatile long lastCpMarkDuration;
+    private final LongSensor lastCpMarkDuration;
 
     /** */
-    private volatile long lastCpPagesWriteDuration;
+    private final LongSensor lastCpPagesWriteDuration;
 
     /** */
-    private volatile long lastCpDuration;
+    private final LongSensor lastCpDuration;
 
     /** */
-    private volatile long lastCpFsyncDuration;
+    private final LongSensor lastCpFsyncDuration;
 
     /** */
-    private volatile long lastCpTotalPages;
+    private final LongSensor lastCpTotalPages;
 
     /** */
-    private volatile long lastCpDataPages;
+    private final LongSensor lastCpDataPages;
 
     /** */
-    private volatile long lastCpCowPages;
+    private final LongSensor lastCpCowPages;
 
     /** */
     private volatile long rateTimeInterval;
@@ -85,19 +90,19 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private volatile IgniteOutClosure<Long> walSizeProvider;
 
     /** */
-    private volatile long lastWalSegmentRollOverTime;
+    private final LongSensor lastWalSegmentRollOverTime;
 
     /** */
-    private final AtomicLong totalCheckpointTime = new AtomicLong();
+    private final LongAdderSensor totalCheckpointTime;
 
     /** */
     private volatile Collection<DataRegionMetrics> regionMetrics;
 
     /** */
-    private volatile long storageSize;
+    private final LongSensor storageSize;
 
     /** */
-    private volatile long sparseStorageSize;
+    private final LongSensor sparseStorageSize;
 
     /**
      * @param metricsEnabled Metrics enabled flag.
@@ -105,6 +110,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
      * @param subInts Number of sub-intervals.
      */
     public DataStorageMetricsImpl(
+        GridMonitoringManager mgr,
         boolean metricsEnabled,
         long rateTimeInterval,
         int subInts
@@ -112,6 +118,41 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         this.metricsEnabled = metricsEnabled;
         this.rateTimeInterval = rateTimeInterval;
         this.subInts = subInts;
+
+        SensorGroup grp = mgr.sensorsGroup(MonitoringGroup.DATA_STORAGE);
+
+        walLoggingRate = grp.hitRateSensor("WalLoggingRate", (int)rateTimeInterval, subInts);
+        walWritingRate = grp.hitRateSensor("WalWritingRate", (int)rateTimeInterval, subInts);
+        walFsyncTimeDuration = grp.hitRateSensor("WalFsyncTimeDuration", (int)rateTimeInterval, subInts);
+        walFsyncTimeNum = grp.hitRateSensor("WalFsyncTimeNum", (int)rateTimeInterval, subInts);
+        walBuffPollSpinsNum = grp.hitRateSensor("WalBuffPollSpinsRate", (int)rateTimeInterval, subInts);
+
+        lastCpLockWaitDuration = grp.longSensor("LastCheckpointLockWaitDuration");
+        lastCpMarkDuration = grp.longSensor("LastCheckpointMarkDuration");
+        lastCpPagesWriteDuration = grp.longSensor("LastCheckpointPagesWriteDuration");
+        lastCpDuration = grp.longSensor("LastCheckpointDuration");
+        lastCpFsyncDuration = grp.longSensor("LastCheckpointFsyncDuration");
+        lastCpTotalPages = grp.longSensor("LastCheckpointTotalPagesNumber");
+        lastCpDataPages = grp.longSensor("LastCheckpointDataPagesNumber");
+        lastCpCowPages = grp.longSensor("LastCheckpointCopiedOnWritePagesNumber");
+        totalCheckpointTime = grp.longAdderSensor("CheckpointTotalTime");
+        lastWalSegmentRollOverTime = grp.longSensor("WalLastRollOverTime");
+        storageSize = grp.longSensor("StorageSize");
+        sparseStorageSize = grp.longSensor("SparseStorageSize");
+
+        grp.sensor("WalArchiveSegments", () -> wal.walArchiveSegments());
+        grp.sensor("WalFsyncTimeAverage", this::getWalFsyncTimeAverage);
+        grp.sensor("WalTotalSize", this::getWalTotalSize);
+        grp.sensor("UsedCheckpointBufferPages", this::getUsedCheckpointBufferPages);
+        grp.sensor("UsedCheckpointBufferSize", this::getUsedCheckpointBufferSize);
+        grp.sensor("CheckpointBufferSize", this::getCheckpointBufferSize);
+        grp.sensor("DirtyPages", this::getDirtyPages);
+        grp.sensor("PagesRead", this::getPagesRead);
+        grp.sensor("PagesWritten", this::getPagesWritten);
+        grp.sensor("PagesReplaced", this::getPagesReplaced);
+        grp.sensor("OffHeapSize", this::getOffHeapSize);
+        grp.sensor("OffheapUsedSize", this::getOffheapUsedSize);
+        grp.sensor("TotalAllocatedSize", this::getTotalAllocatedSize);
 
         resetRates();
     }
@@ -121,7 +162,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return ((float)walLoggingRate.getRate() * 1000) / rateTimeInterval;
+        return ((float)walLoggingRate.getValue() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -129,7 +170,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return ((float)walWritingRate.getRate() * 1000) / rateTimeInterval;
+        return ((float)walWritingRate.getValue() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -145,12 +186,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        long numRate = walFsyncTimeNum.getRate();
+        long numRate = walFsyncTimeNum.getValue();
 
         if (numRate == 0)
             return 0;
 
-        return (float)walFsyncTimeDuration.getRate() / numRate;
+        return (float)walFsyncTimeDuration.getValue() / numRate;
     }
 
     /** {@inheritDoc} */
@@ -158,7 +199,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return walBuffPollSpinsNum.getRate();
+        return walBuffPollSpinsNum.getValue();
     }
 
 
@@ -167,7 +208,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpDuration;
+        return lastCpDuration.getValue();
     }
 
     /** {@inheritDoc} */
@@ -175,7 +216,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpLockWaitDuration;
+        return lastCpLockWaitDuration.getValue();
     }
 
     /** {@inheritDoc} */
@@ -183,7 +224,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpMarkDuration;
+        return lastCpMarkDuration.getValue();
     }
 
     /** {@inheritDoc} */
@@ -191,7 +232,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpPagesWriteDuration;
+        return lastCpPagesWriteDuration.getValue();
     }
 
     /** {@inheritDoc} */
@@ -199,7 +240,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpFsyncDuration;
+        return lastCpFsyncDuration.getValue();
     }
 
     /** {@inheritDoc} */
@@ -207,7 +248,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpTotalPages;
+        return lastCpTotalPages.getValue();
     }
 
     /** {@inheritDoc} */
@@ -215,7 +256,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpDataPages;
+        return lastCpDataPages.getValue();
     }
 
     /** {@inheritDoc} */
@@ -223,7 +264,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpCowPages;
+        return lastCpCowPages.getValue();
     }
 
     /** {@inheritDoc} */
@@ -265,7 +306,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastWalSegmentRollOverTime;
+        return lastWalSegmentRollOverTime.getValue();
     }
 
     /** {@inheritDoc} */
@@ -273,7 +314,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return totalCheckpointTime.get();
+        return totalCheckpointTime.getValue();
     }
 
     /** {@inheritDoc} */
@@ -474,7 +515,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
      *
      */
     public void onWallRollOver() {
-        this.lastWalSegmentRollOverTime = U.currentTimeMillis();
+        this.lastWalSegmentRollOverTime.set(U.currentTimeMillis());
     }
 
     /**
@@ -493,12 +534,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getStorageSize() {
-        return storageSize;
+        return storageSize.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public long getSparseStorageSize() {
-        return sparseStorageSize;
+        return sparseStorageSize.getValue();
     }
 
     /**
@@ -524,18 +565,18 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long sparseStorageSize
     ) {
         if (metricsEnabled) {
-            lastCpLockWaitDuration = lockWaitDuration;
-            lastCpMarkDuration = markDuration;
-            lastCpPagesWriteDuration = pagesWriteDuration;
-            lastCpFsyncDuration = fsyncDuration;
-            lastCpDuration = duration;
-            lastCpTotalPages = totalPages;
-            lastCpDataPages = dataPages;
-            lastCpCowPages = cowPages;
-            this.storageSize = storageSize;
-            this.sparseStorageSize = sparseStorageSize;
+            lastCpLockWaitDuration.set(lockWaitDuration);
+            lastCpMarkDuration.set(markDuration);
+            lastCpPagesWriteDuration.set(pagesWriteDuration);
+            lastCpFsyncDuration.set(fsyncDuration);
+            lastCpDuration.set(duration);
+            lastCpTotalPages.set(totalPages);
+            lastCpDataPages.set(dataPages);
+            lastCpCowPages.set(cowPages);
+            this.storageSize.set(storageSize);
+            this.sparseStorageSize.set(sparseStorageSize);
 
-            totalCheckpointTime.addAndGet(duration);
+            totalCheckpointTime.add(duration);
         }
     }
 
@@ -574,11 +615,11 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
      *
      */
     private void resetRates() {
-        walLoggingRate = new HitRateMetrics((int)rateTimeInterval, subInts);
-        walWritingRate = new HitRateMetrics((int)rateTimeInterval, subInts);
-        walBuffPollSpinsNum = new HitRateMetrics((int)rateTimeInterval, subInts);
+        walLoggingRate.reset((int)rateTimeInterval, subInts);
+        walWritingRate.reset((int)rateTimeInterval, subInts);
+        walBuffPollSpinsNum.reset((int)rateTimeInterval, subInts);
 
-        walFsyncTimeDuration = new HitRateMetrics((int)rateTimeInterval, subInts);
-        walFsyncTimeNum = new HitRateMetrics((int)rateTimeInterval, subInts);
+        walFsyncTimeDuration.reset((int)rateTimeInterval, subInts);
+        walFsyncTimeNum.reset((int)rateTimeInterval, subInts);
     }
 }

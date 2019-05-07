@@ -355,8 +355,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
 
-        DataRegionMetricsImpl memMetrics =
-                new DataRegionMetricsImpl(dataRegionCfg, dataRegionMetricsProvider(dataRegionCfg));
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(
+            cctx.kernalContext().monitoring(),
+            dataRegionCfg,
+            dataRegionMetricsProvider(dataRegionCfg));
 
         DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 

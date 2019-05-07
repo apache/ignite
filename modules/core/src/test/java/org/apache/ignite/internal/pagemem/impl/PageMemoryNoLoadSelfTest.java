@@ -332,7 +332,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             null,
             PAGE_SIZE,
             plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
+            new DataRegionMetricsImpl(null, plcCfg),
             true);
     }
 

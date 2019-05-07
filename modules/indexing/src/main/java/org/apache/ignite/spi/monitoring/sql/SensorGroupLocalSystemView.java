@@ -32,15 +32,17 @@ import org.h2.value.Value;
  */
 public class SensorGroupLocalSystemView extends SqlAbstractLocalSystemView {
     /** */
-    private SensorGroup<?> grp;
+    private SensorGroup grp;
 
     /** */
-    public SensorGroupLocalSystemView(SensorGroup<?> grp, GridKernalContext ctx) {
-        super("SENSOR_GROUP_" + grp.getName().toString().toUpperCase(),
-            "Sensor group " + grp.getName().toString(),
+    public SensorGroupLocalSystemView(SensorGroup grp, GridKernalContext ctx) {
+        super("SENSOR_GROUP_" + grp.getGroup().name() + "_" + grp.getName().toUpperCase().replace('-', '_'),
+            "Sensor group " + grp.getGroup().name() + " - " + grp.getName().toString(),
             ctx,
             newColumn("NAME", Value.STRING),
             newColumn("VALUE", Value.STRING));
+
+        System.out.println("SENSOR_GROUP_" + grp.getGroup().name() + "_" + grp.getName().toUpperCase());
 
         this.grp = grp;
     }

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.monitoring;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -32,21 +32,22 @@ import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroupImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.monitoring.MonitoringExposerSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerSpi> {
-    private Map<MonitoringGroup, SensorGroup> sensors = new HashMap<>();
+    /** */
+    private ConcurrentMap<MonitoringGroup, ConcurrentMap<String, SensorGroup>> sensorGrps = new ConcurrentHashMap<>();
 
-    private Map<String, SensorGroup> sensorGrps = new HashMap<>();
+    /** */
+    private ConcurrentMap<MonitoringGroup, ConcurrentMap<String, MonitoringList<?, ?>>> lists = new ConcurrentHashMap<>();
 
-    private Map<MonitoringGroup, Map<String, MonitoringList<?, ?>>> lists = new HashMap<>();
+    /** CONCURRENCY! */
+    private List<Consumer<SensorGroup>> sensorGrpCreationLsnrs = new ArrayList<>();
 
-    private List<Consumer<SensorGroup<String>>> sensorGrpCreationLsnrs = new ArrayList<>();
-
-    private List<Consumer<SensorGroup<MonitoringGroup>>> sensorsCreationLsnrs = new ArrayList<>();
-
+    /** CONCURRENCY! */
     private List<Consumer<T2<MonitoringGroup, MonitoringList<?, ?>>>> listCreationLsnrs = new ArrayList<>();
 
     /**
@@ -75,54 +76,55 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         stopSpi();
     }
 
-    public SensorGroup<MonitoringGroup> sensors(MonitoringGroup grp, Set<String> names) {
-        SensorGroup<MonitoringGroup> sensorGrp = sensors.computeIfAbsent(grp, g -> new SensorGroupImpl(grp, names));
-
-        notifyListeners(sensorGrp, sensorsCreationLsnrs);
-
-        return sensorGrp;
+    public SensorGroup sensorsGroup(MonitoringGroup monGrp) {
+        return sensorsGroup(monGrp, null);
     }
 
-    public SensorGroup<String> sensorsGroup(String name, Set<String> names) {
-        SensorGroup<String> grp = sensorGrps.computeIfAbsent(name, n -> new SensorGroupImpl(name, names));
+    public SensorGroup sensorsGroup(MonitoringGroup monGrp, @Nullable String name) {
+        if (name == null)
+            name = "";
 
-        notifyListeners(grp, sensorGrpCreationLsnrs);
+        ConcurrentMap<String, SensorGroup> grps = sensorGrps.computeIfAbsent(monGrp, mg -> new ConcurrentHashMap<>());
 
-        return grp;
+        SensorGroup newGrp = new SensorGroupImpl(monGrp, name);
+
+        SensorGroup oldGrp = grps.putIfAbsent(name, newGrp);
+
+        if (oldGrp == null) {
+            notifyListeners(newGrp, sensorGrpCreationLsnrs);
+
+            return newGrp;
+        }
+
+        return oldGrp;
     }
 
     public <Id, Row> MonitoringList<Id, Row> list(MonitoringGroup grp, String name, Class<Row> rowClass) {
-        Map<String, MonitoringList<?, ?>> lists = this.lists.computeIfAbsent(grp, g -> new HashMap<>());
+        Map<String, MonitoringList<?, ?>> grpLists = this.lists.computeIfAbsent(grp, g -> new ConcurrentHashMap<>());
 
-        MonitoringList<Id, Row> list = new MonitoringListImpl<>(grp, name, rowClass);
+        MonitoringList<Id, Row> newList = new MonitoringListImpl<>(grp, name, rowClass);
 
-        MonitoringList<?, ?> old = lists.putIfAbsent(name, list);
+        MonitoringList<Id, Row> oldList = (MonitoringList<Id, Row>) grpLists.putIfAbsent(name, newList);
 
-        assert old == null;
+        if (oldList == null) {
+            notifyListeners(new T2(grp, newList), listCreationLsnrs);
 
-        notifyListeners(new T2(grp, list), listCreationLsnrs);
+            return newList;
+        }
 
-        return list;
+        return oldList;
     }
 
-    public Map<MonitoringGroup, SensorGroup> sensors() {
-        return sensors;
-    }
-
-    public Map<String, SensorGroup> sensorGroups() {
+    public ConcurrentMap<MonitoringGroup, ConcurrentMap<String, SensorGroup>> sensorGroups() {
         return sensorGrps;
     }
 
-    public Map<MonitoringGroup, Map<String, MonitoringList<?, ?>>> lists() {
+    public ConcurrentMap<MonitoringGroup, ConcurrentMap<String, MonitoringList<?, ?>>> lists() {
         return lists;
     }
 
-    public void addSensorGroupCreationListener(Consumer<SensorGroup<String>> lsnr) {
+    public void addSensorGroupCreationListener(Consumer<SensorGroup> lsnr) {
         sensorGrpCreationLsnrs.add(lsnr);
-    }
-
-    public void addSensorsCreationListener(Consumer<SensorGroup<MonitoringGroup>> lsnr) {
-        sensorsCreationLsnrs.add(lsnr);
     }
 
     public void addListCreationListener(Consumer<T2<MonitoringGroup, MonitoringList<?, ?>>> lsnr) {

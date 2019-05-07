@@ -42,7 +42,13 @@ public class DoubleClosureSensor extends AbstractSensor {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public String stringValue() {
         return ((Double)getValue()).toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        // No-op.
     }
 }

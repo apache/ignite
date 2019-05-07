@@ -39,7 +39,13 @@ public class LongTimeSensor extends AbstractTimeSensor {
         this.timestamp = timestamp;
     }
 
+    /** {@inheritDoc} */
     @Override public String stringValue() {
         return "ts=" + timestamp + ",value=" + value;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        value = 0;
     }
 }

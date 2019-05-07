@@ -17,41 +17,58 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  *
  */
-public class DoubleSensor extends AbstractSensor {
-    private double value;
+public class AtomicLongSensor extends AbstractSensor {
+    /** */
+    private AtomicLong value;
 
-    public DoubleSensor(String name, double value) {
+    /** */
+    public AtomicLongSensor(String name) {
         super(name);
 
-        this.value = value;
+        this.value = new AtomicLong();
     }
 
-    public double getValue() {
-        return value;
+    /** */
+    public long getValue() {
+        return value.longValue();
     }
 
+    /** */
     public void increment() {
-        value++;
+        value.incrementAndGet();
     }
 
+    /** */
     public void decrement() {
-        value--;
+        value.decrementAndGet();
     }
 
-    public void set(long value) {
-        this.value = value;
+    /** */
+    public void add(long x) {
+        value.addAndGet(x);
+    }
+
+    /** */
+    public boolean compareAndSet(long expected, long update) {
+        return value.compareAndSet(expected, update);
+    }
+
+    public void set(long x) {
+        value.set(x);
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue() {
-        return ((Double)value).toString();
+        return value.toString();
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = 0;
+        value.set(0);
     }
 }

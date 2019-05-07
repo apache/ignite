@@ -17,41 +17,49 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.concurrent.atomic.LongAdder;
+
 /**
  *
  */
-public class DoubleSensor extends AbstractSensor {
-    private double value;
+public class LongAdderSensor extends AbstractSensor {
+    /** */
+    private LongAdder value;
 
-    public DoubleSensor(String name, double value) {
+    /** */
+    public LongAdderSensor(String name) {
         super(name);
 
-        this.value = value;
+        this.value = new LongAdder();
     }
 
-    public double getValue() {
-        return value;
+    /** */
+    public long getValue() {
+        return value.longValue();
     }
 
+    /** */
     public void increment() {
-        value++;
+        value.increment();
     }
 
+    /** */
     public void decrement() {
-        value--;
+        value.decrement();
     }
 
-    public void set(long value) {
-        this.value = value;
+    /** */
+    public void add(long x) {
+        value.add(x);
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue() {
-        return ((Double)value).toString();
+        return value.toString();
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = 0;
+        value.reset();
     }
 }

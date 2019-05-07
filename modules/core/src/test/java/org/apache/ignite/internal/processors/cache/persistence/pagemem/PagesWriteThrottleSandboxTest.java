@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.monitoring.sensor.HitRateSensor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -114,7 +114,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
             final AtomicBoolean run = new AtomicBoolean(true);
 
-            final HitRateMetrics getRate = new HitRateMetrics(5000, 5);
+            final HitRateSensor getRate = new HitRateSensor(5000, 5);
 
             GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -132,7 +132,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                 }
             }, 2, "read-loader");
 
-            final HitRateMetrics putRate = new HitRateMetrics(1000, 5);
+            final HitRateSensor putRate = new HitRateSensor(1000, 5);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -160,7 +160,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                             e.printStackTrace();
                         }
 
-                        System.out.println("@@@ putsPerSec=," + (putRate.getRate()) + ", getsPerSec=," + (getRate.getRate()) + ", dirtyPages=," + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
+                        System.out.println("@@@ putsPerSec=," + (putRate.getValue()) + ", getsPerSec=," + (getRate.getValue()) + ", dirtyPages=," + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
 
                         try {
                             Thread.sleep(1000);

@@ -29,7 +29,7 @@ import org.apache.ignite.services.ServiceMonitoringInfo;
  *
  */
 public class ServiceInfoRowListHelper extends ListRowMBeanHelper<UUID, ServiceMonitoringInfo> {
-
+    /** {@inheritDoc} */
     @Override protected String[] fields() {
         return new String[] {
             "id",
@@ -40,6 +40,7 @@ public class ServiceInfoRowListHelper extends ListRowMBeanHelper<UUID, ServiceMo
         };
     }
 
+    /** {@inheritDoc} */
     @Override protected OpenType[] types() {
         return new OpenType[] {
             SimpleType.STRING,
@@ -50,10 +51,12 @@ public class ServiceInfoRowListHelper extends ListRowMBeanHelper<UUID, ServiceMo
         };
     }
 
+    /** {@inheritDoc} */
     @Override protected Class<ServiceMonitoringInfo> rowClass() {
         return ServiceMonitoringInfo.class;
     }
 
+    /** {@inheritDoc} */
     @Override protected Map<String, Object> values(ListRow<UUID, ServiceMonitoringInfo> row) {
         Map<String, Object> vals = new HashMap<>();
 

@@ -33,18 +33,22 @@ public class ListRowImpl<Id, Data> implements ListRow<Id, Data> {
         this.data = data;
     }
 
+    /** {@inheritDoc} */
     @Override public Id getId() {
         return id;
     }
 
+    /** {@inheritDoc} */
     @Override public String getSessionId() {
         return sessionId;
     }
 
+    /** {@inheritDoc} */
     @Override public Data getData() {
         return data;
     }
 
+    /** {@inheritDoc} */
     @Override public void setData(Data data) {
         this.data = data;
     }

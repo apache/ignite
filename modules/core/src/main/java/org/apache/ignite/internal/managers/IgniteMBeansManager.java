@@ -178,7 +178,7 @@ public class IgniteMBeansManager {
             // striped executor uses a custom adapter
             registerMBean("Thread Pools",
                 "StripedExecutor",
-                new StripedExecutorMXBeanAdapter(stripedExecSvc),
+                new StripedExecutorMXBeanAdapter(ctx.monitoring(), "StripedExecutor", stripedExecSvc),
                 StripedExecutorMXBean.class);
         }
 
@@ -212,7 +212,8 @@ public class IgniteMBeansManager {
      * @throws IgniteCheckedException if registration fails.
      */
     private void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
-        registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(exec), ThreadPoolMXBean.class);
+        registerMBean("Thread Pools", name, new ThreadPoolMXBeanAdapter(ctx.monitoring(), name, exec),
+            ThreadPoolMXBean.class);
     }
 
     /**

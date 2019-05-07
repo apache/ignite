@@ -42,7 +42,13 @@ public class ClosureSensor<T> extends AbstractSensor {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public String stringValue() {
         return getValue().toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        // No-op.
     }
 }

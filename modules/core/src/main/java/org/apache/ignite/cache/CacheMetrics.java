@@ -25,7 +25,10 @@ import org.apache.ignite.IgniteCache;
 /**
  * Cache metrics used to obtain statistics on cache itself.
  * Use {@link IgniteCache#metrics()} to obtain metrics for a cache.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public interface CacheMetrics {
     /**
      * The number of get requests that were satisfied by the cache.
