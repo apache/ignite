@@ -3125,6 +3125,8 @@ public class CommandHandler {
         usage(i("Print detailed information (topology and key lock ownership) about specific transaction:"),
             TX, TX_INFO, or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
                 "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));
+        usage(i("Dump diagnostic info for page history:"), DIAGNOSTIC, DiagnosticCommand.PAGE_HISTORY.text(),
+            "[page_ids pageId1,pageId2] print_to_log print_to_file", op(CMD_AUTO_CONFIRMATION));
 
         if (enableExperimental) {
             usage(i("Print absolute paths of unused archived wal segments on each node:"), WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");

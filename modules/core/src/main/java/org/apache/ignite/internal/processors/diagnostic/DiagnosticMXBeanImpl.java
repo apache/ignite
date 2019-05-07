@@ -29,28 +29,28 @@ import org.apache.ignite.mxbean.DiagnosticMXBean;
  */
 public class DiagnosticMXBeanImpl implements DiagnosticMXBean {
 
-    private DebugProcessor debug;
+    private DiagnosticProcessor debug;
 
     /**
      * @param ctx Context.
      */
     public DiagnosticMXBeanImpl(GridKernalContext ctx) {
-        debug = ctx.debug();
+        debug = ctx.diagnostic();
     }
 
     /** {@inheritDoc} */
     @Override public void dumpPageHistory(boolean dumpToFile, boolean dumpToLog, String filePath, long... pageIds) {
-        DebugProcessor.DebugPageBuilder builder = new DebugProcessor.DebugPageBuilder()
+        PageHistoryDiagnoster.DiagnosticPageBuilder builder = new PageHistoryDiagnoster.DiagnosticPageBuilder()
             .pageIds(pageIds);
 
         if (filePath != null)
-            builder.fileOrFolderForDump(new File(filePath));
+            builder.folderForDump(new File(filePath));
 
         if (dumpToFile)
-            builder.addAction(DebugProcessor.DebugAction.PRINT_TO_FILE);
+            builder.addAction(DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE);
 
         if (dumpToLog)
-            builder.addAction(DebugProcessor.DebugAction.PRINT_TO_LOG);
+            builder.addAction(DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG);
 
         try {
             debug.dumpPageHistory(builder);

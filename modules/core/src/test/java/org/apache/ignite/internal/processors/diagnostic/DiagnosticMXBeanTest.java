@@ -35,7 +35,7 @@ import org.apache.ignite.mxbean.DiagnosticMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.diagnostic.DebugProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 
 /** */
 public class DiagnosticMXBeanTest extends GridCommonAbstractTest {

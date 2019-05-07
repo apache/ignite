@@ -20,7 +20,8 @@ package org.apache.ignite.internal.visor.diagnostic;
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.diagnostic.DebugProcessor;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
+import org.apache.ignite.internal.processors.diagnostic.PageHistoryDiagnoster;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -37,28 +38,28 @@ public class VisorDumpDiagnosticInfoTask extends VisorOneNodeTask<VisorDumpDiagn
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorDumpDebugInfoJob job(VisorDumpDiagnosticInfoArg arg) {
-        return new VisorDumpDebugInfoJob(arg, debug);
+    @Override protected VisorDumpDiagnosticInfoJob job(VisorDumpDiagnosticInfoArg arg) {
+        return new VisorDumpDiagnosticInfoJob(arg, debug);
     }
 
     /**
      * Job that take diagnostic info dump.
      */
-    private static class VisorDumpDebugInfoJob extends VisorJob<VisorDumpDiagnosticInfoArg, Void> {
+    private static class VisorDumpDiagnosticInfoJob extends VisorJob<VisorDumpDiagnosticInfoArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /**
          * @param arg Formal job argument.
-         * @param debug Debug flag.
+         * @param debug Diagnostic flag.
          */
-        private VisorDumpDebugInfoJob(VisorDumpDiagnosticInfoArg arg, boolean debug) {
+        private VisorDumpDiagnosticInfoJob(VisorDumpDiagnosticInfoArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected Void run(VisorDumpDiagnosticInfoArg arg) {
-            DebugProcessor debug = ignite.context().debug();
+            DiagnosticProcessor debug = ignite.context().diagnostic();
 
             if (arg.operation == VisorDumpDiagnosticInfoOperation.PAGE_HISTORY)
                 dumpPageHistory(arg, debug);
@@ -70,15 +71,15 @@ public class VisorDumpDiagnosticInfoTask extends VisorOneNodeTask<VisorDumpDiagn
          * @param arg Job arguments for dumping.
          * @param debug Diagnostic processor for execution.
          */
-        private void dumpPageHistory(VisorDumpDiagnosticInfoArg arg, DebugProcessor debug) {
-            DebugProcessor.DebugPageBuilder builder = new DebugProcessor.DebugPageBuilder()
+        private void dumpPageHistory(VisorDumpDiagnosticInfoArg arg, DiagnosticProcessor debug) {
+            PageHistoryDiagnoster.DiagnosticPageBuilder builder = new PageHistoryDiagnoster.DiagnosticPageBuilder()
                 .pageIds(arg.getPageIds());
 
             if (arg.getPathToDump() != null)
-                builder.fileOrFolderForDump(new File(arg.getPathToDump()));
+                builder.folderForDump(new File(arg.getPathToDump()));
 
             for (VisorDumpDiagnosticInfoArg.DumpAction action : arg.getDumpActions()) {
-                DebugProcessor.DebugAction convertedAction = toInner(action);
+                DiagnosticProcessor.DiagnosticAction convertedAction = toInner(action);
 
                 if (convertedAction != null)
                     builder.addAction(convertedAction);
@@ -98,12 +99,12 @@ public class VisorDumpDiagnosticInfoTask extends VisorOneNodeTask<VisorDumpDiagn
          * @param action Action for converting.
          * @return Inner debug action.
          */
-        private DebugProcessor.DebugAction toInner(VisorDumpDiagnosticInfoArg.DumpAction action) {
+        private DiagnosticProcessor.DiagnosticAction toInner(VisorDumpDiagnosticInfoArg.DumpAction action) {
             switch (action) {
                 case PRINT_TO_LOG:
-                    return DebugProcessor.DebugAction.PRINT_TO_LOG;
+                    return DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
                 case PRINT_TO_FILE:
-                    return DebugProcessor.DebugAction.PRINT_TO_FILE;
+                    return DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
             }
 
             return null;
@@ -111,7 +112,7 @@ public class VisorDumpDiagnosticInfoTask extends VisorOneNodeTask<VisorDumpDiagn
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorDumpDebugInfoJob.class, this);
+            return S.toString(VisorDumpDiagnosticInfoJob.class, this);
         }
     }
 }
