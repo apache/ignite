@@ -164,7 +164,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCleaningGarbargeAfterCacheDestroyedAndNodeStop() throws Exception {
+    public void testCleaningGarbageAfterCacheDestroyedAndNodeStop() throws Exception {
         testFindAndDeleteGarbage(this::executeTask);
     }
 
@@ -173,7 +173,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testCleaningGarbargeAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
+    public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {
         testFindAndDeleteGarbage(this::executeTaskViaControlConsoleUtil);
     }
 
@@ -223,15 +223,15 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite to execute task on.
-     * @param deleteFoundGarbarge If clearing mode should be used.
+     * @param deleteFoundGarbage If clearing mode should be used.
      * @return Result of task run.
      */
     private VisorFindAndDeleteGarbageInPersistenceTaskResult executeTask(
         IgniteEx ignite,
-        boolean deleteFoundGarbarge
+        boolean deleteFoundGarbage
     ) {
         VisorFindAndDeleteGarbageInPersistenceTaskArg group = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
-            Collections.singleton(GROUP), deleteFoundGarbarge, null);
+            Collections.singleton(GROUP), deleteFoundGarbage, null);
 
         UUID id = ignite.localNode().id();
 
@@ -245,19 +245,19 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite to execute task on.
-     * @param deleteFoundGarbarge If clearing mode should be used.
+     * @param deleteFoundGarbage If clearing mode should be used.
      * @return Result of task run.
      */
     private VisorFindAndDeleteGarbageInPersistenceTaskResult executeTaskViaControlConsoleUtil(
         IgniteEx ignite,
-        boolean deleteFoundGarbarge
+        boolean deleteFoundGarbage
     ) {
         CommandHandler handler = new CommandHandler();
 
         List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
             ignite.localNode().id().toString()));
 
-        if (deleteFoundGarbarge)
+        if (deleteFoundGarbage)
             args.add(FindAndDeleteGarbageArg.DELETE.argName());
 
         handler.execute(args);

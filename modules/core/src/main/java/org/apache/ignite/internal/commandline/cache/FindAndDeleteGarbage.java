@@ -126,7 +126,7 @@ public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Argume
                     continue;
                 }
 
-                logger.log("Garbarge found on node " + nodeEntry.getKey() + ":");
+                logger.log("Garbage found on node " + nodeEntry.getKey() + ":");
 
                 VisorFindAndDeleteGarbageInPersistenceJobResult value = nodeEntry.getValue();
 
