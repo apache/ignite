@@ -54,6 +54,11 @@ public interface DbCheckpointListener {
          * @return {@code True} if at least one page is dirty.
          */
         public boolean hasPages();
+
+        /**
+         * @return {@code True} if at least one page with user data is dirty.
+         */
+        public boolean hasUserPages();
     }
 
     /**

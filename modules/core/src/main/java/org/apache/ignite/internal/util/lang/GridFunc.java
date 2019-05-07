@@ -2798,6 +2798,46 @@ public class GridFunc {
     }
 
     /**
+     * Check's that {@code val} contains ignore case in collection {@code col}.
+     *
+     * @param col Collection of values.
+     * @param val Checked value.
+     * @return {@code true}, if at least one element of {@code col} and {@code @val} are equal ignore case, and
+     * {@code false} otherwise.
+     */
+    public static boolean constainsStringIgnoreCase(@Nullable Collection<String> col, String val) {
+        if (F.isEmpty(col))
+            return false;
+
+        for (String v : col) {
+            if (v.equalsIgnoreCase(val))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check's that {@code val} contains ignore case in array {@code arr}.
+     *
+     * @param arr Array of values.
+     * @param val Checked value.
+     * @return {@code true}, if at least one element of {@code arr} and {@code val} are equal ignore case, and
+     * {@code false} otherwise.
+     */
+    public static boolean constainsStringIgnoreCase(@Nullable String[] arr, String val) {
+        if (F.isEmpty(arr))
+            return false;
+
+        for (String v : arr) {
+            if (v.equalsIgnoreCase(val))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @param arr Array.
      * @param val Value to find.
      * @return {@code True} if array contains given value.

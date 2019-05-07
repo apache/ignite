@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
@@ -488,5 +489,43 @@ public class CommandHandlerParsingTest extends TestCase {
 
         assertNull(arg.getProjection());
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+    }
+
+    /** */
+    public void testValidateIndexesNotAllowedForSystemCache() {
+        CommandHandler hnd = new CommandHandler();
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> hnd.parseAndValidate(asList("--cache", "validate_indexes", "cache1,ignite-sys-cache")),
+            IllegalArgumentException.class,
+            "validate_indexes not allowed for `ignite-sys-cache` cache."
+        );
+    }
+
+    /** */
+    public void testIdleVerifyWithCheckCrcNotAllowedForSystemCache() {
+        CommandHandler hnd = new CommandHandler();
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> hnd.parseAndValidate(asList("--cache", "idle_verify", "--check-crc", "--cache-filter", "ALL")),
+            IllegalArgumentException.class,
+            "idle_verify with --check-crc and --cache-filter ALL or SYSTEM not allowed. You should remove --check-crc or change --cache-filter value."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> hnd.parseAndValidate(asList("--cache", "idle_verify", "--check-crc", "--cache-filter", "SYSTEM")),
+            IllegalArgumentException.class,
+            "idle_verify with --check-crc and --cache-filter ALL or SYSTEM not allowed. You should remove --check-crc or change --cache-filter value."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> hnd.parseAndValidate(asList("--cache", "idle_verify", "--check-crc", "ignite-sys-cache")),
+            IllegalArgumentException.class,
+            "idle_verify with --check-crc not allowed for `ignite-sys-cache` cache."
+        );
     }
 }
