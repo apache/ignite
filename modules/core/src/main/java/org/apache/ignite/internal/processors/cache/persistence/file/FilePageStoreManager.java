@@ -51,9 +51,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -314,14 +313,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * Will preserve crc in buffer if keepCrc is true.
      *
-     * @param cacheId Cache ID.
+     * @param grpId Group ID.
      * @param pageId Page ID.
      * @param pageBuf Page buffer.
      * @param keepCrc Keep CRC flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void read(int cacheId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
-        PageStore store = getStore(cacheId, PageIdUtils.partId(pageId));
+    public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        PageStore store = getStore(grpId, PageIdUtils.partId(pageId));
 
         try {
             store.read(pageId, pageBuf, keepCrc);
