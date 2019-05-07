@@ -93,9 +93,7 @@ public class CompoundNaiveBayesModelTest {
 
     @Test /** */
     public void testPredictOnlyDiscrete() {
-        double first = 1;
-        double second = 2;
-        double[] labels = {first, second};
+        double[] labels = {LABEL_1, LABEL_2};
         double[] classProbabilities = new double[] {6. / 13, 7. / 13};
 
         double[][][] probabilities = new double[][][] {
@@ -114,7 +112,7 @@ public class CompoundNaiveBayesModelTest {
             .withDiscreteModel(discreteModel)
             .build();
 
-        assertEquals(second, model.predict(observation), PRECISION);
+        assertEquals(LABEL_2, model.predict(observation), PRECISION);
     }
 
     @Test /** */
