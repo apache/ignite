@@ -109,10 +109,13 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
                     toMeans = res.featureSumsPerLbl.get(label);
                     sqSum = res.featureSquaredSumsPerLbl.get(label);
+                    int index = 0;
                     for (int j = 0; j < features.size(); j++) {
-                        double x = features.get(j);
-                        toMeans[j] += x;
-                        sqSum[j] += x * x;
+                        if (skipFeature.test(j)) continue;
+                        double x = features.get(index);
+                        toMeans[index] += x;
+                        sqSum[index] += x * x;
+                        ++index;
                     }
                 }
                 return res;
@@ -120,7 +123,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         )) {
             GaussianNaiveBayesSumsHolder sumsHolder = dataset.compute(t -> t, (a, b) -> {
                 if (a == null)
-                    return b == null ? new GaussianNaiveBayesSumsHolder() : b;
+                    return b;
                 if (b == null)
                     return a;
                 return a.merge(b);
@@ -148,9 +151,12 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 double[] sum = sumsHolder.featureSumsPerLbl.get(label);
                 double[] sqSum = sumsHolder.featureSquaredSumsPerLbl.get(label);
 
+                int index = 0;
                 for (int i = 0; i < featureCount; i++) {
-                    means[lbl][i] = sum[i] / count;
-                    variances[lbl][i] = (sqSum[i] - sum[i] * sum[i] / count) / count;
+                    if(skipFeature.test(i)) continue;
+                    means[lbl][index] = sum[index] / count;
+                    variances[lbl][i] = (sqSum[index] - sum[index] * sum[index] / count) / count;
+                    ++index;
                 }
 
                 if (equiprobableClasses)
