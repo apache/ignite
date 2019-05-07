@@ -5,6 +5,8 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
+import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
+import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,6 +59,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
         trainer = new CompoundNaiveBayesTrainer()
                 .setLabels(new double[]{LABEL_1, LABEL_2})
                 .setClsProbabilities(new double[]{.5, .5})
+                .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer().setSkipFeature(f -> f > 2))
                 .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
                         .setBucketThresholds(BINARIZED_DATA_THRESHOLDS)
                         .withEquiprobableClasses()
@@ -72,6 +75,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
         );
 
         assertDiscreteModel(model.getDiscreteModel());
+        assertGaussianModel(model.getGaussianModel());
     }
 
     private void assertDiscreteModel(DiscreteNaiveBayesModel model) {
@@ -94,5 +98,16 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
             for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
                 Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
         }
+    }
+
+    private void assertGaussianModel(GaussianNaiveBayesModel model){
+        double[] priorProbabilities = new double[] {.5, .5};
+
+        Assert.assertEquals(priorProbabilities[0], model.getClassProbabilities()[0], PRECISION);
+        Assert.assertEquals(priorProbabilities[1], model.getClassProbabilities()[1], PRECISION);
+        Assert.assertArrayEquals(new double[] {5.855, 176.25, 11.25, 0,0,0,0,0}, model.getMeans()[0], PRECISION);
+        Assert.assertArrayEquals(new double[] {5.4175, 132.5, 7.5, 0,0,0,0,0}, model.getMeans()[1], PRECISION);
+        double[] expectedVars = {0.026274999999999, 92.1875,0.6875,0,0,0,0,0};
+        Assert.assertArrayEquals(expectedVars, model.getVariances()[0], PRECISION);
     }
 }

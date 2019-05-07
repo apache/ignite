@@ -140,7 +140,7 @@ public class CompoundNaiveBayesModelTest {
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withGaussianModel(gaussianModel)
-            .withGaussianSkipFuture(f -> f >= 2)
+            .withGaussianSkipFuture(f -> f > 2)
             .withDiscreteModel(discreteModel)
             .withDiscreteSkipFuture(f -> f <= 2);
 
