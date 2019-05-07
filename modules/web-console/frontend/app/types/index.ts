@@ -80,3 +80,11 @@ export enum WellKnownOperationStatus {
     ERROR = 'ERROR',
     DONE = 'DONE'
 }
+
+export type BsSelectDropdownAction = {
+    click: (any) => any,
+    action: string,
+    available: boolean
+}
+
+export type BsSelectDropdownActions = BsSelectDropdownAction[]
