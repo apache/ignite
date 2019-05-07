@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.ignite.internal.visor.diagnostic.VisorDumpDiagnosticInfoArg;
 
 /**
- * This class contains all possible arguments after parsing debug command input.
+ * This class contains all possible arguments after parsing diagnostic command input.
  */
 public class DiagnosticArguments {
     /** Command. */
