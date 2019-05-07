@@ -473,7 +473,7 @@ public class GridCacheSharedContext<K, V> {
         DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr
     ) {
-        this.diagnosticMgr =add(mgrs,diagnosticMgr);
+        this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
