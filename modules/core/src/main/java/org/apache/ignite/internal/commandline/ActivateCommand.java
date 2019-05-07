@@ -27,10 +27,10 @@ import static org.apache.ignite.internal.commandline.CommandList.ACTIVATE;
 /**
  * Activate cluster command.
  */
-public class ActivateCommand extends Command<Void> {
+public class ActivateCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        usage(logger, "Activate cluster:", ACTIVATE);
+        Command.usage(logger, "Activate cluster:", ACTIVATE);
     }
 
     /**
@@ -40,7 +40,7 @@ public class ActivateCommand extends Command<Void> {
      * @throws GridClientException If failed to activate.
      */
     @Override public Object execute(GridClientConfiguration cfg, CommandLogger logger) throws Exception {
-        try (GridClient client = startClient(cfg)){
+        try (GridClient client = Command.startClient(cfg)){
             GridClientClusterState state = client.state();
 
             state.active(true);

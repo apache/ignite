@@ -26,10 +26,10 @@ import static org.apache.ignite.internal.commandline.CommandList.STATE;
 /**
  * Command to print cluster state.
  */
-public class StateCommand extends Command<Void> {
+public class StateCommand implements Command<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        usage(logger, "Print current cluster state:", STATE);
+        Command.usage(logger, "Print current cluster state:", STATE);
     }
 
     /**
@@ -39,7 +39,7 @@ public class StateCommand extends Command<Void> {
      * @throws Exception If failed to print state.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        try (GridClient client = startClient(clientCfg)){
+        try (GridClient client = Command.startClient(clientCfg)){
             GridClientClusterState state = client.state();
 
             logger.log("Cluster is " + (state.active() ? "active" : "inactive"));

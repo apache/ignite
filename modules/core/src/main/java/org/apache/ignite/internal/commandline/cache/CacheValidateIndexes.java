@@ -38,8 +38,7 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 
-import static org.apache.ignite.internal.commandline.CommandLogger.j;
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.cache.CacheCommandList.IDLE_VERIFY;
@@ -54,7 +53,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.ValidateInde
 /**
  * Validate indexes command.
  */
-public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments> {
+public class CacheValidateIndexes implements Command<CacheValidateIndexes.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
@@ -72,7 +71,7 @@ public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments
         map.put(CHECK_THROUGH + " K", "validate every Kth key");
 
         usageCache(logger, VALIDATE_INDEXES, description, map,
-            op(CACHES), OP_NODE_ID, op(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
+            optional(CACHES), OP_NODE_ID, optional(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
     }
 
     /**
@@ -148,7 +147,7 @@ public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments
             args.checkThrough()
         );
 
-        try (GridClient client = startClient(clientCfg);) {
+        try (GridClient client = Command.startClient(clientCfg);) {
             VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
                 client, "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask", taskArg, null, clientCfg);
 
@@ -175,7 +174,7 @@ public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments
                     ValidateIndexesPartitionResult res = e.getValue();
 
                     if (!res.issues().isEmpty()) {
-                        logger.logWithIndent(j(" ", e.getKey(), e.getValue()));
+                        logger.logWithIndent(CommandLogger.join(" ", e.getKey(), e.getValue()));
 
                         for (IndexValidationIssue is : res.issues())
                             logger.logWithIndent(is, 2);
@@ -188,7 +187,7 @@ public class CacheValidateIndexes extends Command<CacheValidateIndexes.Arguments
                     ValidateIndexesPartitionResult res = e.getValue();
 
                     if (!res.issues().isEmpty()) {
-                        logger.logWithIndent(j(" ", "SQL Index", e.getKey(), e.getValue()));
+                        logger.logWithIndent(CommandLogger.join(" ", "SQL Index", e.getKey(), e.getValue()));
 
                         for (IndexValidationIssue is : res.issues())
                             logger.logWithIndent(is, 2);

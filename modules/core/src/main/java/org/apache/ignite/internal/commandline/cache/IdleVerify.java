@@ -50,7 +50,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 import static java.lang.String.format;
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 /**
  *
  */
-public class IdleVerify extends Command<IdleVerify.Arguments> {
+public class IdleVerify implements Command<IdleVerify.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
@@ -83,8 +83,8 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
             Collections.singletonMap(CHECK_CRC.toString(),
                 "check the CRC-sum of pages stored on disk before verifying data " +
                     "consistency in partitions between primary and backup nodes."),
-            op(DUMP), op(SKIP_ZEROS), op(CHECK_CRC), op(EXCLUDE_CACHES, CACHES),
-                op(CACHE_FILTER, or(CacheFilterEnum.values())), op(CACHES));
+            optional(DUMP), optional(SKIP_ZEROS), optional(CHECK_CRC), optional(EXCLUDE_CACHES, CACHES),
+                optional(CACHE_FILTER, or(CacheFilterEnum.values())), optional(CACHES));
     }
 
     /**
@@ -177,7 +177,7 @@ public class IdleVerify extends Command<IdleVerify.Arguments> {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        try (GridClient client = startClient(clientCfg);) {
+        try (GridClient client = Command.startClient(clientCfg);) {
             Collection<GridClientNode> nodes = client.compute().nodes(GridClientNode::connectable);
 
             boolean idleVerifyV2 = true;

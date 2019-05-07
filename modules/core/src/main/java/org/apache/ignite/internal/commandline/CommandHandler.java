@@ -44,8 +44,8 @@ import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
-import static org.apache.ignite.internal.commandline.CommandLogger.j;
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.join;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
@@ -427,8 +427,8 @@ public class CommandHandler {
             "The command has the following syntax:");
         logger.nl();
 
-        logger.logWithIndent(j(" ", j(" ", UTILITY_NAME, j(" ", getCommonOptions())),
-            op("command"), "<command_parameters>"));
+        logger.logWithIndent(CommandLogger.join(" ", CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())),
+            optional("command"), "<command_parameters>"));
         logger.nl();
         logger.nl();
 

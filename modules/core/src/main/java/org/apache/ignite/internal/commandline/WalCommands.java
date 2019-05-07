@@ -35,7 +35,7 @@ import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandArgIterator.isCommandOrOption;
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 /**
  * Wal commands.
  */
-public class WalCommands extends Command<T2<String, String>> {
+public class WalCommands implements Command<T2<String, String>> {
     /** */
     static final String WAL_PRINT = "print";
 
@@ -65,8 +65,10 @@ public class WalCommands extends Command<T2<String, String>> {
 
     @Override public void printUsage(CommandLogger logger) {
         if (IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false)) {
-            usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL, WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-            usage(logger,"Delete unused archived wal segments on each node:", WAL, WAL_DELETE, "[consistentId1,consistentId2,....,consistentIdN]", op(CMD_AUTO_CONFIRMATION));
+            Command.usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
+                WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
+            Command.usage(logger,"Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
+                "[consistentId1,consistentId2,....,consistentIdN]", optional(CMD_AUTO_CONFIRMATION));
         }
     }
 
@@ -79,7 +81,7 @@ public class WalCommands extends Command<T2<String, String>> {
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
-        try (GridClient client = startClient(clientCfg)) {
+        try (GridClient client = Command.startClient(clientCfg)) {
             switch (walAct) {
                 case WAL_DELETE:
                     deleteUnusedWalSegments(client, walArgs, clientCfg);

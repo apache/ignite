@@ -22,7 +22,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
-import static org.apache.ignite.internal.commandline.CommandLogger.j;
+import static org.apache.ignite.internal.commandline.CommandLogger.join;
 
 /**
  * Abstract class for all control.sh commands, has already implemented methods and abstract methods.
@@ -30,17 +30,7 @@ import static org.apache.ignite.internal.commandline.CommandLogger.j;
  *
  * @param <T> Generic for getArg method which should return command-specific paramters which it would be run with.
  */
-public abstract class Command<T> {
-    /**
-     * Actual command execution. Parameters for run should be already set by calling parseArguments method.
-     *
-     * @param clientCfg Thin client configuration if connection to cluster is necessary.
-     * @param logger Logger to use.
-     * @return Result of operation (mostly usable for tests).
-     * @throws Exception If error occur.
-     */
-    public abstract Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
-
+public interface Command<T> {
     /**
      * Method to create thin client for communication with cluster.
      *
@@ -48,7 +38,7 @@ public abstract class Command<T> {
      * @return Grid thin client instance which is already connected to cluster.
      * @throws Exception If error occur.
      */
-    protected final GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
+    public static GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
         GridClient client = GridClientFactory.start(clientCfg);
 
         // If connection is unsuccessful, fail before doing any operations:
@@ -59,9 +49,31 @@ public abstract class Command<T> {
     }
 
     /**
+     * Print command usage.
+     *
+     * @param desc Command description.
+     * @param args Arguments.
+     */
+    public static void usage(CommandLogger logger, String desc, CommandList cmd, String... args) {
+        logger.logWithIndent(desc);
+        logger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)), 2);
+        logger.nl();
+    }
+
+    /**
+     * Actual command execution. Parameters for run should be already set by calling parseArguments method.
+     *
+     * @param clientCfg Thin client configuration if connection to cluster is necessary.
+     * @param logger Logger to use.
+     * @return Result of operation (mostly usable for tests).
+     * @throws Exception If error occur.
+     */
+    public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
+
+    /**
      * @return Message text to show user for. If null it means that confirmantion is not needed.
      */
-    public String confirmationPrompt() {
+    public default String confirmationPrompt() {
         return null;
     }
 
@@ -70,31 +82,19 @@ public abstract class Command<T> {
      *
      * @param argIterator Argument iterator.
      */
-    public void parseArguments(CommandArgIterator argIterator) {
+    public default void parseArguments(CommandArgIterator argIterator) {
         //Empty block.
     }
 
     /**
      * @return Command arguments which were parsed during {@link #parseArguments(CommandArgIterator)} call.
      */
-    public abstract T arg();
+    public T arg();
 
     /**
      * Print info for user about command (parameters, use cases and so on).
      *
      * @param logger Would be used as output.
      */
-    public abstract void printUsage(CommandLogger logger);
-
-    /**
-     * Print command usage.
-     *
-     * @param desc Command description.
-     * @param args Arguments.
-     */
-    protected final void usage(CommandLogger logger, String desc, CommandList cmd, String... args) {
-        logger.logWithIndent(desc);
-        logger.logWithIndent(j(" ", UTILITY_NAME, cmd, j(" ", args)), 2);
-        logger.nl();
-    }
+    public void printUsage(CommandLogger logger);
 }

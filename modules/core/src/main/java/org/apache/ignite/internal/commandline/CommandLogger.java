@@ -36,8 +36,8 @@ public class CommandLogger {
      * @param params Other input parameter.
      * @return Joined paramaters with specified {@code delimeter}.
      */
-    public static String j(String delimeter, Object... params) {
-        return j(new SB(), "", delimeter, params).toString();
+    public static String join(String delimeter, Object... params) {
+        return join(new SB(), "", delimeter, params).toString();
     }
 
     /**
@@ -49,7 +49,7 @@ public class CommandLogger {
      * @param params Other input parameter.
      * @return SB with appended to the end joined paramaters with specified {@code delimeter}.
      */
-    public static SB j(SB sb, String sbDelimeter, String delimeter, Object... params) {
+    public static SB join(SB sb, String sbDelimeter, String delimeter, Object... params) {
         if (!F.isEmpty(params)) {
             sb.a(sbDelimeter);
 
@@ -69,8 +69,8 @@ public class CommandLogger {
      * @param params Other input parameter.
      * @return Joined parameters wrapped optional braces.
      */
-    public static String op(Object... params) {
-        return j(new SB(), "[", " ", params).a("]").toString();
+    public static String optional(Object... params) {
+        return join(new SB(), "[", " ", params).a("]").toString();
     }
 
     /**
@@ -80,7 +80,7 @@ public class CommandLogger {
      * @return Concatenated string.
      */
     public static String or(Object... params) {
-        return j("|", params);
+        return join("|", params);
     }
 
     /**
@@ -89,8 +89,8 @@ public class CommandLogger {
      * @param params Input parameter.
      * @return Joined parameters wrapped grouped braces.
      */
-    public static String g(Object... params) {
-        return j(new SB(), "(", " ", params).a(")").toString();
+    public static String grouped(Object... params) {
+        return join(new SB(), "(", " ", params).a(")").toString();
     }
 
     /**
@@ -109,7 +109,7 @@ public class CommandLogger {
      * @param s String to output.
      */
     public void logWithIndent(Object s) {
-        log(i(s));
+        log(indent(s));
     }
 
     /**
@@ -119,7 +119,7 @@ public class CommandLogger {
      * @param s String to output.
      */
     public void logWithIndent(Object s, int indentCnt) {
-        log(i(s), indentCnt);
+        log(indent(s), indentCnt);
     }
 
     /**
@@ -128,8 +128,8 @@ public class CommandLogger {
      * @param o Input object.
      * @return Indented string.
      */
-    public static String i(Object o) {
-        return i(o, 1);
+    public static String indent(Object o) {
+        return indent(o, 1);
     }
 
 
@@ -140,7 +140,7 @@ public class CommandLogger {
      * @param indentCnt Number of indents.
      * @return Indented string.
      */
-    public static String i(Object o, int indentCnt) {
+    public static String indent(Object o, int indentCnt) {
         assert indentCnt >= 0;
 
         String s = o == null ? null : o.toString();

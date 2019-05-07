@@ -55,7 +55,7 @@ public enum CommandList {
 
     /**
      * @param text Text.
-     * @param command
+     * @param command Command implementation.
      */
     CommandList(String text, Command command) {
         this.text = text;

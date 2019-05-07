@@ -52,7 +52,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.transactions.TransactionState;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.CommandList.TX;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
@@ -62,7 +62,7 @@ import static org.apache.ignite.internal.commandline.TxCommandArg.TX_INFO;
 /**
  * Transaction commands.
  */
-public class TxCommands extends Command<VisorTxTaskArg> {
+public class TxCommands implements Command<VisorTxTaskArg> {
     /** Double indent. */
     private static final String DOUBLE_INDENT = INDENT + INDENT;
 
@@ -74,8 +74,8 @@ public class TxCommands extends Command<VisorTxTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        usage(logger,"List or kill transactions:", TX, getTxOptions());
-        usage(logger, "Print detailed information (topology and key lock ownership) about specific transaction:",
+        Command.usage(logger,"List or kill transactions:", TX, getTxOptions());
+        Command.usage(logger, "Print detailed information (topology and key lock ownership) about specific transaction:",
             TX, TX_INFO.argName(), or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
                 "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));
 
@@ -87,17 +87,17 @@ public class TxCommands extends Command<VisorTxTaskArg> {
     private String[] getTxOptions() {
         List<String> list = new ArrayList<>();
 
-        list.add(op(TxCommandArg.TX_XID, "XID"));
-        list.add(op(TxCommandArg.TX_DURATION, "SECONDS"));
-        list.add(op(TxCommandArg.TX_SIZE, "SIZE"));
-        list.add(op(TxCommandArg.TX_LABEL, "PATTERN_REGEX"));
-        list.add(op(or(TxCommandArg.TX_SERVERS, TxCommandArg.TX_CLIENTS)));
-        list.add(op(TxCommandArg.TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"));
-        list.add(op(TxCommandArg.TX_LIMIT, "NUMBER"));
-        list.add(op(TxCommandArg.TX_ORDER, or(VisorTxSortOrder.values())));
-        list.add(op(TxCommandArg.TX_KILL));
-        list.add(op(TX_INFO));
-        list.add(op(CMD_AUTO_CONFIRMATION));
+        list.add(optional(TxCommandArg.TX_XID, "XID"));
+        list.add(optional(TxCommandArg.TX_DURATION, "SECONDS"));
+        list.add(optional(TxCommandArg.TX_SIZE, "SIZE"));
+        list.add(optional(TxCommandArg.TX_LABEL, "PATTERN_REGEX"));
+        list.add(optional(or(TxCommandArg.TX_SERVERS, TxCommandArg.TX_CLIENTS)));
+        list.add(optional(TxCommandArg.TX_NODES, "consistentId1[,consistentId2,....,consistentIdN]"));
+        list.add(optional(TxCommandArg.TX_LIMIT, "NUMBER"));
+        list.add(optional(TxCommandArg.TX_ORDER, or(VisorTxSortOrder.values())));
+        list.add(optional(TxCommandArg.TX_KILL));
+        list.add(optional(TX_INFO));
+        list.add(optional(CMD_AUTO_CONFIRMATION));
 
         return list.toArray(new String[list.size()]);
     }
@@ -115,7 +115,7 @@ public class TxCommands extends Command<VisorTxTaskArg> {
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
-        try (GridClient client = startClient(clientCfg)) {
+        try (GridClient client = Command.startClient(clientCfg)) {
             if (args.getOperation() == VisorTxOperation.INFO)
                 return transactionInfo(client, clientCfg);
 

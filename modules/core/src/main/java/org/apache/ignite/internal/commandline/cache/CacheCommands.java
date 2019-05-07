@@ -29,8 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
-import static org.apache.ignite.internal.commandline.CommandLogger.j;
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONTENTION;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND_AND_DELETE_GARBAGE;
@@ -42,12 +41,12 @@ import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscovery
 /**
  * High-level "cache" command realization.
  */
-public class CacheCommands extends Command<CacheSubcommands> {
+public class CacheCommands implements Command<CacheSubcommands> {
     /** */
     protected static final String NODE_ID = "nodeId";
 
     /** */
-    protected static final String OP_NODE_ID = op(NODE_ID);
+    protected static final String OP_NODE_ID = optional(NODE_ID);
 
     /** */
     private CommandLogger logger;
@@ -58,7 +57,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         logger.logWithIndent("View caches information in a cluster. For more details type:");
-        logger.logWithIndent(j(" ", UTILITY_NAME, CACHE, HELP), 2);
+        logger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, CACHE, HELP), 2);
         logger.nl();
     }
 
@@ -125,7 +124,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
         logger.logWithIndent("The '" + CACHE + " subcommand' is used to get information about and perform actions" +
             " with caches. The command has the following syntax:");
         logger.nl();
-        logger.logWithIndent(CommandLogger.j(" ", UTILITY_NAME, j(" ", getCommonOptions())) + " " +
+        logger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())) + " " +
             CACHE + " [subcommand] <subcommand_parameters>");
         logger.nl();
         logger.logWithIndent("The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '"
@@ -163,7 +162,7 @@ public class CacheCommands extends Command<CacheSubcommands> {
 
         logger.logWithIndent(DELIM, indentsNum);
         logger.nl();
-        logger.logWithIndent(j(" ", CACHE, cmd, j(" ", args)), indentsNum++);
+        logger.logWithIndent(CommandLogger.join(" ", CACHE, cmd, CommandLogger.join(" ", args)), indentsNum++);
         logger.nl();
         logger.logWithIndent(description, indentsNum);
         logger.nl();

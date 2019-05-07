@@ -27,7 +27,7 @@ import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_INTERVAL;
 import static org.apache.ignite.internal.client.GridClientConfiguration.DFLT_PING_TIMEOUT;
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.TaskExecutor.DFLT_PORT;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
@@ -133,21 +133,21 @@ public class CommonArgParser {
     public static String[] getCommonOptions() {
         List<String> list = new ArrayList<>(32);
 
-        list.add(op(CMD_HOST, "HOST_OR_IP"));
-        list.add(op(CMD_PORT, "PORT"));
-        list.add(op(CMD_USER, "USER"));
-        list.add(op(CMD_PASSWORD, "PASSWORD"));
-        list.add(op(CMD_PING_INTERVAL, "PING_INTERVAL"));
-        list.add(op(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
-        list.add(op(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
-        list.add(op(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
-        list.add(op(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
-        list.add(op(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
-        list.add(op(CMD_KEYSTORE, "KEYSTORE_PATH"));
-        list.add(op(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
-        list.add(op(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
-        list.add(op(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
-        list.add(op(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
+        list.add(optional(CMD_HOST, "HOST_OR_IP"));
+        list.add(optional(CMD_PORT, "PORT"));
+        list.add(optional(CMD_USER, "USER"));
+        list.add(optional(CMD_PASSWORD, "PASSWORD"));
+        list.add(optional(CMD_PING_INTERVAL, "PING_INTERVAL"));
+        list.add(optional(CMD_PING_TIMEOUT, "PING_TIMEOUT"));
+        list.add(optional(CMD_SSL_PROTOCOL, "SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]"));
+        list.add(optional(CMD_SSL_CIPHER_SUITES, "SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]"));
+        list.add(optional(CMD_SSL_KEY_ALGORITHM, "SSL_KEY_ALGORITHM"));
+        list.add(optional(CMD_KEYSTORE_TYPE, "KEYSTORE_TYPE"));
+        list.add(optional(CMD_KEYSTORE, "KEYSTORE_PATH"));
+        list.add(optional(CMD_KEYSTORE_PASSWORD, "KEYSTORE_PASSWORD"));
+        list.add(optional(CMD_TRUSTSTORE_TYPE, "TRUSTSTORE_TYPE"));
+        list.add(optional(CMD_TRUSTSTORE, "TRUSTSTORE_PATH"));
+        list.add(optional(CMD_TRUSTSTORE_PASSWORD, "TRUSTSTORE_PASSWORD"));
 
         return list.toArray(new String[0]);
     }

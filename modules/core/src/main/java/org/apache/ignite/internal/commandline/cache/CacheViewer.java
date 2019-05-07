@@ -49,7 +49,7 @@ import org.apache.ignite.internal.visor.verify.VisorViewCacheTask;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorViewCacheTaskResult;
 
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
@@ -68,7 +68,7 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 /**
  * Command to show caches on cluster.
  */
-public class CacheViewer extends Command<CacheViewer.Arguments> {
+public class CacheViewer implements Command<CacheViewer.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String description = "Show information about caches, groups or sequences that match a regular expression. " +
@@ -78,12 +78,12 @@ public class CacheViewer extends Command<CacheViewer.Arguments> {
 
         map.put(CONFIG.toString(), "print all configuration parameters for each cache.");
         map.put(OUTPUT_FORMAT + " " + MULTI_LINE, "print configuration parameters per line. This option has effect only " +
-            "when used with " + CONFIG + " and without " + op(or(GROUP, SEQUENCE)) + ".");
+            "when used with " + CONFIG + " and without " + optional(or(GROUP, SEQUENCE)) + ".");
         map.put(GROUP.toString(), "print information about groups.");
         map.put(SEQUENCE.toString(), "print information about sequences.");
 
         usageCache(logger, LIST, description, map, "regexPattern",
-            op(or(GROUP, SEQUENCE)), OP_NODE_ID, op(CONFIG), op(OUTPUT_FORMAT, MULTI_LINE));
+            optional(or(GROUP, SEQUENCE)), OP_NODE_ID, optional(CONFIG), optional(OUTPUT_FORMAT, MULTI_LINE));
     }
 
     /**
@@ -162,7 +162,7 @@ public class CacheViewer extends Command<CacheViewer.Arguments> {
 
         VisorViewCacheTaskResult res;
 
-        try (GridClient client = startClient(clientCfg)) {
+        try (GridClient client = Command.startClient(clientCfg)) {
             res = TaskExecutor.executeTaskByNameOnNode(
                 client,
                 VisorViewCacheTask.class.getName(),

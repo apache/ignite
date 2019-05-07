@@ -33,7 +33,7 @@ import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributi
 import org.apache.ignite.internal.commandline.cache.distribution.CacheDistributionTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.NULL;
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
@@ -45,14 +45,14 @@ import static org.apache.ignite.internal.commandline.cache.argument.Distribution
 /**
  * Would collect and print info about how data is spread between nodes and partitions.
  */
-public class CacheDistribution extends Command<CacheDistribution.Arguments> {
+public class CacheDistribution implements Command<CacheDistribution.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Prints the information about partition distribution.";
 
         usageCache(logger, DISTRIBUTION, description, null,
-            or(NODE_ID, CommandHandler.NULL), op(CACHES), op(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
+            or(NODE_ID, CommandHandler.NULL), optional(CACHES), optional(USER_ATTRIBUTES, "attrName1,...,attrNameN"));
     }
 
     /**
@@ -115,7 +115,7 @@ public class CacheDistribution extends Command<CacheDistribution.Arguments> {
 
         CacheDistributionTaskResult res;
 
-        try(GridClient client = startClient(clientCfg)) {
+        try(GridClient client = Command.startClient(clientCfg)) {
             res = executeTaskByNameOnNode(client, CacheDistributionTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 

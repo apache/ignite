@@ -33,7 +33,7 @@ import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersist
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskArg;
 import org.apache.ignite.internal.visor.cache.VisorFindAndDeleteGarbageInPersistenceTaskResult;
 
-import static org.apache.ignite.internal.commandline.CommandLogger.op;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.OP_NODE_ID;
 import static org.apache.ignite.internal.commandline.cache.CacheCommands.usageCache;
@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
 /**
  * Command to find and delete garbage which could left after destroying caches in shared group.
  */
-public class FindAndDeleteGarbage extends Command<FindAndDeleteGarbage.Arguments> {
+public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String GROUPS = "groupName1,...,groupNameN";
@@ -50,7 +50,7 @@ public class FindAndDeleteGarbage extends Command<FindAndDeleteGarbage.Arguments
             "after cache destroy.";
 
         usageCache(logger, FIND_AND_DELETE_GARBAGE, description, null,
-            op(GROUPS), OP_NODE_ID, op(FindAndDeleteGarbageArg.DELETE));
+            optional(GROUPS), OP_NODE_ID, optional(FindAndDeleteGarbageArg.DELETE));
     }
 
     /**
@@ -113,7 +113,7 @@ public class FindAndDeleteGarbage extends Command<FindAndDeleteGarbage.Arguments
             args.nodeId() != null ? Collections.singleton(args.nodeId()) : null
         );
 
-        try (GridClient client = startClient(clientCfg);) {
+        try (GridClient client = Command.startClient(clientCfg);) {
             VisorFindAndDeleteGarbageInPersistenceTaskResult taskRes = executeTask(
                 client, VisorFindAndDeleteGarbageInPersistenceTask.class, taskArg, clientCfg);
 
