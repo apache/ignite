@@ -75,6 +75,9 @@ public class PageHistoryDiagnoster {
     public void onStart() {
         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ctx.cache().context().wal();
 
+        if (wal == null)
+            return;
+
         SegmentRouter segmentRouter = wal.getSegmentRouter();
 
         if (segmentRouter.hasArchive())
@@ -92,6 +95,12 @@ public class PageHistoryDiagnoster {
     public void dumpPageHistory(
         @NotNull PageHistoryDiagnoster.DiagnosticPageBuilder builder
     ) throws IgniteCheckedException {
+        if (walFolders == null) {
+            log.info("Skipping dump page history due to WAL not configured");
+
+            return;
+        }
+
         ScannerHandler action = null;
 
         for (DiagnosticProcessor.DiagnosticAction act : builder.actions) {
