@@ -74,7 +74,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
         assertDiscreteModel(model.getDiscreteModel());
     }
 
-    private void assertDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
+    private void assertDiscreteModel(DiscreteNaiveBayesModel model) {
         double[][][] expectedPriorProbabilites = new double[][][]{
                 {
                         {.25, .75},
@@ -92,7 +92,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
             for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
-                Assert.assertArrayEquals(expectedPriorProbabilites[i][j], discreteModel.getProbabilities()[i][j], PRECISION);
+                Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
         }
     }
 }
