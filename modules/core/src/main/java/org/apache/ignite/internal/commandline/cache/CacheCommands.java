@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALI
 import static org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder.DELIM;
 
 /**
- * High-level "cache" command realization.
+ * High-level "cache" command implementation.
  */
 public class CacheCommands implements Command<CacheSubcommands> {
     /** */
@@ -179,6 +179,7 @@ public class CacheCommands implements Command<CacheSubcommands> {
     /**
      * Print cache command arguments usage.
      *
+     * @param logger Command logger.
      * @param paramsDesc Cache command arguments description.
      * @param indentsNum Number of indents.
      */

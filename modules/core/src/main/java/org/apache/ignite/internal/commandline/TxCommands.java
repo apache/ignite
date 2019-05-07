@@ -51,10 +51,10 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.transactions.TransactionState;
 
+import static org.apache.ignite.internal.commandline.CommandList.TX;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.CommandList.TX;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.TxCommandArg.TX_INFO;
@@ -74,7 +74,7 @@ public class TxCommands implements Command<VisorTxTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        Command.usage(logger,"List or kill transactions:", TX, getTxOptions());
+        Command.usage(logger, "List or kill transactions:", TX, getTxOptions());
         Command.usage(logger, "Print detailed information (topology and key lock ownership) about specific transaction:",
             TX, TX_INFO.argName(), or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
                 "(can be found in logs)>", "<TX identifier as UUID (can be retrieved via --tx command)>"));

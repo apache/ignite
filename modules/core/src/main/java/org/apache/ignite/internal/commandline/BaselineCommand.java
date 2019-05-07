@@ -37,8 +37,8 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.commandline.CommandHandler.DELIM;
-import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;
@@ -54,16 +54,16 @@ public class BaselineCommand implements Command<BaselineArguments> {
     @Override public void printUsage(CommandLogger logger) {
         final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
 
-        Command.usage(logger,"Print cluster baseline topology:", BASELINE);
-        Command.usage(logger,"Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(),
+        Command.usage(logger, "Print cluster baseline topology:", BASELINE);
+        Command.usage(logger, "Add nodes into baseline topology:", BASELINE, BaselineSubcommands.ADD.text(),
             constistIds, optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger,"Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(),
+        Command.usage(logger, "Remove nodes from baseline topology:", BASELINE, BaselineSubcommands.REMOVE.text(),
             constistIds, optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger,"Set baseline topology:", BASELINE, BaselineSubcommands.SET.text(), constistIds,
+        Command.usage(logger, "Set baseline topology:", BASELINE, BaselineSubcommands.SET.text(), constistIds,
             optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger,"Set baseline topology based on version:", BASELINE,
+        Command.usage(logger, "Set baseline topology based on version:", BASELINE,
             BaselineSubcommands.VERSION.text() + " topologyVersion", optional(CMD_AUTO_CONFIRMATION));
-        Command.usage(logger,"Set baseline autoadjustment settings:", BASELINE,
+        Command.usage(logger, "Set baseline autoadjustment settings:", BASELINE,
             BaselineSubcommands.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", optional(CMD_AUTO_CONFIRMATION));
     }
 
@@ -83,7 +83,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
      * @throws Exception If failed to execute baseline action.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)){
+        try (GridClient client = Command.startClient(clientCfg)) {
             VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, toVisorArguments(baselineArgs), clientCfg);
 
             baselinePrint0(res, logger);
