@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static java.util.Arrays.stream;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory
     .IteratorParametersBuilder.withIteratorParameters;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
@@ -102,8 +103,16 @@ public class PageHistoryDiagnoster {
 
         requireNonNull(action, "Should be configured at least one action");
 
-        buildWalScanner(withIteratorParameters().log(log).filesOrDirs(walFolders))
-            .findAllRecordsFor(stream(builder.pageIds.array()).boxed().collect(Collectors.toSet()))
+        buildWalScanner(
+            withIteratorParameters()
+                .log(log)
+                .filesOrDirs(walFolders)
+        )
+            .findAllRecordsFor(
+                stream(builder.pageIds.array())
+                    .boxed()
+                    .collect(toSet())
+            )
             .forEach(action);
     }
 

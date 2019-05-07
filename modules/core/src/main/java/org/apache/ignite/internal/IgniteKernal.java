@@ -917,6 +917,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 longJVMPauseDetector
             );
 
+            startProcessor(new DiagnosticProcessor(ctx));
+
             mBeansMgr = new IgniteMBeansManager(this);
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
@@ -1004,7 +1006,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Start processors before discovery manager, so they will
             // be able to start receiving messages once discovery completes.
             try {
-                startProcessor(new DiagnosticProcessor(ctx));
                 startProcessor(COMPRESSION.createOptional(ctx));
                 startProcessor(new PdsConsistentIdProcessor(ctx));
                 startProcessor(new MvccProcessorImpl(ctx));

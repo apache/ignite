@@ -139,10 +139,15 @@ public final class IgniteStopwatch {
         try {
             operation.run();
         }
-        finally {
-            log.info("Operation was finished: operation = " + operationName
+        catch (Throwable ex) {
+            log.info("Operation was failed: operation = " + operationName
                 + ", elapsedTime = " + (System.currentTimeMillis() - start) + " ms");
+
+            throw ex;
         }
+
+        log.info("Operation was success: operation = " + operationName
+            + ", elapsedTime = " + (System.currentTimeMillis() - start) + " ms");
     }
 
     /**

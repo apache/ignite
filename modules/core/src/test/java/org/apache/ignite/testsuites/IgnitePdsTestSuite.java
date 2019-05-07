@@ -189,7 +189,7 @@ public class IgnitePdsTestSuite {
         GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DistributedConfigurationPersistentTest.class, ignoredTests);
 
-        //Debug
+        //Diagnostic
         GridTestUtils.addTestIfNeeded(suite, DiagnosticProcessorTest.class, ignoredTests);
     }
 }
