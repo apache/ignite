@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +26,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.sensor.IntSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.LongSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,7 +42,7 @@ import org.apache.ignite.transactions.TransactionState;
 /**
  * Tx metrics adapter.
  */
-public class TransactionMetricsAdapter implements TransactionMetrics, Externalizable {
+public class TransactionMetricsAdapter implements TransactionMetrics {
     /** Grid kernal context. */
     private final GridKernalContext gridKernalCtx;
 
@@ -50,16 +50,16 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     private static final long serialVersionUID = 0L;
 
     /** Number of transaction commits. */
-    private volatile int txCommits;
+    private IntSensor txCommits;
 
     /** Number of transaction rollbacks. */
-    private volatile int txRollbacks;
+    private IntSensor txRollbacks;
 
     /** Last commit time. */
-    private volatile long commitTime;
+    private LongSensor commitTime;
 
     /** Last rollback time. */
-    private volatile long rollbackTime;
+    private LongSensor rollbackTime;
 
     /**
      * Create TransactionMetricsAdapter.
@@ -73,26 +73,41 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
      */
     public TransactionMetricsAdapter(GridKernalContext ctx) {
         gridKernalCtx = ctx;
+
+        SensorGroup grp = ctx.monitoring().sensorsGroup(MonitoringGroup.TRANSACTIONS, "metrics");
+
+        txCommits = grp.intSensor("txCommits");
+        txRollbacks = grp.intSensor("txRollbacks");
+        commitTime = grp.longSensor("commitTime");
+        rollbackTime = grp.longSensor("rollbackTime");
+
+        grp.sensor("AllOwnerTransactions", this::getAllOwnerTransactions);
+
+        grp.longSensor("TransactionsCommittedNumber", this::getTransactionsCommittedNumber);
+        grp.longSensor("TransactionsRolledBackNumber", this::getTransactionsRolledBackNumber);
+        grp.longSensor("TransactionsHoldingLockNumber", this::getTransactionsHoldingLockNumber);
+        grp.longSensor("LockedKeysNumber", this::getLockedKeysNumber);
+        grp.longSensor("OwnerTransactionsNumber", this::getOwnerTransactionsNumber);
     }
 
     /** {@inheritDoc} */
     @Override public long commitTime() {
-        return commitTime;
+        return commitTime.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public long rollbackTime() {
-        return rollbackTime;
+        return rollbackTime.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public int txCommits() {
-        return txCommits;
+        return txCommits.getValue();
     }
 
     /** {@inheritDoc} */
     @Override public int txRollbacks() {
-        return txRollbacks;
+        return txRollbacks.getValue();
     }
 
     /** {@inheritDoc} */
@@ -134,28 +149,28 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
      * Transaction commit callback.
      */
     public void onTxCommit() {
-        commitTime = U.currentTimeMillis();
+        commitTime.set(U.currentTimeMillis());
 
-        txCommits++;
+        txCommits.increment();
     }
 
     /**
      * Transaction rollback callback.
      */
     public void onTxRollback() {
-        rollbackTime = U.currentTimeMillis();
+        rollbackTime.set(U.currentTimeMillis());
 
-        txRollbacks++;
+        txRollbacks.increment();
     }
 
     /**
      * Reset.
      */
     public void reset() {
-        commitTime = 0;
-        txCommits = 0;
-        rollbackTime = 0;
-        txRollbacks = 0;
+        commitTime.reset();
+        txCommits.reset();
+        rollbackTime.reset();
+        txRollbacks.reset();
     }
 
     /**
@@ -286,22 +301,6 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
         GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
 
         return mvccManager.lockedKeys().size() + mvccManager.nearLockedKeys().size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(commitTime);
-        out.writeLong(rollbackTime);
-        out.writeInt(txCommits);
-        out.writeInt(txRollbacks);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        commitTime = in.readLong();
-        rollbackTime = in.readLong();
-        txCommits = in.readInt();
-        txRollbacks = in.readInt();
     }
 
     /** {@inheritDoc} */

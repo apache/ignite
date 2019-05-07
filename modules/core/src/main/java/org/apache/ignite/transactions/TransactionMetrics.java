@@ -17,13 +17,15 @@
 
 package org.apache.ignite.transactions;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
  * Transaction metrics, shared across all caches.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
-public interface TransactionMetrics extends Serializable {
+@Deprecated
+public interface TransactionMetrics {
     /**
      * Gets last time transaction was committed.
      *

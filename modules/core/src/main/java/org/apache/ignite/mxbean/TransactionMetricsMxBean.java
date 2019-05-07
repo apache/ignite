@@ -22,8 +22,11 @@ import org.apache.ignite.transactions.TransactionMetrics;
 
 /**
  * Transactions MXBean interface.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
 @MXBeanDescription("MBean that provides access to Ignite transactions.")
+@Deprecated
 public interface TransactionMetricsMxBean extends TransactionMetrics {
     /**
      * All near transactions

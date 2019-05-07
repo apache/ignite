@@ -119,6 +119,10 @@ public class SensorGroupImpl implements SensorGroup {
         return addSensor(name, new IntArraySensor(name, sensorValue));
     }
 
+    @Override public IntSensor intSensor(String name) {
+        return addSensor(name, new IntSensor(name));
+    }
+
     /** {@inheritDoc} */
     @Override public <T> TypedSensor<T> sensor(String name, T value) {
         return addSensor(name, new TypedSensor<>(name, value));

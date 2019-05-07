@@ -38,6 +38,9 @@ import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.monitoring.GridMonitoringManager;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -190,9 +193,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     throw new IgniteCheckedException("Failed to bind to any [host:port] from the range [" +
                         "host=" + host + ", portFrom=" + cliConnCfg.getPort() + ", portTo=" + portTo +
                         ", lastErr=" + lastErr + ']');
-
-                if (!U.IGNITE_MBEANS_DISABLED)
-                    registerMBean();
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
@@ -200,10 +200,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (!U.IGNITE_MBEANS_DISABLED)
+            registerMBean(ctx.monitoring());
+    }
+
     /**
      * Register an Ignite MBean for managing clients connections.
+     * @param monitoring
      */
-    private void registerMBean() throws IgniteCheckedException {
+    private void registerMBean(GridMonitoringManager monMgr) throws IgniteCheckedException {
         assert !U.IGNITE_MBEANS_DISABLED;
 
         String name = getClass().getSimpleName();
@@ -212,7 +218,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
             ObjectName objName = U.registerMBean(
                 ctx.config().getMBeanServer(),
                 ctx.config().getIgniteInstanceName(),
-                "Clients", name, new ClientProcessorMXBeanImpl(), ClientProcessorMXBean.class);
+                "Clients", name, new ClientProcessorMXBeanImpl(monMgr), ClientProcessorMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered MBean: " + objName);
@@ -491,6 +497,12 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
      * ClientProcessorMXBean interface.
      */
     private class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
+        public ClientProcessorMXBeanImpl(GridMonitoringManager mgr) {
+            SensorGroup grp = mgr.sensorsGroup(MonitoringGroup.THIN_CLIENT_CONNECTIONS);
+
+            grp.sensor("connections", this::getConnections);
+        }
+
         /** {@inheritDoc} */
         @Override public List<String> getConnections() {
             Collection<? extends GridNioSession> sessions = srv.sessions();

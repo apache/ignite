@@ -86,19 +86,29 @@ public interface SensorGroup {
     /** */
     public HitRateSensor hitRateSensor(String name, int rateTimeInterval, int size);
 
+    /** */
     public BooleanClosureSensor booleanSensor(String name, BooleanSupplier sensorValue);
 
+    /** */
     public LongArraySensor longArraySensor(String name, Supplier<long[]> sensorValue);
 
+    /** */
     public BooleanArraySensor booleanArraySensor(String name, Supplier<boolean[]> sensorValue);
 
+    /** */
     public IntArraySensor intArraySensor(String name, Supplier<int[]> sensorValue);
 
+    /** */
+    public IntSensor intSensor(String name);
+
+    /** */
     @FunctionalInterface
     public interface DoubleToDoubleFunction {
+        /** */
         public double apply(double value);
     }
 
+    /** */
     @FunctionalInterface
     public interface FloatSupplier {
 

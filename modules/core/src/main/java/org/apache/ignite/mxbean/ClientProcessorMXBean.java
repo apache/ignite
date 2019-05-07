@@ -23,6 +23,7 @@ import java.util.List;
  * MXBean interface that provides access to ODBC\JDBC\Thin client connections.
  */
 @MXBeanDescription("MBean that provides information about client connections.")
+@Deprecated
 public interface ClientProcessorMXBean {
     /**
      * Returns list of active connections.

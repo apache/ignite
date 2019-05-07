@@ -19,8 +19,11 @@ package org.apache.ignite.mxbean;
 
 /**
  * MBean that provides access to information about striped executor service.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
 @MXBeanDescription("MBean that provides access to information about striped executor service.")
+@Deprecated
 public interface StripedExecutorMXBean {
     /**
      * Checks for starvation in striped pool, dumps in log information if potential starvation
