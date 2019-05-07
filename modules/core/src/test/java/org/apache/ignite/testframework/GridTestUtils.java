@@ -112,7 +112,9 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Utility class for tests.
@@ -295,6 +297,86 @@ public final class GridTestUtils {
 //            }
 //        }).start();
 //    }
+
+    /**
+     * Checks that string {@param str} doesn't contains substring {@param substr}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if contains.
+     *
+     * @param log Logger (optional).
+     * @param str String.
+     * @param substr Substring.
+     */
+    public static void assertNotContains(@Nullable IgniteLogger log, String str, String substr) {
+        try {
+            assertFalse(str.contains(substr));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("String contain substring: '%s', but shouldn't:", substr));
+            U.warn(log, "String:");
+            U.warn(log, str);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that string {@param str} contains substring {@param substr}. Logs both strings
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param log Logger (optional).
+     * @param str String.
+     * @param substr Substring.
+     */
+    public static void assertContains(@Nullable IgniteLogger log, String str, String substr) {
+        try {
+            assertTrue(str.contains(substr));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("String does not contain substring: '%s':", substr));
+            U.warn(log, "String:");
+            U.warn(log, str);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that collection {@param col} contains string {@param str}. Logs collection, string
+     * and throws {@link java.lang.AssertionError}, if not.
+     *
+     * @param log Logger (optional).
+     * @param col Collection.
+     * @param str String.
+     */
+    public static  <C extends Collection<String>> void assertContains(@Nullable IgniteLogger log, C col, String str) {
+        try {
+            assertTrue(col.contains(str));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("Collection does not contain string: '%s':", str));
+            U.warn(log, "Collection:");
+            U.warn(log, col);
+
+            throw e;
+        }
+    }
+
+    /**
+     * Checks that collection {@param col} doesn't contains string {@param str}. Logs collection, string
+     * and throws {@link java.lang.AssertionError}, if contains.
+     *
+     * @param log Logger (optional).
+     * @param col Collection.
+     * @param str String.
+     */
+    public static <C extends Collection<String>> void assertNotContains(@Nullable IgniteLogger log, C col, String str) {
+        try {
+            assertFalse(col.contains(str));
+        } catch (AssertionError e) {
+            U.warn(log, String.format("Collection contain string: '%s' but shouldn't:", str));
+            U.warn(log, "Collection:");
+            U.warn(log, col);
+
+            throw e;
+        }
+    }
 
     /**
      * Checks whether callable throws expected exception or not.

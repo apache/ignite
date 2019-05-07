@@ -180,6 +180,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.ListCommandA
 import static org.apache.ignite.internal.commandline.cache.argument.ListCommandArg.SEQUENCE;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.ALL;
 import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.NOT_PERSISTENT;
 import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.PERSISTENT;
@@ -2438,6 +2439,7 @@ public class CommandHandler {
                         }
                     }
                 }
+
                 break;
 
             case CONTENTION:
@@ -2590,7 +2592,49 @@ public class CommandHandler {
         if (hasNextSubArg())
             throw new IllegalArgumentException("Unexpected argument of --cache subcommand: " + peekNextArg());
 
+        validateCacheArgs(cacheArgs);
+
         return cacheArgs;
+    }
+
+    /**
+     * Validate incoming cache arguments.
+     *
+     * @param cacheArgs Cache arguments.
+     */
+    private void validateCacheArgs(CacheArguments cacheArgs) {
+        switch (cacheArgs.command()) {
+            case IDLE_VERIFY:
+                if (!cacheArgs.idleCheckCrc())
+                    break;
+
+                if (cacheArgs.getCacheFilterEnum() == ALL || cacheArgs.getCacheFilterEnum() == SYSTEM) {
+                    throw new IllegalArgumentException(
+                        IDLE_VERIFY + " with " + CHECK_CRC + " and " + CACHE_FILTER + " " + ALL + " or " + SYSTEM +
+                            " not allowed. You should remove " + CHECK_CRC + " or change " + CACHE_FILTER + " value."
+                    );
+                }
+
+                if (F.constainsStringIgnoreCase(cacheArgs.caches(), UTILITY_CACHE_NAME)) {
+                    throw new IllegalArgumentException(
+                        IDLE_VERIFY + " with " + CHECK_CRC + " not allowed for `" + UTILITY_CACHE_NAME + "` cache."
+                    );
+                }
+
+                break;
+
+            case VALIDATE_INDEXES:
+                if (F.constainsStringIgnoreCase(cacheArgs.caches(), UTILITY_CACHE_NAME)) {
+                    throw new IllegalArgumentException(
+                        VALIDATE_INDEXES + " not allowed for `" + UTILITY_CACHE_NAME + "` cache."
+                    );
+                }
+
+                break;
+
+            default:
+                break;
+        }
     }
 
     /**

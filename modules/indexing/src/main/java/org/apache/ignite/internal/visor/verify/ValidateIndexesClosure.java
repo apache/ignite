@@ -316,7 +316,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     }
 
                     @Override public void onCheckpointBegin(Context ctx) {
-                        if (ctx.hasPages())
+                        if (ctx.hasUserPages())
                             cpFlag.set(true);
                     }
 

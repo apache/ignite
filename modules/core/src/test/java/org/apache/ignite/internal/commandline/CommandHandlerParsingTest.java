@@ -24,6 +24,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -499,5 +500,45 @@ public class CommandHandlerParsingTest {
 
         assertNull(arg.getProjection());
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+    }
+
+    /** */
+    @Test
+    public void testValidateIndexesNotAllowedForSystemCache() {
+        CommandHandler hnd = new CommandHandler();
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> hnd.parseAndValidate(asList("--cache", "validate_indexes", "cache1,ignite-sys-cache")),
+            IllegalArgumentException.class,
+            "validate_indexes not allowed for `ignite-sys-cache` cache."
+        );
+    }
+
+    /** */
+    @Test
+    public void testIdleVerifyWithCheckCrcNotAllowedForSystemCache() {
+        CommandHandler hnd = new CommandHandler();
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> hnd.parseAndValidate(asList("--cache", "idle_verify", "--check-crc", "--cache-filter", "ALL")),
+            IllegalArgumentException.class,
+            "idle_verify with --check-crc and --cache-filter ALL or SYSTEM not allowed. You should remove --check-crc or change --cache-filter value."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> hnd.parseAndValidate(asList("--cache", "idle_verify", "--check-crc", "--cache-filter", "SYSTEM")),
+            IllegalArgumentException.class,
+            "idle_verify with --check-crc and --cache-filter ALL or SYSTEM not allowed. You should remove --check-crc or change --cache-filter value."
+        );
+
+        GridTestUtils.assertThrows(
+            null,
+            () -> hnd.parseAndValidate(asList("--cache", "idle_verify", "--check-crc", "ignite-sys-cache")),
+            IllegalArgumentException.class,
+            "idle_verify with --check-crc not allowed for `ignite-sys-cache` cache."
+        );
     }
 }
