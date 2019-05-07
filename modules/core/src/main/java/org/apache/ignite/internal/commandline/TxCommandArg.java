@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
+ * contributor license agreements. See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * the License. You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,26 +15,54 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline.baseline;
+package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 
 /**
- * {@link BaselineSubcommands#AUTO_ADJUST} command arguments.
+ * Transaction command arguments name.
  */
-public enum AutoAdjustCommandArg implements CommandArg {
-    /** Enable auto-adjust. */
-    ENABLE("enable"),
-    /** Disable auto-adjust. */
-    DISABLE("disable"),
-    /** Set soft timeout. */
-    TIMEOUT("timeout");
+public enum TxCommandArg implements CommandArg {
+    /** */
+    TX_LIMIT("--limit"),
+
+    /** */
+    TX_ORDER("--order"),
+
+    /** */
+    TX_SERVERS("--servers"),
+
+    /** */
+    TX_CLIENTS("--clients"),
+
+    /** */
+    TX_DURATION("--min-duration"),
+
+    /** */
+    TX_SIZE("--min-size"),
+
+    /** */
+    TX_LABEL("--label"),
+
+    /** */
+    TX_NODES("--nodes"),
+
+    /** */
+    TX_XID("--xid"),
+
+    /** */
+    TX_KILL("--kill"),
+
+    /** */
+    TX_INFO("--info");
 
     /** Option name. */
     private final String name;
 
-    /** */
-    AutoAdjustCommandArg(String name) {
+    /**
+     * @param name Argument name.
+     */
+    TxCommandArg(String name) {
         this.name = name;
     }
 
