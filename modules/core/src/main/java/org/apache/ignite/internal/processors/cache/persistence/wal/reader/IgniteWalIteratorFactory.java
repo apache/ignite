@@ -225,9 +225,18 @@ public class IgniteWalIteratorFactory {
     ) throws IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
-        List<T2<Long, Long>> gaps = new ArrayList<>();
+        return hasGaps(resolveWalFiles(iteratorParametersBuilder));
+    }
 
-        List<FileDescriptor> descriptors = resolveWalFiles(iteratorParametersBuilder);
+    /**
+     * @param descriptors File descriptors.
+     * @return List of tuples, low and high index segments with gap.
+     */
+    public List<T2<Long, Long>> hasGaps(
+         @NotNull  List<FileDescriptor> descriptors
+    ) throws IllegalArgumentException {
+
+        List<T2<Long, Long>> gaps = new ArrayList<>();
 
         Iterator<FileDescriptor> it = descriptors.iterator();
 
