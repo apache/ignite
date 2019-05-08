@@ -1,10 +1,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -13,25 +11,18 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
-import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -43,12 +34,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test data loss on recovery due to missed partition counter on tx messages reorder.
  */
-public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
+public class TxWipWALRebalanceTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private static final int GRID_CNT = 3;
 
     /** */
     private static final int MB = 1024 * 1024;
@@ -98,7 +86,7 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
-        startGridsMultiThreaded(GRID_CNT);
+        //startGridsMultiThreaded(GRID_CNT);
     }
 
     /** {@inheritDoc} */
@@ -112,97 +100,6 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
-
-//        if (!walRebalanceInvoked)
-//            throw new AssertionError("WAL rebalance hasn't been invoked.");
-    }
-
-    /** */
-    public void testMissedPartitionCounter() throws Exception {
-        IgniteEx client = startGrid("client");
-
-        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
-
-        int part = 0;
-
-        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, 2);
-
-        forceCheckpoint();
-
-        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
-
-        spi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtTxFinishRequest) {
-                    GridDhtTxFinishRequest m = (GridDhtTxFinishRequest)msg;
-
-                    return true;
-                }
-
-                return false;
-            }
-        });
-
-        // Start two tx mapped to same primary partition.
-        IgniteInternalFuture fut0 = runAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(0), 0);
-
-                    tx.commit();
-                }
-            }
-        });
-
-        IgniteInternalFuture fut1 = runAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(1), 1);
-
-                    tx.commit();
-                }
-            }
-        });
-
-        spi0.waitForBlocked(4);
-        spi0.stopBlock();
-
-        fut0.get();
-        fut1.get();
-
-        // Wait for backups stop.
-        waitForTopology(2);
-
-        awaitPartitionMapExchange();
-
-        assertEquals(0, client.cache(DEFAULT_CACHE_NAME).get(keys.get(0)));
-        assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(keys.get(1)));
-
-        forceCheckpoint();
-
-        stopAllGrids();
-
-        IgniteEx ex = startGrid(0);
-        startGrid(1);
-
-        ex.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        Map<Integer, Set<Long>> map = IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances();
-        boolean walRebalanceInvoked = !map.isEmpty();
-
-        IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
-
-        IdleVerifyResultV2 res = idleVerify(grid(0), DEFAULT_CACHE_NAME);
-
-        if (res.hasConflicts()) {
-            StringBuilder b = new StringBuilder();
-
-            res.print(b::append);
-
-            fail(b.toString());
-        }
     }
 
     public void testHistory() throws Exception {
@@ -219,11 +116,13 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         forceCheckpoint(); // Prevent IGNITE-10088
 
-        stopGrid(1);
+        List<Integer> keys1 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 100, 1);
+
+        stopGrid(1, true);
 
         awaitPartitionMapExchange();
 
-        List<Integer> keys1 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 100, 1);
+        List<Integer> keys2 = loadDataToPartition(part, DEFAULT_CACHE_NAME, 100, 200, 1);
 
         startGrid(1);
 
