@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
@@ -104,7 +105,7 @@ public class GridDhtRebalanceManager {
 
             List<CacheGroupContext> rebList = cctx.cache().cacheGroups()
                 .stream()
-                .sorted((grp1, grp2) -> grp1.config().getRebalanceOrder() <= grp2.config().getRebalanceOrder() ? 1 : 0)
+                .sorted(Comparator.comparingInt(grp -> grp.config().getRebalanceOrder()))
                 .collect(Collectors.toList());
 
             for (CacheGroupContext grp : rebList) {
