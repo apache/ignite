@@ -143,7 +143,7 @@ public class PageHistoryDiagnoster {
             }
         }
 
-        if (reserved == null) {
+        if (descIdx == -1) {
             log.info("Skipping dump page history due to can not reserve WAL segments: " +  descToString(descs));
 
             return;
