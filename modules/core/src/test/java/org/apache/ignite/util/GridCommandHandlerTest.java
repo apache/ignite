@@ -1296,7 +1296,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 196 partitions",
+            "idle_verify check has finished, found 96 partitions",
             null,
             "--cache", "idle_verify", "--dump", "--exclude-caches", "wrong.*"
         );
