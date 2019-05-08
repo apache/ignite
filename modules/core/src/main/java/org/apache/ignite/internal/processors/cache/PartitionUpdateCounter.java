@@ -29,38 +29,79 @@ import org.jetbrains.annotations.Nullable;
  * TODO add debugging info
  * TODO non-blocking version ? BitSets instead of TreeSet ?
  * TODO cleanup and comment interface
+ * TODO implement gaps iterator.
+ * TODO detailed description (javadoc) for counter contract.
  */
 public interface PartitionUpdateCounter {
-    public void init(long initUpdCntr, @Nullable byte[] rawData);
+    /**
+     * @param initUpdCntr Initialize upd counter.
+     * @param rawGapsData Raw gaps data.
+     */
+    public void init(long initUpdCntr, @Nullable byte[] rawGapsData);
 
+    /** */
     public long initial();
 
+    /**
+     * TODO rename to lwm.
+     */
     public long get();
 
+    /** */
     public long next();
 
+    /**
+     * @param delta Delta.
+     */
     public long next(long delta);
 
+    /**
+     * @param delta Delta.
+     */
+    public long reserve(long delta);
+
+    /**
+     * TODO rename to hwm.
+     */
     public long reserved();
 
     /**
      * @param val Value.
      *
-     * @throws Exception if counter cannot be set to passed value due to incompatibility with current state.
+     * @throws IgniteCheckedException if counter cannot be set to passed value due to incompatibility with current state.
      */
     public void update(long val) throws IgniteCheckedException;
 
+    /**
+     * @param start Start.
+     * @param delta Delta.
+     */
     public boolean update(long start, long delta);
 
-    public void resetCounters();
+    /**
+     * Reset counter internal state to zero.
+     */
+    public void reset();
 
+    /**
+     * @param cntr Counter.
+     */
     public void updateInitial(long cntr);
 
+    /**
+     * Flushes pending update counters closing all possible gaps.
+     *
+     * TODO FIXME should not be here (implement by gaps iterator + update(s, d)
+     *
+     * @return Even-length array of pairs [start, end] for each gap.
+     */
     public GridLongList finalizeUpdateCounters();
 
-    public long reserve(long delta);
-
+    /** */
     public @Nullable byte[] getBytes();
 
+    /**
+     * @return {@code True} if counter has no missed updates.
+     */
     public boolean sequential();
 }

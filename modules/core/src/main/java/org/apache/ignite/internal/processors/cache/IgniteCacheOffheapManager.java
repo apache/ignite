@@ -429,12 +429,12 @@ public interface IgniteCacheOffheapManager {
         long updateCounter();
 
         /**
-         * @return Update counter.
+         * @return Update counter or {@code null} if store is not yet created.
          */
         @Nullable PartitionUpdateCounter partUpdateCounter();
 
         /**
-         * @param val Update counter.
+         * @param delta Delta.
          */
         long reserve(long delta);
 
@@ -445,8 +445,8 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * Updates counters from start value by delta value.
-         *  @param start Start.
-         * @param delta Delta
+         * @param start Start.
+         * @param delta Delta.
          */
         boolean updateCounter(long start, long delta);
 

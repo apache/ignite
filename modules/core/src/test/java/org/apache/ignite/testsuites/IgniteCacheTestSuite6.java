@@ -91,8 +91,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(TxMultiCacheAsyncOpsTest.class);
 
-        GridTestUtils.addTestIfNeeded(suite, TxLocalDhtMixedCacheModesTest.class, ignoredTests);
-
         GridTestUtils.addTestIfNeeded(suite, IgniteCache150ClientsTest.class, ignoredTests);
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
@@ -117,6 +115,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(CacheNoAffinityExchangeTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, CachePartitionLossDetectionOnNodeLeftTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TxLocalDhtMixedCacheModesTest.class, ignoredTests);
 
         //GridTestUtils.addTestIfNeeded(suite, CacheClientsConcurrentStartTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingOrderingTest.class, ignoredTests);

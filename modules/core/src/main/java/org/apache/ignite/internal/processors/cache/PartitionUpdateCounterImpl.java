@@ -80,14 +80,14 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
     /**
      * @param initUpdCntr Initial update counter.
-     * @param rawData Byte array of holes raw data.
+     * @param rawGapsData Byte array of holes raw data.
      */
-    @Override public void init(long initUpdCntr, @Nullable byte[] rawData) {
+    @Override public void init(long initUpdCntr, @Nullable byte[] rawGapsData) {
         cntr.set(initUpdCntr);
 
         initCntr = initUpdCntr;
 
-        queue = fromBytes(rawData);
+        queue = fromBytes(rawGapsData);
     }
 
     /**
@@ -251,11 +251,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return queue.add(item);
     }
 
-    /**
-     * Flushes pending update counters closing all possible gaps.
-     *
-     * @return Even-length array of pairs [start, end] for each gap.
-     */
+    /** {@inheritDoc} */
     @Override public synchronized GridLongList finalizeUpdateCounters() {
         Item item = poll();
 
@@ -281,8 +277,6 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /**
-     * Should never be called
-     *
      * @param delta Delta.
      */
     @Override public long reserve(long delta) {
@@ -298,49 +292,6 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     public long next(long delta) {
         return cntr.getAndAdd(delta);
     }
-
-//    /**
-//     * Release subsequent closed reservations and adjust lwm.
-//     *
-//     * @param start Start.
-//     * @param delta Delta.
-//     */
-//    public synchronized void release(long start, long delta) {
-//        NavigableSet<Item> items = queue.tailSet(new Item(start, delta), true);
-//
-//        Item first = items.first();
-//
-//        assert first != null && first.delta == delta : "Wrong interval " + first;
-//
-//        long cur = cntr.get(), next;
-//
-//        if (start != cur) // If not first just mark as closed and return.
-//            return;
-//
-//        items.pollFirst(); // Skip first.
-//
-//        while (true) {
-//            boolean res = cntr.compareAndSet(cur, next = start + delta);
-//
-//            assert res;
-//
-//            if (items.isEmpty())
-//                break;
-//
-//            Item peek = items.first();
-//
-//            if (peek.start != next || peek.open())
-//                return;
-//
-//            Item item = items.pollFirst();
-//
-//            assert peek == item;
-//
-//            start = item.start;
-//            delta = item.delta;
-//            cur = next;
-//        }
-//    }
 
     /** {@inheritDoc} */
     @Override public synchronized boolean sequential() {
@@ -418,7 +369,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return queue;
     }
 
-    @Override public synchronized void resetCounters() {
+    @Override public synchronized void reset() {
         initCntr = 0;
 
         cntr.set(0);
@@ -511,6 +462,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     public String toString() {
+        // TODO FIXME wrong hwm, maybe max(hwm(), reserve.get()) ?
         return "Counter [init=" + initCntr + ", lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ", resrv=" + reserveCntr.get() + ']';
     }
 }
