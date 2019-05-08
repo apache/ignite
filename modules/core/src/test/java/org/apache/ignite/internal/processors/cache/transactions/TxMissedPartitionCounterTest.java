@@ -1,11 +1,21 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -16,12 +26,19 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.pagemem.wal.WALWriteListener;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -32,7 +49,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 
+import static java.util.Collections.max;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
@@ -125,67 +144,105 @@ public class TxMissedPartitionCounterTest extends GridCommonAbstractTest {
 
         int part = 0;
 
-        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, 2);
+        final int txCnt = 2;
+
+        List<Integer> keys = loadDataToPartition(part, DEFAULT_CACHE_NAME, 5000, 0, txCnt);
 
         forceCheckpoint();
 
-        TestRecordingCommunicationSpi spi0 = TestRecordingCommunicationSpi.spi(grid(0));
+        Ignite backupNode = backupNode(keys.get(0), DEFAULT_CACHE_NAME);
 
-        spi0.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtTxFinishRequest) {
-                    GridDhtTxFinishRequest m = (GridDhtTxFinishRequest)msg;
+        Map<UUID, T3<CountDownLatch, Set<Long>, Boolean>> latches = new ConcurrentHashMap<>();
 
-                    return true;
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite != backupNode)
+                continue;
+
+            IgniteEx igniteEx = (IgniteEx)ignite;
+
+            GridCacheSharedContext<Object, Object> ctx = igniteEx.context().cache().context();
+
+            IgniteTxManager tm = ctx.tm();
+
+            tm.walWriteListener(new WALWriteListener() {
+                @Override public void beforeWrite(List<DataEntry> entries) {
+                    try {
+                        long cntr = entries.get(0).partitionCounter();
+
+                        T3<CountDownLatch, Set<Long>, Boolean> val = new T3<>(new CountDownLatch(txCnt), new ConcurrentSkipListSet<>(), Boolean.FALSE);
+                        T3<CountDownLatch, Set<Long>, Boolean> oldVal = latches.putIfAbsent(ignite.cluster().localNode().id(), val);
+
+                        if (oldVal != null)
+                            val = oldVal;
+
+                        val.get2().add(cntr);
+
+                        val.get1().countDown();
+                        assertTrue(U.await(val.get1(), 10, TimeUnit.SECONDS));
+
+                        // Compute max counter and fail nodes with lesser counter before writing to WAL.
+                        long maxCntr = max(val.get2());
+
+                        // Fail nodes with lowest counters.
+                        if (cntr < maxCntr) {
+                            // Wait until max counter is written.
+                            synchronized (val) {
+                                while (val.get3() != Boolean.TRUE)
+                                    U.wait(val);
+                            }
+
+                            throw new RuntimeException("Fail node");
+                        }
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        fail();
+                    }
                 }
 
-                return false;
-            }
-        });
+                @Override public void afterWrite(List<DataEntry> entries) {
+                    T3<CountDownLatch, Set<Long>, Boolean> val = latches.get(ignite.cluster().localNode().id());
 
-        // Start two tx mapped to same primary partition.
-        IgniteInternalFuture fut0 = runAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(0), 0);
+                    long maxCntr = max(val.get2());
 
-                    tx.commit();
+                    // Unblock waiters after write of max counter.
+                    if (entries.get(0).partitionCounter() == maxCntr) {
+                        synchronized (val) {
+                            val.set3(Boolean.TRUE);
+
+                            val.notifyAll();
+                        }
+                    }
                 }
+            });
+        }
+
+        AtomicInteger id = new AtomicInteger();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+                int idx = id.getAndIncrement();
+
+                client.cache(DEFAULT_CACHE_NAME).put(keys.get(idx), idx);
+
+                tx.commit();
             }
-        });
+        }, txCnt, "tx-thread");
 
-        IgniteInternalFuture fut1 = runAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
-                    client.cache(DEFAULT_CACHE_NAME).put(keys.get(1), 1);
-
-                    tx.commit();
-                }
-            }
-        });
-
-        spi0.waitForBlocked(4);
-        spi0.stopBlock();
-
-        fut0.get();
-        fut1.get();
+        fut.get();
 
         // Wait for backups stop.
-        waitForTopology(2);
+        waitForTopology(GRID_CNT);
 
         awaitPartitionMapExchange();
 
-        assertEquals(0, client.cache(DEFAULT_CACHE_NAME).get(keys.get(0)));
-        assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(keys.get(1)));
+        for (int i = 0; i < txCnt; i++)
+            assertEquals(i, client.cache(DEFAULT_CACHE_NAME).get(keys.get(i)));
 
         forceCheckpoint();
 
         stopAllGrids();
 
-        IgniteEx ex = startGrid(0);
-        startGrid(1);
-
-        ex.cluster().active(true);
+        Ignite ex = startGridsMultiThreaded(GRID_CNT);
 
         awaitPartitionMapExchange();
 

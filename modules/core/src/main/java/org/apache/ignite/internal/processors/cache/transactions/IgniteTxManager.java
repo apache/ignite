@@ -41,7 +41,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.pagemem.wal.WALWriteListener;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
@@ -224,6 +226,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Flag indicates that {@link TxRecord} records will be logged to WAL. */
     private boolean logTxRecords;
+
+    /** Listens for tx WAL write events. */
+    private @Nullable WALWriteListener lsnr;
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
@@ -2437,6 +2442,43 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public boolean logTxRecords() {
         return logTxRecords;
+    }
+
+    /**
+     * Marks MVCC transaction as {@link TxState#COMMITTED} or {@link TxState#ABORTED}.
+     *
+     * @param tx Transaction.
+     * @param commit Commit flag.
+     * @throws IgniteCheckedException If failed to add version to TxLog.
+     */
+    public void mvccFinish(IgniteTxAdapter tx, boolean commit) throws IgniteCheckedException {
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
+            cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
+    }
+
+    /**
+     * Marks MVCC transaction as {@link TxState#PREPARED}.
+     *
+     * @param tx Transaction.
+     * @throws IgniteCheckedException If failed to add version to TxLog.
+     */
+    public void mvccPrepare(IgniteTxAdapter tx) throws IgniteCheckedException {
+        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
+            cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
+    }
+
+    /**
+     * @return WAL write listener.
+     */
+    public @Nullable WALWriteListener walWriteListener() {
+        return lsnr;
+    }
+
+    /**
+     * @param lsnr Listener.
+     */
+    public void walWriteListener(WALWriteListener lsnr) {
+        this.lsnr = lsnr;
     }
 
     /**
