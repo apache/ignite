@@ -18,16 +18,11 @@
 package org.apache.ignite.internal.processors.rest;
 
 /**
- *
+ * Unsigned REST tests.
  */
 public class JettyRestProcessorUnsignedSelfTest extends JettyRestProcessorAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected int restPort() {
-        return 8091;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected String signature() throws Exception {
+    @Override protected String signature() {
         return null;
     }
 }

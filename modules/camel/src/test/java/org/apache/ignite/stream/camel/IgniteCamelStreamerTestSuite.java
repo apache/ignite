@@ -21,7 +21,7 @@ import java.util.Set;
 import junit.framework.TestSuite;
 
 /**
- * Camel streamer tests.
+ * Camel streamer tests. Included into 'Streamers' run configuration.
  */
 public class IgniteCamelStreamerTestSuite extends TestSuite {
     /**

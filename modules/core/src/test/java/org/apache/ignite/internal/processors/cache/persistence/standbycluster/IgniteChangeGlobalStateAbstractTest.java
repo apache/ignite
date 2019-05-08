@@ -61,7 +61,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         nodes.clear();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
 
         startPrimaryNodes(primaryNodes());
 
@@ -84,7 +84,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
 
         nodes.clear();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), testName(), true));
     }
 
     /**

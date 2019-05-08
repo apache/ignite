@@ -158,7 +158,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
                 fail();
             }
             catch (Exception e) {
-                assertTrue(e.getCause() instanceof CacheException);
+                assertTrue(e instanceof CacheException);
             }
         }
     }

@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-class CustomMessageWrapper implements DiscoverySpiCustomMessage {
+public class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,7 @@ class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     /**
      * @param delegate Delegate.
      */
-    CustomMessageWrapper(DiscoveryCustomMessage delegate) {
+    public CustomMessageWrapper(DiscoveryCustomMessage delegate) {
         this.delegate = delegate;
     }
 

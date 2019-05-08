@@ -119,13 +119,28 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(@Nullable String marker, String msg) {
+        impl.trace(marker, enrich(msg));
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         impl.debug(enrich(msg));
     }
 
     /** {@inheritDoc} */
+    @Override public void debug(@Nullable String marker, String msg) {
+        impl.debug(marker, enrich(msg));
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
         impl.info(enrich(msg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(@Nullable String marker, String msg) {
+        impl.info(marker, enrich(msg));
     }
 
     /** {@inheritDoc} */
@@ -139,6 +154,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
+        impl.warning(marker, enrich(msg), e);
+    }
+
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
         impl.error(enrich(msg));
     }
@@ -146,6 +166,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** {@inheritDoc} */
     @Override public void error(String msg, Throwable e) {
         impl.error(enrich(msg), e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(@Nullable String marker, String msg, @Nullable Throwable e) {
+        impl.error(marker, enrich(msg), e);
     }
 
     /** {@inheritDoc} */

@@ -239,7 +239,7 @@ class MapQueryResult {
             rows.add(res.currentRow());
         }
 
-        return false;
+        return !res.hasNext();
     }
 
     /**
@@ -282,7 +282,7 @@ class MapQueryResult {
             U.closeQuiet(rs);
 
             if (lazyWorker != null)
-                lazyWorker.stop();
+                lazyWorker.stop(false);
         }
     }
 }

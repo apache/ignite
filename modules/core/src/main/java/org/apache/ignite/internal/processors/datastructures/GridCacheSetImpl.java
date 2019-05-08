@@ -168,11 +168,13 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             qry.projection(ctx.grid().cluster().forNodes(nodes));
 
-            Iterable<Integer> col = (Iterable<Integer>)qry.execute(new SumReducer()).get();
+            CacheQueryFuture<Integer> qryFut = qry.execute(new SumReducer());
 
             int sum = 0;
 
-            for (Integer val : col)
+            Integer val;
+
+            while((val = qryFut.next()) != null)
                 sum += val;
 
             return sum;

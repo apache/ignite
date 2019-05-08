@@ -17,35 +17,91 @@
 
 @import '../../../public/stylesheets/variables';
 
-.panel--ignite {
-    border: none;
-    border-radius: 0 0 4px 4px;
+.panel {
+    &--ignite {
+        border: none;
+        border-radius: 0 0 4px 4px;
 
-    font-family: Roboto;
+        font-family: Roboto;
 
-    background-color: white;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
+        background-color: white;
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.2);
 
-    & > .panel-heading {
-        height: auto;
-        padding: 22px 20px;
+        & > header {
+            height: auto;
+            padding: 22px 20px;
 
-        background-color: initial;
-        border-bottom: 1px solid $ignite-brand-primary;
-
-        &:hover {
-            text-decoration: none;
-        }
-
-        & > .panel-title {
+            background-color: initial;
             font-size: 16px;
             line-height: 36px;
 
-            & > .panel-selected {
-                font-size: 14px;
-                font-style: italic;
+            &:hover {
+                text-decoration: none;
+            }
+        }
+
+        & > hr {
+            margin: 0;
+            border-top: 1px solid #ddd;
+        }
+
+        & > section {
+            padding: 0 20px;
+        }
+
+        & > .panel-heading {
+            height: auto;
+            padding: 22px 20px;
+
+            background-color: initial;
+            border-bottom: 1px solid $table-border-color;
+
+            &:hover {
+                text-decoration: none;
+            }
+
+            & > .panel-title {
+                font-size: 16px;
                 line-height: 36px;
-                cursor: default;
+
+                & > .panel-selected {
+                    font-size: 14px;
+                    font-style: italic;
+                    line-height: 36px;
+                    cursor: default;
+                }
+            }
+        }
+    }
+
+    &--collapse {
+        & > header {
+            cursor: pointer;
+        }
+
+        [ignite-icon='expand'],
+        [ignite-icon='collapse'] {
+            width: 13px;
+            height: 13px;
+
+            margin-right: 9px;
+        }
+
+        [ignite-icon='expand'] {
+            display: none;
+        }
+
+        [ignite-icon='collapse'] {
+            display: inline-block;
+        }
+
+        &.in {
+            [ignite-icon='expand'] {
+                display: inline-block;
+            }
+
+            [ignite-icon='collapse'] {
+                display: none;
             }
         }
     }

@@ -98,6 +98,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFERRED_ONE_PHASE
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -167,6 +168,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** TX handler. */
     private IgniteTxHandler txHnd;
+
+    /**
+     * Shows if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     */
+    private boolean txOwnerDumpRequestsAllowed =
+        IgniteSystemProperties.getBoolean(IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED, true);
 
     /** Committed local transactions. */
     private final GridBoundedConcurrentOrderedMap<GridCacheVersion, Boolean> completedVersSorted =
@@ -304,7 +313,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             for (IgniteTxEntry entry : tx.allEntries()) {
                 if (entry.cacheId() == cacheId) {
-                    rollbackTx(tx, false);
+                    rollbackTx(tx, false, false);
 
                     break;
                 }
@@ -317,9 +326,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         txFinishSync.onDisconnected(reconnectFut);
 
         for (IgniteInternalTx tx : idMap.values())
-            rollbackTx(tx, true);
+            rollbackTx(tx, true, false);
         for (IgniteInternalTx tx : nearIdMap.values())
-            rollbackTx(tx, true);
+            rollbackTx(tx, true, false);
 
         IgniteClientDisconnectedException err =
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected.");
@@ -333,6 +342,28 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public IgniteTxHandler txHandler() {
         return txHnd;
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     *
+     * @return <code>true</code> if allowed, <code>false</code> otherwise.
+     */
+    public boolean txOwnerDumpRequestsAllowed() {
+        return txOwnerDumpRequestsAllowed;
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     *
+     * @param allowed whether allowed
+     */
+    public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
+        txOwnerDumpRequestsAllowed = allowed;
     }
 
     /**
@@ -416,7 +447,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         boolean completed = completedVersHashMap.containsKey(tx.xidVersion());
 
         // Need check that for tx with timeout rollback message was not received before lock.
-        if (!completed && tx.local() && tx.dht() && tx.timeout() > 0)
+        if (!completed && tx.local() && tx.dht())
             return completedVersHashMap.containsKey(tx.nearXidVersion());
 
         return completed;
@@ -1039,15 +1070,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void removeTxReturn(GridCacheVersion xidVer) {
         Object prev = completedVersHashMap.get(xidVer);
 
-        if (Boolean.FALSE.equals(prev)) // Tx can be rolled back.
-            return;
-
-        assert prev instanceof GridCacheReturnCompletableWrapper:
-            prev + " instead of GridCacheReturnCompletableWrapper";
-
-        boolean res = completedVersHashMap.replace(xidVer, prev, true);
-
-        assert res;
+        if (prev instanceof GridCacheReturnCompletableWrapper)
+            completedVersHashMap.replace(xidVer, prev, true);
     }
 
     /**
@@ -1270,15 +1294,17 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param tx Transaction to rollback.
      * @param clearThreadMap {@code True} if need remove tx from thread map.
+     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed versions map on finish.
      */
-    public void rollbackTx(IgniteInternalTx tx, boolean clearThreadMap) {
+    public void rollbackTx(IgniteInternalTx tx, boolean clearThreadMap, boolean skipCompletedVers) {
         assert tx != null;
 
         if (log.isDebugEnabled())
             log.debug("Rolling back from TM [locNodeId=" + cctx.localNodeId() + ", tx=" + tx + ']');
 
         // 1. Record transaction version to avoid duplicates.
-        addRolledbackTx(tx);
+        if (!skipCompletedVers)
+            addRolledbackTx(tx);
 
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 

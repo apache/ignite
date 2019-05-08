@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -76,33 +77,46 @@ public interface GridQueryIndexing {
      * Detect whether SQL query should be executed in distributed or local manner and execute it.
      * @param schemaName Schema name.
      * @param qry Query.
+     * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
-     * @param cancel Query cancel state handler.
-     * @return Cursor.
+     * @param cancel Query cancel state handler.    @return Cursor.
      */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry, boolean keepBinary,
-        boolean failOnMultipleStmts, GridQueryCancel cancel);
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
+        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel);
 
     /**
-     * Perform a MERGE statement using data streamer as receiver.
+     * Execute an INSERT statement using data streamer as receiver.
      *
      * @param schemaName Schema name.
      * @param qry Query.
      * @param params Query parameters.
      * @param streamer Data streamer to feed data to.
-     * @return Query result.
+     * @return Update counter.
      * @throws IgniteCheckedException If failed.
      */
     public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
         IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
 
     /**
+     * Execute a batched INSERT statement using data streamer as receiver.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param params Query parameters.
+     * @param cliCtx Client connection context.
+     * @return Update counters.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
+        SqlClientContext cliCtx) throws IgniteCheckedException;
+
+    /**
      * Executes regular query.
      *
      * @param schemaName Schema name.
      * @param cacheName Cache name.
-     *@param qry Query.
+     * @param qry Query.
      * @param filter Cache name and key filter.
      * @param keepBinary Keep binary flag.    @return Cursor.
      */
@@ -245,19 +259,12 @@ public interface GridQueryIndexing {
         throws IgniteCheckedException;
 
     /**
-     * Rebuilds all indexes of given type from hash index.
+     * Rebuild indexes for the given cache if necessary.
      *
-     * @param cacheName Cache name.
-     * @throws IgniteCheckedException If failed.
+     * @param cctx Cache context.
+     * @return Future completed when index rebuild finished.
      */
-    public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException;
-
-    /**
-     * Marks all indexes of given type for rebuild from hash index, making them unusable until rebuild finishes.
-     *
-     * @param cacheName Cache name.
-     */
-    public void markForRebuildFromHash(String cacheName);
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
      * Returns backup filter.
@@ -313,12 +320,11 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Check if passed statement is insert statemtn.
+     * Check if passed statement is insert statement eligible for streaming, throw an {@link IgniteSQLException} if not.
      *
      * @param nativeStmt Native statement.
-     * @return {@code True} if insert.
      */
-    public boolean isInsertStatement(PreparedStatement nativeStmt);
+    public void checkStatementStreamable(PreparedStatement nativeStmt);
 
     /**
      * Return row cache cleaner.

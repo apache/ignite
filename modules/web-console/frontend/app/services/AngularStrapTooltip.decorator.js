@@ -16,7 +16,7 @@
  */
 
 import angular from 'angular';
-import flow from 'lodash/flow';
+import _ from 'lodash';
 
 /**
  * Decorator that fix problem in AngularStrap $tooltip.
@@ -62,7 +62,7 @@ export default angular
 
                 scope.$emit(options.prefixEvent + '.hide.before', $tooltip);
 
-                if (angular.isDefined(options.onBeforeHide) && angular.isFunction(options.onBeforeHide))
+                if (!_.isUndefined(options.onBeforeHide) && _.isFunction(options.onBeforeHide))
                     options.onBeforeHide($tooltip);
 
                 $tooltip.$isShown = scope.$isShown = false;
@@ -82,8 +82,8 @@ export default angular
             const $tooltip = $delegate(el, config);
 
             $tooltip.$referenceElement = el;
-            $tooltip.destroy = flow($tooltip.destroy, () => $tooltip.$referenceElement = null);
-            $tooltip.$applyPlacement = flow($tooltip.$applyPlacement, () => {
+            $tooltip.destroy = _.flow($tooltip.destroy, () => $tooltip.$referenceElement = null);
+            $tooltip.$applyPlacement = _.flow($tooltip.$applyPlacement, () => {
                 if (!$tooltip.$element)
                     return;
 

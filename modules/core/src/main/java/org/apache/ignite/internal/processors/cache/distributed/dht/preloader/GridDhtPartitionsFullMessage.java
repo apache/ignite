@@ -208,8 +208,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @param joinedNodeAff Caches affinity for joining nodes.
      */
-    void joinedNodeAffinity(Map<Integer, CacheGroupAffinityMessage> joinedNodeAff) {
+    GridDhtPartitionsFullMessage joinedNodeAffinity(Map<Integer, CacheGroupAffinityMessage> joinedNodeAff) {
         this.joinedNodeAff = joinedNodeAff;
+
+        return this;
     }
 
     /**

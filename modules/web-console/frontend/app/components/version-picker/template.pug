@@ -24,10 +24,14 @@
 )
     | {{$ctrl.currentVersion}}
     span.icon-right.fa.fa-caret-down
-    
-i.icon-help(
+
+svg.icon-help(
+    ignite-icon='info'
     bs-tooltip=''
-    data-title='Web Console supports multiple Ignite versions.<br /> \
-                Select version you need to configure cluster.'
+    data-title=`
+        Web Console supports multiple Ignite versions.
+        <br>
+        Select version you need to configure cluster.
+    `
     data-placement='right'
 )

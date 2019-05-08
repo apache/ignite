@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <cassert>
+
 #include <ignite/impl/interop/interop_stream_position_guard.h>
 #include <ignite/impl/interop/interop_input_stream.h>
 

@@ -117,6 +117,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     @GridToStringInclude
     protected IgniteTxRemoteState txState;
 
+    /** {@code True} if tx should skip adding itself to completed version map on finish. */
+    private boolean skipCompletedVers;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -869,7 +872,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             // Note that we don't evict near entries here -
             // they will be deleted by their corresponding transactions.
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
-                cctx.tm().rollbackTx(this, false);
+                cctx.tm().rollbackTx(this, false, skipCompletedVers);
 
                 state(ROLLED_BACK);
             }
@@ -896,6 +899,13 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public void commitError(Throwable e) {
         // No-op.
+    }
+
+    /**
+     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public void skipCompletedVersions(boolean skipCompletedVers) {
+        this.skipCompletedVers = skipCompletedVers;
     }
 
     /**

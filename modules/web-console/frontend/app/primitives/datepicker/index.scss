@@ -57,6 +57,8 @@
     }
 
     .ignite-form-field__control {
+        @import "./../../../public/stylesheets/variables.scss";
+
         width: auto;
 
         input {
@@ -72,13 +74,13 @@
             font-size: inherit;
             line-height: $height;
             text-align: left;
-            text-shadow: 0 0 0 #ee2b27;
+            text-shadow: 0 0 0 $ignite-brand-success;
 
             border: none;
             box-shadow: none;
 
             &:hover, &:focus {
-                text-shadow: 0 0 0 #a8110f;
+                text-shadow: 0 0 0 change-color($ignite-brand-success, $lightness: 26%);
             }
         }
     }

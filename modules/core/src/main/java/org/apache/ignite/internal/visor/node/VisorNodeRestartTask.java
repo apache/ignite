@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -30,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Restarts nodes.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
     /** */
     private static final long serialVersionUID = 0L;

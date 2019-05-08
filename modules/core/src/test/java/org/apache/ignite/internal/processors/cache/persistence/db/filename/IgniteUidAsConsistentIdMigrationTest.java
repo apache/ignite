@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -105,17 +106,17 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         boolean ok = true;
 
         if (pstStoreCustomPath != null)
-            ok &= deleteRecursively(pstStoreCustomPath);
+            ok &= U.delete(pstStoreCustomPath);
         else
-            ok &= deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+            ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), FilePageStoreManager.DFLT_STORE_DIR, false));
 
         if (pstWalArchCustomPath != null)
-            ok &= deleteRecursively(pstWalArchCustomPath);
+            ok &= U.delete(pstWalArchCustomPath);
 
         if (pstWalStoreCustomPath != null)
-            ok &= deleteRecursively(pstWalStoreCustomPath);
+            ok &= U.delete(pstWalStoreCustomPath);
 
-        ok &= deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+        ok &= U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
 
         if (failIfDeleteNotCompleted)
             assertTrue(ok);

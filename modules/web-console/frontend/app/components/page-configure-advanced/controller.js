@@ -16,19 +16,12 @@
  */
 
 export default class PageConfigureAdvancedController {
-    static $inject = ['$scope'];
-
     static menuItems = [
-        { text: 'Clusters', sref: 'base.configuration.tabs.advanced.clusters' },
-        { text: 'Model', sref: 'base.configuration.tabs.advanced.domains' },
-        { text: 'Caches', sref: 'base.configuration.tabs.advanced.caches' },
-        { text: 'IGFS', sref: 'base.configuration.tabs.advanced.igfs' },
-        { text: 'Summary', sref: 'base.configuration.tabs.advanced.summary' }
+        { text: 'Cluster', sref: 'base.configuration.edit.advanced.cluster' },
+        { text: 'SQL Scheme', sref: 'base.configuration.edit.advanced.models' },
+        { text: 'Caches', sref: 'base.configuration.edit.advanced.caches' },
+        { text: 'IGFS', sref: 'base.configuration.edit.advanced.igfs' }
     ];
-
-    constructor($scope) {
-        Object.assign(this, {$scope});
-    }
 
     $onInit() {
         this.menuItems = this.constructor.menuItems;

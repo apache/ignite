@@ -185,12 +185,21 @@ public class MarshallerContextImpl implements MarshallerContext {
     /**
      * @param platformId Platform id.
      * @param marshallerMappings All marshaller mappings for given platformId.
+     * @throws IgniteCheckedException In case of failure to process incoming marshaller mappings.
      */
-    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings) {
+    public void onMappingDataReceived(byte platformId, Map<Integer, MappedName> marshallerMappings)
+        throws IgniteCheckedException
+    {
         ConcurrentMap<Integer, MappedName> platformCache = getCacheFor(platformId);
 
-        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet())
-            platformCache.put(e.getKey(), new MappedName(e.getValue().className(), true));
+        for (Map.Entry<Integer, MappedName> e : marshallerMappings.entrySet()) {
+            int typeId = e.getKey();
+            String clsName = e.getValue().className();
+
+            platformCache.put(typeId, new MappedName(clsName, true));
+
+            fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
+        }
     }
 
     /**
@@ -243,9 +252,10 @@ public class MarshallerContextImpl implements MarshallerContext {
 
     /** {@inheritDoc} */
     @Override public boolean registerClassName(
-            byte platformId,
-            int typeId,
-            String clsName
+        byte platformId,
+        int typeId,
+        String clsName,
+        boolean failIfUnregistered
     ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
@@ -261,7 +271,13 @@ public class MarshallerContextImpl implements MarshallerContext {
                 if (transport.stopping())
                     return false;
 
-                IgniteInternalFuture<MappingExchangeResult> fut = transport.awaitMappingAcceptance(new MarshallerMappingItem(platformId, typeId, clsName), cache);
+                MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, clsName);
+
+                GridFutureAdapter<MappingExchangeResult> fut = transport.awaitMappingAcceptance(item, cache);
+
+                if (failIfUnregistered && !fut.isDone())
+                    throw new UnregisteredBinaryTypeException(typeId, fut);
+
                 MappingExchangeResult res = fut.get();
 
                 return convertXchRes(res);
@@ -271,11 +287,23 @@ public class MarshallerContextImpl implements MarshallerContext {
             if (transport.stopping())
                 return false;
 
-            IgniteInternalFuture<MappingExchangeResult> fut = transport.proposeMapping(new MarshallerMappingItem(platformId, typeId, clsName), cache);
+            MarshallerMappingItem item = new MarshallerMappingItem(platformId, typeId, clsName);
+
+            GridFutureAdapter<MappingExchangeResult> fut = transport.proposeMapping(item, cache);
+
+            if (failIfUnregistered && !fut.isDone())
+                throw new UnregisteredBinaryTypeException(typeId, fut);
+
             MappingExchangeResult res = fut.get();
 
             return convertXchRes(res);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+        return registerClassName(platformId, typeId, clsName, false);
     }
 
     /** {@inheritDoc} */

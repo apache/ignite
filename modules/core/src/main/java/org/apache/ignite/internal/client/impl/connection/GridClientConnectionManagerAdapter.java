@@ -472,7 +472,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                 try {
                     conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                         cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
-                        cfg.isTcpNoDelay(), marsh, marshId, top, cred, keepBinariesThreadLocal());
+                        cfg.isTcpNoDelay(), marsh, marshId, top, cred);
                 }
                 catch (GridClientException e) {
                     if (marsh instanceof GridClientZipOptimizedMarshaller) {
@@ -482,7 +482,7 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                         conn = new GridClientNioTcpConnection(srv, clientId, addr, sslCtx, pingExecutor,
                             cfg.getConnectTimeout(), cfg.getPingInterval(), cfg.getPingTimeout(),
                             cfg.isTcpNoDelay(), ((GridClientZipOptimizedMarshaller)marsh).defaultMarshaller(), marshId,
-                            top, cred, keepBinariesThreadLocal());
+                            top, cred);
                     }
                     else
                         throw e;
@@ -504,13 +504,6 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         finally {
             endpointStripedLock.unlock(addr);
         }
-    }
-
-    /**
-     * @return Get thread local used to enable keep binary mode.
-     */
-    protected ThreadLocal<Boolean> keepBinariesThreadLocal() {
-        return null;
     }
 
     /** {@inheritDoc} */

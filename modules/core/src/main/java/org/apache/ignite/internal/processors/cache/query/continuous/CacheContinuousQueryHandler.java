@@ -128,7 +128,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient boolean skipPrimaryCheck;
 
     /** */
-    private boolean locCache;
+    private transient boolean locOnly;
 
     /** */
     private boolean keepBinary;
@@ -232,10 +232,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /**
-     * @param locCache Local cache.
+     * @param locOnly Local only.
      */
-    public void localCache(boolean locCache) {
-        this.locCache = locCache;
+    public void localOnly(boolean locOnly) {
+        this.locOnly = locOnly;
     }
 
     /**
@@ -497,7 +497,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     skipCtx = new CounterSkipContext(part, cntr, topVer);
 
                 if (loc) {
-                    assert !locCache;
+                    assert !locOnly;
 
                     final Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, skipCtx.entry());
 
@@ -566,6 +566,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             private String taskName() {
                 return ctx.security().enabled() ? ctx.task().resolveTaskName(taskHash) : null;
             }
+
+            @Override public boolean isPrimaryOnly() {
+                return locOnly && !skipPrimaryCheck;
+            }
         };
 
         CacheContinuousQueryManager mgr = manager(ctx);
@@ -610,7 +614,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (!cctx.isLocal()) {
             AffinityTopologyVersion topVer = initTopVer;
 
-            cacheContext(ctx).affinity().affinityReadyFuture(topVer).get();
+            cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
 
             for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
                 getOrCreatePartitionRecovery(ctx, partId, topVer);
@@ -828,7 +832,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             final CacheContinuousQueryEntry entry = evt.entry();
 
             if (loc) {
-                if (!locCache) {
+                if (!locOnly) {
                     Collection<CacheEntryEvent<? extends K, ? extends V>> evts = handleEvent(ctx, entry);
 
                     if (!evts.isEmpty())

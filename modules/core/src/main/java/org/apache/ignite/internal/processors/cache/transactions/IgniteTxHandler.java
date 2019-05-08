@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -800,9 +801,9 @@ public class IgniteTxHandler {
         if (locTx != null)
             req.txState(locTx.txState());
 
-        // 'baseVersion' message field is re-used for version to be added in completed versions.
-        if (!req.commit() && req.baseVersion() != null)
-            ctx.tm().addRolledbackTx(null, req.baseVersion());
+        // Always add near version to rollback history to prevent races with rollbacks.
+        if (!req.commit())
+            ctx.tm().addRolledbackTx(null, req.version());
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
@@ -1698,6 +1699,8 @@ public class IgniteTxHandler {
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
             if (tx.empty() && req.last()) {
+                tx.skipCompletedVersions(Objects.equals(tx.nearXidVersion(), tx.xidVersion()));
+
                 tx.rollbackRemoteTx();
 
                 return null;

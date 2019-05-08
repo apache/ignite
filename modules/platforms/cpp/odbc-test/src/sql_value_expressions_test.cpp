@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "sql_test_suite_fixture.h"
@@ -45,14 +41,13 @@ BOOST_AUTO_TEST_CASE(TestCase)
             "END "
         "FROM TestType", in.i32Field / 2);
 
-    
     CheckSingleResult<int32_t>(
         "SELECT "
             "CASE i32Field WHEN 22 "
                 "THEN (i32Field / 2) "
                 "ELSE (i32Field / 3) "
             "END "
-        "FROM TestType", in.i32Field / 3);;
+        "FROM TestType", in.i32Field / 3);
 }
 
 BOOST_AUTO_TEST_CASE(TestCast)

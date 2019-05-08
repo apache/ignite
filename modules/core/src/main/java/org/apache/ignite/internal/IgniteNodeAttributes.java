@@ -193,6 +193,12 @@ public final class IgniteNodeAttributes {
     /** Data storage configuration. */
     public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
 
+    /** User authentication enabled flag. */
+    public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
+
     /**
      * Enforces singleton.
      */

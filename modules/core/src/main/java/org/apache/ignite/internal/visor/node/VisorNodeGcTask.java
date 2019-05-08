@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * Task to run gc on nodes.
  */
 @GridInternal
+@GridVisorManagementTask
 public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, VisorNodeGcTaskResult>, VisorNodeGcTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;

@@ -461,7 +461,7 @@ namespace ignite
                  * @param val String.
                  * @param len String length (characters).
                  */
-                void WriteString(const char* val, const int32_t len);
+                void WriteString(const char* val, int32_t len);
 
                 /**
                  * Write string.
@@ -470,12 +470,32 @@ namespace ignite
                  * @param val String.
                  * @param len String length (characters).
                  */
-                void WriteString(const char* fieldName, const char* val, const int32_t len);
+                void WriteString(const char* fieldName, const char* val, int32_t len);
+
+                /**
+                 * Write string.
+                 *
+                 * @param val String.
+                 */
+                void WriteString(const std::string& val)
+                {
+                    WriteString(val.c_str(), static_cast<int32_t>(val.size()));
+                }
+
+                /**
+                 * Write string.
+                 *
+                 * @param fieldName Field name.
+                 * @param val String.
+                 */
+                void WriteString(const char* fieldName, const std::string& val)
+                {
+                    WriteString(fieldName, val.c_str(), static_cast<int32_t>(val.size()));
+                }
 
                 /**
                  * Start string array write.
                  *
-                 * @param typ Collection type.
                  * @return Session ID.
                  */
                 int32_t WriteStringArray();

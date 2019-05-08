@@ -32,6 +32,6 @@ mixin ignite-form-field-file(label, model, name, disabled, required, options, ti
                 input(
                     id=`{{ ${name} }}Input`
                     type='file'
-                    data-ng-model=model
+                    ng-model=model
                 )&attributes(attributes)
                 | {{ `${model}` }}

@@ -69,6 +69,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** Row cache. */
     private final H2RowCache rowCache;
 
+    /** Whether index was created from scratch during owning node lifecycle. */
+    private final boolean created;
+
     /**
      * Constructor.
      *
@@ -123,6 +126,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         setIos(H2ExtrasInnerIO.getVersions(inlineSize), H2ExtrasLeafIO.getVersions(inlineSize));
 
         initTree(initNew, inlineSize);
+
+        this.created = initNew;
     }
 
     /**
@@ -303,4 +308,12 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @return Comparison result.
      */
     public abstract int compareValues(Value v1, Value v2);
+
+    /**
+     * @return {@code True} if index was created during curren node's lifetime, {@code False} if it was restored from
+     * disk.
+     */
+    public boolean created() {
+        return created;
+    }
 }

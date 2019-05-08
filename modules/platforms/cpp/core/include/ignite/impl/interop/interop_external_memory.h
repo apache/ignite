@@ -33,7 +33,7 @@ namespace ignite
             /**
              * Interop external memory.
              */
-            class IGNITE_IMPORT_EXPORT InteropExternalMemory : public interop::InteropMemory
+            class IGNITE_IMPORT_EXPORT InteropExternalMemory : public InteropMemory
             {
             public:
                 /**

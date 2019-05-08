@@ -38,6 +38,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public boolean isFullSync();
 
     /**
+     * @return Current serializer version.
+     */
+    public int serializerVersion();
+
+    /**
      * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
      * method is called to avoid logging changes induced by the state restore procedure.
      */
@@ -64,6 +69,16 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      *      method, the WAL will be invalidated and the node will be stopped.
      */
     public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException;
+
+    /**
+     * Reads WAL record by the specified pointer.
+     *
+     * @param ptr WAL pointer.
+     * @return WAL record.
+     * @throws IgniteCheckedException If failed to read.
+     * @throws StorageException If IO error occurred while reading WAL entries.
+     */
+    public WALRecord read(WALPointer ptr) throws IgniteCheckedException, StorageException;
 
     /**
      * Invoke this method to iterate over the written log entries.

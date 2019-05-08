@@ -157,7 +157,11 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 // Wait for stmt cache entry is created for each thread.
                 assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        return getStatementCacheSize(qryProc) == THREAD_COUNT;
+                        // '>' case is for lazy query flag turned on - in this case, there's more threads
+                        // than those run by test explicitly, and we can't rely on exact number.
+                        // Still the main check for this test is that all threads, no matter how many of them
+                        // is out there, are terminated and their statement caches are cleaned up.
+                        return getStatementCacheSize(qryProc) >= THREAD_COUNT;
                     }
                 }, STMT_CACHE_CLEANUP_TIMEOUT));
             }

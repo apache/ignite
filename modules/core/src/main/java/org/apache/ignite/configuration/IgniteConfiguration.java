@@ -486,6 +486,12 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
+    /** User authentication enabled. */
+    private boolean authEnabled;
+
+    /** SQL schemas to be created on node start. */
+    private String[] sqlSchemas;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -581,6 +587,7 @@ public class IgniteConfiguration {
         sndRetryCnt = cfg.getNetworkSendRetryCount();
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
+        sqlSchemas = cfg.getSqlSchemas();
         sslCtxFactory = cfg.getSslContextFactory();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
@@ -595,6 +602,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        authEnabled = cfg.isAuthenticationEnabled();
     }
 
     /**
@@ -2925,6 +2933,57 @@ public class IgniteConfiguration {
      */
     @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
+    }
+
+    /**
+     * Returns {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
+     * Default value is false; authentication is disabled.
+     *
+     * @return {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
+     */
+    public boolean isAuthenticationEnabled() {
+        return authEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether the user authentication is enabled for cluster.
+     *
+     * @param authEnabled User authentication enabled flag. {@code true} enab
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
+        this.authEnabled = authEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets SQL schemas to be created on node startup.
+     * <p>
+     * See {@link #setSqlSchemas(String...)} for more information.
+     *
+     * @return SQL schemas to be created on node startup.
+     */
+    public String[] getSqlSchemas() {
+        return sqlSchemas;
+    }
+
+    /**
+     * Sets SQL schemas to be created on node startup. Schemas are created on local node only and are not propagated
+     * to other cluster nodes. Created schemas cannot be dropped.
+     * <p>
+     * By default schema names are case-insensitive, i.e. {@code my_schema} and {@code My_Schema} represents the same
+     * object. Use quotes to enforce case sensitivity (e.g. {@code "My_Schema"}).
+     * <p>
+     * Property is ignored if {@code ignite-indexing} module is not in classpath.
+     *
+     * @param sqlSchemas SQL schemas to be created on node startup.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSqlSchemas(String... sqlSchemas) {
+        this.sqlSchemas = sqlSchemas;
+
+        return this;
     }
 
     /** {@inheritDoc} */

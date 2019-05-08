@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -50,6 +51,7 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
@@ -58,6 +60,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -99,6 +103,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -309,7 +314,10 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         U.join(msgWorker, log);
         U.join(sockWriter, log);
-        U.join(sockReader, log);
+
+        // SocketReader may loose interruption, this hack is made to overcome that case.
+        while (!U.join(sockReader, log, 200))
+            U.interrupt(sockReader);
 
         timer.cancel();
 
@@ -445,8 +453,16 @@ class ClientImpl extends TcpDiscoveryImpl {
             throw new IgniteClientDisconnectedException(null, "Failed to send custom message: client is disconnected.");
 
         try {
-            sockWriter.sendMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                U.marshal(spi.marshaller(), evt)));
+            TcpDiscoveryAbstractMessage msg;
+
+            if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
+                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
+                    U.marshal(spi.marshaller(), evt));
+            else
+                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
+                    U.marshal(spi.marshaller(), evt));
+
+            sockWriter.sendMessage(msg);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -1019,6 +1035,11 @@ class ClientImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 U.error(log, "Failed to read message [sock=" + sock + ", " +
                                     "locNodeId=" + getLocalNodeId() + ", rmtNodeId=" + rmtNodeId + ']', e);
+
+                            // Exists possibility that exception raised on interruption.
+                            if (X.hasCause(e, InterruptedException.class, InterruptedIOException.class,
+                                IgniteInterruptedCheckedException.class, IgniteInterruptedException.class))
+                                interrupt();
 
                             IOException ioEx = X.cause(e, IOException.class);
 
@@ -1605,8 +1626,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             onDisconnected();
 
-                            notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
-
                             UUID newId = UUID.randomUUID();
 
                             U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
@@ -1705,8 +1724,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 }
 
                                 onDisconnected();
-
-                                notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
                             }
 
                             UUID newId = UUID.randomUUID();
@@ -1808,6 +1825,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             nodeAdded = false;
 
             delayDiscoData.clear();
+
+            notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
 
             IgniteClientDisconnectedCheckedException err =
                 new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +

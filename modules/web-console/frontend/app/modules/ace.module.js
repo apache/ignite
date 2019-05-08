@@ -16,12 +16,13 @@
  */
 
 import angular from 'angular';
+import _ from 'lodash';
 
 angular
     .module('ignite-console.ace', [])
     .constant('igniteAceConfig', {})
     .directive('igniteAce', ['igniteAceConfig', (aceConfig) => {
-        if (angular.isUndefined(window.ace))
+        if (_.isUndefined(window.ace))
             throw new Error('ignite-ace need ace to work... (o rly?)');
 
         /**
@@ -43,7 +44,7 @@ angular
          */
         const setOptions = (acee, session, opts) => {
             // Sets the ace worker path, if running from concatenated or minified source.
-            if (angular.isDefined(opts.workerPath)) {
+            if (!_.isUndefined(opts.workerPath)) {
                 const config = window.ace.acequire('ace/config');
 
                 config.set('workerPath', opts.workerPath);
@@ -53,26 +54,26 @@ angular
             _.forEach(opts.require, (n) => window.ace.acequire(n));
 
             // Boolean options.
-            if (angular.isDefined(opts.showGutter))
+            if (!_.isUndefined(opts.showGutter))
                 acee.renderer.setShowGutter(opts.showGutter);
 
-            if (angular.isDefined(opts.useWrapMode))
+            if (!_.isUndefined(opts.useWrapMode))
                 session.setUseWrapMode(opts.useWrapMode);
 
-            if (angular.isDefined(opts.showInvisibles))
+            if (!_.isUndefined(opts.showInvisibles))
                 acee.renderer.setShowInvisibles(opts.showInvisibles);
 
-            if (angular.isDefined(opts.showIndentGuides))
+            if (!_.isUndefined(opts.showIndentGuides))
                 acee.renderer.setDisplayIndentGuides(opts.showIndentGuides);
 
-            if (angular.isDefined(opts.useSoftTabs))
+            if (!_.isUndefined(opts.useSoftTabs))
                 session.setUseSoftTabs(opts.useSoftTabs);
 
-            if (angular.isDefined(opts.showPrintMargin))
+            if (!_.isUndefined(opts.showPrintMargin))
                 acee.setShowPrintMargin(opts.showPrintMargin);
 
             // Commands.
-            if (angular.isDefined(opts.disableSearch) && opts.disableSearch) {
+            if (!_.isUndefined(opts.disableSearch) && opts.disableSearch) {
                 acee.commands.addCommands([{
                     name: 'unfind',
                     bindKey: {
@@ -85,21 +86,21 @@ angular
             }
 
             // Base options.
-            if (angular.isString(opts.theme))
+            if (_.isString(opts.theme))
                 acee.setTheme('ace/theme/' + opts.theme);
 
-            if (angular.isString(opts.mode))
+            if (_.isString(opts.mode))
                 session.setMode('ace/mode/' + opts.mode);
 
-            if (angular.isDefined(opts.firstLineNumber)) {
-                if (angular.isNumber(opts.firstLineNumber))
+            if (!_.isUndefined(opts.firstLineNumber)) {
+                if (_.isNumber(opts.firstLineNumber))
                     session.setOption('firstLineNumber', opts.firstLineNumber);
-                else if (angular.isFunction(opts.firstLineNumber))
+                else if (_.isFunction(opts.firstLineNumber))
                     session.setOption('firstLineNumber', opts.firstLineNumber());
             }
 
             // Advanced options.
-            if (angular.isDefined(opts.advanced)) {
+            if (!_.isUndefined(opts.advanced)) {
                 for (const key in opts.advanced) {
                     if (opts.advanced.hasOwnProperty(key)) {
                         // Create a javascript object with the key and value.
@@ -112,7 +113,7 @@ angular
             }
 
             // Advanced options for the renderer.
-            if (angular.isDefined(opts.rendererOptions)) {
+            if (!_.isUndefined(opts.rendererOptions)) {
                 for (const key in opts.rendererOptions) {
                     if (opts.rendererOptions.hasOwnProperty(key)) {
                         // Create a javascript object with the key and value.
@@ -126,15 +127,19 @@ angular
 
             // onLoad callbacks.
             _.forEach(opts.callbacks, (cb) => {
-                if (angular.isFunction(cb))
+                if (_.isFunction(cb))
                     cb(acee);
             });
         };
 
         return {
             restrict: 'EA',
-            require: ['?ngModel', '?^form'],
-            link: (scope, elm, attrs, [ngModel, form]) => {
+            require: ['?ngModel', '?^form', 'igniteAce'],
+            bindToController: {
+                onSelectionChange: '&?'
+            },
+            controller() {},
+            link: (scope, elm, attrs, [ngModel, form, igniteAce]) => {
                 /**
                  * Corresponds the igniteAceConfig ACE configuration.
                  *
@@ -147,7 +152,7 @@ angular
                  *
                  * @type object
                  */
-                let opts = angular.extend({}, options, scope.$eval(attrs.igniteAce));
+                let opts = Object.assign({}, options, scope.$eval(attrs.igniteAce));
 
                 /**
                  * ACE editor.
@@ -163,6 +168,8 @@ angular
                  * @see [EditSession]{@link http://ace.c9.io/#nav=api&api=edit_session}
                  */
                 const session = acee.getSession();
+
+                const selection = session.getSelection();
 
                 /**
                  * Reference to a change listener created by the listener factory.
@@ -191,9 +198,9 @@ angular
                             !scope.$$phase && !scope.$root.$$phase)
                             scope.$eval(() => ngModel.$setViewValue(newValue));
 
-                        if (angular.isDefined(callback)) {
+                        if (!_.isUndefined(callback)) {
                             scope.$evalAsync(() => {
-                                if (angular.isFunction(callback))
+                                if (_.isFunction(callback))
                                     callback([e, acee]);
                                 else
                                     throw new Error('ignite-ace use a function as callback');
@@ -210,10 +217,10 @@ angular
                     form && form.$removeControl(ngModel);
 
                     ngModel.$formatters.push((value) => {
-                        if (angular.isUndefined(value) || value === null)
+                        if (_.isUndefined(value) || value === null)
                             return '';
 
-                        if (angular.isObject(value) || angular.isArray(value))
+                        if (_.isObject(value) || _.isArray(value))
                             throw new Error('ignite-ace cannot use an object or an array as a model');
 
                         return value;
@@ -222,6 +229,14 @@ angular
                     ngModel.$render = () => session.setValue(ngModel.$viewValue);
 
                     acee.on('change', () => ngModel.$setViewValue(acee.getValue()));
+
+                    selection.on('changeSelection', () => {
+                        if (igniteAce.onSelectionChange) {
+                            const aceSelection = selection.isEmpty() ? null : acee.session.getTextRange(acee.getSelectionRange());
+
+                            igniteAce.onSelectionChange({$event: aceSelection});
+                        }
+                    });
                 }
 
                 // Listen for option updates.
@@ -229,7 +244,7 @@ angular
                     if (current === previous)
                         return;
 
-                    opts = angular.extend({}, options, scope.$eval(attrs.igniteAce));
+                    opts = Object.assign({}, options, scope.$eval(attrs.igniteAce));
 
                     opts.callbacks = [opts.onLoad];
 

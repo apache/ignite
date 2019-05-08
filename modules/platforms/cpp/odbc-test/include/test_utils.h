@@ -43,6 +43,58 @@
         BOOST_FAIL(ignite_test::GetOdbcErrorMessage(type, handle) + ", msg = " + msg); \
     }
 
+#define MUTE_TEST_FOR_TEAMCITY \
+    if (jetbrains::teamcity::underTeamcity()) \
+    { \
+        BOOST_TEST_MESSAGE("Muted on TeamCity because of periodical non-critical failures"); \
+        BOOST_CHECK(jetbrains::teamcity::underTeamcity()); \
+        return; \
+    }
+
+/**
+ * Client ODBC erorr.
+ */
+class OdbcClientError : public std::exception
+{
+public:
+    /**
+     * Constructor
+     *
+     * @param sqlstate SQL state.
+     * @param message Error message.
+     */
+    OdbcClientError(const std::string& sqlstate, const std::string& message) :
+        sqlstate(sqlstate),
+        message(message)
+    {
+        // No-op.
+    }
+
+    /**
+     * Destructor.
+     */
+    virtual ~OdbcClientError() IGNITE_NO_THROW
+    {
+         // No-op.
+    }
+
+    /**
+     * Implementation of the standard std::exception::what() method.
+     * Synonym for GetText() method.
+     *
+     * @return Error message string.
+     */
+    virtual const char* what() const IGNITE_NO_THROW
+    {
+        return message.c_str();
+    }
+
+    /** SQL state. */
+    std::string sqlstate;
+
+    /** Error message. */
+    std::string message;
+};
 
 namespace ignite_test
 {
@@ -66,6 +118,11 @@ namespace ignite_test
      * @return Error message.
      */
     std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle);
+
+    /**
+     * @return Test config directory path.
+     */
+    std::string GetTestConfigDir();
 
     /**
      * Initialize configuration for a node.
@@ -103,6 +160,11 @@ namespace ignite_test
      * @return New node.
      */
     ignite::Ignite StartNode(const char* cfgFile, const char* name);
+
+    /**
+     * Remove all the LFS artifacts.
+     */
+    void ClearLfs();
 }
 
 #endif // _IGNITE_ODBC_TEST_TEST_UTILS

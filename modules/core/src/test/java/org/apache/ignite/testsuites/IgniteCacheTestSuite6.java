@@ -18,17 +18,33 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.authentication.AuthenticationConfigurationClusterTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotActiveClusterTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNPEOnStartTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
+import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionsExchangeCoordinatorFailoverTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedAtomicCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheDataLossOnPartitionMoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
+import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticSerializableTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
@@ -50,6 +66,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
         suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
         suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
+        suite.addTestSuite(ExchangeMergeStaleServerNodesTest.class);
 
         suite.addTestSuite(CacheExchangeMergeTest.class);
 
@@ -64,8 +81,30 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
         suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
 
+        suite.addTestSuite(CacheDataLossOnPartitionMoveTest.class);
+
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
+
+        suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
+        suite.addTestSuite(AuthenticationProcessorSelfTest.class);
+        suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
+        suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
+        suite.addTestSuite(AuthenticationProcessorNPEOnStartTest.class);
+
+        suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
+
+        suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
+        suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
+
+        suite.addTestSuite(PartitionsExchangeCoordinatorFailoverTest.class);
+
+        suite.addTestSuite(TxOptimisticSerializableTest.class);
+
+        suite.addTestSuite(GridCacheLongRunningTransactionDiagnosticsTest.class);
 
         return suite;
     }

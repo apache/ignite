@@ -19,6 +19,8 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
+import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
@@ -72,6 +74,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Util Test Suite");
 
+        suite.addTestSuite(IgniteVersionUtilsSelfTest.class);
         suite.addTestSuite(GridThreadPoolExecutorServiceSelfTest.class);
         suite.addTestSuite(IgniteThreadPoolSizeTest.class);
         GridTestUtils.addTestIfNeeded(suite, IgniteUtilsSelfTest.class, ignoredTests);
@@ -113,6 +116,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(PageIdUtilsSelfTest.class);
 
         // control.sh
+        suite.addTestSuite(CommandHandlerParsingTest.class);
         suite.addTestSuite(GridCommandHandlerTest.class);
 
         return suite;

@@ -24,6 +24,7 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
+#include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/type_traits.h"
 #include "ignite/odbc/environment.h"
@@ -180,7 +181,7 @@ namespace ignite
     {
         using odbc::Environment;
 
-        LOG_MSG("SQLFreeEnv called");
+        LOG_MSG("SQLFreeEnv called: " << env);
 
         Environment *environment = reinterpret_cast<Environment*>(env);
 
@@ -270,16 +271,7 @@ namespace ignite
 
         std::string connectStr = SqlStringToString(inConnectionString, inConnectionStringLen);
 
-        odbc::config::Configuration config;
-
-        config.FillFromConnectString(connectStr);
-
-        std::string dsn = config.GetDsn();
-
-        if (!dsn.empty())
-            odbc::ReadDsnConfiguration(dsn.c_str(), config);
-
-        connection->Establish(config);
+        connection->Establish(connectStr);
 
         const DiagnosticRecordStorage& diag = connection->GetDiagnosticRecords();
 
@@ -753,6 +745,8 @@ namespace ignite
 
         int64_t res = statement->AffectedRows();
 
+        LOG_MSG("Row count: " << res);
+
         if (rowCnt)
             *rowCnt = static_cast<SQLLEN>(res);
 
@@ -813,11 +807,11 @@ namespace ignite
 
         LOG_MSG("SQLGetStmtAttr called");
 
-#ifdef ODBC_DEBUG
+#ifdef _DEBUG
         using odbc::type_traits::StatementAttrIdToString;
 
         LOG_MSG("Attr: " << StatementAttrIdToString(attr) << " (" << attr << ")");
-#endif //ODBC_DEBUG
+#endif //_DEBUG
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -836,13 +830,13 @@ namespace ignite
     {
         using odbc::Statement;
 
-        LOG_MSG("SQLSetStmtAttr called");
+        LOG_MSG("SQLSetStmtAttr called: " << attr);
 
-#ifdef ODBC_DEBUG
+#ifdef _DEBUG
         using odbc::type_traits::StatementAttrIdToString;
 
         LOG_MSG("Attr: " << StatementAttrIdToString(attr) << " (" << attr << ")");
-#endif //ODBC_DEBUG
+#endif //_DEBUG
 
         Statement *statement = reinterpret_cast<Statement*>(stmt);
 
@@ -1357,7 +1351,7 @@ namespace ignite
     {
         using odbc::Connection;
 
-        LOG_MSG("SQLSetConnectAttr called");
+        LOG_MSG("SQLSetConnectAttr called(" << attr << ", " << value << ")");
 
         Connection *connection = reinterpret_cast<Connection*>(conn);
 

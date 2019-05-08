@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
@@ -80,6 +81,7 @@ import org.jsr166.LongAdder8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_SESSION_ATTR_SET;
+import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
@@ -171,7 +173,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
 
         for (GridTaskWorker<?, ?> worker : tasks.values())
-            worker.finishTask(null, err);
+            worker.finishTask(null, err, false);
     }
 
     /**
@@ -675,7 +677,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             top = nodes != null ? F.nodeIds(nodes) : null;
         }
 
-        UUID subjId = getThreadContext(TC_SUBJ_ID);
+        UUID subjId = (UUID)map.get(TC_SUBJ_ID);
+
+        if (subjId == null)
+            subjId = getThreadContext(TC_SUBJ_ID);
 
         if (subjId == null)
             subjId = ctx.localNodeId();
@@ -737,6 +742,24 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
+
+                if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
+                    VisorTaskArgument visorTaskArgument = (VisorTaskArgument)arg;
+
+                    Event evt = new TaskEvent(
+                        ctx.discovery().localNode(),
+                        visorTaskArgument != null && visorTaskArgument.getArgument() != null
+                            ? visorTaskArgument.getArgument().toString() : "[]",
+                        EVT_MANAGEMENT_TASK_STARTED,
+                        ses.getId(),
+                        taskCls == null ? null : taskCls.getSimpleName(),
+                        "VisorManagementTask",
+                        false,
+                        subjId
+                    );
+
+                    ctx.event().record(evt);
+                }
 
                 if (!ctx.clientDisconnected()) {
                     if (dep.annotation(taskCls, ComputeTaskMapAsync.class) != null) {

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.binary;
 
+import java.io.Serializable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -33,7 +34,10 @@ import java.util.Map;
  * However, this class allows you to change configuration properties for a specific
  * binary type without affecting configuration for other binary types.
  */
-public class BinaryTypeConfiguration {
+public class BinaryTypeConfiguration implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** Class name. */
     private String typeName;
 

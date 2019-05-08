@@ -37,6 +37,8 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
+
 /**
  * Test job subject ID propagation.
  */
@@ -59,6 +61,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         node1 = startGrid(1);
+
         node2 = startGrid(2);
     }
 
@@ -67,7 +70,14 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         node1 = null;
+
         node2 = null;
+
+        evtSubjId = null;
+
+        taskSubjId = null;
+
+        jobSubjId = null;
     }
 
     /**
@@ -91,7 +101,37 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         node1.compute().execute(new Task(node2.cluster().localNode().id()), null);
 
         assertEquals(taskSubjId, jobSubjId);
+
         assertEquals(taskSubjId, evtSubjId);
+    }
+
+    /**
+     * Test job subject ID propagation in case if was changed.
+     *
+     * @throws Exception If failed.
+     */
+    public void testModifiedSubjectId() throws Exception {
+        node1.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                JobEvent evt0 = (JobEvent)evt;
+
+                assert evtSubjId == null;
+
+                evtSubjId = evt0.taskSubjectId();
+
+                return false;
+            }
+        }, EventType.EVT_JOB_STARTED);
+
+        UUID uuid = new UUID(100, 100);
+
+        ((IgniteEx) node1).context().task().setThreadContextIfNotNull(TC_SUBJ_ID, uuid);
+
+        ((IgniteEx) node1).context().task().execute(new Task(node1.cluster().localNode().id()), null).get();
+
+        assertEquals(uuid, jobSubjId);
+
+        assertEquals(uuid, evtSubjId);
     }
 
     /**

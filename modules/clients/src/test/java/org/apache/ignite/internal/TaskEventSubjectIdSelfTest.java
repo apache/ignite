@@ -310,6 +310,9 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Events for class tasks that was started from external clients should contain
+     * client subject id instead of the node where it was started. This test checks it.
+     *
      * @throws Exception If failed.
      */
     public void testClient() throws Exception {

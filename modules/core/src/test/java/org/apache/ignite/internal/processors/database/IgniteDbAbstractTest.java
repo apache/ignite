@@ -171,7 +171,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(gridCount());
 
@@ -204,7 +204,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /**

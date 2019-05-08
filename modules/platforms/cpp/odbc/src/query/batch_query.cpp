@@ -50,11 +50,7 @@ namespace ignite
             SqlResult::Type BatchQuery::Execute()
             {
                 if (executed)
-                {
-                    diag.AddStatusRecord(SqlState::SHY010_SEQUENCE_ERROR, "Query cursor is in open state already.");
-
-                    return SqlResult::AI_ERROR;
-                }
+                    Close();
 
                 int32_t maxPageSize = connection.GetConfiguration().GetPageSize();
                 int32_t rowNum = params.GetParamSetSize();

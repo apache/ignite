@@ -195,6 +195,15 @@ public class VisorQueryUtils {
             }
 
             if (meta != null) {
+                if (meta.isEnum()) {
+                    try {
+                        return obj.deserialize().toString();
+                    }
+                    catch (BinaryObjectException ignore) {
+                        // NO-op.
+                    }
+                }
+
                 SB buf = new SB(meta.typeName());
 
                 if (meta.fieldNames() != null) {

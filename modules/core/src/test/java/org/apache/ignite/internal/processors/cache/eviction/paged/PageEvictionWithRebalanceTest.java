@@ -60,8 +60,6 @@ public abstract class PageEvictionWithRebalanceTest extends PageEvictionAbstract
         for (int i = 3; i >= 1; i--) {
             stopGrid(i);
 
-            cache.rebalance().get();
-
             awaitPartitionMapExchange();
 
             int rebalanceSize = cache.size(CachePeekMode.ALL);
