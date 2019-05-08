@@ -24,17 +24,79 @@ import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateT
 /**
  * Cache query suite with binary marshaller.
  */
-public class IgniteBinaryCacheQueryTestSuite2 extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception In case of error.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = IgniteCacheQuerySelfTestSuite2.suite();
-
-        suite.addTestSuite(IgniteCacheQueriesLoadTest1.class);
-        suite.addTestSuite(IgniteSqlCreateTableTemplateTest.class);
-
-        return suite;
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    // Dynamic index create/drop tests.
+//    DynamicIndexPartitionedAtomicConcurrentSelfTest.class,
+    DynamicIndexPartitionedTransactionalConcurrentSelfTest.class,
+    DynamicIndexReplicatedAtomicConcurrentSelfTest.class,
+//    DynamicIndexReplicatedTransactionalConcurrentSelfTest.class,
+//
+//    DynamicColumnsConcurrentAtomicPartitionedSelfTest.class,
+//    DynamicColumnsConcurrentTransactionalPartitionedSelfTest.class,
+//    DynamicColumnsConcurrentAtomicReplicatedSelfTest.class,
+//    DynamicColumnsConcurrentTransactionalReplicatedSelfTest.class,
+//
+//    // Distributed joins.
+//    IgniteCacheQueryNodeRestartDistributedJoinSelfTest.class,
+//    IgniteCacheQueryStopOnCancelOrTimeoutDistributedJoinSelfTest.class,
+//
+//    // Other tests.
+//    IgniteCacheQueryMultiThreadedSelfTest.class,
+//
+//    IgniteCacheQueryEvictsMultiThreadedSelfTest.class,
+//
+//    ScanQueryOffheapExpiryPolicySelfTest.class,
+//
+//    IgniteCacheCrossCacheJoinRandomTest.class,
+    IgniteCacheClientQueryReplicatedNodeRestartSelfTest.class,
+//    IgniteCacheQueryNodeFailTest.class,
+//    IgniteCacheQueryNodeRestartSelfTest.class,
+//    IgniteSqlQueryWithBaselineTest.class,
+//    IgniteChangingBaselineCacheQueryNodeRestartSelfTest.class,
+//    IgniteStableBaselineCacheQueryNodeRestartsSelfTest.class,
+//    IgniteCacheQueryNodeRestartSelfTest2.class,
+//    IgniteCacheQueryNodeRestartTxSelfTest.class,
+//    IgniteCacheSqlQueryMultiThreadedSelfTest.class,
+//    IgniteCachePartitionedQueryMultiThreadedSelfTest.class,
+//    CacheScanPartitionQueryFallbackSelfTest.class,
+//    IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class,
+//    IgniteCacheObjectKeyIndexingSelfTest.class,
+//
+//    IgniteCacheGroupsCompareQueryTest.class,
+//    IgniteCacheGroupsSqlSegmentedIndexSelfTest.class,
+//    IgniteCacheGroupsSqlSegmentedIndexMultiNodeSelfTest.class,
+//    IgniteCacheGroupsSqlDistributedJoinSelfTest.class,
+//
+//    QueryJoinWithDifferentNodeFiltersTest.class,
+//
+//    CacheQueryMemoryLeakTest.class,
+//
+//    CreateTableWithDateKeySelfTest.class,
+//
+//    CacheQueryEntityWithDateTimeApiFieldsTest.class,
+//
+//    DmlStatementsProcessorTest.class,
+//
+//    NonCollocatedRetryMessageSelfTest.class,
+//    RetryCauseMessageSelfTest.class,
+//    DisappearedCacheCauseRetryMessageSelfTest.class,
+//    DisappearedCacheWasNotFoundMessageSelfTest.class,
+//
+//    TableViewSubquerySelfTest.class,
+//
+//    IgniteCacheQueriesLoadTest1.class,
+//
+//    SqlLocalQueryConnectionAndStatementTest.class,
+//
+//    NoneOrSinglePartitionsQueryOptimizationsTest.class,
+//
+//    IgniteSqlCreateTableTemplateTest.class,
+//
+//    LocalQueryLazyTest.class,
+//
+//    LongRunningQueryTest.class,
+//    DmlBatchSizeDeadlockTest.class
+})
+public class IgniteBinaryCacheQueryTestSuite2 {
 }

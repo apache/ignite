@@ -28,47 +28,40 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Partition update counter.
- *
- * TODO FIXME consider rolling bit set implementation.
- * TODO describe ITEM structure
- * TODO add debugging info
- * TODO add update order tracking capabilities ?
- * TODO non-blocking version ? BitSets instead of TreeSet ?
- * TODO describe shrink mechanism.
+ * Update counter implementation used for transactional cache groups.
  */
-public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
-    /** Max allowed gaps. Overflow will trigger critical failure handler to prevent OOM.
-     * TODO FIXME define optimal size. */
+public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
+    /**
+     * Max allowed missed updates. Overflow will trigger critical failure handler to prevent OOM.
+     */
     public static final int MAX_MISSED_UPDATES = 10_000;
 
     /** Counter updates serialization version. */
     private static final byte VERSION = 1;
 
-    /** Queue of counter update tasks. */
+    /** Queue of out-of-order counter update tasks. */
     private TreeSet<Item> queue = new TreeSet<>();
 
-    /** Counter of applied updates in partition. */
+    /** LWM. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr). */
+    /** HWM. */
     private final AtomicLong reserveCntr = new AtomicLong();
 
-    /** Initial counter points to last sequential update after WAL recovery. */
-    private long initCntr;
-
     /**
-     * Restores counter state.
-     *
-     * @param initUpdCntr Initial update counter.
-     * @param cntrUpdData Byte array of counter updates in case some updates are missing before checkpoint.
+     * Initial counter points to last sequential update after WAL recovery.
+     * @deprecated TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11794
      */
+    @Deprecated private long initCntr;
+
+    /** {@inheritDoc} */
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
         cntr.set(initUpdCntr);
 
@@ -77,45 +70,38 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         queue = fromBytes(cntrUpdData);
     }
 
-    /**
-     * @return Initial counter value.
-     */
+    /** {@inheritDoc} */
     @Override public long initial() {
         return initCntr;
     }
 
-    /**
-     * @return Current update counter value.
-     */
+    /** {@inheritDoc} */
     @Override public long get() {
         return cntr.get();
     }
 
-    /**
-     * Highest seen (applied) update counter.
-     * @return Counter.
-     */
-    public synchronized long hwm() {
+    /** */
+    protected synchronized long highestAppliedCounter() {
         return queue.isEmpty() ? cntr.get() : queue.last().absolute();
     }
 
     /**
-     * @return Next update counter.
+     * @return Next update counter. For tx mode called by {@link DataStreamerImpl} IsolatedUpdater.
      */
     @Override public long next() {
-        return cntr.incrementAndGet();
+        long next = cntr.incrementAndGet();
+
+        reserveCntr.set(next);
+
+        return next;
     }
 
-    /**
-     * Sets value to update counter clearing all gaps.
-     *
-     * @param val Values.
-     */
+    /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
-        // New counter should be not less than last seen update.
+        // Absolute counter should be not less than last applied update.
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
-        if (!gaps().isEmpty() && val < hwm())
+        if (!gaps().isEmpty() && val < highestAppliedCounter())
             throw new IgniteCheckedException("Illegal counter update");
 
         long cur = cntr.get();
@@ -132,11 +118,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
             queue.clear();
     }
 
-    /**
-     * Updates counter by delta from start position. Used only in transactions.
-     * @param start Start.
-     * @param delta Delta.
-     */
+    /** {@inheritDoc} */
     @Override public synchronized boolean update(long start, long delta) {
         long cur = cntr.get(), next;
 
@@ -189,7 +171,6 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         }
 
         while (true) {
-            // TODO FIXME CAS not needed.
             boolean res = cntr.compareAndSet(cur, next = start + delta);
 
             assert res;
@@ -209,12 +190,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         }
     }
 
-    /**
-     * Updates initial counter on recovery. Not thread-safe.
-     *
-     * @param start Start.
-     * @param delta Delta.
-     */
+    /** {@inheritDoc} */
     @Override public void updateInitial(long start, long delta) {
         long cntr0 = get();
 
@@ -225,22 +201,18 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         initCntr = get();
     }
 
-    /**
-     * @return Retrieves the minimum update counter task from queue.
-     */
+    /** */
     private Item poll() {
         return queue.pollFirst();
     }
 
-    /**
-     * @return Checks the minimum update counter task from queue.
-     */
+    /** */
     private Item peek() {
         return queue.isEmpty() ? null : queue.first();
     }
 
     /**
-     * @param item Adds update task to priority queue.
+     * @param item Item.
      */
     private boolean offer(Item item) {
         if (queue.size() == MAX_MISSED_UPDATES) // Should trigger failure handler.
@@ -274,13 +246,18 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return gaps;
     }
 
-    /**
-     * @param delta Delta.
-     */
+    /** {@inheritDoc} */
     @Override public long reserve(long delta) {
-        return reserveCntr.getAndAdd(delta);
+        long cntr = get();
+
+        long reserved = reserveCntr.getAndAdd(delta);
+
+        assert reserved >= cntr : "LWM after HWM: lwm=" + cntr + ", hwm=" + reserved;
+
+        return reserved;
     }
 
+    /** {@inheritDoc} */
     @Override public long next(long delta) {
         return cntr.getAndAdd(delta);
     }
@@ -290,27 +267,21 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return gaps().isEmpty();
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized @Nullable byte[] getBytes() {
         if (queue.isEmpty())
             return null;
 
-        // TODO slow output stream
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             DataOutputStream dos = new DataOutputStream(bos);
 
-            dos.writeByte(VERSION); // Version.
+            dos.writeByte(VERSION);
 
             int size = queue.size();
 
-            dos.writeInt(size); // Holes count.
-
-            // TODO store as deltas in varint format. Eg:
-            // 10000000000, 2; 10000000002, 4; 10000000004, 10;
-            // stored as:
-            // 10000000000; 0, 2; 2, 4; 4, 10.
-            // All ints are packed except first.
+            dos.writeInt(size);
 
             for (Item item : queue) {
                 dos.writeLong(item.start);
@@ -327,9 +298,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /**
-     * TODO read from stream ?
-     *
-     * @param raw Raw.
+     * @param raw Raw bytes.
      */
     private @Nullable TreeSet<Item> fromBytes(@Nullable byte[] raw) {
         if (raw == null)
@@ -361,9 +330,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return queue;
     }
 
+    /** {@inheritDoc} */
     @Override public synchronized void reset() {
-        initCntr = 0;
-
         cntr.set(0);
 
         reserveCntr.set(0);
@@ -403,22 +371,27 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
                 ']';
         }
 
+        /** */
         public long start() {
             return start;
         }
 
+        /** */
         public long delta() {
             return delta;
         }
 
+        /** */
         public long absolute() {
             return start + delta;
         }
 
+        /** */
         public boolean within(long cntr) {
             return cntr - start < delta;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -429,6 +402,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
             if (start != item.start)
                 return false;
+
             return  (delta != item.delta);
         }
     }
@@ -440,7 +414,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)o;
+        PartitionTxUpdateCounterImpl cntr = (PartitionTxUpdateCounterImpl)o;
 
         if (!queue.equals(cntr.queue))
             return false;
@@ -466,8 +440,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
-        // TODO FIXME wrong hwm, maybe max(hwm(), reserve.get()) ?
-        return "Counter [init=" + initCntr + ", lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ", resrv=" + reserveCntr.get() + ']';
+    @Override public String toString() {
+        return "Counter [lwm=" + get() + ", holes=" + queue +
+            ", maxApplied=" + highestAppliedCounter() + ", hwm=" + reserveCntr.get() + ']';
     }
 }

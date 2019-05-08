@@ -27,8 +27,6 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.ToLongFunction;
 import org.apache.ignite.IgniteSystemProperties;
 import org.jetbrains.annotations.NotNull;
 import sun.misc.Unsafe;

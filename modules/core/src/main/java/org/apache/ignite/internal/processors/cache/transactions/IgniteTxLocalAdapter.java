@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -493,7 +492,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         GridDhtLocalPartition part = top.localPartition(p);
 
                         // LOST state is possible if tx is prepared when cache is in recovery mode (withCacheRecovery).
-                        assert part != null && (part.state() == OWNING || part.state() == LOST && ctx0.isRecoveryMode()):
+                        assert part != null && (part.state() == OWNING || part.state() == LOST):
                             part == null ?
                                 "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
                                 "part=" + part.toString();
@@ -747,10 +746,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         dhtVer,
                                         null);
 
-                                    if (updRes.success()) {
+                                    if (updRes.success())
                                         txEntry.updateCounter(updRes.updateCounter());
-                                        //txEntry.cqNotifyClosure(updRes.cqNotifyClosure());
-                                    }
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();
@@ -911,11 +908,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
 
                     for (IgniteTxEntry entry : commitEntries) {
-//                        log.info("[op=log, grpId=" + entry.context().groupId() + ", partId=" + entry.cached().partition() +
-//                            ", cntr=" + entry.updateCounter() +
-//                            ", key=" + entry.key().value(null, true) +
-//                            ", op=" + entry.op() + ", ver=" + entry.cached().version() + ']');
-
                         if (entry.cqNotifyClosure() != null)
                             entry.cqNotifyClosure().applyx();
                     }

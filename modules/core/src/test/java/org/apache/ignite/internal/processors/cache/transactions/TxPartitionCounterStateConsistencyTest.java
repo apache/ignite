@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -169,7 +168,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * Test primary-backup partitions consistency while restarting random backup nodes under load.
      */
     @Test
-    // TODO FIXME hanging tx ticket ?
     public void testPartitionConsistencyWithBackupsRestart() throws Exception {
         backups = 2;
 
@@ -228,84 +226,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         fut.get();
 
         assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
-    }
-
-    /**
-     * Same as {@link #testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_MovingPartitionNotCleared} but
-     * new coordinator is demander.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
-        backups = 2;
-
-        Ignite crd = startGrids(SERVER_NODES);
-
-        crd.cluster().active(true);
-
-        int[] primaryParts = crd.affinity(DEFAULT_CACHE_NAME).primaryPartitions(crd.cluster().localNode());
-
-        IgniteCache<Object, Object> cache = crd.cache(DEFAULT_CACHE_NAME);
-
-        List<Integer> p1Keys = partitionKeys(cache, primaryParts[0], 2, 0);
-        List<Integer> p2Keys = partitionKeys(cache, primaryParts[1], 2, 0);
-
-        assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.cluster().localNode(), p1Keys.get(0)));
-        assertTrue(crd.affinity(DEFAULT_CACHE_NAME).isPrimary(crd.cluster().localNode(), p2Keys.get(0)));
-
-        final String primName = crd.name();
-
-        cache.put(p1Keys.get(0), 0); // Will be historically rebalanced.
-        cache.put(p1Keys.get(1), 1);
-
-        forceCheckpoint();
-
-        List<Ignite> backups = Arrays.asList(grid(1), grid(2));
-
-        assertFalse(backups.contains(crd));
-
-        final String demanderName = backups.get(0).name();
-
-        stopGrid(true, demanderName);
-
-        // Create counters delta.
-        cache.remove(p1Keys.get(1));
-        cache.put(p2Keys.get(1), 1); // Will be fully rebalanced.
-
-        stopAllGrids();
-
-        crd = startGrid(0);
-        startGrid(1);
-        startGrid(2);
-
-        TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(crd);
-
-        // Block all rebalance from crd.
-        crdSpi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
-
-        crd.cluster().active(true);
-
-        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    crdSpi.waitForBlocked();
-
-                    // Stop before supplying rebalance. New rebalance must start with second backup as supplier
-                    // doing full rebalance.
-                    stopGrid(primName);
-                }
-                catch (InterruptedException e) {
-                    fail();
-                }
-            }
-        });
-
-        fut.get();
-
-        awaitPartitionMapExchange();
-
-        assertPartitionsSame(idleVerify(grid(demanderName), DEFAULT_CACHE_NAME));
     }
 
     /**
@@ -558,5 +478,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         public TestVal(int id) {
             this.id = id;
         }
+    }
+
+    /**
+     * Use increased timeout because history rebalance could take a while.
+     * Better to have utility method allowing to wait for specific rebalance future.
+     */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return getTestTimeout();
     }
 }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;

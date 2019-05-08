@@ -99,14 +99,14 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override protected long nextPartitionCounter(AffinityTopologyVersion topVer,
         boolean primary,
-        boolean initial,
+        boolean init,
         @Nullable Long primaryCntr) {
         try {
-            return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, initial, primaryCntr);
+            return locPart.nextUpdateCounter(cctx.cacheId(), topVer, primary, init, primaryCntr);
         }
         catch (Throwable t) {
             log.error("Failed to update counter for atomic cache [" +
-                ", initial=" + initial +
+                ", initial=" + init +
                 ", primaryCntr=" + primaryCntr +
                 ", part=" + locPart + ']', t);
 

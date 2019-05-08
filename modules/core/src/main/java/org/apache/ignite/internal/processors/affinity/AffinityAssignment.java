@@ -81,7 +81,7 @@ public interface AffinityAssignment {
     public Collection<UUID> getIds(int part);
 
     /**
-     * @return Nodes having parimary and backup assignments.
+     * @return Nodes having primary and backup assignments.
      */
     public Set<ClusterNode> nodes();
 
@@ -105,6 +105,11 @@ public interface AffinityAssignment {
      * @return Backup partitions for specified node ID.
      */
     public Set<Integer> backupPartitions(UUID nodeId);
+
+    /**
+     * @return Set of partitions which primary is different to primary in ideal assignment.
+     */
+    public Set<Integer> partitionPrimariesDifferentToIdeal();
 
     /**
      * Converts List of Cluster Nodes to HashSet of UUIDs wrapped as unmodifiable collection.

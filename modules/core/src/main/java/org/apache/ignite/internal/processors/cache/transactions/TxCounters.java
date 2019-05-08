@@ -23,9 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiFunction;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,10 +38,7 @@ public class TxCounters {
     private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
-
-    /** Map used for counter assigment for tx. Will not contain entries which will not be updated. */
-    private Map<T2<Integer, Integer>, Long> genCntrsMap;
+    private volatile Map<Integer, PartitionUpdateCountersMessage> updCntrs;
 
     /** Counter tracking number of entries locked by tx. */
     private final AtomicInteger lockCntr = new AtomicInteger();
@@ -76,20 +71,10 @@ public class TxCounters {
      * @param updCntrs Final update counters.
      */
     public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
-        this.updCntrs = updCntrs;
+        this.updCntrs = U.newHashMap(updCntrs.size());
 
-        genCntrsMap = U.newHashMap(updCntrs.size());
-
-        // TODO FIXME heavy memory usage due T2<> map key ?
-        // TODO several caches in single group optimize ?
-        for (PartitionUpdateCountersMessage msg : updCntrs) {
-            for (int i = 0; i < msg.size(); i++) {
-                int partId = msg.partition(i);
-                long start = msg.initialCounter(i);
-
-                genCntrsMap.put(new T2<>(msg.cacheId(), partId), start);
-            }
-        }
+        for (PartitionUpdateCountersMessage cntr : updCntrs)
+            this.updCntrs.put(cntr.cacheId(), cntr);
     }
 
     /**
@@ -157,11 +142,14 @@ public class TxCounters {
      * @param cacheId Cache id.
      * @param partId Partition id.
      *
-     * @return Counter or {@code null} if entry will not be updated.
+     * @return Counter or {@code null} if cache partition has not updates.
      */
-    public @Nullable Long generateNextCounter(int cacheId, int partId) {
-        // TODO FIXME gc pressure ?
-        // TODO FIXME dispose of boxing.
-        return genCntrsMap.computeIfPresent(new T2<>(cacheId, partId), (key, val) -> val + 1);
+    public Long generateNextCounter(int cacheId, int partId) {
+        PartitionUpdateCountersMessage msg = updCntrs.get(cacheId);
+
+        if (msg == null)
+            return null;
+
+        return msg.nextCounter(partId);
     }
 }

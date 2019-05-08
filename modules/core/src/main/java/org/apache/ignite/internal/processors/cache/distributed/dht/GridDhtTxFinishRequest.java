@@ -232,14 +232,9 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             taskNameHash,
             addDepInfo,
             retVal,
-            waitRemoteTxs);
-
-//        if (updateIdxs != null && !updateIdxs.isEmpty()) {
-//            partUpdateCnt = new GridLongList(updateIdxs.size());
-//
-//            for (Long idx : updateIdxs)
-//                partUpdateCnt.add(idx);
-//        }
+            waitRemoteTxs,
+            mvccSnapshot,
+            updCntrs);
     }
 
     /**

@@ -18,22 +18,15 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
-import org.junit.Test;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
- * TODO FIXME use WithSystemProperty.
  */
+@WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
 public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest
     extends TxPartitionCounterStateOnePrimaryOneBackupTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
-
-        super.beforeTest();
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         int histRebCnt = IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances().values().size();
@@ -42,14 +35,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest
 
         super.afterTest();
 
-        System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
-
         // Expecting only one historical rebalance for test scenario.
         assertEquals("Wrong number of historical rebalances", 1, histRebCnt);
-    }
-
-    @Test
-    @Override public void testPrepareCommitReorderFailRebalanceSkipCheckpoint() throws Exception {
-        super.testPrepareCommitReorderFailRebalanceSkipCheckpoint();
     }
 }

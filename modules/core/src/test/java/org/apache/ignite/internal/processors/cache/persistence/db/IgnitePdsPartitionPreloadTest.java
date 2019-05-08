@@ -33,11 +33,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -114,8 +112,6 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
             .setMetricsEnabled(true);
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        cfg.setFailureDetectionTimeout(1000000000L);
 
         cfg.setCacheConfiguration(cfgFactory.get());
 

@@ -1389,10 +1389,6 @@ public class IgniteTxHandler {
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
 
-                // TODO FIXME looks no longer needed.
-//                tx.setPartitionUpdateCounters(
-//                    req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
-
                 tx.commitRemoteTx();
             }
             else {
@@ -2055,7 +2051,8 @@ public class IgniteTxHandler {
     /**
      * @param counters Counters.
      */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) throws IgniteCheckedException {
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters)
+        throws IgniteCheckedException {
         applyPartitionsUpdatesCounters(counters, false, false);
     }
 
@@ -2065,7 +2062,9 @@ public class IgniteTxHandler {
      * @param counters Counter values to be updated.
      * @param rollback {@code True} if applied from rollbacks.
      */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters, boolean rollback, boolean rollbackOnPrimary) throws IgniteCheckedException {
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters,
+        boolean rollback,
+        boolean rollbackOnPrimary) throws IgniteCheckedException {
         if (counters == null)
             return;
 
@@ -2094,11 +2093,11 @@ public class IgniteTxHandler {
 
                                 // Need to log rolled back range for logical recovery.
                                 if (updated && rollback) {
-                                    if (part.group().persistenceEnabled() && part.group().walEnabled()) {
+                                    if (part.group().persistenceEnabled() &&
+                                        part.group().walEnabled() &&
+                                        !part.group().mvccEnabled()) {
                                         RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                             start, delta);
-
-                                        // log.error("TX: log rollback [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
 
                                         ctx.wal().log(rec);
                                     }

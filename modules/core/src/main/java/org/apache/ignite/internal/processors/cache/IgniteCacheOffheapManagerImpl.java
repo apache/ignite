@@ -1171,7 +1171,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            pCntr = grp.mvccEnabled() ? new PartitionUpdateCounterMvccImpl() : new PartitionUpdateCounterImpl();
+            pCntr = grp.mvccEnabled() ? new PartitionMvccTxUpdateCounterImpl() :
+                grp.hasAtomicCaches() ? new PartitionAtomicUpdateCounterImpl() :
+                    ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
+                        new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
         }
 
         /**
@@ -1298,12 +1301,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
-            long next = pCntr.next();
-
-            // TODO implement debug on counters.
-            //log.info("TX: next=" + next + ", partId=" + partId + ", cntr=" + pCntr);
-
-            return next;
+            return pCntr.next();
         }
 
                 assert res;
@@ -1332,6 +1330,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public long reservedCounter() {
+            return pCntr.reserved();
+        }
+
+        /** {@inheritDoc} */
         @Override public PartitionUpdateCounter partUpdateCounter() {
             return pCntr;
         }
@@ -1345,8 +1348,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public void updateCounter(long val) {
             try {
                 pCntr.update(val);
-
-                // log.info("TX: set=" + val + ", partId=" + partId + ", cntr=" + pCntr);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Partition counter inconsistency is detected and new counter value will be ignored. " +
@@ -1361,11 +1362,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public boolean updateCounter(long start, long delta) {
-            boolean updated = pCntr.update(start, delta);
-
-            // log.info("TX: update=(" + start + "," + delta + "), partId=" + partId + ", topVer=" + grp.topology().readyTopologyVersion() + ", cntr=" + pCntr + ", updated=" + updated);
-
-            return updated;
+            return pCntr.update(start, delta);
         }
 
         /** {@inheritDoc} */

@@ -23,9 +23,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * FreeList implementation for cache.
  */
-public class CacheFreeListImpl extends DefaultFreeList<CacheDataRow> {
+public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
     /**
      * @param cacheId Cache id.
      * @param name Name.

@@ -21,7 +21,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS
 
 /**
  * Tests an ability to rollback near transactions.
- * TODO add partition/counter consistency check.
  */
 public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
     /** {@inheritDoc} */

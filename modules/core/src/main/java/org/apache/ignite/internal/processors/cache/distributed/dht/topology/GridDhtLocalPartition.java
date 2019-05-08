@@ -360,7 +360,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        // TODO FIXME delegate to update counter.
         return store.isEmpty() && internalSize() == 0;
     }
 
@@ -401,14 +400,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * TODO Get rid of deferred delete queue: https://issues.apache.org/jira/browse/IGNITE-11704
+     * TODO FIXME Get rid of deferred delete queue https://issues.apache.org/jira/browse/IGNITE-11704
      */
     public void cleanupRemoveQueue() {
         if (state() == MOVING) {
-            if (rmvQueue.sizex() >= rmvQueueMaxSize)
-                // TODO FIXME better message.
-                LT.warn(log, "Deferred delete buffer is exceeded " +
-                    "[grpId=" + this.grp.groupId() + ", partId=" + id() + ", size=" + rmvQueueMaxSize + ']');
+            if (rmvQueue.sizex() >= rmvQueueMaxSize) {
+                LT.warn(log, "Deletion queue cleanup for moving partition was delayed until rebalance is finished. " +
+                    "[grpId=" + this.grp.groupId() +
+                    ", partId=" + id() +
+                    ", grpParts=" + this.grp.affinity().partitions() +
+                    ", maxRmvQueueSize=" + rmvQueueMaxSize + ']');
+            }
 
             return;
         }
@@ -420,8 +422,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 removeVersionedEntry(item.cacheId(), item.key(), item.version());
         }
 
-        // Prevent ttl removal for rebalancing partition or partition desync may happen.
-        // TODO FIXME store removed keys until rebalance finish.
         if (!grp.isDrEnabled()) {
             RemovedEntryHolder item = rmvQueue.peekFirst();
 
@@ -988,9 +988,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Returns new update counter for primary node or passed counter for backup node.
      * <p>
-     * Used for atomic caches, during preloading, or isolated updates.
-     *
-     * TODO FIXME merge logic.
+     * Used for non-tx cases.
+     * <p>
+     * Counter generation/update logic is delegated to counter implementation.
      *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
@@ -1001,27 +1001,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         @Nullable Long primaryCntr) {
         long nextCntr;
 
-        if (primaryCntr == null) {// Primary node.
-            if (init) {
-                nextCntr = store.nextUpdateCounter();
-
-                store.updateCounter(nextCntr);
-            }
-            else {
-                nextCntr = store.reserve(1) + 1; // Needed for mixed tx/atomic caches in same group.
-
-                store.updateCounter(nextCntr - 1, 1); // Apply update right now (TODO apply update after writing entry to WAL)
-            }
-        }
+        if (primaryCntr == null) // Primary node.
+            nextCntr = store.nextUpdateCounter();
         else {
             assert !init : "Initial update must generate a counter for partition " + this;
 
             // Backup.
             assert primaryCntr != 0;
 
-            nextCntr = primaryCntr;
-
-            store.updateCounter(primaryCntr - 1, 1);
+            store.updateCounter(nextCntr = primaryCntr);
         }
 
         if (grp.sharedGroup())
@@ -1038,7 +1026,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param primaryCntr Primary counter.
      */
     public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
-        long nextCntr;
+        Long nextCntr;
 
         if (primaryCntr != null)
             nextCntr = primaryCntr;
@@ -1049,6 +1037,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             // Null must never be returned on primary node.
             nextCntr = txCounters.generateNextCounter(cacheId, id());
+
+            assert nextCntr != null : this;
         }
 
         if (grp.sharedGroup())
@@ -1058,19 +1048,23 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return Current update counter.
+     * @return Current update counter (LWM).
      */
     public long updateCounter() {
         return store.updateCounter();
     }
 
     /**
+     * @return Current reserved counter (HWM).
+     */
+    public long reservedCounter() {
+        return store.reservedCounter();
+    }
+
+    /**
      * @param val Update counter value.
      */
     public void updateCounter(long val) {
-//        if (id() == 0 && group().groupId() == CU.cacheId("default"))
-//            log.error("TX: set node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", val=" + val, new Exception());
-
         store.updateCounter(val);
     }
 

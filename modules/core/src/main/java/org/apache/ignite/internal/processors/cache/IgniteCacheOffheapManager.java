@@ -87,7 +87,6 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
-     * TODO FIXME remove
      *
      * @param part Partition.
      * @param cntr Partition counter.
@@ -105,7 +104,6 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * Partition counter provider. May be overridden by plugin-provided subclasses.
-     * TODO FIXME remove
      *
      * @param part Partition ID.
      * @return Last updated counter.
@@ -427,9 +425,22 @@ public interface IgniteCacheOffheapManager {
         boolean isEmpty();
 
         /**
-         * @return Update counter.
+         * Updates size metric for particular cache.
+         *
+         * @param cacheId Cache ID.
+         * @param delta Size delta.
+         */
+        void updateSize(int cacheId, long delta);
+
+        /**
+         * @return Update counter (LWM).
          */
         long updateCounter();
+
+        /**
+         * @return Reserved counter (HWM).
+         */
+        long reservedCounter();
 
         /**
          * @return Update counter or {@code null} if store is not yet created.
@@ -443,7 +454,6 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param val Update counter.
-         * TODO FIXME this is called only during rebalance, need to rename to reflect such fact.
          */
         void updateCounter(long val);
 

@@ -475,7 +475,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /**
      * Creates non-existing partitions belong to given affinity {@code aff}.
-     *  @param affVer Affinity version.
+     *
+     * @param affVer Affinity version.
      * @param aff Affinity assignments.
      * @param updateSeq Update sequence.
      * @param exchFut
@@ -499,7 +500,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
-                    if (existing && locPart.state() == MOVING)
+                    if (existing && locPart.state() == MOVING && !locPart.isEmpty())
                         exchFut.addClearingPartition(grp, p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
@@ -590,7 +591,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             assert !exchFut.context().mergeExchanges();
 
                             affVer = exchFut.initialVersion();
-                            affAssignment = grp.affinity().idealAssignment();
+                            affAssignment = grp.affinity().idealAssignmentRaw();
                         }
 
                         initPartitions(affVer, affAssignment, exchFut, updateSeq);
@@ -1420,7 +1421,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             long updCntr = incomeCntrMap.updateCounter(part.id());
                             long curCntr = part.updateCounter();
 
-                            if (updCntr != 0 || curCntr != 0) {  // Avoid zero counter update to empty partition.
+                            // Avoid zero counter update to empty partition to prevent lazy init.
+                            if (updCntr != 0 || curCntr != 0) {
                                 part.updateCounter(updCntr);
 
                                 if (updCntr > curCntr) {
@@ -1433,7 +1435,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
 
-                // TODO FIXME while stale check after counter updates ?
+                // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11800
                 if (exchangeVer != null) {
                     // Ignore if exchange already finished or new exchange started.
                     if (readyTopVer.compareTo(exchangeVer) > 0 || lastTopChangeVer.compareTo(exchangeVer) > 0) {
@@ -2710,11 +2712,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 long gapStart = gaps.get(j * 2);
                                 long gapStop = gaps.get(j * 2 + 1);
 
-                                if (part.group().persistenceEnabled() && part.group().walEnabled()) {
+                                if (part.group().persistenceEnabled() &&
+                                    part.group().walEnabled() &&
+                                    !part.group().mvccEnabled()) {
                                     RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                         gapStart - 1, gapStop - gapStart + 1);
-
-                                    // log.error("TX: log closegap [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
 
                                     try {
                                         ctx.wal().log(rec);

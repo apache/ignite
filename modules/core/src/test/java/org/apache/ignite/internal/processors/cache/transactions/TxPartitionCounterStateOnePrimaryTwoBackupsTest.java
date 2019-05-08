@@ -43,9 +43,6 @@ import org.junit.Test;
 
 /**
  * Tests scenarios for tx reordering, missed updates and recovery for 2PC.
- *
- * TODO FIXME implement all possible reordering/prepare/commit combinations for 2 and 3 txs count.
- * TODO FIXME scenario descriptions are not very clear.
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartitionCounterStateAbstractTest {
     /** */
@@ -447,7 +444,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     }
 
     /**
-     * Test scenario: TODO FIXME unclear
+     * Test scenario:
      * <p>
      * 1. Prepare all txs.
      * <p>

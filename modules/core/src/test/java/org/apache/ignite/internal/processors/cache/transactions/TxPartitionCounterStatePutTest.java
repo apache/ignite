@@ -27,15 +27,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -140,14 +136,14 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("Isolated update mode can't be used concurrently with others")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutAtomicConcurrentPersistentWithIsolatedMode() throws Exception {
         doTestPutConcurrent(ATOMIC_CACHE, false);
     }
 
     /** */
     @Test
-    @Ignore("Isolated update mode can't be used concurrently with others")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutTxConcurrentPersistentWithIsolatedMode() throws Exception {
         doTestPutConcurrent(TX_CACHE, false);
     }
@@ -178,14 +174,14 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("Isolated update mode can't be used concurrently with others")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutAtomicConcurrentVolatileWithIsolatedMode() throws Exception {
         doTestPutConcurrent(ATOMIC_CACHE_MEMORY, false);
     }
 
     /** */
     @Test
-    @Ignore("Isolated update mode can't be used concurrently with others")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutTxConcurrentVolatileWithIsolatedMode() throws Exception {
         doTestPutConcurrent(TX_CACHE_MEMORY, false);
     }

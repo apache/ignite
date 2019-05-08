@@ -2610,10 +2610,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             metaStateRecord.groupId(), metaStateRecord.partitionId()
                         );
 
-//                        PartitionRecoverState state = new PartitionRecoverState(
-//                            (int)metaStateRecord.state(), metaStateRecord.updateCounter()
-//                        );
-
                         restoreLogicalState.partitionRecoveryStates.put(groupPartitionId, (int)metaStateRecord.state());
 
                         break;
@@ -5154,8 +5150,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     long updateCntr = io.getUpdateCounter(pageAddr);
                     long size = io.getSize(pageAddr);
-
-                    // TODO FIXME print gaps.
 
                     log.info("Partition [grp=" + grp.cacheOrGroupName()
                             + ", id=" + p

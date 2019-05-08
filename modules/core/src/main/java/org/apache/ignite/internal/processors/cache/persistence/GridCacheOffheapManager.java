@@ -66,7 +66,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.DefaultFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -282,11 +282,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PartitionMetaStorage<SimpleDataRow> partStore = store.partStorage();
 
             long updCntr = store.updateCounter();
-            long size = store.fullSize(); // TODO FIXME size is wrong (ahead of counter).
+            long size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
-            // TODO FIXME have to implement byte array input for freelist.insertRow.
-            byte[] rawGaps = store.partUpdateCounter().getBytes();
+            byte[] updCntrsBytes = store.partUpdateCounter().getBytes();
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
@@ -334,15 +333,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         long link = io.getGapsLink(partMetaPageAddr);
 
-                        if (rawGaps == null && link != 0) {
+                        if (updCntrsBytes == null && link != 0) {
                             partStore.removeDataRowByLink(link, grp.statisticsHolderData());
 
                             io.setGapsLink(partMetaPageAddr, (link = 0));
 
                             changed = true;
                         }
-                        else if (rawGaps != null && link == 0) {
-                            SimpleDataRow row = new SimpleDataRow(store.partId(), rawGaps);
+                        else if (updCntrsBytes != null && link == 0) {
+                            SimpleDataRow row = new SimpleDataRow(store.partId(), updCntrsBytes);
 
                             partStore.insertDataRow(row, grp.statisticsHolderData());
 
@@ -350,16 +349,15 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             changed = true;
                         }
-                        else if (rawGaps != null && link != 0) {
+                        else if (updCntrsBytes != null && link != 0) {
                             byte[] prev = partStore.readRow(link);
 
                             assert prev != null : "Read null gaps using link=" + link;
 
-                            if (!Arrays.equals(prev, rawGaps)) {
-                                // TODO FIXME updateRow in-place optimization for same length arrays.
+                            if (!Arrays.equals(prev, updCntrsBytes)) {
                                 partStore.removeDataRowByLink(link, grp.statisticsHolderData());
 
-                                SimpleDataRow row = new SimpleDataRow(store.partId(), rawGaps);
+                                SimpleDataRow row = new SimpleDataRow(store.partId(), updCntrsBytes);
 
                                 partStore.insertDataRow(row, grp.statisticsHolderData());
 
@@ -1079,7 +1077,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            DefaultFreeList freeList = ((GridCacheDataStore)store).freeList;
+            AbstractFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1101,7 +1099,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
 
-            DefaultFreeList freeList = ((GridCacheDataStore)store).freeList;
+            AbstractFreeList freeList = ((GridCacheDataStore)store).freeList;
 
             if (freeList == null)
                 continue;
@@ -1236,9 +1234,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 int pIdx = partMap.partitionIndex(donePart);
 
                 if (log.isDebugEnabled()) {
-                    // TODO FIXME log group.
-                    log.debug("Partition done [partId=" + donePart +
-                        " from=" + partMap.initialUpdateCounterAt(pIdx) + " to=" + partMap.updateCounterAt(pIdx) + ']');
+                    log.debug("Partition done [grpId=" + grp.groupId() +
+                        ", partId=" + donePart +
+                        ", from=" + partMap.initialUpdateCounterAt(pIdx) +
+                        ", to=" + partMap.updateCounterAt(pIdx) + ']');
                 }
 
                 doneParts.add(donePart);
@@ -1247,8 +1246,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
 
             advance();
-
-            // log.info("EEntry: key=" + (int)val.key().value(grp.cacheObjectContext(), false) + ", part=" + val.partition() + ", cntr=" + cntr);
 
             return val;
         }
@@ -1320,7 +1317,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
                                 // Partition will be marked as done for current entry on next iteration.
-                                if (++rebalancedCntrs[idx] == to)
+                                if (++rebalancedCntrs[idx] == to ||
+                                    entry.partitionCounter() == to && grp.hasAtomicCaches())
                                     donePart = entry.partitionId();
 
                                 next = entry;
@@ -1348,7 +1346,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     else if (rec.get2() instanceof RollbackRecord) {
                         RollbackRecord rbRec = (RollbackRecord)rec.get2();
 
-                        if (cacheIds.contains(rbRec.groupId())) {
+                        if (grp.groupId() == rbRec.groupId()) {
                             int idx = partMap.partitionIndex(rbRec.partitionId());
 
                             if (idx < 0 || missingParts.contains(idx))
@@ -1371,8 +1369,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
                 }
 
-                // TODO FIXME introduce isDone() for doneParts.size() == partMap.size()
-                // TODO print info about not done partitions
                 assert entryIt != null || doneParts.size() == partMap.size() :
                     "Reached end of WAL but not all partitions are done";
             }
@@ -1492,7 +1488,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private String name;
 
         /** */
-        private volatile DefaultFreeList<CacheDataRow> freeList;
+        private volatile AbstractFreeList<CacheDataRow> freeList;
 
         /** */
         private PendingEntriesTree pendingTree;
@@ -1960,6 +1956,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public long reservedCounter() {
+            try {
+                CacheDataStore delegate0 = init0(true);
+
+                return delegate0 == null ? 0 : delegate0.reservedCounter();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
         @Override public PartitionUpdateCounter partUpdateCounter() {
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -2043,7 +2051,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (delegate0 == null)
                     throw new IllegalStateException("Should be never called.");
 
-                // TODO throw exception
                 return delegate0.nextUpdateCounter();
             }
             catch (IgniteCheckedException e) {
@@ -2108,6 +2115,121 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             CacheDataStore delegate = init0(false);
 
             delegate.update(cctx, key, val, ver, expireTime, oldRow);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean mvccInitialValue(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            @Nullable CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccVersion mvccVer,
+            MvccVersion newMvccVer)
+            throws IgniteCheckedException
+        {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean mvccApplyHistoryIfAbsent(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            List<GridCacheMvccEntryInfo> hist)
+            throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccApplyHistoryIfAbsent(cctx, key, hist);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean mvccUpdateRowWithPreloadInfo(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            @Nullable CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccVersion mvccVer,
+            MvccVersion newMvccVer,
+            byte mvccTxState,
+            byte newMvccTxState) throws IgniteCheckedException {
+
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccUpdateRowWithPreloadInfo(cctx,
+                key,
+                val,
+                ver,
+                expireTime,
+                mvccVer,
+                newMvccVer,
+                mvccTxState,
+                newMvccTxState);
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccUpdateResult mvccUpdate(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            MvccSnapshot mvccVer,
+            CacheEntryPredicate filter,
+            EntryProcessor entryProc,
+            Object[] invokeArgs,
+            boolean primary,
+            boolean needHistory,
+            boolean noCreate,
+            boolean needOldVal,
+            boolean retVal,
+            boolean keepBinary) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccUpdate(cctx, key, val, ver, expireTime, mvccVer, filter, entryProc, invokeArgs, primary,
+                needHistory, noCreate, needOldVal, retVal, keepBinary);
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccUpdateResult mvccRemove(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            MvccSnapshot mvccVer,
+            CacheEntryPredicate filter,
+            boolean primary,
+            boolean needHistory,
+            boolean needOldVal,
+            boolean retVal) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccRemove(cctx, key, mvccVer,filter,  primary, needHistory, needOldVal, retVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccUpdateResult mvccLock(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            return delegate.mvccLock(cctx, key, mvccSnapshot);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccRemoveAll(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            delegate.mvccRemoveAll(cctx, key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccApplyUpdate(GridCacheContext cctx, KeyCacheObject key, CacheObject val, GridCacheVersion ver,
+            long expireTime, MvccVersion mvccVer) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            delegate.mvccApplyUpdate(cctx, key, val, ver, expireTime, mvccVer);
         }
 
         /** {@inheritDoc} */

@@ -109,7 +109,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     public static final int DURATION = 60_000;
 
     /** */
-    private static final String CACHE_NAME = "test";
+    protected static final String CACHE_NAME = "test";
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

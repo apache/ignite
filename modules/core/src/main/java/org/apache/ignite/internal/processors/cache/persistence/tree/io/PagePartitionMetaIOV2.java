@@ -115,7 +115,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
         sb.a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr));
         sb.a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")");
         sb.a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr));
-        sb.a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr));
+        sb.a(",\n\tcntrUpdDataPageId=").a(getGapsLink(pageAddr));
         sb.a("\n]");
     }
 

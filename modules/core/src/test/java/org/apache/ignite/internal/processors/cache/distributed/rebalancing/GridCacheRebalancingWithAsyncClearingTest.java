@@ -55,12 +55,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(
-                    new DataStorageConfiguration()
-                            .setWalMode(WALMode.LOG_ONLY)
-                            .setDefaultDataRegionConfiguration(
-                                    new DataRegionConfiguration()
-                                            .setPersistenceEnabled(true)
-                                            .setMaxSize(100L * 1024 * 1024))
+            new DataStorageConfiguration()
+                .setWalMode(WALMode.LOG_ONLY)
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(100L * 1024 * 1024))
         );
 
         cfg.setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
@@ -229,10 +229,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
 
         // Check no data loss.
-        for (int k = 1; k <= keysCount; k++) {
-            Integer value = (Integer) ignite.cache(CACHE_NAME).get(k);
-            Assert.assertNotNull("Value for " + k + " is null", value);
-            Assert.assertEquals("Check failed for " + k + " = " + value, k, (int) value);
+        for (int k = 1; k <= keysCnt; k++) {
+            Integer val = (Integer) ignite.cache(CACHE_NAME).get(k);
+
+            Assert.assertNotNull("Value for " + k + " is null", val);
+
+            Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }
     }
 }

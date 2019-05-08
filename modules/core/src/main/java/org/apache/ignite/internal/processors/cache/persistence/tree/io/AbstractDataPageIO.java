@@ -996,12 +996,7 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
             int rowOff = rowSize - written - payloadSize;
 
-            try {
-                writeFragmentData(row, buf, rowOff, payloadSize);
-            }
-            catch (Throwable e) {
-                e.printStackTrace();
-            }
+            writeFragmentData(row, buf, rowOff, payloadSize);
         }
         else {
             PageUtils.putShort(pageAddr, dataOff, (short)(payloadSize | FRAGMENTED_FLAG));
@@ -1080,15 +1075,6 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
         assert getDirectCount(pageAddr) == directCnt + 1;
 
         return directCnt; // Previous directCnt will be our itemId.
-    }
-
-    /**
-     * @return {@code True} if a page should be excluded from using free list intermediate buckets and use only empty pages,
-     * either borrowed from reuse list or newly allocated.
-     * This value could not be changed between I/O versions.
-     */
-    public boolean useOnlyEmptyPages() {
-        return false;
     }
 
     /**

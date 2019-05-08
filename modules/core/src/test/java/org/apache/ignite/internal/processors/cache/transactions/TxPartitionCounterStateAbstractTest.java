@@ -29,7 +29,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
@@ -138,19 +137,25 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
                 setInitialSize(100 * MB).setMaxSize(100 * MB)));
 
-        if (!client) {
-            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-            ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setBackups(backups);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-            ccfg.setOnheapCacheEnabled(false);
-            ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
-
-            cfg.setCacheConfiguration(ccfg);
-        }
+        if (!client)
+            cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
 
         return cfg;
+    }
+
+    /**
+     * @param name Name.
+     */
+    protected CacheConfiguration cacheConfiguration(String name) {
+        CacheConfiguration ccfg = new CacheConfiguration(name);
+
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setBackups(backups);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setOnheapCacheEnabled(false);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
+
+        return ccfg;
     }
 
     /** {@inheritDoc} */
@@ -335,10 +340,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             }
             catch (Throwable ignored) {
                 // No-op.
-                System.out.println();
             }
-
-            // TODO FIXME expect rollback for some scenarios.
         }, sizes.length, "tx-thread");
 
         try {
@@ -790,6 +792,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param primary Primary.
          */
         protected void onAllPrimaryPrepared(IgniteEx primary) {
@@ -797,6 +801,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param backup Backup.
          * @param tx Tx.
          * @param idx Index.
@@ -808,7 +814,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
-         * TODO FIXME callbacks are called only for defined order: add to javadoc!!
+         * Note: callbacks are called only if node presents in defined order.
          *
          * @param primary Primary.
          * @param idx Index.
@@ -820,6 +826,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param backup Backup node.
          * @param idx Index.
          */
@@ -831,6 +839,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param primary Primary node.
          */
         protected void onAllPrimaryCommitted(IgniteEx primary) {
@@ -838,6 +848,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
+         * Note: callbacks are called only if node presents in defined order.
+         *
          * @param backup Backup node.
          */
         protected void onAllBackupCommitted(IgniteEx backup) {
@@ -845,7 +857,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         }
 
         /**
-         *
          * @param primary Primary node.
          * @param tx Primary tx.
          */
