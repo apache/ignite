@@ -254,6 +254,9 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void runCacheStopInMidTx(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig) throws Exception {
+        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
+            return;
+
         CountDownLatch destroyLatch = new CountDownLatch(1);
 
         CountDownLatch putLatch = new CountDownLatch(1);
