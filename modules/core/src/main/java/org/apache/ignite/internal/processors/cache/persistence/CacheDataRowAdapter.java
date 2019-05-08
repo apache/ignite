@@ -124,6 +124,59 @@ public class CacheDataRowAdapter implements CacheDataRow {
         CacheObjectContext coctx = grp != null ?  grp.cacheObjectContext() : null;
 
         boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
+        int grpId = grp != null ? grp.groupId() : 0;
+        IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
+
+        IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem,
+            grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+
+        if (incomplete != null) {
+            // Initialize the remaining part of the large row from other pages.
+            long nextLink = incomplete.getNextLink();
+
+            if (nextLink != 0L) {
+                doInitFromLink(
+                    nextLink,
+                    sharedCtx,
+                    coctx,
+                    pageMem,
+                    grpId,
+                    statHolder,
+                    readCacheId,
+                    rowData,
+                    incomplete,
+                    skipVer
+                );
+            }
+        }
+    }
+
+    /**
+     * @param link Link.
+     * @param sharedCtx Cache shared context.
+     * @param coctx Cache object context.
+     * @param pageMem Page memory.
+     * @param grpId Cache group Id.
+     * @param readCacheId {@code true} If need to read cache ID.
+     * @param rowData Required row data.
+     * @param incomplete Incomplete object.
+     * @param skipVer Whether version read should be skipped.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doInitFromLink(
+        long link,
+        GridCacheSharedContext<?, ?> sharedCtx,
+        CacheObjectContext coctx,
+        PageMemory pageMem,
+        int grpId,
+        IoStatisticsHolder statHolder,
+        boolean readCacheId,
+        RowData rowData,
+        @Nullable IncompleteObject<?> incomplete,
+        boolean skipVer
+    ) throws IgniteCheckedException {
+        assert link != 0 : "link";
+        assert key == null : "key";
 
         long nextLink = link;
         IncompleteObject<?> incomplete = null;

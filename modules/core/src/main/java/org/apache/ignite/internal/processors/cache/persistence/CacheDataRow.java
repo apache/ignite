@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -54,4 +57,9 @@ public interface CacheDataRow extends CacheSearchRow, Storable {
      * @param key Key.
      */
     public void key(KeyCacheObject key);
+
+    /** {@inheritDoc} */
+    @Override public default IOVersions ioVersions() {
+        return DataPageIO.VERSIONS;
+    }
 }

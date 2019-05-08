@@ -56,12 +56,11 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
@@ -629,17 +628,12 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** */
-    public class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
+    public class FreeListImpl extends AbstractFreeList<Storable> {
         /** {@inheritDoc} */
         FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
             ReuseList reuseList,
             IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
             super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IOVersions<? extends AbstractDataPageIO<MetastorageDataRow>> ioVersions() {
-            return SimpleDataPageIO.VERSIONS;
         }
 
         /** {@inheritDoc} */
@@ -671,7 +665,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                     assert pageAddr != 0L : nextLink;
 
                     try {
-                        SimpleDataPageIO io = (SimpleDataPageIO)ioVersions().forPage(pageAddr);
+                        SimpleDataPageIO io = SimpleDataPageIO.VERSIONS.forPage(pageAddr);
 
                         DataPagePayload data = io.readPayload(pageAddr, itemId(nextLink), pageMem.pageSize());
 

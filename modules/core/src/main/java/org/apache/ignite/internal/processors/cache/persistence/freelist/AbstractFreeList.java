@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -44,7 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  */
-public abstract class AbstractFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
+public class AbstractFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
     /** */
     private static final int BUCKETS = 256; // Must be power of 2.
 
@@ -478,23 +477,22 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 long pageId = 0L;
 
-                if (freeSpace == MIN_SIZE_FOR_DATA_PAGE)
-                    pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions());
+            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
+                pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
                 boolean reuseBucket = false;
 
-                // TODO: properly handle reuse bucket.
-                if (pageId == 0L) {
-                    for (int b = bucket(freeSpace, false) + 1; b < BUCKETS - 1; b++) {
-                        pageId = takeEmptyPage(b, ioVersions());
+            PageIO initIo = null;
 
                         if (pageId != 0L) {
                             reuseBucket = isReuseBucket(b);
 
-                            break;
-                        }
-                    }
-                }
+                initIo = row.ioVersions().latest();
+            }
+            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
+                pageId = initReusedPage(row, pageId, row.partition(), statHolder);
+            else
+                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
                 boolean allocated = pageId == 0L;
 
@@ -503,11 +501,28 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 else
                     pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
-                AbstractDataPageIO<T> init = reuseBucket || allocated ? ioVersions().latest() : null;
+    /**
+     * @param reusedPageId Reused page id.
+     * @param partId Partition id.
+     * @param statHolder Statistics holder to track IO operations.
+     * @return Prepared page id.
+     *
+     * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
+     */
+    private long initReusedPage(T row, long reusedPageId, int partId,
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        long reusedPage = acquirePage(reusedPageId, statHolder);
+        try {
+            long reusedPageAddr = writeLock(reusedPageId, reusedPage);
 
                 written = write(pageId, writeRow, init, row, written, FAIL_I);
 
-                assert written != FAIL_I; // We can't fail here.
+            try {
+                return initReusedPage(reusedPageId, reusedPage, reusedPageAddr,
+                    partId, PageIdAllocator.FLAG_DATA, row.ioVersions().latest());
+            }
+            finally {
+                writeUnlock(reusedPageId, reusedPage, reusedPageAddr, true);
             }
             while (written != COMPLETE);
         }
@@ -638,11 +653,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throw new CorruptedFreeListException("Failed to count recycled pages", t);
         }
     }
-
-    /**
-     * @return IOVersions.
-     */
-    public abstract IOVersions<? extends AbstractDataPageIO<T>> ioVersions();
 
     /** {@inheritDoc} */
     @Override public String toString() {

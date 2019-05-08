@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * Data pages IO for Metastorage.
  */
-public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
+public class SimpleDataPageIO extends AbstractDataPageIO<SimpleDataRow> {
     /** */
     public static final IOVersions<SimpleDataPageIO> VERSIONS = new IOVersions<>(
         new SimpleDataPageIO(1)
@@ -41,7 +41,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
 
     /** {@inheritDoc} */
     @Override protected void writeFragmentData(
-        final MetastorageDataRow row,
+        final SimpleDataRow row,
         final ByteBuffer buf,
         final int rowOff,
         final int payloadSize
@@ -64,7 +64,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
     }
 
     /** */
-    private int writeSizeFragment(final MetastorageDataRow row, final ByteBuffer buf, final int rowOff,
+    private int writeSizeFragment(final SimpleDataRow row, final ByteBuffer buf, final int rowOff,
         final int payloadSize) {
         final int size = 4;
 
@@ -92,7 +92,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
         long pageAddr,
         int dataOff,
         int payloadSize,
-        MetastorageDataRow row,
+        SimpleDataRow row,
         boolean newRow
     ) throws IgniteCheckedException {
         long addr = pageAddr + dataOff;
