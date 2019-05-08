@@ -745,8 +745,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
                     // The only way to know is passing flag directly with handshake response.
-                    if (!res.isDiscoveryDataPacketCompression())
-                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
+                    if (!res.isDiscoveryDataPacketCompression() && discoveryData.isJoiningDataZipped())
+                        discoveryData.unzipData(log);
                 }
                 else
                     msg = new TcpDiscoveryClientReconnectMessage(getLocalNodeId(), rmtNodeId, lastMsgId);

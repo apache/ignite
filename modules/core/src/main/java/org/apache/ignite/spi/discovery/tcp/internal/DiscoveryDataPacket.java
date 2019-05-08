@@ -112,13 +112,8 @@ public class DiscoveryDataPacket implements Serializable {
     /**
      * @return {@code true} if joining node data was transferred via network in zipped format.
      */
-    public boolean isJoiningDataZipped(){
-        for (Map.Entry<Integer, byte[]> entry : joiningNodeData.entrySet()) {
-            if (isZipped(entry.getValue()))
-                return true;
-        }
-
-        return false;
+    public boolean isJoiningDataZipped() {
+        return !joiningNodeData.isEmpty() && isZipped(joiningNodeData.values().iterator().next());
     }
 
     /**
