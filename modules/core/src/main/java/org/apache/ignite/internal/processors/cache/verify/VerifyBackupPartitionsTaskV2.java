@@ -523,14 +523,14 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                         return desc.cacheType().userCache() && GridCacheUtils.isPersistentCache(cc, dsCfg);
 
                     case ALL:
-                        break;
+                        return true;
 
                     default:
                         assert false : "Illegal cache filter: " + vdta.getCacheFilterEnum();
                 }
             }
 
-            return true;
+            return desc.cacheType().userCache() || !F.isEmpty(arg.getCaches());
         }
 
         /**

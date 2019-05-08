@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
@@ -95,6 +97,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -605,7 +608,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         awaitPartitionMapExchange();
 
-        checkFutures();
+        checkUserFutures();
     }
 
     /**
@@ -793,7 +796,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
                 assertEquals(tx0.xid(), info.getXid());
 
             assertEquals(1, map.size());
-        }, "--tx", "--kill");
+        }, "--tx", "--xid", tx0.xid().toString(), "--kill");
 
         tx0.finishFuture().get();
 
@@ -805,7 +808,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         nearFinFut.get();
 
-        checkFutures();
+        checkUserFutures();
     }
 
     /**
@@ -855,6 +858,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
             }
         });
 
+        Set<IgniteUuid> xidSet = new GridConcurrentHashSet<>();
+
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 int id = idx.getAndIncrement();
@@ -862,6 +867,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
                 Ignite client = clients[id];
 
                 try (Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 0, 1)) {
+                    xidSet.add(tx.xid());
+
                     IgniteCache<Long, Long> cache = client.cache(DEFAULT_CACHE_NAME);
 
                     if (id != 0)
@@ -950,8 +957,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
                 VisorTxTaskResult res = map.get(grid.localNode());
 
+                List<VisorTxInfo> infos = res.getInfos()
+                    .stream()
+                    .filter(info -> xidSet.contains(info.getNearXid()))
+                    .collect(Collectors.toList());
+
                 // Validate queue length on backups.
-                assertEquals(clients.length, res.getInfos().size());
+                assertEquals(clients.length, infos.size());
             }
         }, "--tx");
 
@@ -981,7 +993,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         assertEquals(tc - 1, cur.longValue());
 
-        checkFutures();
+        checkUserFutures();
     }
 
     /**
@@ -1310,21 +1322,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found 196 partitions",
+            "idle_verify check has finished, found 96 partitions",
             null,
-            "--cache", "idle_verify", "--dump", ".*", "--exclude-caches", "wrong.*"
+            "--cache", "idle_verify", "--dump", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 32 partitions",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*", "--cache-filter", "ALL"
+            "--cache", "idle_verify", "--dump", "shared.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, found 160 partitions",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "ALL"
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
@@ -1334,9 +1346,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "There are no caches matching given filter options.",
+            "idle_verify check has finished, found 160 partitions",
             null,
-            "--cache", "idle_verify", "--dump", "shared.*,wrong.*", "--cache-filter", "SYSTEM"
+            "--cache", "idle_verify", "--dump", "shared.*,wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
@@ -1354,13 +1366,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
             true,
             "idle_verify check has finished, no conflicts have been found.",
             null,
-            "--cache", "idle_verify", ".*", "--exclude-caches", "wrong-.*", "--cache-filter", "DEFAULT"
+            "--cache", "idle_verify", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
             "idle_verify check has finished, no conflicts have been found.",
             null,
-            "--cache", "idle_verify", "--dump", ".*", "--cache-filter", "PERSISTENT"
+            "--cache", "idle_verify", "--dump", "--cache-filter", "PERSISTENT"
         );
     }
 
@@ -1506,7 +1518,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         injectTestSystemOut();
 
-        corruptingAndCheckDefaultCache(ignite, "ALL");
+        corruptingAndCheckDefaultCache(ignite, "USER");
     }
 
     /**
@@ -1790,6 +1802,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
+
+            U.log(log, dumpWithConflicts);
 
             assertContains(log, dumpWithConflicts, "found 4 conflict partitions: [counterConflicts=2, " +
                 "hashConflicts=2]");
