@@ -15,44 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache.persistence.freelist.io;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 
 /**
- * Simple interface for data, store in some RowStore.
+ * Used for storing binary data as secondary data page IO for cache free list.
  */
-public interface Storable {
-    /**
-     * @param link Link for this row.
-     */
-    public void link(long link);
+public class CacheFreeListSecondaryDataPageIO extends SimpleDataPageIO {
+    /** */
+    public static final IOVersions<CacheFreeListSecondaryDataPageIO> VERSIONS = new IOVersions<>(
+        new CacheFreeListSecondaryDataPageIO(1)
+    );
 
     /**
-     * @return Link for this row.
+     * @param ver Version.
      */
-    public long link();
+    public CacheFreeListSecondaryDataPageIO(int ver) {
+        super(T_DATA_CACHE_SECONDARY, ver);
+    }
 
-    /**
-     * @return Partition.
-     */
-    public int partition();
-
-    /**
-     * @return Row size in page.
-     * @throws IgniteCheckedException If failed.
-     */
-    public int size() throws IgniteCheckedException;
-
-    /**
-     * @return Row header size in page. Header is indivisible part of row
-     * which is entirely available on the very first page followed by the row link.
-     */
-    public int headerSize();
-
-    /**
-     * @return I/O for handling this storable.
-     */
-    public IOVersions ioVersions();
+    /** {@inheritDoc} */
+    @Override public boolean useEmptyPages() {
+        return true;
+    }
 }

@@ -15,44 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.CacheFreeListSecondaryDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /**
- * Simple interface for data, store in some RowStore.
  */
-public interface Storable {
+public class SecondaryCacheDataRow extends SimpleDataRow {
     /**
-     * @param link Link for this row.
+     * @param link Link.
+     * @param part Partition.
+     * @param val Value.
      */
-    public void link(long link);
+    public SecondaryCacheDataRow(long link, int part, byte[] val) {
+        super(link, part, val);
+    }
 
     /**
-     * @return Link for this row.
+     * @param part Partition.
+     * @param val Value.
      */
-    public long link();
+    public SecondaryCacheDataRow(int part, byte[] val) {
+        super(part, val);
+    }
 
-    /**
-     * @return Partition.
-     */
-    public int partition();
-
-    /**
-     * @return Row size in page.
-     * @throws IgniteCheckedException If failed.
-     */
-    public int size() throws IgniteCheckedException;
-
-    /**
-     * @return Row header size in page. Header is indivisible part of row
-     * which is entirely available on the very first page followed by the row link.
-     */
-    public int headerSize();
-
-    /**
-     * @return I/O for handling this storable.
-     */
-    public IOVersions ioVersions();
+    /** {@inheritDoc} */
+    @Override public IOVersions ioVersions() {
+        return CacheFreeListSecondaryDataPageIO.VERSIONS;
+    }
 }

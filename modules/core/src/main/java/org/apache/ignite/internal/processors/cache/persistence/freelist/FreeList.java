@@ -23,12 +23,19 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
  */
-public interface FreeList<T extends Storable> {
+public interface FreeList {
     /**
-     * @param row Row.
+     * Read row data by link as byte array.
+     * @param link Link.
      * @throws IgniteCheckedException If failed.
      */
-    public void insertDataRow(T row) throws IgniteCheckedException;
+    public byte[] readRow(long link) throws IgniteCheckedException;
+
+    /**
+     * @param row Row.
+     * @param statHolder Stat holder.
+     */
+    public void insertDataRow(Storable row, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
      * @param link Row link.
@@ -36,7 +43,7 @@ public interface FreeList<T extends Storable> {
      * @return {@code True} if was able to update row.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean updateDataRow(long link, T row) throws IgniteCheckedException;
+    public boolean updateDataRow(long link, Storable row, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
      * @param link Row link.

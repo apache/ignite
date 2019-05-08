@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -42,34 +42,45 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.DefaultFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.SecondaryCacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
  */
 public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
-
-    /** */
     private static final long MB = 1024L * 1024L;
 
     /** */
     private PageMemory pageMem;
 
+    /** */
+    private LongAdder cacheRowCntr = new LongAdder();
+
+    /** */
+    private LongAdder secondaryRowCntr = new LongAdder();
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
+        log.info("Created rows: cacheDataRow=" + cacheRowCntr.sum() + ", secondaryDataRow=" + secondaryRowCntr.sum());
+
+        cacheRowCntr.reset();
+        secondaryRowCntr.reset();
 
         if (pageMem != null)
             pageMem.stop(true);
@@ -80,6 +91,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_1024() throws Exception {
         checkInsertDeleteSingleThreaded(1024);
     }
@@ -87,6 +99,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_2048() throws Exception {
         checkInsertDeleteSingleThreaded(2048);
     }
@@ -94,6 +107,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_4096() throws Exception {
         checkInsertDeleteSingleThreaded(4096);
     }
@@ -101,6 +115,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_8192() throws Exception {
         checkInsertDeleteSingleThreaded(8192);
     }
@@ -108,6 +123,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteSingleThreaded_16384() throws Exception {
         checkInsertDeleteSingleThreaded(16384);
     }
@@ -115,6 +131,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_1024() throws Exception {
         checkInsertDeleteMultiThreaded(1024);
     }
@@ -122,6 +139,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_2048() throws Exception {
         checkInsertDeleteMultiThreaded(2048);
     }
@@ -129,6 +147,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_4096() throws Exception {
         checkInsertDeleteMultiThreaded(4096);
     }
@@ -136,6 +155,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_8192() throws Exception {
         checkInsertDeleteMultiThreaded(8192);
     }
@@ -143,19 +163,9 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testInsertDeleteMultiThreaded_16384() throws Exception {
         checkInsertDeleteMultiThreaded(16384);
-    }
-
-    @Test
-    public void testInsertDeleteByteArrayStorable() throws Exception {
-        final FreeList list = createFreeList(4096);
-
-        SimpleDataRow row = new SimpleDataRow(0, new byte[256]);
-
-        list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
-
-        assertTrue(row.link() != 0);
     }
 
     /**
@@ -165,88 +175,81 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     protected void checkInsertDeleteMultiThreaded(final int pageSize) throws Exception {
         final FreeList list = createFreeList(pageSize);
 
-        Random rnd = new Random();
-
-        final ConcurrentMap<Long, TestDataRow> stored = new ConcurrentHashMap<>();
+        final ConcurrentMap<Long, Storable> stored = new ConcurrentHashMap<>();
 
         for (int i = 0; i < 100; i++) {
-            int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
-            int valSize = rnd.nextInt(pageSize * 5 / 2) + 10;
+            Storable row = createStorable(pageSize);
 
-            TestDataRow row = new TestDataRow(keySize, valSize);
-
-            list.insertDataRow(row);
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
             assertTrue(row.link() != 0L);
 
-            TestDataRow old = stored.put(row.link(), row);
+            Storable old = stored.put(row.link(), row);
 
             assertNull(old);
         }
 
         final AtomicBoolean grow = new AtomicBoolean(true);
 
-        GridTestUtils.runMultiThreaded(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                Random rnd = ThreadLocalRandom.current();
+        GridTestUtils.runMultiThreaded(() -> {
+            Random rnd = ThreadLocalRandom.current();
 
-                for (int i = 0; i < 200_000; i++) {
-                    boolean grow0 = grow.get();
+            for (int i = 0; i < 200_000; i++) {
+                boolean grow0 = grow.get();
 
-                    if (grow0) {
-                        if (stored.size() > 20_000) {
-                            if (grow.compareAndSet(true, false))
-                                info("Shrink... [" + stored.size() + ']');
+                if (grow0) {
+                    if (stored.size() > 20_000) {
+                        if (grow.compareAndSet(true, false))
+                            info("Shrink... [" + stored.size() + ']');
 
-                            grow0 = false;
-                        }
+                        grow0 = false;
                     }
-                    else {
-                        if (stored.size() < 1_000) {
-                            if (grow.compareAndSet(false, true))
-                                info("Grow... [" + stored.size() + ']');
+                }
+                else {
+                    if (stored.size() < 1_000) {
+                        if (grow.compareAndSet(false, true))
+                            info("Grow... [" + stored.size() + ']');
 
-                            grow0 = true;
-                        }
+                        grow0 = true;
                     }
+                }
 
-                    boolean insert = rnd.nextInt(100) < 70 == grow0;
+                boolean insert = rnd.nextInt(100) < 70 == grow0;
 
-                    if (insert) {
-                        int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
-                        int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
+                if (insert) {
+                    int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
+                    int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
 
-                        TestDataRow row = new TestDataRow(keySize, valSize);
+                    TestDataRow row = new TestDataRow(keySize, valSize);
 
-                        list.insertDataRow(row);
+                    list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
-                        assertTrue(row.link() != 0L);
+                    assertTrue(row.link() != 0L);
 
-                        TestDataRow old = stored.put(row.link(), row);
+                    Storable old = stored.put(row.link(), row);
 
-                        assertNull(old);
-                    }
-                    else {
-                        while (true) {
-                            Iterator<TestDataRow> it = stored.values().iterator();
+                    assertNull(old);
+                }
+                else {
+                    while (true) {
+                        Iterator<Storable> it = stored.values().iterator();
 
-                            if (it.hasNext()) {
-                                TestDataRow row = it.next();
+                        if (it.hasNext()) {
+                            Storable row = it.next();
 
-                                TestDataRow rmvd = stored.remove(row.link);
+                            Storable rmvd = stored.remove(row.link());
 
-                                if (rmvd != null) {
-                                    list.removeDataRowByLink(row.link);
+                            if (rmvd != null) {
+                                list.removeDataRowByLink(row.link(), IoStatisticsHolderNoOp.INSTANCE);
 
-                                    break;
-                                }
+                                break;
                             }
                         }
                     }
                 }
-
-                return null;
             }
+
+            return null;
         }, 8, "runner");
     }
 
@@ -258,19 +261,16 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
         Random rnd = new Random();
 
-        Map<Long, TestDataRow> stored = new HashMap<>();
+        Map<Long, Storable> stored = new HashMap<>();
 
         for (int i = 0; i < 100; i++) {
-            int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
-            int valSize = rnd.nextInt(pageSize * 5 / 2) + 10;
+            Storable row = createStorable(pageSize);
 
-            TestDataRow row = new TestDataRow(keySize, valSize);
-
-            list.insertDataRow(row);
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
             assertTrue(row.link() != 0L);
 
-            TestDataRow old = stored.put(row.link(), row);
+            Storable old = stored.put(row.link(), row);
 
             assertNull(old);
         }
@@ -296,30 +296,27 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
             boolean insert = rnd.nextInt(100) < 70 == grow;
 
             if (insert) {
-                int keySize = rnd.nextInt(pageSize * 3 / 2) + 10;
-                int valSize = rnd.nextInt(pageSize * 3 / 2) + 10;
+                Storable row = createStorable(pageSize);
 
-                TestDataRow row = new TestDataRow(keySize, valSize);
-
-                list.insertDataRow(row);
+                list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
                 assertTrue(row.link() != 0L);
 
-                TestDataRow old = stored.put(row.link(), row);
+                Storable old = stored.put(row.link(), row);
 
                 assertNull(old);
             }
             else {
-                Iterator<TestDataRow> it = stored.values().iterator();
+                Iterator<Storable> it = stored.values().iterator();
 
                 if (it.hasNext()) {
-                    TestDataRow row = it.next();
+                    Storable row = it.next();
 
-                    TestDataRow rmvd = stored.remove(row.link);
+                    Storable rmvd = stored.remove(row.link());
 
                     assertTrue(rmvd == row);
 
-                    list.removeDataRowByLink(row.link);
+                    list.removeDataRowByLink(row.link(), IoStatisticsHolderNoOp.INSTANCE);
                 }
             }
         }
@@ -360,13 +357,36 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 
-        return new CacheFreeListImpl(1, "freelist", regionMetrics, dataRegion, null, null, metaPageId, true);
+        return new DefaultFreeList(1, "freelist", regionMetrics, dataRegion, null, null, metaPageId, true);
+    }
+
+    /**
+     * @param pageSize Page size.
+     */
+    protected Storable createStorable(int pageSize) {
+        ThreadLocalRandom cur = ThreadLocalRandom.current();
+
+        int t = cur.nextInt(10);
+
+        if (t < 7) {
+            cacheRowCntr.increment();
+
+            int keySize = cur.nextInt(pageSize * 3 / 2) + 10;
+            int valSize = cur.nextInt(pageSize * 5 / 2) + 10;
+
+            return new CacheFreeListImplSelfTest.TestDataRow(keySize, valSize);
+        }
+        else {
+            secondaryRowCntr.increment();
+
+            return new SecondaryCacheDataRow(0, new byte[ThreadLocalRandom.current().nextInt(pageSize * 3 / 2) + pageSize / 6]);
+        }
     }
 
     /**
      *
      */
-    private static class TestDataRow implements CacheDataRow {
+    static class TestDataRow implements CacheDataRow {
         /** */
         private long link;
 
@@ -383,7 +403,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
          * @param keySize Key size.
          * @param valSize Value size.
          */
-        private TestDataRow(int keySize, int valSize) {
+        TestDataRow(int keySize, int valSize) {
             key = new TestCacheObject(keySize);
             val = new TestCacheObject(valSize);
             ver = new GridCacheVersion(keySize, valSize, 1);
@@ -443,7 +463,7 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestCacheObject implements KeyCacheObject {
+    static class TestCacheObject implements KeyCacheObject {
         /** */
         private byte[] data;
 
