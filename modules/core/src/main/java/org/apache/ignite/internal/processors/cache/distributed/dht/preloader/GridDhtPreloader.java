@@ -233,9 +233,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchId);
 
-                assignments.cancelled(true);
-
-                return assignments;
+                return null;
             }
 
             // If partition belongs to local node.

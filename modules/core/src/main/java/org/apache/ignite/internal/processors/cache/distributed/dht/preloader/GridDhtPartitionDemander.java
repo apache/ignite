@@ -339,9 +339,9 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
-            if (assignments.cancelled()) { // Pending exchange.
+            if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
-                    log.debug("Rebalancing skipped due to cancelled assignments.");
+                    log.debug("Rebalancing skipped due to pending exchange.");
 
                 fut.onDone(false);
 

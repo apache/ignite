@@ -26,6 +26,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 
@@ -35,12 +37,14 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
  *
  */
 public class GridDhtRebalanceManager {
-    /** Context. */
+    /** Shared context. */
+    @GridToStringExclude
     protected GridCacheSharedContext cctx;
 
     /**
-     * Latest started rebalance topology version but possibly not finished yet. Value {@code NONE} means that previous
-     * rebalance is undefined and the new one should be initiated.
+     * Latest started rebalance topology version but possibly not finished yet.
+     *
+     * Value {@code NONE} means that previous rebalance is undefined and the new one should be initiated.
      *
      * Should not be used to determine latest rebalanced topology.
      */
@@ -93,10 +97,12 @@ public class GridDhtRebalanceManager {
 
         AffinityTopologyVersion topVer = exchId.topologyVersion();
 
-        if (rebTopVer.equals(NONE)) {
+        if (cctx.exchange().hasPendingExchange())
+            U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
+                "[top=" + topVer + ", evt=" + exchId.discoveryEventName() +
+                ", node=" + exchId.nodeId() + ']');
+        else if (rebTopVer.equals(NONE)) {
             Runnable r = null;
-
-            boolean assignsCancelled = false;
 
             IgniteCacheSnapshotManager snp = cctx.snapshot();
 
@@ -116,9 +122,6 @@ public class GridDhtRebalanceManager {
                 if ((delay == 0 || forcePreload) && !disableRebalance)
                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                if (assigns != null)
-                    assignsCancelled |= assigns.cancelled();
-
                 Runnable cur = grp.preloader().addAssignments(assigns,
                     forcePreload,
                     cnt,
@@ -132,7 +135,7 @@ public class GridDhtRebalanceManager {
             if (forcedRebFut != null)
                 forcedRebFut.markInitialized();
 
-            if (assignsCancelled) {
+            if (cctx.exchange().hasPendingExchange()) {
                 U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
                     "[top=" + topVer + ", evt=" + exchId.discoveryEventName() +
                     ", node=" + exchId.nodeId() + ']');
@@ -153,11 +156,18 @@ public class GridDhtRebalanceManager {
                     ", node=" + exchId.nodeId() + ']');
         }
         else
-            U.log(log, "Skipping rebalancing (no affinity changes) " +
+            U.log(log, "Skipping rebalancing " +
                 "[top=" + topVer +
                 ", rebTopVer=" + rebTopVer +
                 ", evt=" + exchId.discoveryEventName() +
                 ", evtNode=" + exchId.nodeId() +
                 ", client=" + cctx.kernalContext().clientNode() + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtRebalanceManager.class, this,
+            "topVer", rebTopVer,
+            "super", super.toString());
     }
 }
