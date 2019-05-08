@@ -91,12 +91,9 @@ public class GridDhtRebalanceManager {
         if (exchFut == null)
             rebTopVer = NONE;
 
-        AffinityTopologyVersion resVer = null;
+        AffinityTopologyVersion topVer = exchId.topologyVersion();
 
         if (rebTopVer.equals(NONE)) {
-            if (resVer == null)
-                resVer = exchId.topologyVersion();
-
             Runnable r = null;
 
             boolean assignsCancelled = false;
@@ -137,27 +134,27 @@ public class GridDhtRebalanceManager {
 
             if (assignsCancelled) {
                 U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
-                    "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                    "[top=" + topVer + ", evt=" + exchId.discoveryEventName() +
                     ", node=" + exchId.nodeId() + ']');
             }
             else if (r != null) {
-                U.log(log, "Rebalancing scheduled [top=" + resVer + ", force=" + (exchFut == null) +
+                U.log(log, "Rebalancing scheduled [top=" + topVer + ", force=" + (exchFut == null) +
                     ", evt=" + exchId.discoveryEventName() +
                     ", node=" + exchId.nodeId() + ']');
 
-                rebTopVer = resVer;
+                rebTopVer = topVer;
 
                 r.run();
             }
             else
                 U.log(log, "Skipping rebalancing (nothing scheduled) " +
-                    "[top=" + resVer + ", force=" + (exchFut == null) +
+                    "[top=" + topVer + ", force=" + (exchFut == null) +
                     ", evt=" + exchId.discoveryEventName() +
                     ", node=" + exchId.nodeId() + ']');
         }
         else
             U.log(log, "Skipping rebalancing (no affinity changes) " +
-                "[top=" + resVer +
+                "[top=" + topVer +
                 ", rebTopVer=" + rebTopVer +
                 ", evt=" + exchId.discoveryEventName() +
                 ", evtNode=" + exchId.nodeId() +
