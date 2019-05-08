@@ -43,7 +43,8 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
-import org.apache.ignite.internal.pagemem.wal.WALWriteListener;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
@@ -226,9 +227,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Flag indicates that {@link TxRecord} records will be logged to WAL. */
     private boolean logTxRecords;
-
-    /** Listens for tx WAL write events. */
-    private @Nullable WALWriteListener lsnr;
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
@@ -2472,17 +2470,38 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return WAL write listener.
+     * Logs Tx state to WAL if needed.
+     *
+     * @param tx Transaction.
+     * @return WALPointer or {@code null} if nothing was logged.
      */
-    public @Nullable WALWriteListener walWriteListener() {
-        return lsnr;
-    }
+    @Nullable WALPointer logTxRecord(IgniteTxAdapter tx) {
+        BaselineTopology baselineTop;
 
-    /**
-     * @param lsnr Listener.
-     */
-    public void walWriteListener(WALWriteListener lsnr) {
-        this.lsnr = lsnr;
+        // Log tx state change to WAL.
+        if (cctx.wal() == null
+            || (!logTxRecords && !tx.txState().mvccEnabled())
+            || (baselineTop = cctx.kernalContext().state().clusterState().baselineTopology()) == null
+            || !baselineTop.consistentIds().contains(cctx.localNode().consistentId()))
+            return null;
+
+        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
+
+        TxRecord record;
+
+        if (tx.txState().mvccEnabled())
+            record = new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
+        else
+            record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
+
+        try {
+            return cctx.wal().log(record);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to log TxRecord: " + record, e);
+
+            throw new IgniteException("Failed to log TxRecord: " + record, e);
+        }
     }
 
     /**

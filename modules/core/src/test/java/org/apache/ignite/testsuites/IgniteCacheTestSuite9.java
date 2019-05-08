@@ -29,6 +29,11 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWrit
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.apache.ignite.internal.processors.cache.transactions.PartitionUpdateCounterTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceTest;
+import org.apache.ignite.internal.stat.IoStatisticsCachePersistenceSelfTest;
+import org.apache.ignite.internal.stat.IoStatisticsCacheSelfTest;
+import org.apache.ignite.internal.stat.IoStatisticsManagerSelfTest;
+import org.apache.ignite.internal.stat.IoStatisticsMetricsLocalMXBeanImplSelfTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryOneBackupTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest;
@@ -75,6 +80,7 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         // Update counters and historical rebalance.
         GridTestUtils.addTestIfNeeded(suite, TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxPartitionCounterStateOnePrimaryOneBackupTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxPartitionCounterStateOnePrimaryTwoBackupsTest.class, ignoredTests);

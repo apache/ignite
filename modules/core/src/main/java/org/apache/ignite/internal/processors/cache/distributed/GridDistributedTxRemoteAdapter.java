@@ -35,7 +35,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.WALWriteListener;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -802,15 +801,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
                                 .collect(Collectors.toList());
 
-                            WALWriteListener lsnr = cctx.tm().walWriteListener();
-
-                            if (lsnr != null)
-                                lsnr.beforeWrite(entriesWithCounters);
-
                             cctx.wal().log(new DataRecord(entriesWithCounters));
-
-                            if (lsnr != null)
-                                lsnr.afterWrite(entriesWithCounters);
                         }
                         catch (Throwable ex) {
                             state(UNKNOWN);

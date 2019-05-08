@@ -2583,7 +2583,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             applyUpdate(cacheCtx, dataEntry);
 
-                            applied++;
+                                applied.incrementAndGet();
+                            }, cacheDesc.groupId(), dataEntry.partitionId(), exec, semaphore);
                         }
 
                         break;

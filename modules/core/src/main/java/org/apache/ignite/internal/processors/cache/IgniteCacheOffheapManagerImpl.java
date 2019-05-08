@@ -92,6 +92,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
     /** */
+    private final boolean failNodeOnPartitionInconsistency = Boolean.getBoolean(
+        IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY);
+
+    /** */
     protected GridCacheSharedContext ctx;
 
     /** */
@@ -1299,7 +1303,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long getAndIncrementUpdateCounter(long delta) {
-            long reserve = pCntr.reserve(delta);
+            long reserve = pCntr.next(delta);
 
             // log.info("TX: reserve=(" + reserve + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
 
@@ -1332,11 +1336,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 // log.info("TX: set=" + val + ", partId=" + partId + ", cntr=" + pCntr);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Partition counter inconsistency is detected. " +
+                U.error(log, "Partition counter inconsistency is detected and new counter value will be ignored. " +
                     "Most probably a node with most actual data is out of topology or data streamer is used in isolated " +
-                    "mode (allowOverride=true) concurrently with normal cache operations.");
+                    "mode (allowOverride=true) concurrently with normal cache operations [rebCntr=" + val +
+                    ", locCntr=" + pCntr + ']');
 
-                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                if (failNodeOnPartitionInconsistency)
+                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
         }
 

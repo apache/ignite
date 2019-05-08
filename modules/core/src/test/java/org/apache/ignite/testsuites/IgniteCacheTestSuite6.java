@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticT
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
@@ -90,9 +91,9 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(TxMultiCacheAsyncOpsTest.class);
 
-        suite.addTestSuite(TxOnCachesStartTest.class);
+        GridTestUtils.addTestIfNeeded(suite, TxLocalDhtMixedCacheModesTest.class, ignoredTests);
 
-        suite.addTestSuite(IgniteCache150ClientsTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCache150ClientsTest.class, ignoredTests);
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
