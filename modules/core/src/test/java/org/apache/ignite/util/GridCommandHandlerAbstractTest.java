@@ -22,16 +22,25 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -198,5 +207,49 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     /** */
     protected void injectTestSystemOut() {
         System.setOut(new PrintStream(testOut));
+    }
+
+    /**
+     * Checks if all non-system txs and non-system mvcc futures are finished.
+     */
+    protected void checkUserFutures() {
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
+
+            boolean hasFutures = false;
+
+            for (GridCacheFuture<?> fut : futs) {
+                if (!fut.isDone()) {
+                    //skipping system tx futures if possible
+                    if (fut instanceof GridNearTxPrepareFutureAdapter
+                        && ((GridNearTxPrepareFutureAdapter) fut).tx().system())
+                        continue;
+
+                    if (fut instanceof GridDhtTxPrepareFuture
+                        && ((GridDhtTxPrepareFuture) fut).tx().system())
+                        continue;
+
+                    log.error("Expecting no active future [node=" + ig.localNode().id() + ", fut=" + fut + ']');
+
+                    hasFutures = true;
+                }
+            }
+
+            if (hasFutures)
+                fail("Some mvcc futures are not finished");
+
+            Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions()
+                .stream()
+                .filter(tx -> !tx.system())
+                .collect(Collectors.toSet());
+
+            for (IgniteInternalTx tx : txs)
+                log.error("Expecting no active transaction [node=" + ig.localNode().id() + ", tx=" + tx + ']');
+
+            if (!txs.isEmpty())
+                fail("Some transaction are not finished");
+        }
     }
 }
