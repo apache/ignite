@@ -105,7 +105,7 @@ public class GridDhtRebalanceManager {
 
             List<CacheGroupContext> rebList = cctx.cache().cacheGroups()
                 .stream()
-                .sorted(Comparator.comparingInt(grp -> grp.config().getRebalanceOrder()))
+                .sorted(Comparator.comparingInt(grp -> -1 * grp.config().getRebalanceOrder()))
                 .collect(Collectors.toList());
 
             for (CacheGroupContext grp : rebList) {
