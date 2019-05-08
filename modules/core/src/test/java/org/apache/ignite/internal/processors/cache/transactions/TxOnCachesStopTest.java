@@ -176,14 +176,14 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      */
     private void runTxOnCacheStop(TransactionConcurrency conc, TransactionIsolation iso, Ignite ig, boolean runConc)
         throws Exception {
+        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
+            return;
+
         CountDownLatch destroyLatch = new CountDownLatch(1);
 
         final IgniteCache<Integer, byte[]> cache = ig.getOrCreateCache(destroyCacheCfg);
 
         final IgniteCache<Integer, byte[]> cache2 = ig.getOrCreateCache(surviveCacheCfg);
-
-        if ((conc == TransactionConcurrency.OPTIMISTIC) && (MvccFeatureChecker.forcedMvcc()))
-            return;
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ig);
 
