@@ -108,11 +108,12 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (igniteInstanceName.contains(NODE_1_CONS_ID)) {
-            failingOnNodeJoinSpi.setIpFinder(sharedStaticIpFinder);
             failingOnNodeJoinSpi.setJoinTimeout(60_000);
 
             cfg.setDiscoverySpi(failingOnNodeJoinSpi);
         }
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
 
         cfg.setConsistentId(igniteInstanceName);
 
