@@ -24,6 +24,8 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -45,14 +47,42 @@ public class WalFilters {
      * @param pageOwnerIds Page id for filtering.
      * @return Predicate for filtering record from pageOwnerIds.
      */
-    public static Predicate<IgniteBiTuple<WALPointer, WALRecord>> pageOwner(Set<Long> pageOwnerIds) {
+    public static Predicate<IgniteBiTuple<WALPointer, WALRecord>> pageOwner(Set<T2<Integer, Long>> pageOwnerIds) {
         return record -> {
             WALRecord walRecord = record.get2();
 
-            if (walRecord instanceof PageDeltaRecord)
-                return pageOwnerIds.contains(((PageDeltaRecord)walRecord).pageId());
-            else if (walRecord instanceof PageSnapshot)
-                return pageOwnerIds.contains(((PageSnapshot)walRecord).fullPageId().pageId());
+            if (walRecord instanceof PageDeltaRecord) {
+                PageDeltaRecord rec0 = (PageDeltaRecord)walRecord;
+
+                return pageOwnerIds.contains(new T2<>(rec0.groupId(), rec0.pageId()));
+            }
+            else if (walRecord instanceof PageSnapshot) {
+                PageSnapshot rec0 = (PageSnapshot)walRecord;
+
+                return pageOwnerIds.contains(new T2<>(rec0.groupId(), rec0.fullPageId().pageId()));
+            }
+
+            return false;
+        };
+    }
+
+    /**
+     * Filtering all records whose partitionId is contained in partsMetaupdate.
+     *
+     * @param partsMetaupdate Partition id for filtering.
+     * @return Predicate for filtering record from pageOwnerIds.
+     */
+    public static Predicate<IgniteBiTuple<WALPointer, WALRecord>> partitionMetaStateUpdate(
+        Set<T2<Integer, Integer>> partsMetaupdate
+    ) {
+        return record -> {
+            WALRecord walRecord = record.get2();
+
+            if (walRecord instanceof PartitionMetaStateRecord) {
+                PartitionMetaStateRecord rec0 = (PartitionMetaStateRecord)walRecord;
+
+                return partsMetaupdate.contains(new T2<>(rec0.groupId(), rec0.partitionId()));
+            }
 
             return false;
         };

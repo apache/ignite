@@ -22,8 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import com.google.common.collect.Sets;
+import java.util.Set;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRec
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.Test;
@@ -70,19 +73,20 @@ public class WalScannerTest {
     public void shouldFindCorrectRecords() throws Exception {
         // given: Iterator with random value and value which should be find by scanner.
         long expPageId = 984;
+        int grpId = 123;
 
-        PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId, 1), new byte[0], 10);
+        PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId, grpId), new byte[0], 10);
         CheckpointRecord expCheckpoint = new CheckpointRecord(new FileWALPointer(5738, 0, 0));
-        FixCountRecord expDeltaPage = new FixCountRecord(1, expPageId, 4);
+        FixCountRecord expDeltaPage = new FixCountRecord(grpId, expPageId, 4);
 
         WALIterator mockedIter = mockWalIterator(
             new IgniteBiTuple<>(ZERO_POINTER, expPageSnapshot),
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(455, 1), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(455, grpId), new byte[0], 10)),
             new IgniteBiTuple<>(ZERO_POINTER, expCheckpoint),
             new IgniteBiTuple<>(ZERO_POINTER, new MetastoreDataRecord("key", new byte[0])),
-            new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(1, 1, OWNING, 1)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(grpId, 1, OWNING, 1)),
             new IgniteBiTuple<>(ZERO_POINTER, expDeltaPage),
-            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(1, 98348, 4))
+            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, 98348, 4))
         );
 
         IgniteWalIteratorFactory mockedFactory = mock(IgniteWalIteratorFactory.class);
@@ -92,9 +96,13 @@ public class WalScannerTest {
         List<WALRecord> holder = new ArrayList<>();
         ScannerHandler recordCaptor = (rec) -> holder.add(rec.get2());
 
+        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+
+        groupAndPageIds.add(new T2<>(grpId, expPageId));
+
         // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), mockedFactory)
-            .findAllRecordsFor(Sets.newHashSet(expPageId))
+            .findAllRecordsFor(groupAndPageIds)
             .forEach(recordCaptor);
 
         // then: Should be find only expected value.
@@ -115,20 +123,22 @@ public class WalScannerTest {
         long expPageId2 = 9584;
         long expPageId3 = 98344;
 
-        PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId1, 1), new byte[0], 10);
+        int grpId = 123;
+
+        PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId1, grpId), new byte[0], 10);
         CheckpointRecord expCheckpoint = new CheckpointRecord(new FileWALPointer(5738, 0, 0));
-        FixCountRecord expDeltaPage1 = new FixCountRecord(1, expPageId2, 4);
-        FixCountRecord expDeltaPage2 = new FixCountRecord(1, expPageId3, 4);
+        FixCountRecord expDeltaPage1 = new FixCountRecord(grpId, expPageId2, 4);
+        FixCountRecord expDeltaPage2 = new FixCountRecord(grpId, expPageId3, 4);
 
         WALIterator mockedIter = mockWalIterator(
             new IgniteBiTuple<>(ZERO_POINTER, expPageSnapshot),
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(455, 1), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(455, grpId), new byte[0], 10)),
             new IgniteBiTuple<>(ZERO_POINTER, expCheckpoint),
             new IgniteBiTuple<>(ZERO_POINTER, new MetastoreDataRecord("key", new byte[0])),
-            new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(1, 1, OWNING, 1)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(grpId, 1, OWNING, 1)),
             new IgniteBiTuple<>(ZERO_POINTER, expDeltaPage1),
-            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(1, 98348, 4)),
-            new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(1, 1, OWNING, 1)),
+            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, 98348, 4)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(grpId, 1, OWNING, 1)),
             new IgniteBiTuple<>(ZERO_POINTER, expDeltaPage2)
         );
 
@@ -138,13 +148,19 @@ public class WalScannerTest {
         List<WALRecord> holder = new ArrayList<>();
         ScannerHandler recordCaptor = (rec) -> holder.add(rec.get2());
 
+        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+
+        groupAndPageIds.add(new T2<>(grpId, expPageId1));
+        groupAndPageIds.add(new T2<>(grpId, expPageId2));
+        groupAndPageIds.add(new T2<>(grpId, expPageId3));
+
         // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), mockedFactory)
-            .findAllRecordsFor(Sets.newHashSet(expPageId1, expPageId2, expPageId3))
+            .findAllRecordsFor(groupAndPageIds)
             .forEach(recordCaptor);
 
         // then: Should be find only expected value.
-        assertEquals(holder.size(), 4);
+        assertEquals(4, holder.size());
 
         assertEquals(expPageSnapshot, holder.get(0));
         assertEquals(expCheckpoint, holder.get(1));
@@ -159,6 +175,7 @@ public class WalScannerTest {
     public void shouldDumpToLogFoundRecord() throws Exception {
         // given: Test logger for interception of logging.
         long expPageId = 984;
+        int grpId = 123;
 
         IgniteLogger log = mock(IgniteLogger.class);
 
@@ -166,17 +183,21 @@ public class WalScannerTest {
         doNothing().when(log).info(valCapture.capture());
 
         WALIterator mockedIter = mockWalIterator(
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, 1), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, grpId), new byte[0], 10)),
             new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
-            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(1, expPageId, 4))
+            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expPageId, 4))
         );
 
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
+        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+
+        groupAndPageIds.add(new T2<>(grpId, expPageId));
+
         // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), factory)
-            .findAllRecordsFor(Sets.newHashSet(expPageId))
+            .findAllRecordsFor(groupAndPageIds)
             .forEach(printToLog(log));
 
         // then: Should be find only expected value from log.
@@ -198,21 +219,27 @@ public class WalScannerTest {
         File targetFile = Paths.get(U.defaultWorkDirectory(), TEST_DUMP_FILE).toFile();
 
         long expectedPageId = 984;
+        int grpId = 123;
 
         WALIterator mockedIter = mockWalIterator(
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expectedPageId, 1), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expectedPageId, grpId), new byte[0], 10)),
             new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
-            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(1, expectedPageId, 4))
+            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expectedPageId, 4))
         );
 
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        List<String> actualRecords = null;
+        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+
+        groupAndPageIds.add(new T2<>(grpId, expectedPageId));
+
+        List<String> actualRecords;
+
         try {
             // when: Scanning WAL for searching expected page.
             buildWalScanner(withIteratorParameters(), factory)
-                .findAllRecordsFor(Sets.newHashSet(expectedPageId))
+                .findAllRecordsFor(groupAndPageIds)
                 .forEach(printToFile(targetFile));
 
             actualRecords = Files.readAllLines(targetFile.toPath());
@@ -238,6 +265,7 @@ public class WalScannerTest {
         File targetFile = Paths.get(U.defaultWorkDirectory(), TEST_DUMP_FILE).toFile();
 
         long expPageId = 984;
+        int grpId = 123;
 
         IgniteLogger log = mock(IgniteLogger.class);
 
@@ -245,19 +273,24 @@ public class WalScannerTest {
         doNothing().when(log).info(valCapture.capture());
 
         WALIterator mockedIter = mockWalIterator(
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, 1), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, grpId), new byte[0], 10)),
             new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
-            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(1, expPageId, 4))
+            new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expPageId, 4))
         );
 
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
+        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+
+        groupAndPageIds.add(new T2<>(grpId, expPageId));
+
         List<String> actualFileRecords = null;
+
         try {
             // when: Scanning WAL for searching expected page.
             buildWalScanner(withIteratorParameters(), factory)
-                .findAllRecordsFor(Sets.newHashSet(expPageId))
+                .findAllRecordsFor(groupAndPageIds)
                 .forEach(printToLog(log).andThen(printToFile(targetFile)));
 
             actualFileRecords = Files.readAllLines(targetFile.toPath());
