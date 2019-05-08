@@ -33,6 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.integration.CompletionListener;
@@ -43,6 +44,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -132,6 +134,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.primary;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -2151,5 +2154,56 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (Ignite g : grids)
                 g.events().stopLocalListen(lsnr);
         }
+    }
+
+    /**
+     * Load data into single partition.
+     *
+     * @param p Partition.
+     * @param cacheName Cache name.
+     * @param total Total keys count.
+     * @param returnKeys Return keys count.
+     *
+     * @return List of last keys.
+     */
+    protected List<Integer> loadDataToPartition(int p, String cacheName, int total, int skip, int returnKeys) {
+        int c = 0, k = 0;
+
+        ClusterNode node = grid(0).affinity(cacheName).mapPartitionToNode(p);
+
+        Ignite primary = G.allGrids().stream().filter(new Predicate<Ignite>() {
+            @Override public boolean test(Ignite ignite) {
+                return ignite.cluster().localNode().equals(node);
+            }
+        }).findFirst().get();
+
+        List<Integer> keys = new ArrayList<>(returnKeys);
+
+        int skip0 = 0;
+
+        // Preload
+        try (IgniteDataStreamer<Object, Object> streamer = primary.dataStreamer(DEFAULT_CACHE_NAME)) {
+            while (c < total) {
+                if (primary.affinity(DEFAULT_CACHE_NAME).partition(k) == p) {
+                    if (skip0 < skip) {
+                        k++;
+                        skip0++;
+
+                        continue;
+                    }
+
+                    streamer.addData(k, k);
+
+                    c++;
+
+                    if (total - c < returnKeys)
+                        keys.add(k);
+                }
+
+                k++;
+            }
+        }
+
+        return keys;
     }
 }

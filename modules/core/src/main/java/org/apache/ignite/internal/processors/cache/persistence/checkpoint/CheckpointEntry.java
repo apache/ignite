@@ -275,7 +275,7 @@ public class CheckpointEntry {
             if (stateRec == null)
                 return Collections.emptyMap();
 
-            Map<Integer, GroupState> grpStates = new HashMap<>(stateRec.size());
+            Map<Integer, GroupState> grpStates = U.newHashMap(stateRec.size());
 
             for (Integer grpId : stateRec.keySet()) {
                 CacheState recState = stateRec.get(grpId);

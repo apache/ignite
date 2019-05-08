@@ -127,6 +127,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, FinalizationStatus> FINALIZING_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, FinalizationStatus.class, "finalizing");
 
+    /** */
+    private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, TxCounters> TX_COUNTERS_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, TxCounters.class, "txCounters");
+
     /** Logger. */
     protected static IgniteLogger log;
 
@@ -258,6 +262,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
+
+    /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
+    private volatile TxCounters txCounters;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -1865,6 +1874,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
+    @Override public TxCounters txCounters(boolean createIfAbsent) {
+        if (createIfAbsent && txCounters == null)
+            TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
+
+        return txCounters;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(IgniteTxAdapter.class, this,
             "duration", (U.currentTimeMillis() - startTime) + "ms",
@@ -2124,6 +2141,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public UUID originatingNodeId() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+            return null;
         }
 
         /** {@inheritDoc} */
