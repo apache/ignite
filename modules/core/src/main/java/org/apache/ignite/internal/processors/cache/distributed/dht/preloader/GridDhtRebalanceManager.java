@@ -18,11 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteLogger;
@@ -94,27 +90,17 @@ public class GridDhtRebalanceManager {
         if (exchFut == null)
             rebTopVer = NONE;
 
-        Map<Integer, GridDhtPreloaderAssignments> assignsMap = null;
+        NavigableMap<Integer, List<CacheGroupContext>> orderMap = new TreeMap<>(); // Order queue?
 
         AffinityTopologyVersion resVer = null;
 
         if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
-            assignsMap = new HashMap<>();
-
-            IgniteCacheSnapshotManager snp = cctx.snapshot();
-
             for (final CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                long delay = grp.config().getRebalanceDelay();
+                int order = grp.config().getRebalanceOrder();
 
-                boolean disableRebalance = snp.partitionsAreFrozen(grp);
+                orderMap.computeIfAbsent(order, k -> new ArrayList<>());
 
-                GridDhtPreloaderAssignments assigns = null;
-
-                // Don't delay for dummy reassigns to avoid infinite recursion.
-                if ((delay == 0 || forcePreload) && !disableRebalance)
-                    assigns = grp.preloader().generateAssignments(exchId, exchFut);
-
-                assignsMap.put(grp.groupId(), assigns);
+                orderMap.get(order).add(grp);
 
                 if (resVer == null && !grp.isLocal())
                     resVer = grp.topology().readyTopologyVersion();
@@ -124,34 +110,24 @@ public class GridDhtRebalanceManager {
         if (resVer == null)
             resVer = exchId.topologyVersion();
 
-        if (assignsMap != null && rebTopVer.equals(NONE)) {
-            int size = assignsMap.size();
-
-            NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
-
-            for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-                int grpId = e.getKey();
-
-                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                int order = grp.config().getRebalanceOrder();
-
-                orderMap.computeIfAbsent(order, k -> new ArrayList<>(size));
-
-                orderMap.get(order).add(grpId);
-            }
-
+        if (!orderMap.isEmpty() && rebTopVer.equals(NONE)) {
             Runnable r = null;
-
-            List<String> rebList = new LinkedList<>();
 
             boolean assignsCancelled = false;
 
-            for (Integer order : orderMap.descendingKeySet()) {
-                for (Integer grpId : orderMap.get(order)) {
-                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+            IgniteCacheSnapshotManager snp = cctx.snapshot();
 
-                    GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
+            for (Integer order : orderMap.descendingKeySet()) {
+                for (CacheGroupContext grp : orderMap.get(order)) {
+                    long delay = grp.config().getRebalanceDelay();
+
+                    boolean disableRebalance = snp.partitionsAreFrozen(grp);
+
+                    GridDhtPreloaderAssignments assigns = null;
+
+                    // Don't delay for dummy reassigns to avoid infinite recursion.
+                    if ((delay == 0 || forcePreload) && !disableRebalance)
+                        assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
                     if (assigns != null)
                         assignsCancelled |= assigns.cancelled();
@@ -162,11 +138,8 @@ public class GridDhtRebalanceManager {
                         r,
                         forcedRebFut);
 
-                    if (cur != null) {
-                        rebList.add(grp.cacheOrGroupName());
-
+                    if (cur != null)
                         r = cur;
-                    }
                 }
             }
 
@@ -179,10 +152,7 @@ public class GridDhtRebalanceManager {
                     ", node=" + exchId.nodeId() + ']');
             }
             else if (r != null) {
-                Collections.reverse(rebList);
-
-                U.log(log, "Rebalancing scheduled [order=" + rebList +
-                    ", top=" + resVer + ", force=" + (exchFut == null) +
+                U.log(log, "Rebalancing scheduled [top=" + resVer + ", force=" + (exchFut == null) +
                     ", evt=" + exchId.discoveryEventName() +
                     ", node=" + exchId.nodeId() + ']');
 
