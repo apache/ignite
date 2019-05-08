@@ -29,7 +29,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmen
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
-import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -45,20 +45,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-
 /**
- * Each freelist can store multiple types of data pages, but for now only one could use intermediate free buckets.
- * All others can only reuse empty pages.
- * TODO FIXME comment.
  */
-public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
+public abstract class DefaultFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
     /** */
-    public static final int BUCKETS = 256; // Must be power of 2.
+    private static final int BUCKETS = 256; // Must be power of 2.
 
     /** */
-    public static final int REUSE_BUCKET = BUCKETS - 1;
+    private static final int REUSE_BUCKET = BUCKETS - 1;
 
     /** */
     private static final Integer COMPLETE = Integer.MAX_VALUE;
@@ -85,7 +79,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     private final int MIN_SIZE_FOR_DATA_PAGE;
 
     /** */
-    private final PageHandler<Storable, Boolean> updateRow = new UpdateRowHandler();
+    private final PageHandler<T, Boolean> updateRow = new UpdateRowHandler();
 
     /** */
     private final DataRegionMetricsImpl memMetrics;
@@ -96,7 +90,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     /**
      *
      */
-    private final class UpdateRowHandler extends PageHandler<Storable, Boolean> {
+    private final class UpdateRowHandler extends PageHandler<T, Boolean> {
         @Override public Boolean run(
             int cacheId,
             long pageId,
@@ -104,11 +98,11 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
             long pageAddr,
             PageIO iox,
             Boolean walPlc,
-            Storable row,
+            T row,
             int itemId,
             IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
-            AbstractDataPageIO<Storable> io = (AbstractDataPageIO<Storable>)iox;
+            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int rowSize = io.getRowSize(row);
 
@@ -138,12 +132,12 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     }
 
     /** */
-    private final PageHandler<Storable, Integer> writeRow = new WriteRowHandler();
+    private final PageHandler<T, Integer> writeRow = new WriteRowHandler();
 
     /**
      *
      */
-    private final class WriteRowHandler extends PageHandler<Storable, Integer> {
+    private final class WriteRowHandler extends PageHandler<T, Integer> {
         @Override public Integer run(
             int cacheId,
             long pageId,
@@ -151,11 +145,11 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
             long pageAddr,
             PageIO iox,
             Boolean walPlc,
-            Storable row,
+            T row,
             int written,
             IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
-            AbstractDataPageIO<Storable> io = (AbstractDataPageIO<Storable>)iox;
+            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int rowSize = io.getRowSize(row);
             int oldFreeSpace = io.getFreeSpace(pageAddr);
@@ -169,7 +163,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
             // Reread free space after update.
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
-            if (newFreeSpace > MIN_PAGE_FREE_SPACE && !io.useEmptyPages()) {
+            if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
                 int bucket = bucket(newFreeSpace, false);
 
                 put(null, pageId, page, pageAddr, bucket);
@@ -196,8 +190,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
             long pageId,
             long page,
             long pageAddr,
-            AbstractDataPageIO<Storable> io,
-            Storable row,
+            AbstractDataPageIO<T> io,
+            T row,
             int rowSize
         ) throws IgniteCheckedException {
             io.addRow(pageId, pageAddr, row, rowSize, pageSize());
@@ -236,8 +230,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
             long pageId,
             long page,
             long pageAddr,
-            AbstractDataPageIO<Storable> io,
-            Storable row,
+            AbstractDataPageIO<T> io,
+            T row,
             int written,
             int rowSize
         ) throws IgniteCheckedException {
@@ -288,7 +282,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
             Void ignored,
             int itemId)
             throws IgniteCheckedException {
-            AbstractDataPageIO<Storable> io = (AbstractDataPageIO<Storable>)iox;
+            AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
@@ -301,28 +295,31 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
             int newFreeSpace = io.getFreeSpace(pageAddr);
 
-            int newBucket = bucket(newFreeSpace, false);
+            if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                int newBucket = bucket(newFreeSpace, false);
 
-            // Pages is present in bucket and must be removed from it.
-            if (oldFreeSpace > MIN_PAGE_FREE_SPACE && !io.useEmptyPages()) {
-                int oldBucket = bucket(oldFreeSpace, false);
+                boolean putIsNeeded = oldFreeSpace <= MIN_PAGE_FREE_SPACE;
 
-                if (oldBucket != newBucket) {
-                    pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
+                if (!putIsNeeded) {
+                    int oldBucket = bucket(oldFreeSpace, false);
 
-                    // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
-                    if (!removeDataPage(pageId, page, pageAddr, io, oldBucket, statHolder))
-                        return nextLink;
+                    if (oldBucket != newBucket) {
+                        // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
+
+                        putIsNeeded = removeDataPage(pageId, page, pageAddr, io, oldBucket, statHolder);
+                    }
                 }
-            }
 
-            if (io.isEmpty(pageAddr)) {
-                evictionTracker.forgetPage(pageId);
+                if (io.isEmpty(pageAddr)) {
+                    evictionTracker.forgetPage(pageId);
 
-                reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
+                    if (putIsNeeded)
+                        reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
+                }
+                else if (putIsNeeded)
+                    put(null, pageId, page, pageAddr, newBucket, statHolder);
             }
-            else if (newFreeSpace > MIN_PAGE_FREE_SPACE && !io.useEmptyPages())
-                put(null, pageId, page, pageAddr, newBucket, statHolder);
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
@@ -404,7 +401,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     @Override public void dumpStatistics(IgniteLogger log) {
         long dataPages = 0;
 
-        final boolean dumpBucketsInfo = true;
+        final boolean dumpBucketsInfo = false;
 
         for (int b = 0; b < BUCKETS; b++) {
             long size = bucketsSize[b].longValue();
@@ -427,8 +424,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
                     }
                 }
 
-                //if (log.isInfoEnabled())
-                    U.debug("Bucket [b=" + b +
+                if (log.isInfoEnabled())
+                    log.info("Bucket [b=" + b +
                         ", size=" + size +
                         ", stripes=" + (stripes != null ? stripes.length : 0) +
                         ", stripesEmpty=" + empty + ']');
@@ -436,8 +433,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
         }
 
         if (dataPages > 0) {
-            //if (log.isInfoEnabled())
-                U.debug("FreeList [name=" + name +
+            if (log.isInfoEnabled())
+                log.info("FreeList [name=" + name +
                     ", buckets=" + BUCKETS +
                     ", dataPages=" + dataPages +
                     ", reusePages=" + bucketsSize[REUSE_BUCKET].longValue() + "]");
@@ -450,7 +447,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
      * @return Bucket.
      */
     private int bucket(int freeSpace, boolean allowReuse) {
-        assert freeSpace >= 0 : freeSpace;
+        assert freeSpace > 0 : freeSpace;
 
         int bucket = freeSpace >>> shift;
 
@@ -474,92 +471,8 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
         return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
     }
 
-    /**
-     * Read row as byte array from data pages.
-     */
-    final public byte[] readRow(long link) throws IgniteCheckedException {
-        assert link != 0 : "link";
-
-        long nextLink = link;
-        IncompleteObject incomplete = null;
-        int size = 0;
-
-        boolean first = true;
-
-        do {
-            final long pageId = pageId(nextLink);
-
-            final long page = pageMem.acquirePage(grpId, pageId);
-
-            try {
-                long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
-
-                assert pageAddr != 0L : nextLink;
-
-                try {
-                    AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
-
-                    //MetaStorage never encrypted so realPageSize == pageSize.
-                    DataPagePayload data = io.readPayload(pageAddr, itemId(nextLink), pageMem.pageSize());
-
-                    nextLink = data.nextLink();
-
-                    if (first) {
-                        if (nextLink == 0) {
-                            long payloadAddr = pageAddr + data.offset();
-
-                            // Fast path for a single page row.
-                            return PageUtils.getBytes(payloadAddr, 4, PageUtils.getInt(payloadAddr, 0));
-                        }
-
-                        first = false;
-                    }
-
-                    ByteBuffer buf = pageMem.pageBuffer(pageAddr);
-
-                    buf.position(data.offset());
-                    buf.limit(data.offset() + data.payloadSize());
-
-                    if (size == 0) {
-                        if (buf.remaining() >= 4 && incomplete == null) {
-                            // Just read size.
-                            size = buf.getInt();
-                            incomplete = new IncompleteObject(new byte[size]);
-                        }
-                        else {
-                            if (incomplete == null)
-                                incomplete = new IncompleteObject(new byte[4]);
-
-                            incomplete.readData(buf);
-
-                            if (incomplete.isReady()) {
-                                size = ByteBuffer.wrap(incomplete.data()).order(buf.order()).getInt();
-                                incomplete = new IncompleteObject(new byte[size]);
-                            }
-                        }
-                    }
-
-                    if (size != 0 && buf.remaining() > 0)
-                        incomplete.readData(buf);
-                }
-                finally {
-                    pageMem.readUnlock(grpId, pageId, page);
-                }
-            }
-            finally {
-                pageMem.releasePage(grpId, pageId, page);
-            }
-        }
-        while (nextLink != 0);
-
-        assert incomplete.isReady();
-
-        return incomplete.data();
-    }
-
     /** {@inheritDoc} */
-    @Override public void insertDataRow(Storable row, IoStatisticsHolder statHolder)
-        throws IgniteCheckedException {
+    @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         int rowSize = row.size();
 
         int written = 0;
@@ -573,16 +486,12 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
 
                 long pageId = 0L;
 
-            AbstractDataPageIO<Storable> latest = (AbstractDataPageIO<Storable>)row.ioVersions().latest();
-
-            int b;
-            for (b = remaining >= MIN_SIZE_FOR_DATA_PAGE || latest.useEmptyPages() ?
-                REUSE_BUCKET : bucket(remaining, false); b < BUCKETS; b++) {
+            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
                 pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
                 boolean reuseBucket = false;
 
-            PageIO initIo = null;
+            AbstractDataPageIO initIo = null;
 
                         if (pageId != 0L) {
                             reuseBucket = isReuseBucket(b);
@@ -592,7 +501,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
             else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
                 pageId = initReusedPage(row, pageId, row.partition(), statHolder);
             else
-                pageId = PageIdUtils.changePartitionId(pageId, row.partition());
+                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
                 boolean allocated = pageId == 0L;
 
@@ -609,7 +518,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
      *
      * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
      */
-    private long initReusedPage(Storable row, long reusedPageId, int partId,
+    private long initReusedPage(T row, long reusedPageId, int partId,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         long reusedPage = acquirePage(reusedPageId, statHolder);
         try {
@@ -635,7 +544,7 @@ public class DefaultFreeList extends PagesList implements FreeList, ReuseList {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean updateDataRow(long link, Storable row,
+    @Override public boolean updateDataRow(long link, T row,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert link != 0;
 

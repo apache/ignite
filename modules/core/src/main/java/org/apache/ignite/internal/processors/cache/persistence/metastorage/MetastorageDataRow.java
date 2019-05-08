@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /**
@@ -30,6 +31,7 @@ public class MetastorageDataRow extends SimpleDataRow implements MetastorageSear
 
     /** */
     public MetastorageDataRow(long link, String key, byte[] val) {
+        // TODO FIXME use static setter to recalc part */
         super(link, MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ?
             PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION, val);
         this.key = key;
@@ -53,7 +55,7 @@ public class MetastorageDataRow extends SimpleDataRow implements MetastorageSear
     }
 
     /** {@inheritDoc} */
-    @Override public IOVersions ioVersions() {
+    @Override public IOVersions<? extends AbstractDataPageIO> ioVersions() {
         return MetastoreDataPageIO.VERSIONS;
     }
 

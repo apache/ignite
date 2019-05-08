@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /**
@@ -54,5 +55,5 @@ public interface Storable {
     /**
      * @return I/O for handling this storable.
      */
-    public IOVersions ioVersions();
+    public IOVersions<? extends AbstractDataPageIO> ioVersions();
 }

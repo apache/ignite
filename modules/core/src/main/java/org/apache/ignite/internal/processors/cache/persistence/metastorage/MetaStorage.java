@@ -56,11 +56,10 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.DefaultFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -74,7 +73,6 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.OLD_METASTORE_PARTITION;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  * General purpose key-value local-only storage.
@@ -97,7 +95,6 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** Temporary metastorage buffer size (file). */
     private static final int TEMPORARY_METASTORAGE_BUFFER_SIZE = 1024 * 1024;
-
 
     /** */
     private final IgniteWriteAheadLogManager wal;
@@ -130,7 +127,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private RootPage reuseListRoot;
 
     /** */
-    private DefaultFreeList freeList;
+    private PartitionStorageImpl<MetastorageDataRow> partStorage;
 
     /** */
     private Map<String, byte[]> lastUpdates;
@@ -238,14 +235,18 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
-            freeList = new DefaultFreeList(METASTORAGE_CACHE_ID, "metastorage",
+            partStorage = new PartitionStorageImpl<MetastorageDataRow>(METASTORAGE_CACHE_ID, "metastorage",
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
-                reuseListRoot.isAllocated());
+                reuseListRoot.isAllocated()) {
+                @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                    return pageMem.allocatePage(grpId, partId, FLAG_DATA);
+                }
+            };
 
-            MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
+            MetastorageRowStore rowStore = new MetastorageRowStore(partStorage, db);
 
             tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), failureProcessor, partId);
+                partStorage, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), failureProcessor, partId);
 
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
@@ -537,14 +538,14 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         Executor executor = ctx.executor();
 
         if (executor == null) {
-            freeList.saveMetadata();
+            partStorage.saveMetadata();
 
             saveStoreMetadata();
         }
         else {
             executor.execute(() -> {
                 try {
-                    freeList.saveMetadata();
+                    partStorage.saveMetadata();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -564,7 +565,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
     /** {@inheritDoc} */
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        freeList.saveMetadata();
+        partStorage.saveMetadata();
     }
 
     /** {@inheritDoc} */

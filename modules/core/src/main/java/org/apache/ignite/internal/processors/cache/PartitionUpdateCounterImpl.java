@@ -298,7 +298,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return gaps().isEmpty();
     }
 
-    @Override public @Nullable byte[] getBytes() {
+    @Override public synchronized @Nullable byte[] getBytes() {
         if (queue.isEmpty())
             return null;
 

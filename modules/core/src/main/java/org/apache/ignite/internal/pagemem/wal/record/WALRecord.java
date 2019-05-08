@@ -129,6 +129,9 @@ public abstract class WALRecord {
         /** */
         PARTITION_META_PAGE_UPDATE_COUNTERS,
 
+        /** */
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (PHYSICAL),
+
         /** Memory recovering start marker */
         MEMORY_RECOVERY,
 

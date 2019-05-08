@@ -70,7 +70,6 @@ import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
-import org.apache.ignite.internal.processors.database.FreeListSpaceReuseSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
@@ -180,7 +179,6 @@ import java.util.Set;
     BPlusTreeReuseSelfTest.class,
     IndexStorageSelfTest.class,
     CacheFreeListImplSelfTest.class,
-    FreeListSpaceReuseSelfTest.class,
     DataRegionMetricsSelfTest.class,
     SwapPathConstructionSelfTest.class,
     BitSetIntSetTest.class,

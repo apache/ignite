@@ -27,7 +27,20 @@ import org.apache.ignite.internal.util.GridStringBuilder;
  * Data pages IO for writing binary arrays.
  */
 public class SimpleDataPageIO extends AbstractDataPageIO<SimpleDataRow> {
+    /** */
+    public static final IOVersions<SimpleDataPageIO> VERSIONS = new IOVersions<>(
+        new SimpleDataPageIO(1)
+    );
+
     /**
+     * @param ver Page format version.
+     */
+    public SimpleDataPageIO(int ver) {
+        super(T_DATA_PART, ver);
+    }
+
+    /**
+     * Constructor is intended for extending types.
      * @param type IO type.
      * @param ver Page format version.
      */
@@ -98,11 +111,6 @@ public class SimpleDataPageIO extends AbstractDataPageIO<SimpleDataRow> {
 
         PageUtils.putInt(addr, 2, row.value().length);
         PageUtils.putBytes(addr, 6, row.value());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean useEmptyPages() {
-        return true;
     }
 
     /** {@inheritDoc} */
