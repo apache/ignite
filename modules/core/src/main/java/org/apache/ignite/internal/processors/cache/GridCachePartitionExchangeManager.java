@@ -3154,7 +3154,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        if (!hasPendingExchange())
+                        if (!cctx.kernalContext().clientNode() && !hasPendingExchange())
                             rebMgr.rebalance(exchId, exchFut, cnt, forcedRebFut);
                     }
                     finally {

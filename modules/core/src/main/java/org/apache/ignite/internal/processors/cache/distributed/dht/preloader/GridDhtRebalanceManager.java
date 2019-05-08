@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -75,6 +73,8 @@ public class GridDhtRebalanceManager {
         GridDhtPartitionsExchangeFuture exchFut,
         long cnt,
         GridCompoundFuture<Boolean, Boolean> forcedRebFut) {
+        assert !cctx.kernalContext().clientNode();
+
         boolean forcePreload = forcedRebFut != null;
 
         if (exchFut != null)
@@ -90,57 +90,45 @@ public class GridDhtRebalanceManager {
         if (exchFut == null)
             rebTopVer = NONE;
 
-        NavigableMap<Integer, List<CacheGroupContext>> orderMap = new TreeMap<>(); // Order queue?
-
         AffinityTopologyVersion resVer = null;
 
-        if (!cctx.kernalContext().clientNode() && rebTopVer.equals(NONE)) {
-            for (final CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                int order = grp.config().getRebalanceOrder();
+        if (rebTopVer.equals(NONE)) {
+            if (resVer == null)
+                resVer = exchId.topologyVersion();
 
-                orderMap.computeIfAbsent(order, k -> new ArrayList<>());
-
-                orderMap.get(order).add(grp);
-
-                if (resVer == null && !grp.isLocal())
-                    resVer = grp.topology().readyTopologyVersion();
-            }
-        }
-
-        if (resVer == null)
-            resVer = exchId.topologyVersion();
-
-        if (!orderMap.isEmpty() && rebTopVer.equals(NONE)) {
             Runnable r = null;
 
             boolean assignsCancelled = false;
 
             IgniteCacheSnapshotManager snp = cctx.snapshot();
 
-            for (Integer order : orderMap.descendingKeySet()) {
-                for (CacheGroupContext grp : orderMap.get(order)) {
-                    long delay = grp.config().getRebalanceDelay();
+            List<CacheGroupContext> rebList = cctx.cache().cacheGroups()
+                .stream()
+                .sorted((grp1, grp2) -> grp1.config().getRebalanceOrder() <= grp2.config().getRebalanceOrder() ? 1 : 0)
+                .collect(Collectors.toList());
 
-                    boolean disableRebalance = snp.partitionsAreFrozen(grp);
+            for (CacheGroupContext grp : rebList) {
+                long delay = grp.config().getRebalanceDelay();
 
-                    GridDhtPreloaderAssignments assigns = null;
+                boolean disableRebalance = snp.partitionsAreFrozen(grp);
 
-                    // Don't delay for dummy reassigns to avoid infinite recursion.
-                    if ((delay == 0 || forcePreload) && !disableRebalance)
-                        assigns = grp.preloader().generateAssignments(exchId, exchFut);
+                GridDhtPreloaderAssignments assigns = null;
 
-                    if (assigns != null)
-                        assignsCancelled |= assigns.cancelled();
+                // Don't delay for dummy reassigns to avoid infinite recursion.
+                if ((delay == 0 || forcePreload) && !disableRebalance)
+                    assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                    Runnable cur = grp.preloader().addAssignments(assigns,
-                        forcePreload,
-                        cnt,
-                        r,
-                        forcedRebFut);
+                if (assigns != null)
+                    assignsCancelled |= assigns.cancelled();
 
-                    if (cur != null)
-                        r = cur;
-                }
+                Runnable cur = grp.preloader().addAssignments(assigns,
+                    forcePreload,
+                    cnt,
+                    r,
+                    forcedRebFut);
+
+                if (cur != null)
+                    r = cur;
             }
 
             if (forcedRebFut != null)
