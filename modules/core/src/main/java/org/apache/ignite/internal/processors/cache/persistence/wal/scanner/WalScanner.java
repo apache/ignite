@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -28,13 +31,16 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Filter
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Objects.requireNonNull;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.MIXED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.checkpoint;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.pageOwner;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.partitionMetaStateUpdate;
 
 /**
  * Scanning WAL by specific condition.
@@ -60,16 +66,32 @@ public class WalScanner {
     /**
      * Finding all page physical records whose pageId is contained in given collection.
      *
-     * @param pageIds Search pages.
+     * @param groupAndPageIds Search pages.
      * @return Final step for execution some action on result.
      */
-    @NotNull public WalScanner.ScanTerminateStep findAllRecordsFor(@NotNull Collection<Long> pageIds) {
-        requireNonNull(pageIds);
+    @NotNull public WalScanner.ScanTerminateStep findAllRecordsFor(
+        @NotNull Collection<T2<Integer, Long>> groupAndPageIds
+    ) {
+        requireNonNull(groupAndPageIds);
 
-        return new ScanTerminateStep(() -> iterator(
-            checkpoint().or(pageOwner(new HashSet<>(pageIds))),
-            //Only physical records make sense for this case.
-            parametersBuilder.copy().addFilter((type, pointer) -> type.purpose() == PHYSICAL)
+        HashSet<T2<Integer, Long>> groupAndPageIds0 = new HashSet<>(groupAndPageIds);
+
+        // Collect all (group, partition) partition pairs.
+        Set<T2<Integer, Integer>> groupAndParts = groupAndPageIds0.stream()
+            .map((tup) -> new T2<>(tup.get1(), PageIdUtils.partId(tup.get2())))
+            .collect(Collectors.toSet());
+
+        // Build WAL filter. (Checkoint, Page, Partition meta)
+        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter = checkpoint()
+            .or(pageOwner(groupAndPageIds0))
+            .or(partitionMetaStateUpdate(groupAndParts));
+
+        return new ScanTerminateStep(() -> iterator(filter,
+            parametersBuilder.copy().addFilter((type, pointer) ->
+                // PHYSICAL need fo page shanpshot or delta record.
+                // MIXED need for partiton meta state update.
+                type.purpose() == PHYSICAL || type.purpose() == MIXED
+            )
         ));
     }
 
