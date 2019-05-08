@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -226,8 +227,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     private void doInitFromLink(
-
-
         long link,
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,
@@ -277,7 +276,41 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 }
             }
             catch (RuntimeException | AssertionError e) {
-                throw new BPlusTreeRuntimeException(e, grpId, pageId);
+                GridLongList pageIds = new GridLongList();
+
+                nextLink = link;
+                long nextLinkPageId = pageId(nextLink);
+
+                while (nextLinkPageId != pageId) {
+                    pageIds.add(nextLinkPageId);
+
+                    long page = pageMem.acquirePage(grpId, nextLinkPageId, statHolder);
+
+                    try {
+                        long pageAddr = pageMem.readLock(grpId, nextLinkPageId, page);
+
+                        try {
+                            DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+
+                            int itemId = itemId(nextLink);
+
+                            DataPagePayload data = io.readPayload(pageAddr, itemId, pageMem.realPageSize(grpId));
+
+                            nextLink = data.nextLink();
+                            nextLinkPageId = pageId(nextLink);
+                        }
+                        finally {
+                            pageMem.readUnlock(grpId, nextLinkPageId, page);
+                        }
+                    }
+                    finally {
+                        pageMem.releasePage(grpId, nextLinkPageId, page);
+                    }
+                }
+
+                pageIds.add(pageId);
+
+                throw new BPlusTreeRuntimeException(e, grpId, pageIds.array());
             }
         }
         while (nextLink != 0);
