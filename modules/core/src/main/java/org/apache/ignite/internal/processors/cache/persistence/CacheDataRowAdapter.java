@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTreeRuntimeException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
@@ -225,6 +226,8 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @throws IgniteCheckedException If failed.
      */
     private void doInitFromLink(
+
+
         long link,
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,
@@ -244,32 +247,37 @@ public class CacheDataRowAdapter implements CacheDataRow {
         do {
             final long pageId = pageId(nextLink);
 
-            final long page = pageMem.acquirePage(grpId, pageId, statHolder);
-
             try {
-                long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
-
-                assert pageAddr != 0L : nextLink;
+                final long page = pageMem.acquirePage(grpId, pageId, statHolder);
 
                 try {
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+                    long pageAddr = pageMem.readLock(grpId, pageId, page); // Non-empty data page must not be recycled.
 
-                    int itemId = itemId(nextLink);
+                    assert pageAddr != 0L : nextLink;
 
-                    incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
-                        grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+                    try {
+                        DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
 
-                    if (incomplete == null || (rowData == KEY_ONLY && key != null))
-                        return;
+                        int itemId = itemId(nextLink);
 
-                    nextLink = incomplete.getNextLink();
+                        incomplete = readIncomplete(incomplete, sharedCtx, coctx, pageMem,
+                            grpId, pageAddr, itemId, io, rowData, readCacheId, skipVer);
+
+                        if (incomplete == null || (rowData == KEY_ONLY && key != null))
+                            return;
+
+                        nextLink = incomplete.getNextLink();
+                    }
+                    finally {
+                        pageMem.readUnlock(grpId, pageId, page);
+                    }
                 }
                 finally {
-                    pageMem.readUnlock(grpId, pageId, page);
+                    pageMem.releasePage(grpId, pageId, page);
                 }
             }
-            finally {
-                pageMem.releasePage(grpId, pageId, page);
+            catch (RuntimeException | AssertionError e) {
+                throw new BPlusTreeRuntimeException(e, grpId, pageId);
             }
         }
         while (nextLink != 0);

@@ -21,11 +21,17 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
+import org.apache.ignite.internal.processors.diagnostic.PageHistoryDiagnoster;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
 
 /**
  * Abstract superclass for {@link FailureHandler} implementations.
@@ -57,7 +63,25 @@ public abstract class AbstractFailureHandler implements FailureHandler {
 
     /** {@inheritDoc} */
     @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-        return !ignoredFailureTypes.contains(failureCtx.type()) && handle(ignite, failureCtx);
+        if (ignoredFailureTypes.contains(failureCtx.type()))
+            return false;
+
+        if (X.hasCause(failureCtx.error(), CorruptedTreeException.class)) {
+            CorruptedTreeException corruptedTreeException = X.cause(failureCtx.error(), CorruptedTreeException.class);
+
+            try {
+                ((IgniteEx)ignite).context().diagnostic().dumpPageHistory(
+                    new PageHistoryDiagnoster.DiagnosticPageBuilder()
+                        .pageIds(corruptedTreeException.pages())
+                        .addAction(PRINT_TO_LOG)
+                );
+            }
+            catch (IgniteCheckedException e) {
+                ignite.log().error("Failed to dump diagnostic info on tree corruption.", e);
+            }
+        }
+
+        return handle(ignite, failureCtx);
     }
 
     /**
