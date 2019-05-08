@@ -32,6 +32,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
  */
 public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<WALPointer, WALRecord>>
     implements WALIterator {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Source WAL iterator which provide data for filtering. */
     private final WALIterator delegateWalIter;
 

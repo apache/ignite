@@ -18,26 +18,24 @@
 package org.apache.ignite.internal.processors.diagnostic;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 
-import static java.util.Arrays.stream;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory
-    .IteratorParametersBuilder.withIteratorParameters;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.withIteratorParameters;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
@@ -116,12 +114,7 @@ public class PageHistoryDiagnoster {
             withIteratorParameters()
                 .log(log)
                 .filesOrDirs(walFolders)
-        )
-            .findAllRecordsFor(
-                stream(builder.pageIds.array())
-                    .boxed()
-                    .collect(toSet())
-            )
+        ).findAllRecordsFor(builder.pageIds)
             .forEach(action);
     }
 
@@ -146,7 +139,7 @@ public class PageHistoryDiagnoster {
      */
     public static class DiagnosticPageBuilder {
         /** Pages for searching in WAL. */
-        GridLongList pageIds = GridLongList.asList();
+        List<T2<Integer, Long>> pageIds = new ArrayList<>();
         /** Action after which should be executed after WAL scanning . */
         Set<DiagnosticProcessor.DiagnosticAction> actions = EnumSet.noneOf(DiagnosticProcessor.DiagnosticAction.class);
         /** Folder for dump diagnostic info. */
@@ -156,18 +149,8 @@ public class PageHistoryDiagnoster {
          * @param pageIds Pages for searching in WAL.
          * @return This instance for chaining.
          */
-        public DiagnosticPageBuilder pageIds(long... pageIds) {
-            this.pageIds = GridLongList.asList(pageIds);
-
-            return this;
-        }
-
-        /**
-         * @param pageIds Pages for searching in WAL.
-         * @return This instance for chaining.
-         */
-        public DiagnosticPageBuilder pageIds(@NotNull List<Long> pageIds) {
-            this.pageIds = GridLongList.asList(pageIds.stream().mapToLong(Long::longValue).toArray());
+        public DiagnosticPageBuilder pageIds(T2<Integer,Long> ...pageIds) {
+            this.pageIds.addAll(Arrays.asList(pageIds));
 
             return this;
         }

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -54,7 +55,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
     /** One time configured diagnosticProcessor. */
     private static DiagnosticProcessor diagnosticProcessor;
     /** One time configured page id for searching. */
-    private static long expectedPageId;
+    private static T2<Integer, Long> expectedPageId;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -130,7 +131,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
 
         List<String> records = Files.readAllLines(dumpFile.toPath());
 
-        assertTrue(records.size() > 0);
+        assertTrue(!records.isEmpty());
 
         assertTrue(records.stream().anyMatch(line -> line.contains("PageSnapshot")));
     }
@@ -152,7 +153,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
 
             List<String> records = Files.readAllLines(dumpFile.toPath());
 
-            assertTrue(records.size() > 0);
+            assertTrue(!records.isEmpty());
 
             assertTrue(records.stream().anyMatch(line -> line.contains("PageSnapshot")));
         }
@@ -178,7 +179,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
 
         List<String> records = Files.readAllLines(dumpFile.toPath());
 
-        assertTrue(records.size() > 0);
+        assertTrue(!records.isEmpty());
 
         assertTrue(records.stream().anyMatch(line -> line.contains("PageSnapshot")));
     }
@@ -218,18 +219,21 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
      * @return Page id in WAL.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    private long findAnyPageId() throws org.apache.ignite.IgniteCheckedException {
+    private T2<Integer, Long> findAnyPageId() throws org.apache.ignite.IgniteCheckedException {
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory();
 
         try (WALIterator it = factory.iterator(new IteratorParametersBuilder().filesOrDirs(U.defaultWorkDirectory()))) {
             while (it.hasNext()) {
                 WALRecord record = it.next().get2();
 
-                if (record instanceof PageSnapshot)
-                    return ((PageSnapshot)record).fullPageId().pageId();
+                if (record instanceof PageSnapshot){
+                    PageSnapshot rec = (PageSnapshot)record;
+
+                    return new T2<>(rec.groupId(), rec.fullPageId().pageId());
+                }
             }
         }
 
-        return 0;
+        throw new IgniteCheckedException();
     }
 }
