@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
@@ -26,25 +27,71 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
- * Simple partition counter tests.
+ * Basic partition counter tests.
  */
-@RunWith(JUnit4.class)
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
+    /** Cache. */
+    public static final String CACHE = "cache_group_4_118_";
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)
+                    .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
+            )
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalSegmentSize(8 * 1024 * 1024);
+
+        cfg.setDataStorageConfiguration(memCfg);
+
+        cfg.setCacheConfiguration(new CacheConfiguration(CACHE).
+            setAffinity(new RendezvousAffinityFunction(false, 1)).
+            setCacheMode(CacheMode.REPLICATED).
+            setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cleanPersistenceDir();
+    }
+
     /**
      * Create new counter.
      * @return Counter.
      */
     protected PartitionUpdateCounter newCounter() {
-        return new PartitionUpdateCounterImpl(log);
+        return new PartitionUpdateCounterImpl();
     }
 
     /**
@@ -146,6 +193,139 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         assertTrue(pc.get() == pc.reserved());
 
         assertEquals(reserveCntr.sum(), pc.get());
+    }
+
+    /**
+     * Test logic for handling gaps limit.
+     */
+    @Test
+    public void testMaxGaps() {
+        PartitionUpdateCounter pc = newCounter();
+
+        int i;
+        for (i = 1; i <= PartitionUpdateCounterImpl.MAX_MISSED_UPDATES; i++)
+            pc.update(i * 3, i * 3 + 1);
+
+        i++;
+        try {
+            pc.update(i * 3, i * 3 + 1);
+
+            fail();
+        }
+        catch (Exception e) {
+            // Expected.
+        }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testFoldIntermediateUpdates() {
+        PartitionUpdateCounter pc = newCounter();
+
+        pc.update(0, 59);
+
+        pc.update(60, 5);
+
+        pc.update(67, 3);
+
+        pc.update(65, 2);
+
+        Iterator<long[]> it = pc.iterator();
+
+        it.next();
+
+        assertFalse(it.hasNext());
+
+        pc.update(59, 1);
+
+        assertTrue(pc.sequential());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testOutOfOrderUpdatesIterator() {
+        PartitionUpdateCounter pc = newCounter();
+
+        pc.update(67, 3);
+
+        pc.update(1, 58);
+
+        pc.update(60, 5);
+
+        Iterator<long[]> iter = pc.iterator();
+
+        long[] upd = iter.next();
+
+        assertEquals(1, upd[0]);
+        assertEquals(58, upd[1]);
+
+        upd = iter.next();
+
+        assertEquals(60, upd[0]);
+        assertEquals(5, upd[1]);
+
+        upd = iter.next();
+
+        assertEquals(67, upd[0]);
+        assertEquals(3, upd[1]);
+
+        assertFalse(iter.hasNext());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testOverlap() {
+        PartitionUpdateCounter pc = newCounter();
+
+        assertTrue(pc.update(13, 3));
+
+        assertTrue(pc.update(6, 7));
+
+        assertFalse(pc.update(13, 3));
+
+        assertFalse(pc.update(6, 7));
+
+        Iterator<long[]> iter = pc.iterator();
+        assertTrue(iter.hasNext());
+
+        long[] upd = iter.next();
+
+        assertEquals(6, upd[0]);
+        assertEquals(10, upd[1]);
+
+        assertFalse(iter.hasNext());
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testWithPersistentNode() throws Exception {
+        try {
+            IgniteEx grid0 = startGrid(0);
+            grid0.cluster().active(true);
+
+            grid0.cluster().baselineAutoAdjustEnabled(false);
+
+            grid0.cache(CACHE).put(0, 0);
+
+            startGrid(1);
+
+            grid0.cluster().setBaselineTopology(2);
+
+            awaitPartitionMapExchange();
+
+            grid0.cache(CACHE).put(1, 1);
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

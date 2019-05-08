@@ -42,6 +42,7 @@ public class IgnitePdsTestSuite3 extends TestSuite {
      */
     public static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
         // Rebalancing test
-        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTest.class, ignoredTests);
+//        GridTestUtils.addTestIfNeeded(suite, IgnitePdsContinuousRestartTestWithExpiryPolicy.class, ignoredTests);
     }
 }

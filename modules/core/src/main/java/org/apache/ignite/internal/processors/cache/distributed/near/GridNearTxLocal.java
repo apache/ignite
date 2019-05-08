@@ -3340,7 +3340,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 prepareFut = prepareNearTxLocal();
             }
             catch (Throwable t) {
-                prepareFut = new GridFinishedFuture<>(t); // Process unhandled exceptions during prepare.
+                prepareFut = prepFut;
+
+                // TODO FIXME critical errors must be handled inside prep fut.
+                assert prepareFut != null; // Prep future must be set.
+
+                ((GridNearTxPrepareFutureAdapter)prepFut).onDone(t);
             }
 
             prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -3362,7 +3367,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     fut0.finish(false, true, false);
 
-                    throw e;
+                        if (!(e instanceof NodeStoppingException))
+                            fut.finish(false, true, true); // TODO FIXME add test for this scenario.
+                        else
+                            fut.onNodeStop(e);
+                    }
                 }
                 catch (IgniteCheckedException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);

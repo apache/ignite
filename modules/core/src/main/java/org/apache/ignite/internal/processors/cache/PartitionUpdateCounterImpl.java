@@ -22,13 +22,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,16 +41,15 @@ import org.jetbrains.annotations.Nullable;
  * TODO add debugging info
  * TODO add update order tracking capabilities ?
  * TODO non-blocking version ? BitSets instead of TreeSet ?
+ * TODO describe shrink mechanism.
  */
 public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
-    /** Max allowed gaps. */
-    private static final int MAX_GAPS = 10_000;
+    /** Max allowed gaps. Overflow will trigger critical failure handler to prevent OOM.
+     * TODO FIXME define optimal size. */
+    public static final int MAX_MISSED_UPDATES = 10_000;
 
-    /** */
+    /** Counter updates serialization version. */
     private static final byte VERSION = 1;
-
-    /** */
-    private IgniteLogger log;
 
     /** Queue of counter update tasks. */
     private TreeSet<Item> queue = new TreeSet<>();
@@ -57,37 +57,24 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /** Counter of applied updates in partition. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr).
-     * TODO FIXME consider moving reserve counter outside. */
+    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr). */
     private final AtomicLong reserveCntr = new AtomicLong();
 
-    /** Initial counter points to last sequential update after recovery. */
+    /** Initial counter points to last sequential update after WAL recovery. */
     private long initCntr;
 
-    private int partId;
-
     /**
-     * @param log Logger.
-     */
-    public PartitionUpdateCounterImpl(IgniteLogger log) {
-        this.log = log;
-    }
-
-    public PartitionUpdateCounterImpl(IgniteLogger log, int partId) {
-        this.log = log;
-        this.partId = partId;
-    }
-
-    /**
+     * Restores counter state.
+     *
      * @param initUpdCntr Initial update counter.
-     * @param rawGapsData Byte array of holes raw data.
+     * @param cntrUpdData Byte array of counter updates in case some updates are missing before checkpoint.
      */
-    @Override public void init(long initUpdCntr, @Nullable byte[] rawGapsData) {
+    @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
         cntr.set(initUpdCntr);
 
         initCntr = initUpdCntr;
 
-        queue = fromBytes(rawGapsData);
+        queue = fromBytes(cntrUpdData);
     }
 
     /**
@@ -147,47 +134,62 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
 
     /**
      * Updates counter by delta from start position. Used only in transactions.
-     *  @param start Start.
+     * @param start Start.
      * @param delta Delta.
      */
     @Override public synchronized boolean update(long start, long delta) {
         long cur = cntr.get(), next;
 
-        if (cur > start) {
-            log.warning("Stale update counter task [partId=" + partId + ", cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
-
+        if (cur > start)
             return false;
-        }
 
         if (cur < start) {
-            // Try find existing gap.
-            NavigableSet<Item> set = queue.headSet(new Item(start, 0), false);
+            // Try merge with adjacent gaps in sequence.
+            Item tmp = new Item(start, delta);
+            Item ref = tmp;
 
+            NavigableSet<Item> set = queue.headSet(tmp, false);
+
+            // Merge with previous, possibly modifying previous.
             if (!set.isEmpty()) {
                 Item last = set.last();
 
-                if (last.start + last.delta == start)
+                if (last.start + last.delta == start) {
+                    tmp = last;
+
                     last.delta += delta;
-                else
-                    return offer(new Item(start, delta)); // backup node with gaps
+                }
+                else if (last.within(start) && last.within(start + delta - 1))
+                    return false;
             }
-            else if (!(set = queue.tailSet(new Item(start, 0), false)).isEmpty()) {
+
+            // Merge with next, possibly modifying previous and removing next.
+            if (!(set = queue.tailSet(tmp, false)).isEmpty()) {
                 Item first = set.first();
 
-                if (start + delta == first.start) {
-                    first.start = start;
-                    first.delta += delta;
-                }
-                else
-                    return offer(new Item(start, delta)); // backup node with gaps
-            }
-            else
-                return offer(new Item(start, delta)); // backup node with gaps
+                if (tmp.start + tmp.delta == first.start) {
+                    if (ref != tmp) {
+                        tmp.delta += first.delta;
 
-            return true;
+                        set.pollFirst(); // Merge and remove obsolete head.
+                    }
+                    else {
+                        tmp = first;
+
+                        first.start = start;
+                        first.delta += delta;
+                    }
+                }
+            }
+
+            if (tmp != ref)
+                return true;
+
+            return offer(new Item(start, delta)); // backup node with gaps
         }
 
         while (true) {
+            // TODO FIXME CAS not needed.
             boolean res = cntr.compareAndSet(cur, next = start + delta);
 
             assert res;
@@ -210,19 +212,15 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /**
      * Updates initial counter on recovery. Not thread-safe.
      *
-     * @param cntr Initial counter.
+     * @param start Start.
+     * @param delta Delta.
      */
-    @Override public void updateInitial(long cntr) {
+    @Override public void updateInitial(long start, long delta) {
         long cntr0 = get();
 
-        // The method is called with zero counter to trigger data store initialization before checkpoints are started
-        // (or cp read lock will never be taken).
-        if (cntr == 0)
-            return;
+        assert start >= cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + start;
 
-        assert cntr > cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + cntr;
-
-        update(cntr - 1, 1);
+        update(start, delta);
 
         initCntr = get();
     }
@@ -245,8 +243,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      * @param item Adds update task to priority queue.
      */
     private boolean offer(Item item) {
-        if (queue.size() == MAX_GAPS) // Should trigger failure handler.
-            throw new IgniteException("Too much gaps [part=" + partId + ", cntr=" + this + ']');
+        if (queue.size() == MAX_MISSED_UPDATES) // Should trigger failure handler.
+            throw new IgniteException("Too many gaps [cntr=" + this + ']');
 
         return queue.add(item);
     }
@@ -280,16 +278,10 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
      * @param delta Delta.
      */
     @Override public long reserve(long delta) {
-        long cntr = this.cntr.get();
-
-        long newCntr = reserveCntr.getAndAdd(delta);
-
-        assert newCntr >= cntr : "Update counter behind reserve counter: cntr=" + cntr + ", reserveCntr=" + newCntr + ", partId=" + partId;
-
-        return newCntr;
+        return reserveCntr.getAndAdd(delta);
     }
 
-    public long next(long delta) {
+    @Override public long next(long delta) {
         return cntr.getAndAdd(delta);
     }
 
@@ -364,8 +356,8 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         }
     }
 
-    // TODO make private.
-    public TreeSet<Item> gaps() {
+    /** */
+    private TreeSet<Item> gaps() {
         return queue;
     }
 
@@ -382,7 +374,7 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
     /**
      * Update counter task. Update from start value by delta value.
      */
-    public static class Item implements Comparable<Item> {
+    private static class Item implements Comparable<Item> {
         /** */
         private long start;
 
@@ -456,8 +448,21 @@ public class PartitionUpdateCounterImpl implements PartitionUpdateCounter {
         return this.cntr.get() == cntr.cntr.get();
     }
 
+    /** {@inheritDoc} */
     @Override public long reserved() {
         return reserveCntr.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized boolean empty() {
+        return get() == 0 && sequential();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterator<long[]> iterator() {
+        return F.iterator(queue.iterator(), item -> {
+            return new long[] {item.start, item.delta};
+        }, true);
     }
 
     /** {@inheritDoc} */

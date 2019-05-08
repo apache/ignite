@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * TODO implement gaps iterator.
  * TODO detailed description (javadoc) for counter contract.
  */
-public interface PartitionUpdateCounter {
+public interface PartitionUpdateCounter extends Iterable<long[]> {
     /**
      * @param initUpdCntr Initialize upd counter.
      * @param rawGapsData Raw gaps data.
@@ -84,9 +85,10 @@ public interface PartitionUpdateCounter {
     public void reset();
 
     /**
-     * @param cntr Counter.
+     * @param start Counter.
+     * @param delta Delta.
      */
-    public void updateInitial(long cntr);
+    public void updateInitial(long start, long delta);
 
     /**
      * Flushes pending update counters closing all possible gaps.
@@ -104,4 +106,16 @@ public interface PartitionUpdateCounter {
      * @return {@code True} if counter has no missed updates.
      */
     public boolean sequential();
+
+    /**
+     * @return {@code True} if counter has not seen any update.
+     */
+    public boolean empty();
+
+    /**
+     * TODO implement gaps iterator instead.
+     *
+     * @return Iterator for pairs [start, delta] for each out-of-order update in the update counter sequence.
+     */
+    @Override public Iterator<long[]> iterator();
 }

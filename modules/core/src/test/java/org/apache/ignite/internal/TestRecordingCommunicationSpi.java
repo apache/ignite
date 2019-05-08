@@ -290,7 +290,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * Stops block messages and sends all already blocked messages.
      */
     public void stopBlock() {
-        stopBlock(true, null, true);
+        stopBlock(true, null, true, true);
     }
 
     /**
@@ -299,7 +299,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @param sndMsgs {@code True} to send blocked messages.
      */
     public void stopBlock(boolean sndMsgs) {
-        stopBlock(sndMsgs, null, true);
+        stopBlock(sndMsgs, null, true, true);
     }
 
     /**
@@ -310,7 +310,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @param unblockPred If not null unblocks only messages allowed by predicate.
      */
     public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<T2<ClusterNode, GridIoMessage>> unblockPred) {
-        stopBlock(sndMsgs, unblockPred, true);
+        stopBlock(sndMsgs, unblockPred, true, true);
     }
 
         /**
@@ -320,9 +320,11 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
          * @param sndMsgs If {@code true} sends blocked messages.
          * @param unblockPred If not null unblocks only messages allowed by predicate.
          * @param clearFilters {@code true} to clear filters.
+         * @param rmvBlockedMsgs {@code true} to remove blocked messages. Sometimes useful in conjunction with
+         * {@code sndMsgs=false}.
          */
     public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<T2<ClusterNode, GridIoMessage>> unblockPred,
-        boolean clearFilters) {
+        boolean clearFilters, boolean rmvBlockedMsgs) {
         synchronized (this) {
             if (clearFilters) {
                 blockCls.clear();
@@ -351,7 +353,8 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                     }
                 }
 
-                iter.remove();
+                if (rmvBlockedMsgs)
+                    iter.remove();
             }
         }
     }

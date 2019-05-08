@@ -27,13 +27,9 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
-import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionStorage;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -91,6 +87,7 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
+     * TODO FIXME remove
      *
      * @param part Partition.
      * @param cntr Partition counter.
@@ -101,12 +98,14 @@ public interface IgniteCacheOffheapManager {
      * Initial counter will be updated on state restore only
      *
      * @param part Partition
-     * @param cntr New initial counter
+     * @param start Start.
+     * @param delta Delta.
      */
-    public void onPartitionInitialCounterUpdated(int part, long cntr);
+    public void onPartitionInitialCounterUpdated(int part, long start, long delta);
 
     /**
      * Partition counter provider. May be overridden by plugin-provided subclasses.
+     * TODO FIXME remove
      *
      * @param part Partition ID.
      * @return Last updated counter.
@@ -390,6 +389,13 @@ public interface IgniteCacheOffheapManager {
      */
     interface CacheDataStore {
         /**
+         * Initialize data store if it exists.
+         *
+         * @return {@code True} if initialized.
+         */
+        boolean init();
+
+        /**
          * @return Partition ID.
          */
         int partId();
@@ -398,14 +404,6 @@ public interface IgniteCacheOffheapManager {
          * @return Store name.
          */
         String name();
-
-        /**
-         * @param size Size to init.
-         * @param updCntr Update counter.
-         * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
-         * @param gaps Gaps.
-         */
-        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps);
 
         /**
          * @param cacheId Cache ID.
@@ -445,6 +443,7 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param val Update counter.
+         * TODO FIXME this is called only during rebalance, need to rename to reflect such fact.
          */
         void updateCounter(long val);
 
@@ -579,9 +578,10 @@ public interface IgniteCacheOffheapManager {
         public RowStore rowStore();
 
         /**
-         * @param cntr Counter.
+         * @param start Counter.
+         * @param delta Delta.
          */
-        public void updateInitialCounter(long cntr);
+        public void updateInitialCounter(long start, long delta);
 
         /**
          * Inject rows cache cleaner.
@@ -608,6 +608,6 @@ public interface IgniteCacheOffheapManager {
         /**
          * Partition storage.
          */
-        public PartitionStorage<SimpleDataRow> partStorage();
+        public PartitionMetaStorage<SimpleDataRow> partStorage();
     }
 }

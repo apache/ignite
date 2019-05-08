@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -359,7 +360,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return store.fullSize() == 0 && internalSize() == 0;
+        // TODO FIXME delegate to update counter.
+        return store.isEmpty() && internalSize() == 0;
     }
 
     /**
@@ -399,9 +401,18 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     *
+     * TODO Get rid of deferred delete queue: https://issues.apache.org/jira/browse/IGNITE-11704
      */
     public void cleanupRemoveQueue() {
+        if (state() == MOVING) {
+            if (rmvQueue.sizex() >= rmvQueueMaxSize)
+                // TODO FIXME better message.
+                LT.warn(log, "Deferred delete buffer is exceeded " +
+                    "[grpId=" + this.grp.groupId() + ", partId=" + id() + ", size=" + rmvQueueMaxSize + ']');
+
+            return;
+        }
+
         while (rmvQueue.sizex() >= rmvQueueMaxSize) {
             RemovedEntryHolder item = rmvQueue.pollFirst();
 
@@ -409,6 +420,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 removeVersionedEntry(item.cacheId(), item.key(), item.version());
         }
 
+        // Prevent ttl removal for rebalancing partition or partition desync may happen.
+        // TODO FIXME store removed keys until rebalance finish.
         if (!grp.isDrEnabled()) {
             RemovedEntryHolder item = rmvQueue.peekFirst();
 
@@ -977,6 +990,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * <p>
      * Used for atomic caches, during preloading, or isolated updates.
      *
+     * TODO FIXME merge logic.
+     *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
      * @param init {@code True} if initial update.
@@ -1016,7 +1031,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * TODO FIXME could tx be really null ?
      * Used for transactions.
      *
      * @param cacheId Cache id.
@@ -1051,7 +1065,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Update counter value. Invoke only from
+     * @param val Update counter value.
      */
     public void updateCounter(long val) {
 //        if (id() == 0 && group().groupId() == CU.cacheId("default"))
@@ -1068,21 +1082,22 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Update index value.
+     * Increments cache update counter on primary node.
+     *
+     * @param delta Value to be added to update counter.
+     * @return Update counter value before update.
      */
-    public void updateCounter(long val) {
-        store.updateCounter(val);
+    public long getAndIncrementUpdateCounter(long delta) {
+        return store.getAndIncrementUpdateCounter(delta);
     }
 
     /**
      * Updates MVCC cache update counter on backup node.
-     *  @param start Start position
+     *
+     * @param start Start position
      * @param delta Delta.
      */
     public boolean updateCounter(long start, long delta) {
-//        if (id() == 0 && group().groupId() == CU.cacheId("default"))
-//            log.error("TX: node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", start=" + start + ", delta=" + delta, new Exception());
-
         return store.updateCounter(start, delta);
     }
 
@@ -1135,7 +1150,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 try {
                     CacheDataRow row = it0.next();
 
-                    // Do not clear fresh rows in case of single partition clearing.
+                    // Do not clear fresh rows in case of partition reloading.
+                    // This is required because updates are possible to moving partition which is currently cleared.
                     if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
                         continue;
 
@@ -1306,7 +1322,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             "state", state(),
             "reservations", reservations(),
             "empty", isEmpty(),
-            "createTime", U.format(createTime));
+            "createTime", U.format(createTime),
+            "cntr", dataStore().partUpdateCounter());
     }
 
     /** {@inheritDoc} */

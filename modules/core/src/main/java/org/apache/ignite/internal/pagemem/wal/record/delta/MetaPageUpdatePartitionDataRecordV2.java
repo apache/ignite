@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
+import java.io.DataInput;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -56,6 +59,15 @@ public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartition
         this.link = link;
     }
 
+    /**
+     * @param in Input.
+     */
+    public MetaPageUpdatePartitionDataRecordV2(DataInput in) throws IOException {
+        super(in);
+
+        this.link = in.readLong();
+    }
+
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         super.applyDelta(pageMem, pageAddr);
@@ -70,6 +82,13 @@ public class MetaPageUpdatePartitionDataRecordV2 extends MetaPageUpdatePartition
      */
     public long link() {
         return link;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toBytes(ByteBuffer buf) {
+        super.toBytes(buf);
+
+        buf.putLong(link());
     }
 
     /** {@inheritDoc} */

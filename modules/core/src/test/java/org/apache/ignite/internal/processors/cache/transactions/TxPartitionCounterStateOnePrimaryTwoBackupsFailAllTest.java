@@ -38,7 +38,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNREC
 
 /**
  * Tests partition consistency recovery in case then all owners are lost in the middle of transaction.
- * TODO FIXME proper fix - partition must be moved to lost state. link ticket.
+ * TODO https://issues.apache.org/jira/browse/IGNITE-11611
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPartitionCounterStateAbstractTest {
     /** */
@@ -228,12 +228,16 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
     /**
      * Test scenario:
-     *
+     * <p>
      * 1. All txs is prepared.
+     * <p>
      * 2. All txs are committed on primary, all txs until waitCommitIdx are committed.
+     * <p>
      * 3. Tx processing is paused, all nodes are stopped.
+     * <p>
      * 4. Start backup1 and backup2 in specified order, detect unrecoverable partition and trigger failure handler.
-     * 5. Verify nodes are stopped.
+     * <p>
+     * Pass condition: nodes are stopped by failure handler if applicable.
      *
      * @param skipCheckpoint Skip checkpoint on node stop.
      * @param prepareOrder Prepare order.
@@ -342,7 +346,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
 
             PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, node.name());
 
-            assertTrue(cntr.gaps().isEmpty());
+            assertTrue(cntr.sequential());
         }
     }
 }

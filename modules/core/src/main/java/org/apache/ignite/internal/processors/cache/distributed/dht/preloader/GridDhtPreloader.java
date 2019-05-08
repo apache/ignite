@@ -254,6 +254,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == RENTING) {
                     if (part.reserve()) {
                         part.moving();
+
+                        if (exchFut != null)
+                            exchFut.addClearingPartition(grp, part.id());
+
                         part.clearAsync();
 
                         part.release();
@@ -278,7 +282,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                if (histSupplier != null) {
+                // Clearing partition should always be fully reloaded.
+                if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
@@ -292,6 +297,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
+                    // TODO FIXME initialUpdateCounter is not needed for history calculation, remove it.
+                    // LWM is enough to calculcate required history on coordinator as maxCntr - lwm.
                     msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {

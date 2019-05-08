@@ -2060,7 +2060,7 @@ public class IgniteTxHandler {
     }
 
     /**
-     * Applies partition counter updates for mvcc transactions.
+     * Applies partition counter updates for transactions.
      *
      * @param counters Counter values to be updated.
      * @param rollback {@code True} if applied from rollbacks.
