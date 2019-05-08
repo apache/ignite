@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.function.ToLongFunction;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  *

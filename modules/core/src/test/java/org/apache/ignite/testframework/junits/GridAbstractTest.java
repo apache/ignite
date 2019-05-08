@@ -40,6 +40,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.ToLongFunction;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
@@ -612,6 +615,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
+            sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
+
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if(isSafeTopology())

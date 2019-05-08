@@ -108,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -208,6 +209,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
         "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
         "Deactivate grid and retry node join or clean the joining node.";
+
+    /** Template of message of failed node join because encryption settings are different for the same cache. */
+    private static final String ENCRYPT_MISMATCH_MESSAGE = "Failed to join node to the cluster " +
+        "(encryption settings are different for cache '%s' : local=%s, remote=%s.)";
+
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
@@ -3209,12 +3215,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     errorMessage.append(ex.getMessage());
                 }
 
-                DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
+                DynamicCacheDescriptor locDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
-                if (localDesc == null)
+                if (locDesc == null)
                     continue;
 
-                QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+                QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
 
                 if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
                     if (errorMessage.length() > 0)
@@ -3222,9 +3228,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     if (schemaPatch.hasConflicts())
                         errorMessage.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
-                            localDesc.cacheName(), schemaPatch.getConflictsMessage()));
+                            locDesc.cacheName(), schemaPatch.getConflictsMessage()));
                     else
-                        errorMessage.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, localDesc.cacheName()));
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, locDesc.cacheName()));
+                }
+
+                // This check must be done on join, otherwise group encryption key will be
+                // written to metastore regardless of validation check and could trigger WAL write failures.
+                boolean locEnc = locDesc.cacheConfiguration().isEncryptionEnabled();
+                boolean rmtEnc = cacheInfo.cacheData().config().isEncryptionEnabled();
+
+                if (locEnc != rmtEnc) {
+                    if (errorMessage.length() > 0)
+                        errorMessage.append("\n");
+
+                    // Message will be printed on remote node, so need to swap local and remote.
+                    errorMessage.append(String.format(ENCRYPT_MISMATCH_MESSAGE, locDesc.cacheName(), rmtEnc, locEnc));
                 }
             }
 

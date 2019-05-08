@@ -1213,15 +1213,27 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (next == null)
                 throw new NoSuchElementException();
 
+            long cntr = next.partitionCounter();
+
             CacheDataRow val = new DataEntryRow(next);
 
             if (donePart != -1) {
+                int pIdx = partMap.partitionIndex(donePart);
+
+                if (log.isDebugEnabled()) {
+                    // TODO FIXME log group.
+                    log.debug("Partition done [partId=" + donePart +
+                        " from=" + partMap.initialUpdateCounterAt(pIdx) + " to=" + partMap.updateCounterAt(pIdx) + ']');
+                }
+
                 doneParts.add(donePart);
 
                 donePart = -1;
             }
 
             advance();
+
+            // log.info("EEntry: key=" + (int)val.key().value(grp.cacheObjectContext(), false) + ", part=" + val.partition() + ", cntr=" + cntr);
 
             return val;
         }
@@ -1324,17 +1336,28 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         if (cacheIds.contains(rbRec.groupId())) {
                             int idx = partMap.partitionIndex(rbRec.partitionId());
 
-                            if (idx >= 0 && !missingParts.contains(idx)) {
-                                rebalancedCntrs[idx] += rbRec.range();
+                            if (idx < 0 || missingParts.contains(idx))
+                                continue;
 
-                                if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx))
-                                    doneParts.add(rbRec.partitionId()); // Add to done set immediately.
+                            long from = partMap.initialUpdateCounterAt(idx);
+                            long to = partMap.updateCounterAt(idx);
+
+                            rebalancedCntrs[idx] += rbRec.overlap(from, to);
+
+                            if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx)) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Partition done [partId=" + donePart +
+                                        " from=" + from + " to=" + to + ']');
+                                }
+
+                                doneParts.add(rbRec.partitionId()); // Add to done set immediately.
                             }
                         }
                     }
                 }
 
                 // TODO FIXME introduce isDone() for doneParts.size() == partMap.size()
+                // TODO print info about not done partitions
                 assert entryIt != null || doneParts.size() == partMap.size() :
                     "Reached end of WAL but not all partitions are done";
             }

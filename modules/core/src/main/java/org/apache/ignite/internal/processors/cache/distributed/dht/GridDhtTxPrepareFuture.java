@@ -1219,6 +1219,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void prepare0() {
+        boolean error = false;
+
         try {
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
@@ -1277,7 +1279,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                     // TODO add test for transforms to WithFilter.
                     if (!locCache && entry != null && entry.op() != NOOP &&
-                        !(entry.op() == TRANSFORM && entry.entryProcessorCalculatedValue().get1() == NOOP))
+                        // Update counter shouldn't be incremented for no-op or CQ test will fail.
+                        !(entry.op() == TRANSFORM &&
+                            (entry.entryProcessorCalculatedValue() == null || // TODO FIXME possible for txs over cachestore
+                                entry.entryProcessorCalculatedValue().get1() == NOOP)))
                         counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
 
                     map(entry);
@@ -1299,8 +1304,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 sendPrepareRequests();
             }
         }
+        catch (Throwable t) {
+            error = true;
+
+            throw t;
+        }
         finally {
-            markInitialized();
+            if (!error) // Prevent marking future as initialized on error.
+                markInitialized();
         }
     }
 

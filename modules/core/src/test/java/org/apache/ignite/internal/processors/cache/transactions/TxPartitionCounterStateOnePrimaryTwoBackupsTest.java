@@ -196,7 +196,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             super.onBackupCommitted(backup, idx);
 
                             if (idx == BACKUP_COMMIT_ORDER[0]) {
-                                PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, backup.name());
+                                PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, backup.name());
 
                                 assertFalse(cntr.gaps().isEmpty());
 
@@ -243,7 +243,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
         // Check if holes are closed on rebalance.
-        PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, backup.name());
+        PartitionUpdateCounterImpl cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, backup.name());
 
         assertTrue(cntr.gaps().isEmpty());
 
@@ -255,7 +255,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
-        cntr = counter(PARTITION_ID, backup.name());
+        cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, backup.name());
 
         assertEquals(TOTAL, cntr.reserved());
 
@@ -270,7 +270,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         awaitPartitionMapExchange();
 
-        cntr = counter(PARTITION_ID, grid0.name());
+        cntr = (PartitionUpdateCounterImpl)counter(PARTITION_ID, grid0.name());
 
         assertEquals(TOTAL + addCnt, cntr.get());
 

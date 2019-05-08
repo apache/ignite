@@ -1358,8 +1358,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     private boolean shouldOverridePartitionMap(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
         return newMap != null &&
-                (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) > 0 ||
-                 newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() > currentMap.updateSequence());
+            (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) > 0 ||
+                newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 &&
+                    newMap.updateSequence() > currentMap.updateSequence());
     }
 
     /** {@inheritDoc} */
@@ -1408,17 +1409,20 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             long updCntr = incomeCntrMap.updateCounter(part.id());
                             long curCntr = part.updateCounter();
 
-                            part.updateCounter(updCntr);
+                            if (updCntr != 0 || curCntr != 0) {  // Avoid zero counter update to empty partition.
+                                part.updateCounter(updCntr);
 
-                            if (updCntr != 0 && updCntr > curCntr) { // TODO FIXME use retval from updateCounter to understand if counter changes.
-                                if (log.isDebugEnabled())
-                                    log.debug("Partition update counter has updated [grp=" + grp.cacheOrGroupName() + ", p=" + part.id()
-                                        + ", state=" + part.state() + ", prevCntr=" + curCntr + ", nextCntr=" + updCntr + "]");
+                                if (updCntr > curCntr) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Partition update counter has updated [grp=" + grp.cacheOrGroupName() + ", p=" + part.id()
+                                            + ", state=" + part.state() + ", prevCntr=" + curCntr + ", nextCntr=" + updCntr + "]");
+                                }
                             }
                         }
                     }
                 }
 
+                // TODO FIXME while stale check after counter updates ?
                 if (exchangeVer != null) {
                     // Ignore if exchange already finished or new exchange started.
                     if (readyTopVer.compareTo(exchangeVer) > 0 || lastTopChangeVer.compareTo(exchangeVer) > 0) {
@@ -1698,10 +1702,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         continue;
 
                     long updCntr = cntrMap.updateCounter(part.id());
-
                     long locUpdCntr = part.updateCounter();
 
-                    part.updateCounter(updCntr);
+                    if (updCntr != 0 || locUpdCntr != 0) { // Avoid zero counter update to empty partition.
+                        part.updateCounter(updCntr);
+
+                        if (updCntr > locUpdCntr) {
+                            if (log.isDebugEnabled())
+                                log.debug("Partition update counter has updated [grp=" + grp.cacheOrGroupName() + ", p=" + part.id()
+                                    + ", state=" + part.state() + ", prevCntr=" + locUpdCntr + ", nextCntr=" + updCntr + "]");
+                        }
+                    }
 
                     if (locUpdCntr > updCntr) {
                         cntrMap.initialUpdateCounter(part.id(), part.initialUpdateCounter());
@@ -2105,7 +2116,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (recentlyLost != null) {
                     U.warn(log, "Detected lost partitions [grp=" + grp.cacheOrGroupName()
                         + ", parts=" + S.compact(recentlyLost)
-                        + ", plc=" + plc + "]");
+                        + ", plc=" + plc + ", topVer=" + resTopVer + "]");
                 }
 
                 if (lostParts != null && plc != PartitionLossPolicy.IGNORE)
@@ -2979,7 +2990,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Checks consistency after all operations.
      */
     private void consistencyCheck() {
-        // no-op
+        // No-op.
     }
 
     /**

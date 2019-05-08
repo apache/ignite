@@ -291,17 +291,4 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
             }
         }
     }
-
-    /**
-     * @param res Response.
-     */
-    protected void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
-        if (res.hasConflicts()) {
-            StringBuilder b = new StringBuilder();
-
-            res.print(b::append);
-
-            fail(b.toString());
-        }
-    }
 }

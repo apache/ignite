@@ -30,8 +30,8 @@ import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessim
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
-import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
-import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossDetectionOnNodeLeftTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
@@ -115,7 +115,11 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(CacheNoAffinityExchangeTest.class);
 
-        suite.addTestSuite(CacheParallelStartTest.class);
+        GridTestUtils.addTestIfNeeded(suite, CachePartitionLossDetectionOnNodeLeftTest.class, ignoredTests);
+
+        //GridTestUtils.addTestIfNeeded(suite, CacheClientsConcurrentStartTest.class, ignoredTests);
+        //GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingOrderingTest.class, ignoredTests);
+        //GridTestUtils.addTestIfNeeded(suite, IgniteCacheClientMultiNodeUpdateTopologyLockTest.class, ignoredTests);
 
         //suite.addTestSuite(CacheClientsConcurrentStartTest.class);
         //suite.addTestSuite(GridCacheRebalancingOrderingTest.class);
