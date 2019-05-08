@@ -91,6 +91,10 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
+import org.apache.ignite.internal.processors.monitoring.sensor.IntClosureSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.LongClosureSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.LongSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.SensorGroup;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -170,6 +174,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMP
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.internal.processors.monitoring.MonitoringGroup.IGNITE_LOCAL;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -497,6 +502,46 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if ((getSpi() instanceof TcpDiscoverySpi) && Boolean.TRUE.equals(ctx.config().isClientMode()) && !getSpi().isClientMode())
             ctx.performance().add("Enable client mode for TcpDiscoverySpi " +
                 "(set TcpDiscoverySpi.forceServerMode to false)");
+
+        SensorGroup grp = ctx.monitoring().sensorsGroup(IGNITE_LOCAL, "local");
+
+        grp.doubleSensor("crrentCpuLoad", () -> cpuLoad);
+        grp.doubleSensor("currentGcCpuLoad", () -> gcCpuLoad);
+
+        IntClosureSensor availableProc = grp.intSensor("availableProcessors", os::getAvailableProcessors);
+
+        LongClosureSensor heapMemInit =
+            grp.longSensor("heapMemoryInitialized", () -> getHeapMemoryUsage().getInit());
+
+        LongClosureSensor heapMemUsed = grp.longSensor("heapMemoryUsed", () -> getHeapMemoryUsage().getUsed());
+
+        LongClosureSensor heapMemCommitted =
+            grp.longSensor("heapMemoryCommitted", () -> getHeapMemoryUsage().getCommitted());
+
+        LongClosureSensor heapMemoryMax = grp.longSensor("heapMemoryMaximum", () -> getHeapMemoryUsage().getMax());
+
+        LongClosureSensor nonHeapMemInit =
+            grp.longSensor("nonHeapMemoryInitialized", () -> nonHeapMemoryUsage().getInit());
+
+        LongSensor nonHeapMemUsed = grp.longSensor("nonHeapMemoryUsed", nonHeapMemoryUsage().getUsed());
+
+        LongSensor nonHeapMemCommitted =
+            grp.longSensor("nonHeapMemoryCommitted", nonHeapMemoryUsage().getCommitted());
+
+        LongSensor nonHeapMemMax = grp.longSensor("nonHeapMemoryMaximum", nonHeapMemoryUsage().getMax());
+
+        LongClosureSensor uptime = grp.longSensor("uptime", rt::getUptime);
+
+        LongClosureSensor startTime = grp.longSensor("startTime", rt::getStartTime);
+
+        IntClosureSensor thCnt = grp.intSensor("threadCount", threads::getThreadCount);
+
+        IntClosureSensor peakThCnt = grp.intSensor("peakThreadCount", threads::getPeakThreadCount);
+
+        LongClosureSensor totalStartedThreadCount =
+            grp.longSensor("totalStartedThreadCount", threads::getTotalStartedThreadCount);
+
+        IntClosureSensor daemonThreadCount = grp.intSensor("daemonThreadCount", threads::getDaemonThreadCount);
     }
 
     /** {@inheritDoc} */

@@ -22,6 +22,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
+import org.apache.ignite.internal.processors.monitoring.sensor.DoubleSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.FloatSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.IntSensor;
+import org.apache.ignite.internal.processors.monitoring.sensor.LongSensor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
@@ -53,6 +58,81 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** */
     private volatile InternalMetrics metrics;
 
+    /** */
+    private IntSensor maxActiveJobs = null;
+
+    /** */
+    private IntSensor curActiveJobs = null;
+
+    /** */
+    private FloatSensor avgActiveJobs = null;
+
+    /** */
+    private IntSensor maxWaitingJobs = null;
+
+    /** */
+    private IntSensor curWaitingJobs = null;
+
+    /** */
+    private FloatSensor avgWaitingJobs = null;
+
+    /** */
+    private IntSensor maxCancelledJobs = null;
+
+    /** */
+    private IntSensor curCancelledJobs = null;
+
+    /** */
+    private FloatSensor avgCancelledJobs = null;
+
+    /** */
+    private IntSensor maxRejectedJobs = null;
+
+    /** */
+    private IntSensor curRejectedJobs = null;
+
+    /** */
+    private FloatSensor avgRejectedJobs = null;
+
+    /** */
+    private IntSensor totalRejectedJobs = null;
+
+    /** */
+    private IntSensor totalCancelledJobs = null;
+
+    /** */
+    private IntSensor totalExecutedJobs = null;
+
+    /** */
+    private LongSensor maxJobWaitTime = null;
+
+    /** */
+    private LongSensor curJobWaitTime = null;
+
+    /** */
+    private DoubleSensor avgJobWaitTime = null;
+
+    /** */
+    private LongSensor maxJobExecTime = null;
+
+    /** */
+    private LongSensor curJobExecTime = null;
+
+    /** */
+    private DoubleSensor avgJobExecTime = null;
+
+    /** */
+    private LongSensor totalJobExecTime = null;
+
+    /** */
+    private LongSensor totalIdleTime = null;
+
+    /** */
+    private LongSensor curIdleTime = null;
+
+    /** */
+    private DoubleSensor cpuLoadAvg = null;
+
     /**
      * @param ctx Grid kernal context.
      */
@@ -74,6 +154,67 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
         queSize = size;
 
         reset();
+    }
+
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        ctx.monitoring().sensorsGroup(MonitoringGroup.JOBS, grp -> {
+            if (maxActiveJobs == null) {
+                maxActiveJobs = grp.intSensor("MaximumActiveJobs");
+                curActiveJobs = grp.intSensor("CurrentActiveJobs");
+                avgActiveJobs = grp.floatSensor("AverageActiveJobs");
+                maxWaitingJobs = grp.intSensor("MaximumWaitingJobs");
+                curWaitingJobs = grp.intSensor("CurrentWaitingJobs");
+                avgWaitingJobs = grp.floatSensor("AverageWaitingJobs");
+                maxCancelledJobs = grp.intSensor("MaximumCancelledJobs");
+                curCancelledJobs = grp.intSensor("CurrentCancelledJobs");
+                avgCancelledJobs = grp.floatSensor("AverageCancelledJobs");
+                maxRejectedJobs = grp.intSensor("MaximumRejectedJobs");
+                curRejectedJobs = grp.intSensor("CurrentRejectedJobs");
+                avgRejectedJobs = grp.floatSensor("AverageRejectedJobs");
+                totalRejectedJobs = grp.intSensor("TotalRejectedJobs");
+                totalCancelledJobs = grp.intSensor("TotalCancelledJobs");
+                totalExecutedJobs = grp.intSensor("TotalExecutedJobs");
+                maxJobWaitTime = grp.longSensor("MaximumJobWaitTime");
+                curJobWaitTime = grp.longSensor("CurrentJobWaitTime");
+                avgJobWaitTime = grp.doubleSensor("AverageJobWaitTime");
+                maxJobExecTime = grp.longSensor("MaximumJobExecTime");
+                curJobExecTime = grp.longSensor("CurrentJobExecTime");
+                avgJobExecTime = grp.doubleSensor("AverageJobExecTime");
+                totalJobExecTime = grp.longSensor("TotalJobExecTime");
+                totalIdleTime = grp.longSensor("TotalIdleTime");
+                curIdleTime = grp.longSensor("CurrentIdleTime");
+                cpuLoadAvg = grp.doubleSensor("AverageCpuLoad");
+            }
+
+            GridJobMetrics m = getJobMetrics();
+
+            maxActiveJobs.set(m.getMaximumActiveJobs());
+            curActiveJobs.set(m.getCurrentActiveJobs());
+            avgActiveJobs.set(m.getAverageActiveJobs());
+            maxWaitingJobs.set(m.getMaximumWaitingJobs());
+            curWaitingJobs.set(m.getCurrentWaitingJobs());
+            avgWaitingJobs.set(m.getAverageWaitingJobs());
+            maxCancelledJobs.set(m.getMaximumCancelledJobs());
+            curCancelledJobs.set(m.getCurrentCancelledJobs());
+            avgCancelledJobs.set(m.getAverageCancelledJobs());
+            maxRejectedJobs.set(m.getMaximumRejectedJobs());
+            curRejectedJobs.set(m.getCurrentRejectedJobs());
+            avgRejectedJobs.set(m.getAverageRejectedJobs());
+            totalRejectedJobs.set(m.getTotalRejectedJobs());
+            totalCancelledJobs.set(m.getTotalCancelledJobs());
+            totalExecutedJobs.set(m.getTotalExecutedJobs());
+            maxJobWaitTime.set(m.getMaximumJobWaitTime());
+            curJobWaitTime.set(m.getCurrentJobWaitTime());
+            avgJobWaitTime.set(m.getAverageJobWaitTime());
+            maxJobExecTime.set(m.getMaximumJobExecuteTime());
+            curJobExecTime.set(m.getCurrentJobExecuteTime());
+            avgJobExecTime.set(m.getAverageJobExecuteTime());
+            totalJobExecTime.set(m.getTotalJobsExecutionTime());
+            totalIdleTime.set(m.getTotalIdleTime());
+            curIdleTime.set(m.getCurrentIdleTime());
+            cpuLoadAvg.set(m.getAverageCpuLoad());
+        });
+
     }
 
     /**

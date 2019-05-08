@@ -21,7 +21,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
@@ -37,10 +39,14 @@ public class SensorGroupImpl implements SensorGroup {
     private String name;
 
     /** */
-    private Map<String, Sensor> sensors = new HashMap<>();
+    private Consumer<SensorGroup> updater;
 
     /** */
-    public SensorGroupImpl(MonitoringGroup monGrp, String name) {
+    private Map<String, Sensor> sensors = new HashMap<>();
+
+
+    /** */
+    public SensorGroupImpl(MonitoringGroup monGrp, String name, Consumer<SensorGroup> updater) {
         this.monGrp = monGrp;
 
         this.name = name;
@@ -98,29 +104,52 @@ public class SensorGroupImpl implements SensorGroup {
         return addSensor(name, new FloatClosureSensor(name, sensorValue));
     }
 
+    @Override public FloatSensor floatSensor(String name) {
+        return floatSensor(name, 0);
+    }
+
+    @Override public FloatSensor floatSensor(String name, float value) {
+        return addSensor(name, new FloatSensor(name, value));
+    }
+
     /** {@inheritDoc} */
     @Override public HitRateSensor hitRateSensor(String name, int rateTimeInterval, int size) {
         return addSensor(name, new HitRateSensor(name, rateTimeInterval, size));
     }
 
+    /** {@inheritDoc} */
     @Override public BooleanClosureSensor booleanSensor(String name, BooleanSupplier sensorValue) {
         return addSensor(name, new BooleanClosureSensor(name, sensorValue));
     }
 
+    /** {@inheritDoc} */
     @Override public LongArraySensor longArraySensor(String name, Supplier<long[]> sensorValue) {
         return addSensor(name, new LongArraySensor(name, sensorValue));
     }
 
+    /** {@inheritDoc} */
     @Override public BooleanArraySensor booleanArraySensor(String name, Supplier<boolean[]> sensorValue) {
         return addSensor(name, new BooleanArraySensor(name, sensorValue));
     }
 
+    /** {@inheritDoc} */
     @Override public IntArraySensor intArraySensor(String name, Supplier<int[]> sensorValue) {
         return addSensor(name, new IntArraySensor(name, sensorValue));
     }
 
+    /** {@inheritDoc} */
     @Override public IntSensor intSensor(String name) {
-        return addSensor(name, new IntSensor(name));
+        return intSensor(name, 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IntSensor intSensor(String name, int value) {
+        return addSensor(name, new IntSensor(name, value));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IntClosureSensor intSensor(String name, IntSupplier value) {
+        return addSensor(name, new IntClosureSensor(name, value));
     }
 
     /** {@inheritDoc} */
@@ -149,11 +178,17 @@ public class SensorGroupImpl implements SensorGroup {
 
     /** {@inheritDoc} */
     @Override public Collection<Sensor> getSensors() {
+        if (updater != null)
+            updater.accept(this);
+
         return sensors.values();
     }
 
     /** {@inheritDoc} */
     @Override public Sensor findSensor(String name) {
+        if (updater != null)
+            updater.accept(this);
+
         return sensors.get(name);
     }
 

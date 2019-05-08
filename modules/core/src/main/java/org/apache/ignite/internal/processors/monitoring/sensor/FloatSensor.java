@@ -20,44 +20,30 @@ package org.apache.ignite.internal.processors.monitoring.sensor;
 /**
  *
  */
-public class IntSensor extends AbstractSensor {
-    /** */
-    private int value;
+public class FloatSensor extends AbstractSensor {
+    private float value;
 
-    /** */
-    public IntSensor(String name, int value) {
+    public FloatSensor(String name, float value) {
         super(name);
 
         this.value = value;
     }
 
-    /** */
-    public int getValue() {
+    public float getValue() {
         return value;
-    }
-
-    /** */
-    public void increment() {
-        value++;
-    }
-
-    /** */
-    public void decrement() {
-        value--;
-    }
-
-    /** */
-    public void set(int value) {
-        this.value = value;
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue() {
-        return ((Integer)value).toString();
+        return ((Float) value).toString();
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
         value = 0;
+    }
+
+    public void set(float value) {
+        this.value = value;
     }
 }

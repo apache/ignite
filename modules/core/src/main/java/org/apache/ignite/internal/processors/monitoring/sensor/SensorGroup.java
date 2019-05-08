@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.monitoring.sensor;
 import java.util.Collection;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.monitoring.MonitoringGroup;
@@ -84,6 +85,12 @@ public interface SensorGroup {
     public FloatClosureSensor floatSensor(String name, FloatSupplier sensorValue);
 
     /** */
+    public FloatSensor floatSensor(String name);
+
+    /** */
+    public FloatSensor floatSensor(String name, float value);
+
+    /** */
     public HitRateSensor hitRateSensor(String name, int rateTimeInterval, int size);
 
     /** */
@@ -100,6 +107,11 @@ public interface SensorGroup {
 
     /** */
     public IntSensor intSensor(String name);
+
+    /** */
+    public IntSensor intSensor(String name, int value);
+
+    public IntClosureSensor intSensor(String name, IntSupplier value);
 
     /** */
     @FunctionalInterface

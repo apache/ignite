@@ -41,7 +41,7 @@ public class DoubleSensor extends AbstractSensor {
         value--;
     }
 
-    public void set(long value) {
+    public void set(double value) {
         this.value = value;
     }
 

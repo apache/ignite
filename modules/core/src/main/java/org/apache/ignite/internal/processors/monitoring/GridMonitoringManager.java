@@ -76,17 +76,30 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         stopSpi();
     }
 
-    public SensorGroup sensorsGroup(MonitoringGroup monGrp) {
-        return sensorsGroup(monGrp, null);
+    /** */
+    public SensorGroup sensorsGroup(MonitoringGroup monGrp, Consumer<SensorGroup> updater) {
+        return sensorsGroup(monGrp, null, updater);
     }
 
+    /** */
+    public SensorGroup sensorsGroup(MonitoringGroup monGrp) {
+        return sensorsGroup(monGrp, null, null);
+    }
+
+    /** */
     public SensorGroup sensorsGroup(MonitoringGroup monGrp, @Nullable String name) {
+        return sensorsGroup(monGrp, name, null);
+    }
+
+    /** */
+    public SensorGroup sensorsGroup(MonitoringGroup monGrp, @Nullable String name,
+        @Nullable Consumer<SensorGroup> updater) {
         if (name == null)
             name = "";
 
         ConcurrentMap<String, SensorGroup> grps = sensorGrps.computeIfAbsent(monGrp, mg -> new ConcurrentHashMap<>());
 
-        SensorGroup newGrp = new SensorGroupImpl(monGrp, name);
+        SensorGroup newGrp = new SensorGroupImpl(monGrp, name, updater);
 
         SensorGroup oldGrp = grps.putIfAbsent(name, newGrp);
 
@@ -99,6 +112,7 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         return oldGrp;
     }
 
+    /** */
     public <Id, Row> MonitoringList<Id, Row> list(MonitoringGroup grp, String name, Class<Row> rowClass) {
         Map<String, MonitoringList<?, ?>> grpLists = this.lists.computeIfAbsent(grp, g -> new ConcurrentHashMap<>());
 
@@ -115,22 +129,27 @@ public class GridMonitoringManager extends GridManagerAdapter<MonitoringExposerS
         return oldList;
     }
 
+    /** */
     public ConcurrentMap<MonitoringGroup, ConcurrentMap<String, SensorGroup>> sensorGroups() {
         return sensorGrps;
     }
 
+    /** */
     public ConcurrentMap<MonitoringGroup, ConcurrentMap<String, MonitoringList<?, ?>>> lists() {
         return lists;
     }
 
+    /** */
     public void addSensorGroupCreationListener(Consumer<SensorGroup> lsnr) {
         sensorGrpCreationLsnrs.add(lsnr);
     }
 
+    /** */
     public void addListCreationListener(Consumer<T2<MonitoringGroup, MonitoringList<?, ?>>> lsnr) {
         listCreationLsnrs.add(lsnr);
     }
 
+    /** */
     private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
         for (Consumer<T> lsnr : lsnrs) {
             try {

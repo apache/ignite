@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.io.Serializable;
-
 /**
  * This class represents runtime information available for current VM.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
-public interface GridLocalMetrics extends Serializable {
+@Deprecated
+public interface GridLocalMetrics {
     /**
      * Returns the number of processors available to the Java virtual machine.
      * This method is equivalent to the {@link Runtime#availableProcessors()}

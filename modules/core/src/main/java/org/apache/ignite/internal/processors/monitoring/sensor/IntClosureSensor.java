@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.processors.monitoring.sensor;
 
+import java.util.function.IntSupplier;
+
 /**
  *
  */
-public class IntSensor extends AbstractSensor {
+public class IntClosureSensor extends AbstractSensor {
     /** */
-    private int value;
+    private IntSupplier value;
 
     /** */
-    public IntSensor(String name, int value) {
+    public IntClosureSensor(String name, IntSupplier value) {
         super(name);
 
         this.value = value;
@@ -33,31 +35,16 @@ public class IntSensor extends AbstractSensor {
 
     /** */
     public int getValue() {
-        return value;
-    }
-
-    /** */
-    public void increment() {
-        value++;
-    }
-
-    /** */
-    public void decrement() {
-        value--;
-    }
-
-    /** */
-    public void set(int value) {
-        this.value = value;
+        return value.getAsInt();
     }
 
     /** {@inheritDoc} */
     @Override public String stringValue() {
-        return ((Integer)value).toString();
+        return ((Integer) value.getAsInt()).toString();
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = 0;
+        // No-op.
     }
 }
