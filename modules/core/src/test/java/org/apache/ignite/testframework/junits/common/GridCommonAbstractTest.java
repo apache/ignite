@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.integration.CompletionListener;
@@ -931,10 +932,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                 GridDhtLocalPartition part = top.localPartition(p, AffinityTopologyVersion.NONE, false);
 
+
+
                 sb.append("local part=");
 
-                if (part != null)
-                    sb.append(p).append(" state=").append(part.state());
+                if (part != null) {
+                    sb.append(p).append(" counters=")
+                        .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
+                        .append(" fullSize=")
+                        .append(part == null ? "NA" : part.fullSize())
+                        .append(p).append(" state=").append(part.state());
+                }
                 else
                     sb.append(p).append(" is null");
 
@@ -948,6 +956,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             .append(nodeId)
                             .append(" part=")
                             .append(p)
+                            .append(" counters=")
+                            .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
+                            .append(" fullSize=")
+                            .append(part == null ? "NA" : part.fullSize())
                             .append(" state=")
                             .append(top.partitionState(nodeId, p))
                             .append(" isAffNode=")
@@ -1221,6 +1233,44 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             set.add(entry);
 
         return set;
+    }
+
+    /**
+     * @param cache Cache.
+     * @param part Partition.
+     * @param cnt Count.
+     * @param skipCnt Skip keys from start.
+     * @return List of keys for partition.
+     */
+    protected List<Integer> partitionKeys(IgniteCache<?, ?> cache, int part, int cnt, int skipCnt) {
+        IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
+
+        GridCacheContext<?, ?> cctx = proxy.context();
+
+        AffinityTopologyVersion topVer = cctx.topology().readyTopologyVersion();
+
+        int k = 0, c = 0, skip0 = 0;
+
+        List<Integer> keys = new ArrayList<>(cnt);
+
+        while(c < cnt) {
+            if (cctx.affinity().partition(k) == part) {
+                if (skip0 < skipCnt) {
+                    k++;
+                    skip0++;
+
+                    continue;
+                }
+
+                c++;
+
+                keys.add(k);
+            }
+
+            k++;
+        }
+
+        return keys;
     }
 
     /**
@@ -2166,42 +2216,32 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      * @return List of last keys.
      */
-    protected List<Integer> loadDataToPartition(int p, String cacheName, int total, int skip, int returnKeys) {
-        int c = 0, k = 0;
+    protected List<Integer> loadDataToPartition(int p, String gridName, String cacheName, int total, int skip, int... putType) {
+        IgniteCache<Integer, Integer> cache = grid(gridName).cache(cacheName);
 
-        ClusterNode node = grid(0).affinity(cacheName).mapPartitionToNode(p);
+        List<Integer> keys = partitionKeys(cache, p, total, skip);
 
-        Ignite primary = G.allGrids().stream().filter(new Predicate<Ignite>() {
-            @Override public boolean test(Ignite ignite) {
-                return ignite.cluster().localNode().equals(node);
-            }
-        }).findFirst().get();
+        int mode = putType != null && putType.length > 0 ? putType[0] : 0;
 
-        List<Integer> keys = new ArrayList<>(returnKeys);
+        Map<Integer, Integer> map = keys.stream().collect(Collectors.toMap(k -> k, k -> k));
 
-        int skip0 = 0;
+        switch (mode) {
+            case 0:
+                cache.putAll(map);
 
-        // Preload
-        try (IgniteDataStreamer<Object, Object> streamer = primary.dataStreamer(DEFAULT_CACHE_NAME)) {
-            while (c < total) {
-                if (primary.affinity(DEFAULT_CACHE_NAME).partition(k) == p) {
-                    if (skip0 < skip) {
-                        k++;
-                        skip0++;
-
-                        continue;
-                    }
-
-                    streamer.addData(k, k);
-
-                    c++;
-
-                    if (total - c < returnKeys)
-                        keys.add(k);
+                break;
+            case 1:
+                try(IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
+                    ds.addData(map);
                 }
 
-                k++;
-            }
+                break;
+            case 2:
+                for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+                    cache.put(entry.getKey(), entry.getValue());
+                }
+
+                break;
         }
 
         return keys;

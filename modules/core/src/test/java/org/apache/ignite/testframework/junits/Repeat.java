@@ -15,22 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal;
+package org.apache.ignite.testframework.junits;
 
-import java.util.List;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.METHOD;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Listens for WAL write events. TODO FIXME used for tests, how to do better ?
+ * Repeat test N times annotation.
+ * <p>Usage example:</p>
+ * <pre>
+ * <code>{@literal @}Test
+ * {@literal @}Repeat(10)
+ *  public void testSomething() {
+ *     // test method body
+ *  }
+ * </code>
+ * </pre>
  */
-public interface WALWriteListener {
-    /**
-     * @param entries Entries.
-     */
-    public void beforeWrite(List<DataEntry> entries);
-
-    /**
-     * @param entries Entries.
-     */
-    public void afterWrite(List<DataEntry> entries);
+@Retention( RetentionPolicy.RUNTIME )
+@Target({ METHOD, ANNOTATION_TYPE })
+public @interface Repeat {
+    /** */
+    int value() default 1;
 }

@@ -53,11 +53,14 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -168,6 +171,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
+
+    /** */
+    private volatile boolean stateChanged;
 
     /**
      * @param ctx Context.
@@ -535,6 +541,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 this.state.compareAndSet(state0, setPartState(state0, toState));
 
+                stateChanged = true;
+
                 try {
                     ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
                 }
@@ -560,6 +568,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
                 if (update) {
+                    stateChanged = true;
+
                     try {
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
                     }
@@ -971,37 +981,61 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Returns new update counter for primary node or passed counter for backup node.
+     *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
      * @return Next update index.
      */
     public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, @Nullable Long primaryCntr) {
-        long nextCntr = store.nextUpdateCounter();
+        long nextCntr;
 
-        if (grp.sharedGroup())
-            grp.onPartitionCounterUpdate(cacheId, id, primaryCntr != null ? primaryCntr : nextCntr, topVer, primary);
+        if (primaryCntr == null) // Primary node.
+            nextCntr = store.nextUpdateCounter();
+        else {
+            assert primaryCntr != 0;
 
-        // This is first update in partition, we should log partition state information for further crash recovery.
-        if (nextCntr == 1) {
-            if (grp.persistenceEnabled() && grp.walEnabled())
-                try {
-                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to log partition state snapshot to WAL.", e);
-
-                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-                }
+            nextCntr = primaryCntr;
         }
+
+        // TODO FIXME
+        if (grp.sharedGroup())
+            grp.onPartitionCounterUpdate(cacheId, id, nextCntr, topVer, primary);
 
         return nextCntr;
     }
 
     /**
-     * @return Current update index.
+     * TODO FIXME could tx be really null ?
+     *
+     * @param cacheId Cache id.
+     * @param tx Tx.
+     * @param primaryCntr Primary counter.
+     */
+    public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
+        if (primaryCntr != null)
+            return primaryCntr;
+
+        TxCounters txCounters = tx.txCounters(false);
+
+        return txCounters.generateNextCounter(cacheId, id());
+    }
+
+    /**
+     * @return Current update counter.
      */
     public long updateCounter() {
         return store.updateCounter();
+    }
+
+    /**
+     * @param val Update counter value.
+     */
+    public void updateCounter(long val) {
+//        if (id() == 0 && group().groupId() == CU.cacheId("default"))
+//            log.error("TX: set node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", val=" + val, new Exception());
+
+        store.updateCounter(val);
     }
 
     /**
@@ -1025,14 +1059,25 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param delta Delta.
      */
     public void updateCounter(long start, long delta) {
+//        if (id() == 0 && group().groupId() == CU.cacheId("default"))
+//            log.error("TX: node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", start=" + start + ", delta=" + delta, new Exception());
+
         store.updateCounter(start, delta);
     }
 
     /**
-     * @param val Initial update index value.
+     * @param start Start.
+     * @param delta Delta.
      */
-    public void initialUpdateCounter(long val) {
-        store.updateInitialCounter(val);
+    public void releaseCounter(long start, long delta) {
+        store.releaseCounter(start, delta);
+    }
+
+    /**
+     * Reset partition counters.
+     */
+    public void resetCounters() {
+        store.resetUpdateCounters();
     }
 
     /**
@@ -1363,6 +1408,27 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     private static long setSize(long state, int size) {
         return (state & (~0xFFFFFFFF00000000L)) | ((long)size << 32);
+    }
+
+    /**
+     * Flushes pending update counters closing all possible gaps.
+     *
+     * @return Even-length array of pairs [start, end] for each gap.
+     */
+    public GridLongList finalizeUpdateCounters() {
+        return store.finalizeUpdateCounters();
+    }
+
+    /**
+     *
+     * @return {@code True} if partition state was changed before last call to this method.
+     */
+    public boolean getAndResetStateUpdate() {
+        boolean tmp = stateChanged;
+
+        stateChanged = false;
+
+        return tmp;
     }
 
     /**

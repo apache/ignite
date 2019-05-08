@@ -36,8 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Data pages IO.
  */
-public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
-
+public abstract class AbstractDataPageIO<T extends Storable> extends PageIO implements CompactablePageIO {
     /** */
     private static final int SHOW_ITEM = 0b0001;
 

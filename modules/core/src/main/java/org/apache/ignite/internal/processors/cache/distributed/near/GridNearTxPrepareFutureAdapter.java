@@ -163,10 +163,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         if (tx.storeWriteThrough())
             return;
 
-        Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();
-
-        if (map.size() == 1) {
-            Map.Entry<UUID, Collection<UUID>> entry = map.entrySet().iterator().next();
+        if (txNodes.size() == 1) {
+            Map.Entry<UUID, Collection<UUID>> entry = txNodes.entrySet().iterator().next();
 
             assert entry != null;
 

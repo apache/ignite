@@ -1167,6 +1167,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                 throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
                             }
                         }
+
+                        // TODO FIXME write counters here to wal
                     }
                 }
             }

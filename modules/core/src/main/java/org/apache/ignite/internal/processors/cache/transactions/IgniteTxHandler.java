@@ -1389,6 +1389,10 @@ public class IgniteTxHandler {
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
 
+                // TODO FIXME looks no longer needed.
+//                tx.setPartitionUpdateCounters(
+//                    req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
+
                 tx.commitRemoteTx();
             }
             else {
@@ -2012,12 +2016,7 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
-        try {
-            applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        applyPartitionsUpdatesCounters(req.updateCounters());
 
         try {
             ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId()), SYSTEM_POOL);
@@ -2049,22 +2048,11 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param counters Counters.
-     */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters)
-        throws IgniteCheckedException {
-        applyPartitionsUpdatesCounters(counters, false, false);
-    }
-
-    /**
-     * Applies partition counter updates for transactions.
+     * Applies partition counter updates for mvcc transactions.
+     *  @param counters Counter values to be updated.
      *
-     * @param counters Counter values to be updated.
-     * @param rollback {@code True} if applied from rollbacks.
      */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters,
-        boolean rollback,
-        boolean rollbackOnPrimary) throws IgniteCheckedException {
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) {
         if (counters == null)
             return;
 
@@ -2085,28 +2073,8 @@ public class IgniteTxHandler {
 
                     if (part != null && part.reserve()) {
                         try {
-                            if (part.state() != GridDhtPartitionState.RENTING) { // Check is actual only for backup node.
-                                long start = counter.initialCounter(i);
-                                long delta = counter.updatesCount(i);
-
-                                boolean updated = part.updateCounter(start, delta);
-
-                                // Need to log rolled back range for logical recovery.
-                                if (updated && rollback) {
-                                    if (part.group().persistenceEnabled() &&
-                                        part.group().walEnabled()) {
-                                        RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
-                                            start, delta);
-
-                                        ctx.wal().log(rec);
-                                    }
-
-                                    for (int cntr = 1; cntr <= delta; cntr++) {
-                                        ctx0.continuousQueries().skipUpdateCounter(null, part.id(), start + cntr,
-                                            topVer, rollbackOnPrimary);
-                                    }
-                                }
-                            }
+                            if (part.state() != GridDhtPartitionState.RENTING)
+                                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
                             else
                                 invalid = true;
                         }

@@ -354,6 +354,7 @@ public interface GridDhtPartitionTopology {
     public CachePartitionFullCountersMap fullUpdateCounters();
 
     /**
+     * @param skipZeros {@code True} to exclude zero counters from map.
      * @return Partition update counters.
      */
     public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);

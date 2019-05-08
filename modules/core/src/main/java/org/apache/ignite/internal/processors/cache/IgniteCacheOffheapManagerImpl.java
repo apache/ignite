@@ -35,6 +35,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapt
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -201,6 +204,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         catch (IgniteCheckedException e) {
             throw new IgniteException(e.getMessage(), e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException {
+        return 0; // No-op.
     }
 
     /** {@inheritDoc} */
@@ -1129,7 +1137,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private final CacheDataTree dataTree;
 
         /** Update counter. */
-        protected final AtomicLong cntr = new AtomicLong();
+        protected final PartitionUpdateCounter pCntr = new PartitionUpdateCounter(log);
 
         /** Partition size. */
         private final AtomicLong storageSize = new AtomicLong();
@@ -1282,8 +1290,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 Item peek = peek();
 
-                if (peek == null || peek.start != next)
-                    return;
+        /** {@inheritDoc} */
+        @Override public long getAndIncrementUpdateCounter(long delta) {
+            return pCntr.reserve(delta);
+        }
 
                 Item item = poll();
 
@@ -1295,11 +1305,22 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
         }
 
-        /**
-         * @return Retrieves the minimum update counter task from queue.
-         */
-        private Item poll() {
-            return queue.pollFirst();
+        @Override public PartitionUpdateCounter partUpdateCounter() {
+            return pCntr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateCounter(long val) {
+            try {
+                pCntr.update(val);
+            }
+            catch (PartitionUpdateCounter.IllegalUpdateCounterException e) {
+                U.error(log, "Partition inconsistency is detected. " +
+                    "Most probably a node with most actual data is out of topology or data streamer on " +
+                    "transactional cache in allowOverwrite=false mode is used concurrently with transactions in the same time.");
+
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            }
         }
 
         /**
@@ -1310,11 +1331,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         }
 
-        /**
-         * @param item Adds update task to priority queue.
-         */
-        private void offer(Item item) {
-            queue.add(item);
+        /** {@inheritDoc} */
+        @Override public void releaseCounter(long start, long delta) {
+            // TODO remove.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void finalizeUpdateCountres() {
+            pCntr.finalizeUpdateCounters();
         }
 
         /** {@inheritDoc} */
@@ -1735,8 +1759,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes) {
-            initCntr = updCntr;
+        @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps) {
+            pCntr.init(updCntr, gaps);
+
             storageSize.set(size);
 
             cntr.set(updCntr);
@@ -1750,6 +1775,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void preload() throws IgniteCheckedException {
             // No-op.
+        }
+
+        @Override public void resetUpdateCounters() {
+            pCntr.resetCounters();
         }
 
         /**

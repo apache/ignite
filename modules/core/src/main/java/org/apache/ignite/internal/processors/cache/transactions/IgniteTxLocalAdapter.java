@@ -430,6 +430,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         try {
             cctx.tm().prepareTx(this, entries);
+
+            if (txState().mvccEnabled())
+                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -441,6 +444,64 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 throw e;
 
             throw new IgniteCheckedException("Transaction validation produced a runtime exception: " + this, e);
+        }
+    }
+
+    /**
+     * Calculates partition update counters for current transaction. Each partition will be supplied with
+     * pair (init, delta) values, where init - initial update counter, and delta - updates count made
+     * by current transaction for a given partition.
+     */
+    public void calculatePartitionUpdateCounters() {
+        TxCounters counters = txCounters(false);
+
+        if (counters != null && F.isEmpty(counters.updateCounters())) {
+            List<PartitionUpdateCountersMessage> cntrMsgs = new ArrayList<>();
+
+            for (Map.Entry<Integer, Map<Integer, AtomicLong>> record : counters.accumulatedUpdateCounters().entrySet()) {
+                int cacheId = record.getKey();
+
+                Map<Integer, AtomicLong> partToCntrs = record.getValue();
+
+                assert partToCntrs != null;
+
+                if (F.isEmpty(partToCntrs))
+                    continue;
+
+                PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
+                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
+
+                //assert ctx0 != null && ctx0.mvccEnabled();
+
+                GridDhtPartitionTopology top = ctx0.topology();
+
+                assert top != null;
+
+                for (Map.Entry<Integer, AtomicLong> e : partToCntrs.entrySet()) {
+                    AtomicLong acc = e.getValue();
+
+                    assert acc != null;
+
+                    long cntr = acc.get();
+
+                    assert cntr >= 0;
+
+                    if (cntr != 0) {
+                        int p = e.getKey();
+
+                        GridDhtLocalPartition part = top.localPartition(p);
+
+                        assert part != null && part.state() == GridDhtPartitionState.OWNING;
+
+                        msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
+                    }
+                }
+
+                if (msg.size() > 0)
+                    cntrMsgs.add(msg);
+            }
+
+            counters.updateCounters(cntrMsgs);
         }
     }
 
@@ -517,6 +578,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 cctx.tm().txContext(this);
 
                 AffinityTopologyVersion topVer = topologyVersion();
+
+                TxCounters txCounters = txCounters(false);
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
@@ -733,10 +796,19 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         CU.subjectId(this, cctx),
                                         resolveTaskName(),
                                         dhtVer,
-                                        null);
+                                        null,
+                                        mvccSnapshot());
 
-                                    if (updRes.success())
-                                        txEntry.updateCounter(updRes.updatePartitionCounter());
+                                    if (txState.mvccEnabled())
+                                        txEntry.updateCounter(updRes.updateCounter());
+                                    else {
+                                        Map<Integer, AtomicLong> map =
+                                            txCounters.accumulatedUpdateCounters().get(txEntry.cacheId());
+
+                                        AtomicLong partCtr = map.get(txEntry.cached().partition());
+
+                                        txEntry.updateCounter(partCtr.getAndDecrement());
+                                    }
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();
@@ -834,8 +906,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topologyVersion()));
                         }
                     }
-
                 }
+
+                if (!txState.mvccEnabled() && txCounters != null)
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
+
+                // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
+                applyTxSizes();
+
+                cctx.mvccCaching().onTxFinished(this, true);
 
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
@@ -1005,7 +1084,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            cctx.tm().rollbackTx(this, clearThreadMap, false);
+            if (!txState.mvccEnabled()) {
+                TxCounters txCounters = txCounters(false);
+
+                if (txCounters != null)
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
+            }
+
+            cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);
+
+            cctx.mvccCaching().onTxFinished(this, false);
 
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);

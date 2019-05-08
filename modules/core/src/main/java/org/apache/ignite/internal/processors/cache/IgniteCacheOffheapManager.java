@@ -24,8 +24,11 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.ByteArrayDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
+import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -71,6 +74,15 @@ public interface IgniteCacheOffheapManager {
      *
      */
     public void stop();
+
+    /**
+     * Pre-create partitions that resides in page memory or WAL and restores their state.
+     *
+     * @param partitionRecoveryStates Partition recovery states.
+     * @return Number of processed partitions.
+     * @throws IgniteCheckedException If failed.
+     */
+    long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException;
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
@@ -384,10 +396,11 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * @param size Size to init.
-         * @param updCntr Update counter to init.
+         * @param updCntr Update counter.
          * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
+         * @param gaps Gaps.
          */
-        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes);
+        void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps);
 
         /**
          * @param cacheId Cache ID.
@@ -416,7 +429,12 @@ public interface IgniteCacheOffheapManager {
         long updateCounter();
 
         /**
-         *
+         * @return Update counter.
+         */
+        PartitionUpdateCounter partUpdateCounter();
+
+        /**
+         * @param val Update counter.
          */
         void updateCounter(long val);
 
@@ -427,6 +445,12 @@ public interface IgniteCacheOffheapManager {
          * @param delta Delta
          */
         void updateCounter(long start, long delta);
+
+        /**
+         * @param start Start.
+         * @param delta Delta.
+         */
+        void releaseCounter(long start, long delta);
 
         /**
          * @return Next update counter.
@@ -572,5 +596,10 @@ public interface IgniteCacheOffheapManager {
         PendingEntriesTree pendingTree();
 
         public void preload() throws IgniteCheckedException;
+
+        /**
+         * Reset counters for partition.
+         */
+        void resetUpdateCounters();
     }
 }
