@@ -1,25 +1,37 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -63,6 +75,7 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        // Set mixed persistence + in-memory configuration.
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
             setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).setCheckpointFrequency(10000000000L).
             setDataRegionConfigurations(new DataRegionConfiguration().setName("mem").setInitialSize(100 * MB).setMaxSize(100 * MB)).
@@ -75,11 +88,13 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
             cacheConfiguration(TX_CACHE_MEMORY, true).setAtomicityMode(TRANSACTIONAL),
             cacheConfiguration(ATOMIC_CACHE_MEMORY, true).setAtomicityMode(ATOMIC));
 
-        cfg.setFailureDetectionTimeout(6000000);
-
         return cfg;
     }
 
+    /**
+     * @param name Name.
+     * @param inMemory In memory.
+     */
     private CacheConfiguration cacheConfiguration(String name, boolean inMemory) {
         return new CacheConfiguration(name).setDataRegionName(inMemory ? "mem" : "dflt").setCacheMode(PARTITIONED).setWriteSynchronizationMode(FULL_SYNC).
             setAtomicityMode(TRANSACTIONAL).setBackups(BACKUPS).setAffinity(new RendezvousAffinityFunction(false, 32));
@@ -114,13 +129,27 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPutAtomicConcurrentPersistent() throws Exception {
-        doTestPutConcurrent(ATOMIC_CACHE);
+        doTestPutConcurrent(ATOMIC_CACHE, true);
     }
 
-    /** TODO FIXME IGNORE !!! will fail. */
+    /** */
     @Test
     public void testPutTxConcurrentPersistent() throws Exception {
-        doTestPutConcurrent(TX_CACHE);
+        doTestPutConcurrent(TX_CACHE, true);
+    }
+
+    /** */
+    @Test
+    @Ignore("Isolated update mode can't be used concurrently with others")
+    public void testPutAtomicConcurrentPersistentWithIsolatedMode() throws Exception {
+        doTestPutConcurrent(ATOMIC_CACHE, false);
+    }
+
+    /** */
+    @Test
+    @Ignore("Isolated update mode can't be used concurrently with others")
+    public void testPutTxConcurrentPersistentWithIsolatedMode() throws Exception {
+        doTestPutConcurrent(TX_CACHE, false);
     }
 
     /** */
@@ -138,13 +167,27 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testPutAtomicConcurrentVolatile() throws Exception {
-        doTestPutConcurrent(ATOMIC_CACHE_MEMORY);
+        doTestPutConcurrent(ATOMIC_CACHE_MEMORY, true);
     }
 
-    /** TODO FIXME IGNORE !!! will fail. */
+    /** */
     @Test
     public void testPutTxConcurrentVolatile() throws Exception {
-        doTestPutConcurrent(TX_CACHE_MEMORY);
+        doTestPutConcurrent(TX_CACHE_MEMORY, true);
+    }
+
+    /** */
+    @Test
+    @Ignore("Isolated update mode can't be used concurrently with others")
+    public void testPutAtomicConcurrentVolatileWithIsolatedMode() throws Exception {
+        doTestPutConcurrent(ATOMIC_CACHE_MEMORY, false);
+    }
+
+    /** */
+    @Test
+    @Ignore("Isolated update mode can't be used concurrently with others")
+    public void testPutTxConcurrentVolatileWithIsolatedMode() throws Exception {
+        doTestPutConcurrent(TX_CACHE_MEMORY, false);
     }
 
     /** */
@@ -168,9 +211,13 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
             assertCountersSame(cache);
 
+            loadDataToPartition(PARTITION_ID, ignite.name(), cache, 1000, 3000, 3);
+
+            assertCountersSame(cache);
+
             assertPartitionsSame(idleVerify(grid(0), cache));
 
-            assertEquals(3000, grid(0).cache(cache).size());
+            assertEquals(4000, grid(0).cache(cache).size());
         }
         finally {
             stopAllGrids();
@@ -178,13 +225,13 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doTestPutConcurrent(String cache) throws Exception {
+    private void doTestPutConcurrent(String cache, boolean skipIsolatedMode) throws Exception {
         try {
             Ignite ignite = startGridsMultiThreaded(3);
 
             AtomicInteger idx = new AtomicInteger();
 
-            CyclicBarrier b = new CyclicBarrier(3);
+            CyclicBarrier b = new CyclicBarrier(4);
 
             multithreadedAsync(() -> {
                 switch (idx.getAndIncrement()) {
@@ -206,14 +253,22 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
                         loadDataToPartition(PARTITION_ID, ignite.name(), cache, 1000, 2000, 2);
 
                         break;
+
+                    case 3:
+                        U.awaitQuiet(b);
+
+                        if (!skipIsolatedMode)
+                            loadDataToPartition(PARTITION_ID, ignite.name(), cache, 1000, 3000, 3);
+
+                        break;
                 }
-            }, 3, "put-thread").get();
+            }, 4, "put-thread").get();
 
             assertCountersSame(cache);
 
             assertPartitionsSame(idleVerify(grid(0), cache));
 
-            assertEquals(3000, grid(0).cache(cache).size());
+            assertEquals(skipIsolatedMode ? 3000 : 4000, grid(0).cache(cache).size());
         }
         finally {
             stopAllGrids();

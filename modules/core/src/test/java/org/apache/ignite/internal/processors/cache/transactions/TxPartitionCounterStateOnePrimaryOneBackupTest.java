@@ -24,7 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -134,6 +136,8 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         waitForTopology(NODES_CNT);
 
+        awaitPartitionMapExchange();
+
         IgniteEx client = grid(CLIENT_GRID_NAME);
 
         assertEquals("Primary has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
@@ -191,11 +195,16 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
      */
     private void doTestPrepareCommitReorder2(boolean skipCheckpoint) throws Exception {
         Map<Integer, T2<Ignite, List<Ignite>>> txTops = runOnPartition(PARTITION_ID, null, BACKUPS, NODES_CNT, new IgniteClosure<Map<Integer, T2<Ignite, List<Ignite>>>, TxCallback>() {
+            private Map<Integer, T2<Ignite, List<Ignite>>> txTop;
             @Override public TxCallback apply(Map<Integer, T2<Ignite, List<Ignite>>> map) {
+                txTop = map;
+
                 return new OnePhaseCommitTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == PRIMARY_COMMIT_ORDER[0]) {
+                            // Check primary counter.
                             PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
+                            assertNotNull(cntr);
 
                             assertEquals(TOTAL, cntr.reserved());
 
@@ -205,6 +214,20 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
                             assertEquals(PRELOAD_KEYS_CNT + SIZES[PRIMARY_COMMIT_ORDER[1]] + SIZES[PRIMARY_COMMIT_ORDER[2]], gap.start());
                             assertEquals(SIZES[PRIMARY_COMMIT_ORDER[0]], gap.delta());
+
+                            // Check backup counter.
+                            String backup = txTop.get(PARTITION_ID).get2().get(0).name();
+
+                            PartitionUpdateCounter cntr2 = counter(PARTITION_ID, backup);
+                            assertNotNull(cntr2);
+
+                            assertFalse("Illegal top map", primary.name().equals(backup));
+
+                            assertEquals(TOTAL, cntr2.get());
+                            assertEquals(0, cntr2.reserved());
+                            assertTrue(cntr2.gaps().isEmpty());
+                            IgniteCache<Object, Object> cache = grid(backup).cache(DEFAULT_CACHE_NAME);
+                            assertEquals(TOTAL, cache.localSize(CachePeekMode.BACKUP));
 
                             stopGrid(skipCheckpoint, primary.name()); // Will stop primary node before all commits are applied.
 
@@ -219,16 +242,26 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         T2<Ignite, List<Ignite>> txTop = txTops.get(PARTITION_ID);
 
-        waitForTopology(NODES_CNT);
+        String primaryName = txTop.get1().name();
+        String backupName = txTop.get2().get(0).name();
 
         IgniteEx client = grid(CLIENT_GRID_NAME);
 
-        assertEquals("Primary has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
+        waitForTopology(NODES_CNT);
+
+        awaitPartitionMapExchange();
+
+        PartitionUpdateCounter cntr2 = counter(PARTITION_ID, backupName);
+        assertNotNull(cntr2);
+
+        assertEquals(TOTAL, cntr2.get());
+        assertEquals(TOTAL, cntr2.reserved());
+        assertTrue(cntr2.gaps().isEmpty());
+
+        // TODO FIXME: If not wait for PME backup might not switch to primary.
+        assertEquals("Backup has not all committed transactions", TOTAL, client.cache(DEFAULT_CACHE_NAME).size());
 
         TestRecordingCommunicationSpi.stopBlockAll();
-
-        String primaryName = txTop.get1().name();
-        String backupName = txTop.get2().get(0).name();
 
         TestRecordingCommunicationSpi.spi(grid(backupName)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
@@ -242,6 +275,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
             }
         });
 
+        // Restart primary during rebalance.
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
@@ -266,6 +300,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
             }
         }, 1);
 
+        // Trigger rebalance.
         IgniteEx primary = startGrid(primaryName);
 
         fut.get();

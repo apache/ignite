@@ -38,6 +38,9 @@ import org.jetbrains.annotations.Nullable;
  *
  * TODO FIXME consider rolling bit set implementation.
  * TODO describe ITEM structure
+ * TODO add debugging info
+ * TODO add update order tracking capabilities ?
+ * TODO non-blocking version ? BitSets instead of TreeSet ?
  */
 public class PartitionUpdateCounter {
     /** */
@@ -52,17 +55,24 @@ public class PartitionUpdateCounter {
     /** Counter of applied updates in partition. */
     private final AtomicLong cntr = new AtomicLong();
 
-    /** Counter of pending updates in partition. */
+    /** Counter of pending updates in partition. Updated on primary node and during exchange (set as max upd cntr). */
     private final AtomicLong reserveCntr = new AtomicLong();
 
     /** Initial counter points to last sequential update after recovery. */
     private long initCntr;
+
+    private int partId;
 
     /**
      * @param log Logger.
      */
     public PartitionUpdateCounter(IgniteLogger log) {
         this.log = log;
+    }
+
+    public PartitionUpdateCounter(IgniteLogger log, int partId) {
+        this.log = log;
+        this.partId = partId;
     }
 
     /**
@@ -135,17 +145,16 @@ public class PartitionUpdateCounter {
 
     /**
      * Updates counter by delta from start position. Used only in transactions.
-     *
-     * @param start Start.
+     *  @param start Start.
      * @param delta Delta.
      */
-    public synchronized void update(long start, long delta) {
+    public synchronized boolean update(long start, long delta) {
         long cur = cntr.get(), next;
 
         if (cur > start) {
-            log.warning("Stale update counter task [cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
+            log.warning("Stale update counter task [partId=" + partId + ", cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
 
-            return;
+            return false;
         }
 
         if (cur < start) {
@@ -154,24 +163,26 @@ public class PartitionUpdateCounter {
 
             if (!set.isEmpty()) {
                 Item last = set.last();
+
                 if (last.start + last.delta == start)
                     last.delta += delta;
                 else
-                    offer(new Item(start, delta)); // backup node with gaps
+                    return offer(new Item(start, delta)); // backup node with gaps
             }
             else if (!(set = queue.tailSet(new Item(start, 0), false)).isEmpty()) {
                 Item first = set.first();
+
                 if (start + delta == first.start) {
                     first.start = start;
                     first.delta += delta;
                 }
                 else
-                    offer(new Item(start, delta)); // backup node with gaps
+                    return offer(new Item(start, delta)); // backup node with gaps
             }
             else
-                offer(new Item(start, delta)); // backup node with gaps
+                return offer(new Item(start, delta)); // backup node with gaps
 
-            return;
+            return true;
         }
 
         while (true) {
@@ -182,7 +193,7 @@ public class PartitionUpdateCounter {
             Item peek = peek();
 
             if (peek == null || peek.start != next)
-                return;
+                return true;
 
             Item item = poll();
 
@@ -234,8 +245,8 @@ public class PartitionUpdateCounter {
     /**
      * @param item Adds update task to priority queue.
      */
-    private void offer(Item item) {
-        queue.add(item);
+    private boolean offer(Item item) {
+        return queue.add(item);
     }
 
     /**
@@ -275,7 +286,7 @@ public class PartitionUpdateCounter {
 
         long newCntr = reserveCntr.getAndAdd(delta);
 
-        assert newCntr >= cntr;
+        assert newCntr >= cntr : "Update counter behind reserve counter: cntr=" + cntr + ", reserveCntr=" + newCntr + ", partId=" + partId;
 
         return newCntr;
     }
@@ -487,6 +498,8 @@ public class PartitionUpdateCounter {
         return "Counter [init=" + initCntr + ", lwm=" + get() + ", holes=" + queue + ", hwm=" + hwm() + ", resrv=" + reserveCntr.get() + ']';
     }
 
+    /** */
     public static class IllegalUpdateCounterException extends IgniteCheckedException {
+        private static final long serialVersionUID = 1L;
     }
 }

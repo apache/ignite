@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -225,7 +224,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             // Log partition creation for further crash recovery purposes.
             if (grp.walEnabled() && !recovery)
-                ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), updateCounter()));
+                ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), 0));
 
             // Inject row cache cleaner on store creation
             // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
@@ -544,7 +543,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 stateChanged = true;
 
                 try {
-                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
+                    ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Error while writing to log", e);
@@ -571,7 +570,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     stateChanged = true;
 
                     try {
-                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
+                        ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to log partition state change to WAL.", e);
@@ -728,7 +727,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
         }
 
-        ctx.evict().evictPartitionAsync(grp,this);
+        ctx.evict().evictPartitionAsync(grp, this);
     }
 
     /**
@@ -982,23 +981,41 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Returns new update counter for primary node or passed counter for backup node.
+     * <p>
+     * Used for atomic caches, during preloading, or isolated updates.
      *
      * @param cacheId ID of cache initiated counter update.
      * @param topVer Topology version for current operation.
+     * @param init {@code True} if initial update.
      * @return Next update index.
      */
-    public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, @Nullable Long primaryCntr) {
+    public long nextUpdateCounter(int cacheId, AffinityTopologyVersion topVer, boolean primary, boolean init,
+        @Nullable Long primaryCntr) {
         long nextCntr;
 
-        if (primaryCntr == null) // Primary node.
-            nextCntr = store.nextUpdateCounter();
+        if (primaryCntr == null) {// Primary node.
+            if (init) {
+                nextCntr = store.nextUpdateCounter();
+
+                store.updateCounter(nextCntr);
+            }
+            else {
+                nextCntr = store.partUpdateCounter().reserve(1) + 1; // Needed for mixed tx/atomic cache group.
+
+                store.updateCounter(nextCntr - 1, 1); // Apply update right now (TODO apply update after writing entry to WAL)
+            }
+        }
         else {
+            assert !init : "Initial update must generate a counter for partition " + this;
+
+            // Backup.
             assert primaryCntr != 0;
 
             nextCntr = primaryCntr;
+
+            store.updateCounter(primaryCntr - 1, 1);
         }
 
-        // TODO FIXME
         if (grp.sharedGroup())
             grp.onPartitionCounterUpdate(cacheId, id, nextCntr, topVer, primary);
 
@@ -1007,18 +1024,29 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * TODO FIXME could tx be really null ?
+     * Used for transactions.
      *
      * @param cacheId Cache id.
      * @param tx Tx.
      * @param primaryCntr Primary counter.
      */
     public long nextUpdateCounter(int cacheId, IgniteInternalTx tx, @Nullable Long primaryCntr) {
+        long nextCntr;
+
         if (primaryCntr != null)
-            return primaryCntr;
+            nextCntr = primaryCntr;
+        else {
+            TxCounters txCounters = tx.txCounters(false);
 
-        TxCounters txCounters = tx.txCounters(false);
+            assert txCounters != null : "Must have counters for tx [nearXidVer=" + tx.nearXidVersion() + ']';
 
-        return txCounters.generateNextCounter(cacheId, id());
+            nextCntr = txCounters.generateNextCounter(cacheId, id());
+        }
+
+        if (grp.sharedGroup())
+            grp.onPartitionCounterUpdate(cacheId, id, nextCntr, tx.topologyVersion(), tx.local());
+
+        return nextCntr;
     }
 
     /**
@@ -1029,7 +1057,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param val Update counter value.
+     * @param val Update counter value. Invoke only from
      */
     public void updateCounter(long val) {
 //        if (id() == 0 && group().groupId() == CU.cacheId("default"))
@@ -1054,15 +1082,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /**
      * Updates MVCC cache update counter on backup node.
-     *
-     * @param start Start position
+     *  @param start Start position
      * @param delta Delta.
      */
-    public void updateCounter(long start, long delta) {
+    public boolean updateCounter(long start, long delta) {
 //        if (id() == 0 && group().groupId() == CU.cacheId("default"))
 //            log.error("TX: node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", start=" + start + ", delta=" + delta, new Exception());
 
-        store.updateCounter(start, delta);
+        return store.updateCounter(start, delta);
     }
 
     /**

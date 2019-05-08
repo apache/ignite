@@ -20,83 +20,34 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.Random;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Exchanger;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
- * TODO FIXME add multithreaded test.
+ * Simple partition counter tests.
  */
+@RunWith(JUnit4.class)
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
-    public void testPrimaryModeSimple() {
-        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+    /**
+     * Test applying update multiple times in random order.
+     */
+    @Test
+    public void testRandomUpdates() {
+        List<int[]> tmp = generateUpdates(1000, 5);
 
-        int[][] updates = generateUpdates(10, 1);
-
-        for (int i = 0; i < updates.length; i++) {
-            int[] pair = updates[i];
-
-            pc.reserve(pair[1]);
-        }
-
-        pc.update(0, 1);
-        pc.update(2, 1);
-
-        pc.update(5, 1);
-        pc.update(6, 1);
-        pc.update(7, 1);
-
-        assertTrue(pc.get() < pc.reserved());
-
-        pc.update(1, 1);
-        pc.update(3, 1);
-        pc.update(4, 1);
-        pc.update(8, 1);
-        pc.update(9, 1);
-
-        assertTrue(pc.get() == pc.reserved());
-    }
-
-    public void testBackupModeSimple() {
-        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
-
-        pc.update(0, 1);
-        pc.update(2, 1);
-
-        pc.update(5, 1);
-        pc.update(6, 1);
-        pc.update(7, 1);
-
-        PartitionUpdateCounter pc2 = new PartitionUpdateCounter(log);
-
-        pc2.update(7, 1);
-        pc2.update(6, 1);
-        pc2.update(5, 1);
-
-        pc2.update(2, 1);
-        pc2.update(0, 1);
-
-        assertEquals(pc, pc2);
-    }
-
-    public void testPrimaryModeBatch() {
-
-    }
-
-    public void testBackupModeBatch() {
-        int[][] updates = generateUpdates(1000, 5);
-
-        List<int[]> tmp = new ArrayList<>();
-
-        long expTotal = 0;
-
-        for (int i = 0; i < updates.length; i++) {
-            int[] pair = updates[i];
-
-            tmp.add(pair);
-
-            expTotal += pair[1];
-        }
+        long expTotal = tmp.stream().mapToInt(pair -> pair[1]).sum();
 
         PartitionUpdateCounter pc = null;
 
@@ -121,24 +72,93 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test if pc correctly reports stale (before current counter) updates.
+     * This information is used for logging rollback records only once.
+     */
+    @Test
+    public void testStaleUpdate() {
+        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+
+        assertTrue(pc.update(0, 1));
+        assertFalse(pc.update(0, 1));
+
+        assertTrue(pc.update(2, 1));
+        assertFalse(pc.update(2, 1));
+
+        assertTrue(pc.update(1, 1));
+        assertFalse(pc.update(1, 1));
+    }
+
+    /**
+     * Test multithreaded updates of pc in various modes.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMixedModeMultithreaded() throws Exception {
+        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        Queue<long[]> reservations = new ConcurrentLinkedQueue<>();
+
+        LongAdder reserveCntr = new LongAdder();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            while(!stop.get() || !reservations.isEmpty()) {
+                if (!stop.get() && ThreadLocalRandom.current().nextBoolean()) {
+                    int size = ThreadLocalRandom.current().nextInt(9) + 1;
+
+                    reservations.add(new long[] {pc.reserve(size), size}); // Only update if stop flag is set.
+
+                    reserveCntr.add(size);
+                }
+                else {
+                    long[] reserved = reservations.poll();
+
+                    if (reserved == null)
+                        continue;
+
+                    pc.update(reserved[0], reserved[1]);
+                }
+            }
+        }, Runtime.getRuntime().availableProcessors() * 2, "updater-thread");
+
+        doSleep(10_000);
+
+        stop.set(true);
+
+        fut.get();
+
+        assertTrue(reservations.isEmpty());
+
+        log.info("counter=" + pc.toString() + ", reserveCntrLocal=" + reserveCntr.sum());
+
+        assertTrue(pc.gaps().isEmpty());
+
+        assertTrue(pc.get() == pc.reserved());
+
+        assertEquals(reserveCntr.sum(), pc.get());
+    }
+
+    /**
      * @param cnt Count.
      */
-    private int[][] generateUpdates(int cnt, int maxTxSize) {
+    private List<int[]> generateUpdates(int cnt, int maxTxSize) {
         int[] ints = new Random().ints(cnt, 1, maxTxSize + 1).toArray();
 
-        int[][] pairs = new int[cnt][2];
-
         int off = 0;
+
+        List<int[]> res = new ArrayList<>(cnt);
 
         for (int i = 0; i < ints.length; i++) {
             int val = ints[i];
 
-            pairs[i][0] = off;
-            pairs[i][1] = val;
+            res.add(new int[] {off, val});
 
             off += val;
         }
 
-        return pairs;
+        return res;
     }
 }

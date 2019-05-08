@@ -42,6 +42,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -2646,6 +2647,65 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
         finally {
             lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Pre-processes partition update counters before exchange.
+     */
+    @Override public void finalizeUpdateCounters() {
+        // It is need to acquire checkpoint lock before topology lock acquiring.
+        ctx.database().checkpointReadLock();
+
+        try {
+            lock.readLock().lock();
+
+            try {
+                for (int i = 0; i < locParts.length(); i++) {
+                    GridDhtLocalPartition part = locParts.get(i);
+
+                    if (part != null && part.state().active()) {
+                        // We need to close all gaps in partition update counters sequence. We assume this finalizing is
+                        // happened on exchange and hence all txs are completed. Therefore each gap in update counters
+                        // sequence is a result of undelivered DhtTxFinishMessage on backup (sequences on primary nodes
+                        // do not have gaps). Here we close these gaps and asynchronously notify continuous query engine
+                        // about the skipped events.
+                        AffinityTopologyVersion topVer = ctx.exchange().readyAffinityVersion();
+
+                        GridLongList gaps = part.finalizeUpdateCounters();
+
+                        if (gaps != null) {
+                            for (int j = 0; j < gaps.size() / 2; j++) {
+                                long gapStart = gaps.get(j * 2);
+                                long gapStop = gaps.get(j * 2 + 1);
+
+                                if (part.group().persistenceEnabled() && part.group().walEnabled()) {
+                                    RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
+                                        gapStart - 1, gapStop - gapStart + 1);
+
+                                    log.error("TX: log closegap [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
+
+                                    try {
+                                        ctx.wal().log(rec);
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        throw new IgniteException(e);
+                                    }
+                                }
+                            }
+
+                            for (GridCacheContext ctx0 : grp.caches())
+                                ctx0.continuousQueries().closeBackupUpdateCountersGaps(ctx0, part.id(), topVer, gaps);
+                        }
+                    }
+                }
+            }
+            finally {
+                lock.readLock().unlock();
+            }
+        }
+        finally {
+            ctx.database().checkpointReadUnlock();
         }
     }
 

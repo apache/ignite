@@ -77,7 +77,7 @@ public class TxCounters {
 
         genCntrsMap = U.newHashMap(updCntrs.size());
 
-        // TODO FIXME heavy memory usage ?
+        // TODO FIXME heavy memory usage due T2<> map key ?
         for (PartitionUpdateCountersMessage msg : updCntrs) {
             for (int i = 0; i < msg.size(); i++) {
                 int partId = msg.partition(i);
@@ -154,6 +154,7 @@ public class TxCounters {
      * @param partId Partition id.
      */
     public long generateNextCounter(int cacheId, int partId) {
+        // TODO FIXME gc pressure ?
         return genCntrsMap.compute(new T2<>(cacheId, partId), (key, val) -> val + 1);
     }
 }

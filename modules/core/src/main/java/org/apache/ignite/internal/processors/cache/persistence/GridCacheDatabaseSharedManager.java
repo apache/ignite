@@ -5107,7 +5107,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 log.info("Partition [grp=" + grp.cacheOrGroupName()
                     + ", id=" + p
                     + ", state=" + part.state()
-                    + ", counter=" + part.updateCounter()
+                    + ", counter=" + part.dataStore().partUpdateCounter()
                     + ", size=" + part.fullSize() + "]");
 
                 continue;

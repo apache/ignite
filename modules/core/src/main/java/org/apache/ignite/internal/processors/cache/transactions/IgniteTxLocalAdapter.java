@@ -491,7 +491,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
-                        assert part != null && part.state() == GridDhtPartitionState.OWNING;
+                        assert part != null && part.state() == GridDhtPartitionState.OWNING :
+                            part == null ?
+                                "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
+                                "part=" + part.toString();
 
                         msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
@@ -799,16 +802,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         null,
                                         mvccSnapshot());
 
-                                    if (txState.mvccEnabled())
+                                    if (updRes.success())
                                         txEntry.updateCounter(updRes.updateCounter());
-                                    else {
-                                        Map<Integer, AtomicLong> map =
-                                            txCounters.accumulatedUpdateCounters().get(txEntry.cacheId());
-
-                                        AtomicLong partCtr = map.get(txEntry.cached().partition());
-
-                                        txEntry.updateCounter(partCtr.getAndDecrement());
-                                    }
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();
@@ -1088,7 +1083,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 TxCounters txCounters = txCounters(false);
 
                 if (txCounters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true);
             }
 
             cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);

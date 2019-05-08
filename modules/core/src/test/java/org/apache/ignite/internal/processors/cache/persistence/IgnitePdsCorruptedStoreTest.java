@@ -353,6 +353,49 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         }
     }
 
+
+    /**
+     * Test node invalidation due to checkpoint error.
+     */
+    @Test
+    public void testCheckpointFailure() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        failingFileIOFactory.createClosure(new IgniteBiClosure<File, OpenOption[], FileIO>() {
+            @Override public FileIO apply(File file, OpenOption[] options) {
+                if (file.getName().indexOf("-END.bin") >= 0) {
+                    FileIO delegate;
+
+                    try {
+                        delegate = failingFileIOFactory.delegateFactory().create(file, options);
+                    }
+                    catch (IOException ignore) {
+                        return null;
+                    }
+
+                    return new FileIODecorator(delegate) {
+                        @Override public void close() throws IOException {
+                            throw new IOException("Checkpoint failed");
+                        }
+                    };
+                }
+
+                return null;
+            }
+        });
+
+        try {
+            forceCheckpoint(ignite);
+        }
+        catch (Exception ignore) {
+            // No-op.
+        }
+
+        waitFailure(IOException.class);
+    }
+
     /**
      * @param expError Expected error.
      */

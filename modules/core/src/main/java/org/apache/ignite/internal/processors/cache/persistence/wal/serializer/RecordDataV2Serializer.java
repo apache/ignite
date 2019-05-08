@@ -32,6 +32,11 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -92,6 +97,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)rec);
 
+            case MVCC_TX_RECORD:
+                return txRecordSerializer.size((MvccTxRecord)rec);
+
+            case ROLLBACK_TX_RECORD:
+                return 4 + 4 + 8 + 8;
+
             default:
                 return delegateSerializer.size(rec);
         }
@@ -148,6 +159,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
             case TX_RECORD:
                 return txRecordSerializer.read(in);
+
+            case ROLLBACK_TX_RECORD:
+                int cacheId = in.readInt();
+                int partId = in.readInt();
+                long start = in.readLong();
+                long range = in.readLong();
+
+                return new RollbackRecord(cacheId, partId, start, range);
 
             default:
                 return delegateSerializer.readRecord(type, in);
@@ -217,6 +236,21 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
             case TX_RECORD:
                 txRecordSerializer.write((TxRecord)rec, buf);
+
+                break;
+
+            case MVCC_TX_RECORD:
+                txRecordSerializer.write((MvccTxRecord)rec, buf);
+
+                break;
+
+            case ROLLBACK_TX_RECORD:
+                RollbackRecord rb = (RollbackRecord)rec;
+
+                buf.putInt(rb.cacheId());
+                buf.putInt(rb.partitionId());
+                buf.putLong(rb.start());
+                buf.putLong(rb.range());
 
                 break;
 

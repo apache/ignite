@@ -28,6 +28,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -42,12 +43,12 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -988,7 +989,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         WALIterator it = grp.shared().wal().replay(minPtr);
 
-        WALHistoricalIterator iterator = new WALHistoricalIterator(grp, partCntrs, it);
+        WALHistoricalIterator iterator = new WALHistoricalIterator(log, grp, partCntrs, it);
 
         // Add historical partitions which are unabled to reserve to missing set.
         missing.addAll(iterator.missingParts);
@@ -1101,6 +1102,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Logger. */
+        private IgniteLogger log;
+
         /** Cache context. */
         private final CacheGroupContext grp;
 
@@ -1125,21 +1129,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private DataEntry next;
 
-        /** Flag indicates that partition belongs to current {@link #next} is finished and no longer needs to rebalance. */
-        private boolean reachedPartitionEnd;
-
-        /** Flag indicates that update counters for requested partitions have been reached and done.
-         *  It means that no further iteration is needed. */
-        private boolean doneAllPartitions;
-
-        /** Rebalanced counters in the range from initialUpdateCntr to updateCntr. */
+        /**
+         * Rebalanced counters in the range from initialUpdateCntr to updateCntr.
+         * Invariant: initUpdCntr[idx] + rebalancedCntrs[idx] = updateCntr[idx]
+         */
         private long[] rebalancedCntrs;
 
+        /** A partition what will be finished on next iteration. */
+        private int donePart = -1;
+
         /**
+         * @param log Logger.
          * @param grp Cache context.
          * @param walIt WAL iterator.
          */
-        private WALHistoricalIterator(CacheGroupContext grp, CachePartitionPartialCountersMap partMap, WALIterator walIt) {
+        private WALHistoricalIterator(IgniteLogger log, CacheGroupContext grp, CachePartitionPartialCountersMap partMap,
+            WALIterator walIt) {
+            this.log = log;
             this.grp = grp;
             this.partMap = partMap;
             this.walIt = walIt;
@@ -1209,13 +1215,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             CacheDataRow val = new DataEntryRow(next);
 
-            if (reachedPartitionEnd) {
-                doneParts.add(next.partitionId());
+            if (donePart != -1) {
+                doneParts.add(donePart);
 
-                reachedPartitionEnd = false;
-
-                if (doneParts.size() == partMap.size())
-                    doneAllPartitions = true;
+                donePart = -1;
             }
 
             advance();
@@ -1274,10 +1277,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private void advance() {
             next = null;
 
-            if (doneAllPartitions)
-                return;
-
-            while (true) {
+            outer: while (doneParts.size() != partMap.size()) {
                 if (entryIt != null) {
                     while (entryIt.hasNext()) {
                         DataEntry entry = entryIt.next();
@@ -1292,8 +1292,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             long to = partMap.updateCounterAt(idx);
 
                             if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
-                                if (++rebalancedCntrs[idx] == to) // No entries should be skipped on owner with max counter.
-                                    reachedPartitionEnd = true;
+                                // Partition will be marked as done for current entry on next iteration.
+                                if (++rebalancedCntrs[idx] == to)
+                                    donePart = entry.partitionId();
 
                                 next = entry;
 
@@ -1305,6 +1306,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                 entryIt = null;
 
+                // Search for next DataEntry while applying rollback counters.
                 while (walIt.hasNext()) {
                     IgniteBiTuple<WALPointer, WALRecord> rec = walIt.next();
 
@@ -1312,14 +1314,32 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         DataRecord data = (DataRecord)rec.get2();
 
                         entryIt = data.writeEntries().iterator();
-                        // Move on to the next valid data entry.
 
-                        break;
+                        // Move on to the next valid data entry.
+                        continue outer;
+                    }
+                    else if (rec.get2() instanceof RollbackRecord) {
+                        RollbackRecord rbRec = (RollbackRecord)rec.get2();
+
+                        if (cacheIds.contains(rbRec.cacheId())) {
+                            int idx = partMap.partitionIndex(rbRec.partitionId());
+
+                            if (idx >= 0 && !missingParts.contains(idx)) {
+                                rebalancedCntrs[idx] += rbRec.range();
+
+                                log.info("TX: rollbacrecord node=" + grp.cacheObjectContext().kernalContext().config().getIgniteInstanceName() +
+                                    ", rebCntr=" + rebalancedCntrs[idx] + ", locCntr=" + grp.topology().localPartition(rbRec.partitionId()).dataStore().partUpdateCounter());
+
+                                if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx))
+                                    doneParts.add(rbRec.partitionId()); // Add to done set immediately.
+                            }
+                        }
                     }
                 }
 
-                if (entryIt == null)
-                    return;
+                // TODO FIXME introduce isDone() for doneParts.size() == partMap.size()
+                assert entryIt != null || doneParts.size() == partMap.size() :
+                    "Reached end of WAL but not all partitions are done";
             }
         }
     }
@@ -1882,11 +1902,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public long nextUpdateCounter() {
+        @Override public boolean updateCounter(long start, long delta) {
             try {
                 CacheDataStore delegate0 = init0(false);
 
-                return delegate0 == null ? 0 : delegate0.nextUpdateCounter();
+                return delegate0 != null && delegate0.updateCounter(start, delta);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

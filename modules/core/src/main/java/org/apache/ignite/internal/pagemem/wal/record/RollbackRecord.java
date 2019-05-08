@@ -21,12 +21,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Rollback record. Used to close gap in partition update sequence on tx rollback.
+ * Rollback record.
  */
 public class RollbackRecord extends WALRecord {
     /** Cache ID. */
     @GridToStringInclude
-    protected int grpId;
+    protected int cacheId;
 
     /** Partition ID. */
     @GridToStringInclude
@@ -41,13 +41,13 @@ public class RollbackRecord extends WALRecord {
     protected long range;
 
     /**
-     * @param grpId Group id.
+     * @param cacheId Cache id.
      * @param partId Partition id.
      * @param start Start.
      * @param range Range.
      */
-    public RollbackRecord(int grpId, int partId, long start, long range) {
-        this.grpId = grpId;
+    public RollbackRecord(int cacheId, int partId, long start, long range) {
+        this.cacheId = cacheId;
         this.partId = partId;
         this.start = start;
         this.range = range;
@@ -56,8 +56,8 @@ public class RollbackRecord extends WALRecord {
     /**
      * @return Cache ID.
      */
-    public int groupId() {
-        return grpId;
+    public int cacheId() {
+        return cacheId;
     }
 
     /**
@@ -80,28 +80,6 @@ public class RollbackRecord extends WALRecord {
     public long range() {
         return range;
     }
-
-    /**
-     * Returns a number of overlapping update counters.
-     *
-     * @param from From counter (not inclusive).
-     * @param to To counter (inclusive).
-     */
-    public long overlap(long from, long to) {
-        long to0 = start + range;
-
-        // from lies within (start, to0]
-        if (start <= from && from < to0)
-            return Math.min(to0 - from, to - from);
-
-        // start lies within (from, to]
-        if (from <= start && start < to)
-            return Math.min(to - start, range);
-
-        return 0;
-    }
-
-
 
     /** {@inheritDoc} */
     @Override public RecordType type() {

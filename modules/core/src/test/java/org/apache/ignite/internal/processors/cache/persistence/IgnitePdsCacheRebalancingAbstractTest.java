@@ -142,6 +142,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
             .setCheckpointFrequency(checkpointFrequency())
             .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(1024)
+            .setWalSegmentSize(8 * 1024 * 1024) // For faster node restarts with enabled persistence.
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)

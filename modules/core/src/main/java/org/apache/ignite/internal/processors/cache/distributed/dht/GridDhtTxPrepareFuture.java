@@ -1258,14 +1258,27 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
-            TxCounters counters = tx.txCounters(true);
+            boolean locCache = false;
+
+            for (IgniteTxEntry entry : req.writes()) {
+                if (entry.cached().isLocal()) {
+                    locCache = true;
+
+                    break;
+                }
+            }
+
+            TxCounters counters = locCache ? null : tx.txCounters(true);
 
             // Assign keys to primary nodes.
             if (!F.isEmpty(req.writes())) {
                 for (IgniteTxEntry write : req.writes()) {
                     IgniteTxEntry entry = tx.entry(write.txKey());
 
-                    counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
+                    // TODO add test for transforms to WithFilter.
+                    if (!locCache && entry != null && entry.op() != NOOP &&
+                        !(entry.op() == TRANSFORM && entry.entryProcessorCalculatedValue().get1() == NOOP))
+                        counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
 
                     map(entry);
                 }
@@ -1280,7 +1293,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (!tx.txState().mvccEnabled())
+                if (!tx.txState().mvccEnabled() && !locCache)
                     tx.calculatePartitionUpdateCounters();
 
                 sendPrepareRequests();

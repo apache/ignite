@@ -26,6 +26,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -38,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -84,6 +86,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
+        storageCfg.setPageSize(1024).setWalMode(LOG_ONLY).setWalSegmentSize(8 * 1024 * 1024);
+
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true)
             .setMaxSize(300L * 1024 * 1024);
@@ -115,7 +119,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-            .setAffinity(new RendezvousAffinityFunction(false, 1024))
+            .setAffinity(new RendezvousAffinityFunction(false, 64))
             .setIndexedTypes(String.class, String.class);
     }
 

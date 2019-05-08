@@ -3334,9 +3334,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, true)))
             return chainFinishFuture(finishFut, true, true, false);
 
-        cctx.mvcc().addFuture(fut0, fut0.futureId());
+        if (!fastFinish) {
+            IgniteInternalFuture<?> prepareFut;
+            try {
+                prepareFut = prepareNearTxLocal();
+            }
+            catch (Throwable t) {
+                prepareFut = new GridFinishedFuture<>(t); // Process unhandled exceptions during prepare.
+            }
 
-        final IgniteInternalFuture<?> prepareFut = prepareNearTxLocal();
+            prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> f) {
+                    try {
+                        // Make sure that here are no exceptions.
+                        f.get();
 
         prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {

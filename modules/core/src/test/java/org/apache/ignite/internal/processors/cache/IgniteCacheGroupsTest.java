@@ -2737,10 +2737,11 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(SRVS, CLIENTS);
 
+        // TODO FIXME both atomic and transactional caches are not supported in single group.
         srv0.createCache(cacheConfiguration(GROUP1, "a0", PARTITIONED, ATOMIC, 1, false));
         srv0.createCache(cacheConfiguration(GROUP1, "a1", PARTITIONED, ATOMIC, 1, false));
-        srv0.createCache(cacheConfiguration(GROUP1, "t0", PARTITIONED, TRANSACTIONAL, 1, false));
-        srv0.createCache(cacheConfiguration(GROUP1, "t1", PARTITIONED, TRANSACTIONAL, 1, false));
+        srv0.createCache(cacheConfiguration(GROUP2, "t0", PARTITIONED, TRANSACTIONAL, 1, false));
+        srv0.createCache(cacheConfiguration(GROUP2, "t1", PARTITIONED, TRANSACTIONAL, 1, false));
 
         final List<Integer> keys = new ArrayList<>();
 

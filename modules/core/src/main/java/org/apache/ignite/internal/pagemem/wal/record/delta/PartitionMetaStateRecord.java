@@ -35,12 +35,12 @@ public class PartitionMetaStateRecord extends WALRecord implements WalRecordCach
     /** Partition id. */
     private final int partId;
 
-    /** Update counter. No longer required. */
-    @Deprecated private final long updateCounter;
+    /** @deprecated Update counter. */
+    private final long updateCounter;
 
     /**
      * @param grpId Cache group ID.
-     * @param state Page ID.
+     * @param partId Partition ID.
      * @param state State.
      * @param updateCounter Update counter.
      */
@@ -76,7 +76,7 @@ public class PartitionMetaStateRecord extends WALRecord implements WalRecordCach
     }
 
     /**
-     * @deprecated No longer used.
+     * @return Rollback counter.
      */
     public long updateCounter() {
         return updateCounter;

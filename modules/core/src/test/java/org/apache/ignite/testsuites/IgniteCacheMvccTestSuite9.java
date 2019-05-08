@@ -30,6 +30,10 @@ import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCount
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStatePutTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateTwoPrimaryTwoBackupsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateUpdatesOrderTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateWithFilterTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
@@ -63,6 +67,10 @@ public class IgniteCacheMvccTestSuite9 {
         ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest.class);
         ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest.class);
         ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsTest.class);
+        ignoredTests.add(TxPartitionCounterStatePutTest.class);
+        ignoredTests.add(TxPartitionCounterStateTwoPrimaryTwoBackupsTest.class);
+        ignoredTests.add(TxPartitionCounterStateWithFilterTest.class);
+        ignoredTests.add(TxPartitionCounterStateUpdatesOrderTest.class);
 
         TestSuite suite = new TestSuite("IgniteCache Mvcc Test Suite part 9");
 

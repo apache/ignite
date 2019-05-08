@@ -181,7 +181,63 @@ public abstract class WALRecord {
         EXCHANGE,
 
         /** Reserved for future record. */
-        RESERVED;
+        RESERVED,
+
+        /** Rotated id part record. */
+        ROTATED_ID_PART_RECORD (PHYSICAL),
+
+        /** */
+        MVCC_DATA_PAGE_MARK_UPDATED_RECORD (PHYSICAL),
+
+        /** */
+        MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD (PHYSICAL),
+
+        /** */
+        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD (PHYSICAL),
+
+        /** Encrypted WAL-record. */
+        ENCRYPTED_RECORD (PHYSICAL),
+
+        /** Ecnrypted data record. */
+        ENCRYPTED_DATA_RECORD (LOGICAL),
+
+        /** Mvcc data record. */
+        MVCC_DATA_RECORD (LOGICAL),
+
+        /** Mvcc Tx state change record. */
+        MVCC_TX_RECORD (LOGICAL),
+
+        /** Rollback tx record. */
+        ROLLBACK_TX_RECORD (LOGICAL);
+
+        /**
+         * When you're adding a new record don't forget to choose record purpose explicitly
+         * if record is needed for physical or logical recovery.
+         * By default the purpose of record is {@link RecordPurpose#CUSTOM} and this record will not be used in recovery process.
+         * For more information read description of {@link RecordPurpose}.
+         */
+        private final RecordPurpose purpose;
+
+        /**
+         * @param purpose Purpose.
+         */
+        RecordType(RecordPurpose purpose) {
+            this.purpose = purpose;
+        }
+
+        /**
+         * Default constructor.
+         */
+        RecordType() {
+            this(CUSTOM);
+        }
+
+        /**
+         * @return Purpose of record.
+         */
+        public RecordPurpose purpose() {
+            return purpose;
+        }
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

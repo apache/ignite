@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
@@ -84,6 +86,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toCollection;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -103,7 +107,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     private static final int MB = 1024 * 1024;
 
     /** */
-    private int backups;
+    protected int backups;
 
     /** */
     public static final int TEST_TIMEOUT = 30_000;
@@ -134,14 +138,15 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         boolean client = igniteInstanceName.startsWith(CLIENT_GRID_NAME);
 
+        cfg.setFailureDetectionTimeout(100000000000000L);
+
         cfg.setClientMode(client);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
-            setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).setCheckpointFrequency(10000000000L).
+            setWalSegmentSize(8 * MB).setWalMode(LOG_ONLY).setPageSize(1024).
+            setCheckpointFrequency(MILLISECONDS.convert(365, DAYS)).
             setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true).
                 setInitialSize(100 * MB).setMaxSize(100 * MB)));
-
-        cfg.setFailureDetectionTimeout(600000);
 
         if (!client) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
@@ -260,9 +265,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
         clientWrappedSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                IgniteEx to = IgnitionEx.gridxx(node.id());
-
                 if (msg instanceof GridNearTxPrepareRequest) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg;
 
                     if (!req.last())
@@ -273,6 +278,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.beforePrimaryPrepare(to, req.version().asGridUuid(), createSendFuture(clientWrappedSpi, msg));
                 }
                 else if (msg instanceof GridNearTxFinishRequest) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
 
                     futMap.put(req.futureId(), req.version());
@@ -330,7 +337,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     for (Integer key : keys.subList(range[0], range[0] + range[1]))
                         client.cache(DEFAULT_CACHE_NAME).put(key, 0);
 
-                    if (keysPart2 != null) {// Force 2PC.
+                    if (keysPart2 != null) { // Force 2PC.
                         client.cache(DEFAULT_CACHE_NAME).put(keysPart2.get(txIdx), 0);
                     }
 
@@ -366,9 +373,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         TxCallback cb) {
         return new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                IgniteEx to = IgnitionEx.gridxx(node.id());
-
                 if (msg instanceof GridDhtTxPrepareRequest) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridDhtTxPrepareRequest req = (GridDhtTxPrepareRequest)msg;
 
                     if (!req.last())
@@ -384,6 +391,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.beforeBackupPrepare(from, to, primTx, createSendFuture(wrappedPrimSpi, msg));
                 }
                 else if (msg instanceof GridDhtTxFinishRequest) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
 
                     GridCacheVersion nearVer = nearToLocVerMap.get(req.version());
@@ -397,6 +406,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.beforeBackupFinish(from, to, primTx, backupTx, nearVer.asGridUuid(), createSendFuture(wrappedPrimSpi, msg));
                 }
                 else if (msg instanceof GridNearTxPrepareResponse) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridNearTxPrepareResponse resp = (GridNearTxPrepareResponse)msg;
 
                     IgniteEx from = fromNode(wrappedPrimSpi);
@@ -408,6 +419,8 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.afterPrimaryPrepare(from, primTx, ver.asGridUuid(), createSendFuture(wrappedPrimSpi, msg));
                 }
                 else if (msg instanceof GridNearTxFinishResponse) {
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridNearTxFinishResponse req = (GridNearTxFinishResponse)msg;
 
                     IgniteEx from = fromNode(wrappedPrimSpi);
@@ -426,10 +439,10 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
         Map<IgniteUuid, GridCacheVersion> futMap, TxCallback cb) {
         return new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
-                IgniteEx from = fromNode(wrappedBackupSpi);
-                IgniteEx to = IgnitionEx.gridxx(node.id());
-
                 if (msg instanceof GridDhtTxPrepareResponse) {
+                    IgniteEx from = fromNode(wrappedBackupSpi);
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridDhtTxPrepareResponse resp = (GridDhtTxPrepareResponse)msg;
 
                     GridCacheVersion ver = futMap.get(resp.futureId());
@@ -442,6 +455,9 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                     return cb.afterBackupPrepare(to, from, backupTx, ver.asGridUuid(), createSendFuture(wrappedBackupSpi, msg));
                 }
                 else if (msg instanceof GridDhtTxFinishResponse) {
+                    IgniteEx from = fromNode(wrappedBackupSpi);
+                    IgniteEx to = IgnitionEx.gridxx(node.id());
+
                     GridDhtTxFinishResponse resp = (GridDhtTxFinishResponse)msg;
 
                     GridCacheVersion ver = futMap.get(resp.futureId());
@@ -624,16 +640,24 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
 
     /**
      * @param partId Partition id.
+     *
+     * @return Counter or null if node is not partition owner.
      */
-    protected PartitionUpdateCounter counter(int partId) {
-        return internalCache(0).context().topology().localPartition(partId).dataStore().partUpdateCounter();
+    protected @Nullable PartitionUpdateCounter counter(int partId) {
+        @Nullable GridDhtLocalPartition part = internalCache(0).context().topology().localPartition(partId);
+
+        return part == null ? null : part.dataStore().partUpdateCounter();
     }
 
     /**
      * @param partId Partition id.
+     *
+     * @return Counter or null if node is not partition owner.
      */
-    protected PartitionUpdateCounter counter(int partId, String gridName) {
-        return internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId).dataStore().partUpdateCounter();
+    protected @Nullable PartitionUpdateCounter counter(int partId, String gridName) {
+        @Nullable GridDhtLocalPartition part = internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
+
+        return part == null ? null : part.dataStore().partUpdateCounter();
     }
 
 
@@ -751,7 +775,6 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
                 this.assigns.put(entry.getKey(),
                     IntStream.of(entry.getValue()).boxed().collect(toCollection(ConcurrentLinkedQueue::new)));
             }
-
         }
 
         /** */

@@ -440,11 +440,10 @@ public interface IgniteCacheOffheapManager {
 
         /**
          * Updates counters from start value by delta value.
-         *
-         * @param start Start.
+         *  @param start Start.
          * @param delta Delta
          */
-        void updateCounter(long start, long delta);
+        boolean updateCounter(long start, long delta);
 
         /**
          * @param start Start.
