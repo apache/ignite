@@ -281,7 +281,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = this.ctx.wal();
 
-            if (size > 0 || updCntr > 0 || !store.partUpdateCounter().gaps().isEmpty()) {
+            if (size > 0 || updCntr > 0 || !store.partUpdateCounter().sequential()) {
                 GridDhtPartitionState state = null;
 
                 // localPartition will not acquire writeLock here because create=false.
@@ -1321,14 +1321,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     else if (rec.get2() instanceof RollbackRecord) {
                         RollbackRecord rbRec = (RollbackRecord)rec.get2();
 
-                        if (cacheIds.contains(rbRec.cacheId())) {
+                        if (cacheIds.contains(rbRec.groupId())) {
                             int idx = partMap.partitionIndex(rbRec.partitionId());
 
                             if (idx >= 0 && !missingParts.contains(idx)) {
                                 rebalancedCntrs[idx] += rbRec.range();
-
-                                log.info("TX: rollbacrecord node=" + grp.cacheObjectContext().kernalContext().config().getIgniteInstanceName() +
-                                    ", rebCntr=" + rebalancedCntrs[idx] + ", locCntr=" + grp.topology().localPartition(rbRec.partitionId()).dataStore().partUpdateCounter());
 
                                 if (rebalancedCntrs[idx] == partMap.updateCounterAt(idx))
                                     doneParts.add(rbRec.partitionId()); // Add to done set immediately.
@@ -1860,9 +1857,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
         }
 
+        /** {@inheritDoc} */
         @Override public PartitionUpdateCounter partUpdateCounter() {
             try {
-                CacheDataStore delegate0 = init0(false);
+                CacheDataStore delegate0 = init0(true);
 
                 return delegate0 == null ? null : delegate0.partUpdateCounter();
             }
@@ -1886,6 +1884,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void init(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps) {
             throw new IllegalStateException("Should be never called.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public long reserve(long delta) {
+            try {
+                CacheDataStore delegate0 = init0(false);
+
+                if (delegate0 == null)
+                    throw new IllegalStateException("Should be never called.");
+
+                return delegate0.reserve(delta);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /** {@inheritDoc} */
@@ -1914,19 +1927,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void releaseCounter(long start, long delta) {
-            try {
-                CacheDataStore delegate0 = init0(true);
-
-                if (delegate0 != null)
-                    delegate0.releaseCounter(start, delta);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
-
-        /** {@inheritDoc} */
         @Override public GridLongList finalizeUpdateCounters() {
             try {
                 CacheDataStore delegate0 = init0(true);
@@ -1943,8 +1943,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 CacheDataStore delegate0 = init0(true);
 
-                if (delegate0 != null)
-                    delegate0.updateInitialCounter(cntr);
+                if (delegate0 == null)
+                    throw new IllegalStateException("Should be never called.");
+
+                // TODO throw exception
+                return delegate0.nextUpdateCounter();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1969,8 +1972,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             try {
                 CacheDataStore delegate0 = init0(true);
 
-                if (delegate0 != null)
-                    delegate0.setRowCacheCleaner(rowCacheCleaner);
+                if (delegate0 == null)
+                    throw new IllegalStateException("Should be never called.");
+
+                delegate0.updateInitialCounter(cntr);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

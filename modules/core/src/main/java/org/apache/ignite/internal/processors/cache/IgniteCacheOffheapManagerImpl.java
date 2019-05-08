@@ -1164,7 +1164,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            pCntr = new PartitionUpdateCounter(log, partId);
+            pCntr = new PartitionUpdateCounterImpl(log, partId);
         }
 
         /**
@@ -1301,7 +1301,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public long getAndIncrementUpdateCounter(long delta) {
             long reserve = pCntr.reserve(delta);
 
-            //log.info("TX: reserve=(" + reserve + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
+            // log.info("TX: reserve=(" + reserve + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
 
             return reserve;
         }
@@ -1320,15 +1320,21 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return pCntr;
         }
 
+        @Override public long reserve(long delta) {
+            return pCntr.reserve(delta);
+        }
+
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
             try {
                 pCntr.update(val);
+
+                // log.info("TX: set=" + val + ", partId=" + partId + ", cntr=" + pCntr);
             }
-            catch (PartitionUpdateCounter.IllegalUpdateCounterException e) {
+            catch (IgniteCheckedException e) {
                 U.error(log, "Partition counter inconsistency is detected. " +
-                    "Most probably a node with most actual data is out of topology or data streamer on " +
-                    "transactional cache in allowOverwrite=false mode is used concurrently with transactions in the same time.");
+                    "Most probably a node with most actual data is out of topology or data streamer is used in isolated " +
+                    "mode (allowOverride=true) concurrently with normal cache operations.");
 
                 ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
@@ -1336,21 +1342,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public boolean updateCounter(long start, long delta) {
-            boolean update = pCntr.update(start, delta);
+            boolean updated = pCntr.update(start, delta);
 
-            //log.info("TX: update=(" + start + "," + delta + "), partId=" + partId + ", cntr=" + pCntr);
+            // log.info("TX: update=(" + start + "," + delta + "), partId=" + partId + ", topVer=" + grp.topology().readyTopologyVersion() + ", cntr=" + pCntr + ", updated=" + updated);
 
-            return update;
+            return updated;
         }
 
         /** {@inheritDoc} */
-        @Override public void releaseCounter(long start, long delta) {
-            // TODO remove.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void finalizeUpdateCountres() {
-            pCntr.finalizeUpdateCounters();
+        @Override public GridLongList finalizeUpdateCounters() {
+            return pCntr.finalizeUpdateCounters();
         }
 
         /** {@inheritDoc} */

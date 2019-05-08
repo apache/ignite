@@ -23,13 +23,12 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Exchanger;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +39,14 @@ import org.junit.runners.JUnit4;
  */
 @RunWith(JUnit4.class)
 public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
+    /**
+     * Create new counter.
+     * @return Counter.
+     */
+    protected PartitionUpdateCounter newCounter() {
+        return new PartitionUpdateCounterImpl(log);
+    }
+
     /**
      * Test applying update multiple times in random order.
      */
@@ -54,7 +61,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             Collections.shuffle(tmp);
 
-            PartitionUpdateCounter pc0 = new PartitionUpdateCounter(log);
+            PartitionUpdateCounter pc0 = newCounter();
 
             for (int[] pair : tmp)
                 pc0.update(pair[0], pair[1]);
@@ -64,7 +71,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
             else {
                 assertEquals(pc, pc0);
                 assertEquals(expTotal, pc0.get());
-                assertTrue(pc0.gaps().isEmpty());
+                assertTrue(pc0.sequential());
 
                 pc = pc0;
             }
@@ -77,7 +84,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStaleUpdate() {
-        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+        PartitionUpdateCounter pc = newCounter();
 
         assertTrue(pc.update(0, 1));
         assertFalse(pc.update(0, 1));
@@ -96,7 +103,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMixedModeMultithreaded() throws Exception {
-        PartitionUpdateCounter pc = new PartitionUpdateCounter(log);
+        PartitionUpdateCounter pc = newCounter();
 
         AtomicBoolean stop = new AtomicBoolean();
 
@@ -134,7 +141,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
         log.info("counter=" + pc.toString() + ", reserveCntrLocal=" + reserveCntr.sum());
 
-        assertTrue(pc.gaps().isEmpty());
+        assertTrue(pc.sequential());
 
         assertTrue(pc.get() == pc.reserved());
 
@@ -143,6 +150,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
 
     /**
      * @param cnt Count.
+     * @param maxTxSize Max tx size.
      */
     private List<int[]> generateUpdates(int cnt, int maxTxSize) {
         int[] ints = new Random().ints(cnt, 1, maxTxSize + 1).toArray();

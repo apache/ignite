@@ -598,6 +598,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 ds.addData(keys, keys);
         }
 
+        assertPartitionsSame(idleVerify(grid(0), CACHE));
+
         for (int it = 0; it < 10; it++) {
             final int it0 = it;
 

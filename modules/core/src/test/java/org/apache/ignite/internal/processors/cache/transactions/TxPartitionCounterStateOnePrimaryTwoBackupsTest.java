@@ -26,7 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -196,11 +196,11 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                             super.onBackupCommitted(backup, idx);
 
                             if (idx == BACKUP_COMMIT_ORDER[0]) {
-                                PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
+                                PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, backup.name());
 
                                 assertFalse(cntr.gaps().isEmpty());
 
-                                PartitionUpdateCounter.Item gap = cntr.gaps().first();
+                                PartitionUpdateCounterImpl.Item gap = cntr.gaps().first();
 
                                 assertEquals(PRELOAD_KEYS_CNT + SIZES[BACKUP_COMMIT_ORDER[1]] + SIZES[BACKUP_COMMIT_ORDER[2]], gap.start());
                                 assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], gap.delta());
@@ -243,7 +243,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
         // Check if holes are closed on rebalance.
-        PartitionUpdateCounter cntr = counter(PARTITION_ID, backup.name());
+        PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, backup.name());
 
         assertTrue(cntr.gaps().isEmpty());
 

@@ -1318,7 +1318,7 @@ public class IgniteTxHandler {
             finish(nodeId, dhtTx, req);
         else {
             try {
-                applyPartitionsUpdatesCounters(req.updateCounters(), !req.commit());
+                applyPartitionsUpdatesCounters(req.updateCounters(), !req.commit(), false);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -1666,7 +1666,7 @@ public class IgniteTxHandler {
                     if (log.isDebugEnabled())
                         log.debug("Attempt to start a completed transaction (will ignore): " + tx);
 
-                    applyPartitionsUpdatesCounters(req.updateCounters(), true);
+                    applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
 
                     return null;
                 }
@@ -1678,7 +1678,7 @@ public class IgniteTxHandler {
 
                     ctx.tm().uncommitTx(tx);
 
-                    applyPartitionsUpdatesCounters(req.updateCounters(), true);
+                    applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
 
                     return null;
                 }
@@ -1713,10 +1713,8 @@ public class IgniteTxHandler {
                             tx.addWrite(entry, ctx.deploy().globalLoader());
 
                             if (txCounters != null) {
-                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), entry.cached().partition());
-
-                                if (cntr != null) // Counter is null if entry is no-op.
-                                    entry.updateCounter(cntr);
+                                entry.updateCounter(
+                                    txCounters.generateNextCounter(entry.cacheId(), entry.cached().partition()));
                             }
 
                             if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
@@ -2019,7 +2017,7 @@ public class IgniteTxHandler {
      */
     private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
         try {
-            applyPartitionsUpdatesCounters(req.updateCounters(), true);
+            applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -2058,7 +2056,7 @@ public class IgniteTxHandler {
      * @param counters Counters.
      */
     public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) throws IgniteCheckedException {
-        applyPartitionsUpdatesCounters(counters, false);
+        applyPartitionsUpdatesCounters(counters, false, false);
     }
 
     /**
@@ -2067,7 +2065,7 @@ public class IgniteTxHandler {
      * @param counters Counter values to be updated.
      * @param rollback {@code True} if applied from rollbacks.
      */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters, boolean rollback) throws IgniteCheckedException {
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters, boolean rollback, boolean rollbackOnPrimary) throws IgniteCheckedException {
         if (counters == null)
             return;
 
@@ -2088,17 +2086,27 @@ public class IgniteTxHandler {
 
                     if (part != null && part.reserve()) {
                         try {
-                            if (part.state() != GridDhtPartitionState.RENTING) {
-                                boolean updated = part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+                            if (part.state() != GridDhtPartitionState.RENTING) { // Check is actual only for backup node.
+                                long start = counter.initialCounter(i);
+                                long delta = counter.updatesCount(i);
+
+                                boolean updated = part.updateCounter(start, delta);
 
                                 // Need to log rolled back range for logical recovery.
-                                if (updated && rollback && part.group().persistenceEnabled() && part.group().walEnabled()) {
-                                    RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
-                                        counter.initialCounter(i), counter.updatesCount(i));
+                                if (updated && rollback ) {
+                                    if (part.group().persistenceEnabled() && part.group().walEnabled()) {
+                                        RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
+                                            start, delta);
 
-                                    // log.error("TX: log rollback [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
+                                        // log.error("TX: log rollback [node=" + ctx.gridConfig().getIgniteInstanceName() + ", rec=" + rec + ']', new Exception());
 
-                                    ctx.wal().log(rec);
+                                        ctx.wal().log(rec);
+                                    }
+
+                                    for (int cntr = 1; cntr <= delta; cntr++) {
+                                        ctx0.continuousQueries().skipUpdateCounter(null, part.id(), start + cntr,
+                                            topVer, rollbackOnPrimary);
+                                    }
                                 }
                             }
                             else

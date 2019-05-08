@@ -31,7 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -110,13 +110,13 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                 return new OnePhaseCommitTxCallbackAdapter(PREPARE_ORDER, PRIMARY_COMMIT_ORDER, BACKUP_COMMIT_ORDER) {
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == PRIMARY_COMMIT_ORDER[0]) {
-                            PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
+                            PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, primary.name());
 
                             assertEquals(TOTAL, cntr.reserved());
 
                             assertFalse(cntr.gaps().isEmpty());
 
-                            PartitionUpdateCounter.Item gap = cntr.gaps().first();
+                            PartitionUpdateCounterImpl.Item gap = cntr.gaps().first();
 
                             assertEquals(PRELOAD_KEYS_CNT + SIZES[PRIMARY_COMMIT_ORDER[1]] + SIZES[PRIMARY_COMMIT_ORDER[2]], gap.start());
                             assertEquals(SIZES[PRIMARY_COMMIT_ORDER[0]], gap.delta());
@@ -154,7 +154,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         assertPartitionsSame(idleVerify(client, DEFAULT_CACHE_NAME));
 
         // Check if holes are closed on rebalance.
-        PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
+        PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, primary.name());
 
         assertTrue(cntr.gaps().isEmpty());
 
@@ -203,14 +203,14 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                     @Override protected boolean onPrimaryCommitted(IgniteEx primary, int idx) {
                         if (idx == PRIMARY_COMMIT_ORDER[0]) {
                             // Check primary counter.
-                            PartitionUpdateCounter cntr = counter(PARTITION_ID, primary.name());
+                            PartitionUpdateCounterImpl cntr = counter(PARTITION_ID, primary.name());
                             assertNotNull(cntr);
 
                             assertEquals(TOTAL, cntr.reserved());
 
                             assertFalse(cntr.gaps().isEmpty());
 
-                            PartitionUpdateCounter.Item gap = cntr.gaps().first();
+                            PartitionUpdateCounterImpl.Item gap = cntr.gaps().first();
 
                             assertEquals(PRELOAD_KEYS_CNT + SIZES[PRIMARY_COMMIT_ORDER[1]] + SIZES[PRIMARY_COMMIT_ORDER[2]], gap.start());
                             assertEquals(SIZES[PRIMARY_COMMIT_ORDER[0]], gap.delta());
@@ -218,7 +218,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
                             // Check backup counter.
                             String backup = txTop.get(PARTITION_ID).get2().get(0).name();
 
-                            PartitionUpdateCounter cntr2 = counter(PARTITION_ID, backup);
+                            PartitionUpdateCounterImpl cntr2 = counter(PARTITION_ID, backup);
                             assertNotNull(cntr2);
 
                             assertFalse("Illegal top map", primary.name().equals(backup));
@@ -251,7 +251,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
 
         awaitPartitionMapExchange();
 
-        PartitionUpdateCounter cntr2 = counter(PARTITION_ID, backupName);
+        PartitionUpdateCounterImpl cntr2 = counter(PARTITION_ID, backupName);
         assertNotNull(cntr2);
 
         assertEquals(TOTAL, cntr2.get());

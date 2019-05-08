@@ -745,8 +745,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         dhtVer,
                                         null);
 
-                                    if (updRes.success())
-                                        txEntry.updateCounter(updRes.updatePartitionCounter());
+                                    if (updRes.success()) {
+                                        txEntry.updateCounter(updRes.updateCounter());
+                                        //txEntry.cqNotifyClosure(updRes.cqNotifyClosure());
+                                    }
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();
@@ -903,8 +905,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (!txState.mvccEnabled() && txCounters != null)
+                if (!txState.mvccEnabled() && txCounters != null) {
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
+
+                    for (IgniteTxEntry entry : commitEntries) {
+                        if (entry.cqNotifyClosure() != null)
+                            entry.cqNotifyClosure().applyx();
+                    }
+                }
 
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
                 applyTxSizes();
@@ -1083,7 +1091,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 TxCounters txCounters = txCounters(false);
 
                 if (txCounters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true);
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
             }
 
             cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);

@@ -33,7 +33,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -41,6 +40,7 @@ import javax.cache.integration.CompletionListener;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeMan
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -134,8 +135,6 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.primary;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -1247,8 +1246,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         GridCacheContext<?, ?> cctx = proxy.context();
 
-        AffinityTopologyVersion topVer = cctx.topology().readyTopologyVersion();
-
         int k = 0, c = 0, skip0 = 0;
 
         List<Integer> keys = new ArrayList<>(cnt);
@@ -1271,6 +1268,36 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         return keys;
+    }
+
+    protected Iterator<Integer> partitionKeysIterator(IgniteCache<?, ?> cache, int part) {
+        IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
+
+        GridCacheContext<?, ?> cctx = proxy.context();
+
+        return new Iterator<Integer>() {
+            int cur, next = 0;
+
+            {
+                advance();
+            }
+
+            private void advance() {
+                while(cctx.affinity().partition(cur = next++) != part);
+            }
+
+            @Override public boolean hasNext() {
+                return true;
+            }
+
+            @Override public Integer next() {
+                int tmp = cur;
+
+                advance();
+
+                return tmp;
+            }
+        };
     }
 
     /**
@@ -2250,5 +2277,139 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         return keys;
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param topVer Topology version to wait.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    protected void waitForServicesReadyTopology(final IgniteEx ignite,
+        final AffinityTopologyVersion topVer) throws IgniteInterruptedCheckedException {
+        if (!(ignite.context().service() instanceof IgniteServiceProcessor))
+            return;
+
+        final IgniteServiceProcessor srvcProc = (IgniteServiceProcessor)ignite.context().service();
+
+        GridTestUtils.waitForCondition(() -> {
+            AffinityTopologyVersion readyTopVer = srvcProc.deployment().readyTopologyVersion();
+
+            return topVer.compareTo(readyTopVer) <= 0;
+        }, SERVICE_DEPLOYMENT_WAIT_TIMEOUT);
+    }
+
+    /**
+     * @return {@code false} if value of a system property "IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED" is "false",
+     * otherwise {@code true}.
+     */
+    protected static boolean isEventDrivenServiceProcessorEnabled() {
+        return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
+    }
+
+    /**
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved.
+     *
+     * @param countUpdate Number of events.
+     */
+    protected void awaitMetricsUpdate(int countUpdate) throws InterruptedException {
+        awaitMetricsUpdate(countUpdate, G.allGrids());
+    }
+
+    /**
+     * Wait for {@link EventType#EVT_NODE_METRICS_UPDATED} event will be receieved on specific nodes.
+     *
+     * @param countUpdate Number of events.
+     * @param grids Collection of Ignite instances we are listening for metrics update
+     * @throws InterruptedException
+     */
+    protected void awaitMetricsUpdate(int countUpdate, Collection<Ignite> grids) throws InterruptedException {
+        if (countUpdate > 0) {
+
+            final CountDownLatch latch = new CountDownLatch(G.allGrids().size() * grids.size() * countUpdate);
+
+            final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt.type() == EventType.EVT_NODE_METRICS_UPDATED;
+
+                    latch.countDown();
+
+                    return true;
+                }
+            };
+
+            for (Ignite g : grids)
+                g.events().localListen(lsnr, EventType.EVT_NODE_METRICS_UPDATED);
+
+            // Wait for metrics update.
+            assert latch.await(10, TimeUnit.SECONDS);
+
+            for (Ignite g : grids)
+                g.events().stopLocalListen(lsnr);
+        }
+    }
+
+    /**
+     * @param partId Partition id.
+     * @param gridName Grid name.
+     *
+     * @return Partition update counter or {@code null} if node is not an owner.
+     */
+    protected @Nullable PartitionUpdateCounter counter(int partId, String gridName) {
+        @Nullable GridDhtLocalPartition locPart =
+            internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
+
+        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
+    }
+
+    /**
+     * @param partId Partition id.
+     * @param cacheName Cache name.
+     * @param gridName Grid name.
+     *
+     * @return Partition update counter or {@code null} if node is not an owner.
+     */
+    protected @Nullable PartitionUpdateCounter counter(int partId, String cacheName, String gridName) {
+        @Nullable GridDhtLocalPartition locPart =
+            internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId);
+
+        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
+    }
+
+    /**
+     * @param res Response.
+     */
+    protected void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
+        if (res.hasConflicts()) {
+            StringBuilder b = new StringBuilder();
+
+            res.print(b::append);
+
+            fail(b.toString());
+        }
+    }
+
+    /**
+     *
+     * @param partId
+     * @param withReserveCntr {@code True} to compare reserve counters. Counters must be same after rebalance.
+     */
+    protected void assertCountersSame(int partId, boolean withReserveCntr) throws AssertionFailedError {
+        PartitionUpdateCounter cntr0 = null;
+
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
+
+            PartitionUpdateCounter cntr = counter(partId, ignite.name());
+
+            if (cntr0 != null) {
+                assertEquals("Expecting same counters", cntr0, cntr);
+
+                if (withReserveCntr)
+                    assertEquals("Expecting same reservation counters", cntr0.reserved(), cntr.reserved());
+            }
+
+            cntr0 = cntr;
+        }
     }
 }

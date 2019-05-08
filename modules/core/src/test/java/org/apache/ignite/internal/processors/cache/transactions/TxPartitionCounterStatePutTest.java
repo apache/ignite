@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -289,18 +290,6 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
                 c0 = c;
             }
         }
-    }
-
-
-    /**
-     * @param partId Partition id.
-     */
-    protected PartitionUpdateCounter counter(int partId, String cacheName, String gridName) {
-        return internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId).dataStore().partUpdateCounter();
-    }
-
-    @Override protected long getTestTimeout() {
-        return 10000000000L;
     }
 
     /**

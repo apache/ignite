@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -120,7 +121,6 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
     }
 
     /**
-     * @param ig Ignite.
      * @param cacheMode Cache mode.
      * @param backups Backups.
      * @param sameTx Same tx.
@@ -180,19 +180,6 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
                 }
             }
         }
-    }
-
-    /**
-     * @param partId Partition id.
-     * @param gridName Grid name.
-     *
-     * @return Partition update counter or {@code null} if node is not an owner.
-     */
-    private PartitionUpdateCounter counter(int partId, String gridName) {
-        @Nullable GridDhtLocalPartition locPart =
-            internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
-
-        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
     }
 
     /**

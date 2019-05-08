@@ -171,9 +171,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
-    /** */
-    private volatile boolean stateChanged;
-
     /**
      * @param ctx Context.
      * @param grp Cache group.
@@ -540,8 +537,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 this.state.compareAndSet(state0, setPartState(state0, toState));
 
-                stateChanged = true;
-
                 try {
                     ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                 }
@@ -567,8 +562,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
                 if (update) {
-                    stateChanged = true;
-
                     try {
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, 0));
                     }
@@ -1000,7 +993,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 store.updateCounter(nextCntr);
             }
             else {
-                nextCntr = store.partUpdateCounter().reserve(1) + 1; // Needed for mixed tx/atomic cache group.
+                nextCntr = store.reserve(1) + 1; // Needed for mixed tx/atomic cache group.
 
                 store.updateCounter(nextCntr - 1, 1); // Apply update right now (TODO apply update after writing entry to WAL)
             }
@@ -1090,14 +1083,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 //            log.error("TX: node=" + ctx.gridConfig().getIgniteInstanceName() + ", cntr=" + store.partUpdateCounter() + ", start=" + start + ", delta=" + delta, new Exception());
 
         return store.updateCounter(start, delta);
-    }
-
-    /**
-     * @param start Start.
-     * @param delta Delta.
-     */
-    public void releaseCounter(long start, long delta) {
-        store.releaseCounter(start, delta);
     }
 
     /**
@@ -1444,18 +1429,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public GridLongList finalizeUpdateCounters() {
         return store.finalizeUpdateCounters();
-    }
-
-    /**
-     *
-     * @return {@code True} if partition state was changed before last call to this method.
-     */
-    public boolean getAndResetStateUpdate() {
-        boolean tmp = stateChanged;
-
-        stateChanged = false;
-
-        return tmp;
     }
 
     /**
