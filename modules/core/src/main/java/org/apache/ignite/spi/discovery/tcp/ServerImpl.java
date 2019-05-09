@@ -1325,7 +1325,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // During marshalling, SPI didn't know whether all nodes support compression as we didn't join yet.
                     // The only way to know is passing flag directly with handshake response.
                     if (!res.isDiscoveryDataPacketCompression())
-                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipData(log);
+                        ((TcpDiscoveryJoinRequestMessage)msg).gridDiscoveryData().unzipZippedData(log);
 
                     synchronized (mux) {
                         for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
