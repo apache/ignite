@@ -2565,11 +2565,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return exchWorker != null && Thread.currentThread() == exchWorker.runner();
     }
 
-    /** */
-    public boolean currentThreadIsExchanger() {
-        return exchWorker != null && Thread.currentThread() == exchWorker.runner();
-    }
-
     /**
      * @return {@code True} If there is any exchange future in progress.
      */
