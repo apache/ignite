@@ -214,7 +214,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             long rootPage = allocateForTree();
 
-            PageLockListener lsnr = ctx.diagnostic().createPageLockTracker(pendingEntriesTreeName);
+            PageLockListener lsnr = ctx.diagnostic().pageLockTracker().createPageLockTracker(pendingEntriesTreeName);
 
             pendingEntries = new PendingEntriesTree(
                 grp,
@@ -1241,7 +1241,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         String dataTreeName = treeName(p);
 
-        PageLockListener lsnr = ctx.diagnostic().createPageLockTracker(dataTreeName);
+        PageLockListener lsnr = ctx.diagnostic().pageLockTracker().createPageLockTracker(dataTreeName);
 
         CacheDataTree dataTree = new CacheDataTree(
             grp,

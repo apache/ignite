@@ -261,7 +261,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 wal,
                 reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated(),
-                diagnosticMgr.createPageLockTracker(freeListName)
+                diagnosticMgr.pageLockTracker().createPageLockTracker(freeListName)
             );
 
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
@@ -278,7 +278,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 treeRoot.isAllocated(),
                 failureProcessor,
                 partId,
-                diagnosticMgr.createPageLockTracker(treeName)
+                diagnosticMgr.pageLockTracker().createPageLockTracker(treeName)
             );
 
             if (!readOnly)
