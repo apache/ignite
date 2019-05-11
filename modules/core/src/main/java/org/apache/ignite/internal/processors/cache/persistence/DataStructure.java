@@ -40,7 +40,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
-
 /**
  * Base class for all the data structures based on {@link PageMemory}.
  */
@@ -154,7 +153,7 @@ public abstract class DataStructure {
 
     /**
      * @param pageId Page ID.
-     * @param page  Page pointer.
+     * @param page Page pointer.
      */
     protected final void releasePage(long pageId, long page) {
         pageMem.releasePage(grpId, pageId, page);
@@ -179,9 +178,8 @@ public abstract class DataStructure {
     }
 
     /**
-     * <p>
-     * Note: Default WAL record policy will be used.
-     * </p>
+     * <p> Note: Default WAL record policy will be used. </p>
+     *
      * @param pageId Page ID
      * @param page Page pointer.
      * @param pageAddr Page address.
@@ -203,7 +201,7 @@ public abstract class DataStructure {
     /**
      * @param pageId Page ID
      * @param page Page pointer.
-     * @param pageAddr  Page address.
+     * @param pageAddr Page address.
      */
     protected final void readUnlock(long pageId, long page, long pageAddr) {
         PageHandler.readUnlock(pageMem, grpId, pageId, page, pageAddr, lockLsnr);
@@ -212,7 +210,7 @@ public abstract class DataStructure {
     /**
      * @param pageId Page ID
      * @param page Page pointer.
-     * @param pageAddr  Page address.
+     * @param pageAddr Page address.
      * @param walPlc Full page WAL record policy.
      * @param dirty Dirty flag.
      */

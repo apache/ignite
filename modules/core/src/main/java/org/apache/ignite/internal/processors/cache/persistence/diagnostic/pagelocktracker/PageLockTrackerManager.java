@@ -27,6 +27,9 @@ public class PageLockTrackerManager {
     /** MXbean */
     private final PageLockTrackerMXBean mxBean;
 
+    /** */
+    private final SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker();
+
     /**
      * Default constructor.
      */
@@ -39,7 +42,7 @@ public class PageLockTrackerManager {
      * @return Instance of {@link PageLockListener} for tracking lock/unlock operations.
      */
     public PageLockListener createPageLockTracker(String name) {
-        return DataStructure.NOOP_LSNR;
+        return sharedPageLockTracker.registrateStructure(name);
     }
 
     /**
@@ -58,6 +61,7 @@ public class PageLockTrackerManager {
 
     /**
      * Check page lock tracking.
+     *
      * @return {@code True} if tracking enable, {@code False} if disable.
      */
     public boolean isTracingEnable() {
