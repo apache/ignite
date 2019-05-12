@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Net;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
@@ -153,10 +154,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
         {
             var cache = Client.GetOrCreateCache<TestKeyWithAffinity, int>("c_custom_key_aff");
-            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => new TestKeyWithAffinity(x, x.ToString()), x => x));
-            cache.Get(new TestKeyWithAffinity(1, "1")); // Warm up;
 
-            cache.Get(new TestKeyWithAffinity(1, "1"));
+            var ex = Assert.Throws<IgniteException>(() => cache.Put(new TestKeyWithAffinity(1, "1"), 1));
+            Assert.Equals("TODO", ex.Message);
         }
     }
 }

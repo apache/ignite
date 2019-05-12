@@ -396,11 +396,11 @@ namespace Apache.Ignite.Core.Impl.Client
 
                     for (int i = 0; i < size; i++)
                     {
-                        var g = new ClientCacheAffinityAwarenessGroup(s);
+                        var grp = new ClientCacheAffinityAwarenessGroup(s);
 
                         // Count partitions to avoid reallocating array.
                         int maxPartNum = 0;
-                        foreach (var partMap in g.PartitionMap)
+                        foreach (var partMap in grp.PartitionMap)
                         {
                             foreach (var part in partMap.Value)
                             {
@@ -413,7 +413,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                         // Populate partition array.
                         var partNodeIds = new Guid[maxPartNum + 1];
-                        foreach (var partMap in g.PartitionMap)
+                        foreach (var partMap in grp.PartitionMap)
                         {
                             foreach (var part in partMap.Value)
                             {
@@ -421,7 +421,7 @@ namespace Apache.Ignite.Core.Impl.Client
                             }
                         }
 
-                        foreach (var cache in g.Caches)
+                        foreach (var cache in grp.Caches)
                         {
                             mapping[cache.Key] = new ClientCachePartitionMap(cache.Key, partNodeIds, cache.Value);
                         }
