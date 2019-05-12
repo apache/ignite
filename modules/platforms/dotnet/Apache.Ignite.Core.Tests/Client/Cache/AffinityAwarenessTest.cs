@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
@@ -71,10 +73,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             base.TestSetUp();
 
-            foreach (var logger in _loggers)
-            {
-                logger.Clear();
-            }
+            ClearLoggers();
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -101,17 +100,33 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         private int GetClientRequestGridIndex()
         {
-            for (var i = 0; i < _loggers.Count; i++)
+            try
             {
-                var logger = _loggers[i];
-
-                if (logger.Messages.Any(m => m.Contains("ClientCacheGetRequest")))
+                for (var i = 0; i < _loggers.Count; i++)
                 {
-                    return i;
-                }
-            }
+                    var logger = _loggers[i];
 
-            return -1;
+                    if (logger.Messages.Any(m => m.Contains("ClientCacheGetRequest")))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+            finally
+            {
+                ClearLoggers();
+            }
+        }
+
+
+        private void ClearLoggers()
+        {
+            foreach (var logger in _loggers)
+            {
+                logger.Clear();
+            }
         }
 
         [Test]
@@ -173,12 +188,26 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (Ignition.Start(cfg))
             {
+                // Warm-up.
                 Assert.AreEqual(1, _cache.Get(1));
-                Assert.AreEqual(0, _cache.Get(2));
-                Assert.AreEqual(0, _cache.Get(3));
-                Assert.AreEqual(1, _cache.Get(4));
-                Assert.AreEqual(1, _cache.Get(5));
-                Assert.AreEqual(2, _cache.Get(6));
+                Assert.AreEqual(1, GetClientRequestGridIndex());
+
+                // TODO: Wait for rebalance event? Why don't we hit the case with missing target node?
+                Thread.Sleep(5);
+
+                // Assert.
+                Assert.AreEqual(1, _cache.Get(1));
+                Assert.AreEqual(1, GetClientRequestGridIndex());
+
+                Assert.AreEqual(2, _cache.Get(2));
+                Assert.AreEqual(0, GetClientRequestGridIndex());
+
+                for (var i = 1; i < 99; i++)
+                {
+                    ClearLoggers();
+                    Assert.AreEqual(i, _cache.Get(i));
+                    Console.WriteLine(GetClientRequestGridIndex());
+                }
             }
         }
     }
