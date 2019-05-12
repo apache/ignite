@@ -17,11 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
-    using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
