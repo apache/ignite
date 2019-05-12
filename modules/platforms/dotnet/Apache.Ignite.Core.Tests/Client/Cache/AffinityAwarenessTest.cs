@@ -177,10 +177,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToPrimaryNode()
         {
             // Before topology change.
-            var res = _cache.Get(1);
-
-            Assert.AreEqual(1, res);
+            Assert.AreEqual(12, _cache.Get(1));
             Assert.AreEqual(1, GetClientRequestGridIndex());
+
+            Assert.AreEqual(14, _cache.Get(1));
+            Assert.AreEqual(2, GetClientRequestGridIndex());
 
             // After topology change.
             var cfg = GetIgniteConfiguration();
@@ -192,22 +193,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Assert.AreEqual(1, _cache.Get(1));
                 Assert.AreEqual(1, GetClientRequestGridIndex());
 
-                // TODO: Wait for rebalance event? Why don't we hit the case with missing target node?
-                Thread.Sleep(5);
+                // TODO: Wait for rebalance event - how?
+                Thread.Sleep(5000);
 
-                // Assert.
-                Assert.AreEqual(1, _cache.Get(1));
+                Assert.AreEqual(12, _cache.Get(1));
                 Assert.AreEqual(1, GetClientRequestGridIndex());
 
-                Assert.AreEqual(2, _cache.Get(2));
-                Assert.AreEqual(0, GetClientRequestGridIndex());
-
-                for (var i = 1; i < 99; i++)
-                {
-                    ClearLoggers();
-                    Assert.AreEqual(i, _cache.Get(i));
-                    Console.WriteLine(GetClientRequestGridIndex());
-                }
+                Assert.AreEqual(14, _cache.Get(1));
+                Assert.AreEqual(2, GetClientRequestGridIndex());
             }
         }
     }
