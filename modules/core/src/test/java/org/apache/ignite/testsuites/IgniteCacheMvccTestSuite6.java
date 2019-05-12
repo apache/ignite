@@ -59,7 +59,7 @@ public class IgniteCacheMvccTestSuite6 {
         Set<Class> ignoredTests = new HashSet<>();
 
         // Skip classes that already contains Mvcc tests
-        /*ignoredTests.add(TxStateChangeEventTest.class);
+        ignoredTests.add(TxStateChangeEventTest.class);
 
         // Atomic cache tests.
         ignoredTests.add(ReplicatedAtomicCacheGetsDistributionTest.class);
@@ -85,7 +85,7 @@ public class IgniteCacheMvccTestSuite6 {
 
         // Skip tests that has Mvcc clones.
         ignoredTests.add(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class); // See PartitionedMvccTxPessimisticCacheGetsDistributionTest.
-        ignoredTests.add(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);*/ //See ReplicatedMvccTxPessimisticCacheGetsDistributionTest
+        ignoredTests.add(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class); //See ReplicatedMvccTxPessimisticCacheGetsDistributionTest
 
         List<Class<?>> suite = new ArrayList<>((IgniteCacheTestSuite6.suite(ignoredTests)));
 
