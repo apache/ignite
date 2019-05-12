@@ -42,7 +42,6 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
     /** */
     private final T2<Integer, Long>[] pages;
 
-
     /**
      * @param msg Message.
      * @param cause Cause.
@@ -77,6 +76,7 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
 
         BPlusTreeRuntimeException treeRuntimeException = X.cause(cause, BPlusTreeRuntimeException.class);
 
+        // Add root exception pages ids if we have.
         if (treeRuntimeException != null)
             res.addAll(treeRuntimeException.pages());
 
@@ -89,6 +89,7 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
             return new T2<>(grpId, partMetaPageId);
         }).collect(Collectors.toSet());
 
+        // Add meta pages for all (group,partition) pairs.
         res.addAll(partMetaPages);
 
         return (T2<Integer, Long>[])res.toArray(new T2[0]);

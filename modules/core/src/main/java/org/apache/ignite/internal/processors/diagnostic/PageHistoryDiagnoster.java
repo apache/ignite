@@ -149,7 +149,7 @@ public class PageHistoryDiagnoster {
          * @param pageIds Pages for searching in WAL.
          * @return This instance for chaining.
          */
-        public DiagnosticPageBuilder pageIds(T2<Integer,Long> ...pageIds) {
+        public DiagnosticPageBuilder pageIds(T2<Integer, Long>... pageIds) {
             this.pageIds.addAll(Arrays.asList(pageIds));
 
             return this;

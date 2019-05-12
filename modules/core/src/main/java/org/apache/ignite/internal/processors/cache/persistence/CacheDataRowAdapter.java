@@ -276,41 +276,19 @@ public class CacheDataRowAdapter implements CacheDataRow {
                 }
             }
             catch (RuntimeException | AssertionError e) {
-                GridLongList pageIds = new GridLongList();
+                // Collect all pages from first link to pageId.
+                long[] pageIds;
 
-                nextLink = link;
-                long nextLinkPageId = pageId(nextLink);
+                try {
+                    pageIds = relatedPageIds(grpId, link, pageId, pageMem, statHolder);
 
-                while (nextLinkPageId != pageId) {
-                    pageIds.add(nextLinkPageId);
-
-                    long page = pageMem.acquirePage(grpId, nextLinkPageId, statHolder);
-
-                    try {
-                        long pageAddr = pageMem.readLock(grpId, nextLinkPageId, page);
-
-                        try {
-                            DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
-
-                            int itemId = itemId(nextLink);
-
-                            DataPagePayload data = io.readPayload(pageAddr, itemId, pageMem.realPageSize(grpId));
-
-                            nextLink = data.nextLink();
-                            nextLinkPageId = pageId(nextLink);
-                        }
-                        finally {
-                            pageMem.readUnlock(grpId, nextLinkPageId, page);
-                        }
-                    }
-                    finally {
-                        pageMem.releasePage(grpId, nextLinkPageId, page);
-                    }
+                }
+                catch (IgniteCheckedException e0) {
+                    // Ignore exception if failed to resolve related page ids.
+                    pageIds = new long[] {pageId};
                 }
 
-                pageIds.add(pageId);
-
-                throw new BPlusTreeRuntimeException(e, grpId, pageIds.array());
+                throw new BPlusTreeRuntimeException(e, grpId, pageIds);
             }
         }
         while (nextLink != 0);
@@ -759,6 +737,60 @@ public class CacheDataRowAdapter implements CacheDataRow {
         assert !buf.hasRemaining();
 
         return incomplete;
+    }
+
+    /**
+     *
+     * @param grpId Group id.
+     * @param link Link.
+     * @param pageId PageId.
+     * @param pageMem Page memory.
+     * @param statHolder Status holder.
+     * @return Array of page ids from link to pageId.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long[] relatedPageIds(
+        int grpId,
+        long link,
+        long pageId,
+        PageMemory pageMem,
+        IoStatisticsHolder statHolder
+    ) throws IgniteCheckedException {
+        GridLongList pageIds = new GridLongList();
+
+        long nextLink = link;
+        long nextLinkPageId = pageId(nextLink);
+
+        while (nextLinkPageId != pageId) {
+            pageIds.add(nextLinkPageId);
+
+            long page = pageMem.acquirePage(grpId, nextLinkPageId, statHolder);
+
+            try {
+                long pageAddr = pageMem.readLock(grpId, nextLinkPageId, page);
+
+                try {
+                    DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+
+                    int itemId = itemId(nextLink);
+
+                    DataPagePayload data = io.readPayload(pageAddr, itemId, pageMem.realPageSize(grpId));
+
+                    nextLink = data.nextLink();
+                    nextLinkPageId = pageId(nextLink);
+                }
+                finally {
+                    pageMem.readUnlock(grpId, nextLinkPageId, page);
+                }
+            }
+            finally {
+                pageMem.releasePage(grpId, nextLinkPageId, page);
+            }
+        }
+
+        pageIds.add(pageId);
+
+        return pageIds.array();
     }
 
     /**

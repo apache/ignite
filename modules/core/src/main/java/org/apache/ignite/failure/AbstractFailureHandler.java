@@ -63,25 +63,7 @@ public abstract class AbstractFailureHandler implements FailureHandler {
 
     /** {@inheritDoc} */
     @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-        if (ignoredFailureTypes.contains(failureCtx.type()))
-            return false;
-
-        if (X.hasCause(failureCtx.error(), CorruptedTreeException.class)) {
-            CorruptedTreeException corruptedTreeException = X.cause(failureCtx.error(), CorruptedTreeException.class);
-
-            try {
-                ((IgniteEx)ignite).context().diagnostic().dumpPageHistory(
-                    new PageHistoryDiagnoster.DiagnosticPageBuilder()
-                        .pageIds(corruptedTreeException.pages())
-                        .addAction(PRINT_TO_LOG)
-                );
-            }
-            catch (IgniteCheckedException e) {
-                ignite.log().error("Failed to dump diagnostic info on tree corruption.", e);
-            }
-        }
-
-        return handle(ignite, failureCtx);
+        return !ignoredFailureTypes.contains(failureCtx.type()) && handle(ignite, failureCtx);
     }
 
     /**

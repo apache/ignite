@@ -1023,9 +1023,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
         catch (RuntimeException | AssertionError e) {
-            long[] pageIds = lower == null || cursor == null || cursor.getCursor == null
-                ? GridLongList.EMPTY_ARRAY
-                : new long[] {cursor.getCursor.pageId};
+            long[] pageIds = pages(lower == null || cursor == null || cursor.getCursor == null,
+                cursor.getCursor.pageId);
 
             throw new CorruptedTreeException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e, grpId, pageIds);
         }
@@ -1237,9 +1236,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on last row lookup", e);
         }
         catch (RuntimeException | AssertionError e) {
-            long[] pageIds = g == null
-                ? GridLongList.EMPTY_ARRAY
-                : new long[]{g.rootId, g.pageId, g.backId, g.fwdId, g.rmvId};
+            long[] pageIds = pages(g == null, g.rootId, g.pageId, g.backId, g.fwdId, g.rmvId);
 
             throw new CorruptedTreeException("Runtime failure on last row lookup", e, grpId, pageIds);
         }
@@ -5865,5 +5862,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     protected IoStatisticsHolder statisticsHolder() {
         return IoStatisticsHolderNoOp.INSTANCE;
+    }
+
+    /**
+     * PageIds converter with empty check.
+     *
+     * @param empty Flag for empty array result.
+     * @param pages Pages.
+     * @return Array of page ids.
+     */
+    private long[] pages(boolean empty, long... pages) {
+        return empty ? GridLongList.EMPTY_ARRAY : pages;
     }
 }
