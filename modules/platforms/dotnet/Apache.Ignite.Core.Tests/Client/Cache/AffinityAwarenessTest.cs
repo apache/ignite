@@ -139,11 +139,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(6, 1)]
         public void CacheGet_UserDefinedKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
-            var cache = Client.GetOrCreateCache<MyKey, int>("c_custom_key");
-            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => new MyKey(x, x.ToString()), x => x));
-            cache.Get(new MyKey(1, "1")); // Warm up;
+            var cache = Client.GetOrCreateCache<TestKey, int>("c_custom_key");
+            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => new TestKey(x, x.ToString()), x => x));
+            cache.Get(new TestKey(1, "1")); // Warm up;
 
-            var res = cache.Get(new MyKey(key, key.ToString()));
+            var res = cache.Get(new TestKey(key, key.ToString()));
 
             Assert.AreEqual(key, res);
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
@@ -153,49 +153,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
         {
             // TODO
-        }
-
-        private sealed class MyKey
-        {
-            private readonly int _i;
-            private readonly string _s;
-
-            public MyKey(int i, string s)
-            {
-                _i = i;
-                _s = s;
-            }
-
-            public int I
-            {
-                get { return _i; }
-            }
-
-            public string S
-            {
-                get { return _s; }
-            }
-
-            private bool Equals(MyKey other)
-            {
-                return _i == other._i && string.Equals(_s, other._s);
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(null, obj)) return false;
-                if (ReferenceEquals(this, obj)) return true;
-                if (obj.GetType() != GetType()) return false;
-                return Equals((MyKey) obj);
-            }
-
-            public override int GetHashCode()
-            {
-                unchecked
-                {
-                    return (_i * 397) ^ (_s != null ? _s.GetHashCode() : 0);
-                }
-            }
         }
     }
 }

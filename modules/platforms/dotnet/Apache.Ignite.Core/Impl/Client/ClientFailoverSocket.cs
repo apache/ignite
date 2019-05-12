@@ -31,7 +31,6 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
