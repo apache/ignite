@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 
     /// <summary>
@@ -174,35 +175,39 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToPrimaryNode()
+        public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToDefaultNode()
         {
             // Warm-up.
             Assert.AreEqual(1, _cache.Get(1));
 
             // Before topology change.
-            Assert.AreEqual(12, _cache.Get(1));
+            Assert.AreEqual(12, _cache.Get(12));
             Assert.AreEqual(1, GetClientRequestGridIndex());
 
-            Assert.AreEqual(14, _cache.Get(1));
+            Assert.AreEqual(14, _cache.Get(14));
             Assert.AreEqual(2, GetClientRequestGridIndex());
 
             // After topology change.
             var cfg = GetIgniteConfiguration();
             cfg.AutoGenerateIgniteInstanceName = true;
 
-            using (Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(cfg))
             {
+                // Wait for rebalance.
+                var events = ignite.GetEvents();
+                events.EnableLocal(EventType.CacheRebalanceStopped);
+                events.WaitForLocal(EventType.CacheRebalanceStopped);
+
                 // Warm-up.
                 Assert.AreEqual(1, _cache.Get(1));
 
-                // TODO: Wait for rebalance event - how?
-                Thread.Sleep(5000);
-
-                Assert.AreEqual(12, _cache.Get(1));
+                // Assert: keys 12 and 14 belong to a new node now, but we don't have the new node in the server list.
+                // Requests are routed to default node.
+                Assert.AreEqual(12, _cache.Get(12));
                 Assert.AreEqual(1, GetClientRequestGridIndex());
 
-                Assert.AreEqual(14, _cache.Get(1));
-                Assert.AreEqual(2, GetClientRequestGridIndex());
+                Assert.AreEqual(14, _cache.Get(14));
+                Assert.AreEqual(1, GetClientRequestGridIndex());
             }
         }
     }
