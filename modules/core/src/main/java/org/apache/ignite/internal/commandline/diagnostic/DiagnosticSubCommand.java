@@ -66,4 +66,9 @@ public enum DiagnosticSubCommand {
 
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return name;
+    }
 }

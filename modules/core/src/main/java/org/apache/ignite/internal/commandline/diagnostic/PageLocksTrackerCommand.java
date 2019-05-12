@@ -27,6 +27,10 @@ import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerArgs;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerResult;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerTask;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
+import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.PAGE_LOCKS_TRACKER;
+
 /**
  *
  */
@@ -95,7 +99,16 @@ public class PageLocksTrackerCommand implements Command<PageLocksTrackerCommand.
 
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-
+        logger.log("View pages locks state information in a node");
+        logger.log(CommandLogger.join(" ",
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump", "// Return dump in string format"));
+        logger.log(CommandLogger.join(" ",
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump log","// Pring dump to console on node"));
+        logger.log(CommandLogger.join(" ",
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump file","// Save dump to file generated in IGNITE_HOME directory."));
+        logger.log(CommandLogger.join(" ",
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump file {path}","// Save dump to specific path."));
+        logger.nl();
     }
 
     /**

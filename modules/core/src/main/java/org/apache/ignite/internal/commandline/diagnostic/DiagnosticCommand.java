@@ -22,6 +22,10 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
+import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.HELP;
+
 /**
  *
  */
@@ -36,7 +40,7 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
-        if (subcommand == DiagnosticSubCommand.HELP) {
+        if (subcommand == HELP) {
             printDiagnosticHelp();
 
             return null;
@@ -58,7 +62,7 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         if (!argIter.hasNextSubArg()) {
-            subcommand = DiagnosticSubCommand.HELP;
+            subcommand = HELP;
 
             return;
         }
@@ -68,7 +72,7 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
         DiagnosticSubCommand cmd = DiagnosticSubCommand.of(str);
 
         if (cmd == null)
-            cmd = DiagnosticSubCommand.HELP;
+            cmd = HELP;
 
         switch (cmd) {
             case HELP:
@@ -91,11 +95,13 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        //TODO
+        logger.logWithIndent("View diagnostic information in a cluster. For more details type:");
+        logger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, DIAGNOSTIC, HELP), 2);
+        logger.nl();
     }
 
     /** */
     private void printDiagnosticHelp() {
-        logger.log("Diagnostic help!");
+        logger.log("TODO print diagnostic help");
     }
 }
