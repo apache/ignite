@@ -1,17 +1,21 @@
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    public sealed class TestKey
+    using Apache.Ignite.Core.Cache.Affinity;
+
+    public sealed class TestKeyWithAffinity
     {
+        [AffinityKeyMapped]
         private readonly int _i;
+
         private readonly string _s;
 
-        public TestKey(int i, string s)
+        public TestKeyWithAffinity(int i, string s)
         {
             _i = i;
             _s = s;
         }
 
-        private bool Equals(TestKey other)
+        private bool Equals(TestKeyWithAffinity other)
         {
             return _i == other._i && string.Equals(_s, other._s);
         }
@@ -21,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
-            return Equals((TestKey) obj);
+            return Equals((TestKeyWithAffinity) obj);
         }
 
         public override int GetHashCode()

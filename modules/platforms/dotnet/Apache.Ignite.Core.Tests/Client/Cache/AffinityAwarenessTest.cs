@@ -152,7 +152,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
         {
-            // TODO
+            var cache = Client.GetOrCreateCache<TestKeyWithAffinity, int>("c_custom_key_aff");
+            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => new TestKeyWithAffinity(x, x.ToString()), x => x));
+            cache.Get(new TestKeyWithAffinity(1, "1")); // Warm up;
+
+            cache.Get(new TestKeyWithAffinity(1, "1"));
         }
     }
 }
