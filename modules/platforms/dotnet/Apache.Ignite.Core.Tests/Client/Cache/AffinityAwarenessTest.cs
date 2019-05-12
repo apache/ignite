@@ -17,14 +17,12 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
     /// <summary>
@@ -153,12 +151,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
         {
+            // TODO: This is broken in Java, we don't get any data on annotation-configured types.
             var cache = Client.GetOrCreateCache<TestKeyWithAffinity, int>("c_custom_key_aff");
 
             var ex = Assert.Throws<IgniteException>(() => cache.Put(new TestKeyWithAffinity(1, "1"), 1));
-            Assert.Equals("TODO", ex.Message);
+            Assert.AreEqual("TODO", ex.Message);
         }
-
 
         [Test]
         public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToPrimaryNode()
@@ -175,12 +173,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             using (Ignition.Start(cfg))
             {
-                Assert.Equals(1, _cache.Get(1));
-                Assert.Equals(0, _cache.Get(2));
-                Assert.Equals(0, _cache.Get(3));
-                Assert.Equals(1, _cache.Get(4));
-                Assert.Equals(1, _cache.Get(5));
-                Assert.Equals(2, _cache.Get(6));
+                Assert.AreEqual(1, _cache.Get(1));
+                Assert.AreEqual(0, _cache.Get(2));
+                Assert.AreEqual(0, _cache.Get(3));
+                Assert.AreEqual(1, _cache.Get(4));
+                Assert.AreEqual(1, _cache.Get(5));
+                Assert.AreEqual(2, _cache.Get(6));
             }
         }
     }
