@@ -23,7 +23,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.diagnostic.PageHistoryDiagnoster;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
@@ -50,18 +52,30 @@ public class DiagnosticFailureHandler extends AbstractFailureHandler {
         if (X.hasCause(failureCtx.error(), CorruptedTreeException.class)) {
             CorruptedTreeException corruptedTreeException = X.cause(failureCtx.error(), CorruptedTreeException.class);
 
+            T2<Integer, Long>[] pageIds = corruptedTreeException.pages();
+
             try {
                 DiagnosticProcessor diagnosticProc = ((IgniteEx)ignite).context().diagnostic();
 
                 diagnosticProc.dumpPageHistory(
                     new PageHistoryDiagnoster.DiagnosticPageBuilder()
-                        .pageIds(corruptedTreeException.pages())
+                        .pageIds(pageIds)
                         .addAction(PRINT_TO_LOG)
                         .addAction(PRINT_TO_FILE)
                 );
             }
             catch (IgniteCheckedException e) {
-                ignite.log().error("Failed to dump diagnostic info on tree corruption.", e);
+                SB sb = new SB();
+                sb.a("[");
+
+                for (int i = 0; i < pageIds.length; i++) {
+                    sb.a("(").a(pageIds[i].get1()).a(",").a(pageIds[i].get2()).a(")");
+                }
+
+                sb.a("]");
+
+                ignite.log().error(
+                    "Failed to dump diagnostic info on tree corruption. PageIds=" + sb, e);
             }
         }
 
