@@ -22,13 +22,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -39,10 +46,14 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.Scann
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.ScanTerminateStep;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.withIteratorParameters;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.checkpoint;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.pageOwner;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.partitionMetaStateUpdate;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
@@ -67,7 +78,7 @@ public class PageHistoryDiagnoster {
     private final IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
 
     /** */
-    private volatile  FileWriteAheadLogManager wal;
+    private volatile FileWriteAheadLogManager wal;
 
     /**
      * @param ctx Kernal context.
@@ -144,7 +155,7 @@ public class PageHistoryDiagnoster {
         }
 
         if (descIdx == -1) {
-            log.info("Skipping dump page history due to can not reserve WAL segments: " +  descToString(descs));
+            log.info("Skipping dump page history due to can not reserve WAL segments: " + descToString(descs));
 
             return;
         }
@@ -160,10 +171,7 @@ public class PageHistoryDiagnoster {
         }
 
         try {
-            // Build scanner for pageIds from reserved pointer.
-            ScanTerminateStep scanner = buildWalScanner(params.from(reserved)).findAllRecordsFor(builder.pageIds);
-
-            scanner.forEach(action);
+            scan(builder, params, action, reserved);
         }
         finally {
             assert reserved != null;
@@ -176,7 +184,64 @@ public class PageHistoryDiagnoster {
     }
 
     /**
-     *
+     * @param builder Diagnostic parameter builder.
+     * @param params Iterator parameter builder.
+     * @param action Action.
+     * @param from Pointer from replay.
+     */
+    private void scan(
+        PageHistoryDiagnoster.DiagnosticPageBuilder builder,
+        IteratorParametersBuilder params,
+        ScannerHandler action,
+        FileWALPointer from
+    ) throws IgniteCheckedException {
+        IgniteBiTuple<WALPointer, WALRecord> lastReadRec = null;
+        // Try scan via WAL manager. More safety way on working node.
+        try {
+            HashSet<T2<Integer, Long>> groupAndPageIds0 = new HashSet<>(builder.pageIds);
+
+            // Collect all (group, partition) partition pairs.
+            Set<T2<Integer, Integer>> groupAndParts = groupAndPageIds0.stream()
+                .map((tup) -> new T2<>(tup.get1(), PageIdUtils.partId(tup.get2())))
+                .collect(Collectors.toSet());
+
+            // Build WAL filter. (Checkoint, Page, Partition meta)
+            Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter = checkpoint()
+                .or(pageOwner(groupAndPageIds0))
+                .or(partitionMetaStateUpdate(groupAndParts));
+
+            try (WALIterator it = wal.replay(from)) {
+                while (it.hasNext()) {
+                    IgniteBiTuple<WALPointer, WALRecord> recTup = lastReadRec = it.next();
+
+                    if (filter.test(recTup))
+                        action.handle(recTup);
+                }
+            }
+            finally {
+                action.finish();
+            }
+
+            return;
+
+        }
+        catch (IgniteCheckedException e) {
+            if (lastReadRec != null) {
+                log.warning("Failed to diagnosric scan via WAL manager, lastReadRec:["
+                    + lastReadRec.get1() + ", " + lastReadRec.get2() + "]",e);
+            }
+            else
+                log.warning("Failed to diagnosric scan via WAL manager", e);
+        }
+
+        // Try scan via stand alone iterator is not safety if wal still generated and moving to archive.
+        // Build scanner for pageIds from reserved pointer.
+        ScanTerminateStep scanner = buildWalScanner(params.from(from)).findAllRecordsFor(builder.pageIds);
+
+        scanner.forEach(action);
+    }
+
+    /**
      * @param descs WAL file descriptors.
      * @return String representation.
      */
@@ -185,7 +250,7 @@ public class PageHistoryDiagnoster {
 
         sb.append("[");
 
-        Iterator<FileDescriptor> iter=descs.iterator();
+        Iterator<FileDescriptor> iter = descs.iterator();
 
         while (iter.hasNext()) {
             FileDescriptor desc = iter.next();
@@ -202,7 +267,6 @@ public class PageHistoryDiagnoster {
     }
 
     /**
-     *
      * @param gaps WAL file gaps.
      * @return String representation.
      */
@@ -258,7 +322,7 @@ public class PageHistoryDiagnoster {
          * @param pageIds Pages for searching in WAL.
          * @return This instance for chaining.
          */
-        public DiagnosticPageBuilder pageIds(T2<Integer,Long> ...pageIds) {
+        public DiagnosticPageBuilder pageIds(T2<Integer, Long>... pageIds) {
             this.pageIds.addAll(Arrays.asList(pageIds));
 
             return this;
