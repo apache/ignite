@@ -12,7 +12,10 @@ import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * //TODO Calculate overhad and capacity for all structures.
- * // TODO Fast local get thread local.
+ * //TODO Fast local get thread local.
+ * //TODO Test deadlock
+ * //TODO Dynamic enable/disable tracing.
+ * //TODO Collect page content to dump. AG
  */
 public class SharedPageLockTracker implements PageLockListener, DumpSupported<ThreadDumpLocks> {
     private static final int THREAD_LIMITS = 1000;
