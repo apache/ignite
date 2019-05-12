@@ -158,5 +158,30 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var ex = Assert.Throws<IgniteException>(() => cache.Put(new TestKeyWithAffinity(1, "1"), 1));
             Assert.Equals("TODO", ex.Message);
         }
+
+
+        [Test]
+        public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToPrimaryNode()
+        {
+            // Before topology change.
+            var res = _cache.Get(1);
+
+            Assert.AreEqual(1, res);
+            Assert.AreEqual(1, GetClientRequestGridIndex());
+
+            // After topology change.
+            var cfg = GetIgniteConfiguration();
+            cfg.AutoGenerateIgniteInstanceName = true;
+
+            using (Ignition.Start(cfg))
+            {
+                Assert.Equals(1, _cache.Get(1));
+                Assert.Equals(0, _cache.Get(2));
+                Assert.Equals(0, _cache.Get(3));
+                Assert.Equals(1, _cache.Get(4));
+                Assert.Equals(1, _cache.Get(5));
+                Assert.Equals(2, _cache.Get(6));
+            }
+        }
     }
 }
