@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -140,8 +141,13 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     }
 
     private synchronized void cleanTerminatedThreads() {
-        for (Thread thread : threadIdToThreadRef.values()) {
-            long threadId = thread.getId();
+        Iterator<Map.Entry<Long, Thread>> it = threadIdToThreadRef.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Long, Thread> entry = it.next();
+
+            long threadId = entry.getKey();
+            Thread thread = entry.getValue();
 
             if (thread.getState() == Thread.State.TERMINATED) {
                 PageLockTracker tracker = threadStacks.remove(threadId);
@@ -149,7 +155,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
                 if (tracker != null)
                     tracker.free();
 
-                threadIdToThreadRef.remove(threadId);
+               it.remove();
             }
         }
     }
