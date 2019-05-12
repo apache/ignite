@@ -6,6 +6,9 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStack;
 
 import static java.lang.String.valueOf;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CAPACITY;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_TYPE;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 public final class LockTracerFactory {
     public static final int HEAP_STACK = 1;
@@ -13,8 +16,8 @@ public final class LockTracerFactory {
     public static final int OFF_HEAP_STACK = 3;
     public static final int OFF_HEAP_LOG = 4;
 
-    public static final int DEFAULT_CAPACITY = 128;
-    public static final int DEFAULT_TYPE = HEAP_STACK;
+    public static final int DEFAULT_CAPACITY = getInteger(IGNITE_PAGE_LOCK_TRACKER_CAPACITY, 128);
+    public static final int DEFAULT_TYPE = getInteger(IGNITE_PAGE_LOCK_TRACKER_TYPE, 1);
 
     public static PageLockTracker create(String name) {
         return create(DEFAULT_TYPE, name);
