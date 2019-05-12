@@ -176,6 +176,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void CacheGet_NewNodeEnteredTopology_RequestIsRoutedToPrimaryNode()
         {
+            // Warm-up.
+            Assert.AreEqual(1, _cache.Get(1));
+
             // Before topology change.
             Assert.AreEqual(12, _cache.Get(1));
             Assert.AreEqual(1, GetClientRequestGridIndex());
@@ -191,7 +194,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 // Warm-up.
                 Assert.AreEqual(1, _cache.Get(1));
-                Assert.AreEqual(1, GetClientRequestGridIndex());
 
                 // TODO: Wait for rebalance event - how?
                 Thread.Sleep(5000);
