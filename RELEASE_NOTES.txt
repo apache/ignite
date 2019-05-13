@@ -1,6 +1,21 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Database and Caching Platform 2.7.5
+-----------------------------------------------------------
+
+Ignite:
+* Java 11 supported
+* Fixed infinite looping during SSL handshake, affecting Java 11/Windows
+* Storage corruption case after incorrectly rotated page fixed
+* Errorneus WAL record after incorrectly rotated page processed automatically
+* ignite.sh failure fixed on Mac OS and Linux, affecting Java 11
+* Launch scripts and Ignite initialization were fixed to support Java 12
+* Fixed indexes corruption on node stop under load
+* Fixed case of node crash during node deactivation
+* Error message with advice about required JVM parameters printed in case Java 9+ is used
+* Introduced SYSTEM_CRITICAL_OPERATION_TIMEOUT failure type
+
 Apache Ignite In-Memory Database and Caching Platform 2.7
 ---------------------------------------------------------
 
