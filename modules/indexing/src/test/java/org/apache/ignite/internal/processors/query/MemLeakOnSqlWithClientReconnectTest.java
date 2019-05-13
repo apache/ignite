@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -72,6 +73,7 @@ public class MemLeakOnSqlWithClientReconnectTest extends GridCommonAbstractTest 
         super.beforeTest();
 
         System.setProperty(IgniteSystemProperties.IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE, "4");
+        GridMapQueryExecutor.GROUP_RESERVATIONS_CACHE_MAX_SIZE = 4;
 
         startGrid();
 
@@ -111,6 +113,7 @@ public class MemLeakOnSqlWithClientReconnectTest extends GridCommonAbstractTest 
         stopAllGrids();
 
         System.clearProperty(IgniteSystemProperties.IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE);
+        GridMapQueryExecutor.GROUP_RESERVATIONS_CACHE_MAX_SIZE = 1024;
 
         super.afterTest();
     }

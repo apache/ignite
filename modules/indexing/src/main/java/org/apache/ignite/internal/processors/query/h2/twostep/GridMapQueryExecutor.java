@@ -113,7 +113,7 @@ public class GridMapQueryExecutor {
     public static final boolean FORCE_LAZY = IgniteSystemProperties.getBoolean(IGNITE_SQL_FORCE_LAZY_RESULT_SET);
 
     /** */
-    public static final int GROUP_RESERVATIONS_CACHE_MAX_SIZE =
+    public static int GROUP_RESERVATIONS_CACHE_MAX_SIZE =
         IgniteSystemProperties.getInteger(IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE, 1024);
 
     /** */
