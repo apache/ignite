@@ -20,22 +20,40 @@ package org.apache.ignite.internal.processors.diagnostic;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler;
+import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.ScanTerminateStep;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.withIteratorParameters;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.checkpoint;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.pageOwner;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.partitionMetaStateUpdate;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
@@ -57,6 +75,11 @@ public class PageHistoryDiagnoster {
     /** Function to provide target end file to store diagnostic info. */
     private final Function<File, File> targetFileSupplier;
 
+    private final IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
+
+    /** */
+    private volatile FileWriteAheadLogManager wal;
+
     /**
      * @param ctx Kernal context.
      * @param supplier Function to provide target end file to store diagnostic info.
@@ -75,6 +98,8 @@ public class PageHistoryDiagnoster {
 
         if (wal == null)
             return;
+
+        this.wal = wal;
 
         SegmentRouter segmentRouter = wal.getSegmentRouter();
 
@@ -110,12 +135,160 @@ public class PageHistoryDiagnoster {
 
         requireNonNull(action, "Should be configured at least one action");
 
-        buildWalScanner(
-            withIteratorParameters()
-                .log(log)
-                .filesOrDirs(walFolders)
-        ).findAllRecordsFor(builder.pageIds)
-            .forEach(action);
+        IteratorParametersBuilder params = withIteratorParameters()
+            .log(log)
+            .filesOrDirs(walFolders);
+
+        // Resolve available WAL segment files.
+        List<FileDescriptor> descs = iteratorFactory.resolveWalFiles(params);
+
+        int descIdx = -1;
+        FileWALPointer reserved = null;
+
+        for (int i = 0; i < descs.size(); i++) {
+            // Try resever minimal available segment.
+            if (wal.reserve(reserved = new FileWALPointer(descs.get(i).idx(), 0, 0))) {
+                descIdx = i;
+
+                break;
+            }
+        }
+
+        if (descIdx == -1) {
+            log.info("Skipping dump page history due to can not reserve WAL segments: " + descToString(descs));
+
+            return;
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("Reserverd WAL segment idx: " + reserved.index());
+
+        // Check gaps in the reserved interval.
+        List<T2<Long, Long>> gaps = iteratorFactory.hasGaps(descs.subList(descIdx, descs.size()));
+
+        if (!gaps.isEmpty()) {
+            log.warning("Potentialy missed record because WAL has gaps: " + gapsToString(gaps));
+        }
+
+        try {
+            scan(builder, params, action, reserved);
+        }
+        finally {
+            assert reserved != null;
+
+            wal.release(reserved);
+
+            if (log.isDebugEnabled())
+                log.debug("Release WAL segment idx:" + reserved.index());
+        }
+    }
+
+    /**
+     * @param builder Diagnostic parameter builder.
+     * @param params Iterator parameter builder.
+     * @param action Action.
+     * @param from Pointer from replay.
+     */
+    private void scan(
+        PageHistoryDiagnoster.DiagnosticPageBuilder builder,
+        IteratorParametersBuilder params,
+        ScannerHandler action,
+        FileWALPointer from
+    ) throws IgniteCheckedException {
+        IgniteBiTuple<WALPointer, WALRecord> lastReadRec = null;
+        // Try scan via WAL manager. More safety way on working node.
+        try {
+            HashSet<T2<Integer, Long>> groupAndPageIds0 = new HashSet<>(builder.pageIds);
+
+            // Collect all (group, partition) partition pairs.
+            Set<T2<Integer, Integer>> groupAndParts = groupAndPageIds0.stream()
+                .map((tup) -> new T2<>(tup.get1(), PageIdUtils.partId(tup.get2())))
+                .collect(Collectors.toSet());
+
+            // Build WAL filter. (Checkoint, Page, Partition meta)
+            Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter = checkpoint()
+                .or(pageOwner(groupAndPageIds0))
+                .or(partitionMetaStateUpdate(groupAndParts));
+
+            try (WALIterator it = wal.replay(from)) {
+                while (it.hasNext()) {
+                    IgniteBiTuple<WALPointer, WALRecord> recTup = lastReadRec = it.next();
+
+                    if (filter.test(recTup))
+                        action.handle(recTup);
+                }
+            }
+            finally {
+                action.finish();
+            }
+
+            return;
+
+        }
+        catch (IgniteCheckedException e) {
+            if (lastReadRec != null) {
+                log.warning("Failed to diagnosric scan via WAL manager, lastReadRec:["
+                    + lastReadRec.get1() + ", " + lastReadRec.get2() + "]",e);
+            }
+            else
+                log.warning("Failed to diagnosric scan via WAL manager", e);
+        }
+
+        // Try scan via stand alone iterator is not safety if wal still generated and moving to archive.
+        // Build scanner for pageIds from reserved pointer.
+        ScanTerminateStep scanner = buildWalScanner(params.from(from)).findAllRecordsFor(builder.pageIds);
+
+        scanner.forEach(action);
+    }
+
+    /**
+     * @param descs WAL file descriptors.
+     * @return String representation.
+     */
+    private String descToString(List<FileDescriptor> descs) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("[");
+
+        Iterator<FileDescriptor> iter = descs.iterator();
+
+        while (iter.hasNext()) {
+            FileDescriptor desc = iter.next();
+
+            sb.append(desc.idx());
+
+            if (!iter.hasNext())
+                sb.append(", ");
+        }
+
+        sb.append("]");
+
+        return sb.toString();
+    }
+
+    /**
+     * @param gaps WAL file gaps.
+     * @return String representation.
+     */
+    private String gapsToString(Collection<T2<Long, Long>> gaps) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("[");
+
+        Iterator<T2<Long, Long>> iter = gaps.iterator();
+
+        while (iter.hasNext()) {
+            T2<Long, Long> gap = iter.next();
+
+            sb.append("(").append(gap.get1()).append("..").append(gap.get2()).append(")");
+
+            if (!iter.hasNext())
+                sb.append(", ");
+        }
+
+        sb.append("]");
+
+        return sb.toString();
     }
 
     /**
