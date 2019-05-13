@@ -1,25 +1,30 @@
 {
-  "name": "apache-ignite-client",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "author": "",
-  "license": "Apache-2.0",
-  "engines": {
-    "node": ">=8.0.0"
-  },
-  "dependencies": {
-    "long": "latest",
-    "decimal.js": "latest"
-  },
-  "scripts": {
-    "test": "jasmine",
-    "test:examples": "node ./spec/ExamplesExecutor.js Examples",
-    "test:auth_example": "node ./spec/ExamplesExecutor.js AuthExample"
-  },
-  "devDependencies": {
-    "jasmine": "latest",
-    "jasmine-expect": "latest",
-    "jasmine-reporters": "latest"
-  }
+    "name": "apache-ignite-client",
+    "version": "2.0.0",
+    "description": "",
+    "main": "dist/index.js",
+    "author": "",
+    "license": "Apache-2.0",
+    "engines": {
+        "node": ">=8.0.0"
+    },
+    "dependencies": {
+        "decimal.js": "^10.0.2",
+        "long": "^4.0.0"
+    },
+    "scripts": {
+        "start": "./node_modules/.bin/tsc -w",
+        "build": "./node_modules/.bin/tsc",
+        "test": "jasmine",
+        "test:examples": "node ./spec/ExamplesExecutor.js Examples",
+        "test:auth_example": "node ./spec/ExamplesExecutor.js AuthExample"
+    },
+    "devDependencies": {
+        "@types/node": "^10.12.18",
+        "jasmine": "latest",
+        "jasmine-expect": "^4.0.1",
+        "jasmine-reporters": "^2.3.2",
+        "typescript": "^3.2.4",
+        "apache-ignite-client": "file:./"
+    }
 }

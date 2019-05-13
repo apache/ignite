@@ -21,15 +21,17 @@ require('jasmine-expect');
 
 const config = require('../config');
 const TestingHelper = require('../TestingHelper');
-const IgniteClient = require('apache-ignite-client');
-const Errors = IgniteClient.Errors;
-const SqlQuery = IgniteClient.SqlQuery;
-const SqlFieldsQuery = IgniteClient.SqlFieldsQuery;
-const ObjectType = IgniteClient.ObjectType;
-const CacheConfiguration = IgniteClient.CacheConfiguration;
-const QueryEntity = IgniteClient.QueryEntity;
-const QueryField = IgniteClient.QueryField;
-const ComplexObjectType = IgniteClient.ComplexObjectType;
+const {
+    IgniteClient,
+    Errors,
+    SqlQuery,
+    SqlFieldsQuery,
+    ObjectType,
+    CacheConfiguration,
+    QueryEntity,
+    QueryField,
+    ComplexObjectType
+} = require('apache-ignite-client');
 
 const CACHE_NAME = '__test_cache';
 const TABLE_NAME = '__test_SqlQuery';
