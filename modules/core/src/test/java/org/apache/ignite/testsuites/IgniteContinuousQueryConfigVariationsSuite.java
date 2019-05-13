@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryVariationsTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.Runner;
@@ -60,12 +61,12 @@ public class IgniteContinuousQueryConfigVariationsSuite {
 
     /** */
     @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteSingleNode.class)
-    public static class SingleNodeTest {
+    @Ignore public static class SingleNodeTest {
     }
 
     /** */
     @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteMultiNode.class)
-    public static class MultiNodeTest {
+    @Ignore public static class MultiNodeTest {
     }
 
     /** {@inheritDoc} */
