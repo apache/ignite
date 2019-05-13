@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.time.Instant;
+import java.time.Period;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -84,12 +85,19 @@ public class IgniteCacheSqlQueryUnsupportedTypeSelfTest extends GridCommonAbstra
     @Test
     public void testUnsupportedSqlType(){
         try (IgniteCache<Integer, Person> person = grid(0).createCache(instantCacheConfiguration())) {
-            person.put(1, new Person(1));
-            person.put(2, new Person(2));
+            Person p1 = new Person(1, Instant.now());
+            Person p2 = new Person(2, p1.time.minus(Period.ofDays(1)));
+
+            person.put(1, p1);
+            person.put(2, p2);
 
             List<List<?>> res = execute("SELECT * FROM CACHE.PERSON WHERE time = (select time from cache.person where id = 1)");
 
-            assertEquals(res.get(0).get(0), 1);
+            assertEquals(1, res.get(0).get(0));
+
+            res = execute("SELECT * FROM CACHE.PERSON WHERE time = ?", p2.time);
+
+            assertEquals(2, res.get(0).get(0));
         }
     }
 
@@ -97,13 +105,15 @@ public class IgniteCacheSqlQueryUnsupportedTypeSelfTest extends GridCommonAbstra
      * Pojo with the unsupported type.
      */
     public static class Person {
+        /** id field */
         int id;
 
+        /** Tested instant field. */
         Instant time;
 
-        Person(int id) {
+        Person(int id, Instant time) {
             this.id = id;
-            time = Instant.now();
+            this.time = time;
         }
     }
 }
