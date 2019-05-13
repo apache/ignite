@@ -30,6 +30,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -80,6 +81,7 @@ import org.h2.table.IndexColumn;
 import org.h2.util.JdbcUtils;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.util.Utils;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
 import org.h2.value.ValueBoolean;
@@ -613,6 +615,7 @@ public class H2Utils {
      * @param x java class to map on H2's type.
      * @return H2 type if Ignite supports this type or {@link Value#JAVA_OBJECT} otherwise.
      * @see Value
+     * @see DataType#getTypeFromClass(Class)
      */
     public static int getTypeFromClass(Class <?> x) {
         if (x == null || Void.TYPE == x)
@@ -849,6 +852,8 @@ public class H2Utils {
                 stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else if (obj instanceof BigDecimal)
                 stmt.setObject(idx, obj, Types.DECIMAL);
+            else if (obj.getClass() == Instant.class)
+                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else
                 stmt.setObject(idx, obj);
         }
