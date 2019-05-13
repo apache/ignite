@@ -116,7 +116,7 @@ public class ConfigVariationsTestSuiteBuilder {
         VariationsIterator igniteCfgIter = specificIgniteParam == null ? new VariationsIterator(igniteParams)
             : new OneElementVariationsIterator(specificIgniteParam, igniteParams);
 
-        final List<VariationsTestsConfig> cfgsToTest = new ArrayList<>(); //~~! вот этих 32
+        final List<VariationsTestsConfig> cfgsToTest = new ArrayList<>();
 
         for (; igniteCfgIter.hasNext(); ) {
             final int[] igniteCfgVariation = igniteCfgIter.next();
@@ -216,7 +216,6 @@ public class ConfigVariationsTestSuiteBuilder {
     /**
      * @param cfg Configuration.
      * @param testedNodeCnt Count of tested nodes.
-     * ~~! тут задаются конфиги для тестов
      */
     private static List<VariationsTestsConfig> createMultiNodeTestSuite(
         VariationsTestsConfig cfg, int testedNodeCnt, boolean withClients, boolean skipWaitParMapExchange) {

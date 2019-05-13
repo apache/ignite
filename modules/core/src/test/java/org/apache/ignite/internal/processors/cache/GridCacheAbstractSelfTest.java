@@ -232,7 +232,19 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        IgniteCacheReadThroughEvictionSelfTest.initCacheConfig(cfg, storeStgy);
+        if (storeStgy != null) {
+            Factory<? extends CacheStore<Object, Object>> storeFactory = storeStgy.getStoreFactory();
+
+            CacheStore<?, ?> store = storeFactory.create();
+
+            if (store != null) {
+                cfg.setCacheStoreFactory(storeFactory);
+                cfg.setReadThrough(true);
+                cfg.setWriteThrough(true);
+                cfg.setLoadPreviousValue(true);
+                storeStgy.updateCacheConfiguration(cfg);
+            }
+        }
 
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());

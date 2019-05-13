@@ -26,7 +26,7 @@ import org.junit.Test;
  */
 public class ConfigVariationsExecutionTest extends IgniteConfigVariationsAbstractTest {
     /** Boolean for checking test execution */
-    private static boolean testExecuted = false;
+    private static boolean testExecuted;
 
     /** Executes after test class. Checks that {@link #testCheck()} method was executed indeed. */
     @AfterClass

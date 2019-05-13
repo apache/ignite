@@ -2676,15 +2676,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         try {
             setSystemPropertiesBeforeClass();
 
-                System.out.println("~~!!!~~~ start before");
+            try {
                 beforeFirstTest();
 
-                System.out.println("~~! start test");
                 stmt.evaluate();
+            }
+            finally {
+                afterLastTest();
+            }
         }
         finally {
-            afterLastTest();
-
             clearSystemPropertiesAfterClass();
         }
     }

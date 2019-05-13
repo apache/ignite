@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
-import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
@@ -235,29 +234,11 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      * @return Variation test configuration.
      */
     private CacheConfiguration<Object, Object> variationConfig(String suffix) {
-        CacheConfiguration cfg = testsCfg.configurationFactory().cacheConfiguration(getTestIgniteInstanceName(testedNodeIdx));
+        CacheConfiguration ccfg = testsCfg.configurationFactory().cacheConfiguration(getTestIgniteInstanceName(testedNodeIdx));
 
-        initCacheConfig(cfg, storeStgy);
+        ccfg.setName(cacheName() + "_" + suffix);
 
-        cfg.setName(cacheName() + "_" + suffix);
-
-        return cfg;
-    }
-
-    static void initCacheConfig(CacheConfiguration cfg, TestCacheStoreStrategy stgy) {
-        if (stgy != null) {
-            Factory<? extends CacheStore<Object, Object>> storeFactory = stgy.getStoreFactory();
-
-            CacheStore<?, ?> store = storeFactory.create();
-
-            if (store != null) {
-                cfg.setCacheStoreFactory(storeFactory);
-                cfg.setReadThrough(true);
-                cfg.setWriteThrough(true);
-                cfg.setLoadPreviousValue(true);
-                stgy.updateCacheConfiguration(cfg);
-            }
-        }
+        return ccfg;
     }
 
     /**
