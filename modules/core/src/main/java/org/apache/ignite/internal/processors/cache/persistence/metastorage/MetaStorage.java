@@ -525,7 +525,9 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                         io.setTreeRoot(pageAddr, treeRoot);
                         io.setReuseListRoot(pageAddr, reuseListRoot);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
+                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null)) {
+                            assert io.getType() == PageIO.T_PART_META;
+
                             wal.log(new MetaPageInitRecord(
                                 METASTORAGE_CACHE_ID,
                                 partMetaId,
@@ -534,6 +536,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                                 treeRoot,
                                 reuseListRoot
                             ));
+                        }
 
                         allocated = true;
                     }
