@@ -43,7 +43,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
 
     /**
      * @param grpId Cache group ID.
-     * @param pageId  Page ID.
+     * @param pageId Page ID.
      * @param ioType IO type.
      * @param ioVer IO version.
      * @param newPageId New page ID.
@@ -54,7 +54,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
 
     /**
      * @param grpId Cache group ID.
-     * @param pageId  Page ID.
+     * @param pageId Page ID.
      * @param ioType IO type.
      * @param ioVer IO version.
      * @param newPageId New page ID.
@@ -77,7 +77,8 @@ public class InitNewPageRecord extends PageDeltaRecord {
 
             // Partition consistency failure came from https://issues.apache.org/jira/browse/IGNITE-11030
             // This invalid record can come from persistent stores, version < 2.7.5 where this bug was not fixed.
-            newPartId = partId; // Just hack new page ID to make this record to be correctly applied.
+            // Just hack new page ID to make this record to be correctly applied.
+            newPartId = partId;
 
             this.newPageId = PageIdUtils.pageId(
                 newPartId,
