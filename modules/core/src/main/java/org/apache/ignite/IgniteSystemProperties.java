@@ -849,6 +849,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
 
+    /**
+     * Max size of the map at the GridMapQueryExecutor that hold group reservations for all primary partitions.
+     * @deprecated Since 2.4. Not available on newer versions.
+     */
+    @Deprecated
     /** Max size of the map at the GridMapQueryExecutor that hold group reservations for all primary partitions. */
     public static final String IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE = "IGNITE_GROUP_RESERVATIONS_CACHE_MAX_SIZE";
 
