@@ -45,6 +45,8 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
     /**
      * @param msg Message.
      * @param cause Cause.
+     * @param grpId Group id of potentially corrupted pages.
+     * @param pageIds Potentially corrupted pages.
      */
     public CorruptedTreeException(String msg, @Nullable Throwable cause, int grpId, long... pageIds) {
         this(msg, cause, toPagesArray(grpId, pageIds));
@@ -53,6 +55,7 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
     /**
      * @param msg Message.
      * @param cause Cause.
+     * @param pages (groupId, pageId) pairs for pages that might be corrupted.
      */
     public CorruptedTreeException(String msg, @Nullable Throwable cause, T2<Integer, Long>... pages) {
         super(getMsg(msg, pages), cause);
@@ -103,7 +106,9 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
         );
     }
 
-    /** */
+    /**
+     * @return (groupId, pageId) pairs for pages that might be corrupted.
+     */
     public T2<Integer, Long>[] pages() {
         return pages;
     }

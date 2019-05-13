@@ -21,17 +21,11 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
-import org.apache.ignite.internal.processors.diagnostic.PageHistoryDiagnoster;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.failure.FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_BLOCKED;
-import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
 
 /**
  * Abstract superclass for {@link FailureHandler} implementations.

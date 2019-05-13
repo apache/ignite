@@ -21,13 +21,16 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.T2;
 
-/** */
+/**
+ * This exception indicates that there's something wrong with B+Tree data integrity. Additional info about corrupted
+ * pages is present in fields.
+ */
 public class BPlusTreeRuntimeException extends RuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
-    /** */
+    /** Group id common for all potentially corrupted pages. */
     private final int grpId;
-    /** */
+    /** Ids of potentially corrupted pages. */
     private final long[] pageIds;
 
     /** */
@@ -38,7 +41,7 @@ public class BPlusTreeRuntimeException extends RuntimeException {
         this.pageIds = pageIds;
     }
 
-    /** */
+    /** Pairs of (groupId, pageId). */
     public List<T2<Integer, Long>> pages() {
         List<T2<Integer, Long>> res = new ArrayList<>(pageIds.length);
 

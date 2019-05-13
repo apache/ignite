@@ -198,7 +198,7 @@ public class PageHistoryDiagnoster {
         IgniteBiTuple<WALPointer, WALRecord> lastReadRec = null;
         // Try scan via WAL manager. More safety way on working node.
         try {
-            HashSet<T2<Integer, Long>> groupAndPageIds0 = new HashSet<>(builder.pageIds);
+            Set<T2<Integer, Long>> groupAndPageIds0 = new HashSet<>(builder.pageIds);
 
             // Collect all (group, partition) partition pairs.
             Set<T2<Integer, Integer>> groupAndParts = groupAndPageIds0.stream()

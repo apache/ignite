@@ -23,8 +23,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.diagnostic.PageHistoryDiagnoster;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
@@ -35,12 +37,13 @@ import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcess
  */
 public class DiagnosticFailureHandler extends AbstractFailureHandler {
     /** */
-    private final AbstractFailureHandler delegate;
+    @GridToStringInclude
+    private final FailureHandler delegate;
 
     /**
      * @param delegate Delegate failer hanlder.
      */
-    public DiagnosticFailureHandler(AbstractFailureHandler delegate) {
+    public DiagnosticFailureHandler(FailureHandler delegate) {
         this.delegate = delegate;
     }
 
@@ -68,9 +71,8 @@ public class DiagnosticFailureHandler extends AbstractFailureHandler {
                 SB sb = new SB();
                 sb.a("[");
 
-                for (int i = 0; i < pageIds.length; i++) {
+                for (int i = 0; i < pageIds.length; i++)
                     sb.a("(").a(pageIds[i].get1()).a(",").a(pageIds[i].get2()).a(")");
-                }
 
                 sb.a("]");
 
@@ -79,6 +81,11 @@ public class DiagnosticFailureHandler extends AbstractFailureHandler {
             }
         }
 
-        return delegate.handle(ignite, failureCtx);
+        return delegate.onFailure(ignite, failureCtx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DiagnosticFailureHandler.class, this);
     }
 }

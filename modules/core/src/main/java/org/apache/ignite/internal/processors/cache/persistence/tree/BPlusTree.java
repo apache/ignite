@@ -1023,8 +1023,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
         catch (RuntimeException | AssertionError e) {
-            long[] pageIds = pages(lower == null || cursor == null || cursor.getCursor == null,
-                cursor.getCursor.pageId);
+            long[] pageIds = pages(
+                lower == null || cursor == null || cursor.getCursor == null,
+                cursor.getCursor.pageId
+            );
 
             throw new CorruptedTreeException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e, grpId, pageIds);
         }
@@ -1236,7 +1238,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on last row lookup", e);
         }
         catch (RuntimeException | AssertionError e) {
-            long[] pageIds = pages(g == null, g.rootId, g.pageId, g.backId, g.fwdId, g.rmvId);
+            long[] pageIds = pages(g == null, g.pageId);
 
             throw new CorruptedTreeException("Runtime failure on last row lookup", e, grpId, pageIds);
         }
@@ -5202,7 +5204,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         final L upperBound;
 
-        /** */
+        /** Cached value for retrieving diagnosting info in case of failure. */
         public GetCursor getCursor;
 
         /**
