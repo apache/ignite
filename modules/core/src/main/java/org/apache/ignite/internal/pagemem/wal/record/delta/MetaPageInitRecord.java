@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -45,8 +44,6 @@ public class MetaPageInitRecord extends InitNewPageRecord {
      */
     public MetaPageInitRecord(int grpId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
         super(grpId, pageId, ioType, ioVer, pageId);
-
-        assert ioType == PageIO.T_META || ioType == PageIO.T_PART_META;
 
         this.treeRoot = treeRoot;
         this.reuseListRoot = reuseListRoot;
