@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalF
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalHistoryReservationsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorExceptionDuringReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalReplayingAfterRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionSwitchOnTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
@@ -179,6 +180,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsUnusedWalSegmentsTest.class);
         suite.addTestSuite(IgnitePdsReserveWalSegmentsWithCompactionTest.class);
+
+        suite.addTestSuite(IgniteWalReplayingAfterRestartTest.class);
 
         // new style folders with generated consistent ID test
         suite.addTestSuite(IgniteUidAsConsistentIdMigrationTest.class);

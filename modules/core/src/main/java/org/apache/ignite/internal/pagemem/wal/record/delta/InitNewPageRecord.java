@@ -40,7 +40,7 @@ public class InitNewPageRecord extends PageDeltaRecord {
 
     /**
      * @param grpId Cache group ID.
-     * @param pageId  Page ID.
+     * @param pageId Page ID.
      * @param ioType IO type.
      * @param ioVer IO version.
      * @param newPageId New page ID.
