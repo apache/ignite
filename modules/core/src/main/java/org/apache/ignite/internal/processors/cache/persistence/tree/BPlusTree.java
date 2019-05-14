@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
@@ -108,6 +109,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
+
+    /** */
+    private final String name;
 
     /** */
     private final float minFill;
@@ -750,9 +754,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos,
-        @Nullable FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor,
+        @Nullable PageLockListener lockLsnr
     ) throws IgniteCheckedException {
-        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
+        this(
+            name,
+            cacheId,
+            pageMem,
+            wal,
+            globalRmvId,
+            metaPageId,
+            reuseList,
+            failureProcessor,
+            lockLsnr
+        );
+
         setIos(innerIos, leafIos);
     }
 
@@ -775,9 +791,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         AtomicLong globalRmvId,
         long metaPageId,
         ReuseList reuseList,
-        @Nullable FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor,
+        @Nullable PageLockListener lsnr
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, wal, name);
+        super(cacheId, pageMem, wal, lsnr);
 
         assert !F.isEmpty(name);
 
@@ -788,6 +805,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         assert metaPageId != 0L;
 
         this.metaPageId = metaPageId;
+        this.name = name;
         this.reuseList = reuseList;
         this.globalRmvId = globalRmvId;
         this.failureProcessor = failureProcessor;
