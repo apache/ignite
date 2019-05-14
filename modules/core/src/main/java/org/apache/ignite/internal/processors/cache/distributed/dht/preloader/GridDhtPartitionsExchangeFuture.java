@@ -3371,7 +3371,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (log.isInfoEnabled())
                     log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
 
-                boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
+                AffinityTopologyVersion threshold = newCrdFut != null ? newCrdFut.resultTopologyVersion() : null;
+
+                if (threshold != null) {
+                    assert newCrdFut.fullMessage() == null :
+                        "There is full message in new coordinator future, but exchange was not finished using it: "
+                        + newCrdFut.fullMessage();
+                }
+
+                boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this, threshold);
 
                 timeBag.finishGlobalStage("Exchanges merge");
 

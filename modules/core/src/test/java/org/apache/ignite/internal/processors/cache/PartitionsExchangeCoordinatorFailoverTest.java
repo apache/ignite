@@ -36,6 +36,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.G;
@@ -67,6 +68,9 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
     /** */
     private boolean newCaches = true;
 
+    /** Node client mode. */
+    private boolean client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -92,6 +96,8 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
                             .setAffinity(new RendezvousAffinityFunction(false, 32))
             );
         }
+
+        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -400,6 +406,56 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
                 Assert.assertEquals("Affinity assignments are different " +
                     "[expectedNode=" + expAssignmentNode + ", actualNode=" + nodeEx + "]", expAssignment, assignment);
         }
+    }
+
+    /**
+     * Test checks that changing coordinator to a node that joining to cluster at the moment works correctly
+     * in case of completed exchange on client nodes.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
+    public void testChangeCoordinatorToLocallyJoiningNode2() throws Exception {
+        newCaches = false;
+
+        spiFactory = TestRecordingCommunicationSpi::new;
+
+        IgniteEx crd = startGrid(CRD_NONE);
+
+        client = true;
+
+        // Start several clients.
+        IgniteEx clientNode = (IgniteEx) startGridsMultiThreaded(2, 2);
+
+        client = false;
+
+        awaitPartitionMapExchange();
+
+        final int newCrdNodeIdx = 1;
+
+        // A full message shouldn't be send to new coordinator.
+        blockSendingFullMessage(crd, node -> node.consistentId().equals(getTestIgniteInstanceName(newCrdNodeIdx)));
+
+        IgniteInternalFuture<?> newCrdJoinFut = GridTestUtils.runAsync(() -> startGrid(newCrdNodeIdx));
+
+        // Wait till client node will receive full message and finish exchange on node join.
+        GridTestUtils.waitForCondition(() -> {
+                GridDhtPartitionsExchangeFuture fut = clientNode.cachex(CACHE_NAME)
+                    .context().shared().exchange().lastFinishedFuture();
+
+                return fut != null && fut.topologyVersion().equals(new AffinityTopologyVersion(4, 0));
+            }, 60_000
+        );
+
+        Assert.assertFalse("New coordinator join shouldn't be happened before stopping old coordinator.",
+            newCrdJoinFut.isDone());
+
+        // Stop coordinator.
+        stopGrid(CRD_NONE);
+
+        // New coordinator join process should succeed after that.
+        newCrdJoinFut.get();
+
+        awaitPartitionMapExchange();
     }
 
     /**
