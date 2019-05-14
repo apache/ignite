@@ -23,29 +23,30 @@ mixin form-field-datalist(label, model, name, disabled, required, placeholder, o
             name=`{{ ${name} }}`
             placeholder=placeholder
            
-            data-ng-model=model
+            ng-model=model
 
-            data-ng-required=required && `${required}`
-            data-ng-disabled=disabled && `${disabled}` || `!${options}.length`
+            ng-required=required && `${required}`
+            ng-disabled=disabled && `${disabled}` || `!${options}.length`
 
             bs-typeahead
             bs-options=`item for item in ${options}`
             container='body'
             data-min-length='1'
             ignite-retain-selection
-
-            data-ignite-form-panel-field=''
+            expose-ignite-form-field-control='$input'
         )&attributes(attributes.attributes)
 
     .ignite-form-field
-        +ignite-form-field__label(label, name, required)
-        .ignite-form-field__control
+        +ignite-form-field__label(label, name, required, disabled)
             +tooltip(tip, tipOpts)
-
-            +form-field-feedback(name, 'required', errLbl + ' could not be empty!')
-
+        .ignite-form-field__control
+            .input-tip
+                +form-field-input(attributes=attributes)
+        .ignite-form-field__errors(
+            ng-messages=`$input.$error`
+            ng-if=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+        )
             if block
                 block
 
-            .input-tip
-                +form-field-input(attributes=attributes)
+            +form-field-feedback(name, 'required', `${errLbl} could not be empty!`)

@@ -1271,6 +1271,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         keepBinary,
                         CU.isNearEnabled(cacheCtx));
 
+                    if (op == TRANSFORM && txEntry.value() == null && old != null)
+                        txEntry.value(cacheCtx.toCacheObject(old), false, false);
+
                     if (enlisted != null)
                         enlisted.add(cacheKey);
 

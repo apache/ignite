@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client
     /// <summary>
     /// Client protocol version.
     /// </summary>
-    internal struct ClientProtocolVersion : IEquatable<ClientProtocolVersion>
+    internal struct ClientProtocolVersion : IEquatable<ClientProtocolVersion>, IComparable<ClientProtocolVersion>
     {
         /** */
         private readonly short _major;
@@ -65,6 +65,26 @@ namespace Apache.Ignite.Core.Impl.Client
         public short Maintenance
         {
             get { return _maintenance; }
+        }
+
+        /// <summary>
+        /// Compare this version to other version.
+        /// </summary>
+        /// <param name="other"></param>
+        /// <returns></returns>
+        public int CompareTo(ClientProtocolVersion other)
+        {
+            int res = Major - other.Major;
+
+            if (res == 0)
+            {
+                res = Minor - other.Minor;
+
+                if (res == 0)
+                    res = Maintenance - other.Maintenance;
+            }
+
+            return res;
         }
 
         /// <summary>

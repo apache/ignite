@@ -406,6 +406,11 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return cache.metrics0().getRebalanceClearingPartitionsLeft();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isValidForReading() {
         return cache.metrics0().isValidForReading();
     }

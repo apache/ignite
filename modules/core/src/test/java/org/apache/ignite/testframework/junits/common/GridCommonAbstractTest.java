@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.junits.common;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -71,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -83,12 +83,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -111,6 +112,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -641,7 +643,22 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         for (int i = 0; ; i++) {
                             boolean match = false;
 
-                            AffinityTopologyVersion readyVer = dht.context().shared().exchange().readyAffinityVersion();
+                            GridCachePartitionExchangeManager<?, ?> exchMgr = dht.context().shared().exchange();
+
+                            AffinityTopologyVersion readyVer = exchMgr.readyAffinityVersion();
+
+                            // Wait for the exchange completion (there is a race between ready affinity version
+                            // initialization and partition topology version update).
+                            // Otherwise, there may be an assertion when printing top.readyTopologyVersion().
+                            try {
+                                IgniteInternalFuture<?> fut = exchMgr.affinityReadyFuture(readyVer);
+
+                                if (fut != null)
+                                    fut.get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
 
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
@@ -850,7 +867,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .append(" res=").append(f.isDone() ? f.get() : "N/A")
                     .append(" topVer=")
                     .append((U.hasField(f, "topVer") ?
-                        U.field(f, "topVer") : "[unknown] may be it is finished future"))
+                        String.valueOf(U.field(f, "topVer")) : "[unknown] may be it is finished future"))
                     .append("\n");
 
                 Map<UUID, T2<Long, Collection<Integer>>> remaining = U.field(f, "remaining");
@@ -1646,31 +1663,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param file File or directory to delete.
+     *
      */
-    protected boolean deleteRecursively(File file) {
-        boolean ok = true;
-
-        long size = -1;
-
-        if (file.isDirectory()) {
-            for (File f : file.listFiles())
-                ok = deleteRecursively(f) & ok;
-        }
-        else
-            size = file.length();
-
-        if (!file.delete()) {
-            info("Failed to delete: " + file);
-
-            ok = false;
-        }
-
-        if (ok && log().isDebugEnabled()) // too much logging on real data
-            log().debug("Deleted OK: " + file.getAbsolutePath() +
-                (size >= 0 ? "(" + IgniteUtils.readableSize(size, false) + ")" : ""));
-
-        return ok;
+    protected void cleanPersistenceDir() throws Exception {
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
     }
 
     /**
@@ -1854,5 +1853,42 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         assertEquals(desc.config().getName(), desc0.config().getName());
         assertEquals(desc.config().getGroupName(), desc0.config().getGroupName());
         assertEquals(desc.caches(), desc0.caches());
+    }
+
+    /**
+     * Forces checkpoint on all available nodes.
+     *
+     * @throws IgniteCheckedException If checkpoint was failed.
+     */
+    protected void forceCheckpoint() throws IgniteCheckedException {
+        forceCheckpoint(G.allGrids());
+    }
+
+    /**
+     * Forces checkpoint on specified node.
+     *
+     * @param node Node to force checkpoint on it.
+     * @throws IgniteCheckedException If checkpoint was failed.
+     */
+    protected void forceCheckpoint(Ignite node) throws IgniteCheckedException {
+        forceCheckpoint(Collections.singletonList(node));
+    }
+
+    /**
+     * Forces checkpoint on all specified nodes.
+     *
+     * @param nodes Nodes to force checkpoint on them.
+     * @throws IgniteCheckedException If checkpoint was failed.
+     */
+    protected void forceCheckpoint(Collection<Ignite> nodes) throws IgniteCheckedException {
+        for (Ignite ignite : nodes) {
+            if (ignite.cluster().localNode().isClient())
+                continue;
+
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
+                    .cache().context().database();
+
+            dbMgr.waitForCheckpoint("test");
+        }
     }
 }

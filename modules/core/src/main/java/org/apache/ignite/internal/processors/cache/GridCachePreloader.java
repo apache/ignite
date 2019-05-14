@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -68,22 +67,22 @@ public interface GridCachePreloader {
      * @param exchFut Exchange future.
      * @return Assignments or {@code null} if detected that there are pending exchanges.
      */
-    @Nullable public GridDhtPreloaderAssignments assign(GridDhtPartitionExchangeId exchId,
-        @Nullable GridDhtPartitionsExchangeFuture exchFut);
+    @Nullable public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
+                                                                     @Nullable GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Adds assignments to preloader.
      *
      * @param assignments Assignments to add.
      * @param forcePreload Force preload flag.
-     * @param cnt Counter.
+     * @param rebalanceId Rebalance id.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut Rebalance future.
      * @return Rebalancing runnable.
      */
     public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
-        int cnt,
+        long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
 
@@ -176,13 +175,6 @@ public interface GridCachePreloader {
      * @param d Demand message.
      */
     public void handleDemandMessage(int idx, UUID id, GridDhtPartitionDemandMessage d);
-
-    /**
-     * Evicts partition asynchronously.
-     *
-     * @param part Partition.
-     */
-    public void evictPartitionAsync(GridDhtLocalPartition part);
 
     /**
      * @param lastFut Last future.

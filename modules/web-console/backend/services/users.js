@@ -135,6 +135,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
 
         /**
          * Get list of user accounts and summary information.
+         *
          * @returns {mongo.Account[]} - returns all accounts with counters object
          */
         static list(params) {

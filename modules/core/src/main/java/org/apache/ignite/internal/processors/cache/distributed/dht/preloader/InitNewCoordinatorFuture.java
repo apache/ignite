@@ -338,6 +338,9 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
         synchronized (this) {
             done = awaited.remove(nodeId) && awaited.isEmpty();
+
+            if (done)
+                onAllReceived();
         }
 
         if (done)

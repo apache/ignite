@@ -154,6 +154,17 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param ctx Cache context.
+     * @param obj Object.
+     * @param userObj If {@code true} then given object is object provided by user and should be copied
+     *        before stored in cache.
+     * @param failIfUnregistered Throw exception if class isn't registered.
+     * @return Cache object.
+     */
+    @Nullable public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj, boolean userObj,
+        boolean failIfUnregistered);
+
+    /**
+     * @param ctx Cache context.
      * @param type Object type.
      * @param bytes Object bytes.
      * @return Cache object.

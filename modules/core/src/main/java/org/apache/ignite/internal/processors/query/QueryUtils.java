@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -193,6 +194,27 @@ public class QueryUtils {
         }
 
         return res;
+    }
+
+    /**
+     * Normalize cache query entities.
+     *
+     * @param entities Query entities.
+     * @param cfg Cache config.
+     * @return Normalized query entities.
+     */
+    public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
+        CacheConfiguration<?, ?> cfg) {
+        Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
+
+        for (QueryEntity entity : entities) {
+            if (!F.isEmpty(entity.getNotNullFields()))
+                checkNotNullAllowed(cfg);
+
+            normalEntities.add(normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+        }
+
+        return normalEntities;
     }
 
     /**

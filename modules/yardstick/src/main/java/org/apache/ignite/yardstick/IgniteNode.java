@@ -63,12 +63,17 @@ public class IgniteNode implements BenchmarkServer {
         // No-op.
     }
 
-    /** */
+    /**
+     * @param clientMode Run node in client mode.
+     */
     public IgniteNode(boolean clientMode) {
         this.clientMode = clientMode;
     }
 
-    /** */
+    /**
+     * @param clientMode Run node in client mode.
+     * @param ignite Use exist ignite instance.
+     */
     public IgniteNode(boolean clientMode, Ignite ignite) {
         this.clientMode = clientMode;
         this.ignite = ignite;
@@ -79,6 +84,9 @@ public class IgniteNode implements BenchmarkServer {
         IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
+
+        if (args.clientNodesAfterId() >= 0 && cfg.memberId() > args.clientNodesAfterId())
+            clientMode = true;
 
         IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> tup = loadConfiguration(args.configuration());
 

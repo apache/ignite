@@ -31,10 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -54,7 +57,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
@@ -74,10 +76,18 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg1 = cacheConfiguration(cacheName);
-        ccfg1.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
-        ccfg1.setBackups(1);
-        ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setConsistentId(gridName);
+
+        cfg.setRebalanceThreadPoolSize(2);
+
+        CacheConfiguration ccfg1 = cacheConfiguration(cacheName)
+            .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
+            .setBackups(1)
+            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setRebalanceBatchesPrefetchCount(2)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         CacheConfiguration ccfg2 = cacheConfiguration("indexed");
         ccfg2.setBackups(1);
@@ -158,14 +168,14 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -176,7 +186,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     public void testRebalancingOnRestart() throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        ignite0.active(true);
+        ignite0.cluster().active(true);
 
         startGrid(1);
 
@@ -225,8 +235,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If fails.
      */
     public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
-        fail("IGNITE-5302");
-
         IgniteEx ignite0 = startGrid(0);
 
         IgniteEx ignite1 = startGrid(1);
@@ -234,7 +242,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteEx ignite2 = startGrid(2);
         IgniteEx ignite3 = startGrid(3);
 
-        ignite0.active(true);
+        ignite0.cluster().active(true);
 
         ignite0.cache(cacheName).rebalance().get();
         ignite1.cache(cacheName).rebalance().get();
@@ -255,6 +263,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ignite2.close();
         ignite3.close();
+
+        resetBaselineTopology();
 
         ignite0.resetLostPartitions(Collections.singletonList(cache1.getName()));
 
@@ -298,7 +308,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
-        ignite1.active(true);
+        ignite1.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -317,7 +327,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
-        ignite1.active(true);
+        ignite1.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -340,12 +350,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If fails.
      */
     public void testPartitionLossAndRecover() throws Exception {
-        fail("IGNITE-5302");
-
         Ignite ignite1 = startGrid(0);
         Ignite ignite2 = startGrid(1);
         Ignite ignite3 = startGrid(2);
         Ignite ignite4 = startGrid(3);
+
+        ignite1.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -402,7 +412,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         Ignite ignite = startGrid(0);
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
         IgniteCache<Integer, TestValue> cache = ignite.cache(cacheName);
 
@@ -529,7 +539,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         final Ignite ig = grid(1);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -568,7 +578,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
         final Ignite ig = startGrids(4);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         int k = 0;
 
@@ -579,21 +589,37 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 ds.addData(k, k);
         }
 
-        for (int t = 0; t < 10; t++) {
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        stopGrid(3);
+        for (int t = 0; t < 5; t++) {
+            int t0 = t;
+            IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+                try {
+                    stopGrid(3);
 
-                        IgniteEx ig0 = startGrid(3);
+                    forceCheckpoint();
+
+                    U.sleep(500); // Wait for data load.
+
+                    IgniteEx ig0 = startGrid(3);
+
+                    U.sleep(2000); // Wait for node join.
+
+                    if (t0 % 2 == 1) {
+                        stopGrid(2);
 
                         awaitPartitionMapExchange();
 
-                        ig0.cache(cacheName).rebalance().get();
+                        forceCheckpoint();
+
+                        startGrid(2);
+
+                        awaitPartitionMapExchange();
                     }
-                    catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+
+                    ig0.cache(cacheName).rebalance().get();
+                }
+                catch (Exception e) {
+                    error("Unable to start/stop grid", e);
+                    throw new RuntimeException(e);
                 }
             });
 
@@ -601,15 +627,21 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 ds.allowOverwrite(true);
 
                 while (!fut.isDone()) {
-                    ds.addData(k, k);
+                    int k0 = k;
 
-                    k++;
+                    for (;k < k0 + 3; k++)
+                        ds.addData(k, k);
 
-                    U.sleep(1);
+                    U.sleep(10);
                 }
+            }
+            catch (Exception e) {
+                log.error("Unable to write data", e);
             }
 
             fut.get();
+
+            log.info("Checking data...");
 
             Map<Integer, Long> cntrs = new HashMap<>();
 
@@ -624,7 +656,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 }
 
                 for (int k0 = 0; k0 < k; k0++)
-                    assertEquals(String.valueOf(k0), k0, ig0.cache(cacheName).get(k0));
+                    assertEquals(String.valueOf(k0) + " " + g, k0, ig0.cache(cacheName).get(k0));
             }
 
             assertEquals(ig.affinity(cacheName).partitions(), cntrs.size());

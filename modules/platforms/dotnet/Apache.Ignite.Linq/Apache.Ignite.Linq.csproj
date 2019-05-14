@@ -64,7 +64,10 @@
     <Compile Include="Impl\CacheQueryExpressionVisitor.cs" />
     <Compile Include="Impl\CacheQueryModelVisitor.cs" />
     <Compile Include="Impl\CacheQueryParser.cs" />
+    <Compile Include="Impl\Dml\MemberUpdateContainer.cs" />
+    <Compile Include="Impl\Dml\UpdateAllExpressionNode.cs" />
     <Compile Include="Impl\Dml\RemoveAllExpressionNode.cs" />
+    <Compile Include="Impl\Dml\UpdateAllResultOperator.cs" />
     <Compile Include="Impl\Dml\RemoveAllResultOperator.cs" />
     <Compile Include="Impl\EnumerableHelper.cs" />
     <Compile Include="Impl\ICacheQueryableInternal.cs" />
@@ -73,6 +76,7 @@
     <Compile Include="Impl\SqlTypes.cs" />
     <Compile Include="Impl\ExpressionWalker.cs" />
     <Compile Include="Impl\JoinInnerSequenceParameterNotNullExpressionVisitor.cs" />
+    <Compile Include="IUpdateDescriptor.cs" />
     <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryOptions.cs" />

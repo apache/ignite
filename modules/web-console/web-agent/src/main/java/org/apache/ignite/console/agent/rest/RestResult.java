@@ -30,6 +30,9 @@ public class RestResult {
     /** The field contains result of command. */
     private String data;
 
+    /** Session token string representation. */
+    private String sesTok;
+
     /** Flag of zipped data. */
     private boolean zipped;
 
@@ -57,8 +60,12 @@ public class RestResult {
      * @param data The field contains result of command.
      * @return Request result.
      */
-    public static RestResult success(String data) {
-        return new RestResult(0, null, data);
+    public static RestResult success(String data, String sesTok) {
+        RestResult res = new RestResult(0, null, data);
+
+        res.sesTok = sesTok;
+
+        return res;
     }
 
     /**
@@ -80,6 +87,13 @@ public class RestResult {
      */
     public String getData() {
         return data;
+    }
+
+    /**
+     * @return String representation of session token.
+     */
+    public String getSessionToken() {
+        return sesTok;
     }
 
     /**

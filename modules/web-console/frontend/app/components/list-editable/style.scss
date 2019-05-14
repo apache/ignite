@@ -18,9 +18,21 @@
 list-editable {
     $min-height: 47px;
     $index-column-width: 46px;
+    $index-color: #757575;
 
     display: block;
     flex: 1;
+    transition: 0.2s opacity;    
+
+    &[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    [list-editable-transclude='itemView'] {
+        flex: 1;
+    }
 
     &-item-view,
     &-item-edit,
@@ -30,10 +42,11 @@ list-editable {
     }
 
     &-no-items {
+        padding: 8px 20px;
         display: flex;
         align-items: center;
         min-height: $min-height;
-        padding: 5px 20px;
+        padding: 8px 20px;
         margin: -6px 0;
 
         font-style: italic;
@@ -43,22 +56,25 @@ list-editable {
         box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
     }
 
+    .le-row-sort {
+        display: none;
+    }
+
     .le-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
         min-height: $min-height;
         padding: 5px 0;
-
-        cursor: pointer;
+        background-color: var(--le-row-bg-color); // Ilya Borisov: does not work in IE11
         border-top: 1px solid #ddd;
 
         &:nth-child(odd) {
-            background-color: #ffffff;
+            --le-row-bg-color: #ffffff;
         }
 
         &:nth-child(even) {
-            background-color: #f9f9f9;
+            --le-row-bg-color: #f9f9f9;
         }
 
         &-index,
@@ -75,6 +91,7 @@ list-editable {
             flex-grow: 0;
             align-items: center;
             justify-content: center;
+            color: $index-color;
         }
 
         &-sort {
@@ -107,6 +124,10 @@ list-editable {
             z-index: 1;
 
             align-items: flex-start;
+        }
+
+        &--has-item-view {
+            cursor: pointer;
         }
 
         &:not(.le-row--has-item-view) {

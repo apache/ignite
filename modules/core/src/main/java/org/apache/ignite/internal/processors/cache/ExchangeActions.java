@@ -409,7 +409,7 @@ public class ExchangeActions {
     /**
      *
      */
-    static class CacheGroupActionData {
+    public static class CacheGroupActionData {
         /** */
         private final CacheGroupDescriptor desc;
 

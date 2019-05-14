@@ -33,14 +33,19 @@ Among standard included by autotools options configure script also include follo
 Ignite-specific options:
  * --enable-odbc - build included ODBC driver. Disabled by default.
  * --enable-core - build Ignite core library. Enabled by default.
+ * --enable-thin-client - build thin client library. Enabled by default.
  * --enable-node - build stand-alone node executable. Enabled by default.
  
 If you only need to build ODBC driver and do not want to build anything else you may just
 use configure script with the following arguments:
- ./configure --enable-odbc --disable-core --disable-node
+ ./configure --enable-odbc --disable-core --disable-thin-client --disable-node
 
 With the config like that you should not have any ignite dependencies as jvm.dll installed
 to build ODBC driver.
+ 
+Similarly if you only want to build only thin client you may use configure script with
+the following arguments:
+ ./configure --disable-core --disable-node
 
 NOTE: You may want to use "make install" command to install Ignite libraries and headers
 for your operation system. Note however that this action may require superuser privileges.

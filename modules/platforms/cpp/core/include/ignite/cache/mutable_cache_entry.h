@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::MutableCacheEntry class template.
+ */
+
 #ifndef _IGNITE_CACHE_MUTABLE_CACHE_ENTRY
 #define _IGNITE_CACHE_MUTABLE_CACHE_ENTRY
-
-#include <ignite/common/common.h>
-#include <ignite/cache/cache_entry.h>
 
 namespace ignite
 {

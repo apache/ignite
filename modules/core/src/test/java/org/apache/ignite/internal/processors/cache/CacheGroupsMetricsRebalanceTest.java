@@ -227,29 +227,34 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
                 System.out.println("Wait until keys left will be less " + keysLine);
 
-                while (finishRebalanceLatch.getCount() != 0) {
-                    CacheMetrics m = ig2.cache(CACHE1).localMetrics();
+                try {
+                    while (finishRebalanceLatch.getCount() != 0) {
+                        CacheMetrics m = ig2.cache(CACHE1).localMetrics();
 
-                    long keyLeft = m.getKeysToRebalanceLeft();
+                        long keyLeft = m.getKeysToRebalanceLeft();
 
-                    if (keyLeft > 0 && keyLeft < keysLine)
-                        latch.countDown();
+                        if (keyLeft > 0 && keyLeft < keysLine)
+                            latch.countDown();
 
-                    System.out.println("Keys left: " + m.getKeysToRebalanceLeft());
+                        System.out.println("Keys left: " + m.getKeysToRebalanceLeft());
 
-                    try {
-                        Thread.sleep(1_000);
+                        try {
+                            Thread.sleep(1_000);
+                        }
+                        catch (InterruptedException e) {
+                            System.out.println("Interrupt thread: " + e.getMessage());
+
+                            Thread.currentThread().interrupt();
+                        }
                     }
-                    catch (InterruptedException e) {
-                        System.out.println("Interrupt thread: " + e.getMessage());
-
-                        Thread.currentThread().interrupt();
-                    }
+                }
+                finally {
+                    latch.countDown();
                 }
             }
         });
 
-        latch.await();
+        assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
         long finishTime = ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime();
 
@@ -258,7 +263,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         long timePassed = U.currentTimeMillis() - startTime;
         long timeLeft = finishTime - System.currentTimeMillis();
 
-        assertTrue(finishRebalanceLatch.await(timeLeft + 2_000, TimeUnit.SECONDS));
+        assertTrue(finishRebalanceLatch.await(timeLeft + 12_000L, TimeUnit.SECONDS));
 
         System.out.println(
             "TimePassed:" + timePassed +
@@ -274,7 +279,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         long diff = finishTime - U.currentTimeMillis();
 
-        assertTrue("Expected less 5000, Actual:" + diff, Math.abs(diff) < 10_000);
+        assertTrue("Expected less 12_000L, Actual:" + diff, Math.abs(diff) < 12_000L);
     }
 
     /**

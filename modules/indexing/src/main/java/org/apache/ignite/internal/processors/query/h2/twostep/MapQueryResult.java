@@ -282,7 +282,7 @@ class MapQueryResult {
             U.closeQuiet(rs);
 
             if (lazyWorker != null)
-                lazyWorker.stop();
+                lazyWorker.stop(false);
         }
     }
 }

@@ -42,9 +42,7 @@ module.exports.factory = (mongo, browsersHnd) => {
          */
         static merge(owner, message, isShown = false, date = new Date()) {
             return mongo.Notifications.create({owner, message, date, isShown})
-                .then(({message, date, isShown}) => {
-                    browsersHnd.updateNotification({message, date, isShown});
-                });
+                .then(({message, date, isShown}) => browsersHnd.updateNotification({message, date, isShown}));
         }
     }
 

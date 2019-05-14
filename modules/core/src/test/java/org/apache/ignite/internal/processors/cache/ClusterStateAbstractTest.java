@@ -288,7 +288,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
                 return null;
             }
         }, IgniteException.class,
-            "Failed to deactivate cluster (must invoke the method outside of an active transaction or lock).");
+            "Failed to deactivate cluster (must invoke the method outside of an active transaction).");
 
         lock.unlock();
     }
@@ -326,7 +326,7 @@ public abstract class ClusterStateAbstractTest extends GridCommonAbstractTest {
                     return null;
                 }
             }, IgniteException.class,
-                "Failed to deactivate cluster (must invoke the method outside of an active transaction or lock).");
+                "Failed to deactivate cluster (must invoke the method outside of an active transaction).");
         }
 
         assertNull(cache0.get(1));

@@ -29,6 +29,9 @@
     <Filter Include="Code\system\ui">
       <UniqueIdentifier>{ff144e89-0a10-42c3-97dd-d22bfdbc7abb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\ssl">
+      <UniqueIdentifier>{857734a3-6b29-412a-b75e-7fcc9d3fef8c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\odbc.cpp">
@@ -106,9 +109,6 @@
     <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp">
       <Filter>Code\diagnostic</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\system\socket_client.cpp">
-      <Filter>Code\system</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\query\type_info_query.cpp">
       <Filter>Code\query</Filter>
     </ClCompile>
@@ -147,6 +147,24 @@
     </ClCompile>
     <ClCompile Include="..\..\src\message.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssl\secure_socket_client.cpp">
+      <Filter>Code\ssl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\system\tcp_socket_client.cpp">
+      <Filter>Code\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssl\ssl_mode.cpp">
+      <Filter>Code\ssl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp">
+      <Filter>Code\ssl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\config\connection_string_parser.cpp">
+      <Filter>Code\config</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\config\config_tools.cpp">
+      <Filter>Code\config</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -245,9 +263,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\system\odbc_constants.h">
       <Filter>Code\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h">
-      <Filter>Code\system</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h">
       <Filter>Code\query</Filter>
     </ClInclude>
@@ -282,6 +297,36 @@
       <Filter>Code\query</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\odbc_error.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h">
+      <Filter>Code\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\socket_client.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\system\tcp_socket_client.h">
+      <Filter>Code\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_mode.h">
+      <Filter>Code\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h">
+      <Filter>Code\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_bindings.h">
+      <Filter>Code\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\settable_value.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\config_tools.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\end_point.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

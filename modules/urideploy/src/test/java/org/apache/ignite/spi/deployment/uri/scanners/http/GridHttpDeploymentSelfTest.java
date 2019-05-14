@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.deployment.uri.GridUriDeploymentAbstractSelfTest;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
@@ -31,9 +30,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.eclipse.jetty.util.resource.Resource;
-
-import static org.eclipse.jetty.http.HttpHeader.LAST_MODIFIED;
 
 /**
  * Test http scanner.
@@ -80,13 +76,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
 
         srv.addConnector(conn);
 
-        ResourceHandler hnd = new ResourceHandler() {
-            @Override protected void doResponseHeaders(HttpServletResponse resp, Resource res, String mimeTyp) {
-                super.doResponseHeaders(resp, res, mimeTyp);
-
-                resp.setDateHeader(LAST_MODIFIED.asString(), res.lastModified());
-            }
-        };
+        ResourceHandler hnd = new ResourceHandler();
 
         hnd.setDirectoriesListed(true);
 

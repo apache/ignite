@@ -67,6 +67,7 @@ import org.apache.ignite.internal.GridTaskResultCacheSelfTest;
 import org.apache.ignite.internal.GridTaskTimeoutSelfTest;
 import org.apache.ignite.internal.IgniteComputeEmptyClusterGroupTest;
 import org.apache.ignite.internal.IgniteComputeJobOneThreadTest;
+import org.apache.ignite.internal.IgniteComputeResultExceptionTest;
 import org.apache.ignite.internal.IgniteComputeTopologyExceptionTest;
 import org.apache.ignite.internal.IgniteExecutorServiceTest;
 import org.apache.ignite.internal.IgniteExplicitImplicitDeploymentSelfTest;
@@ -156,6 +157,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridMultinodeRedeployIsolatedModeSelfTest.class);
         suite.addTestSuite(IgniteComputeEmptyClusterGroupTest.class);
         suite.addTestSuite(IgniteComputeTopologyExceptionTest.class);
+        suite.addTestSuite(IgniteComputeResultExceptionTest.class);
         suite.addTestSuite(GridTaskFailoverAffinityRunTest.class);
         suite.addTestSuite(TaskNodeRestartTest.class);
         suite.addTestSuite(IgniteRoundRobinErrorAfterClientReconnectTest.class);

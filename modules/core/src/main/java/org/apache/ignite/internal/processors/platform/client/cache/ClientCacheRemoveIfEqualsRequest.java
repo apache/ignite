@@ -21,6 +21,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache remove request with value.
@@ -38,6 +39,8 @@ public class ClientCacheRemoveIfEqualsRequest extends ClientCacheKeyValueRequest
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        authorize(ctx, SecurityPermission.CACHE_READ, SecurityPermission.CACHE_REMOVE);
+
         boolean res = cache(ctx).remove(key(), val());
 
         return new ClientBooleanResponse(requestId(), res);

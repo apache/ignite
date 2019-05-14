@@ -333,7 +333,7 @@ public class PlatformContextImpl implements PlatformContext {
         BinaryContext binCtx = cacheObjProc.binaryContext();
 
         for (BinaryMetadata meta : metas)
-            binCtx.updateMetadata(meta.typeId(), meta);
+            binCtx.updateMetadata(meta.typeId(), meta, false);
     }
 
     /** {@inheritDoc} */

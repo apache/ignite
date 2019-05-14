@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
-export default [() => {
-    return _.id8;
-}];
+import id8 from 'app/utils/id8';
+
+export default function() {
+    return id8;
+}

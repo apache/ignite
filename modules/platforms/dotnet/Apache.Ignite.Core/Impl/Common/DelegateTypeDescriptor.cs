@@ -203,6 +203,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Throws an exception if first argument is not null.
         /// </summary>
         // ReSharper disable once UnusedParameter.Local
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private static void ThrowIfMultipleInterfaces(object check, Type userType, Type interfaceType)
         {
             if (check != null)

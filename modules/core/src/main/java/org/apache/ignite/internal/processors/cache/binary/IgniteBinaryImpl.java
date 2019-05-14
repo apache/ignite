@@ -66,7 +66,7 @@ public class IgniteBinaryImpl implements IgniteBinary {
         guard();
 
         try {
-            return (T)proc.marshalToBinary(obj);
+            return (T)proc.marshalToBinary(obj, false);
         }
         finally {
             unguard();

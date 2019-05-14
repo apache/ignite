@@ -993,10 +993,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }), F.t(node, keys), topVer);
 
-                    postProcessResult(res);
-
-                    // It is critical to call onDone after adding futures to compound list.
-                    onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
+                    postProcessResultAndDone(res);
 
                     return;
                 }
@@ -1016,17 +1013,29 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             }
                         }), F.t(node, keys), readyTopVer);
 
-                        postProcessResult(res);
-
-                        // It is critical to call onDone after adding futures to compound list.
-                        onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
+                        postProcessResultAndDone(res);
                     }
                 });
             }
-            else {
+            else
+                postProcessResultAndDone(res);
+
+        }
+
+        /**
+         * Post processes result and done future.
+         *
+         * @param res Response.
+         */
+        private void postProcessResultAndDone(final GridNearGetResponse res){
+            try {
                 postProcessResult(res);
 
+                // It is critical to call onDone after adding futures to compound list.
                 onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));
+            }
+            catch (Exception ex) {
+                onDone(ex);
             }
         }
 

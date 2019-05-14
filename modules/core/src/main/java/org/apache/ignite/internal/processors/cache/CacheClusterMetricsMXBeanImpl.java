@@ -405,6 +405,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return cache.clusterMetrics().getRebalanceClearingPartitionsLeft();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isValidForReading() {
         return cache.clusterMetrics().isValidForReading();
     }

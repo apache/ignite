@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridJobCancelRequest;
 import org.apache.ignite.internal.GridJobExecuteRequest;
@@ -35,6 +36,9 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
+import org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage;
+import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
 import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
@@ -85,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.Update
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandLegacyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -511,6 +516,11 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 44:
+                msg = new GridDhtPartitionDemandLegacyMessage();
+
+                break;
+
+            case 45:
                 msg = new GridDhtPartitionDemandMessage();
 
                 break;
@@ -882,6 +892,21 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 129:
                 msg = new WalStateAckMessage();
+
+                break;
+
+            case 130:
+                msg = new UserManagementOperationFinishedMessage();
+
+                break;
+
+            case 131:
+                msg = new UserAuthenticateRequestMessage();
+
+                break;
+
+            case 132:
+                msg = new UserAuthenticateResponseMessage();
 
                 break;
 

@@ -166,7 +166,19 @@ public enum GridRestCommand {
     CLUSTER_INACTIVE("inactive"),
 
     /** */
-    CLUSTER_CURRENT_STATE("currentstate");
+    CLUSTER_CURRENT_STATE("currentstate"),
+
+    /** */
+    AUTHENTICATE("authenticate"),
+
+    /** */
+    ADD_USER("adduser"),
+
+    /** */
+    REMOVE_USER("removeuser"),
+
+    /** */
+    UPDATE_USER("updateuser");
 
     /** Enum values. */
     private static final GridRestCommand[] VALS = values();
@@ -174,9 +186,7 @@ public enum GridRestCommand {
     /** Key to enum map. */
     private static final Map<String, GridRestCommand> cmds = new HashMap<>();
 
-    /**
-     * Map keys to commands.
-     */
+    // Map keys to commands.
     static {
         for (GridRestCommand cmd : values())
             cmds.put(cmd.key(), cmd);

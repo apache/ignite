@@ -789,8 +789,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                     var clientCache = client.GetCache<int, string>(CacheName);
 
                     Assert.AreEqual("foo", clientCache.Get(1));
-                },
-                Environment.ProcessorCount, 5);
+                }, 4, 5);
 
             clients.ToList().ForEach(x => x.Value.Dispose());
         }
