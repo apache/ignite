@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -62,7 +63,7 @@ public abstract class AbstractOptimizationTestBenchmark {
         cfg.setDiscoverySpi(
             new TcpDiscoverySpi()
                 .setIpFinder(
-                    new TcpDiscoveryMulticastIpFinder()
+                    new TcpDiscoveryVmIpFinder()
                         .setAddresses(Collections.singleton("127.0.0.1:47500..47502"))
                 )
         );

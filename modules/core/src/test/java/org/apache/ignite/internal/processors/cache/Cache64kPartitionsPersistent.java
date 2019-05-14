@@ -91,8 +91,6 @@ public class Cache64kPartitionsPersistent extends GridCommonAbstractTest {
                 cache.put(i, 1);
 
                 System.gc();
-                System.gc();
-                System.gc();
 
                 doSleep(30);
             }
