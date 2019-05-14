@@ -87,9 +87,6 @@ public abstract class PagesList extends DataStructure {
     /** Number of buckets. */
     private final int buckets;
 
-    /** Name (for debug purposes). */
-    protected final String name;
-
     /** */
     private final PageHandler<Void, Boolean> cutTail = new CutTail();
 
@@ -142,9 +139,8 @@ public abstract class PagesList extends DataStructure {
         IgniteWriteAheadLogManager wal,
         long metaPageId
     ) {
-        super(cacheId, pageMem, wal);
+        super(cacheId, pageMem, wal, name);
 
-        this.name = name;
         this.buckets = buckets;
         this.metaPageId = metaPageId;
 

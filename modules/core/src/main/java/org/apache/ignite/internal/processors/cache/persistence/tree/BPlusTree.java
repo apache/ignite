@@ -110,9 +110,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
 
     /** */
-    private final String name;
-
-    /** */
     private final float minFill;
 
     /** */
@@ -780,7 +777,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ReuseList reuseList,
         @Nullable FailureProcessor failureProcessor
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, wal);
+        super(cacheId, pageMem, wal, name);
 
         assert !F.isEmpty(name);
 
@@ -791,7 +788,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         assert metaPageId != 0L;
 
         this.metaPageId = metaPageId;
-        this.name = name;
         this.reuseList = reuseList;
         this.globalRmvId = globalRmvId;
         this.failureProcessor = failureProcessor;

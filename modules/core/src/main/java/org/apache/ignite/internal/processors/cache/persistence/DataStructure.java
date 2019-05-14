@@ -40,7 +40,6 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
-
 /**
  * Base class for all the data structures based on {@link PageMemory}.
  */
@@ -60,6 +59,9 @@ public abstract class DataStructure implements PageLockListener {
     /** */
     protected ReuseList reuseList;
 
+    /** Name (for debug purposes). */
+    protected final String name;
+
     /**
      * @param cacheId Cache group ID.
      * @param pageMem Page memory.
@@ -68,13 +70,15 @@ public abstract class DataStructure implements PageLockListener {
     public DataStructure(
         int cacheId,
         PageMemory pageMem,
-        IgniteWriteAheadLogManager wal
+        IgniteWriteAheadLogManager wal,
+        String name
     ) {
         assert pageMem != null;
 
         this.grpId = cacheId;
         this.pageMem = pageMem;
         this.wal = wal;
+        this.name = name;
     }
 
     /**
@@ -149,7 +153,7 @@ public abstract class DataStructure implements PageLockListener {
 
     /**
      * @param pageId Page ID.
-     * @param page  Page pointer.
+     * @param page Page pointer.
      */
     protected final void releasePage(long pageId, long page) {
         pageMem.releasePage(grpId, pageId, page);
@@ -174,9 +178,8 @@ public abstract class DataStructure implements PageLockListener {
     }
 
     /**
-     * <p>
-     * Note: Default WAL record policy will be used.
-     * </p>
+     * <p> Note: Default WAL record policy will be used. </p>
+     *
      * @param pageId Page ID
      * @param page Page pointer.
      * @param pageAddr Page address.
@@ -198,7 +201,7 @@ public abstract class DataStructure implements PageLockListener {
     /**
      * @param pageId Page ID
      * @param page Page pointer.
-     * @param pageAddr  Page address.
+     * @param pageAddr Page address.
      */
     protected final void readUnlock(long pageId, long page, long pageAddr) {
         PageHandler.readUnlock(pageMem, grpId, pageId, page, pageAddr, this);
@@ -207,7 +210,7 @@ public abstract class DataStructure implements PageLockListener {
     /**
      * @param pageId Page ID
      * @param page Page pointer.
-     * @param pageAddr  Page address.
+     * @param pageAddr Page address.
      * @param walPlc Full page WAL record policy.
      * @param dirty Dirty flag.
      */
