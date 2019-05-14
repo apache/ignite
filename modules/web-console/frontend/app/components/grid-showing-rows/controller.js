@@ -58,7 +58,28 @@ export default class {
         }
 
         this.count = this.gridApi.grid.rows.length;
-        this.visible = _.sumBy(this.gridApi.grid.rows, (row) => Number(row.visible));
+
+        this.visible = _.sumBy(this.gridApi.grid.rows, (row) => {
+            if (!row.visible)
+                return 0;
+
+            const treeNode = row.treeNode;
+
+            if (!treeNode)
+                return 1;
+
+            let parent = treeNode.parentRow;
+
+            while (parent) {
+                if (parent.treeNode.state !== 'expanded')
+                    return 0;
+
+                parent = parent.treeNode.parentRow;
+            }
+
+            return 1;
+        });
+
         this.updateSelectedCount();
     }
 
