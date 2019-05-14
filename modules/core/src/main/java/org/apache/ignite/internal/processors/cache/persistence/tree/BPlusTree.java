@@ -5897,7 +5897,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
         CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, pageIds);
 
-        failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+        if (failureProcessor != null)
+            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
         return e;
     }
