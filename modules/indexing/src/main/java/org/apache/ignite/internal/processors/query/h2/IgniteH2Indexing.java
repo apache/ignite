@@ -2222,7 +2222,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int inlineSize = getInlineSize(page, grpId, pageMemory);
 
-        PageLockListener lockLsnr = ctx.cache().context().diagnostic().createPageLockTracker("IndexTree##" + indexName);
+        PageLockListener lockLsnr = ctx.cache().context().diagnostic()
+            .pageLockTracker().createPageLockTracker("IndexTree##" + indexName);
 
         BPlusTree<H2Row, H2Row> tree = new BPlusTree<H2Row, H2Row>(
             indexName,

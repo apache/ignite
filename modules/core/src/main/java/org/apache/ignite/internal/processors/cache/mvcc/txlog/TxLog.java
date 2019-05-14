@@ -98,11 +98,11 @@ public class TxLog implements DbCheckpointListener {
 
         CacheDiagnosticManager diagnosticMgr = ctx.cache().context().diagnostic();
 
-        PageLockListener txLogLockLsnr = diagnosticMgr.createPageLockTracker(txLogName);
+        PageLockListener txLogLockLsnr = diagnosticMgr.pageLockTracker().createPageLockTracker(txLogName);
 
         if (CU.isPersistenceEnabled(ctx.config())) {
             String txLogReuseListName = TX_LOG_CACHE_NAME + "##ReuseList";
-            PageLockListener txLogReuseListLockLsnr = diagnosticMgr.createPageLockTracker(txLogReuseListName);
+            PageLockListener txLogReuseListLockLsnr = diagnosticMgr.pageLockTracker().createPageLockTracker(txLogReuseListName);
 
             mgr.checkpointReadLock();
 

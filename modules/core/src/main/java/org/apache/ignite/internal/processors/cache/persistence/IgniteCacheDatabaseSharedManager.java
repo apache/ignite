@@ -252,7 +252,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             String freeListName = memPlcCfg.getName() + "##FreeList";
 
-            PageLockListener lsnr = cctx.diagnostic().createPageLockTracker(freeListName);
+            PageLockListener lsnr = cctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName);
 
             CacheFreeList freeList = new CacheFreeList(
                 0,

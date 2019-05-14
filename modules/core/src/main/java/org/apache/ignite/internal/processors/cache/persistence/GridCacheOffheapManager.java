@@ -143,7 +143,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated(),
-            diagnosticMgr.createPageLockTracker(reuseListName)
+            diagnosticMgr.pageLockTracker().createPageLockTracker(reuseListName)
         );
 
         RootPage metastoreRoot = metas.treeRoot;
@@ -160,7 +160,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
             ctx.kernalContext().failure(),
-            diagnosticMgr.createPageLockTracker(indexStorageTreeName)
+            diagnosticMgr.pageLockTracker().createPageLockTracker(indexStorageTreeName)
         );
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
@@ -1545,7 +1545,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private CacheFreeList createFreeList(RootPage reuseRoot) throws IgniteCheckedException {
             String freeListName = freeListName();
 
-            PageLockListener lsnr = ctx.diagnostic().createPageLockTracker(freeListName);
+            PageLockListener lsnr = ctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName);
 
             return new CacheFreeList(
                 grp.groupId(),
@@ -1583,7 +1583,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ) throws IgniteCheckedException {
             String dataTreeName = dataTreeName();
 
-            PageLockListener lsnr = ctx.diagnostic().createPageLockTracker(dataTreeName);
+            PageLockListener lsnr = ctx.diagnostic().pageLockTracker().createPageLockTracker(dataTreeName);
 
             return new CacheDataTree(
                 grp,
@@ -1617,7 +1617,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         ) throws IgniteCheckedException {
             String pendingEntriesTreeName = pendingEntriesTreeName();
 
-            PageLockListener lsnr = ctx.diagnostic().createPageLockTracker(pendingEntriesTreeName);
+            PageLockListener lsnr = ctx.diagnostic().pageLockTracker().createPageLockTracker(pendingEntriesTreeName);
 
             return new PendingEntriesTree(
                 grp,
@@ -2116,7 +2116,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
         }
-
+        
         /** {@inheritDoc} */
         @Override public boolean mvccApplyHistoryIfAbsent(
             GridCacheContext cctx,
