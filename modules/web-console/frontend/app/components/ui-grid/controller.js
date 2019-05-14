@@ -106,6 +106,19 @@ export default class IgniteUiGrid {
             onRegisterApi: (api) => {
                 this.gridApi = api;
 
+                const _isExpandedTree = (tree) => {
+                    return !_.find(tree, (node) => {
+                        return !_.isEmpty(node.children) && (node.state === 'collapsed' || !_isExpandedTree(node.children));
+                    });
+                };
+
+                api.core.on.rowsRendered(this.$scope, () => {
+                    const tree = _.get(api, 'grid.treeBase.tree');
+
+                    if (tree)
+                        api.grid.treeBase.expandAll = _isExpandedTree(tree);
+                });
+
                 api.core.on.rowsVisibleChanged(this.$scope, () => {
                     this.adjustHeight();
 
