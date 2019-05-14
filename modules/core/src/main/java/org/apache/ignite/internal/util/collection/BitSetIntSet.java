@@ -159,13 +159,13 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
 
     /** {@inheritDoc} */
     @Override public int[] toIntArray() {
-        if(size == 0)
+        if (size == 0)
             return EMPTY_INTS;
 
         int[] arr = new int[size];
 
-        for(int i = 0, pos = -1; i < size; i++) {
-            pos = bitSet.nextSetBit(pos+1);
+        for (int i = 0, pos = -1; i < size; i++) {
+            pos = bitSet.nextSetBit(pos + 1);
             arr[i] = pos;
         }
 
