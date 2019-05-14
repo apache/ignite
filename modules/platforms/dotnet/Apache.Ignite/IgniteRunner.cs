@@ -92,6 +92,9 @@ namespace Apache.Ignite
                     var allArgs = AppSettingsConfigurator.GetArgs(ConfigurationManager.AppSettings)
                         .Concat(ArgsConfigurator.GetArgs(args)).ToArray();
 
+                    // load additional assemblies if required
+                    ArgsAssemblyLoader.LoadAssemblies(allArgs);
+
                     if (install)
                         IgniteService.DoInstall(allArgs);
                     else
