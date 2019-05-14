@@ -130,7 +130,7 @@ public class SandboxTest extends GridCommonAbstractTest {
     }
 
     private URLClassLoader prepareClassLoader(String fileName, String src) throws Exception {
-        Files.createDirectories(srcTmpDir); // To avoid possible NoSuchFileException on some OS.
+        Files.createDirectories(srcTmpDir);
 
         File srcFile = new File(srcTmpDir.toFile(), fileName);
 
@@ -144,11 +144,4 @@ public class SandboxTest extends GridCommonAbstractTest {
 
         return new URLClassLoader(new URL[] {srcTmpDir.toUri().toURL()});
     }
-
-    class FailRunnable implements IgniteRunnable {
-        @Override public void run() {
-            new Thread(() -> {throw new IllegalStateException("Thread shouldn't start");}).start();
-        }
-    }
-
 }
