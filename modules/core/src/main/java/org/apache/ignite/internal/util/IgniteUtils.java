@@ -9055,21 +9055,38 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
         Collection<String> hostNames, int port) {
-        Set<InetSocketAddress> res = new HashSet<>(addrs.size());
+        Set<InetSocketAddress> res = new LinkedHashSet<>(addrs.size());
 
         Iterator<String> hostNamesIt = hostNames.iterator();
 
+        int it = 0;
+
         for (String addr : addrs) {
+            it++;
+
             String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
 
             if (!F.isEmpty(hostName)) {
                 InetSocketAddress inetSockAddr = new InetSocketAddress(hostName, port);
 
-                if (inetSockAddr.isUnresolved() || inetSockAddr.getAddress().isLoopbackAddress())
+                System.err.println("Try address -> " + it + " " + hostName);
+
+                if (inetSockAddr.isUnresolved() || inetSockAddr.getAddress().isLoopbackAddress()) {
                     inetSockAddr = new InetSocketAddress(addr, port);
+
+                    System.err.println("Address transform -> " + it + " " + inetSockAddr.getAddress()
+                        + ", loopback = " + inetSockAddr.getAddress().isLoopbackAddress()
+                        + ", unresolved = " + inetSockAddr.isUnresolved());
+                }
+
+                System.err.println("Add address -> " + it + " " + inetSockAddr.getAddress()
+                    + ", loopback = " + inetSockAddr.getAddress().isLoopbackAddress()
+                    + ", unresolved = " + inetSockAddr.isUnresolved());
 
                 res.add(inetSockAddr);
             }
+
+            System.err.println("Add address 2 - > " + it + " " + addr);
 
             // Always append address because local and remote nodes may have the same hostname
             // therefore remote hostname will be always resolved to local address.
