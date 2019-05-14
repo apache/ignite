@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -469,40 +470,43 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         try {
             do {
+                IOVersions ioVersions = row.ioVersions();
+
                 if (written != 0)
                     memMetrics.incrementLargeEntriesPages();
 
-                int remaining = rowSize - written;
+                int freeSpace = Math.min(MIN_SIZE_FOR_DATA_PAGE, rowSize - written);
 
                 long pageId = 0L;
 
-                if (remaining < MIN_SIZE_FOR_DATA_PAGE) {
-                    for (int b = bucket(remaining, false) + 1; b < BUCKETS - 1; b++) {
-                        pageId = takeEmptyPage(b, row.ioVersions());
+                if (freeSpace == MIN_SIZE_FOR_DATA_PAGE)
+                    pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions);
 
-                        if (pageId != 0L)
+                boolean reuseBucket = false;
+
+                // TODO: properly handle reuse bucket.
+                if (pageId == 0L) {
+                    for (int b = bucket(freeSpace, false) + 1; b < BUCKETS - 1; b++) {
+                        pageId = takeEmptyPage(b, ioVersions);
+
+                        if (pageId != 0L) {
+                            reuseBucket = isReuseBucket(b);
+
                             break;
+                        }
                     }
                 }
 
-                if (pageId == 0L) { // Handle reuse bucket.
-                    if (reuseList == this)
-                        pageId = takeEmptyPage(REUSE_BUCKET, row.ioVersions());
-                    else
-                        pageId = reuseList.takeRecycledPage();
-                }
+                boolean allocated = pageId == 0L;
 
-                AbstractDataPageIO initIo = null;
-
-                if (pageId == 0L) {
+                if (allocated)
                     pageId = allocateDataPage(row.partition());
-
-                    initIo = row.ioVersions().latest();
-                }
-                else // Page is taken from free space bucket. For in-memory mode partition must be changed.
+                else
                     pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
-                written = write(pageId, writeRow, initIo, row, written, FAIL_I);
+                PageIO init = reuseBucket || allocated ? ioVersions.latest() : null;
+
+                written = write(pageId, writeRow, init, row, written, FAIL_I);
 
                 assert written != FAIL_I; // We can't fail here.
             }

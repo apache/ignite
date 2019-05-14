@@ -1222,6 +1222,8 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * Removes data page from bucket, merges bucket list if needed.
+     *
      * @param dataId Data page ID.
      * @param dataPage Data page pointer.
      * @param dataAddr Data page address.

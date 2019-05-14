@@ -58,9 +58,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
-
-    /** */
     private static final long MB = 1024L * 1024L;
 
     /** */

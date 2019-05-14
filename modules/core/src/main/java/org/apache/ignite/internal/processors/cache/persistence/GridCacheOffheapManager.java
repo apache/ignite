@@ -1482,7 +1482,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         grp.cacheOrGroupName() + "-partstore-" + partId,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
-                        freeList,
+                        null, // TODO: cannot use reuseList
                         ctx.wal(),
                         partMetastoreReuseListRoot.pageId().pageId(),
                         partMetastoreReuseListRoot.isAllocated()) {
