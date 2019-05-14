@@ -78,6 +78,10 @@
         <appender-ref ref="CONSOLE"/>
     </logger>
 
+    <category name="org.apache.ignite.spi.discovery.tcp">
+        <level value="DEBUG"/>
+    </category>
+
     <!--
         Uncomment to enable Ignite query execution debugging.
     -->
