@@ -2032,7 +2032,11 @@ public abstract class IgniteUtils {
                         if (reachable(addr, reachTimeout)) {
                             synchronized (res) {
                                 res.add(addr);
+                                System.err.println("Address is reachable: " + addr);
                             }
+                        }
+                        else {
+                            System.err.println("Address is NOT reachable: " + addr);
                         }
                     }
                 }));
