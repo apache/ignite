@@ -2443,11 +2443,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param it WalIterator.
      * @param recPredicate Wal record filter.
      * @param entryPredicate Entry filter.
+     * @param partitionRecoveryStates States.
      */
     public void applyUpdatesOnRecovery(
         @Nullable WALIterator it,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
-        IgnitePredicate<DataEntry> entryPredicate
+        IgnitePredicate<DataEntry> entryPredicate,
+        Map<GroupPartitionId, Integer> partitionRecoveryStates
     ) throws IgniteCheckedException {
         cctx.walState().runWithOutWAL(() -> {
             if (it != null) {
@@ -2499,6 +2501,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             // Skip other records.
                     }
                 }
+            }
+
+            checkpointReadLock();
+
+            try {
+                for (CacheGroupContext grp : cctx.cache().cacheGroups())
+                    grp.offheap().restorePartitionStates(partitionRecoveryStates);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                checkpointReadUnlock();
             }
         });
     }
