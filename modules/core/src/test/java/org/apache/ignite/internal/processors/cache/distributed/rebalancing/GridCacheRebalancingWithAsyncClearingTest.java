@@ -229,11 +229,9 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
 
         // Check no data loss.
-        for (int k = 1; k <= keysCnt; k++) {
+        for (int k = 1; k <= keysCount; k++) {
             Integer val = (Integer) ignite.cache(CACHE_NAME).get(k);
-
             Assert.assertNotNull("Value for " + k + " is null", val);
-
             Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }
     }

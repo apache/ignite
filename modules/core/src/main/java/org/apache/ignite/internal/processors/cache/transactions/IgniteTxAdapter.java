@@ -263,6 +263,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
 
+    /** {@code True} if tx should skip adding itself to completed version map on finish. */
+    private boolean skipCompletedVers;
+
     /** */
     @SuppressWarnings("unused")
     @GridToStringExclude
@@ -384,6 +387,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * @return {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public boolean skipCompletedVersions() {
+        return skipCompletedVers;
+    }
+
+    /**
+     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public void skipCompletedVersions(boolean skipCompletedVers) {
+        this.skipCompletedVers = skipCompletedVers;
     }
 
     /**
@@ -1167,8 +1184,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                 throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
                             }
                         }
-
-                        // TODO FIXME write counters here to wal
                     }
                 }
             }

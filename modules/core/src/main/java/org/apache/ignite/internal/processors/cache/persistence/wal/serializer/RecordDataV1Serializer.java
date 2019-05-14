@@ -93,16 +93,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.record.Header
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
-import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.REC_TYPE_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.putRecordType;
 
 /**
  * Record data V1 serializer.
@@ -135,171 +125,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
     /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
-        int clSz = plainSize(record);
-
-        if (needEncryption(record))
-            return encSpi.encryptedSize(clSz) + 4 /* groupId */ + 4 /* data size */ + REC_TYPE_SIZE;
-
-        return clSz;
-    }
-
-    /** {@inheritDoc} */
-    @Override public WALRecord readRecord(RecordType type, ByteBufferBackedDataInput in)
-        throws IOException, IgniteCheckedException {
-        if (type == ENCRYPTED_RECORD) {
-            if (encSpi == null) {
-                T2<Integer, RecordType> knownData = skipEncryptedRecord(in, true);
-
-                //This happen on offline WAL iteration(we don't have encryption keys available).
-                return new EncryptedRecord(knownData.get1(), knownData.get2());
-            }
-
-            T3<ByteBufferBackedDataInput, Integer, RecordType> clData = readEncryptedData(in, true);
-
-            //This happen during startup. On first WAL iteration we restore only metastore.
-            //So, no encryption keys available. See GridCacheDatabaseSharedManager#readMetastore
-            if (clData.get1() == null)
-                return new EncryptedRecord(clData.get2(), clData.get3());
-
-            return readPlainRecord(clData.get3(), clData.get1(), true);
-        }
-
-        return readPlainRecord(type, in, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeRecord(WALRecord rec, ByteBuffer buf) throws IgniteCheckedException {
-        if (needEncryption(rec)) {
-            int clSz = plainSize(rec);
-
-            ByteBuffer clData = ByteBuffer.allocate(clSz);
-
-            writePlainRecord(rec, clData);
-
-            clData.rewind();
-
-            writeEncryptedData(((WalRecordCacheGroupAware)rec).groupId(), rec.type(), clData, buf);
-
-            return;
-        }
-
-        writePlainRecord(rec, buf);
-    }
-
-    /**
-     * @param rec Record to check.
-     * @return {@code True} if this record should be encrypted.
-     */
-    private boolean needEncryption(WALRecord rec) {
-        if (encryptionDisabled)
-            return false;
-
-        if (!(rec instanceof WalRecordCacheGroupAware))
-            return false;
-
-        return needEncryption(((WalRecordCacheGroupAware)rec).groupId());
-    }
-
-    /**
-     * @param grpId Group id.
-     * @return {@code True} if this record should be encrypted.
-     */
-    private boolean needEncryption(int grpId) {
-        if (encryptionDisabled)
-            return false;
-
-        GridEncryptionManager encMgr = cctx.kernalContext().encryption();
-
-        return encMgr != null && encMgr.groupKey(grpId) != null;
-    }
-
-    /**
-     * Reads and decrypt data from {@code in} stream.
-     *
-     * @param in Input stream.
-     * @param readType If {@code true} plain record type will be read from {@code in}.
-     * @return Plain data stream, group id, plain record type,
-     * @throws IOException If failed.
-     * @throws IgniteCheckedException If failed.
-     */
-    private T3<ByteBufferBackedDataInput, Integer, RecordType> readEncryptedData(ByteBufferBackedDataInput in,
-        boolean readType)
-        throws IOException, IgniteCheckedException {
-        int grpId = in.readInt();
-        int encRecSz = in.readInt();
-        RecordType plainRecType = null;
-
-        if (readType)
-            plainRecType = RecordV1Serializer.readRecordType(in);
-
-        byte[] encData = new byte[encRecSz];
-
-        in.readFully(encData);
-
-        Serializable key = encMgr.groupKey(grpId);
-
-        if (key == null)
-            return new T3<>(null, grpId, plainRecType);
-
-        byte[] clData = encSpi.decrypt(encData, key);
-
-        return new T3<>(new ByteBufferBackedDataInputImpl().buffer(ByteBuffer.wrap(clData)), grpId, plainRecType);
-    }
-
-    /**
-     * Reads encrypted record without decryption.
-     * Should be used only for a offline WAL iteration.
-     *
-     * @param in Data stream.
-     * @param readType If {@code true} plain record type will be read from {@code in}.
-     * @return Group id and type of skipped record.
-     */
-    private T2<Integer, RecordType> skipEncryptedRecord(ByteBufferBackedDataInput in, boolean readType)
-        throws IOException, IgniteCheckedException {
-        int grpId = in.readInt();
-        int encRecSz = in.readInt();
-        RecordType plainRecType = null;
-
-        if (readType)
-            plainRecType = RecordV1Serializer.readRecordType(in);
-
-        int skipped = in.skipBytes(encRecSz);
-
-        assert skipped == encRecSz;
-
-        return new T2<>(grpId, plainRecType);
-    }
-
-    /**
-     * Writes encrypted {@code clData} to {@code dst} stream.
-     *
-     * @param grpId Group id;
-     * @param plainRecType Plain record type
-     * @param clData Plain data.
-     * @param dst Destination buffer.
-     */
-    private void writeEncryptedData(int grpId, @Nullable RecordType plainRecType, ByteBuffer clData, ByteBuffer dst) {
-        int dtSz = encSpi.encryptedSize(clData.capacity());
-
-        dst.putInt(grpId);
-        dst.putInt(dtSz);
-
-        if (plainRecType != null)
-            putRecordType(dst, plainRecType);
-
-        Serializable key = encMgr.groupKey(grpId);
-
-        assert key != null;
-
-        encSpi.encrypt(clData, key, dst);
-    }
-
-    /**
-     * @param record Record to measure.
-     * @return Plain(without encryption) size of serialized rec in bytes.
-     * @throws IgniteCheckedException If failed.
-     */
-    int plainSize(WALRecord record) throws IgniteCheckedException {
         switch (record.type()) {
             case PAGE_RECORD:
                 assert record instanceof PageSnapshot;
@@ -312,7 +137,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 CheckpointRecord cpRec = (CheckpointRecord)record;
 
                 assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
+                    "Invalid WAL record: " + cpRec;
 
                 int cacheStatesSize = cacheStatesSize(cpRec.cacheGroupStates());
 
@@ -325,7 +150,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
-                        + /*allocatedIdxCandidate*/ 4;
+                    + /*allocatedIdxCandidate*/ 4;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
@@ -360,7 +185,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 DataPageUpdateRecord uRec = (DataPageUpdateRecord)record;
 
                 return 4 + 8 + 2 + 4 +
-                        uRec.payload().length;
+                    uRec.payload().length;
 
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
                 final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
@@ -1075,7 +900,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 CheckpointRecord cpRec = (CheckpointRecord)rec;
 
                 assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
+                    "Invalid WAL record: " + cpRec;
 
                 FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
                 UUID cpId = cpRec.checkpointId();
@@ -1464,7 +1289,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID:
                 MetaPageUpdateLastSuccessfulFullSnapshotId mpUpdateLastSuccFullSnapshotId =
-                        (MetaPageUpdateLastSuccessfulFullSnapshotId)rec;
+                    (MetaPageUpdateLastSuccessfulFullSnapshotId)rec;
 
                 buf.putInt(mpUpdateLastSuccFullSnapshotId.groupId());
                 buf.putLong(mpUpdateLastSuccFullSnapshotId.pageId());
@@ -1475,7 +1300,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID:
                 MetaPageUpdateLastSuccessfulSnapshotId mpUpdateLastSuccSnapshotId =
-                        (MetaPageUpdateLastSuccessfulSnapshotId)rec;
+                    (MetaPageUpdateLastSuccessfulSnapshotId)rec;
 
                 buf.putInt(mpUpdateLastSuccSnapshotId.groupId());
                 buf.putLong(mpUpdateLastSuccSnapshotId.pageId());
@@ -1487,7 +1312,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_ALLOCATED_INDEX:
                 MetaPageUpdateLastAllocatedIndex mpUpdateLastAllocatedIdx =
-                        (MetaPageUpdateLastAllocatedIndex) rec;
+                    (MetaPageUpdateLastAllocatedIndex) rec;
 
                 buf.putInt(mpUpdateLastAllocatedIdx.groupId());
                 buf.putLong(mpUpdateLastAllocatedIdx.pageId());
@@ -1654,31 +1479,31 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
 
             return new DataEntry(
-                    cacheId,
-                    key,
-                    val,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr
+                cacheId,
+                key,
+                val,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr
             );
         }
         else
             return new LazyDataEntry(
-                    cctx,
-                    cacheId,
-                    keyType,
-                    keyBytes,
-                    valType,
-                    valBytes,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr);
+                cctx,
+                cacheId,
+                keyType,
+                keyBytes,
+                valType,
+                valBytes,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr);
     }
 
     /**

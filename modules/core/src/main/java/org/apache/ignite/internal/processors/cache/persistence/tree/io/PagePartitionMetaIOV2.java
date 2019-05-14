@@ -49,6 +49,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
         super.initNewPage(pageAddr, pageId, pageSize);
 
         setPendingTreeRoot(pageAddr, 0L);
+        setPartitionMetaStoreReuseListRoot(pageAddr, 0L);
         setGapsLink(pageAddr, 0);
     }
 

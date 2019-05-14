@@ -39,7 +39,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
 
 /**
  * Tests scenarios for tx reordering, missed updates and recovery for 2PC.
@@ -70,174 +69,146 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
     private static final int SERVERS_CNT = 3;
 
     /** */
-    @Test
     public void testPartialPrepare_2TX_1_1() throws Exception {
         doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_2TX_1_2() throws Exception {
         doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_2TX_1_3() throws Exception {
         doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {0, 1}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_2TX_1_4() throws Exception {
         doTestPartialPrepare_2tx(true, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {0, 1}, 0);
     }
 
 
     /** */
-    @Test
     public void testPartialPrepare_2TX_2_1() throws Exception {
         doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {1, 0}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_2TX_2_2() throws Exception {
         doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {1, 0}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_2TX_2_3() throws Exception {
         doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {0, 1}, new int[] {0, 1}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_2TX_2_4() throws Exception {
         doTestPartialPrepare_2tx(false, new int[] {3, 7}, new int[] {0, 1}, new int[] {1, 0}, new int[] {0, 1}, 0);
     }
 
     /** */
-    @Test
     public void testPartialCommit_2TX_1()
         throws Exception {
         doTestPartialCommit_2tx(true, new int[] {1, 0});
     }
 
     /** */
-    @Test
     public void testPartialCommit_2TX_2()
         throws Exception {
         doTestPartialCommit_2tx(false, new int[] {1, 0});
     }
 
     /** */
-    @Test
     public void testPartialCommit_2TX_3()
         throws Exception {
         doTestPartialCommit_2tx(true, new int[] {0, 1});
     }
 
     /** */
-    @Test
     public void testPartialCommit_2TX_4()
         throws Exception {
         doTestPartialCommit_2tx(false, new int[] {0, 1});
     }
 
     /** */
-    @Test
     public void testPartialCommit_3TX_1() throws Exception {
         doTestPartialCommit_3tx_1(false);
     }
 
     /** */
-    @Test
     public void testPartialCommit_3TX_2() throws Exception {
         doTestPartialCommit_3tx_1(true);
     }
 
     /** */
-    @Test
     public void testPrepareOnlyTxFailover_3TX_1() throws Exception {
         doTestPartialCommit_3tx_2(false);
     }
 
     /** */
-    @Test
     public void testPrepareOnlyTxFailover_3TX_2() throws Exception {
         doTestPartialCommit_3tx_2(true);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_1_1() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_2_1() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 1);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_3_1() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {2, 1, 0}, 2);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_4_1() throws Exception {
         doTestPartialPrepare_3tx(false, new int[] {2, 1, 0}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_5_1() throws Exception {
         doTestPartialPrepare_3tx(false, new int[] {2, 1, 0}, 1);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_6_1() throws Exception {
         doTestPartialPrepare_3tx(false, new int[] {2, 1, 0}, 2);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_1_2() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_2_2() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 1);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_3_2() throws Exception {
         doTestPartialPrepare_3tx(true, new int[] {0, 1, 2}, 2);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_4_2() throws Exception {
         doTestPartialPrepare_3tx(false, new int[] {0, 1, 2}, 0);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_5_2() throws Exception {
         doTestPartialPrepare_3tx(false, new int[] {0, 1, 2}, 1);
     }
 
     /** */
-    @Test
     public void testPartialPrepare_3TX_6_2() throws Exception {
         doTestPartialPrepare_3tx(false, new int[] {0, 1, 2}, 2);
     }
@@ -262,7 +233,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testCommitReorderWithRollbackNoRebalanceAfterRestart() throws Exception {
         int[] sizes = new int[] {3, 7};
         int[] assignOrder = new int[] {0, 1};
@@ -351,7 +321,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testMissingUpdateBetweenMultipleCheckpoints() throws Exception {
         int[] sizes = new int[] {3, 7};
         int[] assignOrder = new int[] {0, 1};
@@ -521,7 +490,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
 
         String backupName = txTop.get2().get(0).name();
 
-        IgniteEx backup = startGrid(backupName);
+        Ignite backup = startGrid(backupName);
 
         awaitPartitionMapExchange();
 
@@ -553,7 +522,7 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
         // TODO https://issues.apache.org/jira/browse/IGNITE-11607
         // Historical rebalance is not possible from checkpoint containing rebalance entries.
         // Next rebalance will be full.
-        IgniteEx grid0 = startGrid(primaryName);
+        Ignite grid0 = startGrid(primaryName);
 
         awaitPartitionMapExchange();
 

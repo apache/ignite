@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -591,7 +593,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             assert !exchFut.context().mergeExchanges();
 
                             affVer = exchFut.initialVersion();
-                            affAssignment = grp.affinity().idealAssignmentRaw();
+                            affAssignment = grp.affinity().idealAssignment();
                         }
 
                         initPartitions(affVer, affAssignment, exchFut, updateSeq);
@@ -762,27 +764,26 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (int p = 0; p < partitions; p++) {
                     GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true);
 
-                        if (partitionLocalNode(p, topVer)) {
-                            // Prepare partition to rebalance if it's not happened on full map update phase.
-                            if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
-                                locPart = rebalancePartition(p, true, exchFut);
+                    if (partitionLocalNode(p, topVer)) {
+                        // Prepare partition to rebalance if it's not happened on full map update phase.
+                        if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
+                            locPart = rebalancePartition(p, true, exchFut);
 
                         GridDhtPartitionState state = locPart.state();
 
-                            if (state == MOVING) {
-                                if (grp.rebalanceEnabled()) {
-                                    Collection<ClusterNode> owners = owners(p);
+                        if (state == MOVING) {
+                            if (grp.rebalanceEnabled()) {
+                                Collection<ClusterNode> owners = owners(p);
 
-                                    // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
-                                    if (!F.isEmpty(owners)) {
-                                        if (log.isDebugEnabled())
-                                            log.debug("Will not own partition (there are owners to rebalance from) " +
-                                                "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
-                                    }
-
-                                    if (exchFut.isClearingPartition(grp, p))
-                                        locPart.clearAsync();
+                                // If an owner node left during exchange, then new exchange should be started with detecting lost partitions.
+                                if (!F.isEmpty(owners)) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Will not own partition (there are owners to rebalance from) " +
+                                            "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                 }
+
+                                if (exchFut.isClearingPartition(grp, p))
+                                    locPart.clearAsync();
                             }
                             else
                                 updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
@@ -2713,8 +2714,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 long gapStop = gaps.get(j * 2 + 1);
 
                                 if (part.group().persistenceEnabled() &&
-                                    part.group().walEnabled() &&
-                                    !part.group().mvccEnabled()) {
+                                    part.group().walEnabled()) {
                                     RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                         gapStart - 1, gapStop - gapStart + 1);
 

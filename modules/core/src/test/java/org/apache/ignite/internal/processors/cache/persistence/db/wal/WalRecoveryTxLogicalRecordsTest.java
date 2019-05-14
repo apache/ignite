@@ -843,7 +843,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * Simple test for rollback record overlap count.
      */
-    @Test
     public void testRollbackRecordOverlap() {
         RollbackRecord r0 = new RollbackRecord(0, 0, 1, 1);
         RollbackRecord r1 = new RollbackRecord(0, 0, 1, 4);
@@ -870,7 +869,6 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     /**
      * Tests if history iterator work correctly if partition contains missed due to rollback updates.
      */
-    @Test
     public void testWalIteratorOverPartitionWithMissingEntries() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 

@@ -43,8 +43,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void writeFragmentData(
+    @Override protected void writeFragmentData(
         final CacheDataRow row,
         final ByteBuffer buf,
         final int rowOff,
@@ -242,8 +241,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void writeRowData(
+    @Override protected void writeRowData(
         long pageAddr,
         int dataOff,
         int payloadSize,
@@ -278,8 +276,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void writeRowData(
+    @Override protected void writeRowData(
         long pageAddr,
         int dataOff,
         byte[] payload
@@ -288,11 +285,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         dataOff += 2;
 
         PageUtils.putBytes(pageAddr, dataOff, payload);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getRowSize(CacheDataRow row) throws IgniteCheckedException {
-        return getRowSize(row, row.cacheId() != 0);
     }
 
     /** {@inheritDoc} */

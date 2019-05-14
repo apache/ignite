@@ -50,10 +50,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -74,13 +72,12 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testSingleThreadedUpdateOrder() throws Exception {
         backups = 2;
 
         Ignite crd = startGridsMultiThreaded(SERVER_NODES);
 
-        IgniteEx client = startGrid("client");
+        Ignite client = startGrid("client");
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -121,13 +118,12 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     /**
      * Test primary-backup partitions consistency while restarting primary node under load.
      */
-    @Test
     public void testPartitionConsistencyWithPrimaryRestart() throws Exception {
         backups = 2;
 
         Ignite prim = startGridsMultiThreaded(SERVER_NODES);
 
-        IgniteEx client = startGrid("client");
+        Ignite client = startGrid("client");
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -167,7 +163,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     /**
      * Test primary-backup partitions consistency while restarting random backup nodes under load.
      */
-    @Test
     public void testPartitionConsistencyWithBackupsRestart() throws Exception {
         backups = 2;
 
@@ -232,62 +227,67 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      * Tests reproduces the problem: deferred removal queue should never be cleared during rebalance OR rebalanced
      * entries could undo deletion causing inconsistency.
      */
-    @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, value = "1000")
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_RemoveQueueCleared() throws Exception {
-        backups = 2;
+        System.setProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL, "1000");
 
-        Ignite prim = startGridsMultiThreaded(SERVER_NODES);
+        try {
+            backups = 2;
 
-        int[] primaryParts = prim.affinity(DEFAULT_CACHE_NAME).primaryPartitions(prim.cluster().localNode());
+            Ignite prim = startGridsMultiThreaded(SERVER_NODES);
 
-        List<Integer> keys = partitionKeys(prim.cache(DEFAULT_CACHE_NAME), primaryParts[0], 2, 0);
+            int[] primaryParts = prim.affinity(DEFAULT_CACHE_NAME).primaryPartitions(prim.cluster().localNode());
 
-        prim.cache(DEFAULT_CACHE_NAME).put(keys.get(0), keys.get(0));
-        prim.cache(DEFAULT_CACHE_NAME).put(keys.get(1), keys.get(1));
+            List<Integer> keys = partitionKeys(prim.cache(DEFAULT_CACHE_NAME), primaryParts[0], 2, 0);
 
-        forceCheckpoint();
+            prim.cache(DEFAULT_CACHE_NAME).put(keys.get(0), keys.get(0));
+            prim.cache(DEFAULT_CACHE_NAME).put(keys.get(1), keys.get(1));
 
-        List<Ignite> backups = backupNodes(keys.get(0), DEFAULT_CACHE_NAME);
+            forceCheckpoint();
 
-        assertFalse(backups.contains(prim));
+            List<Ignite> backups = backupNodes(keys.get(0), DEFAULT_CACHE_NAME);
 
-        stopGrid(true, backups.get(0).name());
+            assertFalse(backups.contains(prim));
 
-        prim.cache(DEFAULT_CACHE_NAME).put(keys.get(0), keys.get(0));
+            stopGrid(true, backups.get(0).name());
 
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(prim);
+            prim.cache(DEFAULT_CACHE_NAME).put(keys.get(0), keys.get(0));
 
-        spi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+            TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(prim);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    spi.waitForBlocked();
+            spi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionSupplyMessage);
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        spi.waitForBlocked();
+                    }
+                    catch (InterruptedException e) {
+                        fail(X.getFullStackTrace(e));
+                    }
+
+                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(0));
+
+                    doSleep(2000);
+
+                    prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(1)); // Ensure queue cleanup is triggered.
+
+                    spi.stopBlock();
                 }
-                catch (InterruptedException e) {
-                    fail(X.getFullStackTrace(e));
-                }
+            });
 
-                prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(0));
+            startGrid(backups.get(0).name());
 
-                doSleep(2000);
+            awaitPartitionMapExchange();
 
-                prim.cache(DEFAULT_CACHE_NAME).remove(keys.get(1)); // Ensure queue cleanup is triggered.
+            fut.get();
 
-                spi.stopBlock();
-            }
-        });
+            assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
 
-        startGrid(backups.get(0).name());
-
-        awaitPartitionMapExchange();
-
-        fut.get();
-
-        assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
-
-        assertCountersSame(PARTITION_ID, true);
+            assertCountersSame(PARTITION_ID, true);
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+        }
     }
 
     /**
@@ -296,7 +296,6 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
      *
      * @throws Exception
      */
-    @Test
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_CheckpointDuringRebalance() throws Exception {
         backups = 2;
 

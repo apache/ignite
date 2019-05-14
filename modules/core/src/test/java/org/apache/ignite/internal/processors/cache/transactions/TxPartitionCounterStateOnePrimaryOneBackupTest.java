@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
 
 /**
  */
@@ -67,25 +66,21 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
     private static final int SERVERS_CNT = 2;
 
     /** */
-    @Test
     public void testPrepareCommitReorder() throws Exception {
         doTestPrepareCommitReorder(false);
     }
 
     /** */
-    @Test
     public void testPrepareCommitReorderSkipCheckpoint() throws Exception {
         doTestPrepareCommitReorder(true);
     }
 
     /** */
-    @Test
     public void testPrepareCommitReorderFailRebalance() throws Exception {
         doTestPrepareCommitReorder_2(false);
     }
 
     /** */
-    @Test
     public void testPrepareCommitReorderFailRebalanceSkipCheckpoint() throws Exception {
         doTestPrepareCommitReorder_2(true);
     }
@@ -115,7 +110,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         String primaryName = txTop.get1().name();
         String backupName = txTop.get2().get(0).name();
 
-        IgniteEx primary = startGrid(primaryName);
+        Ignite primary = startGrid(primaryName);
 
         awaitPartitionMapExchange();
 
@@ -146,7 +141,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         // TODO https://issues.apache.org/jira/browse/IGNITE-11607
         // Historical rebalance is not possible from history containing rebalanced entries.
         // Next rebalance will be full.
-        IgniteEx grid0 = startGrid(backupName);
+        Ignite grid0 = startGrid(backupName);
 
         awaitPartitionMapExchange();
 
@@ -226,7 +221,7 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         }, 1);
 
         // Trigger rebalance.
-        IgniteEx prim = startGrid(primaryName);
+        Ignite prim = startGrid(primaryName);
 
         // Wait for restart.
         fut.get();

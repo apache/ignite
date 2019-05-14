@@ -923,7 +923,7 @@ public abstract class PagesList extends DataStructure {
                 int idx = io.addPage(prevAddr, nextId, pageSize());
 
                 if (idx == -1) { // Attempt to add page failed: the node page is full.
-                    final long nextPage = acquirePage(nextId, statHolder);
+                    final long nextPage = acquirePage(nextId);
 
                     try {
                         long nextPageAddr = writeLock(nextId, nextPage); // Page from reuse bag can't be concurrently recycled.
@@ -1080,8 +1080,7 @@ public abstract class PagesList extends DataStructure {
      * @return Removed page ID.
      * @throws IgniteCheckedException If failed.
      */
-    protected long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers,
-        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers) throws IgniteCheckedException {
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForTake(bucket);
 
@@ -1223,47 +1222,6 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
-     * Reused page must obtain correctly assembled page id, then initialized by proper {@link PageIO} instance and
-     * non-zero {@code itemId} of reused page id must be saved into special place.
-     *
-     * @param reusedPageId Reused page id.
-     * @param reusedPage Reused page.
-     * @param reusedPageAddr Reused page address.
-     * @param partId Partition id.
-     * @param flag Flag.
-     * @param initIo Initial io.
-     * @return Prepared page id.
-     * @throws IgniteCheckedException In case of failure.
-     */
-    protected final long initReusedPage(long reusedPageId, long reusedPage, long reusedPageAddr,
-        int partId, byte flag, PageIO initIo) throws IgniteCheckedException {
-
-        long newPageId = PageIdUtils.pageId(partId, flag, PageIdUtils.pageIndex(reusedPageId));
-
-        initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
-
-        boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
-
-        if (needWalDeltaRecord) {
-            wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
-                initIo.getVersion(), newPageId));
-        }
-
-        int itemId = PageIdUtils.itemId(reusedPageId);
-
-        if (itemId != 0) {
-            PageIO.setRotatedIdPart(reusedPageAddr, itemId);
-
-            if (needWalDeltaRecord)
-                wal.log(new RotatedIdPartRecord(grpId, newPageId, itemId));
-        }
-
-        return newPageId;
-    }
-
-    /**
-     * Removes data page from bucket, merges bucket list if needed.
-     *
      * @param dataId Data page ID.
      * @param dataPage Data page pointer.
      * @param dataAddr Data page address.
@@ -1618,7 +1576,7 @@ public abstract class PagesList extends DataStructure {
         public volatile long tailId;
 
         /** */
-        public volatile boolean empty;
+        volatile boolean empty;
 
         /**
          * @param tailId Tail ID.

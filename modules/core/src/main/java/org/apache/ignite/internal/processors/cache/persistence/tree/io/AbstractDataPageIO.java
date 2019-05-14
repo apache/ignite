@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Data pages IO.
  */
-public abstract class AbstractDataPageIO<T extends Storable> extends PageIO implements CompactablePageIO {
+public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
     /** */
     private static final int SHOW_ITEM = 0b0001;
 
@@ -1224,13 +1224,6 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
         PageUtils.putBytes(pageAddr, dataOff, payload);
     }
-
-    /**
-     * @param row Row.
-     * @return Row size in page.
-     * @throws IgniteCheckedException if failed.
-     */
-    public abstract int getRowSize(T row) throws IgniteCheckedException;
 
     /**
      * Defines closure interface for applying computations to data page items.

@@ -76,7 +76,7 @@ public class PartitionMetaStateRecord extends WALRecord implements WalRecordCach
     }
 
     /**
-     * @return Rollback counter.
+     *
      */
     public long updateCounter() {
         return updateCounter;

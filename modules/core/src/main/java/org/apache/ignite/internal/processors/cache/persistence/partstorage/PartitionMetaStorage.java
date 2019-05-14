@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.partstorage;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 
 /**
  */
@@ -35,13 +34,13 @@ public interface PartitionMetaStorage<T extends Storable> {
      * @param row Row.
      * @param statHolder Stat holder.
      */
-    public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public void insertDataRow(T row) throws IgniteCheckedException;
 
     /**
      * @param link Row link.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public void removeDataRowByLink(long link) throws IgniteCheckedException;
 
     /**
      * Save metadata to pagememory.

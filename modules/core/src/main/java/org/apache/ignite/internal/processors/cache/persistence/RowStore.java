@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -97,12 +96,12 @@ public class RowStore {
      */
     public void addRow(CacheDataRow row) throws IgniteCheckedException {
         if (!persistenceEnabled)
-            freeList.insertDataRow(row, statHolder);
+            freeList.insertDataRow(row);
         else {
             ctx.database().checkpointReadLock();
 
             try {
-                freeList.insertDataRow(row, statHolder);
+                freeList.insertDataRow(row);
 
                 assert row.link() != 0L;
             }

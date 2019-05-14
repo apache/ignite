@@ -30,7 +30,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -67,49 +66,41 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
     }
 
     /** */
-    @Test
     public void testAssignCountersInTxWithFilterReplicated() {
         doTestAssignCountersInTxWithFilter(REPLICATED, -1, false);
     }
 
     /** */
-    @Test
     public void testAssignCountersInTxWithFilterReplicatedSameTx() {
         doTestAssignCountersInTxWithFilter(REPLICATED, -1, true);
     }
 
     /** */
-    @Test
     public void testAssignCountersInTxWithFilterTwoBackups() {
         doTestAssignCountersInTxWithFilter(PARTITIONED, 2, false);
     }
 
     /** */
-    @Test
     public void testAssignCountersInTxWithFilterTwoBackupsSameTx() {
         doTestAssignCountersInTxWithFilter(PARTITIONED, 2, true);
     }
 
     /** */
-    @Test
     public void testAssignCountersInTxWithFilterOneBackup() {
         doTestAssignCountersInTxWithFilter(PARTITIONED, 1, false);
     }
 
     /** */
-    @Test
     public void testAssignCountersInTxWithFilterOneBackupSameTx() {
         doTestAssignCountersInTxWithFilter(PARTITIONED, 1, true);
     }
 
     /** */
-    @Test
     public void testAssignCountersInTxWithFilterNoBackups() {
         doTestAssignCountersInTxWithFilter(PARTITIONED, 0, false);
     }
 
     /** */
-    @Test
     public void testAssignCountersInTxWithFilterNoBackupsSameTx() {
         doTestAssignCountersInTxWithFilter(PARTITIONED, 0, true);
     }

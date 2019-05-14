@@ -1249,6 +1249,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void finalizeUpdateCounters() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<Integer, Long> partitionSizes() {
         return Collections.emptyMap();
     }

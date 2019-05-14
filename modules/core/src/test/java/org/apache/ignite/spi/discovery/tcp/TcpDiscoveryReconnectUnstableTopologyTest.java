@@ -57,7 +57,6 @@ import org.junit.runners.JUnit4;
  *
  * Pass condition: new node successfully joins topology.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -88,7 +87,6 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testReconnectUnstableTopology() throws Exception {
         try {
             List<IgniteEx> nodes = new ArrayList<>();
@@ -97,7 +95,7 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
 
             nodes.add(startGrid(1));
 
-            nodes.add(startGrid("client"));
+            nodes.add((IgniteEx)startGrid("client"));
 
             nodes.add(startGrid(2));
 

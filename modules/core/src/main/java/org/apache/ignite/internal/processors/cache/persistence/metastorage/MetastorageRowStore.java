@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorage;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 
 /**
  *
@@ -55,7 +54,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            partStorage.removeDataRowByLink(link, IoStatisticsHolderNoOp.INSTANCE);
+            partStorage.removeDataRowByLink(link);
         }
         finally {
             db.checkpointReadUnlock();
@@ -70,7 +69,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            partStorage.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
+            partStorage.insertDataRow(row);
         }
         finally {
             db.checkpointReadUnlock();

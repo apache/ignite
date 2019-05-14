@@ -1356,7 +1356,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     GridAffinityAssignmentCache aff = grp.affinity();
 
-                    aff.initialize(initialVersion(), aff.idealAssignmentRaw());
+                    aff.initialize(initialVersion(), aff.idealAssignment());
 
                     cctx.exchange().exchangerUpdateHeartbeat();
                 }
@@ -3106,12 +3106,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
             ownersByUpdCounters.put(e.getKey(), e.getValue().nodes);
 
-        Map<Integer, Long> partSizes = new HashMap<>(maxCntrs.size());
-        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
-            partSizes.put(e.getKey(), e.getValue().size);
-
-        top.globalPartSizes(partSizes);
-
         Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(ownersByUpdCounters, haveHistory, this);
 
         for (Map.Entry<UUID, Set<Integer>> e : partitionsToRebalance.entrySet()) {
@@ -3634,6 +3628,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Collects non local cache groups.
+     *
+     * @return Collection of non local cache groups.
+     */
+    private List<CacheGroupContext> nonLocalCacheGroups() {
+        return cctx.cache().cacheGroups().stream()
+            .filter(grp -> !grp.isLocal() && !cacheGroupStopping(grp.groupId()))
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Validates that partition update counters and cache sizes for all caches are consistent.
      */
     private void validatePartitionsState() {
@@ -4145,45 +4150,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer grpId = entry.getKey();
 
-        try {
-            doInParallel(
-                parallelismLvl,
-                cctx.kernalContext().getSystemExecutorService(),
-                msg.partitions().keySet(), grpId -> {
-                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                    if (grp != null) {
-                        CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
-                            grp.topology().partitions());
-
-                        grp.topology().update(resTopVer,
-                            msg.partitions().get(grpId),
-                            cntrMap,
-                            msg.partsToReload(cctx.localNodeId(), grpId),
-                            msg.partitionSizes(grpId),
-                            null,
-                            this);
-                    }
-                    else {
-                        GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId, events().discoveryCache());
+            Map<Integer, Map<Integer, Long>> partsSizes = msg.partitionSizes(cctx);
 
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                        top.update(resTopVer,
-                            msg.partitions().get(grpId),
-                            cntrMap,
-                            Collections.emptySet(),
-                            null,
-                            null,
-                            this);
-                    }
+            if (grp != null) {
+                CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId,
+                    grp.topology().partitions());
 
                 grp.topology().update(resTopVer,
                     entry.getValue(),
                     cntrMap,
                     msg.partsToReload(cctx.localNodeId(), grpId),
                     partsSizes.getOrDefault(grpId, Collections.emptyMap()),
-                    null);
+                    null,
+                    this);
             }
             else {
                 GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId, events().discoveryCache());
@@ -4196,7 +4177,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cntrMap,
                     Collections.emptySet(),
                     null,
-                    null);
+                    null,
+                    this);
             }
         }
 
@@ -4393,7 +4375,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             for (int i = 0; i < grp.affinity().partitions(); i++)
                 affAssignment.add(empty);
 
-            grp.affinity().idealAssignment(initialVersion(), affAssignment);
+            grp.affinity().idealAssignment(affAssignment);
 
             grp.affinity().initialize(initialVersion(), affAssignment);
 
@@ -4946,7 +4928,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param step Exponent coefficient.m
+     * @param step Exponent coefficient.
      * @param timeout Base timeout.
      * @return Time to wait before next debug dump.
      */

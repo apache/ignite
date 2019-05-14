@@ -48,25 +48,28 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRollove
 /**
  * Test suite for tests that cover core PDS features and depend on indexing module.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgnitePdsCacheIntegrationTest.class,
-    IgnitePdsPageEvictionTest.class,
-    IgnitePdsMultiNodePutGetRestartTest.class,
-    IgnitePersistentStoreCacheGroupsTest.class,
-    PersistenceDirectoryWarningLoggingTest.class,
-    WalPathsTest.class,
-    WalRecoveryTxLogicalRecordsTest.class,
-    WalRolloverRecordLoggingFsyncTest.class,
-    WalRolloverRecordLoggingLogOnlyTest.class,
+public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Test Suite");
 
-    IgniteWalRecoveryTest.class,
-    IgniteWalRecoveryWithCompactionTest.class,
-    IgnitePdsNoActualWalHistoryTest.class,
-    IgniteWalRebalanceTest.class,
+        suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
+        suite.addTestSuite(IgnitePdsPageEvictionTest.class);
+        suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
+        suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
+        suite.addTestSuite(PersistenceDirectoryWarningLoggingTest.class);
+        suite.addTestSuite(WalPathsTest.class);
+        suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
+        suite.addTestSuite(WalRolloverRecordLoggingFsyncTest.class);
+        suite.addTestSuite(WalRolloverRecordLoggingLogOnlyTest.class);
 
-    IgnitePdsAtomicCacheRebalancingTest.class,
-    IgnitePdsAtomicCacheHistoricalRebalancingTest.class,
+        suite.addTestSuite(IgniteWalRecoveryTest.class);
+        suite.addTestSuite(IgniteWalRecoveryWithCompactionTest.class);
+        suite.addTestSuite(IgnitePdsNoActualWalHistoryTest.class);
+        suite.addTestSuite(IgniteWalRebalanceTest.class);
 
         suite.addTestSuite(IgnitePdsAtomicCacheRebalancingTest.class);
         suite.addTestSuite(IgnitePdsAtomicCacheHistoricalRebalancingTest.class);

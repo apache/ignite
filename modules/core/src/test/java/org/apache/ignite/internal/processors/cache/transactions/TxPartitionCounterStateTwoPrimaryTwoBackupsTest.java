@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.junit.Test;
 
 /**
  *
@@ -65,13 +64,11 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
     private static final int NODES_CNT = 3;
 
     /** */
-    @Test
     public void testFailoverOnPrepare2Partitions() throws Exception {
         doTestFailoverOnPrepare2Partitions(false);
     }
 
     /** */
-    @Test
     public void testFailoverOnPrepare2PartitionsSkipCheckpoint() throws Exception {
         doTestFailoverOnPrepare2Partitions(true);
     }

@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -47,7 +46,6 @@ public class TxLocalDhtMixedCacheModesTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
     public void testTxLocalDhtMixedCacheModes() throws Exception {
         try {
             IgniteEx g0 = startGrid(0);

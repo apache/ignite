@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -2094,8 +2095,7 @@ public class IgniteTxHandler {
                                 // Need to log rolled back range for logical recovery.
                                 if (updated && rollback) {
                                     if (part.group().persistenceEnabled() &&
-                                        part.group().walEnabled() &&
-                                        !part.group().mvccEnabled()) {
+                                        part.group().walEnabled()) {
                                         RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                             start, delta);
 

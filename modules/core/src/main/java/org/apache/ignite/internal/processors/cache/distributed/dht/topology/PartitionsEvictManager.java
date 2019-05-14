@@ -133,12 +133,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             log.debug("Partition has been scheduled for eviction [grp=" + grp.cacheOrGroupName()
                 + ", p=" + part.id() + ", state=" + part.state() + "]");
 
-        int bucket;
-
-        synchronized (mux) {
-            bucket = evictionQueue.offer(evictionTask);
-        }
-
         scheduleNextPartitionEviction(bucket);
     }
 

@@ -18,18 +18,21 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  * Tests partition consistency recovery in case then all owners are lost in the middle of transaction.
  */
-@WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceTest extends
     TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         int histRebCnt = IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances().size();
@@ -40,61 +43,47 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceT
 
         // Expecting only one historical rebalance for test scenario.
         assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
+
+        System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore("Rebalance will not be triggered because counters are same")
     @Override public void testRestartAllOwnersAfterPartialCommit_2tx_1() throws Exception {
-        super.testRestartAllOwnersAfterPartialCommit_2tx_1();
+        // Rebalance will not be triggered because counters are same.
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore("Rebalance will not be triggered because counters are same")
     @Override public void testRestartAllOwnersAfterPartialCommit_2tx_2() throws Exception {
-        super.testRestartAllOwnersAfterPartialCommit_2tx_2();
+        // Rebalance will not be triggered because counters are same.
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore("Rebalance will not be triggered because counters are same")
     @Override public void testRestartAllOwnersAfterPartialCommit_2tx_3() throws Exception {
-        super.testRestartAllOwnersAfterPartialCommit_2tx_3();
+        // Rebalance will not be triggered because counters are same.
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore("Rebalance will not be triggered because counters are same")
     @Override public void testRestartAllOwnersAfterPartialCommit_2tx_4() throws Exception {
-        super.testRestartAllOwnersAfterPartialCommit_2tx_4();
+        // Rebalance will not be triggered because counters are same.
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore("Rebalance will not be triggered because counters are same")
     @Override public void testStopAllOwnersWithPartialCommit_3tx_1_1() throws Exception {
-        super.testStopAllOwnersWithPartialCommit_3tx_1_1();
+        // Rebalance will not be triggered because counters are same.
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore("Rebalance will not be triggered because counters are same")
     @Override public void testStopAllOwnersWithPartialCommit_3tx_1_2() throws Exception {
-        super.testStopAllOwnersWithPartialCommit_3tx_1_2();
+        // Rebalance will not be triggered because counters are same.
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore("Rebalance will not be triggered because counters are same")
     @Override public void testStopAllOwnersWithPartialCommit_3tx_2_1() throws Exception {
-        super.testStopAllOwnersWithPartialCommit_3tx_2_1();
+        // Rebalance will not be triggered because counters are same.
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore("Rebalance will not be triggered because counters are same")
     @Override public void testStopAllOwnersWithPartialCommit_3tx_2_2() throws Exception {
-        super.testStopAllOwnersWithPartialCommit_3tx_2_2();
+        // Rebalance will not be triggered because counters are same.
     }
 }

@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY;
 
@@ -51,7 +50,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     private static final int NODES_CNT = 3;
 
     /** */
-    @Test
     public void testRestartAllOwnersAfterPartialCommit_2tx_1() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(false,
             new int[] {0, 1},
@@ -65,7 +63,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testRestartAllOwnersAfterPartialCommit_2tx_2() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1},
@@ -79,7 +76,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testRestartAllOwnersAfterPartialCommit_2tx_3() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(false,
             new int[] {0, 1},
@@ -93,7 +89,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testRestartAllOwnersAfterPartialCommit_2tx_4() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1},
@@ -107,7 +102,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testStopAllOwnersWithPartialCommit_3tx_1_1() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(false,
             new int[] {0, 1, 2},
@@ -122,7 +116,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testStopAllOwnersWithPartialCommit_3tx_1_2() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(false,
             new int[] {0, 1, 2},
@@ -137,7 +130,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testStopAllOwnersWithPartialCommit_3tx_2_1() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1, 2},
@@ -152,7 +144,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testStopAllOwnersWithPartialCommit_3tx_2_2() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1, 2},
@@ -167,7 +158,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testStopAllOwnersWithPartialCommit_3tx_3() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(false,
             new int[] {0, 1, 2},
@@ -182,7 +172,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testStopAllOwnersWithPartialCommit_3tx_4() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1, 2},
@@ -197,7 +186,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testStopAllOwnersWithPartialCommit_3tx_5() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(false,
             new int[] {0, 1, 2},
@@ -212,7 +200,6 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest extends TxPa
     }
 
     /** */
-    @Test
     public void testStopAllOwnersWithPartialCommit_3tx_6() throws Exception {
         doTestRestartAllOwnersAfterPartialCommit(true,
             new int[] {0, 1, 2},

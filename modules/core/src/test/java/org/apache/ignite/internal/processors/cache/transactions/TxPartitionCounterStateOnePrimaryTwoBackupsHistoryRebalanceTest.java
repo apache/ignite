@@ -18,18 +18,21 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  *
  */
-@WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
 public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
     extends TxPartitionCounterStateOnePrimaryTwoBackupsTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+    }
+
     /** {@inheritDoc} */
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -41,24 +44,17 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
 
         // Expecting only one historical rebalance for test scenario.
         assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
+
+        System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore
     @Override public void testMissingUpdateBetweenMultipleCheckpoints() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Test
-    @Ignore
     @Override public void testCommitReorderWithRollbackNoRebalanceAfterRestart() throws Exception {
         // No-op.
-    }
-
-    @Test
-    @Override public void testPartialPrepare_2TX_1_1() throws Exception {
-        super.testPartialPrepare_2TX_1_1();
     }
 }

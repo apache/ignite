@@ -50,9 +50,20 @@ public interface DatabaseLifecycleListener {
     /**
      *
      * @param mgr
-     * @throws IgniteCheckedException
+     * @param restoreState Result of logical recovery.
+     * @throws IgniteCheckedException If failed.
      */
-    default void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {};
+    public default void afterLogicalUpdatesApplied(IgniteCacheDatabaseSharedManager mgr,
+        GridCacheDatabaseSharedManager.RestoreLogicalState restoreState) throws IgniteCheckedException {}
+
+    /**
+     * Callback executed when all physical updates are applied and we are ready to write new physical records
+     * during logical recovery.
+     *
+     * @param mgr Database shared manager.
+     * @throws IgniteCheckedException If failed.
+     */
+    public default void beforeResumeWalLogging(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {}
 
     /**
      * @param mgr Database shared manager.

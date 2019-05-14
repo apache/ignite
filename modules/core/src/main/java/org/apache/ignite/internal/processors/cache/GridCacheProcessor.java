@@ -209,11 +209,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
         "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
         "Deactivate grid and retry node join or clean the joining node.";
-
-    /** Template of message of failed node join because encryption settings are different for the same cache. */
-    private static final String ENCRYPT_MISMATCH_MESSAGE = "Failed to join node to the cluster " +
-        "(encryption settings are different for cache '%s' : local=%s, remote=%s.)";
-
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
@@ -908,32 +903,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (IgniteComponentType.HADOOP.inClassPath())
             internalCaches.add(CU.SYS_CACHE_HADOOP_MR);
-    }
-
-    /**
-     * @param rmtNode Remote node to check.
-     * @return Data storage configuration
-     */
-    private DataStorageConfiguration extractDataStorage(ClusterNode rmtNode) {
-        return GridCacheUtils.extractDataStorage(
-            rmtNode,
-            ctx.marshallerContext().jdkMarshaller(),
-            U.resolveClassLoader(ctx.config())
-        );
-    }
-
-    /**
-     * @param dataStorageCfg User-defined data regions.
-     */
-    private Map<String, DataRegionConfiguration> dataRegionCfgs(DataStorageConfiguration dataStorageCfg) {
-        if(dataStorageCfg != null) {
-            return Optional.ofNullable(dataStorageCfg.getDataRegionConfigurations())
-                .map(Stream::of)
-                .orElseGet(Stream::empty)
-                .collect(Collectors.toMap(DataRegionConfiguration::getName, e -> e));
-        }
-
-        return Collections.emptyMap();
     }
 
     /**
@@ -3241,35 +3210,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     errorMessage.append(ex.getMessage());
                 }
 
-                DynamicCacheDescriptor locDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
+                DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
-                if (locDesc == null)
+                if (localDesc == null)
                     continue;
 
-                QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+                QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
 
                 if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
                     if (errorMessage.length() > 0)
                         errorMessage.append("\n");
 
                     if (schemaPatch.hasConflicts())
-                        errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
-                            locDesc.cacheName(), schemaPatch.getConflictsMessage()));
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
+                            localDesc.cacheName(), schemaPatch.getConflictsMessage()));
                     else
-                        errorMsg.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, locDesc.cacheName()));
-                }
-
-                // This check must be done on join, otherwise group encryption key will be
-                // written to metastore regardless of validation check and could trigger WAL write failures.
-                boolean locEnc = locDesc.cacheConfiguration().isEncryptionEnabled();
-                boolean rmtEnc = cacheInfo.cacheData().config().isEncryptionEnabled();
-
-                if (locEnc != rmtEnc) {
-                    if (errorMessage.length() > 0)
-                        errorMessage.append("\n");
-
-                    // Message will be printed on remote node, so need to swap local and remote.
-                    errorMessage.append(String.format(ENCRYPT_MISMATCH_MESSAGE, locDesc.cacheName(), rmtEnc, locEnc));
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, localDesc.cacheName()));
                 }
             }
 
@@ -5561,8 +5517,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void afterLogicalUpdatesApplied(GridCacheDatabaseSharedManager.RestoreLogicalState logicalState) throws IgniteCheckedException {
-            restorePartitionStates(cacheGroups(), logicalState.partitionRecoveryStates());
+        @Override public void afterLogicalUpdatesApplied(IgniteCacheDatabaseSharedManager mgr,
+            GridCacheDatabaseSharedManager.RestoreLogicalState restoreState) throws IgniteCheckedException {
+            restorePartitionStates(cacheGroups(), restoreState.partitionRecoveryStates());
         }
 
         /**

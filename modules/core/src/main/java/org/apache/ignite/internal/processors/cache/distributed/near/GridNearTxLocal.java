@@ -3334,31 +3334,27 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFinishFuture<>(cctx, this, true)))
             return chainFinishFuture(finishFut, true, true, false);
 
-        if (!fastFinish) {
-            IgniteInternalFuture<?> prepareFut;
-            try {
-                prepareFut = prepareNearTxLocal();
-            }
-            catch (Throwable t) {
-                prepareFut = prepFut;
+        cctx.mvcc().addFuture(fut0, fut0.futureId());
 
-                // Properly finish prepFut in case of unchecked error.
-                assert prepareFut != null; // Prep future must be set.
+        IgniteInternalFuture<?> prepareFut;
 
-                ((GridNearTxPrepareFutureAdapter)prepFut).onDone(t);
-            }
+        try {
+            prepareFut = prepareNearTxLocal();
+        }
+        catch (Throwable t) {
+            prepareFut = prepFut;
 
-            prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> f) {
-                    try {
-                        // Make sure that here are no exceptions.
-                        f.get();
+            // Properly finish prepFut in case of unchecked error.
+            assert prepareFut != null; // Prep future must be set.
+
+            ((GridNearTxPrepareFutureAdapter)prepFut).onDone(t);
+        }
 
         prepareFut.listen(new CI1<IgniteInternalFuture<?>>() {
             @Override public void apply(IgniteInternalFuture<?> f) {
                 try {
                     // Make sure that here are no exceptions.
-                    prepareFut.get();
+                    f.get();
 
                     fut0.finish(true, true, false);
                 }
@@ -3367,11 +3363,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     fut0.finish(false, true, false);
 
-                        if (!(e instanceof NodeStoppingException))
-                            fut.finish(false, true, true);
-                        else
-                            fut.onNodeStop(e);
-                    }
+                    throw e;
                 }
                 catch (IgniteCheckedException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);

@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.io.Externalizable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -35,6 +38,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -431,9 +435,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         try {
             cctx.tm().prepareTx(this, entries);
-
-            if (txState().mvccEnabled())
-                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -491,7 +492,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
-                        // LOST state is possible if tx is prepared when cache is in recovery mode (withCacheRecovery).
+                        // LOST state is possible if tx is started over LOST partition.
                         assert part != null && (part.state() == OWNING || part.state() == LOST):
                             part == null ?
                                 "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
@@ -747,7 +748,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         null);
 
                                     if (updRes.success())
-                                        txEntry.updateCounter(updRes.updateCounter());
+                                        txEntry.updateCounter(updRes.updatePartitionCounter());
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();
@@ -800,11 +801,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         CU.subjectId(this, cctx),
                                         resolveTaskName(),
                                         dhtVer,
-                                        null,
-                                        mvccSnapshot());
+                                        null);
 
                                     if (updRes.success())
-                                        txEntry.updateCounter(updRes.updateCounter());
+                                        txEntry.updateCounter(updRes.updatePartitionCounter());
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();
@@ -904,7 +904,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (!txState.mvccEnabled() && txCounters != null) {
+                if (txCounters != null) {
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
 
                     for (IgniteTxEntry entry : commitEntries) {
@@ -912,11 +912,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             entry.cqNotifyClosure().applyx();
                     }
                 }
-
-                // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
-                applyTxSizes();
-
-                cctx.mvccCaching().onTxFinished(this, true);
 
                 if (ptr != null && !cctx.tm().logTxRecords())
                     cctx.wal().flush(ptr, false);
@@ -1086,16 +1081,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            if (!txState.mvccEnabled()) {
-                TxCounters txCounters = txCounters(false);
+            TxCounters txCounters = txCounters(false);
 
-                if (txCounters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
-            }
+            if (txCounters != null)
+                cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
 
-            cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);
-
-            cctx.mvccCaching().onTxFinished(this, false);
+            cctx.tm().rollbackTx(this, clearThreadMap, skipCompletedVersions());
 
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);

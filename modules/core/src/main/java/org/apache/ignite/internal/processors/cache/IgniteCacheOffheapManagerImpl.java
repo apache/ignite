@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -1171,8 +1172,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            pCntr = grp.mvccEnabled() ? new PartitionMvccTxUpdateCounterImpl() :
-                grp.hasAtomicCaches() ? new PartitionAtomicUpdateCounterImpl() :
+            pCntr = grp.hasAtomicCaches() ? new PartitionAtomicUpdateCounterImpl() :
                     ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
                         new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
         }
@@ -1258,53 +1258,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public long updateCounter() {
-            return cntr.get();
-        }
-
-        /**
-         * @param val Update index value.
-         */
-        @Override public void updateCounter(long val) {
-            while (true) {
-                long val0 = cntr.get();
-
-                if (val0 >= val)
-                    break;
-
-                if (cntr.compareAndSet(val0, val))
-                    break;
-            }
-        }
-
-        /**
-         * Updates counter by delta from start position.
-         *
-         * @param start Start.
-         * @param delta Delta.
-         */
-        public synchronized void updateCounter(long start, long delta) {
-            long cur = cntr.get(), next;
-
-            if (cur > start) {
-                log.warning("Stale update counter task [cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
-
-                return;
-            }
-
-            if (cur < start) {
-                // backup node with gaps
-                offer(new Item(start, delta));
-
-                return;
-            }
-
-        /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
             return pCntr.next();
         }
 
-                assert res;
+        /** {@inheritDoc} */
+        @Override public long initialUpdateCounter() {
+            return pCntr.initial();
+        }
 
         /** {@inheritDoc}
          * @param start Start.
@@ -1319,14 +1280,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return pCntr.reserve(delta);
         }
 
-                Item item = poll();
-
-                assert peek == item;
-
-                start = item.start;
-                delta = item.delta;
-                cur = next;
-            }
+        /** {@inheritDoc} */
+        @Override public long updateCounter() {
+            return pCntr.get();
         }
 
         /** {@inheritDoc} */
@@ -1759,29 +1715,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return rowStore;
         }
 
-        /**
-         * @return Next update index.
-         */
-        @Override public long nextUpdateCounter() {
-            return cntr.incrementAndGet();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long initialUpdateCounter() {
-            return initCntr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateInitialCounter(long cntr) {
-            if (updateCounter() < cntr)
-                updateCounter(cntr);
-
-            initCntr = cntr;
-        }
-
         /** {@inheritDoc} */
         @Override public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
             rowStore().setRowCacheCleaner(rowCacheCleaner);
+        }
+
+        /** */
+        @Override public PendingEntriesTree pendingTree() {
+            return pendingEntries;
         }
 
         /**
@@ -1794,8 +1735,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             pCntr.init(updCntr, gaps);
 
             storageSize.set(size);
-
-            cntr.set(updCntr);
 
             if (cacheSizes != null) {
                 for (Map.Entry<Integer, Long> e : cacheSizes.entrySet())

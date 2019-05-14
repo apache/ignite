@@ -210,7 +210,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
             totalKeys += size;
         }
 
-        IgniteEx client = startGrid("client");
+        Ignite client = startGrid("client");
 
         // Preload one key to partition to enable historical rebalance.
         List<Integer> preloadKeys = loadDataToPartition(partId, "client", DEFAULT_CACHE_NAME, PRELOAD_KEYS_CNT, 0);

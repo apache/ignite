@@ -23,7 +23,6 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -32,8 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -41,8 +38,21 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 /**
  * Test partitions consistency in various scenarios.
  */
-@WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
 public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPartitionCounterStateConsistencyTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+    }
+
     /**
      * Tests reproduces the problem: if partition is selected for full rebalancing for some reason and it was
      * rebalancing before it should always be cleared first OR deletes on supplier will not be visible on demander
@@ -52,7 +62,6 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
      *
      * @throws Exception
      */
-    @Test
     public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_MovingPartitionNotCleared() throws Exception {
         backups = 2;
 
@@ -98,7 +107,7 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
             }
         });
 
-        IgniteEx backup2 = startGrid(backup.name());
+        Ignite backup2 = startGrid(backup.name());
 
         doSleep(5000);
 
@@ -117,7 +126,6 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
      *
      * @throws Exception
      */
-    @Test
     public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
         backups = 2;
 

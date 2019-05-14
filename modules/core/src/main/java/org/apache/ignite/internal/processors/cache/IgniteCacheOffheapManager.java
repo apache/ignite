@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -35,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -425,14 +425,6 @@ public interface IgniteCacheOffheapManager {
         boolean isEmpty();
 
         /**
-         * Updates size metric for particular cache.
-         *
-         * @param cacheId Cache ID.
-         * @param delta Size delta.
-         */
-        void updateSize(int cacheId, long delta);
-
-        /**
          * @return Update counter (LWM).
          */
         long updateCounter();
@@ -468,6 +460,14 @@ public interface IgniteCacheOffheapManager {
          * @return Next update counter.
          */
         public long nextUpdateCounter();
+
+        /**
+         * Returns current value and updates counter by delta.
+         *
+         * @param delta Delta.
+         * @return Current value.
+         */
+        public long getAndIncrementUpdateCounter(long delta);
 
         /**
          * @return Initial update counter.
@@ -608,6 +608,17 @@ public interface IgniteCacheOffheapManager {
          */
         PendingEntriesTree pendingTree();
 
+        /**
+         * Flushes pending update counters closing all possible gaps.
+         *
+         * @return Even-length array of pairs [start, end] for each gap.
+         */
+        GridLongList finalizeUpdateCounters();
+
+        /**
+         * Preload a store into page memory.
+         * @throws IgniteCheckedException If failed.
+         */
         public void preload() throws IgniteCheckedException;
 
         /**

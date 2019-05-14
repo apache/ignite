@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -111,79 +109,67 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
     public void testPutAtomicSequentialPersistent() throws Exception {
         doTestPutSequential(ATOMIC_CACHE);
     }
 
     /** */
-    @Test
     public void testPutTxSequentialPersistent() throws Exception {
         doTestPutSequential(TX_CACHE);
     }
 
     /** */
-    @Test
     public void testPutAtomicConcurrentPersistent() throws Exception {
         doTestPutConcurrent(ATOMIC_CACHE, true);
     }
 
     /** */
-    @Test
     public void testPutTxConcurrentPersistent() throws Exception {
         doTestPutConcurrent(TX_CACHE, true);
     }
 
     /** */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutAtomicConcurrentPersistentWithIsolatedMode() throws Exception {
-        doTestPutConcurrent(ATOMIC_CACHE, false);
+        // doTestPutConcurrent(ATOMIC_CACHE, false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-11793");
     }
 
     /** */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutTxConcurrentPersistentWithIsolatedMode() throws Exception {
-        doTestPutConcurrent(TX_CACHE, false);
+        //doTestPutConcurrent(TX_CACHE, false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-11793");
     }
 
     /** */
-    @Test
     public void testPutAtomicSequentialVolatile() throws Exception {
         doTestPutSequential(ATOMIC_CACHE_MEMORY);
     }
 
     /** */
-    @Test
     public void testPutTxSequentialVolatile() throws Exception {
         doTestPutSequential(TX_CACHE_MEMORY);
     }
 
     /** */
-    @Test
     public void testPutAtomicConcurrentVolatile() throws Exception {
         doTestPutConcurrent(ATOMIC_CACHE_MEMORY, true);
     }
 
     /** */
-    @Test
     public void testPutTxConcurrentVolatile() throws Exception {
         doTestPutConcurrent(TX_CACHE_MEMORY, true);
     }
 
     /** */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutAtomicConcurrentVolatileWithIsolatedMode() throws Exception {
-        doTestPutConcurrent(ATOMIC_CACHE_MEMORY, false);
+        // doTestPutConcurrent(ATOMIC_CACHE_MEMORY, false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-11793");
     }
 
     /** */
-    @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutTxConcurrentVolatileWithIsolatedMode() throws Exception {
-        doTestPutConcurrent(TX_CACHE_MEMORY, false);
+        // doTestPutConcurrent(TX_CACHE_MEMORY, false);
+        fail("https://issues.apache.org/jira/browse/IGNITE-11793");
     }
 
     /** */

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -31,41 +30,11 @@ import org.jetbrains.annotations.Nullable;
  * Values which should be tracked during transaction execution and applied on commit.
  */
 public class TxCounters {
-    /** Size changes for cache partitions made by transaction */
-    private final Map<Integer, Map<Integer, AtomicLong>> sizeDeltas = new ConcurrentHashMap<>();
-
     /** Per-partition update counter accumulator. */
     private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
     private volatile Map<Integer, PartitionUpdateCountersMessage> updCntrs;
-
-    /** Counter tracking number of entries locked by tx. */
-    private final AtomicInteger lockCntr = new AtomicInteger();
-
-    private Map<T2<Integer, Integer>, Long> genCntrsMap;
-
-    /**
-     * Accumulates size change for cache partition.
-     *
-     * @param cacheId Cache id.
-     * @param part Partition id.
-     * @param delta Size delta.
-     */
-    public void accumulateSizeDelta(int cacheId, int part, long delta) {
-        AtomicLong accDelta = accumulator(sizeDeltas, cacheId, part);
-
-        // here AtomicLong is used more as a container,
-        // every instance is assumed to be accessed in thread-confined manner
-        accDelta.set(accDelta.get() + delta);
-    }
-
-    /**
-     * @return Map of size changes for cache partitions made by transaction.
-     */
-    public Map<Integer, Map<Integer, AtomicLong>> sizeDeltas() {
-        return sizeDeltas;
-    }
 
     /**
      * @param updCntrs Final update counters.

@@ -1268,7 +1268,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                     assert entry != null && entry.cached() != null : entry;
 
-                    // Counter shouldn't be reserved for mvcc, local cache entries, NOOP operations and NOOP transforms.
+                    // Counter shouldn't be reserved for local cache entries, NOOP operations and NOOP transforms.
                     if (!entry.cached().isLocal() && entry.op() != NOOP &&
                         !(entry.op() == TRANSFORM &&
                             (entry.entryProcessorCalculatedValue() == null || // Possible for txs over cachestore
@@ -1288,11 +1288,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 return;
 
             if (last) {
-                if (!tx.txState().mvccEnabled()) {
-                    /** For MVCC counters are assigned on enlisting. */
-                    /** See usage of {@link TxCounters#incrementUpdateCounter(int, int)} ) */
-                    tx.calculatePartitionUpdateCounters();
-                }
+                tx.calculatePartitionUpdateCounters();
 
                 sendPrepareRequests();
             }
@@ -1312,7 +1308,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void sendPrepareRequests() {
-
         if (tx.onePhaseCommit() && !tx.nearMap().isEmpty()) {
             for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
                 if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
@@ -1368,7 +1363,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
-                retVal);
+                retVal,
+                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             int idx = 0;
 
@@ -1471,7 +1467,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
-                    retVal);
+                    retVal,
+                    null);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {

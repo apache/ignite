@@ -680,8 +680,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                null,
-                                                mvccSnapshot());
+                                                null);
 
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
 
@@ -706,41 +705,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     topVer);
                                             }
                                         }
-                                    }
-                                    else if (op == DELETE) {
-                                        GridCacheUpdateTxResult updRes = cached.innerRemove(this,
-                                            eventNodeId(),
-                                            nodeId,
-                                            false,
-                                            true,
-                                            true,
-                                            txEntry.keepBinary(),
-                                            txEntry.hasOldValue(),
-                                            txEntry.oldValue(),
-                                            topVer,
-                                            null,
-                                            replicate ? DR_BACKUP : DR_NONE,
-                                            near() ? null : explicitVer,
-                                            CU.subjectId(this, cctx),
-                                            resolveTaskName(),
-                                            dhtVer,
-                                            null,
-                                            mvccSnapshot());
-
-                                        txEntry.updateCounter(updRes.updateCounter());
-
-                                        if (updRes.loggedPointer() != null)
-                                            ptr = updRes.loggedPointer();
-
-                                        // Keep near entry up to date.
-                                        if (nearCached != null)
-                                            nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId, topVer);
-                                    }
-                                    else if (op == RELOAD) {
-                                        CacheObject reloaded = cached.innerReload();
-
-                                        if (nearCached != null) {
-                                            nearCached.innerReload();
+                                        else if (op == READ) {
+                                            assert near();
 
                                             if (log.isDebugEnabled())
                                                 log.debug("Ignoring READ entry when committing: " + txEntry);
@@ -789,19 +755,21 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                             TxCounters txCntrs = txCounters(false);
 
-                        // Apply update counters.
-                        if (txCntrs != null)
-                            cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
+                            // Apply update counters.
+                            if (txCntrs != null)
+                                cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
 
-                        cctx.mvccCaching().onTxFinished(this, true);
+                            if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
+                                // Set new update counters for data entries received from persisted tx entries.
+                                List<DataEntry> entriesWithCounters = dataEntries.stream()
+                                    .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
+                                    .collect(Collectors.toList());
 
-                        if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
-                            // Set new update counters for data entries received from persisted tx entries.
-                            List<DataEntry> entriesWithCounters = dataEntries.stream()
-                                .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
-                                .collect(Collectors.toList());
+                                cctx.wal().log(new DataRecord(entriesWithCounters));
+                            }
 
-                            cctx.wal().log(new DataRecord(entriesWithCounters));
+                            if (ptr != null && !cctx.tm().logTxRecords())
+                                cctx.wal().flush(ptr, false);
                         }
                         catch (Throwable ex) {
                             state(UNKNOWN);
@@ -940,14 +908,19 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters(), true, false);
 
                 state(ROLLED_BACK);
-
-                cctx.mvccCaching().onTxFinished(this, false);
             }
         }
-        catch (RuntimeException | Error e) {
+        catch (IgniteCheckedException | RuntimeException | Error e) {
             state(UNKNOWN);
 
-            throw e;
+            U.error(log, "Error during tx rollback.", e);
+
+            if (e instanceof IgniteCheckedException)
+                throw new IgniteException(e);
+            else if (e instanceof RuntimeException)
+                throw (RuntimeException) e;
+            else
+                throw (Error) e;
         }
     }
 

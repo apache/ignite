@@ -34,8 +34,4 @@ public class GridCacheLocalTxStoreExceptionSelfTest extends IgniteTxStoreExcepti
     @Override protected CacheMode cacheMode() {
         return LOCAL;
     }
-
-    @Override public void testPutMultipleKeysTx() throws Exception {
-        super.testPutMultipleKeysTx();
-    }
 }

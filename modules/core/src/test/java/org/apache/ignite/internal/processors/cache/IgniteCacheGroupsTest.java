@@ -1289,7 +1289,6 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testStartManyCaches() throws Exception {
         final int CACHES = 5_000;
 

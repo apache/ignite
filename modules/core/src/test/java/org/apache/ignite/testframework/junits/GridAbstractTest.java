@@ -170,19 +170,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
 
-    /** Supports obtaining test name for JUnit4 cases. */
-    @Rule public transient TestName nameRule = new TestName();
-
-    /** Manages test execution and reporting. */
-    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
-        @Override public void evaluate() throws Throwable {
-            runTest(base);
-        }
-    };
-
-    /** Allows easy repeating for test. */
-    @Rule public transient RepeatRule repeatRule = new RepeatRule();
-
     /** */
     private transient boolean startGrid;
 
@@ -612,8 +599,6 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
-
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if(isSafeTopology())

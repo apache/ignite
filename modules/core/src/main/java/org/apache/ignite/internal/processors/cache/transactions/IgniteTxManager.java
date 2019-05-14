@@ -41,10 +41,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectsReleaseFuture;
@@ -54,19 +51,19 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
@@ -2096,6 +2093,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             tx.rollbackAsync();
     }
 
+    /** */
+    private void neighborcastPartitionCountersAndRollback(IgniteInternalTx tx) {
+        TxCounters txCounters = tx.txCounters(false);
+
+        if (txCounters == null || txCounters.updateCounters() == null)
+            tx.rollbackAsync();
+
+        PartitionCountersNeighborcastFuture fut = new PartitionCountersNeighborcastFuture(tx, cctx);
+
+        fut.listen(fut0 -> tx.rollbackAsync());
+
+        fut.init();
+    }
+
     /**
      * Commits transaction in case when node started transaction failed, but all related
      * transactions were prepared (invalidates transaction if it is not fully prepared).
@@ -2444,64 +2455,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public boolean logTxRecords() {
         return logTxRecords;
-    }
-
-    /**
-     * Marks MVCC transaction as {@link TxState#COMMITTED} or {@link TxState#ABORTED}.
-     *
-     * @param tx Transaction.
-     * @param commit Commit flag.
-     * @throws IgniteCheckedException If failed to add version to TxLog.
-     */
-    public void mvccFinish(IgniteTxAdapter tx, boolean commit) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
-            cctx.coordinators().updateState(tx.mvccSnapshot, commit ? TxState.COMMITTED : TxState.ABORTED, tx.local());
-    }
-
-    /**
-     * Marks MVCC transaction as {@link TxState#PREPARED}.
-     *
-     * @param tx Transaction.
-     * @throws IgniteCheckedException If failed to add version to TxLog.
-     */
-    public void mvccPrepare(IgniteTxAdapter tx) throws IgniteCheckedException {
-        if (!cctx.kernalContext().clientNode() && tx.mvccSnapshot != null && !(tx.near() && tx.remote()))
-            cctx.coordinators().updateState(tx.mvccSnapshot, TxState.PREPARED);
-    }
-
-    /**
-     * Logs Tx state to WAL if needed.
-     *
-     * @param tx Transaction.
-     * @return WALPointer or {@code null} if nothing was logged.
-     */
-    @Nullable WALPointer logTxRecord(IgniteTxAdapter tx) {
-        BaselineTopology baselineTop;
-
-        // Log tx state change to WAL.
-        if (cctx.wal() == null
-            || (!logTxRecords && !tx.txState().mvccEnabled())
-            || (baselineTop = cctx.kernalContext().state().clusterState().baselineTopology()) == null
-            || !baselineTop.consistentIds().contains(cctx.localNode().consistentId()))
-            return null;
-
-        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
-
-        TxRecord record;
-
-        if (tx.txState().mvccEnabled())
-            record = new MvccTxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes, tx.mvccSnapshot());
-        else
-            record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
-
-        try {
-            return cctx.wal().log(record);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to log TxRecord: " + record, e);
-
-            throw new IgniteException("Failed to log TxRecord: " + record, e);
-        }
     }
 
     /**

@@ -49,10 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -67,7 +63,6 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -169,12 +164,6 @@ public class CacheGroupContext {
 
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
-
-    /** Statistics holder to track IO operations for PK index pages. */
-    private final IoStatisticsHolder statHolderIdx;
-
-    /** Statistics holder to track IO operations for data pages. */
-    private final IoStatisticsHolder statHolderData;
 
     /** */
     private volatile boolean hasAtomicCaches;
@@ -833,6 +822,25 @@ public class CacheGroupContext {
     }
 
     /**
+     * @param part Partition to restore state for.
+     * @param stateId State enum ordinal.
+     * @return Updated flag.
+     */
+    private boolean updateState(GridDhtLocalPartition part, int stateId) {
+        if (stateId != -1) {
+            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(stateId);
+
+            assert state != null;
+
+            part.restoreState(state == GridDhtPartitionState.EVICTED ? GridDhtPartitionState.RENTING : state);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @return {@code True} if current cache group is in recovery mode.
      */
     public boolean isRecoveryMode() {
@@ -1007,8 +1015,8 @@ public class CacheGroupContext {
                 ccfg.getAffinity(),
                 ccfg.getNodeFilter(),
                 ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL
-            );
+                ccfg.getCacheMode() == LOCAL,
+                persistenceEnabled());
 
         if (ccfg.getCacheMode() != LOCAL)
             top = new GridDhtPartitionTopologyImpl(ctx, this);
@@ -1198,20 +1206,6 @@ public class CacheGroupContext {
      */
     private void persistLocalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, true);
-    }
-
-    /**
-     * @return Statistics holder to track cache IO operations.
-     */
-    public IoStatisticsHolder statisticsHolderIdx() {
-        return statHolderIdx;
-    }
-
-    /**
-     * @return Statistics holder to track cache IO operations.
-     */
-    public IoStatisticsHolder statisticsHolderData() {
-        return statHolderData;
     }
 
     /**

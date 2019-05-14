@@ -28,7 +28,7 @@ public interface FreeList<T extends Storable> {
      * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public void insertDataRow(T row) throws IgniteCheckedException;
 
     /**
      * @param link Row link.
@@ -36,7 +36,7 @@ public interface FreeList<T extends Storable> {
      * @return {@code True} if was able to update row.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean updateDataRow(long link, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException;
+    public boolean updateDataRow(long link, T row) throws IgniteCheckedException;
 
     /**
      * @param link Row link.

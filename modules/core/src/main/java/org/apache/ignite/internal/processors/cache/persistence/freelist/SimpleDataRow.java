@@ -66,10 +66,6 @@ public class SimpleDataRow implements Storable {
         return 2 /** Fragment size */ + 2 /** Row size */ + value().length;
     }
 
-    @Override public int headerSize() {
-        return 0;
-    }
-
     public byte[] value() {
         return val;
     }
