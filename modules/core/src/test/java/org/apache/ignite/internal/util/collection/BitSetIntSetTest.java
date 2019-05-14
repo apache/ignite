@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.util.collection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  *
@@ -96,6 +100,20 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         iter.hasNext();
         iter.hasNext();
         assertEquals(3, (int) iter.next());
+    }
+
+    @Test
+    public void toIntArray() {
+        IntSet emptySet = new BitSetIntSet();
+        int[] emptyArr = emptySet.toIntArray();
+        assertThat(emptyArr.length, is(0));
+
+        IntSet withGapsSet = new BitSetIntSet(100, Arrays.asList(43, 23, 53));
+        int[] arr = withGapsSet.toIntArray();
+        assertThat(arr.length, is(3));
+        assertThat(arr[0], is(23));
+        assertThat(arr[1], is(43));
+        assertThat(arr[2], is(53));
     }
 
     /** */

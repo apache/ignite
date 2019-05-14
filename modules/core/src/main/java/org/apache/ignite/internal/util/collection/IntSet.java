@@ -31,4 +31,7 @@ public interface IntSet extends Set<Integer> {
 
     /** Removes the specified element from this set. */
     boolean remove(int element);
+
+    /** Returns array with primitive types **/
+    int[] toIntArray();
 }

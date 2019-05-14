@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.collection;
 
-import com.sun.tools.javac.util.List;
+import java.util.Arrays;
 import java.util.HashSet;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class ImmutableIntSetTest {
     /** */
     @Test
     public void shouldWrapHashSet() {
-        IntSet immutableSet = ImmutableIntSet.wrap(new HashSet<>(List.of(2)));
+        IntSet immutableSet = ImmutableIntSet.wrap(new HashSet<>(Arrays.asList(2)));
 
         assertTrue(immutableSet.contains(2));
         assertFalse(immutableSet.contains(1));
@@ -50,8 +50,22 @@ public class ImmutableIntSetTest {
 
     /** */
     @Test
+    public void toIntArray() {
+        IntSet hashSet = ImmutableIntSet.wrap(new HashSet<>(Arrays.asList(2)));
+        int[] fromHash = hashSet.toIntArray();
+        assertThat(fromHash.length, is(1));
+        assertThat(fromHash[0], is(2));
+
+        IntSet bitSet = ImmutableIntSet.wrap(new BitSetIntSet(2, Arrays.asList(2)));
+        int[] fromBit = bitSet.toIntArray();
+        assertThat(fromBit.length, is(1));
+        assertThat(fromBit[0], is(2));
+    }
+
+    /** */
+    @Test
     public void contains() {
-        IntSet immutableSet = ImmutableIntSet.wrap(new BitSetIntSet(2, List.of(2)));
+        IntSet immutableSet = ImmutableIntSet.wrap(new BitSetIntSet(2, Arrays.asList(2)));
 
         assertThat(immutableSet.size(), is(1));
         assertFalse(immutableSet.isEmpty());
@@ -71,7 +85,7 @@ public class ImmutableIntSetTest {
     /** */
     @Test(expected = UnsupportedOperationException.class)
     public void throwExceptionForRemoveOperation() {
-        IntSet immutableSet = ImmutableIntSet.wrap(new BitSetIntSet(2, List.of(2)));
+        IntSet immutableSet = ImmutableIntSet.wrap(new BitSetIntSet(2, Arrays.asList(2)));
 
         immutableSet.remove(2);
     }

@@ -23,6 +23,8 @@ import java.util.NoSuchElementException;
 import org.apache.ignite.internal.util.GridSerializableCollection;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_INTS;
+
 /**
  * Set of Integers implementation based on BitSet.
  *
@@ -153,6 +155,21 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
         }
 
         return alreadySet;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int[] toIntArray() {
+        if(size == 0)
+            return EMPTY_INTS;
+
+        int[] arr = new int[size];
+
+        for(int i = 0, pos = -1; i < size; i++) {
+            pos = bitSet.nextSetBit(pos+1);
+            arr[i] = pos;
+        }
+
+        return arr;
     }
 
     /** {@inheritDoc} */

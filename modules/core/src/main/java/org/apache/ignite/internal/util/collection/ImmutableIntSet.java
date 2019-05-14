@@ -25,6 +25,7 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /** */
@@ -90,6 +91,14 @@ public class ImmutableIntSet implements IntSet {
     /** {@inheritDoc} */
     @NotNull @Override public <T> T[] toArray(@NotNull T[] a) {
         return delegate.toArray(a);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int[] toIntArray() {
+        if (delegate instanceof IntSet)
+            return ((IntSet)delegate).toIntArray();
+        else
+            return U.toIntArray(delegate);
     }
 
     /** {@inheritDoc} */
