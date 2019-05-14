@@ -97,6 +97,8 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.IgniteTree;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
+import org.apache.ignite.internal.util.collection.IntSet;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -399,27 +401,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         else {
             final Iterator<GridDhtLocalPartition> it = grp.topology().currentLocalPartitions().iterator();
 
-            if (primary && backup) {
-                return F.iterator(it, new IgniteClosure<GridDhtLocalPartition, CacheDataStore>() {
-                    @Override public CacheDataStore apply(GridDhtLocalPartition part) {
-                        return part.dataStore();
-                    }
-                }, true);
-            }
+            if (primary && backup)
+                return F.iterator(it, (IgniteClosure<GridDhtLocalPartition, CacheDataStore>)GridDhtLocalPartition::dataStore, true);
 
-            final Set<Integer> parts = primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
-                grp.affinity().backupPartitions(ctx.localNodeId(), topVer);
+            final IntSet parts = ImmutableIntSet.wrap(primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
+                grp.affinity().backupPartitions(ctx.localNodeId(), topVer));
 
-            return F.iterator(it, new IgniteClosure<GridDhtLocalPartition, CacheDataStore>() {
-                    @Override public CacheDataStore apply(GridDhtLocalPartition part) {
-                        return part.dataStore();
-                    }
-                }, true,
-                new IgnitePredicate<GridDhtLocalPartition>() {
-                    @Override public boolean apply(GridDhtLocalPartition part) {
-                        return parts.contains(part.id());
-                    }
-                });
+            return F.iterator(it,
+                (IgniteClosure<GridDhtLocalPartition, CacheDataStore>)GridDhtLocalPartition::dataStore,
+                true,
+                (IgnitePredicate<GridDhtLocalPartition>)part -> parts.contains(part.id()));
         }
     }
 

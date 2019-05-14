@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.BitSetIntSet;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;

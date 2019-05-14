@@ -31,10 +31,10 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.ImmutableIntSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Cached affinity calculations V2.
@@ -118,16 +118,16 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
         for (int partsCnt = assignment.size(), p = 0; p < partsCnt; p++) {
             isPrimary = true;
 
-            List<ClusterNode> currentOwners = assignment.get(p);
+            List<ClusterNode> currOwners = assignment.get(p);
 
-            for (ClusterNode node : currentOwners) {
+            for (ClusterNode node : currOwners) {
                 UUID id = node.id();
 
                 Map<UUID, Set<Integer>> tmp = isPrimary ? tmpPrimary : tmpBackup;
 
                 /*
                     https://issues.apache.org/jira/browse/IGNITE-4554 BitSet performs better than HashSet at most cases.
-                    However with 65k partition and high number of nodes (700+) BitSet is loosing HashSet.
+                    However with 65k partition and high number of nodes (700+) BitSet is losing HashSet.
                     We need to replace it with sparse bitsets.
                  */
                 tmp.computeIfAbsent(id, uuid ->
@@ -139,7 +139,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
 
             List<ClusterNode> idealOwners = p < idealAssignment.size() ? idealAssignment.get(p) : Collections.emptyList();
 
-            ClusterNode curPrimary = !currentOwners.isEmpty() ? currentOwners.get(0) : null;
+            ClusterNode curPrimary = !currOwners.isEmpty() ? currOwners.get(0) : null;
             ClusterNode idealPrimary = !idealOwners.isEmpty() ? idealOwners.get(0) : null;
 
             if (curPrimary != null && !curPrimary.equals(idealPrimary))
@@ -289,7 +289,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     @Override public Set<Integer> primaryPartitions(UUID nodeId) {
         Set<Integer> set = primary.get(nodeId);
 
-        return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? ImmutableIntSet.emptySet() : ImmutableIntSet.wrap(set);
     }
 
     /**
@@ -301,7 +301,7 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     @Override public Set<Integer> backupPartitions(UUID nodeId) {
         Set<Integer> set = backup.get(nodeId);
 
-        return set == null ? Collections.emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? ImmutableIntSet.emptySet() : ImmutableIntSet.wrap(set);
     }
 
     /** {@inheritDoc} */
@@ -333,23 +333,25 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(topVer);
+        throw new RuntimeException("TODO");
+    /*    out.writeObject(topVer);
 
         U.writeCollection(out, assignment);
 
-        U.writeMap(out, primary);
+        U.writeMap(out, primary); //todo
 
-        U.writeMap(out, backup);
+        U.writeMap(out, backup); //todo*/
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        topVer = (AffinityTopologyVersion)in.readObject();
+        throw new RuntimeException("TODO");
+      /*  topVer = (AffinityTopologyVersion)in.readObject();
 
         assignment = U.readList(in);
 
-        primary = U.readMap(in);
+        primary = U.readMap(in); //todo
 
-        backup = U.readMap(in);
+        backup = U.readMap(in); //todo*/
     }
 }
