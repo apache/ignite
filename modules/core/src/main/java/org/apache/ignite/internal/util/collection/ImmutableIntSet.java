@@ -159,11 +159,10 @@ public class ImmutableIntSet implements IntSet {
         throw new UnsupportedOperationException();
     }
 
-    // Override default methods in Collection
     /** {@inheritDoc} */
     @Override
-    public void forEach(Consumer<? super Integer> action) {
-        delegate.forEach(action);
+    public void forEach(Consumer<? super Integer> act) {
+        delegate.forEach(act);
     }
 
     /** {@inheritDoc} */
