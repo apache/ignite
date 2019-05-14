@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {Component, AfterViewInit, Inject, Input, ContentChild, HostBinding, Injectable} from '@angular/core';
+import {Component, AfterViewInit, Inject, Input, ContentChild, HostBinding, Injectable, TemplateRef} from '@angular/core';
 import {FormFieldErrorStyles, FormFieldRequiredMarkerStyles} from './index';
 import {FormFieldHint} from './hint.component';
 import {FormControlName, FormControl} from '@angular/forms';
@@ -116,7 +116,7 @@ export class FormField implements AfterViewInit {
         return control.errors ? Object.entries(control.errors).filter(([key, invalid]) => invalid).map(([key]) => key).pop() : void 0;
     }
 
-    addExtraErrorMessage(key, message) {
+    addExtraErrorMessage(key: string, message: TemplateRef<any>) {
         this.extraMessages = {
             ...this.extraMessages,
             [key]: message

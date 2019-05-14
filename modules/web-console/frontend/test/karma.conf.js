@@ -30,7 +30,8 @@ module.exports = (/** @type {import('karma').Config} */ config) => {
         files: [
             'node_modules/angular/angular.js',
             'node_modules/angular-mocks/angular-mocks.js',
-            'app/**/*.spec.+(js|ts)',
+            'test/zone-testing-mocha.ts',
+            '+(app|app-angular)/**/*.spec.+(js|ts)',
             'test/**/*.test.js'
         ],
 
@@ -45,7 +46,7 @@ module.exports = (/** @type {import('karma').Config} */ config) => {
         // Preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor.
         preprocessors: {
-            '+(app|test)/**/*.+(js|ts)': ['webpack']
+            '+(app|app-angular|test)/**/*.+(js|ts)': ['webpack']
         },
 
         webpack: testCfg,
