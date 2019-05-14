@@ -56,6 +56,9 @@ namespace Apache.Ignite
                 var allArgs = AppSettingsConfigurator.GetArgs(ConfigurationManager.AppSettings)
                     .Concat(ArgsConfigurator.GetArgs(args)).ToArray();
 
+                // load additional assemblies if required
+                ArgsAssemblyLoader.LoadAssemblies(allArgs);
+
                 var ignite = Ignition.Start(Configurator.GetConfiguration(allArgs));
 
                 // Wait until stopped.
