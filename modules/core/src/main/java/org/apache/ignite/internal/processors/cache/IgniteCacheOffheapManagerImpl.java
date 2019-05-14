@@ -402,15 +402,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             final Iterator<GridDhtLocalPartition> it = grp.topology().currentLocalPartitions().iterator();
 
             if (primary && backup)
-                return F.iterator(it, (IgniteClosure<GridDhtLocalPartition, CacheDataStore>)GridDhtLocalPartition::dataStore, true);
+                return F.iterator(it, GridDhtLocalPartition::dataStore, true);
 
             final IntSet parts = ImmutableIntSet.wrap(primary ? grp.affinity().primaryPartitions(ctx.localNodeId(), topVer) :
                 grp.affinity().backupPartitions(ctx.localNodeId(), topVer));
 
-            return F.iterator(it,
-                (IgniteClosure<GridDhtLocalPartition, CacheDataStore>)GridDhtLocalPartition::dataStore,
-                true,
-                (IgnitePredicate<GridDhtLocalPartition>)part -> parts.contains(part.id()));
+            return F.iterator(it, GridDhtLocalPartition::dataStore, true, part -> parts.contains(part.id()));
         }
     }
 
