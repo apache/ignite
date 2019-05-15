@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -46,6 +45,8 @@ public class PageLockTrackerManager {
         mxBean = new PageLockTrackerMXBeanImpl(this);
         sharedPageLockTracker = new SharedPageLockTracker();
         this.log = log;
+
+        sharedPageLockTracker.onStart();
     }
 
     /**

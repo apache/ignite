@@ -59,6 +59,8 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     protected int nextOpStructureId;
     /** */
     protected long nextOpPageId;
+    /** */
+    private long opCntr;
 
     /** */
     protected PageLockTracker(String name, int capacity) {
@@ -236,6 +238,8 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
 
     /** */
     private void unLock() {
+        opCntr++;
+
         locked = false;
     }
 
@@ -251,6 +255,16 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
         while (locked) {
             // Busy wait.
         }
+    }
+
+    /**
+     * @return Number of locks operations.
+     */
+    public long operationsCounter(){
+        // Read  volatile for thread safety.
+        boolean locked = this.locked;
+
+        return opCntr;
     }
 
     /** */

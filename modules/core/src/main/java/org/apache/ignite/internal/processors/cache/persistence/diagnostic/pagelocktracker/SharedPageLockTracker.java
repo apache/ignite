@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 
 //TODO Calculate overhad and capacity for all structures.
@@ -35,10 +35,14 @@ import org.apache.ignite.lang.IgniteFuture;
 //TODO Dynamic enable/disable tracing.
 //TODO Collect page content to dump. AG
 //TODO Create dump by timeout.
+
 /** */
 public class SharedPageLockTracker implements PageLockListener, DumpSupported<ThreadPageLocksDumpLock> {
     /** */
     private static final int THREAD_LIMITS = 1000;
+
+    /** */
+    private static final int TIME_OUT_WORKER_INTERVAL = 60_000;
 
     /** */
     private final Map<Long, PageLockTracker<? extends PageLockDump>> threadStacks = new HashMap<>();
@@ -49,7 +53,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     private final Map<String, Integer> structureNameToId = new HashMap<>();
 
     /** Thread for clean terminated threads from map. */
-    private final Cleaner cleaner = new Cleaner();
+    private final TimeOutWorker timeOutWorker = new TimeOutWorker();
 
     /** */
     private int idGen;
@@ -77,9 +81,9 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
 
     /** */
     void onStart() {
-        cleaner.setDaemon(true);
+        timeOutWorker.setDaemon(true);
 
-        cleaner.start();
+        timeOutWorker.start();
     }
 
     /** */
@@ -198,13 +202,52 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     }
 
     /** */
-    private class Cleaner extends Thread {
+    private synchronized Map<Long, Long> getThreadOperationCounters() {
+        return threadStacks.entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey,
+            e -> e.getValue().operationsCounter()
+        ));
+    }
+
+    /** */
+    private class TimeOutWorker extends Thread {
+        /** */
+        private Map<Long, Long> prevThreadsOperationCounters = new HashMap<>();
+
         @Override public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    sleep(60_000);
+                    sleep(TIME_OUT_WORKER_INTERVAL);
 
                     cleanTerminatedThreads();
+
+                    List<Long> hangsThreads = null;
+
+                    Map<Long, Long> currentThreadsOperationCounters = getThreadOperationCounters();
+
+                    for (Map.Entry<Long, Long> entry : prevThreadsOperationCounters.entrySet()) {
+                        Long threadId = entry.getKey();
+
+                        Long currOpCnt = currentThreadsOperationCounters.get(threadId);
+
+                        if (currOpCnt == null)
+                            continue;
+
+                        Long prevOpCnt = entry.getValue();
+
+                        if (prevOpCnt.equals(currOpCnt)) {
+                            if (hangsThreads == null)
+                                hangsThreads = new ArrayList<>();
+
+                            hangsThreads.add(threadId);
+                        }
+                    }
+
+                    if (!F.isEmpty(hangsThreads)) {
+                        // TODO.
+                    }
+
+                    prevThreadsOperationCounters = currentThreadsOperationCounters;
                 }
             }
             catch (InterruptedException e) {
