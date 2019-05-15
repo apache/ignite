@@ -1977,10 +1977,13 @@ public class GridSqlQueryParser {
         
         //add@byron support create and drop alias cmd
         if (stmt instanceof CreateFunctionAlias)
-            return new GridSqlNativeStatement((CreateFunctionAlias)stmt);
+            return new GridSqlSchemaStatement((CreateFunctionAlias)stmt);
         
         if (stmt instanceof DropFunctionAlias)
-            return new GridSqlNativeStatement((DropFunctionAlias)stmt);
+            return new GridSqlSchemaStatement((DropFunctionAlias)stmt);
+        
+        //-if (stmt instanceof SchemaCommand)
+        //-    return new GridSqlSchemaStatement((SchemaCommand)stmt);
         //end@
 
         throw new IgniteSQLException("Unsupported statement: " + stmt,

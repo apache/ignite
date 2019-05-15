@@ -24,10 +24,10 @@ import org.h2.command.ddl.SchemaCommand;
 import org.h2.schema.Schema;
 
 /**
- * some sql statement can native exec in all node. such as: create alias
+ * some schema sql statement can native exec in all node. such as: create alias
  * add@byron
  */
-public class GridSqlNativeStatement extends GridSqlStatement {   
+public class GridSqlSchemaStatement extends GridSqlStatement {   
 
     /** Schema name. */
     private String schemaName;
@@ -41,7 +41,7 @@ public class GridSqlNativeStatement extends GridSqlStatement {
     	return cmd;
 	}
 
-	public GridSqlNativeStatement(SchemaCommand cmd){
+	public GridSqlSchemaStatement(SchemaCommand cmd){
     	this.cmd = cmd;  
     	Field getSchema;
 		try {

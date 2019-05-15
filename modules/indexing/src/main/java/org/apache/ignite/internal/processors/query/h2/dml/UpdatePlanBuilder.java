@@ -108,7 +108,7 @@ public final class UpdatePlanBuilder {
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(planKey, stmt, idx, mvccEnabled);
         else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
-            return planForUpdate(planKey, stmt, idx, mvccEnabled);
+            return planForUpdate(planKey, stmt, idx, mvccEnabled);             
         else
             throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -490,6 +490,8 @@ public final class UpdatePlanBuilder {
         }
     }
 
+   
+    
     /**
      * Prepare update plan for COPY command (AKA bulk load).
      *

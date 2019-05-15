@@ -1191,9 +1191,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         K key0 = null;
                         V val0 = null;
+                        
+                        //add@byron support scanfilter:
+                        if(qry.scanFilter()!=null){                        	
+                            key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false);                            
+                            val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false);
+                            
+                            if(!qry.scanFilter().apply(key0,val0))
+                            	continue;
+                        }
+                        //end@
 
                         if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
+                        	if (key0 == null)
                             key0 = (K)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, key, qry.keepBinary(), false);
+                        	if (val0 == null)
                             val0 = (V)CacheObjectUtils.unwrapBinaryIfNeeded(objCtx, val, qry.keepBinary(), false);
 
                             switch (type) {
@@ -1261,7 +1273,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                 continue;
                         }
                         else
-                            data.add(new T2<>(key, val));
+                        	//modify@byron
+                            //-data.add(new T2<>(key, val));
+                            data.add(qry.keepBinary() || val0==null ? F.t(key, val) : F.t(key0, val0));
                     }
 
                     if (!loc) {
@@ -2757,6 +2771,44 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             TEXT,
             clsName,
             search,
+            null,
+            null,
+            false,
+            keepBinary,
+            null);
+    }
+
+    public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
+        String search, IgniteBiPredicate<Object, Object> filter, boolean keepBinary) {
+        A.notNull("clsName", clsName);
+        A.notNull("search", search);
+
+        return new GridCacheQueryAdapter<>(cctx,
+            TEXT,
+            clsName,
+            search,
+            filter,
+            null,
+            false,
+            keepBinary,
+			null);
+    }
+	
+	 /**
+     * Creates user's SQL fields query for given clause. For more information refer to {@link CacheQuery}
+     * documentation.
+     *
+     * @param qry Query.
+     * @param keepBinary Keep binary flag.
+     * @return Created query.
+     */
+    public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean keepBinary) {
+        A.notNull(qry, "qry");
+
+        return new GridCacheQueryAdapter<>(cctx,
+            SQL_FIELDS,
+            null,
+            qry,
             null,
             null,
             false,

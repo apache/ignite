@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
@@ -82,6 +83,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlCreateTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSchemaStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
@@ -112,10 +114,13 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
+import org.h2.command.ddl.CreateFunctionAlias;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
+import org.h2.command.ddl.DropFunctionAlias;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
+import org.h2.command.ddl.SchemaCommand;
 import org.h2.command.dml.NoOperation;
 import org.h2.table.Column;
 import org.h2.value.DataType;
@@ -870,6 +875,31 @@ public class CommandProcessor {
                     }
                 }
             }
+            else if(cmdH2 instanceof GridSqlSchemaStatement){
+            	//add@byron broadcast native sql stmt to all node.
+            	GridSqlSchemaStatement nsql = (GridSqlSchemaStatement) cmdH2;             	
+            	SqlFieldsQueryEx qry = new SqlFieldsQueryEx(nsql.toString(),false);
+            	qry.setSkipReducerOnUpdate(true);
+            	
+            	isDdlOnSchemaSupported(nsql.schemaName());
+
+               if(nsql!=null) {
+            	   int ret = nsql.getCmd().update();    
+               }
+            	
+            	//nsql.getCmd().update();
+            	//idx.querySqlFields(nsql.schemaName(),qry, null, false, true, null);            	
+            	
+            	// it is update stmt.
+            	//idx.mapDistributedUpdate(nsql.schemaName(),qry, null, null, false);
+            	UpdateResult result = idx.executeUpdateOnDataNode(nsql.schemaName(),qry, null, null, false);
+            	
+            	
+            	log.debug(nsql.toString()+" execute result count " + result.counter());
+            	
+            	result.throwIfError();
+            	//end@
+            }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -1097,9 +1127,18 @@ public class CommandProcessor {
      */
     public static boolean isCommand(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
-            cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
+            cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn 
+            || isSchemaDdlStatement(cmd) //add@byron scheam op also is ddl
+            ;
     }
-
+    /**
+     * add@byron
+     * @param cmd Statement.
+     * @return Whether {@code cmd} is a schema DDL statement we're able to handle.
+     */
+    public static boolean isSchemaDdlStatement(Prepared cmd) {
+        return cmd instanceof CreateFunctionAlias || cmd instanceof DropFunctionAlias;
+    }
     /**
      * @param cmd Statement.
      * @return Whether {@code cmd} is a no-op.

@@ -536,6 +536,11 @@ public class H2Utils {
 
             obj = co.value(coCtx, false);
         }
+        //add@byron
+        if(obj.getClass().isArray()){
+        	type = Value.ARRAY;
+        }
+        //end@
 
         switch (type) {
             case Value.BOOLEAN:

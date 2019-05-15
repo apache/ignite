@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.H2TableEngine;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
@@ -275,7 +276,10 @@ public class FullTextLucene {
     	
     	 try {
     		IgniteH2Indexing idxing = (IgniteH2Indexing)ctx.query().getIndexing();
-			idxing.executeStatement("PUBLIC", sql);			
+    		
+    		/** Query executor. */
+    	    ConnectionManager connMgr = idxing.connections();
+    	    connMgr.executeStatement("PUBLIC", sql);			
 			
 		} catch (IgniteCheckedException e) {
 			// TODO Auto-generated catch block
