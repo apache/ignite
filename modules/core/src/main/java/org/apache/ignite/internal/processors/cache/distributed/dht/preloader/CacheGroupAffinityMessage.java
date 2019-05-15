@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
@@ -185,6 +184,7 @@ public class CacheGroupAffinityMessage implements Message {
     public static List<ClusterNode> toNodes(GridLongList assign, Map<Long, ClusterNode> nodesByOrder, DiscoCache discoCache) {
         List<ClusterNode> assign0 = new ArrayList<>(assign.size());
 
+        try {
         for (int n = 0; n < assign.size(); n++) {
             long order = assign.get(n);
 
@@ -194,6 +194,12 @@ public class CacheGroupAffinityMessage implements Message {
                 ", topVer=" + discoCache.version() + ']';
 
             assign0.add(affNode);
+        }
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+
+            throw e;
         }
 
         return assign0;
