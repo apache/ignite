@@ -1068,7 +1068,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * Reset counters for partition.
          */
-        void resetUpdateCounters();
+        void resetUpdateCounter();
 
         /**
          * Partition storage.

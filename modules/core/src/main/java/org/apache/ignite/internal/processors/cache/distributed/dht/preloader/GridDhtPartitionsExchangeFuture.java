@@ -4998,7 +4998,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * @param step Exponent coefficient.m
+     * @param step Exponent coefficient.
      * @param timeout Base timeout.
      * @return Time to wait before next debug dump.
      */
@@ -5022,13 +5022,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * If partition is clearing or already cleared we need full rebalance even if supplier is exists.
-     * (it still could be used for other demanders)
+     * (it still could be used by other demanders)
      *
      * @param grp Group.
      * @param part Partition.
      */
     public boolean isClearingPartition(CacheGroupContext grp, int part) {
-        if (grp.persistenceEnabled())
+        if (!grp.persistenceEnabled())
             return false;
 
         synchronized (mux) {

@@ -50,7 +50,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
         super.init(initUpdCntr, cntrUpdData);
 
-        log.info("[op=init" +
+        log.debug("[op=init" +
             ", grpId=" + grp.groupId() +
             ", grpName=" + grp.cacheOrGroupName() +
             ", caches=" + grp.caches() +
@@ -63,6 +63,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             ']');
     }
 
+    /** {@inheritDoc} */
     @Override public void updateInitial(long start, long delta) {
         SB sb = new SB();
 
@@ -76,7 +77,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             super.updateInitial(start, delta);
         }
         finally {
-            log.info(sb.a(", after=" + toString() +
+            log.debug(sb.a(", after=" + toString() +
                 ']').toString());
         }
     }
@@ -94,7 +95,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             return super.next();
         }
         finally {
-            log.info(sb.a(", after=" + toString() +
+            log.debug(sb.a(", after=" + toString() +
                 ']').toString());
         }
     }
@@ -113,7 +114,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             return super.next();
         }
         finally {
-            log.info(sb.a(", after=" + toString() +
+            log.debug(sb.a(", after=" + toString() +
                 ']').toString());
         }
     }
@@ -132,7 +133,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             super.update(val);
         }
         finally {
-            log.info(sb.a(", after=" + toString() +
+            log.debug(sb.a(", after=" + toString() +
                 ']').toString());
         }
     }
@@ -151,7 +152,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             return super.finalizeUpdateCounters();
         }
         finally {
-            log.info(sb.a(", after=" + toString() +
+            log.debug(sb.a(", after=" + toString() +
                 ']').toString());
         }
     }
@@ -170,7 +171,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             return super.reserve(delta);
         }
         finally {
-            log.info(sb.a(", after=" + toString() +
+            log.debug(sb.a(", after=" + toString() +
                 ']').toString());
         }
     }
@@ -191,7 +192,7 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             updated = super.update(start, delta);
         }
         finally {
-            log.info(sb.a(", after=" + toString() +
+            log.debug(sb.a(", after=" + toString() +
                 ']').toString());
         }
 

@@ -33,7 +33,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
     private final AtomicLong cntr = new AtomicLong();
 
     /**
-     * Initial counter points to last sequential update after WAL recovery.
+     * Initial counter is set to update with max sequence number after WAL recovery.
      */
     private long initCntr;
 
@@ -61,7 +61,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /** {@inheritDoc} */
     @SuppressWarnings("StatementWithEmptyBody")
-    @Override public void update(long val) throws IgniteCheckedException {
+    @Override public void update(long val) {
         long cur;
 
         while(val > (cur = cntr.get()) && !cntr.compareAndSet(cur, val));
@@ -83,13 +83,8 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
      * @param start Start.
      * @param delta Delta.
      */
-    @Override public void updateInitial(long start, long delta) {
-        try {
-            update(start + delta);
-        }
-        catch (IgniteCheckedException e) {
-            // Ignore.
-        }
+    @Override public synchronized void updateInitial(long start, long delta) {
+        update(start + delta);
 
         initCntr = get();
     }
@@ -145,7 +140,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /** {@inheritDoc} */
     @Override public synchronized boolean empty() {
-        return get() == 0 && sequential();
+        return get() == 0;
     }
 
     /** {@inheritDoc} */

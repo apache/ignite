@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 
 /**
+ * Provides a way to associate any {@link Storable} implementation as partition metadata.
  */
 public interface PartitionMetaStorage<T extends Storable> {
     /**
@@ -44,7 +45,7 @@ public interface PartitionMetaStorage<T extends Storable> {
     public void removeDataRowByLink(long link, IoStatisticsHolder statHolder) throws IgniteCheckedException;
 
     /**
-     * Save metadata to pagememory.
+     * Saves storage metadata.
      */
     public void saveMetadata() throws IgniteCheckedException;
 }

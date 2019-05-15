@@ -1439,10 +1439,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            pCntr = grp.mvccEnabled() ? new PartitionMvccTxUpdateCounterImpl() :
-                grp.hasAtomicCaches() ? new PartitionAtomicUpdateCounterImpl() :
-                    ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
-                        new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
+            if (grp.mvccEnabled())
+                pCntr = new PartitionMvccTxUpdateCounterImpl();
+            else if (grp.hasAtomicCaches())
+                pCntr = new PartitionAtomicUpdateCounterImpl();
+            else {
+                pCntr = ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
+                    new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
+            }
         }
 
         /**
@@ -1583,10 +1587,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 pCntr.update(val);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Partition counter inconsistency is detected and new counter value will be ignored. " +
-                    "Most probably a node with most actual data is out of topology or data streamer is used in isolated " +
-                    "mode (allowOverride=true) concurrently with normal cache operations [rebCntr=" + val +
-                    ", locCntr=" + pCntr + ']');
+                U.error(log, "Failed to update partition counter. " +
+                    "Most probably a node with most actual data is out of topology or data streamer is used " +
+                    "in preload mode (allowOverride=false) concurrently with cache transactions [grpName=" +
+                    grp.name() + ", partId=" + partId + ']', e);
 
                 if (failNodeOnPartitionInconsistency)
                     ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
@@ -2942,10 +2946,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param size Size to init.
          * @param updCntr Update counter.
          * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.
-         * @param gaps Gaps.
+         * @param cntrUpdData Counter updates.
          */
-        public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] gaps) {
-            pCntr.init(updCntr, gaps);
+        public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] cntrUpdData) {
+            pCntr.init(updCntr, cntrUpdData);
 
             storageSize.set(size);
 
@@ -2965,10 +2969,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             // No-op.
         }
 
-        @Override public void resetUpdateCounters() {
+        /** {@inheritDoc} */
+        @Override public void resetUpdateCounter() {
             pCntr.reset();
         }
 
+        /** {@inheritDoc} */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
         }
