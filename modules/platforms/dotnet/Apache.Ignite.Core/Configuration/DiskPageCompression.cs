@@ -15,20 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.impl;
+namespace Apache.Ignite.Core.Configuration
+{
+    /// <summary>
+    /// Disk page compression options.
+    /// </summary>
+    public enum DiskPageCompression
+    {
+        /// <summary>
+        /// Compression disabled.
+        /// </summary>
+        Disabled,
 
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.plugin.PluginConfiguration;
+        /// <summary>
+        /// Retain only useful data from half-filled pages, but do not apply any compression.
+        /// </summary>
+        SkipGarbage,
 
-/**
- * Grid security configuration for tests.
- */
-@FunctionalInterface
-public interface TestSecurityPluginConfiguration extends PluginConfiguration {
-    /**
-     * @param ctx GridKernalContext.
-     * @return GridSecurityProcessor.
-     */
-    public GridSecurityProcessor build(GridKernalContext ctx);
+        /// <summary>
+        /// Zstd compression.
+        /// </summary>
+        Zstd,
+
+        /// <summary>
+        /// Lz4 compression.
+        /// </summary>
+        Lz4,
+
+        /// <summary>
+        /// Snappy compression.
+        /// </summary>
+        Snappy
+    }
 }

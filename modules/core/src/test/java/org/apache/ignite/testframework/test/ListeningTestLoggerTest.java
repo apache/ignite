@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.test;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -171,7 +172,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info("Ignored message.");
         log.info("Target message.");
 
-        assertThrowsWithCause(lsnr::check, AssertionError.class);
+        assertThrowsWithCause((Callable<Object>)lsnr::check, AssertionError.class);
 
         // Check custom exception.
         LogListener lsnr2 = LogListener.matches(msg -> {
@@ -183,7 +184,7 @@ public class ListeningTestLoggerTest extends GridCommonAbstractTest {
         log.info("1");
         log.info("2");
 
-        assertThrowsWithCause(lsnr2::check, IllegalStateException.class);
+        assertThrowsWithCause((Callable<Object>)lsnr2::check, IllegalStateException.class);
     }
 
     /**

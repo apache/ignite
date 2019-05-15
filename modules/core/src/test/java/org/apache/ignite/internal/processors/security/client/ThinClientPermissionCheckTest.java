@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -98,7 +99,7 @@ public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
 
         return getConfiguration(
             instanceName,
-            secPluginCfg("srv_" + instanceName, null, ALLOW_ALL, clientData)
+            new TestSecurityPluginProvider("srv_" + instanceName, null, ALLOW_ALL, clientData)
         ).setCacheConfiguration(
             new CacheConfiguration().setName(CACHE),
             new CacheConfiguration().setName(FORBIDDEN_CACHE)

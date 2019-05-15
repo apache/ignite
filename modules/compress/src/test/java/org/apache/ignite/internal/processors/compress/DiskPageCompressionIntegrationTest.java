@@ -19,21 +19,17 @@ package org.apache.ignite.internal.processors.compress;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -47,45 +43,17 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
-import static org.apache.ignite.configuration.DiskPageCompression.LZ4;
-import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
-import static org.apache.ignite.configuration.DiskPageCompression.SNAPPY;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_DEFAULT_LEVEL;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MAX_LEVEL;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MIN_LEVEL;
 
 /**
  *
  */
-public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
-    /** */
-    private DiskPageCompression compression;
-
-    /** */
-    private Integer compressionLevel;
-
+public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionIntegrationTest {
     /** */
     private FileIOFactory factory;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        compression = null;
-        compressionLevel = null;
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids(true);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteName) throws Exception {
@@ -113,90 +81,8 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testPageCompression_Zstd_Max() throws Exception {
-        compression = ZSTD;
-        compressionLevel = ZSTD_MAX_LEVEL;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPageCompression_Zstd_Default() throws Exception {
-        compression = ZSTD;
-        compressionLevel = null;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPageCompression_Zstd_Min() throws Exception {
-        compression = ZSTD;
-        compressionLevel = ZSTD_MIN_LEVEL;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPageCompression_Lz4_Max() throws Exception {
-        compression = LZ4;
-        compressionLevel = LZ4_MAX_LEVEL;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPageCompression_Lz4_Default() throws Exception {
-        compression = LZ4;
-        compressionLevel = null;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPageCompression_Lz4_Min() throws Exception {
-        assertEquals(LZ4_MIN_LEVEL, LZ4_DEFAULT_LEVEL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPageCompression_SkipGarbage() throws Exception {
-        compression = SKIP_GARBAGE;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testPageCompression_Snappy() throws Exception {
-        compression = SNAPPY;
-
-        doTestPageCompression();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void doTestPageCompression() throws Exception {
+    @Override
+    protected void doTestPageCompression() throws Exception {
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -339,57 +225,6 @@ public class DiskPageCompressionIntegrationTest extends GridCommonAbstractTest {
             f = ((PunchFileIOFactory)f).delegate;
 
         assertSame(factory, f);
-    }
-
-    /**
-     */
-    static class TestVal implements Serializable {
-        /** */
-        static final long serialVersionUID = 1L;
-
-        /** */
-        @QuerySqlField
-        String str;
-
-        /** */
-        int i;
-
-        /** */
-        @QuerySqlField
-        long x;
-
-        /** */
-        @QuerySqlField
-        UUID id;
-
-        TestVal(int i) {
-            this.str =  i + "bla bla bla!";
-            this.i = -i;
-            this.x = 0xffaabbccdd773311L + i;
-            this.id = new UUID(i,-i);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            TestVal testVal = (TestVal)o;
-
-            if (i != testVal.i) return false;
-            if (x != testVal.x) return false;
-            if (str != null ? !str.equals(testVal.str) : testVal.str != null) return false;
-            return id != null ? id.equals(testVal.id) : testVal.id == null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int result = str != null ? str.hashCode() : 0;
-            result = 31 * result + i;
-            result = 31 * result + (int)(x ^ (x >>> 32));
-            result = 31 * result + (id != null ? id.hashCode() : 0);
-            return result;
-        }
     }
 
     /**

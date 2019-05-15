@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.security;
 
-import java.util.Arrays;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -47,10 +44,10 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /**
      * @param instanceName Instance name.
-     * @param secCfg Security plugin configuration.
+     * @param pluginProv Security plugin provider.
      */
     protected IgniteConfiguration getConfiguration(String instanceName,
-        TestSecurityPluginConfiguration secCfg) throws Exception {
+        AbstractTestSecurityPluginProvider pluginProv) throws Exception {
 
         return getConfiguration(instanceName)
             .setDataStorageConfiguration(
@@ -60,20 +57,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
                     )
             )
             .setAuthenticationEnabled(true)
-            .setPluginConfigurations(secCfg);
-    }
-
-    /**
-     * @param login Login.
-     * @param pwd Password.
-     * @param prmSet Security permission set.
-     * @return Security plaugin configuration.
-     */
-    protected TestSecurityPluginConfiguration secPluginCfg(String login, String pwd, SecurityPermissionSet prmSet,
-        TestSecurityData... clientData) {
-        return ctx -> new TestSecurityProcessor(ctx,
-            new TestSecurityData(login, pwd, prmSet),
-            Arrays.asList(clientData));
+            .setPluginProviders(pluginProv);
     }
 
     /** */
@@ -92,6 +76,7 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
      * @param isClient Is client.
      */
     protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
-        return startGrid(getConfiguration(login, secPluginCfg(login, "", prmSet)).setClientMode(isClient));
+        return startGrid(getConfiguration(login, new TestSecurityPluginProvider(login, "", prmSet))
+                .setClientMode(isClient));
     }
 }

@@ -140,7 +140,7 @@ public class RecordV1Serializer implements RecordSerializer {
             if (recType == null)
                 throw new IOException("Unknown record type: " + recType);
 
-            final WALRecord rec = dataSerializer.readRecord(recType, in);
+            final WALRecord rec = dataSerializer.readRecord(recType, in, 0);
 
             rec.position(ptr);
 
