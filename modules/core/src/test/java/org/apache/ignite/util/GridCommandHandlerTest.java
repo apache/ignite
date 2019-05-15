@@ -69,11 +69,10 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.commandline.Command;
-import org.apache.ignite.internal.commandline.CommandArgFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -128,7 +127,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
-import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -1326,12 +1325,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         String output = testOut.toString();
 
-        for (CacheCommand cmd : CacheCommand.values()) {
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
             if (cmd != HELP) {
                 assertTrue(cmd.text(), output.contains(cmd.toString()));
 
-                for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                    assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+                Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
+
+                if (args != null)
+                    for (Enum<? extends CommandArg> arg : args.getEnumConstants())
+                        assertTrue(cmd + " " + arg, output.contains(arg.toString()));
 
             }
         }
@@ -1343,9 +1345,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
-        for (CacheCommand cmd : CacheCommand.values()) {
-            for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
+            Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
+
+            if(args != null)
+                for (Enum<? extends CommandArg> arg : args.getEnumConstants())
+                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -1357,7 +1362,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--help"));
 
-        for (Command cmd : Command.values())
+        for (CommandList cmd : CommandList.values())
             assertTrue(cmd.text(), testOut.toString().contains(cmd.toString()));
     }
 
@@ -1679,7 +1684,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         int exitCode = execute(args);
 
-        assertEquals(exitOk, EXIT_CODE_OK == exitCode);
+        assertEquals(testOut.toString(), exitOk, EXIT_CODE_OK == exitCode);
 
         if (exitCode == EXIT_CODE_OK) {
             Matcher fileNameMatcher = dumpFileNameMatcher();
@@ -2156,7 +2161,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("There are no caches matching given filter options."));
+            assertTrue(dumpWithConflicts, dumpWithConflicts.contains("There are no caches matching given filter options."));
         }
         else
             fail("Should be found dump with conflicts");
@@ -2202,8 +2207,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertTrue(dumpWithConflicts.contains("idle_verify check has finished, found 32 partitions"));
-            assertTrue(dumpWithConflicts.contains("default_third"));
+            assertTrue(dumpWithConflicts, dumpWithConflicts.contains("idle_verify check has finished, found 32 partitions"));
+            assertTrue(dumpWithConflicts, dumpWithConflicts.contains("default_third"));
             assertTrue(!dumpWithConflicts.contains("shared_grp"));
         }
         else
