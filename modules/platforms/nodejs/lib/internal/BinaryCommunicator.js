@@ -50,7 +50,7 @@ class BinaryCommunicator {
             buffer.writeString(value);
         }
     }
-    
+
     async send(opCode, payloadWriter, payloadReader = null) {
         await this._socket.send(opCode, payloadWriter, payloadReader);
     }
@@ -217,7 +217,7 @@ class BinaryCommunicator {
     }
 
     _readUUID(buffer) {
-        return [...buffer.readBuffer(BinaryUtils.getSize(BinaryUtils.TYPE_CODE.UUID))];
+        return [...buffer.readBuffer(BinaryUtils.getSize(BinaryUtils.TYPE_CODE.UUID)).swap64()];
     }
 
     async _readEnum(buffer) {
@@ -313,7 +313,7 @@ class BinaryCommunicator {
     }
 
     _writeUUID(buffer, value) {
-        buffer.writeBuffer(Buffer.from(value));
+        buffer.writeBuffer(Buffer.from(value).swap64());
     }
 
     async _writeEnum(buffer, enumValue) {

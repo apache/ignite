@@ -114,7 +114,7 @@ class MessageBuffer {
                         this._buffer.writeInt8(value, this._position);
                     }
                     else {
-                        this._buffer.writeUInt8(value, this._position);   
+                        this._buffer.writeUInt8(value, this._position);
                     }
                     break;
                 case BinaryUtils.TYPE_CODE.SHORT:
@@ -122,7 +122,7 @@ class MessageBuffer {
                         this._buffer.writeInt16LE(value, this._position);
                     }
                     else {
-                        this._buffer.writeUInt16LE(value, this._position);   
+                        this._buffer.writeUInt16LE(value, this._position);
                     }
                     break;
                 case BinaryUtils.TYPE_CODE.INTEGER:
@@ -130,7 +130,7 @@ class MessageBuffer {
                         this._buffer.writeInt32LE(value, this._position);
                     }
                     else {
-                        this._buffer.writeUInt32LE(value, this._position);   
+                        this._buffer.writeUInt32LE(value, this._position);
                     }
                     break;
                 case BinaryUtils.TYPE_CODE.FLOAT:
@@ -259,7 +259,7 @@ class MessageBuffer {
         if (end === undefined) {
             end = buffer.length;
         }
-        const size = end - start; 
+        const size = end - start;
         this._ensureCapacity(size);
         buffer.copy(this._buffer, this._position, start, end);
         this._position += size;

@@ -28,7 +28,7 @@ const Errors = require('./Errors');
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
- * See Apache Ignite documentation for details of every configuration setting. 
+ * See Apache Ignite documentation for details of every configuration setting.
  */
 class CacheKeyConfiguration {
 
@@ -111,7 +111,7 @@ class CacheKeyConfiguration {
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
- * See Apache Ignite documentation for details of every configuration setting. 
+ * See Apache Ignite documentation for details of every configuration setting.
  */
 class QueryEntity {
 
@@ -237,7 +237,7 @@ class QueryEntity {
     }
 
     /**
-     * 
+     *
      *
      * @param {Array<QueryField>} fields
      *
@@ -249,7 +249,7 @@ class QueryEntity {
     }
 
     /**
-     * 
+     *
      *
      * @return {Array<QueryField>}
      */
@@ -258,7 +258,7 @@ class QueryEntity {
     }
 
     /**
-     * 
+     *
      *
      * @param {Map<string, string>} aliases
      *
@@ -270,7 +270,7 @@ class QueryEntity {
     }
 
     /**
-     * 
+     *
      *
      * @return {Map<string, string>}
      */
@@ -279,7 +279,7 @@ class QueryEntity {
     }
 
     /**
-     * 
+     *
      *
      * @param {Array<QueryIndex>} indexes
      *
@@ -291,7 +291,7 @@ class QueryEntity {
     }
 
     /**
-     * 
+     *
      *
      * @return {Array<QueryIndex>}
      */
@@ -393,7 +393,7 @@ class QueryEntity {
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
- * See Apache Ignite documentation for details of every configuration setting. 
+ * See Apache Ignite documentation for details of every configuration setting.
  */
 class QueryField {
 
@@ -647,10 +647,10 @@ class QueryField {
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
- * See Apache Ignite documentation for details of every configuration setting. 
+ * See Apache Ignite documentation for details of every configuration setting.
  */
 class QueryIndex {
-    
+
     /**
      * Public constructor.
      *
@@ -737,7 +737,7 @@ class QueryIndex {
     }
 
     /**
-     * 
+     *
      *
      * @param {Map<string, boolean>} fields
      *
@@ -749,7 +749,7 @@ class QueryIndex {
     }
 
     /**
-     * 
+     *
      *
      * @return {Map<string, boolean>}
      */
@@ -942,7 +942,7 @@ const WRITE_SYNCHRONIZATION_MODE = Object.freeze({
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
- * See Apache Ignite documentation for details of every configuration setting. 
+ * See Apache Ignite documentation for details of every configuration setting.
  */
 class CacheConfiguration {
 
@@ -1558,7 +1558,7 @@ class CacheConfiguration {
     }
 
     /**
-     * 
+     *
      *
      * @param {...CacheKeyConfiguration} keyConfigurations
      *
@@ -1573,7 +1573,7 @@ class CacheConfiguration {
     }
 
     /**
-     * 
+     *
      *
      * @return {Array<CacheKeyConfiguration>}
      */
@@ -1582,7 +1582,7 @@ class CacheConfiguration {
     }
 
     /**
-     * 
+     *
      *
      * @param {...QueryEntity} queryEntities
      *
@@ -1597,7 +1597,7 @@ class CacheConfiguration {
     }
 
     /**
-     * 
+     *
      *
      * @return {Array<QueryEntity>}
      */

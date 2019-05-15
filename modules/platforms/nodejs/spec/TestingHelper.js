@@ -61,7 +61,7 @@ const decimalValueModificator = (data) => { return data.add(12345); };
 const timestampValueModificator = (data) => { return new Timestamp(new Date(data.getTime() + 12345), data.getNanos() + 123); };
 
 const primitiveValues = {
-    [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
+    [ObjectType.PRIMITIVE_TYPE.BYTE] : {
         values : [-128, 0, 127],
         isMapKey : true,
         modificator : numericValueModificator
@@ -384,7 +384,7 @@ class TestingHelper {
             }
             return true;
         }
-    }    
+    }
 }
 
 module.exports = TestingHelper;
