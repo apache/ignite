@@ -63,17 +63,15 @@
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
         <module>modules/jta</module>
-        <module>modules/aws</module>
+     
         <module>modules/log4j</module>
         <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-        <module>modules/gce</module>
-        <module>modules/cloud</module>
-        <module>modules/mesos</module>
+        
         <module>modules/kafka</module>
-        <module>modules/flume</module>
+      
         <module>modules/yarn</module>
         <module>modules/jms11</module>
         <module>modules/twitter</module>
@@ -87,17 +85,18 @@
         <module>modules/osgi</module>
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>
-        <module>modules/cassandra</module>
-        <module>modules/flink</module>
-        <module>modules/kubernetes</module>
+        
+        
+        
         <module>modules/zeromq</module>
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
-        <module>modules/ml/spark-model-parser</module>
+       
         <module>modules/ml/xgboost-model-parser</module>
-        <module>modules/ml/tensorflow-model-parser</module>
-        <module>modules/tensorflow</module>
+        
+        <module>modules/elasticsearch-relay</module>
+        
     </modules>
 
     <profiles>
@@ -121,6 +120,7 @@
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
                 <module>modules/ml/mleap-model-parser</module>
+                <module>modules/ml/spark-model-parser</module>
                 <module>modules/scalar-2.10</module>
                 <module>modules/scalar</module>
                 <module>modules/spark</module>
@@ -129,11 +129,27 @@
                 <module>modules/visor-plugins</module>
             </modules>
         </profile>
+        
+        <profile>
+            <id>all-cloud</id><!-- used to update project versions and check all modules compilation -->
+            <modules><!-- sorted alphabetically -->
+                <module>modules/gce</module>
+		        <module>modules/cloud</module>
+		        <module>modules/mesos</module> 
+		        <module>modules/flume</module>
+		        <module>modules/aws</module> 
+		        <module>modules/flink</module>
+		        <module>modules/kubernetes</module>
+		        <module>modules/cassandra</module>
+            </modules>
+        </profile>
 
         <profile>
             <id>all-other</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
                 <module>modules/web-console</module>
+                <module>modules/ml/tensorflow-model-parser</module>
+        		<module>modules/tensorflow</module>
             </modules>
         </profile>
 
@@ -555,8 +571,7 @@
             </activation>
 
             <modules>
-                <module>modules/scalar-2.10</module>
-                <module>modules/visor-console-2.10</module>
+                <module>modules/scalar-2.10</module>                
                 <module>modules/visor-plugins</module>
             </modules>
         </profile>

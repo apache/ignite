@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE web-app 
+    PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" 
+    "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+<web-app>
+
+    <display-name>Elasticsearch Relay</display-name>
+    <description>
+      Relays queries to Elasticsearch and handles authentication and filtering.
+    </description>
+
+
+<!-- 
+	<filter>
+	  <filter-name>CorsFilter</filter-name>
+	  <filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
+	  <init-param>
+	    <param-name>cors.allowed.methods</param-name>
+	    <param-value>GET,POST,HEAD,OPTIONS,PUT,DELETE</param-value>
+	  </init-param>
+	</filter>
+	<filter-mapping>
+	  <filter-name>CorsFilter</filter-name>
+	  <url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<listener>
+	  <listener-class>
+	    org.jasig.cas.client.session.SingleSignOutHttpSessionListener
+	  </listener-class>
+	</listener>
+	
+	<filter>
+	  <filter-name>CAS Single Sign Out Filter</filter-name>
+	  <filter-class>
+	    org.jasig.cas.client.session.SingleSignOutFilter
+	  </filter-class>
+	</filter>
+
+
+  <filter>
+    <filter-name>CASAuthenticationFilter</filter-name>
+    <filter-class>org.jasig.cas.client.authentication.AuthenticationFilter</filter-class>
+    <init-param>
+      <param-name>casServerLoginUrl</param-name>
+      <param-value>https://127.0.0.1:8443/cas/login</param-value>
+    </init-param>
+    <init-param>
+        <param-name>serverName</param-name>
+        <param-value>http://127.0.0.1:8080</param-value>
+    </init-param> 
+  </filter>
+
+  <filter>
+    <filter-name>CAS Validation Filter</filter-name>
+    <filter-class>org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter</filter-class>
+    <init-param>
+      <param-name>casServerUrlPrefix</param-name>
+      <param-value>https://127.0.0.1:8443/cas/</param-value>
+    </init-param>
+    <init-param>
+      <param-name>serverName</param-name>
+      <param-value>http://127.0.0.1:8080</param-value>
+    </init-param>
+    <init-param>
+      <param-name>redirectAfterValidation</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </filter>
+
+  <filter>
+      <filter-name>CAS HttpServletRequest Wrapper Filter</filter-name>
+      <filter-class>org.jasig.cas.client.util.HttpServletRequestWrapperFilter</filter-class>
+  </filter>
+ 
+  <filter-mapping>
+    <filter-name>CAS Single Sign Out Filter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+
+  <filter-mapping>
+    <filter-name>CASAuthenticationFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <filter-mapping>
+    <filter-name>CAS Validation Filter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <filter-mapping>
+    <filter-name>CAS HttpServletRequest Wrapper Filter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+-->
+
+
+    <servlet>
+      <servlet-name>relay</servlet-name>
+      <servlet-class>org.elasticsearch.relay.ESRelay</servlet-class>
+      <load-on-startup>5</load-on-startup>
+    </servlet>
+
+    <servlet-mapping>
+      <servlet-name>relay</servlet-name>
+      <url-pattern>/*</url-pattern>
+    </servlet-mapping>
+
+</web-app>
