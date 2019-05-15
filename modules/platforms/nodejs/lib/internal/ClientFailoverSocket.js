@@ -60,7 +60,7 @@ class ClientFailoverSocket {
     }
 
     async _onSocketDisconnect(error = null) {
-        this._changeState(IgniteClient.STATE.CONNECTING, null, error);        
+        this._changeState(IgniteClient.STATE.CONNECTING, null, error);
         this._socket = null;
         this._endpointIndex++;
         try {
