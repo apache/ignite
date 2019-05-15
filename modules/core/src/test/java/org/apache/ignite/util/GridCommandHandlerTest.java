@@ -62,11 +62,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.commandline.Command;
-import org.apache.ignite.internal.commandline.CommandArgFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.CommandList;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -115,9 +114,10 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
-import static org.apache.ignite.internal.commandline.cache.CacheCommand.HELP;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -909,7 +909,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
             Collection<IgniteInternalTx> txs = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
 
-            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     for (IgniteInternalTx tx : txs)
                         if (!tx.local()) {
@@ -1018,12 +1018,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         String output = testOut.toString();
 
-        for (CacheCommand cmd : CacheCommand.values()) {
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
             if (cmd != HELP) {
                 assertContains(log, output, cmd.toString());
 
-                for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                    assertContains(log, output, arg.toString());
+                Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
+
+                if (args != null)
+                    for (Enum<? extends CommandArg> arg : args.getEnumConstants())
+                        assertTrue(cmd + " " + arg, output.contains(arg.toString()));
+
             }
         }
     }
@@ -1033,9 +1037,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
-        for(CacheCommand cmd : CacheCommand.values()) {
-            for (CommandArg arg : CommandArgFactory.getArgs(cmd))
-                assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
+        for (CacheSubcommands cmd : CacheSubcommands.values()) {
+            Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
+
+            if(args != null)
+                for (Enum<? extends CommandArg> arg : args.getEnumConstants())
+                    assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
     }
 
@@ -1048,8 +1055,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         String testOutStr = testOut.toString();
 
-        for (Command cmd : Command.values())
-            assertContains(log, testOutStr, cmd.text());
+        for (CommandList cmd : CommandList.values())
+            assertContains(log, testOutStr, cmd.toString());
     }
 
     /**
@@ -1283,13 +1290,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found",
+            "idle_verify check has finished, found 100 partitions",
             "idle_verify task was executed with the following args: --cache-filter SYSTEM --exclude-caches wrong.* ",
             "--cache", "idle_verify", "--dump", "--cache-filter", "SYSTEM", "--exclude-caches", "wrong.*"
         );
         testCacheIdleVerifyMultipleCacheFilterOptionsCommon(
             true,
-            "idle_verify check has finished, found",
+            "idle_verify check has finished, found 196 partitions",
             null,
             "--cache", "idle_verify", "--dump", "--exclude-caches", "wrong.*"
         );
@@ -1418,7 +1425,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         int exitCode = execute(args);
 
-        assertEquals(exitOk, EXIT_CODE_OK == exitCode);
+        assertEquals(testOut.toString(), exitOk, EXIT_CODE_OK == exitCode);
 
         if (exitCode == EXIT_CODE_OK) {
             Matcher fileNameMatcher = dumpFileNameMatcher();
@@ -1632,7 +1639,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     private void corruptPartition(File partitionsDir) throws IOException {
         ThreadLocalRandom rand = ThreadLocalRandom.current();
 
-        for(File partFile : partitionsDir.listFiles((d, n) -> n.startsWith("part"))) {
+        for (File partFile : partitionsDir.listFiles((d, n) -> n.startsWith("part"))) {
             try (RandomAccessFile raf = new RandomAccessFile(partFile, "rw")) {
                 byte[] buf = new byte[1024];
 

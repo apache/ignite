@@ -17,72 +17,78 @@
 
 package org.apache.ignite.internal.commandline.cache;
 
+import org.apache.ignite.internal.commandline.Command;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public enum CacheCommand {
+public enum CacheCommandList {
     /**
      * Prints out help for the cache command.
      */
-    HELP("help"),
+    HELP("help", null),
 
     /**
      * Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster.
      */
-    IDLE_VERIFY("idle_verify"),
+    IDLE_VERIFY("idle_verify", new IdleVerify()),
 
     /**
      * Prints info regarding caches, groups or sequences.
      */
-    LIST("list"),
+    LIST("list", new CacheViewer()),
 
     /**
      * Validates indexes attempting to read each indexed entry.
      */
-    VALIDATE_INDEXES("validate_indexes"),
+    VALIDATE_INDEXES("validate_indexes", new CacheValidateIndexes()),
 
     /**
      * Prints info about contended keys (the keys concurrently locked from multiple transactions).
      */
-    CONTENTION("contention"),
+    CONTENTION("contention", new CacheContention()),
 
     /**
      * Collect information on the distribution of partitions.
      */
-    DISTRIBUTION("distribution"),
+    DISTRIBUTION("distribution", new CacheDistribution()),
 
     /**
      * Reset lost partitions
      */
-    RESET_LOST_PARTITIONS("reset_lost_partitions"),
+    RESET_LOST_PARTITIONS("reset_lost_partitions", new ResetLostPartitions()),
 
     /**
      * Find and remove garbage.
      */
-    FIND_AND_DELETE_GARBAGE("find_garbage");
+    FIND_AND_DELETE_GARBAGE("find_garbage", new FindAndDeleteGarbage());
 
 
     /** Enumerated values. */
-    private static final CacheCommand[] VALS = values();
+    private static final CacheCommandList[] VALS = values();
 
     /** Name. */
     private final String name;
 
+    /** */
+    private final Command command;
+
     /**
      * @param name Name.
+     * @param command Command implementation.
      */
-    CacheCommand(String name) {
+    CacheCommandList(String name, Command command) {
         this.name = name;
+        this.command = command;
     }
 
     /**
      * @param text Command text.
      * @return Command for the text.
      */
-    public static CacheCommand of(String text) {
-        for (CacheCommand cmd : CacheCommand.values()) {
+    public static CacheCommandList of(String text) {
+        for (CacheCommandList cmd : CacheCommandList.values()) {
             if (cmd.text().equalsIgnoreCase(text))
                 return cmd;
         }
@@ -98,12 +104,19 @@ public enum CacheCommand {
     }
 
     /**
+     * @return Cache subcommand implementation.
+     */
+    public Command subcommand() {
+        return command;
+    }
+
+    /**
      * Efficiently gets enumerated value from its ordinal.
      *
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static CacheCommand fromOrdinal(int ord) {
+    @Nullable public static CacheCommandList fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 
