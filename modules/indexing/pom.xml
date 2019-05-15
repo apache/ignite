@@ -83,7 +83,7 @@
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency>
+        </dependency> 
 
         <dependency>
             <groupId>com.thoughtworks.xstream</groupId>
@@ -135,6 +135,7 @@
 
     <build>
         <plugins>
+      
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -146,7 +147,7 @@
                     </execution>
                 </executions>
             </plugin>
-
+ 		
             <!-- Generate the OSGi MANIFEST.MF for this bundle.
                  This bundle is a fragment attached to the ignite-core bundle, as it contains and exports classes in
                  the org.apache.ignite.internal.processors.query.h2.opt in the same manner as ignite-geospatial, thus
