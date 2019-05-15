@@ -81,6 +81,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
         assertGaussianModel(model.getGaussianModel());
     }
 
+    /** */
     private void assertDiscreteModel(DiscreteNaiveBayesModel model) {
         double[][][] expectedPriorProbabilites = new double[][][]{
                 {
@@ -104,6 +105,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
         assertArrayEquals(new double[] {.5, .5}, model.getClsProbabilities(), PRECISION);
     }
 
+    /** */
     private void assertGaussianModel(GaussianNaiveBayesModel model) {
         double[] priorProbabilities = new double[]{.5, .5};
 
