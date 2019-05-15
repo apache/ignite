@@ -29,8 +29,8 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     @Before
     public void createTrainer() {
         trainer = new CompoundNaiveBayesTrainer()
-                .setLabels(new double[]{LABEL_1, LABEL_2})
-                .setClsProbabilities(new double[]{.5, .5})
+                .setLabels(labels)
+                .setClsProbabilities(classProbabilities)
                 .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer().setSkipFeature(f -> f > 2))
                 .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
                         .setBucketThresholds(binarizedDataThresholds)
