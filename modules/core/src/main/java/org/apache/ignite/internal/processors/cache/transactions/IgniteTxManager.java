@@ -2226,12 +2226,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (nearFut != null) {
                         Set<IgniteTxKey> nearRequestedKeys = nearFut.requestedKeys();
 
-                        if (nearRequestedKeys != null) {
-                            if (requestedKeys == null)
-                                requestedKeys = nearRequestedKeys;
-                            else
-                                requestedKeys = nearRequestedKeys;
-                        }
+                        if (nearRequestedKeys != null)
+                            requestedKeys = nearRequestedKeys;
                     }
                 }
                 else {
