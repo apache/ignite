@@ -20,13 +20,10 @@ package org.apache.ignite.ml.naivebayes.compound;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
-import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesSumsHolder;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import static org.apache.ignite.ml.naivebayes.compound.Data.*;
 import static org.junit.Assert.assertEquals;
 
 /** Tests for {@link CompoundNaiveBayesModel} */
@@ -34,58 +31,6 @@ public class CompoundNaiveBayesModelTest {
 
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
-
-    /** The first label*/
-    private static final double LABEL_1 = 1.;
-
-    /** The second label*/
-    private static final double LABEL_2 = 2.;
-
-    private static final double[] labels = {LABEL_1, LABEL_2};
-
-    /** */
-    private static final Map<Integer, double[]> data = new HashMap<>();
-    /** */
-    private static double[][] means;
-    /** */
-    private static double[][] variances;
-    /** */
-    private static double[] classProbabilities;
-    /** */
-    private static  double[][] thresholds;
-    /** */
-    private static double[][][] probabilities;
-
-    static {
-        data.put(0, new double[] {6,    180, 12, 0, 0, 1, 1, 1, LABEL_1});
-        data.put(1, new double[] {5.92, 190, 11, 1, 0, 1, 1, 0, LABEL_1});
-        data.put(2, new double[] {5.58, 170, 12, 1, 1, 0, 0, 1, LABEL_1});
-        data.put(3, new double[] {5.92, 165, 10, 1, 1, 0, 0, 0, LABEL_1});
-
-        data.put(4, new double[] {5,    100,  6, 1, 0, 0, 1, 1, LABEL_2});
-        data.put(5, new double[] {5.5,  150,  8, 1, 1, 0, 0, 1, LABEL_2});
-        data.put(6, new double[] {5.42, 130,  7, 1, 1, 1, 1, 0, LABEL_2});
-        data.put(7, new double[] {5.75, 150,  9, 1, 1, 0, 1, 0, LABEL_2});
-
-        classProbabilities = new double[] {.5, .5};
-
-        means = new double[][] {
-                {5.855, 176.25, 11.25},
-                {5.4175, 132.5, 7.5},
-        };
-
-        variances = new double[][] {
-                {3.5033E-2, 1.2292E2, 9.1667E-1},
-                {9.7225E-2, 5.5833E2, 1.6667},
-        };
-
-        thresholds = new double[][] { {.5}, {.5}, {.5}, {.5}, {.5}};
-
-        probabilities = new double[][][] {
-                {{.25, .75}, {.25, .75}, {.5, .5}, {.5, .5}, {.5, .5}},
-                {{0, 1}, {.25, .75}, {.75, .25}, {.25, .75}, {.5, .5}}
-        };
-    }
 
     @Test /** */
     public void testPredictOnlyGauss() {
@@ -105,7 +50,7 @@ public class CompoundNaiveBayesModelTest {
     @Test /** */
     public void testPredictOnlyDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
-            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, thresholds, null);
+            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
 
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
@@ -120,7 +65,7 @@ public class CompoundNaiveBayesModelTest {
     @Test /** */
     public void testPredictGausAndDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
-                new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, thresholds, null);
+                new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
 
         GaussianNaiveBayesModel gaussianModel =
             new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
