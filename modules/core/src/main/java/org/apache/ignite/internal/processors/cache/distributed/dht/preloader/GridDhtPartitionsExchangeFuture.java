@@ -4958,7 +4958,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param part Partition.
      */
     public boolean isClearingPartition(CacheGroupContext grp, int part) {
-        if (grp.persistenceEnabled())
+        if (!grp.persistenceEnabled())
             return false;
 
         synchronized (mux) {
