@@ -45,16 +45,15 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash recovery.
  */
 public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    private static final String CACHE = "cache";
-
     /** Partitions count. */
     private static final int PARTS_CNT = 32;
 
@@ -81,7 +80,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dsCfg);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE)
+        CacheConfiguration ccfg = defaultCacheConfiguration()
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
@@ -89,6 +88,20 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -119,7 +132,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     private void loadData(IgniteEx ignite, int keysCnt, int multiplier) {
         log.info("Load data: keys=" + keysCnt);
 
-        try (IgniteDataStreamer streamer = ignite.dataStreamer(CACHE)) {
+        try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             streamer.allowOverwrite(true);
 
             for (int k = 0; k < keysCnt; k++)
@@ -134,7 +147,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     private void checkData(IgniteEx ignite, int keysCnt, int multiplier) {
         log.info("Check data: " + ignite.name() + ", keys=" + keysCnt);
 
-        IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < keysCnt; k++)
             Assert.assertEquals("node = " + ignite.name() + ", key = " + k, (Integer) (k * multiplier), cache.get(k));
@@ -145,6 +158,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyAfterCheckpoint() throws Exception {
         IgniteEx crd = (IgniteEx) startGrids(2);
 
@@ -177,6 +191,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyAndRecreate() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -224,6 +239,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyCrashRecovery1() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -277,6 +293,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionFileDestroyCrashRecovery2() throws Exception {
         IgniteEx crd = startGrid(0);
 
@@ -338,6 +355,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDestroyWhenPartitionsAreEmpty() throws Exception {
         IgniteEx crd = (IgniteEx) startGrids(2);
 
@@ -346,7 +364,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         forceCheckpoint();
 
         // Evict arbitrary partition.
-        List<GridDhtLocalPartition> parts = crd.cachex(CACHE).context().topology().localPartitions();
+        List<GridDhtLocalPartition> parts = crd.cachex(DEFAULT_CACHE_NAME).context().topology().localPartitions();
         for (GridDhtLocalPartition part : parts)
             if (part.state() != GridDhtPartitionState.EVICTED) {
                 part.rent(false).get();
@@ -375,12 +393,12 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     private void checkPartitionFiles(IgniteEx ignite, boolean exists) throws IgniteCheckedException {
         int evicted = 0;
 
-        GridDhtPartitionTopology top = ignite.cachex(CACHE).context().topology();
+        GridDhtPartitionTopology top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
         for (int p = 0; p < PARTS_CNT; p++) {
             GridDhtLocalPartition part = top.localPartition(p);
 
-            File partFile = partitionFile(ignite, CACHE, p);
+            File partFile = partitionFile(ignite, DEFAULT_CACHE_NAME, p);
 
             if (exists) {
                 if (part != null && part.state() == GridDhtPartitionState.EVICTED)

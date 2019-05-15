@@ -62,7 +62,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -273,14 +275,23 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected ConsistentIdMapper consistentIdMapper;
 
     /** Mvcc tx update snapshot. */
+    @GridToStringInclude
     protected volatile MvccSnapshot mvccSnapshot;
+
+    /** {@code True} if tx should skip adding itself to completed version map on finish. */
+    private boolean skipCompletedVers;
 
     /** Rollback finish future. */
     @GridToStringExclude
     private volatile IgniteInternalFuture rollbackFut;
 
     /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
     private volatile TxCounters txCounters;
+
+    /** Transaction from which this transaction was copied by(if it was). */
+    private GridNearTxLocal parentTx;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -401,6 +412,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
+     * @param parentTx Transaction from which this transaction was copied by.
+     */
+    public void setParentTx(GridNearTxLocal parentTx) {
+        this.parentTx = parentTx;
+    }
+
+    /**
      * @return Mvcc info.
      */
     @Override @Nullable public MvccSnapshot mvccSnapshot() {
@@ -410,6 +428,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public void mvccSnapshot(MvccSnapshot mvccSnapshot) {
         this.mvccSnapshot = mvccSnapshot;
+    }
+
+    /**
+     * @return {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public boolean skipCompletedVersions() {
+        return skipCompletedVers;
+    }
+
+    /**
+     * @param skipCompletedVers {@code True} if tx should skip adding itself to completed version map on finish.
+     */
+    public void skipCompletedVersions(boolean skipCompletedVers) {
+        this.skipCompletedVers = skipCompletedVers;
     }
 
     /**
@@ -1039,6 +1071,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return state(state, false);
     }
 
+    /**
+     * Changing state for this transaction as well as chained(parent) transactions.
+     *
+     * @param state Transaction state.
+     * @return {@code True} if transition was valid, {@code false} otherwise.
+     */
+    public boolean chainState(TransactionState state) {
+        if (parentTx != null)
+            parentTx.state(state);
+
+        return state(state);
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
         GridFutureAdapter<IgniteInternalTx> fut = finFut;
@@ -1157,10 +1202,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             }
 
             if (valid) {
-                this.state = state;
-
                 if (timedOut)
                     this.timedOut = true;
+
+                this.state = state;
 
                 if (log.isDebugEnabled())
                     log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
@@ -1181,21 +1226,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     seal();
 
                 if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                    if (state == PREPARED) {
-                        try {
-                            cctx.tm().mvccPrepare(this);
-                        }
-                        catch (IgniteCheckedException e) {
-                            String msg = "Failed to update TxState: " + TxState.PREPARED;
+                    cctx.tm().setMvccState(this, toMvccState(state));
 
-                            U.error(log, msg, e);
-
-                            throw new IgniteException(msg, e);
-                        }
-                    }
-
-                    if (!txState().mvccEnabled())
-                        ptr = cctx.tm().logTxRecord(this);
+                    ptr = cctx.tm().logTxRecord(this);
                 }
             }
         }
@@ -1222,6 +1255,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         return valid;
+    }
+
+    /** */
+    private byte toMvccState(TransactionState state) {
+        switch (state) {
+            case PREPARED:
+                return TxState.PREPARED;
+            case COMMITTED:
+                return TxState.COMMITTED;
+            case ROLLED_BACK:
+                return TxState.ABORTED;
+            default:
+                throw new IllegalStateException("Unexpected state: " + state);
+        }
     }
 
     /** */
@@ -1631,8 +1678,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
-                    keepBinary,
-                    null); // TODO IGNITE-7371
+                    keepBinary);
             }
 
             boolean modified = false;
@@ -1736,7 +1782,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings({"unchecked"})
     protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext> conflictResolve(
         GridCacheOperation op,
         IgniteTxEntry txEntry,
@@ -1960,7 +2006,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public abstract void addActiveCache(GridCacheContext cacheCtx, boolean recovery) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Nullable @Override public TxCounters txCounters(boolean createIfAbsent) {
+    @Override public TxCounters txCounters(boolean createIfAbsent) {
         if (createIfAbsent && txCounters == null)
             TX_COUNTERS_UPD.compareAndSet(this, null, new TxCounters());
 
@@ -1980,21 +2026,51 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         for (Map.Entry<Integer, ? extends Map<Integer, AtomicLong>> entry : sizeDeltas.entrySet()) {
             Integer cacheId = entry.getKey();
-            Map<Integer, AtomicLong> partDeltas = entry.getValue();
+            Map<Integer, AtomicLong> deltas = entry.getValue();
 
-            assert !F.isEmpty(partDeltas);
+            assert !F.isEmpty(deltas);
 
             GridDhtPartitionTopology top = cctx.cacheContext(cacheId).topology();
 
-            for (Map.Entry<Integer, AtomicLong> e : partDeltas.entrySet()) {
-                Integer p = e.getKey();
+            // Need to reserve on backups only
+            boolean reserve = dht() && remote();
+
+            for (Map.Entry<Integer, AtomicLong> e : deltas.entrySet()) {
+                boolean invalid = false;
+                int p = e.getKey();
                 long delta = e.getValue().get();
 
-                GridDhtLocalPartition dhtPart = top.localPartition(p);
+                try {
+                    GridDhtLocalPartition part = top.localPartition(p);
 
-                assert dhtPart != null;
+                    if (!reserve || part != null && part.reserve()) {
+                        assert part != null;
 
-                dhtPart.dataStore().updateSize(cacheId, delta);
+                        try {
+                            if (part.state() != GridDhtPartitionState.RENTING)
+                                part.dataStore().updateSize(cacheId, delta);
+                            else
+                                invalid = true;
+                        }
+                        finally {
+                            if (reserve)
+                                part.release();
+                        }
+                    }
+                    else
+                        invalid = true;
+                }
+                catch (GridDhtInvalidPartitionException e1) {
+                    invalid = true;
+                }
+
+                if (invalid) {
+                    assert reserve;
+
+                    if (log.isDebugEnabled())
+                        log.debug("Trying to apply size delta for invalid partition: " +
+                            "[cacheId=" + cacheId + ", part=" + p + "]");
+                }
             }
         }
     }

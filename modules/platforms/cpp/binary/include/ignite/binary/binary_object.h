@@ -68,6 +68,7 @@ namespace ignite
              * @param mem Binary object memory.
              * @param start Object starting position in memory.
              * @param idRslvr ID resolver.
+             * @param metaMgr Metadata manager.
              */
             BinaryObject(impl::interop::InteropMemory& mem, int32_t start,
                 impl::binary::BinaryIdResolver* idRslvr, impl::binary::BinaryTypeManager* metaMgr) :

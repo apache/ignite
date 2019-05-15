@@ -38,6 +38,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test for task future when grid stops.
@@ -67,6 +68,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testGet() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 

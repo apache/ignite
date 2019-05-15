@@ -24,42 +24,50 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.junit.Test;
 
 /**
  * Tests distributed queries over set of partitions on stable topology.
  */
 public class IgniteCacheDistributedPartitionQuerySelfTest extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
     /** Tests query within region. */
+    @Test
     public void testRegionQuery() {
         doTestRegionQuery(grid(0));
     }
 
     /** Tests query within region (client). */
+    @Test
     public void testRegionQueryClient() throws Exception {
         doTestRegionQuery(grid("client"));
     }
 
     /** Test query within partitions. */
+    @Test
     public void testPartitionsQuery() {
         doTestPartitionsQuery(grid(0));
     }
 
     /** Test query within partitions (client). */
+    @Test
     public void testPartitionsQueryClient() throws Exception {
         doTestPartitionsQuery(grid("client"));
     }
 
     /** Tests join query within region. */
+    @Test
     public void testJoinQuery() {
         doTestJoinQuery(grid(0));
     }
 
     /** Tests join query within region. */
+    @Test
     public void testJoinQueryClient() throws Exception {
         doTestJoinQuery(grid("client"));
     }
 
     /** Tests local query over partitions. */
+    @Test
     public void testLocalQuery() {
         Affinity<Object> affinity = grid(0).affinity("cl");
 

@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
@@ -26,6 +30,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
  * TODO: IGNITE-809.
  */
 public class GridCacheMultinodeUpdateNearEnabledSelfTest extends GridCacheMultinodeUpdateAbstractSelfTest {
+    /** */
+    @Before
+    public void beforeGridCacheMultinodeUpdateNearEnabledSelfTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+    }
+
     /** {@inheritDoc} */
     @Override protected NearCacheConfiguration nearConfiguration() {
         return new NearCacheConfiguration();
@@ -37,7 +47,10 @@ public class GridCacheMultinodeUpdateNearEnabledSelfTest extends GridCacheMultin
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testInvoke() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-809");
+        Assume.assumeTrue("https://issues.apache.org/jira/browse/IGNITE-809", MvccFeatureChecker.forcedMvcc());
+
+        super.testInvoke();
     }
 }

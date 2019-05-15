@@ -15,12 +15,12 @@
 # limitations under the License.
 #
 
-FROM node:8-alpine
+FROM node:10-alpine
 
 ENV NPM_CONFIG_LOGLEVEL error
 
 # Update package list & install.
-RUN apk add --no-cache nginx 
+RUN apk add --no-cache nginx
 
 # Install global node packages.
 RUN npm install -g pm2

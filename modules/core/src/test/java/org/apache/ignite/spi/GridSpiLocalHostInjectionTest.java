@@ -24,6 +24,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * This class tests injection of {@code localHost} property to various SPIs.
@@ -38,6 +39,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testTcpDiscoverySpiBothSet() throws IgniteCheckedException {
         processTcpDiscoverySpiTestInjection(true, true, SPI_LOCAL_ADDR_VALUE);
     }
@@ -45,6 +47,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testTcpDiscoverySpiOnlySet() throws IgniteCheckedException {
         processTcpDiscoverySpiTestInjection(false, true, SPI_LOCAL_ADDR_VALUE);
     }
@@ -52,6 +55,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testTcpDiscoverySpiConfigOnlySet() throws IgniteCheckedException {
         processTcpDiscoverySpiTestInjection(true, false, CONFIG_LOCAL_ADDR_VALUE);
     }
@@ -59,6 +63,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testTcpDiscoverySpiBothNotSet() throws IgniteCheckedException {
         processTcpDiscoverySpiTestInjection(false, false, null);
     }
@@ -66,6 +71,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testTcpCommunicationSpiBothSet() throws IgniteCheckedException {
         processTcpCommunicationSpiTestInjection(true, true, SPI_LOCAL_ADDR_VALUE);
     }
@@ -73,6 +79,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testTcpCommunicationSpiOnlySet() throws IgniteCheckedException {
         processTcpCommunicationSpiTestInjection(false, true, SPI_LOCAL_ADDR_VALUE);
     }
@@ -80,6 +87,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testTcpCommunicationSpiConfigOnlySet() throws IgniteCheckedException {
         processTcpCommunicationSpiTestInjection(true, false, CONFIG_LOCAL_ADDR_VALUE);
     }
@@ -87,6 +95,7 @@ public class GridSpiLocalHostInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If test fails.
      */
+    @Test
     public void testTcpCommunicationSpiBothNotSet() throws IgniteCheckedException {
         processTcpCommunicationSpiTestInjection(false, false, null);
     }

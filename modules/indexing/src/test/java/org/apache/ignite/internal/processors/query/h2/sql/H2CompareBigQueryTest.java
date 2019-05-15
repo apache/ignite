@@ -36,6 +36,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
+import org.junit.Test;
 
 /**
  * Executes one big query (and subqueries of the big query) to compare query results from h2 database instance and
@@ -113,13 +114,13 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         cacheCustOrd = null;
         cacheReplOrd = null;
         cacheOrdParam = null;
         cacheCancel = null;
         cacheExec = null;
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -280,6 +281,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBigQuery() throws Exception {
         X.println();
         X.println(bigQry);

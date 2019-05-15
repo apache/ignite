@@ -32,7 +32,6 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -45,14 +44,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -67,9 +65,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  *
  */
 public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final int SRVS = 4;
 
@@ -89,8 +84,6 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
         cfg.setClientMode(clientMode);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
@@ -107,27 +100,20 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
-
-        startGrids(SRVS);
+        startGridsMultiThreaded(SRVS);
 
         clientMode = true;
 
-        for (int i = 0; i < CLIENTS; i++) {
-            Ignite client = startGrid(SRVS + i);
+        startGridsMultiThreaded(SRVS, CLIENTS);
 
-            assertTrue(client.configuration().isClientMode());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        for (int i = 0; i < CLIENTS; i++)
+            assertTrue(grid(SRVS + i).configuration().isClientMode());
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPrimarySyncRestart() throws Exception {
         multithreadedTests(PRIMARY_SYNC, true);
     }
@@ -135,6 +121,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedPrimarySync() throws Exception {
         multithreadedTests(PRIMARY_SYNC, false);
     }
@@ -142,6 +129,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullSync() throws Exception {
         multithreadedTests(FULL_SYNC, false);
     }
@@ -149,6 +137,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullSyncRestart() throws Exception {
         multithreadedTests(FULL_SYNC, true);
     }
@@ -156,6 +145,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullAsync() throws Exception {
         multithreadedTests(FULL_ASYNC, false);
     }
@@ -163,6 +153,7 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultithreadedFullAsyncRestart() throws Exception {
         multithreadedTests(FULL_ASYNC, true);
     }
@@ -195,6 +186,14 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
         boolean store,
         boolean nearCache,
         boolean restart) throws Exception {
+        if (MvccFeatureChecker.forcedMvcc()) {
+            if (store && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.CACHE_STORE))
+                return;
+
+            if (nearCache && !MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE))
+                return;
+        }
+
         final Ignite ignite = ignite(0);
 
         createCache(ignite, cacheConfiguration(DEFAULT_CACHE_NAME, syncMode, backups, store), nearCache);
@@ -225,7 +224,16 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
                     Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                    cache.put(key, rnd.nextInt());
+                    while (true) {
+                        try {
+                            cache.put(key, rnd.nextInt());
+
+                            break;
+                        }
+                        catch (CacheException e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        }
+                    }
                 }
             });
 
@@ -241,7 +249,16 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                         map.put(key, rnd.nextInt());
                     }
 
-                    cache.putAll(map);
+                    while (true) {
+                        try {
+                            cache.putAll(map);
+
+                            break;
+                        }
+                        catch (CacheException e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        }
+                    }
                 }
             });
 
@@ -271,36 +288,38 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                 }
             });
 
-            commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
-                @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            if (!MvccFeatureChecker.forcedMvcc()) {
+                commitMultithreaded(new IgniteBiInClosure<Ignite, IgniteCache<Integer, Integer>>() {
+                    @Override public void apply(Ignite ignite, IgniteCache<Integer, Integer> cache) {
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    Map<Integer, Integer> map = new LinkedHashMap<>();
+                        Map<Integer, Integer> map = new LinkedHashMap<>();
 
-                    for (int i = 0; i < 10; i++) {
-                        Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
+                        for (int i = 0; i < 10; i++) {
+                            Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                        map.put(key, rnd.nextInt());
+                            map.put(key, rnd.nextInt());
+                        }
+
+                        while (true) {
+                            try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
+                                for (Map.Entry<Integer, Integer> e : map.entrySet())
+                                    cache.put(e.getKey(), e.getValue());
+
+                                tx.commit();
+
+                                break;
+                            }
+                            catch (TransactionOptimisticException ignored) {
+                                // Retry.
+                            }
+                            catch (CacheException | IgniteException ignored) {
+                                break;
+                            }
+                        }
                     }
-
-                    while (true) {
-                        try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, SERIALIZABLE)) {
-                            for (Map.Entry<Integer, Integer> e : map.entrySet())
-                                cache.put(e.getKey(), e.getValue());
-
-                            tx.commit();
-
-                            break;
-                        }
-                        catch (TransactionOptimisticException ignored) {
-                           // Retry.
-                        }
-                        catch (CacheException | IgniteException ignored) {
-                            break;
-                        }
-                    }
-                }
-            });
+                });
+            }
         }
         finally {
             stop.set(true);

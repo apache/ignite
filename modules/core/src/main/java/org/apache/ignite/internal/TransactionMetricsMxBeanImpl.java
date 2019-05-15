@@ -41,7 +41,7 @@ public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     /**
      * @param transactionMetrics Transaction metrics.
      */
-    TransactionMetricsMxBeanImpl(TransactionMetrics transactionMetrics) {
+    public TransactionMetricsMxBeanImpl(TransactionMetrics transactionMetrics) {
         this.transactionMetrics = transactionMetrics;
     }
 

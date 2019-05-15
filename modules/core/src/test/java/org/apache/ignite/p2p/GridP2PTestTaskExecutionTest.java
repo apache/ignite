@@ -23,6 +23,8 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
 /**
  * Test executes GridP2PTestTask on the remote node.
  * Before running of test you MUST start at least one remote node.
@@ -32,6 +34,7 @@ public final class GridP2PTestTaskExecutionTest extends GridCommonAbstractTest {
      * Method executes GridP2PTestTask.
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testGridP2PTestTask() throws IgniteCheckedException {
         try (Ignite g  = G.start()) {
             assert g != null;

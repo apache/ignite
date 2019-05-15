@@ -29,18 +29,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests for fillFactor metrics.
  */
 public class FillFactorMetricTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static final String MY_DATA_REGION = "MyPolicy";
 
@@ -56,7 +52,6 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER))
             .setDataStorageConfiguration(
                 new DataStorageConfiguration().setDataRegionConfigurations(
                     new DataRegionConfiguration()
@@ -95,6 +90,7 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testEmptyCachePagesFillFactor() throws Exception {
         startGrids(1);
 
@@ -112,6 +108,7 @@ public class FillFactorMetricTest extends GridCommonAbstractTest {
     /**
      * throws if failed.
      */
+    @Test
     public void testFillAndEmpty() throws Exception {
         final AtomicBoolean stopLoadFlag = new AtomicBoolean();
         final AtomicBoolean doneFlag = new AtomicBoolean();

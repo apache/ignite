@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.G;
+import org.junit.Test;
 
 /**
  * Tests SQL queries in read-only cluster mode.
@@ -32,6 +33,7 @@ public class ClusterReadOnlyModeSqlTest extends ClusterReadOnlyModeAbstractTest 
     /**
      *
      */
+    @Test
     public void testSqlReadOnly() {
         assertSqlReadOnlyMode(false);
 

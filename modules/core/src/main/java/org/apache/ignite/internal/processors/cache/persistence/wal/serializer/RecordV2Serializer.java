@@ -122,10 +122,11 @@ public class RecordV2Serializer implements RecordSerializer {
                     ", expected pointer [idx=" + exp.index() + ", offset=" + exp.fileOffset() + "]");
             }
 
-            if (recordFilter != null && !recordFilter.apply(recType, ptr)) {
+            if (recType.purpose() != WALRecord.RecordPurpose.INTERNAL
+                && recordFilter != null && !recordFilter.apply(recType, ptr)) {
                 int toSkip = ptr.length() - REC_TYPE_SIZE - FILE_WAL_POINTER_SIZE - CRC_SIZE;
 
-                assert toSkip >= 0 : "Too small saved record length: " + ptr;
+                assert toSkip >= 0 : "Too small saved record length: ptr=" + ptr + ", type=" + recType;
 
                 if (in.skipBytes(toSkip) < toSkip)
                     throw new EOFException("Reached end of file while reading record: " + ptr);
@@ -159,7 +160,8 @@ public class RecordV2Serializer implements RecordSerializer {
                 return new MarshalledRecord(recType, ptr, buf);
             }
             else {
-                WALRecord rec = dataSerializer.readRecord(recType, in);
+                WALRecord rec = dataSerializer.readRecord(recType, in, ptr.length() - REC_TYPE_SIZE -
+                    FILE_WAL_POINTER_SIZE - CRC_SIZE);
 
                 rec.position(ptr);
 

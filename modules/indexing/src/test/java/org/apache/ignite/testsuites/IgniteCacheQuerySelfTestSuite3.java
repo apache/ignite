@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousBatchForceServerModeAckTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryConcurrentPartitionUpdateTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryCounterPartitionedAtomicTest;
@@ -41,53 +40,48 @@ import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheC
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTxReconnectTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryNoUnsubscribeTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryReconnectTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Cache Continuous Queries Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    // Continuous queries 1.
+    GridCacheContinuousQueryNodesFilteringTest.class,
+    GridCacheContinuousQueryPartitionTxOneNodeTest.class,
+    CacheContinuousWithTransformerReplicatedSelfTest.class,
+    CacheContinuousQueryExecuteInPrimaryTest.class,
+    CacheContinuousWithTransformerClientSelfTest.class,
+    ClientReconnectContinuousQueryTest.class,
+    IgniteCacheContinuousQueryNoUnsubscribeTest.class,
+    IgniteCacheContinuousQueryClientTxReconnectTest.class,
+    IgniteCacheContinuousQueryClientReconnectTest.class,
+    GridCacheContinuousQueryAtomicSelfTest.class,
+    GridCacheContinuousQueryAtomicNearEnabledSelfTest.class,
+    GridCacheContinuousQueryPartitionTxOneNodeTest.class,
+    IgniteCacheContinuousQueryClientReconnectTest.class,
+    IgniteCacheContinuousQueryClientTxReconnectTest.class,
+    GridCacheContinuousQueryReplicatedSelfTest.class,
+    CacheContinuousQueryFactoryAsyncFilterRandomOperationTest.class,
+    GridCacheContinuousQueryPartitionedSelfTest.class,
+    CacheContinuousBatchForceServerModeAckTest.class,
+    CacheContinuousQueryExecuteInPrimaryTest.class,
+    GridCacheContinuousQueryNodesFilteringTest.class,
+    IgniteCacheContinuousQueryNoUnsubscribeTest.class,
+    ClientReconnectContinuousQueryTest.class,
+    ContinuousQueryReassignmentTest.class,
+    CacheContinuousQueryConcurrentPartitionUpdateTest.class,
+    CacheContinuousQueryFactoryAsyncFilterRandomOperationTest.class,
 
-        // Continuous queries 1.
-        suite.addTestSuite(GridCacheContinuousQueryNodesFilteringTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionTxOneNodeTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerReplicatedSelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryExecuteInPrimaryTest.class);
-        suite.addTestSuite(CacheContinuousWithTransformerClientSelfTest.class);
-        suite.addTestSuite(ClientReconnectContinuousQueryTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryNoUnsubscribeTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryClientTxReconnectTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryClientReconnectTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryAtomicSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryAtomicNearEnabledSelfTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionTxOneNodeTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryClientReconnectTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryClientTxReconnectTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryReplicatedSelfTest.class);
-        suite.addTestSuite(CacheContinuousQueryFactoryAsyncFilterRandomOperationTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryPartitionedSelfTest.class);
-        suite.addTestSuite(CacheContinuousBatchForceServerModeAckTest.class);
-        suite.addTestSuite(CacheContinuousQueryExecuteInPrimaryTest.class);
-        suite.addTestSuite(GridCacheContinuousQueryNodesFilteringTest.class);
-        suite.addTestSuite(IgniteCacheContinuousQueryNoUnsubscribeTest.class);
-        suite.addTestSuite(ClientReconnectContinuousQueryTest.class);
-        suite.addTestSuite(ContinuousQueryReassignmentTest.class);
-        suite.addTestSuite(CacheContinuousQueryConcurrentPartitionUpdateTest.class);
-        suite.addTestSuite(CacheContinuousQueryFactoryAsyncFilterRandomOperationTest.class);
+    CacheContinuousQueryCounterPartitionedAtomicTest.class,
+    CacheContinuousQueryCounterPartitionedTxTest.class,
+    CacheContinuousQueryCounterReplicatedAtomicTest.class,
+    CacheContinuousQueryCounterReplicatedTxTest.class,
+    CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest.class,
 
-        suite.addTestSuite(CacheContinuousQueryCounterPartitionedAtomicTest.class);
-        suite.addTestSuite(CacheContinuousQueryCounterPartitionedTxTest.class);
-        suite.addTestSuite(CacheContinuousQueryCounterReplicatedAtomicTest.class);
-        suite.addTestSuite(CacheContinuousQueryCounterReplicatedTxTest.class);
-        suite.addTestSuite(CacheContinuousQueryFailoverAtomicNearEnabledSelfSelfTest.class);
-
-        suite.addTestSuite(IgniteCacheContinuousQueryReconnectTest.class);
-
-        return suite;
-    }
+    IgniteCacheContinuousQueryReconnectTest.class
+})
+public class IgniteCacheQuerySelfTestSuite3 {
 }

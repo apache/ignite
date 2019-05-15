@@ -35,6 +35,7 @@ import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /** */
 public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridCommonAbstractTest {
@@ -60,6 +61,7 @@ public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxCommitAfterDeactivation() throws Exception {
         checkTxFinishAfterDeactivation(true);
     }
@@ -67,6 +69,7 @@ public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridC
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTxRollbackAfterDeactivation() throws Exception {
         checkTxFinishAfterDeactivation(false);
     }

@@ -26,13 +26,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAlwaysEvictionPolicy;
 import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -57,9 +55,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
 
     /** Number of transactions per thread. */
     private static final int TX_CNT = 500;
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -86,12 +81,6 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         cc.setNearConfiguration(nearCfg);
 
         c.setCacheConfiguration(cc);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
 
         return c;
     }
@@ -121,6 +110,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticReadCommitted() throws Exception {
         doTest(PESSIMISTIC, READ_COMMITTED);
     }
@@ -130,6 +120,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticRepeatableRead() throws Exception {
         doTest(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -139,6 +130,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticSerializable() throws Exception {
         doTest(PESSIMISTIC, SERIALIZABLE);
     }
@@ -148,6 +140,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticReadCommitted() throws Exception {
         doTest(OPTIMISTIC, READ_COMMITTED);
     }
@@ -157,6 +150,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticRepeatableRead() throws Exception {
         doTest(OPTIMISTIC, REPEATABLE_READ);
     }
@@ -166,6 +160,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticSerializable() throws Exception {
         doTest(OPTIMISTIC, SERIALIZABLE);
     }

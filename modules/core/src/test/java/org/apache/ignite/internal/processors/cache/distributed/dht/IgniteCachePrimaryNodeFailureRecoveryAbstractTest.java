@@ -59,6 +59,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -120,6 +121,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticPrimaryNodeFailureRecovery1() throws Exception {
         if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
 
@@ -129,6 +131,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticPrimaryNodeFailureRecovery2() throws Exception {
         if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
 
@@ -138,6 +141,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticPrimaryNodeFailureRollback1() throws Exception {
         if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
 
@@ -147,6 +151,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticPrimaryNodeFailureRollback2() throws Exception {
         if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
 
@@ -156,6 +161,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticPrimaryNodeFailureRecovery1() throws Exception {
         primaryNodeFailure(false, false, false);
     }
@@ -163,6 +169,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticPrimaryNodeFailureRecovery2() throws Exception {
         primaryNodeFailure(true, false, false);
     }
@@ -170,6 +177,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticPrimaryNodeFailureRollback1() throws Exception {
         primaryNodeFailure(false, true, false);
     }
@@ -177,6 +185,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticPrimaryNodeFailureRollback2() throws Exception {
         primaryNodeFailure(true, true, false);
     }
@@ -281,6 +290,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery1() throws Exception {
         if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
 
@@ -290,6 +300,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticPrimaryAndOriginatingNodeFailureRecovery2() throws Exception {
         if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
 
@@ -299,6 +310,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticPrimaryAndOriginatingNodeFailureRollback1() throws Exception {
         if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
 
@@ -308,6 +320,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOptimisticPrimaryAndOriginatingNodeFailureRollback2() throws Exception {
         if (atomicityMode() == TRANSACTIONAL_SNAPSHOT) return;
 
@@ -317,6 +330,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticPrimaryAndOriginatingNodeFailureRecovery1() throws Exception {
         primaryAndOriginatingNodeFailure(false, false, false);
     }
@@ -324,6 +338,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticPrimaryAndOriginatingNodeFailureRecovery2() throws Exception {
         primaryAndOriginatingNodeFailure(true, false, false);
     }
@@ -331,6 +346,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticPrimaryAndOriginatingNodeFailureRollback1() throws Exception {
         primaryAndOriginatingNodeFailure(false, true, false);
     }
@@ -338,6 +354,7 @@ public abstract class IgniteCachePrimaryNodeFailureRecoveryAbstractTest extends 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPessimisticPrimaryAndOriginatingNodeFailureRollback2() throws Exception {
         primaryAndOriginatingNodeFailure(true, true, false);
     }

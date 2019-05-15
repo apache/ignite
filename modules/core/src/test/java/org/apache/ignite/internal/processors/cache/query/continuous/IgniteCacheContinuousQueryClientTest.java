@@ -32,11 +32,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -48,16 +46,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private boolean client;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -89,6 +82,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoins() throws Exception {
         startGrids(2);
 
@@ -115,6 +109,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
 
             Ignite joined1 = startGrid(4);
 
+            awaitPartitionMapExchange();
+
             IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 
             joinedCache1.put(primaryKey(joinedCache1), 1);
@@ -124,6 +120,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined2 = startGrid(5);
+
+            awaitPartitionMapExchange();
 
             IgniteCache<Object, Object> joinedCache2 = joined2.cache(DEFAULT_CACHE_NAME);
 
@@ -142,6 +140,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeJoinsRestartQuery() throws Exception {
         startGrids(2);
 
@@ -167,6 +166,8 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
             lsnr.latch = new CountDownLatch(1);
 
             Ignite joined1 = startGrid(4);
+
+            awaitPartitionMapExchange();
 
             IgniteCache<Object, Object> joinedCache1 = joined1.cache(DEFAULT_CACHE_NAME);
 
@@ -199,6 +200,7 @@ public class IgniteCacheContinuousQueryClientTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerNodeLeft() throws Exception {
         startGrids(3);
 

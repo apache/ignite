@@ -37,6 +37,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -68,7 +69,6 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed..
      */
-    @SuppressWarnings("unchecked")
     private void processTestSameRemoteClassLoader(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
@@ -181,6 +181,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSameClassLoaderPrivateMode() throws Exception {
         processTestSameRemoteClassLoader(DeploymentMode.PRIVATE);
     }
@@ -190,6 +191,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testSameClassLoaderIsolatedMode() throws Exception {
         processTestSameRemoteClassLoader(DeploymentMode.ISOLATED);
     }
@@ -199,6 +201,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testDifferentClassLoaderPrivateMode() throws Exception {
         processTestDifferentRemoteClassLoader(DeploymentMode.PRIVATE);
     }
@@ -208,6 +211,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testDifferentClassLoaderIsolatedMode() throws Exception {
         processTestDifferentRemoteClassLoader(DeploymentMode.ISOLATED);
     }

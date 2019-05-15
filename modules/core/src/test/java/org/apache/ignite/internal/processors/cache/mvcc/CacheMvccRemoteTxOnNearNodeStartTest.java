@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -41,6 +42,7 @@ public class CacheMvccRemoteTxOnNearNodeStartTest extends CacheMvccAbstractTest 
      * when first request is sent to OWNING partition and second to MOVING partition.
      * @throws Exception if failed.
      */
+    @Test
     public void testRemoteTxOnNearNodeIsStartedIfPartitionIsMoving() throws Exception {
         startGridsMultiThreaded(3);
 

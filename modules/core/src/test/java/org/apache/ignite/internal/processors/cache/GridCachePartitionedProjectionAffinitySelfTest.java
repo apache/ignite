@@ -23,11 +23,9 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -43,9 +41,6 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     /** Grid count. */
     private static final int GRIDS = 3;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -59,12 +54,6 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
 
         return cfg;
     }
@@ -80,6 +69,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testAffinity() throws Exception {
         waitTopologyUpdate();
 
@@ -91,6 +81,7 @@ public class GridCachePartitionedProjectionAffinitySelfTest extends GridCommonAb
     }
 
     /** @throws Exception If failed. */
+    @Test
     public void testProjectionAffinity() throws Exception {
         waitTopologyUpdate();
 

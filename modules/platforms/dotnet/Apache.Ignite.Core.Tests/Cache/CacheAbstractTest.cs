@@ -117,26 +117,25 @@ namespace Apache.Ignite.Core.Tests.Cache
             return Ignition.GetIgnite("grid-" + idx);
         }
 
-        private ICache<int, int> Cache(int idx) {
-            return Cache<int, int>(idx);
-        }
-
-        private ICache<TK, TV> Cache<TK, TV>(int idx) {
-            return GetIgnite(idx).GetCache<TK, TV>(CacheName());
-        }
-
-        protected ICache<int, int> Cache(bool async = false)
+        protected ICache<int, int> Cache(int idx, bool async = false) 
         {
-            var cache = Cache<int, int>(0);
+            return Cache<int, int>(idx, async);
+        }
+
+        private ICache<TK, TV> Cache<TK, TV>(int idx, bool async = false) {
+            var cache = GetIgnite(idx).GetCache<TK, TV>(CacheName());
 
             return async ? cache.WrapAsync() : cache;
         }
 
+        protected ICache<int, int> Cache(bool async = false)
+        {
+            return Cache<int, int>(0, async);
+        }
+
         private ICache<TK, TV> Cache<TK, TV>(bool async = false)
         {
-            var cache = Cache<TK, TV>(0);
-
-            return async ? cache : cache.WrapAsync();
+            return Cache<TK, TV>(0, async);
         }
 
         private ICacheAffinity Affinity()
@@ -1199,11 +1198,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestSizes()
+        public void TestSizes([Values(true, false)] bool async)
         {
             for (int i = 0; i < GridCount(); i++)
             {
-                var cache = Cache(i);
+                var cache = Cache(i, async);
 
                 List<int> keys = GetPrimaryKeysForCache(cache, 2);
 
@@ -1211,12 +1210,22 @@ namespace Apache.Ignite.Core.Tests.Cache
                     cache.Put(key, 1);
 
                 Assert.IsTrue(cache.GetSize() >= 2);
+                Assert.AreEqual(cache.GetSize(), cache.GetSizeLong());
+                Assert.AreEqual(2, cache.GetLocalSizeLong(CachePeekMode.Primary));
                 Assert.AreEqual(2, cache.GetLocalSize(CachePeekMode.Primary));
+
+                foreach (var key in keys)
+                {
+                    var p = GetIgnite(i).GetAffinity(cache.Name).GetPartition(key);
+                    
+                    Assert.GreaterOrEqual(cache.GetSizeLong(p, CachePeekMode.Primary), 1);
+                }
             }
 
-            ICache<int, int> cache0 = Cache();
+            ICache<int, int> cache0 = Cache(async);
 
             Assert.AreEqual(GridCount() * 2, cache0.GetSize(CachePeekMode.Primary));
+            Assert.AreEqual(GridCount() * 2, cache0.GetSizeLong(CachePeekMode.Primary));
 
             if (!LocalCache() && !ReplicatedCache())
             {
@@ -1225,6 +1234,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 cache0.Put(nearKey, 1);
 
                 Assert.AreEqual(NearEnabled() ? 1 : 0, cache0.GetSize(CachePeekMode.Near));
+                Assert.AreEqual(NearEnabled() ? 1 : 0, cache0.GetSizeLong(CachePeekMode.Near));
             }
         }
 
@@ -1238,15 +1248,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(keys[1], 2);
 
             var localSize = cache.GetLocalSize();
+            Assert.AreEqual(localSize, cache.GetLocalSizeLong());
 
             cache.LocalEvict(keys.Take(2).ToArray());
 
             Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(0, cache.GetLocalSizeLong(CachePeekMode.Onheap));
             Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
-
+            Assert.AreEqual(localSize, cache.GetLocalSizeLong(CachePeekMode.All));
+            
             cache.Put(keys[2], 3);
 
             Assert.AreEqual(localSize + 1, cache.GetLocalSize(CachePeekMode.All));
+            Assert.AreEqual(localSize + 1, cache.GetLocalSizeLong(CachePeekMode.All));
+            
+            foreach (var key in keys)
+            {
+                var p = Affinity().GetPartition(key);
+                    
+                Assert.GreaterOrEqual(cache.GetLocalSizeLong(p, CachePeekMode.All), 1);
+            }
 
             cache.RemoveAll(keys.Take(2).ToArray());
         }

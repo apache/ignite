@@ -80,6 +80,9 @@ public final class IgniteQueryErrorCode {
     /** Conversion failure. */
     public static final int CONVERSION_FAILED = 3013;
 
+    /** Query canceled. */
+    public static final int QUERY_CANCELED = 3014;
+
     /* 4xxx - cache related runtime errors */
 
     /** Attempt to INSERT a key that is already in cache. */
@@ -192,6 +195,9 @@ public final class IgniteQueryErrorCode {
 
             case TRANSACTION_SERIALIZATION_ERROR:
                 return SqlStateCode.SERIALIZATION_FAILURE;
+
+            case QUERY_CANCELED:
+                return SqlStateCode.QUERY_CANCELLED;
 
             default:
                 return SqlStateCode.INTERNAL_ERROR;

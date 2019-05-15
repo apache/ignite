@@ -50,15 +50,13 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.SimpleLayout;
 import org.apache.log4j.WriterAppender;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -67,9 +65,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests for {@code IgniteDataStreamerImpl}.
  */
 public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Number of keys to load via data streamer. */
     private static final int KEYS_COUNT = 1000;
 
@@ -96,11 +91,6 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         cfg.setCommunicationSpi(new StaleTopologyCommunicationSpi());
 
         if (cnt < MAX_CACHE_COUNT)
@@ -114,6 +104,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCloseWithCancellation() throws Exception {
         cnt = 0;
 
@@ -142,6 +133,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNullPointerExceptionUponDataStreamerClosing() throws Exception {
         cnt = 0;
 
@@ -189,6 +181,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAddDataFromMap() throws Exception {
         cnt = 0;
 
@@ -225,6 +218,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testNoDataNodesOnClose() throws Exception {
         boolean failed = false;
 
@@ -254,6 +248,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fail.
      */
+    @Test
     public void testNoDataNodesOnFlush() throws Exception {
         boolean failed = false;
 
@@ -296,6 +291,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAllOperationFinishedBeforeFutureCompletion() throws Exception {
         cnt = 0;
 
@@ -348,6 +344,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemapOnTopologyChangeDuringUpdatePreparation() throws Exception {
         cnt = 0;
 
@@ -430,6 +427,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed
      */
+    @Test
     public void testRetryWhenTopologyMismatch() throws Exception {
         final int KEY = 1;
         final String VAL = "1";
@@ -465,6 +463,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientEventsNotCausingRemaps() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -493,6 +492,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testServerEventsCauseRemaps() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -525,6 +525,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDataStreamerWaitsUntilDynamicCacheStartIsFinished() throws Exception {
         final Ignite ignite0 = startGrids(2);
         final Ignite ignite1 = grid(1);

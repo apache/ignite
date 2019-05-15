@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.internal.IgniteEx;
+import org.junit.Test;
 
 /**
  *
@@ -30,6 +31,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveClientReconnectsToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -109,6 +111,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testActiveClientReconnectsToInactiveCluster() throws Exception {
         startNodes(null);
 
@@ -189,6 +192,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInactiveClientReconnectsToActiveCluster() throws Exception {
         CountDownLatch activateLatch = new CountDownLatch(1);
 
@@ -250,6 +254,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testInactiveClientReconnectsToInactiveCluster() throws Exception {
         startNodes(null);
 

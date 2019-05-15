@@ -23,6 +23,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.LongAdder;
+import org.junit.Test;
 
 /**
  *
@@ -31,6 +32,7 @@ public class HadoopExecutorServiceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testExecutesAll() throws Exception {
         final HadoopExecutorService exec = new HadoopExecutorService(log, "_GRID_NAME_", 10, 5);
 

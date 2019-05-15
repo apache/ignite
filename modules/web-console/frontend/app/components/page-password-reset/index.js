@@ -22,6 +22,7 @@ import _ from 'lodash';
 
 import template from './template.pug';
 import controller from './controller';
+import publicTemplate from '../../../views/public.pug';
 
 import './style.scss';
 
@@ -42,7 +43,14 @@ export default angular
         })
         .state('password.reset', {
             url: '/reset?{token}',
-            component: 'pagePasswordReset',
+            views: {
+                '@': {
+                    template: publicTemplate
+                },
+                'page@password.reset': {
+                    component: 'pagePasswordReset'
+                }
+            },
             redirectTo: (trans) => {
                 if (_.isEmpty(trans.params('to').token))
                     return 'signin';

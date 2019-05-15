@@ -251,6 +251,10 @@ public class IgniteBenchmarkArguments {
     private boolean persistentStoreEnabled;
 
     /** */
+    @Parameter(names = {"-wm", "--walMode"}, description = "WAL mode")
+    private String walMode = "LOG_ONLY";
+
+    /** */
     @Parameter(names = {"-stcp", "--streamerCachesPrefix"}, description = "Cache name prefix for streamer benchmark")
     private String streamerCachesPrefix = "streamer";
 
@@ -299,6 +303,13 @@ public class IgniteBenchmarkArguments {
      */
     public boolean persistentStoreEnabled() {
         return persistentStoreEnabled;
+    }
+
+    /**
+     * @return Wal mode.
+     */
+    public String walMode() {
+        return walMode;
     }
 
     /**

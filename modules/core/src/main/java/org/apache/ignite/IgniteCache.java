@@ -51,7 +51,6 @@ import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -366,7 +365,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param qry Query.
      * @return Cursor.
      * @see ScanQuery
-     * @see SqlQuery
      * @see SqlFieldsQuery
      * @see TextQuery
      * @see SpiQuery
@@ -1236,7 +1234,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws TransactionException If operation within transaction is failed.
      */
     public <T> IgniteFuture<T> invokeAsync(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments)
-		    throws TransactionException;
+        throws TransactionException;
 
     /**
      * Invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
@@ -1270,7 +1268,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     @IgniteAsyncSupported
     public <T> T invoke(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments)
-		    throws TransactionException;
+        throws TransactionException;
 
     /**
      * Asynchronously invokes an {@link CacheEntryProcessor} against the {@link javax.cache.Cache.Entry} specified by
@@ -1300,7 +1298,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @see CacheEntryProcessor
      */
     public <T> IgniteFuture<T> invokeAsync(K key, CacheEntryProcessor<K, V, T> entryProcessor, Object... arguments)
-		    throws TransactionException;
+        throws TransactionException;
 
     /**
      * {@inheritDoc}

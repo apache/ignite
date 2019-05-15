@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
@@ -200,7 +199,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void touch(GridCacheEntryEx e, AffinityTopologyVersion topVer) {
+    @Override public void touch(GridCacheEntryEx e) {
         assert e.context() == cctx : "Entry from another cache context passed to eviction manager: [" +
             "entry=" + e +
             ", cctx=" + cctx +
@@ -357,7 +356,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
      * @param near Near flag.
      * @throws IgniteCheckedException If registration failed.
      */
-    @SuppressWarnings("unchecked")
     private void registerMbean(Object obj, @Nullable String cacheName, boolean near)
         throws IgniteCheckedException {
         if (U.IGNITE_MBEANS_DISABLED)

@@ -28,7 +28,19 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class MvccCoordinator implements Serializable {
     /** */
+    public static final MvccCoordinator DISCONNECTED_COORDINATOR =
+        new MvccCoordinator(AffinityTopologyVersion.NONE, null, 0, false);
+
+    /** */
+    public static final MvccCoordinator UNASSIGNED_COORDINATOR =
+        new MvccCoordinator(AffinityTopologyVersion.NONE, null, 0, false);
+
+    /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    @GridToStringInclude
+    private final AffinityTopologyVersion topVer;
 
     /** */
     private final UUID nodeId;
@@ -37,32 +49,32 @@ public class MvccCoordinator implements Serializable {
      * Unique coordinator version, increases when new coordinator is assigned,
      * can differ from topVer if we decide to assign coordinator manually.
      */
-    private final long crdVer;
+    private final long ver;
 
     /** */
-    @GridToStringInclude
-    private final AffinityTopologyVersion topVer;
+    private final boolean local;
+
+    /** */
+    private volatile boolean initialized;
 
     /**
-     * @param nodeId Coordinator node ID.
-     * @param crdVer Coordinator version.
      * @param topVer Topology version when coordinator was assigned.
+     * @param nodeId Coordinator node ID.
+     * @param ver Coordinator version.
+     * @param local {@code True} if the local node is a coordinator.
      */
-    public MvccCoordinator(UUID nodeId, long crdVer, AffinityTopologyVersion topVer) {
-        assert nodeId != null;
-        assert crdVer > 0 : crdVer;
-        assert topVer != null;
-
-        this.nodeId = nodeId;
-        this.crdVer = crdVer;
+    public MvccCoordinator(AffinityTopologyVersion topVer, UUID nodeId, long ver, boolean local) {
         this.topVer = topVer;
+        this.nodeId = nodeId;
+        this.ver = ver;
+        this.local = local;
     }
 
     /**
-     * @return Unique coordinator version.
+     * @return Topology version when coordinator was assigned.
      */
-    public long coordinatorVersion() {
-        return crdVer;
+    public AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**
@@ -73,10 +85,50 @@ public class MvccCoordinator implements Serializable {
     }
 
     /**
-     * @return Topology version when coordinator was assigned.
+     * @return Unique coordinator version.
      */
-    public AffinityTopologyVersion topologyVersion() {
-        return topVer;
+    public long version() {
+        return ver;
+    }
+
+    /**
+     *
+     * @return {@code True} if the coordinator is local.
+     */
+    public boolean local() {
+        return local;
+    }
+
+    /**
+     *
+     * @return {@code True} if the coordinator is disconnected.
+     */
+    public boolean disconnected() {
+        return this == DISCONNECTED_COORDINATOR;
+    }
+
+    /**
+     *
+     * @return {@code True} if the coordinator has not been assigned yet.
+     */
+    public boolean unassigned() {
+        return this == UNASSIGNED_COORDINATOR;
+    }
+
+    /**
+     *
+     * @return {@code True} if the coordinator is initialized.
+     */
+    public boolean initialized() {
+        return initialized;
+    }
+
+    /**
+     *
+     * @param initialized Initialized flag.
+     */
+    public void initialized(boolean initialized) {
+        this.initialized = initialized;
     }
 
     /** {@inheritDoc} */
@@ -89,12 +141,12 @@ public class MvccCoordinator implements Serializable {
 
         MvccCoordinator that = (MvccCoordinator)o;
 
-        return crdVer == that.crdVer;
+        return ver == that.ver;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return (int)(crdVer ^ (crdVer >>> 32));
+        return (int)(ver ^ (ver >>> 32));
     }
 
     /** {@inheritDoc} */

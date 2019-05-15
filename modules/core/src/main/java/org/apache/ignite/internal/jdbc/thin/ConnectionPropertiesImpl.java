@@ -26,9 +26,10 @@ import java.util.StringTokenizer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
-import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Holds JDBC connection properties.
@@ -183,6 +184,23 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty passwd = new StringProperty(
         "password", "User's password", null, null, false, null);
 
+    /** Data page scan flag. */
+    private BooleanProperty dataPageScanEnabled = new BooleanProperty("dataPageScanEnabled",
+        "Whether data page scan for queries is allowed. If not specified, server defines the default behaviour.",
+        null, false);
+
+    /** affinity awareness flag. */
+    private BooleanProperty affinityAwareness = new BooleanProperty(
+        "affinityAwareness",
+        "Whether jdbc thin affinity awareness is enabled.",
+        false, false);
+
+    /** Update batch size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). */
+    private IntegerProperty updateBatchSize = new IntegerProperty("updateBatchSize",
+        "Update bach size (the size of internal batches are used for INSERT/UPDATE/DELETE operation). " +
+            "Set to 1 to prevent deadlock on update where keys sequence are different " +
+            "in several concurrent updates.", null, false, 1, Integer.MAX_VALUE);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
@@ -191,7 +209,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
-        user, passwd
+        user, passwd,
+        dataPageScanEnabled,
+        affinityAwareness,
+        updateBatchSize
     };
 
     /** {@inheritDoc} */
@@ -485,6 +506,36 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public String getPassword() {
         return passwd.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Boolean isDataPageScanEnabled() {
+        return dataPageScanEnabled.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setDataPageScanEnabled(@Nullable Boolean dataPageScanEnabled) {
+        this.dataPageScanEnabled.setValue(dataPageScanEnabled);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isAffinityAwareness() {
+        return affinityAwareness.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setAffinityAwareness(boolean affinityAwareness) {
+        this.affinityAwareness.setValue(affinityAwareness);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Integer getUpdateBatchSize() {
+        return updateBatchSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException {
+        this.updateBatchSize.setValue(updateBatchSize);
     }
 
     /**
@@ -911,7 +962,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         private static final String [] boolChoices = new String[] {Boolean.TRUE.toString(), Boolean.FALSE.toString()};
 
         /** Value. */
-        private boolean val;
+        private Boolean val;
 
         /**
          * @param name Name.
@@ -919,7 +970,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @param dfltVal Default value.
          * @param required {@code true} if the property is required.
          */
-        BooleanProperty(String name, String desc, boolean dfltVal, boolean required) {
+        BooleanProperty(String name, String desc, @Nullable Boolean dfltVal, boolean required) {
             super(name, desc, dfltVal, boolChoices, required);
 
             val = dfltVal;
@@ -928,7 +979,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /**
          * @return Property value.
          */
-        boolean value() {
+        @Nullable Boolean value() {
             return val;
         }
 
@@ -949,13 +1000,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override String valueObject() {
+            if (val == null)
+                return null;
+
             return Boolean.toString(val);
         }
 
         /**
          * @param val Property value to set.
          */
-        void setValue(boolean val) {
+        void setValue(Boolean val) {
             this.val = val;
         }
     }
@@ -984,8 +1038,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         NumberProperty(String name, String desc, Number dfltVal, boolean required, Number min, Number max) {
             super(name, desc, dfltVal, null, required);
 
-            assert dfltVal != null;
-
             val = dfltVal;
 
             range = new Number[] {min, max};
@@ -994,7 +1046,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
             if (str == null)
-                val = (int)dfltVal;
+                val = dfltVal != null ? (int)dfltVal : null;
             else {
                 try {
                     setValue(parse(str));
@@ -1015,7 +1067,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override String valueObject() {
-            return String.valueOf(val);
+            return val != null ? String.valueOf(val) : null;
         }
 
         /**
@@ -1066,8 +1118,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         /**
          * @return Property value.
          */
-        int value() {
-            return val.intValue();
+        Integer value() {
+            return val != null ? val.intValue() : null;
         }
     }
 

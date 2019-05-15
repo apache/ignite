@@ -37,6 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Test;
 
 /**
  *
@@ -66,11 +67,13 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testPutOOMPropagation() throws Exception {
         testOOMPropagation(false);
     }
 
     /** */
+    @Test
     public void testStreamerOOMPropagation() throws Exception {
         testOOMPropagation(true);
     }

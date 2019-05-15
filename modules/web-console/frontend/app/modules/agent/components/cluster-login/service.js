@@ -77,4 +77,9 @@ export default class ClusterLoginService {
                 modal.hide();
             });
     }
+
+    cancel() {
+        if (this.deferred)
+            this.deferred.reject(new CancellationError());
+    }
 }

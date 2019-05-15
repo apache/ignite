@@ -34,7 +34,6 @@ import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePartialUpdateException;
@@ -51,9 +50,6 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -65,9 +61,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  *
  */
 public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     protected static final long DURATION = 60_000;
 
@@ -120,8 +113,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
         cfg.setIncludeEventTypes();
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         AtomicConfiguration acfg = new AtomicConfiguration();
@@ -137,8 +128,6 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(GRID_CNT);
@@ -146,7 +135,9 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        super.afterTestsStopped();
+
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -169,6 +160,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPut() throws Exception {
         checkRetry(Test.PUT, false, false);
     }
@@ -176,6 +168,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testGetAndPut() throws Exception {
         checkRetry(Test.GET_AND_PUT, false, false);
     }
@@ -183,6 +176,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutStoreEnabled() throws Exception {
         checkRetry(Test.PUT, false, true);
     }
@@ -190,6 +184,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAll() throws Exception {
         checkRetry(Test.PUT_ALL, false, false);
     }
@@ -197,6 +192,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAsync() throws Exception {
         checkRetry(Test.PUT_ASYNC, false, false);
     }
@@ -204,6 +200,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testPutAsyncStoreEnabled() throws Exception {
         checkRetry(Test.PUT_ASYNC, false, true);
     }
@@ -211,6 +208,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testInvoke() throws Exception {
         checkRetry(Test.INVOKE, false, false);
     }
@@ -218,6 +216,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testInvokeAll() throws Exception {
         checkRetry(Test.INVOKE_ALL, false, false);
     }
@@ -225,6 +224,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testInvokeAllEvict() throws Exception {
         checkRetry(Test.INVOKE_ALL, true, false);
     }
@@ -468,6 +468,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testFailsWithNoRetries() throws Exception {
         checkFailsWithNoRetries(false);
     }
@@ -475,6 +476,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @org.junit.Test
     public void testFailsWithNoRetriesAsync() throws Exception {
         checkFailsWithNoRetries(true);
     }

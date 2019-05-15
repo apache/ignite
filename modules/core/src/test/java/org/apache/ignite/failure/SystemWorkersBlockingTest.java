@@ -17,6 +17,8 @@
 
 package org.apache.ignite.failure;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.Test;
 
 /**
  * Tests the handling of long blocking operations in system-critical workers.
@@ -40,13 +43,22 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setFailureHandler(new AbstractFailureHandler() {
+        AbstractFailureHandler failureHnd = new AbstractFailureHandler() {
             @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
-                hndLatch.countDown();
+                if (failureCtx.type() == FailureType.SYSTEM_WORKER_BLOCKED)
+                    hndLatch.countDown();
 
                 return false;
             }
-        });
+        };
+
+        Set<FailureType> ignoredFailureTypes = new HashSet<>(failureHnd.getIgnoredFailureTypes());
+
+        ignoredFailureTypes.remove(FailureType.SYSTEM_WORKER_BLOCKED);
+
+        failureHnd.setIgnoredFailureTypes(ignoredFailureTypes);
+
+        cfg.setFailureHandler(failureHnd);
 
         cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
 
@@ -72,6 +84,7 @@ public class SystemWorkersBlockingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBlockingWorker() throws Exception {
         IgniteEx ignite = grid(0);
 

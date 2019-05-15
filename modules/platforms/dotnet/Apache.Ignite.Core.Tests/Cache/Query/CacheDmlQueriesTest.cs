@@ -283,8 +283,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 ValueTypeName = "Foo",
                 Fields = new[]
                 {
+                    // Next two fields belong to the <see cref="Key"/> object, so should have been marked with <see cref="QueryField.IsKeyField"/>
+                    // But if we forgot to do this - all fields are treated as value fields. Key fields have default values and second insert fails.
                     new QueryField("Lo", typeof(int)),
                     new QueryField("Hi", typeof(int)),
+
                     new QueryField("Id", typeof(int)),
                     new QueryField("Name", typeof(string))
                 }
@@ -296,8 +299,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 () => cache.Query(new SqlFieldsQuery("insert into foo(lo, hi, id, name) " +
                                                            "values (1, 2, 3, 'John'), (4, 5, 6, 'Mary')")));
 
-            Assert.AreEqual("Ownership flag not set for binary property. Have you set 'keyFields' " +
-                            "property of QueryEntity in programmatic or XML configuration?", ex.Message);
+            StringAssert.StartsWith("Failed to INSERT some keys because they are already in cache", ex.Message);
         }
 
         /// <summary>

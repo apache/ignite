@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.LazyMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -55,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 /**
  * Record data V2 serializer.
  */
-public class RecordDataV2Serializer extends RecordDataV1Serializer implements RecordDataSerializer {
+public class RecordDataV2Serializer extends RecordDataV1Serializer {
     /** Length of HEADER record data. */
     private static final int HEADER_RECORD_DATA_SIZE = /*Magic*/8 + /*Version*/4;
 
@@ -118,14 +120,25 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
     @Override WALRecord readPlainRecord(
         RecordType type,
         ByteBufferBackedDataInput in,
-        boolean encrypted
+        boolean encrypted,
+        int recordSize
     ) throws IOException, IgniteCheckedException {
         switch (type) {
+            case PAGE_RECORD:
+                int cacheId = in.readInt();
+                long pageId = in.readLong();
+
+                byte[] arr = new byte[recordSize - 4 /* cacheId */ - 8 /* pageId */];
+
+                in.readFully(arr);
+
+                return new PageSnapshot(new FullPageId(pageId, cacheId), arr, encrypted ? realPageSize : pageSize);
+
             case CHECKPOINT_RECORD:
                 long msb = in.readLong();
                 long lsb = in.readLong();
                 boolean hasPtr = in.readByte() != 0;
-                int idx0 = hasPtr ? in.readInt() : 0;
+                long idx0 = hasPtr ? in.readLong() : 0;
                 int off = hasPtr ? in.readInt() : 0;
                 int len = hasPtr ? in.readInt() : 0;
 
@@ -194,7 +207,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer implements Re
                 return txRecordSerializer.readMvccTx(in);
 
             default:
-                return super.readPlainRecord(type, in, encrypted);
+                return super.readPlainRecord(type, in, encrypted, recordSize);
         }
     }
 

@@ -38,6 +38,7 @@ import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.tools.admin.DefaultMQAdminExt;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.stream.rocketmq.TestRocketMQServer.NAME_SERVER_PORT;
@@ -91,6 +92,7 @@ public class RocketMQStreamerTest extends GridCommonAbstractTest {
      *
      * @throws Exception If fails.
      */
+    @Test
     public void testStreamer() throws Exception {
         RocketMQStreamer<String, byte[]> streamer = null;
 

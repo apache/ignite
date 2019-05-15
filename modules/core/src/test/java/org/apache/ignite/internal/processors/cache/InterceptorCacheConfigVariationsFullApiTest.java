@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Full API cache test.
@@ -42,16 +43,19 @@ public class InterceptorCacheConfigVariationsFullApiTest extends IgniteCacheConf
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testTtlNoTx() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testTtlNoTxOldEntry() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testTtlTx() throws Exception {
         // No-op.
     }

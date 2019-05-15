@@ -30,9 +30,4 @@ public class IgnitePartitionedCountDownLatchSelfTest extends IgniteCountDownLatc
     @Override protected CacheMode atomicsCacheMode() {
         return PARTITIONED;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testLatch() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1793");
-    }
 }

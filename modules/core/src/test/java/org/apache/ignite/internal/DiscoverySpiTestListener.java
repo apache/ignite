@@ -43,6 +43,9 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
     private volatile CountDownLatch joinLatch;
 
     /** */
+    private volatile CountDownLatch reconLatch;
+
+    /** */
     private Set<Class<?>> blockCustomEvtCls;
 
     /** */
@@ -67,8 +70,22 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
     /**
      *
      */
+    public void startBlockReconnect() {
+        reconLatch = new CountDownLatch(1);
+    }
+
+    /**
+     *
+     */
     public void stopBlockJoin() {
         joinLatch.countDown();
+    }
+
+    /**
+     *
+     */
+    public void stopBlockRestart() {
+        reconLatch.countDown();
     }
 
     /** {@inheritDoc} */
@@ -78,6 +95,22 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
 
             if (writeLatch0 != null) {
                 log.info("Block join");
+
+                U.await(writeLatch0);
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeReconnect(ClusterNode locNode, IgniteLogger log) {
+        try {
+            CountDownLatch writeLatch0 = reconLatch;
+
+            if (writeLatch0 != null) {
+                log.info("Block reconnect");
 
                 U.await(writeLatch0);
             }

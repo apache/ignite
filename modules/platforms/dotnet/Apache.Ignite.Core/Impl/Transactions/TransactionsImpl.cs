@@ -89,13 +89,18 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** */
         private readonly Ignite _ignite;
 
+        /** */
+        private readonly string _label;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionsImpl" /> class.
         /// </summary>
         /// <param name="ignite">Parent target, actually <see cref="Ignite"/> (used for withLabel)</param>
         /// <param name="target">Target.</param>
         /// <param name="localNodeId">Local node id.</param>
-        public TransactionsImpl(Ignite ignite, IPlatformTargetInternal target, Guid localNodeId) : base(target)
+        /// <param name="label">TX label. </param>
+        public TransactionsImpl(Ignite ignite, IPlatformTargetInternal target, Guid localNodeId, string label = null) 
+            : base(target)
         {
             _localNodeId = localNodeId;
 
@@ -111,6 +116,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             _dfltTimeout = res.Item3;
             _dfltTimeoutOnPartitionMapExchange = res.Item4;
             _ignite = ignite;
+            _label = label;
         }
 
         /** <inheritDoc /> */
@@ -138,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 w.WriteInt(txSize);
             }, s => s.ReadLong());
 
-            var innerTx = new TransactionImpl(id, this, concurrency, isolation, timeout, _localNodeId);
+            var innerTx = new TransactionImpl(id, this, concurrency, isolation, timeout, _label, _localNodeId);
 
             return new Transaction(innerTx);
         }
@@ -195,8 +201,10 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
                     var timeout = reader.ReadLongAsTimespan();
 
+                    var label = reader.ReadString();
+
                     var innerTx = new TransactionImpl(id, this, (TransactionConcurrency) concurrency,
-                        (TransactionIsolation) isolation, timeout, _localNodeId, false);
+                        (TransactionIsolation) isolation, timeout, label, _localNodeId, false);
 
                     result.Add(new Transaction(innerTx));
                 }

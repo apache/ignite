@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.junit.Test;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version
@@ -78,6 +79,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCompactingOldWalFiles() throws Exception {
         doTestStartupWithOldVersion("2.3.0");
     }

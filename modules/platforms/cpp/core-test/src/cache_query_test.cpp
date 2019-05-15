@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
+#include <stdint.h>
 
 #include <sstream>
 #include <iterator>
@@ -761,7 +759,7 @@ struct CacheQueryTestSuiteFixture
         Cache<int, QueryPerson> cache = GetPersonCache();
 
         // Test query with two fields of different type.
-        SqlFieldsQuery qry("select name, age from QueryPerson");
+        SqlFieldsQuery qry("select name, age from QueryPerson order by age");
 
         QueryFieldsCursor cursor = cache.Query(qry);
         CheckEmpty(cursor);
@@ -805,12 +803,12 @@ struct CacheQueryTestSuiteFixture
             std::string name = row.GetNext<std::string>(error);
             BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-            BOOST_REQUIRE(name == expected_name);
+            BOOST_REQUIRE_EQUAL(name, expected_name);
 
             int age = row.GetNext<int>(error);
             BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-            BOOST_REQUIRE(age == expected_age);
+            BOOST_REQUIRE_EQUAL(age, expected_age);
 
             BOOST_REQUIRE(!row.HasNext());
         }
@@ -964,8 +962,7 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
  */
 BOOST_AUTO_TEST_CASE(TestSqlQueryDistributedJoins)
 {
-    if (JetBrains::underTeamcity())
-        return;
+    MUTE_TEST_FOR_TEAMCITY;
 
     Cache<int, QueryPerson> cache1 = GetPersonCache();
     Cache<int, QueryRelation> cache2 = GetRelationCache();
@@ -1245,8 +1242,7 @@ BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryBasic)
  */
 BOOST_AUTO_TEST_CASE(TestSqlFieldsQueryDistributedJoins)
 {
-    if (JetBrains::underTeamcity())
-        return;
+    MUTE_TEST_FOR_TEAMCITY;
 
     Cache<int, QueryPerson> cache1 = GetPersonCache();
     Cache<int, QueryRelation> cache2 = GetRelationCache();
@@ -1456,7 +1452,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
     Cache<int, QueryPerson> cache = GetPersonCache();
 
     // Test query with two fields of different type.
-    SqlFieldsQuery qry("select name, age from QueryPerson");
+    SqlFieldsQuery qry("select name, age from QueryPerson order by age");
 
     QueryFieldsCursor cursor = cache.Query(qry);
     CheckEmpty(cursor);
@@ -1500,12 +1496,12 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
         std::string name = row.GetNext<std::string>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_REQUIRE(name == expected_name);
+        BOOST_REQUIRE_EQUAL(name, expected_name);
 
         int age = row.GetNext<int>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_REQUIRE(age == expected_age);
+        BOOST_REQUIRE_EQUAL(age, expected_age);
 
         BOOST_REQUIRE(!row.HasNext());
     }

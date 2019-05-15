@@ -25,29 +25,27 @@ import org.apache.ignite.cache.query.QueryCancelledException;
  */
 public class GridQueryCancel {
     /** No-op runnable indicating cancelled state. */
-    private static final Runnable CANCELLED = new Runnable() {
-        @Override public void run() {
-            // No-op.
-        }
+    private static final QueryCancellable CANCELLED = () -> {
+        // No-op.
     };
 
     /** */
-    private static final AtomicReferenceFieldUpdater<GridQueryCancel, Runnable> STATE_UPDATER =
-        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, Runnable.class, "clo");
+    private static final AtomicReferenceFieldUpdater<GridQueryCancel, QueryCancellable> STATE_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(GridQueryCancel.class, QueryCancellable.class, "clo");
 
     /** */
-    private volatile Runnable clo;
+    private volatile QueryCancellable clo;
 
     /**
      * Sets a cancel closure.
      *
      * @param clo Clo.
      */
-    public void set(Runnable clo) throws QueryCancelledException {
+    public void set(QueryCancellable clo) throws QueryCancelledException {
         assert clo != null;
 
         while(true) {
-            Runnable tmp = this.clo;
+            QueryCancellable tmp = this.clo;
 
             if (tmp == CANCELLED)
                 throw new QueryCancelledException();
@@ -62,11 +60,11 @@ public class GridQueryCancel {
      */
     public void cancel() {
         while(true) {
-            Runnable tmp = this.clo;
+            QueryCancellable tmp = clo;
 
             if (STATE_UPDATER.compareAndSet(this, tmp, CANCELLED)) {
                 if (tmp != null)
-                    tmp.run();
+                    tmp.doCancel();
 
                 return;
             }

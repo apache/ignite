@@ -59,7 +59,6 @@ public class IgfsInputStreamImpl extends IgfsInputStream implements IgfsSecondar
     private final IgfsContext igfsCtx;
 
     /** Secondary file system reader. */
-    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private final IgfsSecondaryFileSystemPositionedReadable secReader;
 
     /** Logger. */

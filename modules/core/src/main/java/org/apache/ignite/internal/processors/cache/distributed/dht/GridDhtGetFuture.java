@@ -194,6 +194,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         // TODO get rid of force keys request https://issues.apache.org/jira/browse/IGNITE-10251
         GridDhtFuture<Object> fut = cctx.group().preloader().request(cctx, keys.keySet(), topVer);
 
+        assert !cctx.mvccEnabled() || fut == null; // Should not happen with MVCC enabled.
+
         if (fut != null) {
             if (!F.isEmpty(fut.invalidPartitions())) {
                 if (retries == null)
@@ -320,6 +322,18 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         try {
             int keyPart = cctx.affinity().partition(key);
 
+            if (cctx.mvccEnabled()) {
+                boolean noOwners = cctx.topology().owners(keyPart, topVer).isEmpty();
+
+                // Force key request is disabled for MVCC. So if there are no partition owners for the given key
+                // (we have a not strict partition loss policy if we've got here) we need to set flag forceKeys to true
+                // to avoid useless remapping to other non-owning partitions. For non-mvcc caches the force key request
+                // is also useless in the such situations, so the same flow is here: allegedly we've made a force key
+                // request with no results and therefore forceKeys flag may be set to true here.
+                if (noOwners)
+                    forceKeys = true;
+            }
+
             GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
                 cache().topology().localPartition(keyPart, topVer, true) :
                 cache().topology().localPartition(keyPart);
@@ -440,7 +454,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             log.debug("Got removed entry when getting a DHT value: " + e);
                     }
                     finally {
-                        e.touch(topVer);
+                        e.touch();
                     }
                 }
             }

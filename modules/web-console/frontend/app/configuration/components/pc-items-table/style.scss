@@ -1,0 +1,68 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+pc-items-table {
+    @import "public/stylesheets/variables.scss";
+
+    display: block;
+
+    .panel-title {
+        display: flex;
+        flex-direction: row;
+    }
+
+    // Removes unwanted box-shadow and border-right from checkboxes column
+    .ui-grid.ui-grid--ignite .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-render-container-left:before {
+        box-shadow: none;
+    }
+    .ui-grid-pinned-container.ui-grid-pinned-container-left .ui-grid-cell:last-child {
+        border-right: none;
+    }
+    .ui-grid--ignite .ui-grid-header-cell .ui-grid-cell-contents {
+        padding-top: (69px - 20px) / 2;
+        padding-bottom: (69px - 20px) / 2;
+    }
+    footer-slot {
+        $height: 36px + 11px;
+        $line-height: 16px;
+        display: block;
+        line-height: $line-height;
+        font-size: 14px;
+        padding: ($height - $line-height) / 2 20px ($height - $line-height) / 2 70px;
+    }
+    .pco-clusters-table__column-selection {
+        margin-left: 0 !important;
+    }
+    .pco-clusters-table__actions-button {
+        margin-left: auto;
+    }
+    // Fixes header jank
+    .ui-grid-header-viewport {
+        min-height: 70px;
+    }
+    .pc-items-table__selection-count {
+        font-size: 14px;
+        font-style: italic;
+        flex: 0 0 auto;
+    }
+    .pc-items-table__table-name {
+        display: flex;
+    }
+    grid-column-selector {
+        flex: 0 0 auto;
+    }
+}

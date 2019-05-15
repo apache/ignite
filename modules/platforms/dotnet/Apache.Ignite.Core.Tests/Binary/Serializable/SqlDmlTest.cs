@@ -99,7 +99,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             };
 
             // Test SQL.
+#pragma warning disable 618
             var res = cache.Query(new SqlQuery(typeof(SimpleSerializable), "where Int = 2")).GetAll().Single();
+#pragma warning restore 618
 
             Assert.AreEqual(2, res.Key);
             Assert.AreEqual(2, res.Value.Int);

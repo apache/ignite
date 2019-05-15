@@ -251,7 +251,6 @@ public class GridCacheAffinityProxy<K, V> implements Affinity<K>, Externalizable
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         cctx = (GridCacheContext<K, V>)in.readObject();
     }

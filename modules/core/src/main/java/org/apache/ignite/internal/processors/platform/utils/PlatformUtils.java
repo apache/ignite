@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
@@ -81,7 +82,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 /**
  * Platform utility methods.
  */
-@SuppressWarnings({"unchecked"})
 public class PlatformUtils {
     /** Node attribute: platform. */
     public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
@@ -1266,6 +1266,21 @@ public class PlatformUtils {
         }
 
         return attrs;
+    }
+
+    /**
+     * Write binary productVersion.
+     *
+     * @param out Writer.
+     * @param productVersion IgniteProductVersion.
+     */
+    public static void writeNodeVersion(BinaryRawWriterEx out, IgniteProductVersion productVersion) {
+        out.writeByte(productVersion.major());
+        out.writeByte(productVersion.minor());
+        out.writeByte(productVersion.maintenance());
+        out.writeString(productVersion.stage());
+        out.writeLong(productVersion.revisionTimestamp());
+        out.writeByteArray(productVersion.revisionHash());
     }
 
     /**

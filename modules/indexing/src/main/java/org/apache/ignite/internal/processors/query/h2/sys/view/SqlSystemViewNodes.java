@@ -39,8 +39,8 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
      * @param ctx Grid context.
      */
     public SqlSystemViewNodes(GridKernalContext ctx) {
-        super("NODES", "Topology nodes", ctx, "ID",
-            newColumn("ID", Value.UUID),
+        super("NODES", "Topology nodes", ctx, "NODE_ID",
+            newColumn("NODE_ID", Value.UUID),
             newColumn("CONSISTENT_ID"),
             newColumn("VERSION"),
             newColumn("IS_CLIENT", Value.BOOLEAN),
@@ -57,7 +57,7 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
 
         Collection<ClusterNode> nodes;
 
-        SqlSystemViewColumnCondition idCond = conditionForColumn("ID", first, last);
+        SqlSystemViewColumnCondition idCond = conditionForColumn("NODE_ID", first, last);
 
         if (idCond.isEquality()) {
             UUID nodeId = uuidFromValue(idCond.valueForEquality());
@@ -70,9 +70,10 @@ public class SqlSystemViewNodes extends SqlAbstractLocalSystemView {
         for (ClusterNode node : nodes) {
             if (node != null)
                 rows.add(
-                    createRow(ses, rows.size(),
+                    createRow(
+                        ses,
                         node.id(),
-                        node.consistentId(),
+                        toStringSafe(node.consistentId()),
                         node.version(),
                         node.isClient(),
                         node.isDaemon(),

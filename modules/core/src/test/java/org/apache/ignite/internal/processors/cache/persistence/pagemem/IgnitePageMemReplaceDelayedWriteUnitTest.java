@@ -218,6 +218,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         GridCacheSharedContext sctx = Mockito.mock(GridCacheSharedContext.class);
 
+        when(sctx.gridConfig()).thenReturn(cfg);
         when(sctx.pageStore()).thenReturn(new NoOpPageStoreManager());
         when(sctx.wal()).thenReturn(new NoOpWALManager());
         when(sctx.database()).thenReturn(db);

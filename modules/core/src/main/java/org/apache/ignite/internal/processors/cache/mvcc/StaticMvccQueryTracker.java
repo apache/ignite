@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Simple MVCC tracker used only as an Mvcc snapshot holder.
@@ -65,32 +63,7 @@ public class StaticMvccQueryTracker implements MvccQueryTracker {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<MvccSnapshot> requestSnapshot(@NotNull final AffinityTopologyVersion topVer) {
-        return new GridFinishedFuture<>(snapshot);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void requestSnapshot(@NotNull AffinityTopologyVersion topVer, @NotNull MvccSnapshotResponseListener lsnr) {
-        lsnr.onResponse(snapshot);
-    }
-
-    /** {@inheritDoc} */
     @Override public void onDone() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> onDone(@NotNull GridNearTxLocal tx, boolean commit) {
-        throw new UnsupportedOperationException("Operation is not supported.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public long onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        return MVCC_TRACKER_ID_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long id() {
-        return MVCC_TRACKER_ID_NA;
     }
 }

@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -80,6 +81,7 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNonCoalescingIncrementing() throws Exception {
         Ignite ignite = grid(0);
 

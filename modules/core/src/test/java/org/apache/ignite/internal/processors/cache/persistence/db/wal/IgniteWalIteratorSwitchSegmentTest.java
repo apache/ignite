@@ -40,6 +40,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.WalStateManager;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,6 +61,7 @@ import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
@@ -105,6 +106,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testCheckSerializer() throws Exception {
         for (int serVer : checkSerializerVers) {
             checkInvariantSwitchSegmentSize(serVer);
@@ -119,7 +121,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         GridKernalContext kctx = new StandaloneGridKernalContext(
             log, null, null) {
             @Override public IgniteCacheObjectProcessor cacheObjects() {
-                return new IgniteCacheObjectProcessorImpl(this);
+                return new CacheObjectBinaryProcessorImpl(this);
             }
         };
 
@@ -146,6 +148,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
                 null,
                 null,
                 null,
+                null,
                 null)
         ).createSerializer(serVer);
 
@@ -161,6 +164,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testInvariantSwitchSegment() throws Exception {
         for (int serVer : checkSerializerVers) {
             try {
@@ -177,6 +181,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    @Test
     public void testSwitchReadingSegmentFromWorkToArchive() throws Exception {
         for (int serVer : checkSerializerVers) {
             try {
@@ -465,6 +470,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
             null,
             null,
             new GridCacheIoManager(),
+            null,
             null,
             null,
             null,

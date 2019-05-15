@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,6 +64,9 @@ public class IndexStorageImpl implements IndexStorage {
     /** Cache group ID. */
     private final int grpId;
 
+    /** Whether group is shared. */
+    private final boolean grpShared;
+
     /** */
     private final int allocPartId;
 
@@ -76,6 +82,7 @@ public class IndexStorageImpl implements IndexStorage {
         final IgniteWriteAheadLogManager wal,
         final AtomicLong globalRmvId,
         final int grpId,
+        boolean grpShared,
         final int allocPartId,
         final byte allocSpace,
         final ReuseList reuseList,
@@ -86,6 +93,7 @@ public class IndexStorageImpl implements IndexStorage {
         try {
             this.pageMem = pageMem;
             this.grpId = grpId;
+            this.grpShared = grpShared;
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
             this.reuseList = reuseList;
@@ -99,7 +107,15 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage getOrAllocateForTree(final String idxName) throws IgniteCheckedException {
+    @Override public RootPage allocateCacheIndex(Integer cacheId, String idxName, int segment)
+        throws IgniteCheckedException {
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
+
+        return allocateIndex(maskedIdxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RootPage allocateIndex(String idxName) throws IgniteCheckedException {
         final MetaTree tree = metaTree;
 
         synchronized (this) {
@@ -132,8 +148,15 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage dropRootPage(final String idxName)
+    @Override public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment)
         throws IgniteCheckedException {
+        String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);
+
+        return dropIndex(maskedIdxName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public RootPage dropIndex(final String idxName) throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
         final IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));
@@ -149,6 +172,39 @@ public class IndexStorageImpl implements IndexStorage {
     /** {@inheritDoc} */
     @Override public void destroy() throws IgniteCheckedException {
         metaTree.destroy();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<String> getIndexNames() throws IgniteCheckedException {
+        assert metaTree != null;
+        
+        GridCursor<IndexItem> cursor = metaTree.find(null, null);
+
+        ArrayList<String> names = new ArrayList<>((int)metaTree.size());
+
+        while (cursor.next()) {
+            IndexItem item = cursor.get();
+            
+            if (item != null)
+                names.add(new String(item.idxName));
+        }
+        
+        return names;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean nameIsAssosiatedWithCache(String idxName, int cacheId) {
+        return !grpShared || idxName.startsWith(Integer.toString(cacheId));
+    }
+
+    /**
+     * Mask cache index name.
+     *
+     * @param idxName Index name.
+     * @return Masked name.
+     */
+    private String maskCacheIndexName(Integer cacheId, String idxName, int segment) {
+        return (grpShared ? (Integer.toString(cacheId) + "_") : "") + idxName + "%" + segment;
     }
 
     /**

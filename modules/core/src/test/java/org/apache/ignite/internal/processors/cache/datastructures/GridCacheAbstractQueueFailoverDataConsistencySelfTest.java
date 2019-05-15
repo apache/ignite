@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -104,6 +105,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddFailover() throws Exception {
         testAddFailover(false);
     }
@@ -111,6 +113,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddFailoverCollocated() throws Exception {
         testAddFailover(true);
     }
@@ -199,6 +202,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPollFailover() throws Exception {
         testPollFailover(false);
     }
@@ -206,6 +210,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPollFailoverCollocated() throws Exception {
         testPollFailover(true);
     }

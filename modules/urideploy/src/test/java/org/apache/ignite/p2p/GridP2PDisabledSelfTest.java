@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.deployment.uri.UriDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test what happens if peer class loading is disabled.
@@ -172,6 +173,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testGarPrivateMode() throws Exception {
         depMode = DeploymentMode.PRIVATE;
 
@@ -183,6 +185,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testGarIsolatedMode() throws Exception {
         depMode = DeploymentMode.ISOLATED;
 
@@ -194,6 +197,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testGarContinuousMode() throws Exception {
         depMode = DeploymentMode.CONTINUOUS;
 
@@ -205,6 +209,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if error occur.
      */
+    @Test
     public void testGarSharedMode() throws Exception {
         depMode = DeploymentMode.SHARED;
 

@@ -44,6 +44,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
@@ -100,7 +101,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testMultipleVersionsLocalDeploy() throws Exception {
         try {
             Ignite ignite = startGrid(1);
@@ -159,7 +160,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     /**
      * @throws Exception If test failed.
      */
-    @SuppressWarnings("unchecked")
+    @Test
     public void testMultipleVersionsP2PDeploy() throws Exception {
         try {
             Ignite g1 = startGrid(1);

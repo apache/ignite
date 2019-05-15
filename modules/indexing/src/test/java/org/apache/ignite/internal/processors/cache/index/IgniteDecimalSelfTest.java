@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static java.util.Arrays.asList;
 
@@ -122,6 +123,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfiguredFromDdl() throws Exception {
         checkPrecisionAndScale(DEC_TAB_NAME, VALUE, PRECISION, SCALE);
     }
@@ -129,6 +131,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfiguredFromQueryEntity() throws Exception {
         checkPrecisionAndScale(SALARY_TAB_NAME, "amount", PRECISION, SCALE);
     }
@@ -136,6 +139,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfiguredFromQueryEntityInDynamicallyCreatedCache() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -151,6 +155,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConfiguredFromAnnotations() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -164,6 +169,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** */
+    @Test
     public void testSelectDecimal() throws Exception {
         IgniteEx grid = grid(0);
 

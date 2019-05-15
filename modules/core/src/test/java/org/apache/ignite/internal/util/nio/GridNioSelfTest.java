@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -103,6 +104,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleMessages() throws Exception {
         final Collection<GridNioSession> sesSet = new GridConcurrentHashSet<>();
 
@@ -159,6 +161,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if failed.
      */
+    @Test
     public void testServerShutdown() throws Exception {
         GridNioServerListener lsnr = new GridNioServerListenerAdapter() {
             @Override public void onConnected(GridNioSession ses) {
@@ -214,6 +217,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCorrectSocketClose() throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
@@ -259,6 +263,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testThroughput() throws Exception {
         GridNioServerListener lsnr = new GridNioServerListenerAdapter() {
             @Override public void onConnected(GridNioSession ses) {
@@ -339,6 +344,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCloseSession() throws Exception {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
@@ -414,6 +420,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSendAfterServerStop() throws Exception {
         final AtomicReference<GridNioSession> sesRef = new AtomicReference<>();
 
@@ -631,6 +638,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testSendReceive() throws Exception {
         CountDownLatch latch = new CountDownLatch(10);
 
@@ -665,6 +673,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testAsyncSendReceive() throws Exception {
         CountDownLatch latch = new CountDownLatch(10);
 
@@ -703,6 +712,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testMultiThreadedSendReceive() throws Exception {
         CountDownLatch latch = new CountDownLatch(MSG_CNT * THREAD_CNT);
 
@@ -749,6 +759,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentConnects() throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(THREAD_CNT);
 
@@ -846,6 +857,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if test failed.
      */
+    @Test
     public void testDeliveryDuration() throws Exception {
         idProvider.set(1);
 
@@ -913,6 +925,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSessionIdleTimeout() throws Exception {
         final int sesCnt = 20;
 
@@ -975,6 +988,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testWriteTimeout() throws Exception {
         final int sesCnt = 20;
 

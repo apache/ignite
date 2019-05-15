@@ -21,13 +21,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
-import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * File IO tests.
  */
-public class IgniteFileIOTest extends TestCase {
+public class IgniteFileIOTest {
     /** Test data size. */
     private static final int TEST_DATA_SIZE = 16 * 1024 * 1024;
 
@@ -52,6 +52,21 @@ public class IgniteFileIOTest extends TestCase {
          */
         TestFileIO(byte[] data) {
             this.data = data;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getFileSystemBlockSize() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getSparseSize() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int punchHole(long position, int len) {
+            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
@@ -171,6 +186,7 @@ public class IgniteFileIOTest extends TestCase {
     /**
      * test for 'full read' functionality.
      */
+    @Test
     public void testReadFully() throws Exception {
         byte[] arr = new byte[TEST_DATA_SIZE];
 
@@ -206,6 +222,7 @@ public class IgniteFileIOTest extends TestCase {
     /**
      * test for 'full read' functionality.
      */
+    @Test
     public void testReadFullyArray() throws Exception {
         byte[] arr = new byte[TEST_DATA_SIZE];
 
@@ -227,6 +244,7 @@ public class IgniteFileIOTest extends TestCase {
     /**
      * test for 'full write' functionality.
      */
+    @Test
     public void testWriteFully() throws Exception {
         byte[] arr = new byte[TEST_DATA_SIZE];
 
@@ -262,6 +280,7 @@ public class IgniteFileIOTest extends TestCase {
     /**
      * test for 'full write' functionality.
      */
+    @Test
     public void testWriteFullyArray() throws Exception {
         byte[] arr = new byte[TEST_DATA_SIZE];
 

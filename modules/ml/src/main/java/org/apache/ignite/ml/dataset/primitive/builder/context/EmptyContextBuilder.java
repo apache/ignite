@@ -21,6 +21,7 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 
 /**
  * A partition {@code context} builder that makes {@link EmptyContext}.
@@ -33,7 +34,7 @@ public class EmptyContextBuilder<K, V> implements PartitionContextBuilder<K, V, 
     private static final long serialVersionUID = 6620781747993467186L;
 
     /** {@inheritDoc} */
-    @Override public EmptyContext build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
+    @Override public EmptyContext build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
         return new EmptyContext();
     }
 }

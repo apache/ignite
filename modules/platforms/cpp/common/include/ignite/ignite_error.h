@@ -201,6 +201,13 @@ namespace ignite
 
         /** Future state error. */
         static const int IGNITE_ERR_FUTURE_STATE = 2024;
+
+        /** Networking error. */
+        static const int IGNITE_ERR_NETWORK_FAILURE = 2025;
+
+        /** SSL/TLS error. */
+        static const int IGNITE_ERR_SECURE_CONNECTION_FAILURE = 2026;
+        
         
         /** Unknown error. */
         static const int IGNITE_ERR_UNKNOWN = -1;

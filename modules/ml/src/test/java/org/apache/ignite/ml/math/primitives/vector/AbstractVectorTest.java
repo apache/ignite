@@ -354,14 +354,9 @@ public class AbstractVectorTest {
      * @return AbstractVector.
      */
     private AbstractVector getAbstractVector(VectorStorage storage) {
-        return new AbstractVector(storage) { // TODO: IGNTIE-5723, find out how to fix warning about missing constructor
+        return new AbstractVector(storage) { // TODO: IGNITE-5723, find out how to fix warning about missing constructor
             /** {@inheritDoc} */
             @Override public boolean isDense() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
                 return false;
             }
 
@@ -403,11 +398,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
             }
 
             /** {@inheritDoc} */
@@ -423,7 +413,7 @@ public class AbstractVectorTest {
      * @return AbstractVector.
      */
     private AbstractVector getAbstractVector() {
-        return new AbstractVector() { // TODO: IGNTIE-5723, find out how to fix warning about missing constructor
+        return new AbstractVector() { // TODO: IGNITE-5723, find out how to fix warning about missing constructor
             /** {@inheritDoc} */
             @Override public boolean isDense() {
                 return false;
@@ -432,11 +422,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
-                return false;
             }
 
             /** {@inheritDoc} */
@@ -472,11 +457,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
             }
 
             /** {@inheritDoc} */

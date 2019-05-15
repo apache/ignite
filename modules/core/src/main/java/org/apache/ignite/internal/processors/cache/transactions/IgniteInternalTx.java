@@ -38,6 +38,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -662,5 +663,5 @@ public interface IgniteInternalTx {
      * @return Transaction counters.
      * @param createIfAbsent {@code True} if non-null instance is needed.
      */
-    @Nullable public TxCounters txCounters(boolean createIfAbsent);
+    @Nullable @Contract("true -> !null;") public TxCounters txCounters(boolean createIfAbsent);
 }

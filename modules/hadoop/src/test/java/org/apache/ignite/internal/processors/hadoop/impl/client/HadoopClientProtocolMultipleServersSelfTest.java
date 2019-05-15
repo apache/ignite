@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Hadoop client protocol configured with multiple ignite servers tests.
@@ -146,6 +147,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultipleAddresses() throws Exception {
         restPort = REST_PORT;
 
@@ -161,6 +163,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingleAddress() throws Exception {
         try {
             // Don't use REST_PORT to test connection fails if the only this port is configured
@@ -186,6 +189,7 @@ public class HadoopClientProtocolMultipleServersSelfTest extends HadoopAbstractS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMixedAddrs() throws Exception {
         restPort = REST_PORT;
 

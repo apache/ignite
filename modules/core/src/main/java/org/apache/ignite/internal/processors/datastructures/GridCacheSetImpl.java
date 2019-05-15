@@ -158,7 +158,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
 
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
+                new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null,
+                false, false, null);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -427,7 +428,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @SuppressWarnings("unchecked")
     private WeakReferenceCloseableIterator<T> sharedCacheIterator() throws IgniteCheckedException {
         CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-            new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null, false, false);
+            new GridSetQueryPredicate<>(id, collocated), collocated ? hdrPart : null,
+            false, false, null);
 
         Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -514,7 +516,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @throws IgniteCheckedException If all cache nodes left grid.
      */
     private Collection<ClusterNode> dataNodes(AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        if (ctx.isLocal() || ctx.isReplicated())
+        assert ctx.isPartitioned() || collocated : "Non-collocated mode is supported only for PARTITIONED caches.";
+
+        if (ctx.isLocal() || (ctx.isReplicated() && ctx.affinityNode()))
             return Collections.singleton(ctx.localNode());
 
         Collection<ClusterNode> nodes;

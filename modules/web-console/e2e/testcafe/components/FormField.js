@@ -32,13 +32,12 @@ export class FormField {
         if (id)
             this._selector = Selector(`#${id}`).parent(this.constructor.ROOT_SELECTOR);
         else if (label) {
-            this._selector = Selector(() => {
-                return Array
-                    .from(window.document.querySelectorAll(this.constructor.LABEL_SELECTOR))
-                    .filter((el) => el.textContent.contains(label))
-                    .map((el) => el.parent(this.constructor.ROOT_SELECTOR))
+            this._selector = Selector((LABEL_SELECTOR, ROOT_SELECTOR, label) => {
+                return [].slice.call((window.document.querySelectorAll(LABEL_SELECTOR)))
+                    .filter((el) => el.textContent.includes(label))
+                    .map((el) => el.closest(ROOT_SELECTOR))
                     .pop();
-            });
+            })(this.constructor.LABEL_SELECTOR, this.constructor.ROOT_SELECTOR, label);
         } else if (model)
             this._selector = AngularJSSelector.byModel(model).parent(this.constructor.ROOT_SELECTOR);
 

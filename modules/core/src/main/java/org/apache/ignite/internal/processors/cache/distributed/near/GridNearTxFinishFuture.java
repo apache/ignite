@@ -40,13 +40,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -147,7 +144,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
@@ -442,23 +438,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private void doFinish(boolean commit, boolean clearThreadMap) {
         try {
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
-                GridLongList waitTxs = tx.mvccWaitTransactions();
-
-                if (waitTxs != null) {
-                    MvccSnapshot snapshot = tx.mvccSnapshot();
-
-                    MvccCoordinator crd = cctx.coordinators().currentCoordinator();
-
-                    assert snapshot != null;
-
-                    if (snapshot.coordinatorVersion() == crd.coordinatorVersion()) {
-                        IgniteInternalFuture fut = cctx.coordinators()
-                            .waitTxsFuture(cctx.coordinators().currentCoordinatorId(), waitTxs);
-
-                        add(fut);
-                    }
-                }
-
                 // Cleanup transaction if heuristic failure.
                 if (tx.state() == UNKNOWN)
                     cctx.tm().rollbackTx(tx, clearThreadMap, false);
@@ -468,13 +447,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         GridDistributedTxMapping mapping = mappings.singleMapping();
 
                         if (mapping != null) {
-                            assert !hasFutures() || isDone() || waitTxs != null : futures();
+                            assert !hasFutures() || isDone() : futures();
 
                             finish(1, mapping, commit, !clearThreadMap);
                         }
                     }
                     else {
-                        assert !hasFutures() || isDone() || waitTxs != null : futures();
+                        assert !hasFutures() || isDone() : futures();
 
                         finish(mappings.mappings(), commit, !clearThreadMap);
                     }
@@ -841,7 +820,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
                 if (f.getClass() == FinishMiniFuture.class) {
                     FinishMiniFuture fut = (FinishMiniFuture)f;

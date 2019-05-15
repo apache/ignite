@@ -46,21 +46,17 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.DiscoveryHook;
 import org.apache.ignite.testframework.GridTestUtils.DiscoverySpiListenerWrapper;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  *
  */
 public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean clientMode;
 
@@ -96,7 +92,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
             });
         }
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(sharedStaticIpFinder);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -123,6 +119,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
      * Verifies that if thread tries to read metadata with ongoing update it gets blocked
      * until acknowledge message arrives.
      */
+    @Test
     public void testReadRequestBlockedOnUpdatingMetadata() throws Exception {
         final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -222,6 +219,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /**
      * Verifies that all sequential updates that don't introduce any conflicts are accepted and observed by all nodes.
      */
+    @Test
     public void testSequentialUpdatesNoConflicts() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -255,6 +253,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /**
      * Verifies that client is able to detect obsolete metadata situation and request up-to-date from the cluster.
      */
+    @Test
     public void testClientRequestsUpToDateMetadata() throws Exception {
         final IgniteEx ignite0 = startGrid(0);
 
@@ -290,6 +289,7 @@ public class GridCacheBinaryObjectMetadataExchangeMultinodeTest extends GridComm
     /**
      * Verifies that client resends request for up-to-date metadata in case of failure on server received first request.
      */
+    @Test
     public void testClientRequestsUpToDateMetadataOneNodeDies() throws Exception {
         final Ignite srv0 = startGrid(0);
         replaceWithStoppingMappingRequestListener(((GridKernalContext)U.field(srv0, "ctx")).io(), 0);

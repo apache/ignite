@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -139,6 +140,7 @@ public class IgniteHadoopFileSystemClientSelfTest extends IgfsCommonAbstractTest
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOutputStreamDeferredException() throws Exception {
         final byte[] data = "test".getBytes();
 

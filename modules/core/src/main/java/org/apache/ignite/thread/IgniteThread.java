@@ -171,6 +171,15 @@ public class IgniteThread extends Thread {
     }
 
     /**
+     * @return {@code True} if thread is not allowed to request binary metadata to avoid potential deadlock.
+     */
+    public static boolean currentThreadCanRequestBinaryMetadata() {
+        IgniteThread curThread = current();
+
+        return curThread == null || !curThread.isForbiddenToRequestBinaryMetadata();
+    }
+
+    /**
      * Callback before entry processor execution is started.
      */
     public static void onEntryProcessorEntered(boolean holdsTopLock) {

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractRemoveFailur
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -82,6 +83,8 @@ public class IgniteChangingBaselineDownCacheRemoveFailoverTest extends GridCache
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
         cleanPersistenceDir();
     }
 
@@ -101,6 +104,8 @@ public class IgniteChangingBaselineDownCacheRemoveFailoverTest extends GridCache
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
     }
 
     /** {@inheritDoc} */

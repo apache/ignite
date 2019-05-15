@@ -18,16 +18,43 @@
 package org.apache.ignite.cache.query;
 
 import javax.cache.Cache;
-
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Query for Lucene based fulltext search.
+ * <h1 class="header">Full Text Queries</h1>
+ * Ignite supports full text queries based on Apache Lucene engine.
+ * Note that all fields that are expected to show up in text query results must be annotated with {@link QueryTextField}
+ *
+ * <h2 class="header">Query usage</h2>
+ * Ignite TextQuery supports classic Lucene query syntax.
+ * See Lucene classic MultiFieldQueryParser and StandardAnalyzer javadoc for details.
+ * As an example, suppose we have data model consisting of {@code 'Employee'} class defined as follows:
+ * <pre name="code" class="java">
+ * public class Person {
+ *     private long id;
+ *
+ *     private String name;
+ *
+ *     // Index for text search.
+ *     &#64;QueryTextField
+ *     private String resume;
+ *     ...
+ * }
+ * </pre>
+ *
+ * Here is a possible query that will use Lucene text search to scan all resumes to
+ * check if employees have {@code Master} degree:
+ * <pre name="code" class="java">
+ * Query&lt;Cache.Entry&lt;Long, Person&gt;&gt; qry =
+ *     new TextQuery(Person.class, "Master");
+ *
+ * // Query all cache nodes.
+ * cache.query(qry).getAll();
+ * </pre>
  *
  * @see IgniteCache#query(Query)
  */
@@ -40,21 +67,6 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
 
     /** SQL clause. */
     private String txt;
-    
-    /** */
-    private IgniteBiPredicate<K, V> filter;
-
-   
-    /**
-     * Create scan query with filter.
-     *
-     * @param filter Filter. If {@code null} then all entries will be returned.
-     */
-    public TextQuery(Class<?> type, String txt,@Nullable IgniteBiPredicate<K, V> filter) {
-        this(type, txt);
-        setFitler(filter);
-    }
-
 
     /**
      * Constructs query for the given search string.
@@ -85,16 +97,6 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public String getType() {
         return type;
-    }
-    
-
-    /**
-     * Gets filter for query.
-     *
-     * @return Type.
-     */
-    public IgniteBiPredicate<K, V> getFilter() {
-        return filter;
     }
 
     /**
@@ -152,17 +154,6 @@ public final class TextQuery<K, V> extends Query<Cache.Entry<K, V>> {
         return (TextQuery<K, V>)super.setLocal(loc);
     }
 
-    /**
-     * Sets text search filter cloure.
-     *
-     * @param txt Text search string.
-     * @return {@code this} For chaining.
-     */
-    public TextQuery<K, V> setFitler(IgniteBiPredicate<K, V> filter) {
-        this.filter = filter;
-        return this;
-    }
-    
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TextQuery.class, this);

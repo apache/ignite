@@ -204,9 +204,14 @@ public class CommandLineTransformer {
      * @param args Collection of unknown (from JCommander point of view) arguments.
      */
     private void parseJvmOptionsAndSpringConfig(Iterable<String> args) {
+        boolean hadFileEncoding = false;
+
         for (String arg : args) {
             if (arg.startsWith(JVM_OPTION_PREFIX)) {
                 String jvmOpt = arg.substring(JVM_OPTION_PREFIX.length());
+
+                if (jvmOpt.startsWith("-Dfile.encoding="))
+                    hadFileEncoding = true;
 
                 if (!checkJVMOptionIsSupported(jvmOpt))
                     throw new RuntimeException(JVM_OPTION_PREFIX + " JVM parameters for Ignite batch scripts " +
@@ -222,6 +227,9 @@ public class CommandLineTransformer {
                     throw new RuntimeException("Unrecognised parameter has been found: " + arg);
             }
         }
+
+        if (!hadFileEncoding)
+            jvmOptions = (jvmOptions.isEmpty() ? "" : (jvmOptions + " ")) + "-Dfile.encoding=UTF-8";
     }
 
     /**
