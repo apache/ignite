@@ -65,7 +65,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
-    @Ignore
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11849")
     @Test
     public void testReadThroughWithExpirePolicy() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
@@ -109,7 +109,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
-    @Ignore
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11849")
     @Test
     public void testReadThroughExpirePolicyConfigured() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
@@ -205,7 +205,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
     /**
      * @throws Exception if failed.
      */
-    @Ignore
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11849")
     @Test
     public void testReadThroughSkipStore() throws Exception {
         Ignite ig = testedGrid();

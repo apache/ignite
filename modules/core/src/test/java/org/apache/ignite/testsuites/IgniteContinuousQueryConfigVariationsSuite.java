@@ -61,12 +61,12 @@ public class IgniteContinuousQueryConfigVariationsSuite {
 
     /** */
     @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteSingleNode.class)
-    @Ignore public static class SingleNodeTest {
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11851") public static class SingleNodeTest {
     }
 
     /** */
     @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteMultiNode.class)
-    @Ignore public static class MultiNodeTest {
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11851") public static class MultiNodeTest {
     }
 
     /** {@inheritDoc} */
