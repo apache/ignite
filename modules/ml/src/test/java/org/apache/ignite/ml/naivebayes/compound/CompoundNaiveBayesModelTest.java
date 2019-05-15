@@ -45,6 +45,16 @@ public class CompoundNaiveBayesModelTest {
 
     /** */
     private static final Map<Integer, double[]> data = new HashMap<>();
+    /** */
+    private static double[][] means;
+    /** */
+    private static double[][] variances;
+    /** */
+    private static double[] classProbabilities;
+    /** */
+    private static  double[][] thresholds;
+    /** */
+    private static double[][][] probabilities;
 
     static {
         data.put(0, new double[] {6,    180, 12, 0, 0, 1, 1, 1, LABEL_1});
@@ -56,20 +66,29 @@ public class CompoundNaiveBayesModelTest {
         data.put(5, new double[] {5.5,  150,  8, 1, 1, 0, 0, 1, LABEL_2});
         data.put(6, new double[] {5.42, 130,  7, 1, 1, 1, 1, 0, LABEL_2});
         data.put(7, new double[] {5.75, 150,  9, 1, 1, 0, 1, 0, LABEL_2});
+
+        classProbabilities = new double[] {.5, .5};
+
+        means = new double[][] {
+                {5.855, 176.25, 11.25},
+                {5.4175, 132.5, 7.5},
+        };
+
+        variances = new double[][] {
+                {3.5033E-2, 1.2292E2, 9.1667E-1},
+                {9.7225E-2, 5.5833E2, 1.6667},
+        };
+
+        thresholds = new double[][] { {.5}, {.5}, {.5}, {.5}, {.5}};
+
+        probabilities = new double[][][] {
+                {{.25, .75}, {.25, .75}, {.5, .5}, {.5, .5}, {.5, .5}},
+                {{0, 1}, {.25, .75}, {.75, .25}, {.25, .75}, {.5, .5}}
+        };
     }
 
     @Test /** */
     public void testPredictOnlyGauss() {
-        double[] classProbabilities = new double[] {.5, .5};
-
-        double[][] means = new double[][] {
-            {5.855, 176.25, 11.25},
-            {5.4175, 132.5, 7.5},
-        };
-        double[][] variances = new double[][] {
-            {3.5033E-2, 1.2292E2, 9.1667E-1},
-            {9.7225E-2, 5.5833E2, 1.6667},
-        };
         GaussianNaiveBayesModel gaussianModel =
             new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
 
@@ -85,17 +104,10 @@ public class CompoundNaiveBayesModelTest {
 
     @Test /** */
     public void testPredictOnlyDiscrete() {
-        double[] classProbabilities = new double[] {.5, .5};
-
-        double[][][] probabilities = new double[][][] {
-            {{.25, .75}, {.25, .75}, {.5, .5}, {.5, .5}, {.5, .5}},
-            {{0, 1}, {.25, .75}, {.75, .25}, {.25, .75}, {.5, .5}}
-        };
-        double[][] thresholds = new double[][] { {.5}, {.5}, {.5}, {.5}, {.5}};
         DiscreteNaiveBayesModel discreteModel =
-            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, thresholds, new DiscreteNaiveBayesSumsHolder());
+            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, thresholds, null);
 
-        Vector observation = VectorUtils.of(2, 0, 1, 2, 0);
+        Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
         CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
             .wirhPriorProbabilities(classProbabilities)
@@ -107,23 +119,9 @@ public class CompoundNaiveBayesModelTest {
 
     @Test /** */
     public void testPredictGausAndDiscrete() {
-        double[][][] probabilities = new double[][][] {
-                {{.25, .75}, {.25, .75}, {.5, .5}, {.5, .5}, {.5, .5}},
-                {{0, 1}, {.25, .75}, {.75, .25}, {.25, .75}, {.5, .5}}
-        };
-        double[] classProbabilities = new double[] {.5, .5};
+        DiscreteNaiveBayesModel discreteModel =
+                new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, thresholds, null);
 
-        double[][] thresholds = new double[][] { {.5}, {.5}, {.5}, {.5}, {.5}};
-        DiscreteNaiveBayesModel discreteModel = new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, thresholds, null);
-
-        double[][] means = new double[][] {
-            {5.855, 176.25, 11.25},
-            {5.4175, 132.5, 7.5},
-        };
-        double[][] variances = new double[][] {
-            {3.5033E-2, 1.2292E2, 9.1667E-1},
-            {9.7225E-2, 5.5833E2, 1.6667},
-        };
         GaussianNaiveBayesModel gaussianModel =
             new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
 
@@ -135,7 +133,7 @@ public class CompoundNaiveBayesModelTest {
             .withDiscreteModel(discreteModel)
             .withDiscreteSkipFuture(f -> f <= 2);
 
-        Vector observation = VectorUtils.of(6, 130, 8, 2, 0, 1, 2, 0);
+        Vector observation = VectorUtils.of(6, 130, 8, 1, 0, 1, 1, 0);
 
         assertEquals(LABEL_2, model.predict(observation), PRECISION);
     }
