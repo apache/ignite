@@ -232,6 +232,6 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return tbl.tableStatistics().getRowCountStatistics();
+        return tbl.getRowCountApproximation();
     }
 }
