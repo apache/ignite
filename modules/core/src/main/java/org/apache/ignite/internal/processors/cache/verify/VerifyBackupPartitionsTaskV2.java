@@ -120,7 +120,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         if (results.size() != exceptions.size())
             return checkConflicts(clusterHashes, exceptions);
         else
-            return new IdleVerifyResultV2(new HashMap<>(), new HashMap<>(), new HashMap<>(), exceptions, false);
+            return new IdleVerifyResultV2(new HashMap<>(), new HashMap<>(), new HashMap<>(), exceptions);
     }
 
     /** {@inheritDoc} */
@@ -188,7 +188,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             }
         }
 
-        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions, true);
+        return new IdleVerifyResultV2(updateCntrConflicts, hashConflicts, movingParts, exceptions);
     }
 
     /** */
