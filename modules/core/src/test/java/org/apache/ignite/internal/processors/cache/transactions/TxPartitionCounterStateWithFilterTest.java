@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,6 +33,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -39,12 +43,40 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test if NOOP tx operation skips incrementing update counter for entry partition.
  */
+@RunWith(Parameterized.class)
 public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 4;
 
     /** */
     private boolean client;
+
+    /** */
+    @Parameterized.Parameter(0)
+    public CacheMode cacheMode;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public int backups;
+
+    /** */
+    @Parameterized.Parameter(2)
+    public boolean sameTx;
+
+    /** */
+    @Parameterized.Parameters(name = "cacheMode={0}, backups={1}, sameTx={2}")
+    public static Collection parameters() {
+        return Arrays.asList(new Object[][] {
+            {REPLICATED, -1, false},
+            {REPLICATED, -1, true},
+            {PARTITIONED, 2, false},
+            {PARTITIONED, 2, true},
+            {PARTITIONED, 1, false},
+            {PARTITIONED, 1, true},
+            {PARTITIONED, 0, false},
+            {PARTITIONED, 0, true}
+        });
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -68,61 +100,7 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
 
     /** */
     @Test
-    public void testAssignCountersInTxWithFilterReplicated() {
-        doTestAssignCountersInTxWithFilter(REPLICATED, -1, false);
-    }
-
-    /** */
-    @Test
-    public void testAssignCountersInTxWithFilterReplicatedSameTx() {
-        doTestAssignCountersInTxWithFilter(REPLICATED, -1, true);
-    }
-
-    /** */
-    @Test
-    public void testAssignCountersInTxWithFilterTwoBackups() {
-        doTestAssignCountersInTxWithFilter(PARTITIONED, 2, false);
-    }
-
-    /** */
-    @Test
-    public void testAssignCountersInTxWithFilterTwoBackupsSameTx() {
-        doTestAssignCountersInTxWithFilter(PARTITIONED, 2, true);
-    }
-
-    /** */
-    @Test
-    public void testAssignCountersInTxWithFilterOneBackup() {
-        doTestAssignCountersInTxWithFilter(PARTITIONED, 1, false);
-    }
-
-    /** */
-    @Test
-    public void testAssignCountersInTxWithFilterOneBackupSameTx() {
-        doTestAssignCountersInTxWithFilter(PARTITIONED, 1, true);
-    }
-
-    /** */
-    @Test
-    public void testAssignCountersInTxWithFilterNoBackups() {
-        doTestAssignCountersInTxWithFilter(PARTITIONED, 0, false);
-    }
-
-    /** */
-    @Test
-    public void testAssignCountersInTxWithFilterNoBackupsSameTx() {
-        doTestAssignCountersInTxWithFilter(PARTITIONED, 0, true);
-    }
-
-    /**
-     * @param cacheMode Cache mode.
-     * @param backups Backups.
-     * @param sameTx Same tx.
-     */
-    private void doTestAssignCountersInTxWithFilter(
-        CacheMode cacheMode,
-        int backups,
-        boolean sameTx) {
+    public void testAssignCountersInTxWithFilter() {
         for (Ignite ig : G.allGrids()) {
             for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
