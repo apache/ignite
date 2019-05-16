@@ -33,6 +33,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -118,6 +119,7 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
      * @throws Exception
      */
     @Test
+    @Ignore
     public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
         backups = 2;
 
