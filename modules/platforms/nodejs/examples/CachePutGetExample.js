@@ -62,7 +62,7 @@ class CachePutGetExample {
     constructor() {
         this._personCache = null;
         this._personObjectType = null;
-        this._binaryObjectCache = null; 
+        this._binaryObjectCache = null;
     }
 
     async start() {
@@ -127,7 +127,7 @@ class CachePutGetExample {
             new CacheEntry(await personBinaryObject1.getField('id'), personBinaryObject1),
             new CacheEntry(await personBinaryObject2.getField('id'), personBinaryObject2)
         ]);
-        
+
         console.log('Binary Objects put successfully using putAll()');
     }
 
@@ -138,7 +138,7 @@ class CachePutGetExample {
             this.printPersonObject(person.getValue());
         }
     }
-    
+
     async getBinaryObjects() {
         const personBinaryObject = await this._binaryObjectCache.get(3);
         console.log('Binary Object get:');

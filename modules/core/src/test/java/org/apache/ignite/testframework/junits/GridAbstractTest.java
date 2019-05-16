@@ -670,7 +670,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             afterTest();
         }
         finally {
-            serializedObj.clear();
+            if (!keepSerializedObjects())
+                serializedObj.clear();
 
             Thread.currentThread().setContextClassLoader(clsLdr);
 
@@ -1393,7 +1394,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param idx Index.
      * @return Ignite instance.
      */
-    protected Ignite ignite(int idx) {
+    protected IgniteEx ignite(int idx) {
         return grid(idx);
     }
 

@@ -62,7 +62,6 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -440,19 +439,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @param cachesToFilter cache groups to filter
          */
         private void filterByCacheFilter(Set<CacheGroupContext> cachesToFilter) {
-            if (onlySpecificCaches())
-                cachesToFilter.removeIf(grp -> !doesGrpMatchFilter(grp));
-
-            boolean excludeSysCaches;
-
-            if (arg instanceof VisorIdleVerifyDumpTaskArg) {
-                CacheFilterEnum filter = ((VisorIdleVerifyDumpTaskArg) arg).getCacheFilterEnum();
-
-                excludeSysCaches = !(filter == CacheFilterEnum.SYSTEM);
-            } else
-                excludeSysCaches = true;
-
-            cachesToFilter.removeIf(grp -> (grp.systemCache() && excludeSysCaches) || grp.isLocal());
+            cachesToFilter.removeIf(grp -> !doesGrpMatchFilter(grp));
         }
 
         /**
@@ -461,7 +448,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
          * @param cachesToFilter cache groups to filter
          */
         private void filterByCacheNames(Set<CacheGroupContext> cachesToFilter) {
-            if (arg.getCaches() != null && !arg.getCaches().isEmpty()) {
+            if (!F.isEmpty(arg.getCaches())) {
                 Set<Pattern> cacheNamesPatterns = new HashSet<>();
 
                 for (String cacheNameRegexp : arg.getCaches())
@@ -510,19 +497,6 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
         }
 
         /**
-         * @return True if validates only specific caches, else false.
-         */
-        private boolean onlySpecificCaches() {
-            if (arg instanceof VisorIdleVerifyDumpTaskArg) {
-                VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
-
-                return vdta.getCacheFilterEnum() != CacheFilterEnum.ALL;
-            }
-
-            return false;
-        }
-
-        /**
          * @param desc Cache descriptor.
          */
         private boolean isCacheMatchFilter(DynamicCacheDescriptor desc) {
@@ -534,6 +508,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                 VisorIdleVerifyDumpTaskArg vdta = (VisorIdleVerifyDumpTaskArg)arg;
 
                 switch (vdta.getCacheFilterEnum()) {
+                    case DEFAULT:
+                        return desc.cacheType().userCache() || !F.isEmpty(arg.getCaches());
+
+                    case USER:
+                        return desc.cacheType().userCache();
+
                     case SYSTEM:
                         return !desc.cacheType().userCache();
 
