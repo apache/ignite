@@ -19,10 +19,8 @@ package org.apache.ignite.examples.ml.genetic.knapsack;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
@@ -37,10 +35,6 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
  * How To Run:
  *
  * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.knapsack.KnapsackGAExample"
- *
- * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
- * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class KnapsackGAExample {
     /** Ignite instance */
