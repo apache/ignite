@@ -23,6 +23,7 @@ import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.ml.naivebayes.compound.Data.*;
 import static org.junit.Assert.assertEquals;
 
@@ -74,9 +75,9 @@ public class CompoundNaiveBayesModelTest {
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withGaussianModel(gaussianModel)
-            .withGaussianSkipFuture(f -> f > 2)
+            .withGaussianSkipFuture(asList(3,4,5,6,7))
             .withDiscreteModel(discreteModel)
-            .withDiscreteSkipFuture(f -> f <= 2);
+            .withDiscreteSkipFuture(asList(0,1,2));
 
         Vector observation = VectorUtils.of(6, 130, 8, 1, 0, 1, 1, 0);
 

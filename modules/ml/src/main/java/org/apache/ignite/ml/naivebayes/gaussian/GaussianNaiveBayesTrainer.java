@@ -19,8 +19,8 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.function.Predicate;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -31,6 +31,8 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+
+import static java.util.Collections.emptyList;
 
 /**
  * Trainer for the naive Bayes classification model. The trainer calculates prior probabilities from the input dataset.
@@ -44,8 +46,8 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     /** Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
 
-    /** Check it the feature should be skipped. By defaut all feature are processed. */
-    Predicate<Integer> skipFeature = i -> false;
+    /** Feature ids which should be skipped. By defaut all features are processed. */
+    private Collection<Integer> featureIdsToSkip = emptyList();
 
     /** {@inheritDoc} */
     @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -111,7 +113,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     sqSum = res.featureSquaredSumsPerLbl.get(label);
                     int index = 0;
                     for (int j = 0; j < features.size(); j++) {
-                        if (skipFeature.test(j)) continue;
+                        if (featureIdsToSkip.contains(j)) continue;
                         double x = features.get(index);
                         toMeans[index] += x;
                         sqSum[index] += x * x;
@@ -153,7 +155,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
                 int index = 0;
                 for (int i = 0; i < featureCount; i++) {
-                    if(skipFeature.test(i)) continue;
+                    if(featureIdsToSkip.contains(i)) continue;
                     means[lbl][index] = sum[index] / count;
                     variances[lbl][i] = (sqSum[index] - sum[index] * sum[index] / count) / count;
                     ++index;
@@ -195,22 +197,22 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         return this;
     }
 
-    /** Sets predicate to skip features. */
-    public GaussianNaiveBayesTrainer setSkipFeature(Predicate<Integer> skipFeature) {
-        this.skipFeature = skipFeature;
+    /** Sets feature ids to skip. */
+    public GaussianNaiveBayesTrainer setFeatureIdsToSkip(Collection<Integer> featureIdsToSkip) {
+        this.featureIdsToSkip = featureIdsToSkip;
         return this;
     }
 
     /** */
-    public Predicate<Integer> getSkipFeature() {
-        return skipFeature;
+    public Collection<Integer> getFeatureIdsToSkip() {
+        return featureIdsToSkip;
     }
 
     /** Sets default settings. */
     public GaussianNaiveBayesTrainer resetSettings() {
         equiprobableClasses = false;
         priorProbabilities = null;
-        skipFeature = i -> false;
+        featureIdsToSkip = emptyList();
         return this;
     }
 

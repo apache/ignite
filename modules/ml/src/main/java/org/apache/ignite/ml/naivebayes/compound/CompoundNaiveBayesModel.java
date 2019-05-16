@@ -17,13 +17,15 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.util.function.Predicate;
+import java.util.Collection;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
+
+import static java.util.Collections.emptyList;
 
 /** Created by Ravil on 04/02/2019. */
 public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel> {
@@ -36,8 +38,8 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** Discrete Bayes model. */
     private DiscreteNaiveBayesModel discreteModel;
 
-    private Predicate<Integer> gaussianSkipFeature = i -> false;
-    private Predicate<Integer> discreteSkipFeature = i -> false;
+    private Collection<Integer> gaussianSkipFeature = emptyList();
+    private Collection<Integer> discreteSkipFeature = emptyList();
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<CompoundNaiveBayesModel, P> exporter, P path) {
@@ -55,7 +57,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             for (int i = 0; i < priorProbabilities.length; i++) {
                 int index = 0;
                 for (int j = 0; j < vector.size(); j++) {
-                    if (discreteSkipFeature.test(j))
+                    if (discreteSkipFeature.contains(j))
                         continue;
                     int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[index]);
                     double probability = discreteModel.getProbabilities()[i][index][bucketNumber];
@@ -69,7 +71,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             for (int i = 0; i < priorProbabilities.length; i++) {
                 int index = 0;
                 for (int j = 0; j < vector.size(); j++) {
-                    if (gaussianSkipFeature.test(j))
+                    if (gaussianSkipFeature.contains(j))
                         continue;
                     double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][index]);
                     probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
@@ -124,7 +126,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return this;
     }
 
-    public CompoundNaiveBayesModel withGaussianSkipFuture(Predicate<Integer> gaussianSkipFeature) {
+    public CompoundNaiveBayesModel withGaussianSkipFuture(Collection<Integer> gaussianSkipFeature) {
         this.gaussianSkipFeature = gaussianSkipFeature;
         return this;
     }
@@ -134,7 +136,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return this;
     }
 
-    public CompoundNaiveBayesModel withDiscreteSkipFuture(Predicate<Integer> discreteSkipFeature) {
+    public CompoundNaiveBayesModel withDiscreteSkipFuture(Collection<Integer> discreteSkipFeature) {
         this.discreteSkipFeature = discreteSkipFeature;
         return this;
     }

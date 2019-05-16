@@ -17,11 +17,7 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.*;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -31,6 +27,8 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+
+import static java.util.Collections.emptyList;
 
 /**
  * Trainer for the Discrete naive Bayes classification model. The trainer calculates prior probabilities from the input
@@ -51,8 +49,8 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     /** The threshold to convert a feature to a discrete value. */
     private double[][] bucketThresholds;
 
-    /** Check it the feature should be skipped. By defaut all feature are processed. */
-    private Predicate<Integer> skipFeature = i -> false;
+    /** Feature ids which should be skipped. By defaut all features are processed. */
+    private Collection<Integer> featureIdsToSkip = emptyList();
 
     /** {@inheritDoc} */
     @Override public <K, V> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -95,12 +93,12 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
                     long[][] valuesInBucket;
 
-                    int size = features.size();
+                    int size = features.size();// - featureIdsToSkip.size();
                     if (!res.valuesInBucketPerLbl.containsKey(lb)) {
                         valuesInBucket = new long[size][];
                         int index = 0;
                         for (int i = 0; i < size; i++) {
-                            if (skipFeature.test(i)) {
+                            if (featureIdsToSkip.contains(i)) {
                                 continue;
                             }
                             valuesInBucket[index] = new long[bucketThresholds[index].length + 1];
@@ -119,7 +117,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
                     int index = 0;
                     for (int j = 0; j < size; j++) {
-                        if (skipFeature.test(j)) {
+                        if (featureIdsToSkip.contains(j)) {
                             continue;
                         }
                         double x = features.get(j);
@@ -163,7 +161,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
                 int index = 0;
                 for (int i = 0; i < featureCnt; i++) {
-                    if (skipFeature.test(i))
+                    if (featureIdsToSkip.contains(i))
                         continue;
                     int bucketsCnt = sum[index].length;
                     probabilities[lbl][index] = new double[bucketsCnt];
@@ -232,13 +230,13 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     }
 
     /** */
-    public Predicate<Integer> getSkipFeature() {
-        return skipFeature;
+    public Collection<Integer> getFeatureIdsToSkip() {
+        return featureIdsToSkip;
     }
 
-    /** Sets predicate to skip features. */
-    public DiscreteNaiveBayesTrainer setSkipFeature(Predicate<Integer> skipFeature) {
-        this.skipFeature = skipFeature;
+    /** Sets feature ids to skip. */
+    public DiscreteNaiveBayesTrainer setFeatureIdsToSkip(Collection<Integer> featureIdsToSkip) {
+        this.featureIdsToSkip = featureIdsToSkip;
         return this;
     }
 
@@ -246,7 +244,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     public DiscreteNaiveBayesTrainer resetProbabilitiesSettings() {
         equiprobableClasses = false;
         priorProbabilities = null;
-        skipFeature = i -> false;
+        featureIdsToSkip = emptyList();
         return this;
     }
 

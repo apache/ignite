@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.ml.naivebayes.compound.Data.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -31,11 +32,11 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
         trainer = new CompoundNaiveBayesTrainer()
                 .setLabels(labels)
                 .setClsProbabilities(classProbabilities)
-                .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer().setSkipFeature(f -> f > 2))
+                .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer().setFeatureIdsToSkip(asList(3,4,5,6,7)))
                 .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
                         .setBucketThresholds(binarizedDataThresholds)
                         .withEquiprobableClasses()
-                        .setSkipFeature(f -> f <= 2));
+                        .setFeatureIdsToSkip(asList(0,1,2)));
     }
 
     @Test /** */

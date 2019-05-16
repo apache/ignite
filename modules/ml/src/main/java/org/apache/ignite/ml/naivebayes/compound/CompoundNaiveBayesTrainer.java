@@ -65,7 +65,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                     : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor) ;
 
             compoundModel.withGaussianModel(model)
-                    .withGaussianSkipFuture(gaussianNaiveBayesTrainer.getSkipFeature());
+                    .withGaussianSkipFuture(gaussianNaiveBayesTrainer.getFeatureIdsToSkip());
         }
 
         if (discreteNaiveBayesTrainer != null) {
@@ -74,7 +74,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                     : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor) ;
 
             compoundModel.withDiscreteModel(model)
-                    .withDiscreteSkipFuture(discreteNaiveBayesTrainer.getSkipFeature());
+                    .withDiscreteSkipFuture(discreteNaiveBayesTrainer.getFeatureIdsToSkip());
         }
 
         return compoundModel;
