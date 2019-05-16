@@ -88,28 +88,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THREAD_POOL_SIZE} instead.
      */
     @Deprecated
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = IgniteConfiguration.DFLT_REBALANCE_THREAD_POOL_SIZE;
 
     /**
      * Default rebalance timeout (ms).
      * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT} instead.
      */
     @Deprecated
-    public static final long DFLT_REBALANCE_TIMEOUT = 10000;
+    public static final long DFLT_REBALANCE_TIMEOUT = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
 
     /**
      * Default rebalance batches prefetch count.
      * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCHES_PREFETCH_COUNT} instead.
      */
     @Deprecated
-    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 2;
+    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /**
      * Time in milliseconds to wait between rebalance messages to avoid overloading CPU.
      * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} instead.
      */
     @Deprecated
-    public static final long DFLT_REBALANCE_THROTTLE = 0;
+    public static final long DFLT_REBALANCE_THROTTLE = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
 
     /** Default number of backups. */
     public static final int DFLT_BACKUPS = 0;
@@ -143,7 +143,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @deprecated Use {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE} instead.
      */
     @Deprecated
-    public static final int DFLT_REBALANCE_BATCH_SIZE = 512 * 1024; // 512K
+    public static final int DFLT_REBALANCE_BATCH_SIZE = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
 
     /** Default value for eager ttl flag. */
     public static final boolean DFLT_EAGER_TTL = true;
@@ -231,7 +231,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Rebalance timeout. */
     @Deprecated
-    private long rebalanceTimeout = IgniteConfiguration.DFLT_REBALANCE_TIMEOUT;
+    private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
     /** Cache eviction policy. */
     @Deprecated
@@ -305,11 +305,11 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Rebalance batch size. */
     @Deprecated
-    private int rebalanceBatchSize = IgniteConfiguration.DFLT_REBALANCE_BATCH_SIZE;
+    private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
 
     /** Rebalance batches prefetch count. */
     @Deprecated
-    private long rebalanceBatchesPrefetchCnt = IgniteConfiguration.DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
+    private long rebalanceBatchesPrefetchCnt = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** Maximum number of concurrent asynchronous operations. */
     private int maxConcurrentAsyncOps = DFLT_MAX_CONCURRENT_ASYNC_OPS;
@@ -346,7 +346,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
     @Deprecated
-    private long rebalanceThrottle = IgniteConfiguration.DFLT_REBALANCE_THROTTLE;
+    private long rebalanceThrottle = DFLT_REBALANCE_THROTTLE;
 
     /** */
     private CacheInterceptor<K, V> interceptor;
@@ -1226,7 +1226,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets size (in number bytes) to be loaded within a single rebalance message.
      * Rebalancing algorithm will split total data set on every node into multiple
      * batches prior to sending data. Default value is defined by
-     * {@link IgniteConfiguration#DFLT_REBALANCE_BATCH_SIZE}.
+     * {@link #DFLT_REBALANCE_BATCH_SIZE}.
      *
      * @return Size in bytes of a single rebalance message.
      * @deprecated Use {@link IgniteConfiguration#getRebalanceBatchSize()} instead.
@@ -1522,7 +1522,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Gets rebalance timeout (ms).
      * <p>
-     * Default value is {@link IgniteConfiguration#DFLT_REBALANCE_TIMEOUT}.
+     * Default value is {@link #DFLT_REBALANCE_TIMEOUT}.
      *
      * @return Rebalance timeout (ms).
      * @deprecated Use {@link IgniteConfiguration#getRebalanceTimeout()} instead.
@@ -1593,7 +1593,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * properly while rebalancing is still in progress.
      * <p>
      * Value of {@code 0} means that throttling is disabled. By default throttling is disabled -
-     * the default is defined by {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} constant.
+     * the default is defined by {@link #DFLT_REBALANCE_THROTTLE} constant.
      *
      * @return Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
      * {@code 0} to disable throttling.
@@ -1610,8 +1610,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * down the application performance. This parameter helps tune the amount of time to wait between rebalance messages
      * to make sure that rebalancing process does not have any negative performance impact. Note that application will
      * continue to work properly while rebalancing is still in progress. <p> Value of {@code 0} means that throttling is
-     * disabled. By default throttling is disabled - the default is defined by
-     * {@link IgniteConfiguration#DFLT_REBALANCE_THROTTLE} constant.
+     * disabled. By default throttling is disabled - the default is defined by {@link #DFLT_REBALANCE_THROTTLE} constant.
      *
      * @param rebalanceThrottle Time in milliseconds to wait between rebalance messages to avoid overloading of CPU,
      * {@code 0} to disable throttling.
