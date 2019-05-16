@@ -19,11 +19,9 @@ package org.apache.ignite.examples.ml.genetic.change;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.GAGrid;
 import org.apache.ignite.ml.genetic.Gene;
@@ -43,10 +41,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  *
  * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.change.OptimizeMakeChangeGAExample"
  * -DAMOUNTCHANGE=75
- *
- * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
- * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class OptimizeMakeChangeGAExample {
     /** Ignite instance */
