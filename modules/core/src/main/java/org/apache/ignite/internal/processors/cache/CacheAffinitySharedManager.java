@@ -1638,7 +1638,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @return Computed difference with ideal affinity.
      * @throws IgniteCheckedException If failed.
      */
-    private Map<Integer, CacheGroupAffinityMessage> onReassignmentEnforced(
+    public Map<Integer, CacheGroupAffinityMessage> onReassignmentEnforced(
         final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException
     {
         final ExchangeDiscoveryEvents evts = fut.context().events();
@@ -1647,12 +1647,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
                 AffinityTopologyVersion topVer = evts.topologyVersion();
 
-                CacheGroupHolder cache = getOrCreateGroupHolder(topVer, desc);
+                CacheGroupHolder grpHolder = getOrCreateGroupHolder(topVer, desc);
 
-                List<List<ClusterNode>> assign = cache.affinity().calculate(topVer, evts, evts.discoveryCache());
+                // Already calculated.
+                if (grpHolder.affinity().lastVersion().equals(topVer))
+                    return;
 
-                if (!cache.rebalanceEnabled || fut.cacheGroupAddedOnExchange(desc.groupId(), desc.receivedFrom()))
-                    cache.affinity().initialize(topVer, assign);
+                List<List<ClusterNode>> assign = grpHolder.affinity().calculate(topVer, evts, evts.discoveryCache());
+
+                if (!grpHolder.rebalanceEnabled || fut.cacheGroupAddedOnExchange(desc.groupId(), desc.receivedFrom()))
+                    grpHolder.affinity().initialize(topVer, assign);
 
                 fut.timeBag().finishLocalStage("Affinity initialization (enforced) " +
                     "[grp=" + desc.cacheOrGroupName() + "]");
@@ -2136,6 +2140,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     return;
 
                 CacheGroupHolder cache = getOrCreateGroupHolder(evts.topologyVersion(), desc);
+
+                // Already calculated.
+                if (cache.affinity().lastVersion().equals(evts.topologyVersion()))
+                    return;
 
                 boolean latePrimary = cache.rebalanceEnabled;
 
