@@ -758,6 +758,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             boolean crdNode = crd != null && crd.isLocal();
 
             isLocalAffinityRecalculation = isLocalAffinityRecalculationExchange();
+            System.out.println("MY EXCHANGE light="+isLocalAffinityRecalculation);
 
             exchCtx = new ExchangeContext(crdNode, this, isLocalAffinityRecalculation);
 
@@ -988,18 +989,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} if affinity can be recalculated locally.
      */
     private boolean isLocalAffinityRecalculationExchange() {
+//        if (true)
+//            return false;
+
         if (!allNodesSupports(firstEvtDiscoCache.allNodes(), LOCAL_AFFINITY_RECALCULATION_EXCHANGE))
             return false;
 
         // Case for baseline node leave.
         if ((firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
             && firstEvtDiscoCache.baselineNodes() != null) {
-            // Check that there are no in-memory caches.
-            if (isInMemoryCachesConfigured())
-                return false;
-
-            // Check that there are no moving partitions.
-            if (!cctx.affinity().isLastAffinityIdeal(crd != null && crd.isLocal()))
+            // Check that there are no moving partitions that may be lost.
+            if (!cctx.affinity().isLastAffinityIdeal(this, crd != null && crd.isLocal()))
                 return false;
 
             return firstEvtDiscoCache.baselineNodes().stream()

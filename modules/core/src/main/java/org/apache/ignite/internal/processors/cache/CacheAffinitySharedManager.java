@@ -85,6 +85,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -1098,17 +1099,63 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param crd Coordinator flag.
      * @return {@code true} true if last initialized affinity is ideal.
      */
-    public boolean isLastAffinityIdeal(boolean crd) {
+    public boolean isLastAffinityIdeal(GridDhtPartitionsExchangeFuture exchFut, boolean crd) {
         AtomicBoolean ideal = new AtomicBoolean(true);
 
-        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override public void applyx(GridAffinityAssignmentCache aff) {
-                AffinityAssignment assign = aff.readyAffinity(aff.lastVersion());
+        forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
+                @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
+                    CacheGroupHolder grpHolder = getOrCreateGroupHolder(exchFut.initialVersion(), desc);
 
-                if (!assign.idealAssignment().equals(assign.assignment()))
-                    ideal.set(false);
+                    GridDhtPartitionTopology top = grpHolder.topology(exchFut.firstEventCache());
+
+                    GridDhtPartitionFullMap map = top.partitionMap(false);
+
+                    int parts = top.partitions();
+
+                    for (int part = 0; part < parts; part++) {
+                        boolean hasOwner = false;
+
+                        for (GridDhtPartitionMap partMap : map.values()) {
+                            if (partMap.nodeId().equals(exchFut.firstEvent().eventNode().id()))
+                                continue;
+
+                            if (partMap.get(part) == OWNING) {
+                                hasOwner = true;
+                                break;
+                            }
+                        }
+
+                        if (!hasOwner)
+                            ideal.set(false);
+                    }
+
+                }
             }
-        });
+        );
+
+//        if (true)
+//            return ideal.get();
+//
+//        forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
+//            @Override public void applyx(GridAffinityAssignmentCache aff) {
+//                AffinityAssignment assign = aff.readyAffinity(aff.lastVersion());
+//
+//                List<List<ClusterNode>> curAssignment = aff.assignments(aff.lastVersion());
+////
+////                String s = " n=" + cctx.localNode().id() + "\n"
+////                    + "aff1=" + aff.lastVersion();
+////                s += "\naff3=" + exchFut.initialVersion();
+////                s += "\ncurAssignment=" + Arrays.toString(curAssignment.stream().map(F::nodeIds).toArray());
+////                s += "\nideal=" + Arrays.toString(assign.idealAssignment().stream().map(F::nodeIds).toArray());
+////
+////                aff
+////
+////                System.out.println("\n\n\nS=" + s + "\n\n");
+//
+//                if (!assign.idealAssignment().equals(assign.assignment()))
+//                    ideal.set(false);
+//            }
+//        });
 
         return ideal.get();
     }
