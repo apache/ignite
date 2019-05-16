@@ -63,6 +63,8 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTest {
     /** Test cache name. */
     protected static final String CACHE_NAME = "persons-cache-vi";
+    /** Test group name. */
+    protected static final String GROUP_NAME = "group1";
 
     /**
      * Tests that validation doesn't fail if nothing is broken.
@@ -174,7 +176,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
 
         forceCheckpoint();
 
-        File idxPath = indexPartition(ignite, CACHE_NAME);
+        File idxPath = indexPartition(ignite, GROUP_NAME);
 
         stopAllGrids();
 
@@ -192,6 +194,39 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
     }
 
     /**
+     * Test to validate only specified cache, not all cache group.
+     */
+    @Test
+    public void testValidateSingleCacheShouldNotTriggerCacheGroupValidation() throws Exception {
+        Ignite ignite = prepareGridForTest();
+
+        ignite.getOrCreateCache(new CacheConfiguration<Integer, Person>()
+                .setName(DEFAULT_CACHE_NAME)
+                .setGroupName(GROUP_NAME)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                .setBackups(1)
+                .setQueryEntities(F.asList(personEntity(true, true)))
+                .setAffinity(new RendezvousAffinityFunction(false, 32)));
+
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+        try (IgniteDataStreamer<Integer, Person> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < 10_000; i++)
+                streamer.addData(i, new Person(rand.nextInt(), String.valueOf(rand.nextLong())));
+        }
+
+        forceCheckpoint();
+
+        breakCacheDataTree(ignite, CACHE_NAME, 1);
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", DEFAULT_CACHE_NAME, "--check-through", "10"));
+        assertContains(log, testOut.toString(), "no issues found");
+    }
+
+    /**
      *
      */
     private Ignite prepareGridForTest() throws Exception{
@@ -203,6 +238,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
 
         client.getOrCreateCache(new CacheConfiguration<Integer, Person>()
                 .setName(CACHE_NAME)
+                .setGroupName(GROUP_NAME)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                 .setBackups(1)
@@ -222,12 +258,12 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
     /**
      * Get index partition file for specific node and cache.
      */
-    private File indexPartition(Ignite ig, String cacheName) {
+    private File indexPartition(Ignite ig, String groupName) {
         IgniteEx ig0 = (IgniteEx)ig;
 
         FilePageStoreManager pageStoreManager = ((FilePageStoreManager) ig0.context().cache().context().pageStore());
 
-        return new File(pageStoreManager.cacheWorkDir(false, cacheName), INDEX_FILE_NAME);
+        return new File(pageStoreManager.cacheWorkDir(true, groupName), INDEX_FILE_NAME);
     }
 
     /**
