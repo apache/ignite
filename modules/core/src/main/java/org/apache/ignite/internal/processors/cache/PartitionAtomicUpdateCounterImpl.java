@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.Nullable;

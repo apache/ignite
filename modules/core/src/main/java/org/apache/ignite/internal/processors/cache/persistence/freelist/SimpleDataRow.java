@@ -84,7 +84,9 @@ public class SimpleDataRow implements Storable {
         return 0;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Value.
+     */
     public byte[] value() {
         return val;
     }
