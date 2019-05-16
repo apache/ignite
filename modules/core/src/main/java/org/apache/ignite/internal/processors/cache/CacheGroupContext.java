@@ -250,7 +250,7 @@ public class CacheGroupContext {
 
         log = ctx.kernalContext().log(getClass());
 
-        metrics=new CacheGroupMetricsImpl();
+        metrics = new CacheGroupMetricsImpl();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 

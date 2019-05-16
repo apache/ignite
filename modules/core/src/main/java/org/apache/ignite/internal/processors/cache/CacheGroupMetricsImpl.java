@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * Cache group metrics
  */
 public class CacheGroupMetricsImpl implements CacheGroupMetrics {
-
     /** Number of partitions need processed for finished indexes create or rebuilding. */
     private final AtomicLong indexBuildCountPartitionsLeft;
 

@@ -192,4 +192,8 @@ public interface CacheGroupMetricsMXBean extends CacheGroupMetrics {
      */
     @MXBeanDescription("Storage space allocated for group adjusted for possible sparsity, in bytes.")
     public long getSparseStorageSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Count of partitions need processed for finished indexes create or rebuilding.")
+    @Override public long getIndexBuildCountPartitionsLeft();
 }

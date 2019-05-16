@@ -26,5 +26,5 @@ public interface CacheGroupMetrics {
      * It is calculated as the number of local partition minus the processed.
      * A value of 0 indicates that the index is built.
      */
-    long getIndexBuildCountPartitionsLeft();
+    public long getIndexBuildCountPartitionsLeft();
 }
