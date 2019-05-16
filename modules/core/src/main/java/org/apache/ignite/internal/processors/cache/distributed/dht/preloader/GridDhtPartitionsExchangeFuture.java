@@ -2838,6 +2838,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         if (log.isInfoEnabled()) {
                             log.info("Coordinator received single message [ver=" + initialVersion() +
                                 ", node=" + nodeId +
+                                (allReceived ? "" : ", remainingNodes=" + remaining.size()) +
                                 ", allReceived=" + allReceived + ']');
                         }
                     }
