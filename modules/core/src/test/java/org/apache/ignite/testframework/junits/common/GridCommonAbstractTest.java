@@ -1268,6 +1268,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         return keys;
     }
 
+    /**
+     * @param cache Cache.
+     * @param part Partition.
+     */
     protected Iterator<Integer> partitionKeysIterator(IgniteCache<?, ?> cache, int part) {
         IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
 
