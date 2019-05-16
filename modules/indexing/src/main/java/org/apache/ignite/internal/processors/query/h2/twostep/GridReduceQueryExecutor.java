@@ -639,8 +639,6 @@ public class GridReduceQueryExecutor {
                     else {
                         cancel.checkCancelled();
 
-                        H2Utils.setupConnection(r.connection(), false, enforceJoinOrder);
-
                         QueryContext qctx = new QueryContext(
                             0,
                             null,
@@ -648,6 +646,8 @@ public class GridReduceQueryExecutor {
                             null,
                             null
                         );
+
+                        H2Utils.setupConnection(r.connection(), qctx, false, enforceJoinOrder);
 
                         QueryContextRegistry qryCtxRegistry = h2.queryContextRegistry();
 
@@ -722,7 +722,7 @@ public class GridReduceQueryExecutor {
                         cause = disconnectedErr;
                 }
 
-                throw new CacheException("Failed to run reduce query locally.", cause);
+                throw new CacheException("Failed to run reduce query locally. " + cause.getMessage(), cause);
             }
             finally {
                 if (detachedConn != null)

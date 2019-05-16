@@ -52,6 +52,7 @@ public class QueryDescriptor {
      * @param enforceJoinOrder Enforce join order of tables.
      * @param loc Query is local flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param batched Batched flag.
      */
     QueryDescriptor(
         String schemaName,

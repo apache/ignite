@@ -138,6 +138,7 @@ public class Session extends SessionWithState implements TransactionStore.Rollba
     private boolean forceJoinOrder;
     private boolean lazyQueryExecution;
     private ColumnNamerConfiguration columnNamerConfiguration;
+    private Object qryContext;
     /**
      * Tables marked for ANALYZE after the current transaction is committed.
      * Prevents us calling ANALYZE repeatedly in large transactions.
@@ -204,6 +205,14 @@ public class Session extends SessionWithState implements TransactionStore.Rollba
 
     public boolean isJoinBatchEnabled() {
         return joinBatchEnabled;
+    }
+
+    public Object getQueryContext() {
+        return qryContext;
+    }
+
+    public void setQueryContext(Object qryContext) {
+        this.qryContext = qryContext;
     }
 
     /**

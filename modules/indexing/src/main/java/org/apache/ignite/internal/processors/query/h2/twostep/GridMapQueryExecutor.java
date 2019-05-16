@@ -378,6 +378,7 @@ public class GridMapQueryExecutor {
 
                 H2Utils.setupConnection(
                     connWrp.connection(schemaName),
+                    qctx,
                     distributedJoins,
                     enforceJoinOrder,
                     lazy

@@ -1763,7 +1763,7 @@ public class GridSqlQuerySplitter {
      */
     public static Prepared prepare(Connection c, String qry, boolean distributedJoins,
         boolean enforceJoinOrder) throws SQLException {
-        H2Utils.setupConnection(c, distributedJoins, enforceJoinOrder);
+        H2Utils.setupConnection(c, null, distributedJoins, enforceJoinOrder);
 
         try (PreparedStatement s = c.prepareStatement(qry)) {
             return GridSqlQueryParser.prepared(s);

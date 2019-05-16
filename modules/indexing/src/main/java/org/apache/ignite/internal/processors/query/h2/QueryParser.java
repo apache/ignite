@@ -277,7 +277,7 @@ public class QueryParser {
         // (and therefore longer parsing) as long as there'll be more parsing at split stage.
         boolean enforceJoinOrderOnParsing = (!qry.isLocal() || qry.isEnforceJoinOrder());
 
-        H2Utils.setupConnection(c, /*distributedJoins*/false, /*enforceJoinOrder*/enforceJoinOrderOnParsing);
+        H2Utils.setupConnection(c, null, /*distributedJoins*/false, enforceJoinOrderOnParsing);
 
         PreparedStatement stmt;
 

@@ -130,7 +130,7 @@ public class H2QueryInfo {
     protected String queryPlan(IgniteLogger log, ConnectionManager connMgr) {
         Connection c = connMgr.connectionForThread().connection(schema);
 
-        H2Utils.setupConnection(c, distributedJoin, enforceJoinOrder);
+        H2Utils.setupConnection(c, null, distributedJoin, enforceJoinOrder);
 
         try (PreparedStatement pstmt = c.prepareStatement("EXPLAIN " + sql)) {
 

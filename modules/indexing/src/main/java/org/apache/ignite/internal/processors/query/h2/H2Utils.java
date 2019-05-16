@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
@@ -412,21 +413,25 @@ public class H2Utils {
 
     /**
      * @param conn Connection to use.
+     * @param qctx Query context.
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      */
-    public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
-        setupConnection(conn,distributedJoins, enforceJoinOrder, false);
+    public static void setupConnection(Connection conn, QueryContext qctx,
+        boolean distributedJoins, boolean enforceJoinOrder) {
+        setupConnection(conn, qctx, distributedJoins, enforceJoinOrder, false);
     }
 
     /**
      * @param conn Connection to use.
+     * @param qctx Query context.
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param lazy Lazy query execution mode.
      */
     public static void setupConnection(
         Connection conn,
+        QueryContext qctx,
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean lazy
@@ -436,6 +441,7 @@ public class H2Utils {
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
         s.setLazyQueryExecution(lazy);
+        s.setQueryContext(qctx);
     }
 
     /**
