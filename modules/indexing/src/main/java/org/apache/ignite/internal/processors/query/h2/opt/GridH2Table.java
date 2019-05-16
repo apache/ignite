@@ -220,9 +220,11 @@ public class GridH2Table extends TableBase {
 
         lock = new ReentrantReadWriteLock();
 
-        long totalTblSize = rowCountAllSegments(false);
+        if (hasHashIndex) { // We are on affinity node if hash index exists.
+            long totalTblSize = rowCountAllSegments(false);
 
-        size.add(totalTblSize);
+            size.add(totalTblSize);
+        }
 
         // Init stats with the dummy values. This prevents us from scanning index with backup filter when
         // topology may not be initialized yet.
