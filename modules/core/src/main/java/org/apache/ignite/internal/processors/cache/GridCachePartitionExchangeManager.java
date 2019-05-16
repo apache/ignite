@@ -50,6 +50,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -1871,6 +1872,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (!pred.apply(node))
                         doCompute = false;
 
+                String txRequestInfo = String.format(
+                    "[xidVer=%s, nodeId=%s]",
+                    tx.xidVersion().toString(),
+                    nearNodeId.toString()
+                );
+
                 if (doCompute) {
                     IgniteCompute compute = ignite.compute(ignite.cluster().forNodeId(nearNodeId));
 
@@ -1884,10 +1891,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     try {
                                         traceDump = strIgniteFut.get();
                                     }
+                                    catch (ClusterGroupEmptyException e) {
+                                        U.error(
+                                            diagnosticLog,
+                                            "Could not get thread dump from transaction owner because near node " +
+                                                    "is now out of topology. " + txRequestInfo
+                                        );
+                                    }
                                     catch (Exception e) {
                                         U.error(
                                             diagnosticLog,
-                                            "Could not get thread dump from transaction owner near node: ",
+                                            "Could not get thread dump from transaction owner near node " + txRequestInfo,
                                             e
                                         );
                                     }
@@ -1896,8 +1910,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         U.warn(
                                             diagnosticLog,
                                             String.format(
-                                                "Dumping the near node thread that started transaction [xidVer=%s]\n%s",
-                                                tx.xidVersion().toString(),
+                                                "Dumping the near node thread that started transaction %s\n%s",
+                                                txRequestInfo,
                                                 traceDump
                                             )
                                         );
@@ -1906,13 +1920,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             });
                     }
                     catch (Exception e) {
-                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node: ", e);
+                        U.error(diagnosticLog, "Could not send dump request to transaction owner near node " + txRequestInfo, e);
                     }
                 }
                 else {
                     U.warn(
                         diagnosticLog,
-                        "Could not send dump request to transaction owner near node: node does not support this feature."
+                        "Could not send dump request to transaction owner near node: node does not support this feature. " +
+                            txRequestInfo
                     );
                 }
             }
