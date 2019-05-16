@@ -70,6 +70,8 @@ public class IgniteExamplesMLTestSuite {
      * @throws IOException, ClassNotFoundException If failed.
      */
     public static Class<?>[] suite() throws IOException, ClassNotFoundException {
+        getClasses(basePkgForTests).stream().forEach(cl -> System.out.println(cl.getCanonicalName()));
+
         return getClasses(basePkgForTests)
             .stream()
             .map(IgniteExamplesMLTestSuite::makeTestClass)
