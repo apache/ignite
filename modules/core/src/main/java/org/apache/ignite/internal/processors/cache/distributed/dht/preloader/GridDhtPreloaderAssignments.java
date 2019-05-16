@@ -62,6 +62,8 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
      * @param cancelled {@code True} if assignments creation was cancelled.
      */
     public void cancelled(boolean cancelled) {
+        System.err.println("Assigment cancelled!");
+
         this.cancelled = cancelled;
     }
 

@@ -3201,7 +3201,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         busy = false;
                     }
 
-                    if (assignsMap != null && rebalanceRequired) {
+                    if (hasPendingExchange()) {
+                        U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
+                            "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                            ", node=" + exchId.nodeId() + ']');
+                    }
+                    else if (assignsMap != null && rebalanceRequired) {
                         int size = assignsMap.size();
 
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
@@ -3223,8 +3228,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         List<String> rebList = new LinkedList<>();
 
-                        boolean assignsCancelled = false;
-
                         GridCompoundFuture<Boolean, Boolean> forcedRebFut = null;
 
                         if (task instanceof ForceRebalanceExchangeTask)
@@ -3235,9 +3238,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                                 GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
-
-                                if (assigns != null)
-                                    assignsCancelled |= assigns.cancelled();
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,
@@ -3256,12 +3256,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (assignsCancelled || hasPendingExchange()) {
-                            U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
-                                "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
-                                ", node=" + exchId.nodeId() + ']');
-                        }
-                        else if (r != null) {
+                        if (r != null) {
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing scheduled [order=" + rebList +

@@ -117,6 +117,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        cfg.setSystemWorkerBlockedTimeout(Long.MAX_VALUE);
 
         if (testSpi)
             cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
@@ -190,6 +191,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         int backups)
     {
         CacheConfiguration ccfg = new CacheConfiguration(name);
+//        ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -944,11 +946,11 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMergeJoinExchangesCoordinatorChange1_8_servers() throws Exception {
-        for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
-            mergeJoinExchangesCoordinatorChange1(8, mode);
+//        for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
+            mergeJoinExchangesCoordinatorChange1(8, CoordinatorChangeMode.NEW_CRD_RCDV);
 
             stopAllGrids();
-        }
+//        }
     }
 
     /**
@@ -1335,12 +1337,15 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         for (String cacheName : cacheNames) {
+            IgniteCache<Object, Object> cache = node.cache(cacheName);
+
             String err = "Invalid value [node=" + node.name() +
                 ", client=" + node.configuration().isClientMode() +
                 ", order=" + node.cluster().localNode().order() +
-                ", cache=" + cacheName + ']';
-
-            IgniteCache<Object, Object> cache = node.cache(cacheName);
+                ", cache=" + cacheName + ']'
+                + ", syncWriteMode=" + cache.getConfiguration(CacheConfiguration.class).getWriteSynchronizationMode()
+                + ", backups=" + cache.getConfiguration(CacheConfiguration.class).getBackups()
+                + ", readFromBackup=" + cache.getConfiguration(CacheConfiguration.class).isReadFromBackup();
 
             for (int i = 0; i < 10; i++) {
                 Integer key = rnd.nextInt(keyRange) + startKey;
@@ -1352,6 +1357,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 assertEquals(err, i, val);
             }
         }
+    }
+
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 10;
     }
 
     /**
@@ -1378,7 +1387,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                     String err = "Invalid value [node=" + node.name() +
                             ", client=" + node.configuration().isClientMode() +
                             ", order=" + node.cluster().localNode().order() +
-                            ", cache=" + cacheName + ']';
+                            ", cache=" + cacheName + ']'
+                        + ", syncWriteMode=" + cache.getConfiguration(CacheConfiguration.class).getWriteSynchronizationMode()
+                        + ", backups=" + cache.getConfiguration(CacheConfiguration.class).getBackups()
+                        + ", readFromBackup=" + cache.getConfiguration(CacheConfiguration.class).isReadFromBackup();
 
                     for (int i = 0; i < 5; i++) {
                         Integer key = rnd.nextInt(20_000);
