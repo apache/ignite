@@ -71,6 +71,7 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MAX_SNAPSHOT;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -1209,11 +1210,13 @@ public class GridH2Table extends TableBase {
 
         AffinityTopologyVersion topVer = indexing.readyTopologyVersion();
 
+        boolean mvcc = indexing.kernalContext().cache().context().cacheContext(cacheId()).mvccEnabled();
+
         QueryContext qctx = new QueryContext(
             seg,
             primaryOnly ? indexing.backupFilter(topVer, null) : null,
             null,
-            null,
+            mvcc ? MVCC_MAX_SNAPSHOT : null,
             null,
             true
         );
