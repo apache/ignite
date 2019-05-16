@@ -195,10 +195,6 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public void updateInitial(long start, long delta) {
-        long cntr0 = get();
-
-        assert start >= cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + start;
-
         update(start, delta);
 
         initCntr = get();

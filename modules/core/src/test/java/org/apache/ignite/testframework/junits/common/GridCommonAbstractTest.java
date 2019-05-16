@@ -2127,7 +2127,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             if (hasFutures)
-                fail("Some mvcc futures are not finished");
+                fail("Some cache futures are not finished");
 
             Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
 
