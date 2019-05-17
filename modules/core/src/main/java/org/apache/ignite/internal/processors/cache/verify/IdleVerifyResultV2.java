@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VERIFY;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.IDLE_VERIFY;
 
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
@@ -190,13 +190,14 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     private void print(Consumer<String> printer, boolean printExceptionMessages) {
         boolean noMatchingCaches = false;
 
-        for (Exception e : exceptions.values())
+        for (Exception e : exceptions.values()) {
             if (e instanceof NoMatchingCachesException) {
                 noMatchingCaches = true;
                 succeeded = false;
 
                 break;
             }
+        }
 
         if (succeeded) {
             if (!F.isEmpty(exceptions)) {

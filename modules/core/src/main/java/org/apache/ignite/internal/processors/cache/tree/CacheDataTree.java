@@ -145,8 +145,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         Object x
     ) throws IgniteCheckedException {
         // If there is a group of caches, lower and upper bounds will not be null here.
-        if (lower == null && upper == null && grp.persistenceEnabled() && dataPageScanEnabled.get() &&
-            (c == null || c instanceof MvccDataPageClosure))
+        if (lower == null
+                && upper == null
+                && grp.persistenceEnabled()
+                && dataPageScanEnabled.get()
+                && (c == null || c instanceof MvccDataPageClosure))
             return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 
         lastFindWithDataPageScan = FALSE;
