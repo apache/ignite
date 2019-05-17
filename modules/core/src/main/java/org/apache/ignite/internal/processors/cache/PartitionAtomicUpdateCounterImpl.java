@@ -66,22 +66,14 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
         while(val > (cur = cntr.get()) && !cntr.compareAndSet(cur, val));
     }
 
-    /**
-     * Updates counter by delta from start position.
-     *
-     * @param start Start.
-     * @param delta Delta.
-     */
+    /** {@inheritDoc} */
     @Override public boolean update(long start, long delta) {
-        return false; // Prevent RollbackRecord in mixed tx-atomic mode.
+        update(start + delta);
+
+        return false; // Prevents RollbackRecord in mixed tx-atomic mode.
     }
 
-    /**
-     * Updates initial counter on recovery. Not thread-safe.
-     *
-     * @param start Start.
-     * @param delta Delta.
-     */
+    /** {@inheritDoc} */
     @Override public synchronized void updateInitial(long start, long delta) {
         update(start + delta);
 
