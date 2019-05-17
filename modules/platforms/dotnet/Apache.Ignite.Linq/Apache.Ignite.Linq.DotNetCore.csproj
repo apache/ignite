@@ -6,6 +6,9 @@
 	<AssemblyName>Apache.Ignite.Linq</AssemblyName>
 	<RootNamespace>Apache.Ignite.Linq</RootNamespace>
     <NoWarn>NU1701</NoWarn>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile>Apache.Ignite.Linq.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>  
   
   <ItemGroup>
