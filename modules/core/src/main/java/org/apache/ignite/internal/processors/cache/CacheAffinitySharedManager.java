@@ -1156,6 +1156,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 //                    ideal.set(false);
 //            }
 //        });
+        System.out.println("MY hasLost="+ideal.get()+" n="+cctx.localNode().id());
 
         return ideal.get();
     }

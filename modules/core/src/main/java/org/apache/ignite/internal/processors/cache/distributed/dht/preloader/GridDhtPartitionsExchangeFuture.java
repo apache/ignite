@@ -758,7 +758,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             boolean crdNode = crd != null && crd.isLocal();
 
             isLocalAffinityRecalculation = isLocalAffinityRecalculationExchange();
-            System.out.println("MY EXCHANGE light="+isLocalAffinityRecalculation);
+            System.out.println("MY EXCHANGE light="+isLocalAffinityRecalculation+
+                " n="+cctx.localNode().id()+" nodes="+F.nodeIds(firstEventCache().serverNodes())
+                +" leave="+firstEvent().eventNode());
 
             exchCtx = new ExchangeContext(crdNode, this, isLocalAffinityRecalculation);
 

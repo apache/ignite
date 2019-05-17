@@ -2042,10 +2042,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         boolean hasOwner = false;
 
                         for (GridDhtPartitionMap partMap : node2part.values()) {
-
-                            if (!grp.systemCache())
-                                System.out.println("MY n="+ctx.localNode().id()+" CHECK LOST p="+partMap.get(part));
-
                             if (partMap.get(part) == OWNING) {
                                 hasOwner = true;
                                 break;
@@ -2104,10 +2100,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     e.getValue().put(part, LOST);
                             }
                         }
-
-                        if (!grp.systemCache())
-                            System.out.println("MY n="+ctx.localNode().id()+" DETECTED LOST p="+dumpPartitionStates()
-                            +"\n"+partitionMap(false).toFullString()+"\n\n");
                     }
                 }
 
@@ -2599,10 +2591,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == MOVING) {
-
-                    if (ctx.igniteInstanceName().endsWith("3") && !grp.systemCache()) {
-                        System.out.println("MY TRY TO MAKE OWN REBALANCE p=" + locPart + "\n\n");
-                    }
+//
+//                    if (ctx.igniteInstanceName().endsWith("3") && !grp.systemCache()) {
+//                        System.out.println("MY TRY TO MAKE OWN REBALANCE p=" + locPart + "\n\n");
+//                    }
 
                     boolean reserved = locPart.reserve();
 
@@ -2616,9 +2608,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (reserved)
                             locPart.release();
                     }
-
-                    if (ctx.igniteInstanceName().endsWith("3") && !grp.systemCache())
-                        System.out.println("MY after rebalance="+locPart);
                 }
             }
         }
