@@ -102,7 +102,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
         if (!gaps().isEmpty() && val < highestAppliedCounter())
-            throw new IgniteCheckedException("Failed to update the counter [newVal=" + this + ", curState=" + this + ']');
+            throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
         long cur = cntr.get();
 
