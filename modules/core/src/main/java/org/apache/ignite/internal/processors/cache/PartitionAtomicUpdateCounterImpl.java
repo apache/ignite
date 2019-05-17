@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLongList;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +32,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
     private final AtomicLong cntr = new AtomicLong();
 
     /**
-     * Initial counter points to last sequential update after WAL recovery.
+     * Initial counter is set to update with max sequence number after WAL recovery.
      */
     private long initCntr;
 
@@ -61,35 +60,22 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /** {@inheritDoc} */
     @SuppressWarnings("StatementWithEmptyBody")
-    @Override public void update(long val) throws IgniteCheckedException {
+    @Override public void update(long val) {
         long cur;
 
         while(val > (cur = cntr.get()) && !cntr.compareAndSet(cur, val));
     }
 
-    /**
-     * Updates counter by delta from start position.
-     *
-     * @param start Start.
-     * @param delta Delta.
-     */
+    /** {@inheritDoc} */
     @Override public boolean update(long start, long delta) {
-        return false; // Prevent RollbackRecord in mixed tx-atomic mode.
+        update(start + delta);
+
+        return false; // Prevents RollbackRecord in mixed tx-atomic mode.
     }
 
-    /**
-     * Updates initial counter on recovery. Not thread-safe.
-     *
-     * @param start Start.
-     * @param delta Delta.
-     */
-    @Override public void updateInitial(long start, long delta) {
-        try {
-            update(start + delta);
-        }
-        catch (IgniteCheckedException e) {
-            // Ignore.
-        }
+    /** {@inheritDoc} */
+    @Override public synchronized void updateInitial(long start, long delta) {
+        update(start + delta);
 
         initCntr = get();
     }
@@ -145,7 +131,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /** {@inheritDoc} */
     @Override public synchronized boolean empty() {
-        return get() == 0 && sequential();
+        return get() == 0;
     }
 
     /** {@inheritDoc} */

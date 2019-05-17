@@ -46,7 +46,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     /** Counter updates serialization version. */
     private static final byte VERSION = 1;
 
-    /** Queue of out-of-order counter update tasks. */
+    /** Queue of finished out of order counter updates. */
     private TreeSet<Item> queue = new TreeSet<>();
 
     /** LWM. */
@@ -102,7 +102,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
         if (!gaps().isEmpty() && val < highestAppliedCounter())
-            throw new IgniteCheckedException("Illegal counter update");
+            throw new IgniteCheckedException("Failed to update the counter [newVal=" + this + ", curState=" + this + ']');
 
         long cur = cntr.get();
 
@@ -192,10 +192,6 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public void updateInitial(long start, long delta) {
-        long cntr0 = get();
-
-        assert start >= cntr0 : "Illegal update counters order: cur=" + cntr0 + ", new=" + start;
-
         update(start, delta);
 
         initCntr = get();

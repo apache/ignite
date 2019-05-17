@@ -1306,10 +1306,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 pCntr.update(val);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Partition counter inconsistency is detected and new counter value will be ignored. " +
-                    "Most probably a node with most actual data is out of topology or data streamer is used in isolated " +
-                    "mode (allowOverride=true) concurrently with normal cache operations [rebCntr=" + val +
-                    ", locCntr=" + pCntr + ']');
+                U.error(log, "Failed to update partition counter. " +
+                    "Most probably a node with most actual data is out of topology or data streamer is used " +
+                    "in preload mode (allowOverride=false) concurrently with cache transactions [grpName=" +
+                    grp.name() + ", partId=" + partId + ']', e);
 
                 if (failNodeOnPartitionInconsistency)
                     ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
