@@ -48,12 +48,6 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalcula
  * compares prediction to expected outcome.</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
- * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class MLPTrainerExample {
     /**

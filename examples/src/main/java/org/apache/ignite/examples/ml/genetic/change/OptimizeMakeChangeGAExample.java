@@ -45,12 +45,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * <p>
  * You can change the test data and parameters of GA grid used in this example and re-run it to explore
  * this functionality further.</p>
- * <p>
- * Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
- * <p>
- *  Alternatively you can run ExampleNodeStartup in another JVM which will start node with
- *  {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class OptimizeMakeChangeGAExample {
     /**
