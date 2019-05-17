@@ -4111,10 +4111,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         partHistSuppliers.putAll(msg.partitionHistorySuppliers());
 
+        Map<Integer, Map<Integer, Long>> partsSizes = msg.partitionSizes(cctx);
+
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer grpId = entry.getKey();
 
-            Map<Integer, Map<Integer, Long>> partsSizes = msg.partitionSizes(cctx);
 
             CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
