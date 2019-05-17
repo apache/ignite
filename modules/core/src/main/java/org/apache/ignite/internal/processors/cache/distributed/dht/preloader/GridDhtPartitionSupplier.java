@@ -266,10 +266,10 @@ class GridDhtPartitionSupplier {
                 maxBatchesCnt = 1;
 
             GridDhtPartitionSupplyMessage supplyMsg = new GridDhtPartitionSupplyMessage(
-                    demandMsg.rebalanceId(),
-                    grp.groupId(),
-                    demandMsg.topologyVersion(),
-                    grp.deploymentEnabled()
+                demandMsg.rebalanceId(),
+                grp.groupId(),
+                demandMsg.topologyVersion(),
+                grp.deploymentEnabled()
             );
 
             Set<Integer> remainingParts;
@@ -501,6 +501,7 @@ class GridDhtPartitionSupplier {
 
     /**
      * Extracts entry info from row.
+     *
      * @param row Cache data row.
      * @return Entry info.
      */
