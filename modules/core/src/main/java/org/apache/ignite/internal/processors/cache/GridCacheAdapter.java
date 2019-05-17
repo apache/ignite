@@ -1959,7 +1959,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             skipVals,
             /*keep cache objects*/false,
             recovery,
-            true /*TODO ROLLBACK, TEST ONLY*/,
+            consistency,
             needVer,
             null,
             null); // TODO IGNITE-7371
