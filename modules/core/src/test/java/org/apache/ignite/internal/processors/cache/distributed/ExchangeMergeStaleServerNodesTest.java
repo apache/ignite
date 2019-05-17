@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,6 +49,7 @@ import org.junit.runners.JUnit4;
 /**
  *
  */
+@SuppressWarnings("deprecation")
 @RunWith(JUnit4.class)
 public class ExchangeMergeStaleServerNodesTest extends GridCommonAbstractTest {
     /** */
@@ -126,6 +127,64 @@ public class ExchangeMergeStaleServerNodesTest extends GridCommonAbstractTest {
 
             // Check that next nodes can successfully join topology.
             startGrid(3);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testServersFailAfterDoubleMerge() throws Exception {
+        commSpis = F.asMap(
+            getTestIgniteInstanceName(0), new DelayableCommunicationSpi((msg) -> false),
+            getTestIgniteInstanceName(1), new DelayableCommunicationSpi((msg) -> false),
+            getTestIgniteInstanceName(2), new DelayableCommunicationSpi((msg) -> false),
+            getTestIgniteInstanceName(3), new DelayableCommunicationSpi((msg) -> msg instanceof GridDhtPartitionsSingleMessage),
+            getTestIgniteInstanceName(4), new DelayableCommunicationSpi((msg) -> false)
+        );
+
+        try {
+            IgniteEx crd = startGrid(0);
+
+            GridCachePartitionExchangeManager<Object, Object> exchMgr = crd.context().cache().context().exchange();
+
+            exchMgr.mergeExchangesTestWaitVersion(new AffinityTopologyVersion(4, 0), null);
+
+            // This start will trigger an exchange.
+            IgniteInternalFuture<IgniteEx> fut1 = GridTestUtils.runAsync(() -> startGrid(1), "starter1");
+            // This exchange will be merged.
+            IgniteInternalFuture<IgniteEx> fut2 = GridTestUtils.runAsync(() -> startGrid(2), "starter2");
+
+            GridTestUtils.waitForCondition(() -> exchMgr.lastTopologyFuture().exchangeId().topologyVersion()
+                .equals(new AffinityTopologyVersion(2, 0)), getTestTimeout());
+
+            // This exchange will be merged as well, but the node will be failed.
+            IgniteInternalFuture<IgniteEx> futFail = GridTestUtils.runAsync(() -> startGrid(3), "starter3");
+
+            GridTestUtils.waitForCondition(exchMgr::hasPendingExchange, getTestTimeout());
+
+            // Wait for merged exchange.
+            GridTestUtils.waitForCondition(
+                () -> exchMgr.mergeExchangesTestWaitVersion() == null, getTestTimeout());
+
+            futFail.cancel();
+            stopGrid(getTestIgniteInstanceName(2), true);
+
+            fut1.get();
+            fut2.get();
+
+            try {
+                futFail.get();
+            }
+            catch (IgniteCheckedException ignore) {
+                // No-op.
+            }
+
+            // Check that next nodes can successfully join topology.
+            startGrid(4);
         }
         finally {
             stopAllGrids();
