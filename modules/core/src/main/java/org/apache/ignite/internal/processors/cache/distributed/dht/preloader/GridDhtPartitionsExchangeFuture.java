@@ -2503,7 +2503,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Merges this exchange with given one.
+     * Merges this exchange with given one. Invoked under synchronization on {@code mux} of the {@code fut}.
+     * All futures being merged are merged under a single synchronized section.
      *
      * @param fut Current exchange to merge with.
      * @return {@code True} if need wait for message from joined server node.
@@ -4389,6 +4390,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                                         wasMerged = true;
                                         rmvd = true;
+
+                                        awaitMergedMsgs--;
+
+                                        assert awaitMergedMsgs >= 0 : "exchFut=" + this + ", node=" + node;
                                     }
                                 }
                             }
@@ -4404,7 +4409,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                     return;
 
                                 case CRD:
-                                    allReceived = rmvd && (remaining.isEmpty() && F.isEmpty(mergedJoinExchMsgs));
+                                    allReceived = rmvd && (remaining.isEmpty() && awaitMergedMsgs == 0);
 
                                     break;
 
@@ -4845,16 +4850,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @Override public String toString() {
         Set<UUID> remaining;
         Set<UUID> mergedJoinExch;
+        int awaitMergedMsgs;
 
         synchronized (mux) {
             remaining = new HashSet<>(this.remaining);
             mergedJoinExch = mergedJoinExchMsgs == null ? null : new HashSet<>(mergedJoinExchMsgs.keySet());
+            awaitMergedMsgs = this.awaitMergedMsgs;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
             "mergedJoinExchMsgs", mergedJoinExch,
+            "awaitMergedMsgs", awaitMergedMsgs,
             "super", super.toString());
     }
 
