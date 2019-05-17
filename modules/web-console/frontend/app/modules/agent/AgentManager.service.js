@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -84,7 +84,6 @@ class ConnectionState {
 
     updateCluster(cluster) {
         this.cluster = cluster;
-        this.cluster.connected = !!_.find(this.clusters, {id: this.cluster.id});
 
         return cluster;
     }
@@ -95,11 +94,8 @@ class ConnectionState {
         if (_.isEmpty(this.clusters))
             this.cluster = null;
 
-        if (_.isNil(this.cluster))
+        if (_.isNil(this.cluster) || !_.find(clusters, {id: this.cluster.id}))
             this.cluster = _.head(clusters);
-
-        if (this.cluster)
-            this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
 
         this.hasDemo = hasDemo;
 
@@ -112,10 +108,8 @@ class ConnectionState {
     }
 
     useConnectedCluster() {
-        if (nonEmpty(this.clusters) && !this.cluster.connected) {
+        if (nonEmpty(this.clusters)) {
             this.cluster = _.head(this.clusters);
-
-            this.cluster.connected = true;
 
             this.state = State.CONNECTED;
         }
@@ -176,10 +170,9 @@ export default class AgentManager {
             return JSON.parse(localStorage.cluster);
         }
         catch (ignore) {
-            return null;
-        }
-        finally {
             localStorage.removeItem('cluster');
+
+            return null;
         }
     }
 
