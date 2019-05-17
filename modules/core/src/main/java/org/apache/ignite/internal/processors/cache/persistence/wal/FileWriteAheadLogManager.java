@@ -457,16 +457,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled());
 
-        if (isArchiverEnabled())
-            archiver = new FileArchiver(segmentAware, log);
-        else
-            archiver = null;
-
+        // We have to initialize compressor before archiver in order to setup already compressed segments.
+        // Otherwise, FileArchiver initialization will trigger redundant work for FileCompressor.
         if (dsCfg.isWalCompactionEnabled()) {
             compressor = new FileCompressor(log);
 
             decompressor = new FileDecompressor(log);
         }
+
+        if (isArchiverEnabled())
+            archiver = new FileArchiver(segmentAware, log);
+        else
+            archiver = null;
 
         segmentRouter = new SegmentRouter(walWorkDir, walArchiveDir, segmentAware, dsCfg);
 
@@ -1941,6 +1943,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** */
         FileCompressor(IgniteLogger log) {
             super(0, log);
+
+            initAlreadyCompressedSegments();
         }
 
         /** */
@@ -1954,11 +1958,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 f.delete();
             }
 
-            FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
-
-            if (alreadyCompressed.length > 0)
-                segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
-
             for (int i = 1; i < calculateThreadCount(); i++) {
                 FileCompressorWorker worker = new FileCompressorWorker(i, log);
 
@@ -1968,6 +1967,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     workers.add(worker);
                 }
             }
+        }
+
+        /**
+         * Checks if there are already compressed segments and assigns counters if needed.
+         */
+        private void initAlreadyCompressedSegments() {
+            FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
+
+            if (alreadyCompressed.length > 0)
+                segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
         }
 
         /**
@@ -2017,6 +2026,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** */
     private class FileCompressorWorker extends GridWorker {
+        /** Last compression error. */
+        private volatile Throwable lastCompressionError;
+
         /** */
         FileCompressorWorker(int idx,  IgniteLogger log) {
             super(cctx.igniteInstanceName(), "wal-file-compressor-%" + cctx.igniteInstanceName() + "%-" + idx, log);
@@ -2089,8 +2101,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 catch (IgniteCheckedException | IOException e) {
+                    lastCompressionError = e;
+
                     U.error(log, "Compression of WAL segment [idx=" + segIdx +
-                            "] was skipped due to unexpected error", e);
+                            "] was skipped due to unexpected error", lastCompressionError);
 
                     segmentAware.onSegmentCompressed(segIdx);
                 }
