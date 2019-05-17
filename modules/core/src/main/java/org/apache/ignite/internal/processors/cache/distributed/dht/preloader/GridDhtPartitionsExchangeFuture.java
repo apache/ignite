@@ -758,9 +758,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             boolean crdNode = crd != null && crd.isLocal();
 
             isLocalAffinityRecalculation = isLocalAffinityRecalculationExchange();
-            System.out.println("MY EXCHANGE light="+isLocalAffinityRecalculation+
-                " n="+cctx.localNode().id()+" nodes="+F.nodeIds(firstEventCache().serverNodes())
-                +" leave="+firstEvent().eventNode());
 
             exchCtx = new ExchangeContext(crdNode, this, isLocalAffinityRecalculation);
 
@@ -1000,12 +997,22 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // Case for baseline node leave.
         if ((firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
             && firstEvtDiscoCache.baselineNodes() != null) {
+
+            boolean res = true;
+
             // Check that there are no moving partitions that may be lost.
             if (!cctx.affinity().isLastAffinityIdeal(this, crd != null && crd.isLocal()))
-                return false;
+                res =  false;
 
-            return firstEvtDiscoCache.baselineNodes().stream()
-                .anyMatch(node -> node.consistentId().equals(firstDiscoEvt.eventNode().consistentId()));
+            if (res)
+                res =  firstEvtDiscoCache.baselineNodes().stream()
+                    .anyMatch(node -> node.consistentId().equals(firstDiscoEvt.eventNode().consistentId()));
+
+            System.out.println("MY EXCHANGE light="+res+
+                " n="+cctx.localNode().id()+" nodes="+F.nodeIds(firstEventCache().serverNodes())
+                +" leave="+firstEvent().eventNode());
+
+            return res;
         }
 
         return false;
