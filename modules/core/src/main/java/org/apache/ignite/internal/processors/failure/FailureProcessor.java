@@ -140,6 +140,8 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (IGNITE_DUMP_THREADS_ON_FAILURE)
             U.dumpThreads(log);
 
+        ctx.diagnostic().onFailure(ignite, failureCtx);
+
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 
         if (invalidated) {

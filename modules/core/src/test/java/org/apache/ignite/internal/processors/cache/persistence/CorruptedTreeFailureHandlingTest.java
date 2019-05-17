@@ -30,7 +30,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.DiagnosticFailureHandler;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
@@ -113,7 +112,7 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
 
     /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new DiagnosticFailureHandler(new StopNodeFailureHandler());
+        return new StopNodeFailureHandler();
     }
 
     /** */

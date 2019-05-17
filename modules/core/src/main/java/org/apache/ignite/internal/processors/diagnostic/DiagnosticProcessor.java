@@ -21,12 +21,21 @@ import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
 import static org.apache.ignite.internal.util.IgniteStopwatch.logTime;
 
 /**
@@ -73,6 +82,47 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
         @NotNull PageHistoryDiagnoster.DiagnosticPageBuilder builder
     ) throws IgniteCheckedException {
         logTime(log, "DiagnosticPageHistory", () -> pageHistoryDiagnoster.dumpPageHistory(builder));
+    }
+
+    /**
+     * Print diagnostic info about failure occurred on {@code ignite} instance.
+     * Failure details is contained in {@code failureCtx}.
+     *
+     * @param ignite Ignite instance.
+     * @param failureCtx Failure context.
+     */
+    public void onFailure(Ignite ignite, FailureContext failureCtx) {
+        // If we have some corruption in data structure,
+        // we should scan WAL and print to log and save to file all pages related to corruption for
+        // future investigation.
+        if (X.hasCause(failureCtx.error(), CorruptedTreeException.class)) {
+            CorruptedTreeException corruptedTreeException = X.cause(failureCtx.error(), CorruptedTreeException.class);
+
+            T2<Integer, Long>[] pageIds = corruptedTreeException.pages();
+
+            try {
+                DiagnosticProcessor diagnosticProc = ((IgniteEx)ignite).context().diagnostic();
+
+                diagnosticProc.dumpPageHistory(
+                    new PageHistoryDiagnoster.DiagnosticPageBuilder()
+                        .pageIds(pageIds)
+                        .addAction(PRINT_TO_LOG)
+                        .addAction(PRINT_TO_FILE)
+                );
+            }
+            catch (IgniteCheckedException e) {
+                SB sb = new SB();
+                sb.a("[");
+
+                for (int i = 0; i < pageIds.length; i++)
+                    sb.a("(").a(pageIds[i].get1()).a(",").a(pageIds[i].get2()).a(")");
+
+                sb.a("]");
+
+                ignite.log().error(
+                    "Failed to dump diagnostic info on tree corruption. PageIds=" + sb, e);
+            }
+        }
     }
 
     /**
