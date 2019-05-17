@@ -85,7 +85,6 @@ class ConnectionState {
 
     updateCluster(cluster) {
         this.cluster = cluster;
-        this.cluster.connected = !!_.find(this.clusters, {id: this.cluster.id});
 
         return cluster;
     }
@@ -96,11 +95,8 @@ class ConnectionState {
         if (_.isEmpty(this.clusters))
             this.cluster = null;
 
-        if (_.isNil(this.cluster))
+        if (_.isNil(this.cluster) || !_.find(clusters, {id: this.cluster.id}))
             this.cluster = _.head(clusters);
-
-        if (this.cluster)
-            this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
 
         this.hasDemo = hasDemo;
 
@@ -113,10 +109,8 @@ class ConnectionState {
     }
 
     useConnectedCluster() {
-        if (nonEmpty(this.clusters) && !this.cluster.connected) {
+        if (nonEmpty(this.clusters)) {
             this.cluster = _.head(this.clusters);
-
-            this.cluster.connected = true;
 
             this.state = State.CONNECTED;
         }
@@ -177,10 +171,9 @@ export default class AgentManager {
             return JSON.parse(localStorage.cluster);
         }
         catch (ignore) {
-            return null;
-        }
-        finally {
             localStorage.removeItem('cluster');
+
+            return null;
         }
     }
 
