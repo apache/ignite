@@ -357,80 +357,86 @@ namespace Apache.Ignite.Core.Impl.Client
                 if (IsDistributionMapUpToDate())
                     return; // Up to date.
 
-                DoOutInOp<object>(ClientOp.CachePartitions, s =>
+                DoOutInOp(
+                    ClientOp.CachePartitions,
+                    s => WriteDistributionMapRequest(cacheId, s),
+                    s => ReadDistributionMapResponse(s));
+            }
+        }
+
+        private object ReadDistributionMapResponse(IBinaryStream s)
+        {
+            var affinityTopologyVersion = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
+            var size = s.ReadInt();
+            var mapping = new Dictionary<int, ClientCachePartitionMap>();
+
+            for (int i = 0; i < size; i++)
+            {
+                var grp = new ClientCacheAffinityAwarenessGroup(s);
+
+                // Count partitions to avoid reallocating array.
+                int maxPartNum = 0;
+                foreach (var partMap in grp.PartitionMap)
                 {
-                    if (_distributionMap != null)
+                    foreach (var part in partMap.Value)
                     {
-                        // Map exists: request update for all caches.
-                        // TODO: Add a limit for map size, use LRU.
-                        var mapContainsCacheId = _distributionMap.CachePartitionMap.ContainsKey(cacheId);
-                        var count = _distributionMap.CachePartitionMap.Count;
-                        if (!mapContainsCacheId)
+                        if (part > maxPartNum)
                         {
-                            count++;
-                        }
-
-                        s.WriteInt(count);
-
-                        foreach (var cachePartitionMap in _distributionMap.CachePartitionMap)
-                        {
-                            s.WriteInt(cachePartitionMap.Key);
-                        }
-
-                        if (!mapContainsCacheId)
-                        {
-                            s.WriteInt(cacheId);
+                            maxPartNum = part;
                         }
                     }
-                    else
-                    {
-                        // Map does not exist yet: request update for specified cache only.
-                        s.WriteInt(1);
-                        s.WriteInt(cacheId);
-                    }
-                }, s =>
+                }
+
+                // Populate partition array.
+                var partNodeIds = new Guid[maxPartNum + 1];
+                foreach (var partMap in grp.PartitionMap)
                 {
-                    var affinityTopologyVersion = new AffinityTopologyVersion(s.ReadLong(), s.ReadInt());
-                    var size = s.ReadInt();
-                    var mapping = new Dictionary<int, ClientCachePartitionMap>();
-
-                    for (int i = 0; i < size; i++)
+                    foreach (var part in partMap.Value)
                     {
-                        var grp = new ClientCacheAffinityAwarenessGroup(s);
-
-                        // Count partitions to avoid reallocating array.
-                        int maxPartNum = 0;
-                        foreach (var partMap in grp.PartitionMap)
-                        {
-                            foreach (var part in partMap.Value)
-                            {
-                                if (part > maxPartNum)
-                                {
-                                    maxPartNum = part;
-                                }
-                            }
-                        }
-
-                        // Populate partition array.
-                        var partNodeIds = new Guid[maxPartNum + 1];
-                        foreach (var partMap in grp.PartitionMap)
-                        {
-                            foreach (var part in partMap.Value)
-                            {
-                                partNodeIds[part] = partMap.Key;
-                            }
-                        }
-
-                        foreach (var cache in grp.Caches)
-                        {
-                            mapping[cache.Key] = new ClientCachePartitionMap(cache.Key, partNodeIds, cache.Value);
-                        }
+                        partNodeIds[part] = partMap.Key;
                     }
+                }
 
-                    _distributionMap = new ClientCacheTopologyPartitionMap(mapping, affinityTopologyVersion);
+                foreach (var cache in grp.Caches)
+                {
+                    mapping[cache.Key] = new ClientCachePartitionMap(cache.Key, partNodeIds, cache.Value);
+                }
+            }
 
-                    return null;
-                });
+            _distributionMap = new ClientCacheTopologyPartitionMap(mapping, affinityTopologyVersion);
+
+            return null;
+        }
+
+        private void WriteDistributionMapRequest(int cacheId, IBinaryStream s)
+        {
+            if (_distributionMap != null)
+            {
+                // Map exists: request update for all caches.
+                var mapContainsCacheId = _distributionMap.CachePartitionMap.ContainsKey(cacheId);
+                var count = _distributionMap.CachePartitionMap.Count;
+                if (!mapContainsCacheId)
+                {
+                    count++;
+                }
+
+                s.WriteInt(count);
+
+                foreach (var cachePartitionMap in _distributionMap.CachePartitionMap)
+                {
+                    s.WriteInt(cachePartitionMap.Key);
+                }
+
+                if (!mapContainsCacheId)
+                {
+                    s.WriteInt(cacheId);
+                }
+            }
+            else
+            {
+                // Map does not exist yet: request update for specified cache only.
+                s.WriteInt(1);
+                s.WriteInt(cacheId);
             }
         }
 
