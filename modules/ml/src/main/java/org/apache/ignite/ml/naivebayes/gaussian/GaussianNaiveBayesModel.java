@@ -64,22 +64,32 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** Returns a number of class to which the input belongs. */
     @Override public Double predict(Vector vector) {
-        double maxProbability = .0;
-        int max = 0;
+        double[] probapilityPowers = probabilityPowers(vector);
 
-        for (int i = 0; i < classProbabilities.length; i++) {
-            double p = classProbabilities[i];
-            for (int j = 0; j < vector.size(); j++) {
-                double x = vector.get(j);
-                double g = gauss(x, means[i][j], variances[i][j]);
-                p *= g;
-            }
-            if (p > maxProbability) {
+        int max = 0;
+        for (int i = 0; i <probapilityPowers.length; i++) {
+            probapilityPowers[i] += Math.log(classProbabilities[i]);
+
+            if (probapilityPowers[i] > probapilityPowers[max]) {
                 max = i;
-                maxProbability = p;
             }
         }
         return labels[max];
+    }
+
+    /** Returns an array where the index correapons a label, and value corresponds probalility to be this label.
+     * The prior probabilities are not count. */
+    public double[] probabilityPowers(Vector vector) {
+        double[] probapilityPowers = new double[classProbabilities.length];
+
+        for (int i = 0; i < classProbabilities.length; i++) {
+            for (int j = 0; j < vector.size(); j++) {
+                double x = vector.get(j);
+                double parobability = gauss(x, means[i][j], variances[i][j]);
+                probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
+            }
+        }
+        return probapilityPowers;
     }
 
     /** */

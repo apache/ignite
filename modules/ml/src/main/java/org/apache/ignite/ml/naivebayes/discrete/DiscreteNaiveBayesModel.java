@@ -75,24 +75,35 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @return a label with max probability.
      */
     @Override public Double predict(Vector vector) {
-        double maxProbapilityPower = -Double.MAX_VALUE;
-        int maxLabelIndex = -1;
+        double[] probapilityPowers = probapilityPowers(vector);
+
+        int maxLabelIndex = 0;
+        for (int i = 0; i < probapilityPowers.length; i++) {
+            probapilityPowers[i] += Math.log(clsProbabilities[i]);
+
+            if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
+                maxLabelIndex = i;
+            }
+        }
+
+
+        return labels[maxLabelIndex];
+    }
+
+    /** Returns an array where the index correapons a label, and value corresponds probalility to be this label.
+     * The prior probabilities are not count. */
+    public double[] probapilityPowers(Vector vector) {
+        double[] probapilityPowers = new double[clsProbabilities.length];
 
         for (int i = 0; i < clsProbabilities.length; i++) {
-            double probabilityPower = Math.log(clsProbabilities[i]);
-
             for (int j = 0; j < probabilities[0].length; j++) {
                 int x = toBucketNumber(vector.get(j), bucketThresholds[j]);
                 double p = probabilities[i][j][x];
-                probabilityPower += (p > 0 ? Math.log(p) : .0);
-            }
-
-            if (probabilityPower > maxProbapilityPower) {
-                maxLabelIndex = i;
-                maxProbapilityPower = probabilityPower;
+                probapilityPowers[i] += (p > 0 ? Math.log(p) : .0);
             }
         }
-        return labels[maxLabelIndex];
+
+        return probapilityPowers;
     }
 
     /** */
