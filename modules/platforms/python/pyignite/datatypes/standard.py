@@ -585,11 +585,11 @@ class StandardArray(IgniteDataType):
             )
         length = len(value)
         header.length = length
-        buffer = bytes(header)
+        buffer = bytearray(header)
 
         for x in value:
             buffer += cls.standard_type.from_python(x)
-        return buffer
+        return bytes(buffer)
 
 
 class StringArray(StandardArray):
@@ -719,11 +719,11 @@ class EnumArrayObject(StandardArrayObject):
         length = len(value)
         header.length = length
         header.type_id = type_id
-        buffer = bytes(header)
+        buffer = bytearray(header)
 
         for x in value:
             buffer += cls.standard_type.from_python(x)
-        return buffer
+        return bytes(buffer)
 
     @classmethod
     def to_python(cls, ctype_object, *args, **kwargs):

@@ -167,7 +167,7 @@ class StructArray:
         header_class = self.build_header_class()
         header = header_class()
         header.length = length
-        buffer = bytes(header)
+        buffer = bytearray(header)
 
         for i, v in enumerate(value):
             for default_key, default_value in self.defaults.items():
@@ -175,7 +175,7 @@ class StructArray:
             for name, el_class in self.following:
                 buffer += el_class.from_python(v[name])
 
-        return buffer
+        return bytes(buffer)
 
 
 @attr.s
@@ -465,8 +465,8 @@ class AnyDataArray(AnyDataObject):
             value = [value]
             length = 1
         header.length = length
-        buffer = bytes(header)
+        buffer = bytearray(header)
 
         for x in value:
             buffer += infer_from_python(x)
-        return buffer
+        return bytes(buffer)
