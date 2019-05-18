@@ -544,24 +544,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         long metaPageId = pageMem.metaPageId(grpId);
         long metaPage = pageMem.acquirePage(grpId, metaPageId);
 
+        long nextSnapshotTag = -1;
+
         try {
             long metaPageAddr = pageMem.writeLock(grpId, metaPageId, metaPage);
 
             try {
                 PageMetaIO metaIo = PageMetaIO.getPageIO(metaPageAddr);
 
-                long nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
+                nextSnapshotTag = metaIo.getNextSnapshotTag(metaPageAddr);
 
                 metaIo.setNextSnapshotTag(metaPageAddr, nextSnapshotTag + 1);
 
                 if (log != null && log.isDebugEnabled())
                     log.debug("Save next snapshot before checkpoint start for grId = " + grpId
                         + ", nextSnapshotTag = " + nextSnapshotTag);
-
-                if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaPageId,
-                    metaPage, wal, null))
-                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId,
-                        nextSnapshotTag + 1));
 
                 addPartition(
                     null,
@@ -575,6 +572,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
             finally {
                 pageMem.writeUnlock(grpId, metaPageId, metaPage, null, true);
+
+                if (!wal.disabled(grpId) && nextSnapshotTag != -1)
+                    wal.log(new MetaPageUpdateNextSnapshotId(grpId, metaPageId, nextSnapshotTag + 1));
             }
         }
         finally {
