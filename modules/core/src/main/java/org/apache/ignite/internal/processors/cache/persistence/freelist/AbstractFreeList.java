@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -484,23 +483,32 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 long pageId = 0L;
 
-                for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
-                    pageId = takeEmptyPage(b, ioVersions(), statHolder);
+                if (remaining < MIN_SIZE_FOR_DATA_PAGE) {
+                    for (int b = bucket(remaining, false) + 1; b < BUCKETS - 1; b++) {
+                        pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
-                    if (pageId != 0L)
-                        break;
+                        if (pageId != 0L)
+                            break;
+                    }
                 }
 
-                AbstractDataPageIO<T> initIo = null;
+                if (pageId == 0L) { // Handle reuse bucket.
+                    if (reuseList == this)
+                        pageId = takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder);
+                    else
+                        pageId = reuseList.takeRecycledPage();
+                }
+
+                AbstractDataPageIO initIo = null;
 
                 if (pageId == 0L) {
                     pageId = allocateDataPage(row.partition());
 
-                    initIo = ioVersions().latest();
+                    initIo = row.ioVersions().latest();
                 }
-                else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
-                    pageId = initReusedPage(pageId, row.partition(), statHolder);
-                else
+                else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
+                    pageId = initReusedPage(row, pageId, row.partition(), statHolder);
+                else // Page is taken from free space bucket. For in-memory mode partition must be changed.
                     pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
                 written = write(pageId, writeRow, initIo, row, written, FAIL_I, statHolder);
@@ -525,7 +533,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      *
      * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
      */
-    private long initReusedPage(long reusedPageId, int partId,
+    private long initReusedPage(T row, long reusedPageId, int partId,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         long reusedPage = acquirePage(reusedPageId, statHolder);
         try {
@@ -535,7 +543,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             try {
                 return initReusedPage(reusedPageId, reusedPage, reusedPageAddr,
-                    partId, PageIdAllocator.FLAG_DATA, ioVersions().latest());
+                    partId, PageIdAllocator.FLAG_DATA, row.ioVersions().latest());
             }
             finally {
                 writeUnlock(reusedPageId, reusedPage, reusedPageAddr, true);
@@ -693,11 +701,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throw new CorruptedFreeListException("Failed to count recycled pages", t);
         }
     }
-
-    /**
-     * @return IOVersions.
-     */
-    public abstract IOVersions<? extends AbstractDataPageIO<T>> ioVersions();
 
     /** {@inheritDoc} */
     @Override public String toString() {

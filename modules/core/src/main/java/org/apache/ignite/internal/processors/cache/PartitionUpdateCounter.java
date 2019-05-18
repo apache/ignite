@@ -17,219 +17,116 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteLogger;
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridLongList;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Partition update counter with MVCC delta updates capabilities.
+ * Partition update counter maintains three entities for tracking partition update state.
+   <ol>
+ *     <li><b>Low water mark (LWM)</b> or update counter - lowest applied sequential update number.</li>
+ *     <li><b>High water mark (HWM)</b> or reservation counter - highest seen but unapplied yet update number.</li>
+ *     <li>Out-of-order applied updates in range between LWM and HWM.</li>
+ * </ol>
  */
-public class PartitionUpdateCounter {
-    /** */
-    private IgniteLogger log;
-
-    /** Queue of counter update tasks*/
-    private final TreeSet<Item> queue = new TreeSet<>();
-
-    /** Counter. */
-    private final AtomicLong cntr = new AtomicLong();
-
-    /** Initial counter. */
-    private long initCntr;
-
+public interface PartitionUpdateCounter extends Iterable<long[]> {
     /**
-     * @param log Logger.
-     */
-    PartitionUpdateCounter(IgniteLogger log) {
-        this.log = log;
-    }
-
-    /**
-     * Sets init counter.
+     * Restores update counter state.
      *
-     * @param updateCntr Init counter valus.
+     * @param initUpdCntr LWM.
+     * @param cntrUpdData Counter updates raw data.
      */
-    public void init(long updateCntr) {
-        initCntr = updateCntr;
-
-        cntr.set(updateCntr);
-    }
+    public void init(long initUpdCntr, @Nullable byte[] cntrUpdData);
 
     /**
-     * @return Initial counter value.
+     * @deprecated TODO LWM should be used as initial counter https://ggsystems.atlassian.net/browse/GG-17396
      */
-    public long initial() {
-        return initCntr;
-    }
+    public long initial();
 
     /**
-     * @return Current update counter value.
+     * Get LWM.
      */
-    public long get() {
-        return cntr.get();
-    }
+    public long get();
 
     /**
-     * Adds delta to current counter value.
+     * Increment LWM by 1.
+     *
+     * @return New LWM.
+     */
+    public long next();
+
+    /**
+     * Increment LWM by delta.
      *
      * @param delta Delta.
-     * @return Value before add.
      */
-    public long getAndAdd(long delta) {
-        return cntr.getAndAdd(delta);
-    }
+    public long next(long delta);
 
     /**
-     * @return Next update counter.
-     */
-    public long next() {
-        return cntr.incrementAndGet();
-    }
-
-    /**
-     * Sets value to update counter,
+     * Increment HWM by delta.
      *
-     * @param val Values.
-     */
-    public void update(long val) {
-        while (true) {
-            long val0 = cntr.get();
-
-            if (val0 >= val)
-                break;
-
-            if (cntr.compareAndSet(val0, val))
-                break;
-        }
-    }
-
-    /**
-     * Updates counter by delta from start position.
-     *
-     * @param start Start.
      * @param delta Delta.
+     * @return New HWM.
      */
-    public synchronized void update(long start, long delta) {
-        long cur = cntr.get(), next;
-
-        if (cur > start) {
-            log.warning("Stale update counter task [cur=" + cur + ", start=" + start + ", delta=" + delta + ']');
-
-            return;
-        }
-
-        if (cur < start) {
-            // backup node with gaps
-            offer(new Item(start, delta));
-
-            return;
-        }
-
-        while (true) {
-            boolean res = cntr.compareAndSet(cur, next = start + delta);
-
-            assert res;
-
-            Item peek = peek();
-
-            if (peek == null || peek.start != next)
-                return;
-
-            Item item = poll();
-
-            assert peek == item;
-
-            start = item.start;
-            delta = item.delta;
-            cur = next;
-        }
-    }
+    public long reserve(long delta);
 
     /**
-     * @param cntr Sets initial counter.
+     * Returns HWM.
      */
-    public void updateInitial(long cntr) {
-        if (get() < cntr)
-            update(cntr);
-
-        initCntr = cntr;
-    }
+    public long reserved();
 
     /**
-     * @return Retrieves the minimum update counter task from queue.
+     * Sets update counter to absolute value. All missed updates will be discarded.
+     *
+     * @param val Absolute value.
+     * @throws IgniteCheckedException if counter cannot be set to passed value due to incompatibility with current state.
      */
-    private Item poll() {
-        return queue.pollFirst();
-    }
+    public void update(long val) throws IgniteCheckedException;
 
     /**
-     * @return Checks the minimum update counter task from queue.
+     * Applies counter update out of range. Update ranges must not intersect.
+     *
+     * @param start Start (<= lwm).
+     * @param delta Delta.
+     * @return {@code True} if update was actually applied.
      */
-    private Item peek() {
-        return queue.isEmpty() ? null : queue.first();
-
-    }
+    public boolean update(long start, long delta);
 
     /**
-     * @param item Adds update task to priority queue.
+     * Reset counter internal state to zero.
      */
-    private void offer(Item item) {
-        queue.add(item);
-    }
+    public void reset();
+
+    /**
+     * @param start Counter.
+     * @param delta Delta.
+     * @deprecated TODO https://ggsystems.atlassian.net/browse/GG-17396
+     */
+    public void updateInitial(long start, long delta);
 
     /**
      * Flushes pending update counters closing all possible gaps.
      *
      * @return Even-length array of pairs [start, end] for each gap.
      */
-    public synchronized GridLongList finalizeUpdateCounters() {
-        Item item = poll();
+    public GridLongList finalizeUpdateCounters();
 
-        GridLongList gaps = null;
-
-        while (item != null) {
-            if (gaps == null)
-                gaps = new GridLongList((queue.size() + 1) * 2);
-
-            long start = cntr.get() + 1;
-            long end = item.start;
-
-            gaps.add(start);
-            gaps.add(end);
-
-            // Close pending ranges.
-            update(item.start + item.delta);
-
-            item = poll();
-        }
-
-        return gaps;
-    }
+    /** */
+    public @Nullable byte[] getBytes();
 
     /**
-     * Update counter task. Update from start value by delta value.
+     * @return {@code True} if counter has no missed updates.
      */
-    private static class Item implements Comparable<Item> {
-        /** */
-        private final long start;
+    public boolean sequential();
 
-        /** */
-        private final long delta;
+    /**
+     * @return {@code True} if counter has not seen any update.
+     */
+    public boolean empty();
 
-        /**
-         * @param start Start value.
-         * @param delta Delta value.
-         */
-        private Item(long start, long delta) {
-            this.start = start;
-            this.delta = delta;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull Item o) {
-            return Long.compare(this.start, o.start);
-        }
-    }
+    /**
+     * @return Iterator for pairs [start, delta] for each out-of-order update in the update counter sequence.
+     */
+    @Override public Iterator<long[]> iterator();
 }

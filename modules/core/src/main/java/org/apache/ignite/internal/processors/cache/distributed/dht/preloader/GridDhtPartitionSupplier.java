@@ -445,6 +445,15 @@ class GridDhtPartitionSupplier {
                 log.info("Finished supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]");
         }
         catch (Throwable t) {
+            if (iter != null && !iter.isClosed()) {
+                try {
+                    iter.close();
+                }
+                catch (IgniteCheckedException e) {
+                    t.addSuppressed(e);
+                }
+            }
+
             if (grp.shared().kernalContext().isStopping())
                 return;
 

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
@@ -30,6 +31,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -1352,8 +1354,14 @@ public class IgniteTxHandler {
 
         if (dhtTx != null)
             finish(nodeId, dhtTx, req);
-        else
-            applyPartitionsUpdatesCounters(req.updateCounters());
+        else {
+            try {
+                applyPartitionsUpdatesCounters(req.updateCounters(), !req.commit(), false);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
 
         if (nearTx != null)
             finish(nodeId, nearTx, req);
@@ -1421,9 +1429,6 @@ public class IgniteTxHandler {
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
-
-                tx.setPartitionUpdateCounters(
-                    req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
 
                 tx.commitRemoteTx();
             }
@@ -1698,7 +1703,7 @@ public class IgniteTxHandler {
                     if (log.isDebugEnabled())
                         log.debug("Attempt to start a completed transaction (will ignore): " + tx);
 
-                    applyPartitionsUpdatesCounters(req.updateCounters());
+                    applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
 
                     return null;
                 }
@@ -1710,7 +1715,7 @@ public class IgniteTxHandler {
 
                     ctx.tm().uncommitTx(tx);
 
-                    applyPartitionsUpdatesCounters(req.updateCounters());
+                    applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
 
                     return null;
                 }
@@ -1720,8 +1725,13 @@ public class IgniteTxHandler {
                 tx.transactionNodes(req.transactionNodes());
             }
 
-            if (req.updateCounters() != null)
-                tx.txCounters(true).updateCounters(req.updateCounters());
+            TxCounters txCounters = null;
+
+            if (req.updateCounters() != null) {
+                txCounters = tx.txCounters(true);
+
+                txCounters.updateCounters(req.updateCounters());
+            }
 
             if (!tx.isSystemInvalidate()) {
                 int idx = 0;
@@ -1738,6 +1748,13 @@ public class IgniteTxHandler {
                     if (locPart != null && locPart.reserve()) {
                         try {
                             tx.addWrite(entry, ctx.deploy().globalLoader());
+
+                            if (txCounters != null) {
+                                Long cntr = txCounters.generateNextCounter(entry.cacheId(), entry.cached().partition());
+
+                                if (cntr != null) // Counter is null if entry is no-op.
+                                    entry.updateCounter(cntr);
+                            }
 
                             if (isNearEnabled(cacheCtx) && req.invalidateNearEntry(idx))
                                 invalidateNearEntry(cacheCtx, entry.key(), req.version());
@@ -2198,7 +2215,12 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     private void processPartitionCountersRequest(UUID nodeId, PartitionCountersNeighborcastRequest req) {
-        applyPartitionsUpdatesCounters(req.updateCounters());
+        try {
+            applyPartitionsUpdatesCounters(req.updateCounters(), true, false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
 
         try {
             ctx.io().send(nodeId, new PartitionCountersNeighborcastResponse(req.futId()), SYSTEM_POOL);
@@ -2230,20 +2252,31 @@ public class IgniteTxHandler {
     }
 
     /**
-     * Applies partition counter updates for mvcc transactions.
+     * @param counters Counters.
+     */
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters)
+        throws IgniteCheckedException {
+        applyPartitionsUpdatesCounters(counters, false, false);
+    }
+
+    /**
+     * Applies partition counter updates for transactions.
      *
      * @param counters Counter values to be updated.
+     * @param rollback {@code True} if applied from rollbacks.
      */
-    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters) {
+    public void applyPartitionsUpdatesCounters(Iterable<PartitionUpdateCountersMessage> counters,
+        boolean rollback,
+        boolean rollbackOnPrimary) throws IgniteCheckedException {
         if (counters == null)
             return;
 
         for (PartitionUpdateCountersMessage counter : counters) {
             GridCacheContext ctx0 = ctx.cacheContext(counter.cacheId());
 
-            assert ctx0.mvccEnabled();
-
             GridDhtPartitionTopology top = ctx0.topology();
+
+            AffinityTopologyVersion topVer = top.readyTopologyVersion();
 
             assert top != null;
 
@@ -2255,8 +2288,29 @@ public class IgniteTxHandler {
 
                     if (part != null && part.reserve()) {
                         try {
-                            if (part.state() != GridDhtPartitionState.RENTING)
-                                part.updateCounter(counter.initialCounter(i), counter.updatesCount(i));
+                            if (part.state() != GridDhtPartitionState.RENTING) { // Check is actual only for backup node.
+                                long start = counter.initialCounter(i);
+                                long delta = counter.updatesCount(i);
+
+                                boolean updated = part.updateCounter(start, delta);
+
+                                // Need to log rolled back range for logical recovery.
+                                if (updated && rollback) {
+                                    if (part.group().persistenceEnabled() &&
+                                        part.group().walEnabled() &&
+                                        !part.group().mvccEnabled()) {
+                                        RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
+                                            start, delta);
+
+                                        ctx.wal().log(rec);
+                                    }
+
+                                    for (int cntr = 1; cntr <= delta; cntr++) {
+                                        ctx0.continuousQueries().skipUpdateCounter(null, part.id(), start + cntr,
+                                            topVer, rollbackOnPrimary);
+                                    }
+                                }
+                            }
                             else
                                 invalid = true;
                         }
@@ -2272,7 +2326,7 @@ public class IgniteTxHandler {
                 }
 
                 if (invalid && log.isDebugEnabled())
-                    log.debug("Received partition update counters message for invalid partition: " +
+                    log.debug("Received partition update counters message for invalid partition, ignoring: " +
                         "[cacheId=" + counter.cacheId() + ", part=" + counter.partition(i) + "]");
             }
         }
