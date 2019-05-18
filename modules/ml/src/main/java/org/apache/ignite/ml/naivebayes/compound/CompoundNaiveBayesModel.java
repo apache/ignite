@@ -17,15 +17,12 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.util.Collection;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
-
-import static java.util.Collections.emptyList;
 
 /** Created by Ravil on 04/02/2019. */
 public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel> {
@@ -37,9 +34,6 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     private GaussianNaiveBayesModel gaussianModel;
     /** Discrete Bayes model. */
     private DiscreteNaiveBayesModel discreteModel;
-
-    private Collection<Integer> gaussianSkipFeature = emptyList();
-    private Collection<Integer> discreteSkipFeature = emptyList();
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<CompoundNaiveBayesModel, P> exporter, P path) {
@@ -78,21 +72,6 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return discreteModel;
     }
 
-    /** Returs a bucket number to which the {@code value} corresponds. */
-    private int toBucketNumber(double val, double[] thresholds) {
-        for (int i = 0; i < thresholds.length; i++) {
-            if (val < thresholds[i])
-                return i;
-        }
-
-        return thresholds.length;
-    }
-
-    /** Gauss distribution */
-    private double gauss(double x, double mean, double variance) {
-        return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
-    }
-
     public CompoundNaiveBayesModel wirhPriorProbabilities(double[] priorProbabilities) {
         this.priorProbabilities = priorProbabilities.clone();
         return this;
@@ -108,18 +87,8 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return this;
     }
 
-    public CompoundNaiveBayesModel withGaussianSkipFuture(Collection<Integer> gaussianSkipFeature) {
-        this.gaussianSkipFeature = gaussianSkipFeature;
-        return this;
-    }
-
     public CompoundNaiveBayesModel withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
         this.discreteModel = discreteModel;
-        return this;
-    }
-
-    public CompoundNaiveBayesModel withDiscreteSkipFuture(Collection<Integer> discreteSkipFeature) {
-        this.discreteSkipFeature = discreteSkipFeature;
         return this;
     }
 
