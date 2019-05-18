@@ -121,21 +121,10 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 UpdateDistributionMap(cacheId);
 
-                var distributionMap = _distributionMap;
-                var socketMap = _nodeSocketMap;
-                ClientCachePartitionMap cachePartMap;
-
-                if (socketMap != null &&
-                    distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
+                var socket = GetAffinitySocket(cacheId, key);
+                if (socket != null)
                 {
-                    var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Count, cachePartMap.KeyConfiguration);
-                    var nodeId = cachePartMap.PartitionNodeIds[partition];
-
-                    ClientSocket socket;
-                    if (socketMap.TryGetValue(nodeId, out socket) && !socket.IsDisposed)
-                    {
-                        return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
-                    }
+                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
                 }
             }
 
@@ -194,6 +183,29 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 return _socket;
             }
+        }
+
+        private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
+        {
+            var distributionMap = _distributionMap;
+            var socketMap = _nodeSocketMap;
+            ClientCachePartitionMap cachePartMap;
+
+            if (socketMap == null || !distributionMap.CachePartitionMap.TryGetValue(cacheId, out cachePartMap))
+            {
+                return null;
+            }
+
+            var partition = GetPartition(key, cachePartMap.PartitionNodeIds.Count, cachePartMap.KeyConfiguration);
+            var nodeId = cachePartMap.PartitionNodeIds[partition];
+
+            ClientSocket socket;
+            if (socketMap.TryGetValue(nodeId, out socket) && !socket.IsDisposed)
+            {
+                return socket;
+            }
+
+            return null;
         }
 
         /// <summary>
