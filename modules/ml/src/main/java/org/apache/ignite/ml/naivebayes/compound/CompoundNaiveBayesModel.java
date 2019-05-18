@@ -54,31 +54,13 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         }
 
         if (discreteModel != null) {
-            for (int i = 0; i < priorProbabilities.length; i++) {
-                int index = 0;
-                for (int j = 0; j < vector.size(); j++) {
-                    if (discreteSkipFeature.contains(j))
-                        continue;
-                    int bucketNumber = toBucketNumber(vector.get(j), discreteModel.getBucketThresholds()[index]);
-                    double probability = discreteModel.getProbabilities()[i][index][bucketNumber];
-                    probapilityPowers[i] += (probability > 0 ? Math.log(probability) : .0);
-                    ++index;
-                }
-            }
+            probapilityPowers = sum(probapilityPowers,  discreteModel.probabilityPowers(vector));
         }
 
         if (gaussianModel != null) {
-            for (int i = 0; i < priorProbabilities.length; i++) {
-                int index = 0;
-                for (int j = 0; j < vector.size(); j++) {
-                    if (gaussianSkipFeature.contains(j))
-                        continue;
-                    double parobability = gauss(vector.get(j), gaussianModel.getMeans()[i][j], gaussianModel.getVariances()[i][index]);
-                    probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
-                    ++index;
-                }
-            }
+            probapilityPowers = sum(probapilityPowers,  gaussianModel.probabilityPowers(vector));
         }
+
         int maxLabelIndex = 0;
         for (int i = 0; i < probapilityPowers.length; i++) {
             if (probapilityPowers[i] > probapilityPowers[maxLabelIndex]) {
@@ -139,5 +121,16 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     public CompoundNaiveBayesModel withDiscreteSkipFuture(Collection<Integer> discreteSkipFeature) {
         this.discreteSkipFeature = discreteSkipFeature;
         return this;
+    }
+
+    private static double[] sum(double[] arr1, double[] arr2) {
+        assert arr1.length == arr2.length;
+
+        double[] result = new double[arr1.length];
+
+        for (int i = 0; i <arr1.length; i++) {
+            result[i] = arr1[i] + arr2[i];
+        }
+        return result;
     }
 }

@@ -18,6 +18,8 @@
 package org.apache.ignite.ml.naivebayes.discrete;
 
 import java.io.Serializable;
+import java.util.Collection;
+
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -46,22 +48,26 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * bucket.
      */
     private final double[][] bucketThresholds;
+    /** Feature ids which should be skipped. By defaut all features are processed. */
+    private final Collection<Integer> featureIdsToSkip;
     /** Amount values in each buckek for each feature per label. */
     private final DiscreteNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param probabilities Probabilities of features for classes.
      * @param clsProbabilities Prior probabilities for classes.
-     * @param bucketThresholds The threshold to convert a feature to a binary value.
-     * @param sumsHolder Amount values which are abouve the threshold per label.
      * @param labels Labels.
+     * @param bucketThresholds The threshold to convert a feature to a binary value.
+     * @param featureIdsToSkip
+     * @param sumsHolder Amount values which are abouve the threshold per label.
      */
     public DiscreteNaiveBayesModel(double[][][] probabilities, double[] clsProbabilities, double[] labels,
-        double[][] bucketThresholds, DiscreteNaiveBayesSumsHolder sumsHolder) {
+                                   double[][] bucketThresholds, Collection<Integer> featureIdsToSkip, DiscreteNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.clsProbabilities = clsProbabilities;
         this.labels = labels;
         this.bucketThresholds = bucketThresholds;
+        this.featureIdsToSkip = featureIdsToSkip;
         this.sumsHolder = sumsHolder;
     }
 
@@ -75,7 +81,7 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @return a label with max probability.
      */
     @Override public Double predict(Vector vector) {
-        double[] probapilityPowers = probapilityPowers(vector);
+        double[] probapilityPowers = probabilityPowers(vector);
 
         int maxLabelIndex = 0;
         for (int i = 0; i < probapilityPowers.length; i++) {
@@ -92,14 +98,18 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** Returns an array where the index correapons a label, and value corresponds probalility to be this label.
      * The prior probabilities are not count. */
-    public double[] probapilityPowers(Vector vector) {
+    public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[clsProbabilities.length];
 
         for (int i = 0; i < clsProbabilities.length; i++) {
+            int index = 0;
             for (int j = 0; j < probabilities[0].length; j++) {
-                int x = toBucketNumber(vector.get(j), bucketThresholds[j]);
-                double p = probabilities[i][j][x];
+                if (featureIdsToSkip.contains(j))
+                    continue;
+                int x = toBucketNumber(vector.get(j), bucketThresholds[index]);
+                double p = probabilities[i][index][x];
                 probapilityPowers[i] += (p > 0 ? Math.log(p) : .0);
+                ++index;
             }
         }
 

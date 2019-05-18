@@ -24,6 +24,7 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.apache.ignite.ml.naivebayes.compound.Data.*;
 import static org.junit.Assert.assertEquals;
 
@@ -36,7 +37,7 @@ public class CompoundNaiveBayesModelTest {
     @Test /** */
     public void testPredictOnlyGauss() {
         GaussianNaiveBayesModel gaussianModel =
-            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
+            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, emptyList(), null);
 
         Vector observation = VectorUtils.of(6, 130, 8);
 
@@ -51,7 +52,7 @@ public class CompoundNaiveBayesModelTest {
     @Test /** */
     public void testPredictOnlyDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
-            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
+            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, asList(0,1,2), null);
 
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
@@ -66,10 +67,10 @@ public class CompoundNaiveBayesModelTest {
     @Test /** */
     public void testPredictGausAndDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
-                new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, null);
+                new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, asList(0,1,2), null);
 
         GaussianNaiveBayesModel gaussianModel =
-            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, null);
+            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, asList(3,4,5,6,7), null);
 
         CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
             .wirhPriorProbabilities(classProbabilities)

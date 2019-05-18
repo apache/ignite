@@ -175,7 +175,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 ++lbl;
             }
 
-            return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, sumsHolder);
+            return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, featureIdsToSkip, sumsHolder);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

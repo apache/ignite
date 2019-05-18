@@ -183,7 +183,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 labels[lbl] = label;
                 ++lbl;
             }
-            return new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, sumsHolder);
+            return new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, featureIdsToSkip, sumsHolder);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

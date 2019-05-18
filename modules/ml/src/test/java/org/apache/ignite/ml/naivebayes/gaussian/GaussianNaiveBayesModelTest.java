@@ -22,6 +22,8 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static java.util.Collections.emptyList;
+
 /**
  * Tests for {@link GaussianNaiveBayesModel}.
  */
@@ -40,7 +42,7 @@ public class GaussianNaiveBayesModelTest {
             {9.7225E-2, 5.5833E2, 1.6667},
         };
         double[] probabilities = new double[] {.5, .5};
-        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, new double[] {first, second}, null);
+        GaussianNaiveBayesModel mdl = new GaussianNaiveBayesModel(means, variances, probabilities, new double[] {first, second}, emptyList(), null);
         Vector observation = VectorUtils.of(6, 130, 8);
 
         Assert.assertEquals(second, mdl.predict(observation), 0.0001);
