@@ -117,17 +117,9 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            // TODO: Converge into single GetSocket call for all cases
-            if (_config.EnableAffinityAwareness)
-            {
-                var socket = GetAffinitySocket(cacheId, key);
-                if (socket != null)
-                {
-                    return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
-                }
-            }
+            var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
 
-            return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
+            return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
         /** <inheritdoc /> */
@@ -186,6 +178,11 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
+            if (!_config.EnableAffinityAwareness)
+            {
+                return null;
+            }
+
             UpdateDistributionMap(cacheId);
 
             var distributionMap = _distributionMap;
