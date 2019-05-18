@@ -117,10 +117,9 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
+            // TODO: Converge into single GetSocket call for all cases
             if (_config.EnableAffinityAwareness)
             {
-                UpdateDistributionMap(cacheId);
-
                 var socket = GetAffinitySocket(cacheId, key);
                 if (socket != null)
                 {
@@ -187,6 +186,8 @@ namespace Apache.Ignite.Core.Impl.Client
 
         private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
+            UpdateDistributionMap(cacheId);
+
             var distributionMap = _distributionMap;
             var socketMap = _nodeSocketMap;
             ClientCachePartitionMap cachePartMap;
