@@ -36,6 +36,11 @@ public interface DbCheckpointListener {
         public boolean nextSnapshot();
 
         /**
+         * @return {@code True} if information must be collected on #onMarkCheckpointBegin() point.
+         */
+        public boolean collectContextInfo();
+
+        /**
          * @return Partition allocation statistic map
          */
         public PartitionAllocationMap partitionStatMap();
@@ -72,4 +77,11 @@ public interface DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException;
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public default void beforeMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        // No-op.
+    }
 }
