@@ -147,6 +147,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(1, 1)]
         [TestCase(2, 0)]
         [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
+        public void CacheGetAsync_PrimitiveKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
+        {
+            var res = _cache.GetAsync(key).Result;
+
+            Assert.AreEqual(key, res);
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
+        }
+
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
         [TestCase(4, 0)]
         [TestCase(5, 0)]
         [TestCase(6, 1)]
