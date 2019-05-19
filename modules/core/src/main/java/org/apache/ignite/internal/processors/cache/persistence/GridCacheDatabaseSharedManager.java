@@ -1502,22 +1502,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> rebuildIndexesOnDemand(
-        GridCacheContext cacheCtx,
-        Predicate<GridDhtLocalPartition> pred,
-        boolean restore
-    ) {
-        GridQueryProcessor qryProc = cctx.kernalContext().query();
-
-        if (!qryProc.moduleEnabled())
-            return null;
-
-        // TODO do we need to take checkpoint readLock here?
-        // TODO to evict all rebuilded index entries in case of node crash need to write undo-WAL records.
-        return qryProc.rebuildIndexesOnDemand(cacheCtx, pred, restore);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return idxRebuildFuts.get(cacheId);
     }
@@ -2967,7 +2951,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         ((MvccDataEntry)dataEntry).mvccVer());
                 }
                 else {
-                    // TODO load to restore true\false
                     cacheCtx.offheap().update(
                         cacheCtx,
                         dataEntry.key(),
@@ -2975,8 +2958,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         dataEntry.writeVersion(),
                         dataEntry.expireTime(),
                         locPart,
-                        null,
-                        restore);
+                        null);
                 }
 
                 if (dataEntry.partitionCounter() != 0)
@@ -2996,8 +2978,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         ((MvccDataEntry)dataEntry).mvccVer());
                 }
                 else
-                    // TODO load to restore true\false
-                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart, restore);
+                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
 
                 if (dataEntry.partitionCounter() != 0)
                     cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());
