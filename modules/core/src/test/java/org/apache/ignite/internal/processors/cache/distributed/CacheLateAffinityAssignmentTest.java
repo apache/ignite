@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -1672,11 +1673,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInitCacheReceivedOnJoin() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String s) {
-                return null;
-            }
-        };
+        cacheC = s -> null;
 
         startServer(0, 1);
 
@@ -1684,11 +1681,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(2, 1), true);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String s) {
-                return new CacheConfiguration[]{cacheConfiguration()};
-            }
-        };
+        cacheC = s -> new CacheConfiguration[]{cacheConfiguration()};
 
         startServer(2, 3);
 
@@ -1696,14 +1689,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(3, topVer(3, 1), true);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String s) {
-                CacheConfiguration ccfg = cacheConfiguration();
+        cacheC = s -> {
+            CacheConfiguration ccfg = cacheConfiguration();
 
-                ccfg.setName(CACHE_NAME2);
+            ccfg.setName(CACHE_NAME2);
 
-                return new CacheConfiguration[]{ccfg};
-            }
+            return new CacheConfiguration[]{ccfg};
         };
 
         startClient(3, 4);
@@ -2605,7 +2596,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private Map<String, List<List<ClusterNode>>> checkAffinity(int expNodes,
         AffinityTopologyVersion topVer,
         boolean expIdeal,
-        boolean checkPublicApi) throws Exception {
+        boolean checkPublicApi
+    ) throws Exception {
         List<Ignite> nodes = G.allGrids();
 
         Map<String, List<List<ClusterNode>>> aff = new HashMap<>();
@@ -2697,11 +2689,14 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         if (!aff1.equals(aff2)) {
             for (int i = 0; i < aff1.size(); i++) {
+                Collection<UUID> n1 = new ArrayList<>(F.nodeIds(aff1.get(i)));
+                Collection<UUID> n2 = new ArrayList<>(F.nodeIds(aff2.get(i)));
+
                 assertEquals("Wrong affinity [node=" + node.name() +
                     ", topVer=" + topVer +
                     ", cache=" + cacheName +
                     ", part=" + i + ']',
-                    F.nodeIds(aff1.get(i)), F.nodeIds(aff2.get(i)));
+                    n1, n2);
             }
 
             fail();

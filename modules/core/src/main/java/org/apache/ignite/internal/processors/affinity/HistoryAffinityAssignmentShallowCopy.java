@@ -96,6 +96,11 @@ public class HistoryAffinityAssignmentShallowCopy implements HistoryAffinityAssi
     }
 
     /** {@inheritDoc} */
+    @Override public Set<Integer> partitionPrimariesDifferentToIdeal() {
+        return histAssignment.partitionPrimariesDifferentToIdeal();
+    }
+
+    /** {@inheritDoc} */
     @Override public HistoryAffinityAssignment origin() {
         return histAssignment;
     }

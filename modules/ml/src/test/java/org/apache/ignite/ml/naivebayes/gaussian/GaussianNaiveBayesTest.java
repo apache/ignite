@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.naivebayes.gaussian;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Complex tests for naive Bayes algorithm with different datasets.
@@ -54,7 +53,7 @@ public class GaussianNaiveBayesTest {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
         Vector observation = VectorUtils.of(6, 130, 8);
 
@@ -76,7 +75,7 @@ public class GaussianNaiveBayesTest {
         GaussianNaiveBayesTrainer trainer = new GaussianNaiveBayesTrainer();
         GaussianNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         );
         Vector observation = VectorUtils.of(-0.8, -1);
 

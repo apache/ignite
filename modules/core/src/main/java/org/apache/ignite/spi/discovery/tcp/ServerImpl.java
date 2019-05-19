@@ -169,6 +169,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -274,9 +275,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
-
-    /** Last listener future. */
-    private IgniteFuture<?> lastCustomEvtLsnrFut;
 
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
@@ -568,7 +566,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
-                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null).get();
                 }
             }
         }
@@ -1098,7 +1096,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
             attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, marshalWithSecurityVersion(subj, 1));
 
             locNode.setAttributes(attrs);
 
@@ -1120,8 +1117,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     private boolean sendJoinRequestMessage(DiscoveryDataPacket discoveryData) throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
-        // Time when it has been detected, that addresses from IP finder do not respond.
-        long noResStart = 0;
+        // Time when join process started.
+        long joinStart = 0;
 
         while (true) {
             Collection<InetSocketAddress> addrs = spi.resolvedAddresses();
@@ -1153,8 +1150,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     noResAddrs.remove(addr);
 
-                    // Address is responsive, reset period start.
-                    noResStart = 0;
+                    //join timeout should not be reset if response was received from another CONNECTING node
+                    //(only CONNECTING node sends back WAIT and CONTINUE_JOIN codes),
+                    //otherwise two CONNECTING nodes can stuck in infinite loop sending join reqs to each other forever
+                    if (res != RES_WAIT && res != RES_CONTINUE_JOIN)
+                        joinStart = 0;
 
                     switch (res) {
                         case RES_WAIT:
@@ -1243,9 +1243,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (spi.joinTimeout > 0) {
-                    if (noResStart == 0)
-                        noResStart = U.currentTimeMillis();
-                    else if (U.currentTimeMillis() - noResStart > spi.joinTimeout)
+                    if (joinStart == 0)
+                        joinStart = U.currentTimeMillis();
+                    else if (U.currentTimeMillis() - joinStart > spi.joinTimeout)
                         throw new IgniteSpiException(
                             "Failed to connect to any address from IP finder within join timeout " +
                                 "(make sure IP finder addresses are correct, and operating system firewalls are disabled " +
@@ -2212,56 +2212,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /**
-     * @param obj Object.
-     * @param ver Security serialize version.
-     * @return Marshaled object.
-     */
-    private byte[] marshalWithSecurityVersion(Object obj, int ver) throws IgniteCheckedException {
-        try {
-            SecurityUtils.serializeVersion(ver);
-
-            return U.marshal(spi.marshaller(), obj);
-        }
-        finally {
-            SecurityUtils.restoreDefaultSerializeVersion();
-        }
-    }
-
-    /**
-     * @param bytes Marshaled object.
-     * @param ver Security serialize version.
-     * @return Unmarshaled object.
-     */
-    private <T> T unmarshalWithSecurityVersion(byte[] bytes, int ver) throws IgniteCheckedException {
-        try {
-            if (ver > 0)
-                SecurityUtils.serializeVersion(ver);
-
-            return spi.marshaller().unmarshal(bytes, U.resolveClassLoader(spi.ignite().configuration()));
-        }
-        finally {
-            SecurityUtils.restoreDefaultSerializeVersion();
-        }
-    }
-
     /** */
     private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
         return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
-    }
-
-    /**
-     * Wait for all the listeners from previous discovery message to be completed.
-     */
-    private void waitForLastCustomEventListenerFuture() {
-        if (lastCustomEvtLsnrFut != null) {
-            try {
-                lastCustomEvtLsnrFut.get();
-            }
-            finally {
-                lastCustomEvtLsnrFut = null;
-            }
-        }
     }
 
     /**
@@ -4032,7 +3985,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
                             attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, marshalWithSecurityVersion(subj, 1));
 
                             node.setAttributes(attrs);
                         }
@@ -4062,7 +4014,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         spi.marshaller(),
                         U.resolveClassLoader(spi.ignite().configuration()),
                         false,
-                        isDiscoDataPaketCompressed(node),
                         log));
 
                 if (err != null) {
@@ -4378,15 +4329,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @param node Joined node.
-         * @return <code>true</code> if packet is compressed.
-         */
-        private boolean isDiscoDataPaketCompressed(TcpDiscoveryNode node) {
-            return IgniteFeatures.nodeSupports(node, IgniteFeatures.DATA_PACKET_COMPRESSION) &&
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION);
-        }
-
-        /**
          * @param node Node.
          * @param name Attribute name.
          * @param dflt Default value.
@@ -4499,15 +4441,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
-            blockingSectionBegin();
-
-            try {
-                waitForLastCustomEventListenerFuture();
-            }
-            finally {
-                blockingSectionEnd();
-            }
-
             TcpDiscoveryNode node = msg.node();
 
             assert node != null;
@@ -4618,22 +4551,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-                            byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
-
-                            SecurityContext coordSubj;
-
-                            try {
-                                if (subjBytesV2 == null)
-                                    SecurityUtils.serializeVersion(1);
-
-                                coordSubj = U.unmarshal(spi.marshaller(),
-                                    subjBytesV2 != null ? subjBytesV2 : subjBytes,
-                                    U.resolveClassLoader(spi.ignite().configuration()));
-                            }
-                            finally {
-                                SecurityUtils.restoreDefaultSerializeVersion();
-                            }
+                            SecurityContext coordSubj = nodeSecurityContext(
+                                spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
+                            );
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -4650,7 +4570,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 authFailed = false;
                         }
                     }
-                    catch (IgniteException | IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
                     }
                     finally {
@@ -4724,23 +4644,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
 
                                 try {
-                                    byte[] rmSubj = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-                                    byte[] locSubj = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+                                    ClassLoader ldr = U.resolveClassLoader(spi.ignite().configuration());
 
-                                    byte[] rmSubjV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
-                                    byte[] locSubjV2 = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+                                    SecurityContext rmCrd = nodeSecurityContext(
+                                        spi.marshaller(), ldr, node
+                                    );
 
-                                    int ver = 1; // Compatible version.
-
-                                    if (rmSubjV2 != null && locSubjV2 != null) {
-                                        rmSubj = rmSubjV2;
-                                        locSubj = locSubjV2;
-
-                                        ver = 0; // Default version.
-                                    }
-
-                                    SecurityContext rmCrd = unmarshalWithSecurityVersion(rmSubj, ver);
-                                    SecurityContext locCrd = unmarshalWithSecurityVersion(locSubj, ver);
+                                    SecurityContext locCrd = nodeSecurityContext(
+                                        spi.marshaller(), ldr, locNode
+                                    );
 
                                     if (!permissionsEqual(locCrd.subject().permissions(),
                                         rmCrd.subject().permissions())) {
@@ -4759,7 +4671,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         return;
                                     }
                                 }
-                                catch (IgniteCheckedException e) {
+                                catch (IgniteException e) {
                                     U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
 
                                     joinRes.set(authFail);
@@ -6006,8 +5918,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
                 }
-                else
-                    lastCustomEvtLsnrFut = fut;
 
                 if (msgObj.isMutable()) {
                     try {
@@ -7514,6 +7424,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         private MessageWorkerDiscoveryThread(GridWorker worker, IgniteLogger log) {
             super(worker, log);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridWorker worker() {
+            return worker;
         }
     }
 

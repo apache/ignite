@@ -209,7 +209,7 @@ public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
 
         VisorTaskArgument<VisorValidateIndexesTaskArg> argument = new VisorTaskArgument<>(nodes, arg, true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = ((IgniteEx)grid1).context().task().execute(new VisorValidateIndexesTask(), argument);
+        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().execute(new VisorValidateIndexesTask(), argument);
 
         VisorValidateIndexesTaskResult result = execute.get();
 

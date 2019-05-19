@@ -53,16 +53,19 @@ libignite_thin_client_la_DEPENDENCIES = \
     @top_srcdir@/network/libignite-network.la
 
 libignite_thin_client_la_SOURCES = \
+    src/impl/data_channel.cpp \
     src/impl/utility.cpp \
     src/impl/protocol_version.cpp \
-    src/impl/data_channel.cpp \
+    src/impl/ignite_node.cpp \
+    src/impl/ignite_client_impl.cpp \
+    src/impl/data_router.cpp \
+    src/impl/affinity/affinity_topology_version.cpp \
+    src/impl/affinity/affinity_assignment.cpp \
+    src/impl/affinity/affinity_manager.cpp \
     src/impl/remote_type_updater.cpp \
     src/impl/message.cpp \
-    src/impl/ignite_client_impl.cpp \
     src/impl/cache/cache_client_proxy.cpp \
     src/impl/cache/cache_client_impl.cpp \
-    src/impl/cache/cache_affinity_info.cpp \
-    src/impl/data_router.cpp \
     src/ignite_client.cpp
 
 clean-local:

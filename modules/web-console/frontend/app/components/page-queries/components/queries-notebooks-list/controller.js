@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import headerTemplate from '../../../../../app/primitives/ui-grid-header/index.tpl.pug';
-
 export class NotebooksListCtrl {
     static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', 'IgniteInput', '$scope', '$modal'];
 
@@ -31,44 +29,17 @@ export class NotebooksListCtrl {
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
         const scanQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.scanQueriesPsaragraphsLength}}</div>`;
 
-        const categories = [
+        this.categories = [
             { name: 'Name', visible: true, enableHiding: false },
             { name: 'SQL Queries', visible: true, enableHiding: false },
             { name: 'Scan Queries', visible: true, enableHiding: false }
         ];
 
-        const columnDefs = [
-            { name: 'name', displayName: 'Notebook name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, pinnedLeft: true, filter: { placeholder: 'Filter by Name...' } },
+        this.columnDefs = [
+            { name: 'name', displayName: 'Notebook name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, filter: { placeholder: 'Filter by Name...' } },
             { name: 'sqlQueryNum', displayName: 'SQL Queries', categoryDisplayName: 'SQL Queries', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false },
             { name: 'scanQueryNum', displayName: 'Scan Queries', categoryDisplayName: 'Scan Queries', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: '10%', enableFiltering: false }
         ];
-
-        this.gridOptions = {
-            data: [],
-
-            categories,
-            columnDefs,
-            headerTemplate,
-
-            rowHeight: 46,
-            selectWithCheckboxOnly: true,
-            suppressRemoveSort: false,
-            enableFiltering: true,
-            enableSelectAll: true,
-            enableRowSelection: true,
-            enableFullRowSelection: true,
-            enableColumnMenus: false,
-            noUnselect: false,
-            fastWatch: true,
-            onRegisterApi: (api) => {
-                this.gridApi = api;
-
-                api.selection.on.rowSelectionChanged($scope, this._onSelectionChanged.bind(this));
-                api.selection.on.rowSelectionChangedBatch($scope, this._onSelectionChanged.bind(this));
-
-                this.$scope.$watch(() => this.gridApi.grid.getVisibleRows().length, (rows) => this._adjustHeight(rows));
-            }
-        };
 
         this.actionOptions = [
             {
@@ -96,8 +67,10 @@ export class NotebooksListCtrl {
     async _loadAllNotebooks() {
         try {
             this.IgniteLoading.start('notebooksLoading');
-            this.notebooks = await this.IgniteNotebook.read();
-            this.gridOptions.data = this._preprocessNotebooksList(this.notebooks);
+
+            const data = await this.IgniteNotebook.read();
+
+            this.notebooks = this._preprocessNotebooksList(data);
         }
         catch (err) {
             this.IgniteMessages.showError(err);
@@ -122,7 +95,7 @@ export class NotebooksListCtrl {
         return notebook.paragraphs.filter((paragraph) => paragraph.qryType === queryType).length || 0;
     }
 
-    _onSelectionChanged() {
+    onSelectionChanged() {
         this._checkActionsAllow();
     }
 

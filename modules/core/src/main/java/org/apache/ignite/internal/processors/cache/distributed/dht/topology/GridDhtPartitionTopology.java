@@ -42,7 +42,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * DHT partition topology.
+ * Distributed Hash Table (DHT) partition topology.
  */
 @GridToStringExclude
 public interface GridDhtPartitionTopology {

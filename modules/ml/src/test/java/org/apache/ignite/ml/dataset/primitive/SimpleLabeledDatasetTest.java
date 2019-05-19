@@ -17,15 +17,18 @@
 
 package org.apache.ignite.ml.dataset.primitive;
 
-import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.composition.CompositionUtils;
-import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNull;
@@ -37,25 +40,29 @@ public class SimpleLabeledDatasetTest {
     /** Basic test for SimpleLabeledDataset features. */
     @Test
     public void basicTest() throws Exception {
-        Map<Integer, DataPoint> dataPoints = new HashMap<Integer, DataPoint>() {{
-            put(5, new DataPoint(42, 10000));
-            put(6, new DataPoint(32, 64000));
-            put(7, new DataPoint(53, 120000));
-            put(8, new DataPoint(24, 70000));
+        Map<Integer, Vector> dataPoints = new HashMap<Integer, Vector>() {{
+            put(5, VectorUtils.of(42, 10000));
+            put(6, VectorUtils.of(32, 64000));
+            put(7,  VectorUtils.of(53, 120000));
+            put(8,  VectorUtils.of(24, 70000));
         }};
 
         double[][] actualFeatures = new double[2][];
         double[][] actualLabels = new double[2][];
         int[] actualRows = new int[2];
 
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
+
+        PatchedPreprocessor<Integer, Vector, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(func, vectorizer);
+
         // Creates a local simple dataset containing features and providing standard dataset API.
         try (SimpleLabeledDataset<?> dataset = DatasetFactory.createSimpleLabeledDataset(
             dataPoints,
             TestUtils.testEnvBuilder(),
-            2, new FeatureLabelExtractorWrapper<>(CompositionUtils.asFeatureLabelExtractor(
-                (k, v) -> VectorUtils.of(v.getAge(), v.getSalary()),
-                (k, v) -> new double[] {k, v.getAge(), v.getSalary()}
-            ))
+            2,
+            patchedPreprocessor
         )) {
             assertNull(dataset.compute((data, env) -> {
                 int part = env.partition();
@@ -67,8 +74,8 @@ public class SimpleLabeledDatasetTest {
         }
 
         double[][] expFeatures = new double[][] {
-            new double[] {42.0, 32.0, 10000.0, 64000.0},
-            new double[] {53.0, 24.0, 120000.0, 70000.0}
+            new double[] {10000.0, 64000.0},
+            new double[] {120000.0, 70000.0}
         };
         int rowFeat = 0;
         for (double[] row : actualFeatures)
@@ -76,8 +83,8 @@ public class SimpleLabeledDatasetTest {
                 expFeatures[rowFeat++], row, 0);
 
         double[][] expLabels = new double[][] {
-            new double[] {5.0, 6.0, 42.0, 32.0, 10000.0, 64000.0},
-            new double[] {7.0, 8.0, 53.0, 24.0, 120000.0, 70000.0}
+            new double[] {42.0, 32.0},
+            new double[] {53.0, 24.0}
         };
         int rowLbl = 0;
         for (double[] row : actualLabels)
@@ -85,35 +92,5 @@ public class SimpleLabeledDatasetTest {
                 expLabels[rowLbl++], row, 0);
 
         assertArrayEquals("Rows per partitions", new int[] {2, 2}, actualRows);
-    }
-
-    /** */
-    private static class DataPoint {
-        /** Age. */
-        private final double age;
-
-        /** Salary. */
-        private final double salary;
-
-        /**
-         * Constructs a new instance of person.
-         *
-         * @param age Age.
-         * @param salary Salary.
-         */
-        DataPoint(double age, double salary) {
-            this.age = age;
-            this.salary = salary;
-        }
-
-        /** */
-        double getAge() {
-            return age;
-        }
-
-        /** */
-        double getSalary() {
-            return salary;
-        }
     }
 }

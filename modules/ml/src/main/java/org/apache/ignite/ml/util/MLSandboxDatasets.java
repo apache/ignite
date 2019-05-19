@@ -53,7 +53,13 @@ public enum MLSandboxDatasets {
     BOSTON_HOUSE_PRICES("modules/ml/src/main/resources/datasets/boston_housing_dataset.txt", false, ","),
 
     /** Example from book Barber D. Bayesian reasoning and machine learning. Chapter 10. */
-    ENGLISH_VS_SCOTTISH("modules/ml/src/main/resources/datasets/english_vs_scottish_binary_dataset.csv", true, ",");
+    ENGLISH_VS_SCOTTISH("modules/ml/src/main/resources/datasets/english_vs_scottish_binary_dataset.csv", true, ","),
+
+    /** Wholesale customers dataset. Could be found <a href="https://archive.ics.uci.edu/ml/datasets/Wholesale+customers">here</a>. */
+    WHOLESALE_CUSTOMERS("modules/ml/src/main/resources/datasets/wholesale_customers.csv", true, ","),
+
+    /** Fraud detection problem [part of whole dataset]. Could be found <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud/">here</a>. */
+    FRAUD_DETECTION("modules/ml/src/main/resources/datasets/fraud_detection.csv", false, ",");
 
     /** Filename. */
     private final String filename;

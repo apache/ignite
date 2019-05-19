@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VERIFY;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.IDLE_VERIFY;
 
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
@@ -182,27 +182,48 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
     /** */
     private void print(Consumer<String> printer, boolean printExceptionMessages) {
-        if (!F.isEmpty(exceptions)) {
-            int size = exceptions.size();
+        boolean noMatchingCaches = false;
 
-            printer.accept("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+        boolean succeeded = true;
+
+        for (Exception e : exceptions.values()) {
+            if (e instanceof NoMatchingCachesException) {
+                noMatchingCaches = true;
+                succeeded = false;
+
+                break;
+            }
         }
 
-        if (!hasConflicts())
-            printer.accept("idle_verify check has finished, no conflicts have been found.\n");
-        else
-            printConflicts(printer);
+        if (succeeded) {
+            if (!F.isEmpty(exceptions)) {
+                int size = exceptions.size();
 
-        if (!F.isEmpty(movingPartitions())) {
-            printer.accept("Verification was skipped for " + movingPartitions().size() + " MOVING partitions:\n");
-
-            for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : movingPartitions().entrySet()) {
-                printer.accept("Rebalancing partition: " + entry.getKey() + "\n");
-
-                printer.accept("Partition instances: " + entry.getValue() + "\n");
+                printer.accept("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
             }
 
-            printer.accept("\n");
+            if (!hasConflicts())
+                printer.accept("idle_verify check has finished, no conflicts have been found.\n");
+            else
+                printConflicts(printer);
+
+            if (!F.isEmpty(movingPartitions())) {
+                printer.accept("Verification was skipped for " + movingPartitions().size() + " MOVING partitions:\n");
+
+                for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : movingPartitions().entrySet()) {
+                    printer.accept("Rebalancing partition: " + entry.getKey() + "\n");
+
+                    printer.accept("Partition instances: " + entry.getValue() + "\n");
+                }
+
+                printer.accept("\n");
+            }
+        }
+        else {
+            printer.accept("idle_verify failed.");
+
+            if (noMatchingCaches)
+                printer.accept("There are no caches matching given filter options.");
         }
 
         if (!F.isEmpty(exceptions())) {

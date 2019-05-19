@@ -17,26 +17,6 @@
 
 package org.apache.ignite.ml.knn.ann;
 
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
-import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
-import org.apache.ignite.ml.dataset.Dataset;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.distances.DistanceMeasure;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.util.MapUtil;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +24,25 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
+import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.util.MapUtil;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
+import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * ANN algorithm trainer to solve multi-class classification task. This trainer is based on ACD strategy and KMeans
@@ -69,15 +68,15 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V, C extends Serializable> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> extractor) {
+    @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+                                                       Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C extends Serializable> ANNClassificationModel updateModel(ANNClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> extractor) {
+    @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
+                                                                  DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         List<Vector> centers;
         CentroidStat centroidStat;
@@ -97,6 +96,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
 
         return new ANNClassificationModel(dataset, centroidStat);
     }
+
 
     /** {@inheritDoc} */
     @Override public boolean isUpdateable(ANNClassificationModel mdl) {
@@ -131,7 +131,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * @param <V> Type of a value in {@code upstream} data.
      * @return The arrays of vectors.
      */
-    private <K, V, C extends Serializable> List<Vector> getCentroids(Vectorizer<K,V,C,Double> vectorizer, DatasetBuilder<K, V> datasetBuilder) {
+    private <K, V, C extends Serializable> List<Vector> getCentroids(Preprocessor<K, V> vectorizer, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
             .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
@@ -166,9 +166,9 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     }
 
     /** */
-    private <K, V, C extends Serializable> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> vectorizer,
-        List<Vector> centers) {
+    private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
+                                                Preprocessor<K, V> vectorizer,
+                                                List<Vector> centers) {
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 

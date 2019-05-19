@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,10 +40,15 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.RootPage;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -56,6 +59,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -327,6 +331,12 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
+        @Override public void destroyOrphanIndex(RootPage page, String indexName, int grpId, PageMemory pageMemory,
+            GridAtomicLong removeId, ReuseList reuseList, boolean mvccEnabled) throws IgniteCheckedException {
+            // No-op
+        }
+
+        /** {@inheritDoc} */
         @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
                                                boolean ifTblExists, boolean ifColNotExists)
             throws IgniteCheckedException {
@@ -363,6 +373,14 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         @Override public boolean registerType(GridCacheContextInfo cacheInfo,
             GridQueryTypeDescriptor desc, boolean isSql) throws IgniteCheckedException {
             return false;
+        }
+
+        @Override public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery sql) {
+            return null;
+        }
+
+        @Override public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery sql) {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -405,11 +423,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public PreparedStatement prepareNativeStatement(String space, String sql) throws SQLException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
             return null;
         }
@@ -435,8 +448,9 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
+        @Override public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) {
             // No-op.
+            return true;
         }
 
         /** {@inheritDoc} */

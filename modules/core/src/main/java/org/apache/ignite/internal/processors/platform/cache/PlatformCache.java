@@ -76,7 +76,7 @@ import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 
 /**
  * Native cache wrapper implementation.
@@ -1032,7 +1032,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
                         getConfiguration(CacheConfiguration.class);
 
-                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg, CURRENT_VER);
+                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg, DEFAULT_VER);
 
                 break;
 

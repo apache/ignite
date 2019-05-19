@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImp
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -3782,9 +3781,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         for (Object key : keys)
             A.notNull(key, "key");
 
-        if (!ctx.store().configured())
-            return new GridFinishedFuture<>();
-
         //TODO IGNITE-7954
         MvccUtils.verifyMvccOperationSupport(ctx, "Load");
 
@@ -3794,21 +3790,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        if (replaceExisting) {
-            if (ctx.store().isLocal())
-                return runLoadKeysCallable(keys, plc, keepBinary, true);
-            else {
-                return ctx.closures().callLocalSafe(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        localLoadAndUpdate(keys);
-
-                        return null;
-                    }
-                });
-            }
-        }
-        else
-            return runLoadKeysCallable(keys, plc, keepBinary, false);
+        return runLoadKeysCallable(keys, plc, keepBinary, replaceExisting);
     }
 
     /**

@@ -22,12 +22,10 @@ import org.apache.ignite.ml.composition.DatasetMapping;
 import org.apache.ignite.ml.composition.combinators.sequential.TrainersSequentialComposition;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
-
-import java.io.Serializable;
 
 /**
  * Type used to adapt input and output types of wrapped {@link DatasetTrainer}. Produces model which is composition  of
@@ -95,8 +93,8 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor) {
+    @Override public <K, V> AdaptableDatasetModel<I, O, IW, OW, M> fit(DatasetBuilder<K, V> datasetBuilder,
+                                                                       Preprocessor<K, V> extractor) {
         M fit = wrapped.
             withEnvironmentBuilder(envBuilder)
             .fit(datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
@@ -111,10 +109,10 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     }
 
     /** {@inheritDoc} */
-    @Override protected <K, V, C extends Serializable> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
+    @Override protected <K, V> AdaptableDatasetModel<I, O, IW, OW, M> updateModel(
         AdaptableDatasetModel<I, O, IW, OW, M> mdl, DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, L> extractor) {
-        M updated = wrapped.withEnvironmentBuilder(envBuilder)
+        Preprocessor<K, V> extractor) {
+       M updated = wrapped.withEnvironmentBuilder(envBuilder)
             .updateModel(
                 mdl.innerModel(),
                 datasetBuilder.withUpstreamTransformer(upstreamTransformerBuilder),
@@ -167,31 +165,31 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
     public AdaptableDatasetTrainer<I, O, IW, OW, M, L> withDatasetMapping(DatasetMapping<L, L> mapping) {
         return of(new DatasetTrainer<M, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> extractor) {
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
                 return wrapped.fit(datasetBuilder, extractor.map(lv -> new LabeledVector<>(
                     mapping.mapFeatures(lv.features()),
-                    mapping.mapLabels(lv.label())
+                    mapping.mapLabels((L)lv.label())
                 )));
             }
 
             /** {@inheritDoc} */
-            @Override public <K, V, C extends Serializable> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, L> vectorizer) {
+            @Override public <K, V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
                 return wrapped.update(mdl, datasetBuilder, vectorizer.map(lv -> new LabeledVector<>(
                     mapping.mapFeatures(lv.features()),
-                    mapping.mapLabels(lv.label())
+                    mapping.mapLabels((L)lv.label())
                 )));
             }
+
 
             /** {@inheritDoc} */
             @Override public boolean isUpdateable(M mdl) {
                 return false;
             }
 
-            /** {@inheritDoc} */
-            @Override protected <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                Vectorizer<K, V, C, L> extractor) {
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
                 return null;
             }
+
         }).beforeTrainedModel(before).afterTrainedModel(after);
     }
 

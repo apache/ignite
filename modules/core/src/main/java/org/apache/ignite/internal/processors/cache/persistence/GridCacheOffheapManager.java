@@ -901,7 +901,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageIO.setTreeRoot(pageAddr, metastoreRoot);
                     pageIO.setReuseListRoot(pageAddr, reuseListRoot);
 
-                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null))
+                    if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, metaId, metaPage, wal, null)) {
+                        assert pageIO.getType() == PageIO.T_META;
+
                         wal.log(new MetaPageInitRecord(
                             grpId,
                             metaId,
@@ -910,6 +912,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             metastoreRoot,
                             reuseListRoot
                         ));
+                    }
 
                     allocated = true;
                 }
@@ -1069,6 +1072,36 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         return emptyDataPages;
+    }
+
+    /**
+     * @param cacheId Which was stopped, but its data still presented.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void findAndCleanupLostIndexesForStoppedCache(int cacheId) throws IgniteCheckedException {
+        for (String name : indexStorage.getIndexNames()) {
+            if (indexStorage.nameIsAssosiatedWithCache(name, cacheId)) {
+                ctx.database().checkpointReadLock();
+
+                try {
+                    RootPage page = indexStorage.allocateIndex(name);
+
+                    ctx.kernalContext().query().getIndexing().destroyOrphanIndex(
+                        page,
+                        name,
+                        grp.groupId(),
+                        grp.dataRegion().pageMemory(), globalRemoveId(),
+                        reuseListForIndex(name),
+                        grp.mvccEnabled()
+                    );
+
+                    indexStorage.dropIndex(name);
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+            }
+        }
     }
 
     /**

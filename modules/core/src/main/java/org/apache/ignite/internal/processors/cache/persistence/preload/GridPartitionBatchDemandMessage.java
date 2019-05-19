@@ -175,7 +175,7 @@ public class GridPartitionBatchDemandMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 172;
+        return 175;
     }
 
     /** {@inheritDoc} */

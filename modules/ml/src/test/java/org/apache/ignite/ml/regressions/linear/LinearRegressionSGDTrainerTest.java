@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -60,7 +59,7 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
 
         LinearRegressionModel mdl = trainer.fit(
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(
@@ -95,7 +94,7 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
 
         LinearRegressionModel originalMdl = trainer.withSeed(0).fit(
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
 
@@ -103,14 +102,14 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
             originalMdl,
             data,
             parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         LinearRegressionModel updatedOnEmptyDS = trainer.withSeed(0).update(
             originalMdl,
             new HashMap<>(),
             parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(

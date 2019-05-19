@@ -17,8 +17,12 @@
 
 package org.apache.ignite.ml.knn;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
@@ -28,11 +32,6 @@ import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -79,7 +78,7 @@ public class KNNClassificationTest {
 
         NNClassificationModel knnMdl = trainer.fit(
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
@@ -109,7 +108,7 @@ public class KNNClassificationTest {
 
         NNClassificationModel knnMdl = trainer.fit(
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
@@ -135,7 +134,7 @@ public class KNNClassificationTest {
 
         NNClassificationModel knnMdl = trainer.fit(
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
@@ -159,7 +158,7 @@ public class KNNClassificationTest {
 
         NNClassificationModel knnMdl = trainer.fit(
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.WEIGHTED);
@@ -183,19 +182,19 @@ public class KNNClassificationTest {
 
         KNNClassificationModel originalMdl = (KNNClassificationModel)trainer.fit(
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.WEIGHTED);
 
         KNNClassificationModel updatedOnSameDataset = trainer.update(originalMdl,
             data, parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         KNNClassificationModel updatedOnEmptyDataset = trainer.update(originalMdl,
             new HashMap<Integer, double[]>(), parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Vector vector = new DenseVector(new double[] {-1.01, -1.01});

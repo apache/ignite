@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
 
 /**
  * JDBC query execute request.
@@ -56,6 +57,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
 
     /** Client auto commit flag state. */
     private boolean autoCommit;
+
+    /** Flag, that signals, that query expects partition response in response. */
+    private boolean partResReq;
 
     /**
      */
@@ -157,6 +161,9 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
             writer.writeBoolean(autoCommit);
 
         writer.writeByte((byte)stmtType.ordinal());
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            writer.writeBoolean(partResReq);
     }
 
     /** {@inheritDoc} */
@@ -188,6 +195,23 @@ public class JdbcQueryExecuteRequest extends JdbcRequest {
         catch (IOException e) {
             throw new BinaryObjectException(e);
         }
+
+        if (ver.compareTo(VER_2_8_0) >= 0)
+            partResReq = reader.readBoolean();
+    }
+
+    /**
+     * @return Partition response request.
+     */
+    public boolean partitionResponseRequest() {
+        return partResReq;
+    }
+
+    /**
+     * @param partResReq New partition response request.
+     */
+    public void partitionResponseRequest(boolean partResReq) {
+        this.partResReq = partResReq;
     }
 
     /** {@inheritDoc} */

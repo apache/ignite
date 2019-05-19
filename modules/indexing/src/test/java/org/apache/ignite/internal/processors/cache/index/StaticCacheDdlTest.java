@@ -38,7 +38,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -123,7 +122,6 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11604")
     @Test
     public void testDropColumn() throws Exception {
         String fieldName = "field_to_drop";

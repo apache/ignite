@@ -128,5 +128,33 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     options: '["JKS", "PCKS11", "PCKS12"]',
                     tip: 'Trust store type used in context initialization'
                 })
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.7.0")')
+                .ignite-form-field
+                    +list-text-field({
+                        items: `${model}.cipherSuites`,
+                        lbl: 'Cipher suite',
+                        name: 'cipherSuite',
+                        itemName: 'cipher suite',
+                        itemsName: 'cipher suites'
+
+                    })(
+                        list-editable-cols=`::[{name: 'Suites:'}]`
+                        ng-disabled=`!(${enabled})`
+                    )
+                        +form-field__error({error: 'igniteUnique', message: 'Such suite is already configured!'})
+            .pc-form-grid-col-60(ng-if-end)
+                .ignite-form-field
+                    +list-text-field({
+                        items: `${model}.protocols`,
+                        lbl: 'Protocol',
+                        name: 'protocols',
+                        itemName: 'protocol',
+                        itemsName: 'protocols'
+
+                    })(
+                        list-editable-cols=`::[{name: 'Protocols:'}]`
+                        ng-disabled=`!(${enabled})`
+                    )
+                        +form-field__error({error: 'igniteUnique', message: 'Such protocol already exists!'})
         .pca-form-column-6
             +preview-xml-java(cluster, 'clusterSsl')

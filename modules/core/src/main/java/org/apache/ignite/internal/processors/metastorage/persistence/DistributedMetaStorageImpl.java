@@ -266,13 +266,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * {@code readyForRead} and then {@code readyForWrite} if {@code active} flag happened to be {@code true}.
      */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+
+    }
+
+    public void inMemoryReadyForRead() {
         if (!isPersistenceEnabled) {
             for (DistributedMetastorageLifecycleListener subscriber : isp.getDistributedMetastorageSubscribers())
                 subscriber.onReadyForRead(this);
         }
-
-        if (active)
-            onActivate(ctx);
     }
 
     /**
@@ -282,6 +283,10 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * {@code readyForWrite}.
      */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+
+    }
+
+    public void inMemoryReadyForWrite() throws IgniteCheckedException {
         if (!isPersistenceEnabled) {
             lock.writeLock().lock();
 

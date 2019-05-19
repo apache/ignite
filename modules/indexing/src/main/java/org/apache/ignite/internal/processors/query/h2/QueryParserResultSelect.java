@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
 
 /**
  * Parsing result for SELECT.
@@ -49,9 +48,6 @@ public class QueryParserResultSelect {
     /** Metadata for two-step query, or {@code} null if this result is for local query. */
     private final List<GridQueryFieldMetadata> meta;
 
-    /** Number of parameters. */
-    private final int paramsCnt;
-
     /** Involved cache IDs. */
     private final List<Integer> cacheIds;
 
@@ -77,7 +73,6 @@ public class QueryParserResultSelect {
      * @param twoStepQry Distributed query plan.
      * @param forUpdateTwoStepQry FOR UPDATE query for execution within transaction.
      * @param meta Fields metadata.
-     * @param paramsCnt Parameters count.
      * @param cacheIds Cache IDs.
      * @param mvccCacheId ID of the first MVCC cache.
      * @param forUpdateQryOutTx FOR UPDATE query string for execution out of transaction.
@@ -88,7 +83,6 @@ public class QueryParserResultSelect {
         @Nullable GridCacheTwoStepQuery twoStepQry,
         @Nullable GridCacheTwoStepQuery forUpdateTwoStepQry,
         List<GridQueryFieldMetadata> meta,
-        int paramsCnt,
         List<Integer> cacheIds,
         @Nullable Integer mvccCacheId,
         String forUpdateQryOutTx,
@@ -98,7 +92,6 @@ public class QueryParserResultSelect {
         this.twoStepQry = twoStepQry;
         this.forUpdateTwoStepQry = forUpdateTwoStepQry;
         this.meta = meta;
-        this.paramsCnt = paramsCnt;
         this.cacheIds = cacheIds;
         this.mvccCacheId = mvccCacheId;
         this.forUpdateQryOutTx = forUpdateQryOutTx;
@@ -180,12 +173,5 @@ public class QueryParserResultSelect {
      */
     public String forUpdateQueryTx() {
         return forUpdateQryTx;
-    }
-
-    /**
-     * @return Number of parameters.
-     */
-    public int parametersCount() {
-        return paramsCnt;
     }
 }

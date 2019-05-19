@@ -146,8 +146,8 @@ export default class AbstractTransformer {
     }
 
     // Generate memory configuration group.
-    static clusterDataStorageConfiguration(dataStorageCfg, available) {
-        return this.toSection(this.generator.clusterDataStorageConfiguration(dataStorageCfg, available));
+    static clusterDataStorageConfiguration(cluster, available) {
+        return this.toSection(this.generator.clusterDataStorageConfiguration(cluster, available));
     }
 
     // Generate marshaller group.
@@ -158,6 +158,11 @@ export default class AbstractTransformer {
     // Generate marshaller group.
     static clusterMvcc(cluster, available) {
         return this.toSection(this.generator.clusterMvcc(cluster, available));
+    }
+
+    // Generate encryption group.
+    static clusterEncryption(encryption, available) {
+        return this.toSection(this.generator.clusterEncryption(encryption, available));
     }
 
     // Generate marshaller group.
@@ -191,8 +196,8 @@ export default class AbstractTransformer {
     }
 
     // Generate ssl group.
-    static clusterSsl(cluster) {
-        return this.toSection(this.generator.clusterSsl(cluster));
+    static clusterSsl(cluster, available) {
+        return this.toSection(this.generator.clusterSsl(cluster, available));
     }
 
     // Generate swap group.
@@ -211,8 +216,8 @@ export default class AbstractTransformer {
     }
 
     // Generate transactions group.
-    static clusterTransactions(transactionConfiguration) {
-        return this.toSection(this.generator.clusterTransactions(transactionConfiguration));
+    static clusterTransactions(transactionConfiguration, available) {
+        return this.toSection(this.generator.clusterTransactions(transactionConfiguration, available));
     }
 
     // Generate user attributes group.
@@ -260,6 +265,11 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.cacheAffinity(cache, available));
     }
 
+    // Generate cache key configuration.
+    static cacheKeyConfiguration(cache, available) {
+        return this.toSection(this.generator.cacheKeyConfiguration(cache, available));
+    }
+
     // Generate cache memory group.
     static cacheMemory(cache, available) {
         return this.toSection(this.generator.cacheMemory(cache, available));
@@ -278,6 +288,11 @@ export default class AbstractTransformer {
     // Generate cache concurrency control group.
     static cacheConcurrency(cache, available) {
         return this.toSection(this.generator.cacheConcurrency(cache, available));
+    }
+
+    // Generate cache misc group.
+    static cacheMisc(cache, available) {
+        return this.toSection(this.generator.cacheMisc(cache, available));
     }
 
     // Generate cache node filter group.

@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Integration tests for Bernoulli naive Bayes algorithm with different datasets.
@@ -59,7 +58,7 @@ public class DiscreteNaiveBayesTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 

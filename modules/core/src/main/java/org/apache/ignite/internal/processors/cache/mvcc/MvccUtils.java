@@ -35,8 +35,9 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxUnexpectedStateCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.transactions.TransactionException;
+import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionState;
+import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -689,8 +690,8 @@ public class MvccUtils {
     /**
      * @param ctx Grid kernal context.
      * @return Currently started user transaction, or {@code null} if none started.
-     * @throws UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
-     * @throws NonMvccTransactionException If started transaction spans non MVCC caches.
+     * @throws TransactionUnsupportedConcurrencyException If transaction mode is not supported when MVCC is enabled.
+     * @throws TransactionMixedModeException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx) {
         return tx(ctx, null);
@@ -700,8 +701,8 @@ public class MvccUtils {
      * @param ctx Grid kernal context.
      * @param txId Transaction ID.
      * @return Currently started user transaction, or {@code null} if none started.
-     * @throws UnsupportedTxModeException If transaction mode is not supported when MVCC is enabled.
-     * @throws NonMvccTransactionException If started transaction spans non MVCC caches.
+     * @throws TransactionUnsupportedConcurrencyException If transaction mode is not supported when MVCC is enabled.
+     * @throws TransactionMixedModeException If started transaction spans non MVCC caches.
      */
     @Nullable public static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
         IgniteTxManager tm = ctx.cache().context().tm();
@@ -714,13 +715,13 @@ public class MvccUtils {
             if (!tx.pessimistic()) {
                 tx.setRollbackOnly();
 
-                throw new UnsupportedTxModeException();
+                throw new TransactionUnsupportedConcurrencyException("Only pessimistic transactions are supported when MVCC is enabled.");
             }
 
             if (!tx.isOperationAllowed(true)) {
                 tx.setRollbackOnly();
 
-                throw new NonMvccTransactionException();
+                throw new TransactionMixedModeException("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
             }
         }
 
@@ -944,26 +945,6 @@ public class MvccUtils {
         @Override public MvccVersion apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) {
             return newMvccCrd == MVCC_CRD_COUNTER_NA ? null : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
-        }
-    }
-
-    /** */
-    public static class UnsupportedTxModeException extends TransactionException {
-        /** */
-        private static final long serialVersionUID = 0L;
-        /** */
-        private UnsupportedTxModeException() {
-            super("Only pessimistic transactions are supported when MVCC is enabled.");
-        }
-    }
-
-    /** */
-    public static class NonMvccTransactionException extends TransactionException {
-        /** */
-        private static final long serialVersionUID = 0L;
-        /** */
-        private NonMvccTransactionException() {
-            super("Operations on MVCC caches are not permitted in transactions spanning non MVCC caches.");
         }
     }
 }

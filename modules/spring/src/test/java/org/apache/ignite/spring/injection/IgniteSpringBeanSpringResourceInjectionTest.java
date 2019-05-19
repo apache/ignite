@@ -28,6 +28,8 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -191,8 +193,8 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
             new TestSpringResourceInjectedRunnable(SPRING_CFG_LOCATION, BEAN_TO_INJECT_NAME) {
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
-                    IgniteCacheStoreWithSpringResource cacheStore =
-                        appCtx.getBean(IgniteCacheStoreWithSpringResource.class);
+                    IgniteCacheStoreWithSpringResource cacheStore = (IgniteCacheStoreWithSpringResource)
+                        ((IgniteEx) G.allGrids().get(0)).cachex("cache1").context().store().store();
 
                     return cacheStore.getInjectedSpringField();
                 }

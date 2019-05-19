@@ -17,12 +17,15 @@
 
 package org.apache.ignite.examples.ml.tutorial;
 
+import java.io.FileNotFoundException;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
@@ -37,9 +40,6 @@ import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
 import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
-
-import java.io.FileNotFoundException;
-import java.util.Arrays;
 
 /**
  * To choose the best hyperparameters the cross-validation with {@link ParamGrid} will be used in this example.
@@ -73,42 +73,39 @@ public class Step_8_CV_with_Param_Grid {
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
-                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                // Defines first preprocessor that extracts features from an upstream data.
-                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare" .
-                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                    = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer
+                    = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
 
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
-
-                TrainTestSplit<Integer, Object[]> split = new TrainTestDatasetSplitter<Integer, Object[]>()
+                TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
                     .split(0.75);
 
-                IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(6) // <--- Changed index here.
                     .fit(ignite,
                         dataCache,
-                        featureExtractor
+                        vectorizer
                     );
 
-                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor
                     );
 
-                IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Vector>()
                     .fit(
                         ignite,
                         dataCache,
                         imputingPreprocessor
                     );
 
-                IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
-                    .withP(2)
+                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
+                    .withP(1)
                     .fit(
                         ignite,
                         dataCache,
@@ -119,7 +116,7 @@ public class Step_8_CV_with_Param_Grid {
 
                 DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
 
-                CrossValidation<DecisionTreeNode, Double, Integer, Object[]> scoreCalculator
+                CrossValidation<DecisionTreeNode, Double, Integer, Vector> scoreCalculator
                     = new CrossValidation<>();
 
                 ParamGrid paramGrid = new ParamGrid()
@@ -133,7 +130,6 @@ public class Step_8_CV_with_Param_Grid {
                     dataCache,
                     split.getTrainFilter(),
                     normalizationPreprocessor,
-                    lbExtractor,
                     3,
                     paramGrid
                 );
@@ -159,7 +155,7 @@ public class Step_8_CV_with_Param_Grid {
                     ignite,
                     dataCache,
                     split.getTrainFilter(),
-                    FeatureLabelExtractorWrapper.wrap(normalizationPreprocessor, lbExtractor) //TODO: IGNITE-11581
+                    normalizationPreprocessor
                 );
 
                 System.out.println("\n>>> Trained model: " + bestMdl);
@@ -169,7 +165,6 @@ public class Step_8_CV_with_Param_Grid {
                     split.getTestFilter(),
                     bestMdl,
                     normalizationPreprocessor,
-                    lbExtractor,
                     new Accuracy<>()
                 );
 

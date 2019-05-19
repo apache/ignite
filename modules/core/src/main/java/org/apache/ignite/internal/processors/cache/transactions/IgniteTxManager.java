@@ -103,6 +103,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFERRED_ONE_PHASE
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -183,6 +184,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** TX handler. */
     private IgniteTxHandler txHnd;
+
+    /**
+     * Shows if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     */
+    private boolean txOwnerDumpRequestsAllowed =
+        IgniteSystemProperties.getBoolean(IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED, true);
 
     /** Committed local transactions. */
     private final GridBoundedConcurrentOrderedMap<GridCacheVersion, Boolean> completedVersSorted =
@@ -375,6 +384,28 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public IgniteTxHandler txHandler() {
         return txHnd;
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     *
+     * @return <code>true</code> if allowed, <code>false</code> otherwise.
+     */
+    public boolean txOwnerDumpRequestsAllowed() {
+        return txOwnerDumpRequestsAllowed;
+    }
+
+    /**
+     * Sets if dump requests from local node to near node are allowed, when long running transaction
+     * is found. If allowed, the compute request to near node will be made to get thread dump of transaction
+     * owner thread.
+     *
+     * @param allowed whether allowed
+     */
+    public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
+        txOwnerDumpRequestsAllowed = allowed;
     }
 
     /**
@@ -973,6 +1004,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         return new IgnitePair<>(
             committed == null ? Collections.<GridCacheVersion>emptyList() : committed,
             rolledback == null ? Collections.<GridCacheVersion>emptyList() : rolledback);
+    }
+
+    /**
+     * Peeks completed versions history map to find out whether transaction was committed or rolled back
+     * in the recent past.
+     *
+     * @param xid Transaction XID version.
+     * @return <code>true</code> if transaction was committed, <code>false</code> if transaction was rolled back,
+     * <code>null</code> if information is missed in history.
+     */
+    public Boolean peekCompletedVersionsHistory(GridCacheVersion xid) {
+        Object o = completedVersHashMap.get(xid);
+
+        return (o instanceof Boolean) ? (Boolean)o : null;
     }
 
     /**

@@ -48,7 +48,7 @@ public class ExtractionUtils {
 
         /** {@inheritDoc} */
         @Override protected Double label(C coord, K key, V value) {
-            return feature(coord, key, value);
+            return (Double)feature(coord, key, value);
         }
 
         /** {@inheritDoc} */

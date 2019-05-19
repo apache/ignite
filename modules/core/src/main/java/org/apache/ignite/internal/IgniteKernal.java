@@ -162,7 +162,9 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
@@ -885,7 +887,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack configuration.
         ackSpis();
 
-        List<PluginProvider> plugins = U.allPluginProviders();
+        List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+           Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
 
         // Spin out SPIs & managers.
         try {
@@ -977,7 +980,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new GridTimeoutProcessor(ctx));
 
             // Start security processors.
-            startProcessor(createComponent(GridSecurityProcessor.class, ctx));
+            startProcessor(securityProcessor());
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
@@ -1047,6 +1050,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
                 ctx.cache().context().database().notifyMetaStorageSubscribersOnReadyForRead();
+
+                ((DistributedMetaStorageImpl)ctx.distributedMetastorage()).inMemoryReadyForRead();
 
                 ctx.cache().context().database().startMemoryRestore(ctx);
 
@@ -1288,6 +1293,17 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         if (!isDaemon())
             ctx.discovery().ackTopology(ctx.discovery().localJoin().joinTopologyVersion().topologyVersion(),
                 EventType.EVT_NODE_JOINED, localNode());
+    }
+
+    /**
+     * @return IgniteSecurity.
+     */
+    private GridProcessor securityProcessor() throws IgniteCheckedException {
+        GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
+
+        return prc != null && prc.enabled()
+            ? new IgniteSecurityProcessor(ctx, prc)
+            : new NoOpIgniteSecurityProcessor(ctx);
     }
 
     /**
@@ -2010,7 +2026,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         m.a("  ^-- ").a(regCfg.getName()).a(" [");
         m.a("initSize=").a(U.readableSize(regCfg.getInitialSize(), false));
         m.a(", maxSize=").a(U.readableSize(regCfg.getMaxSize(), false));
-        m.a(", persistence=" + regCfg.isPersistenceEnabled()).a(']');
+        m.a(", persistence=" + regCfg.isPersistenceEnabled());
+        m.a(", lazyMemoryAllocation=" + regCfg.isLazyMemoryAllocation()).a(']');
 
         return m.toString();
     }
@@ -4083,7 +4100,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                             reconnectState.firstReconnectFut.onDone(e);
 
-                            close();
+                            new Thread(() -> {
+                                U.error(log, "Stopping the node after a failed reconnect attempt.");
+
+                                close();
+                            }, "node-stopper").start();
                         }
                         else {
                             assert ctx.discovery().reconnectSupported();
@@ -4141,6 +4162,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
+
+        if(cls.equals(GridSecurityProcessor.class))
+            return null;
 
         Class<T> implCls = null;
 
