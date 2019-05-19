@@ -97,7 +97,6 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             null,
             null,
             null,
-            null,
             null
         );
 
