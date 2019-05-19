@@ -622,6 +622,16 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /// <summary>
+        /// Does the out in op.
+        /// </summary>
+        private Task<T> DoOutInOpAffinityAsync<T>(ClientOp opId, TK key, Action<BinaryWriter> writeAction,
+            Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinityAsync(opId, stream => WriteRequest(writeAction, stream),
+                readFunc, _id, key, HandleError<T>);
+        }
+
+        /// <summary>
         /// Writes the request.
         /// </summary>
         private void WriteRequest(Action<BinaryWriter> writeAction, IBinaryStream stream)
