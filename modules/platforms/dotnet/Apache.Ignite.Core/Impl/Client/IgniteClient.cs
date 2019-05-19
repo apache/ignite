@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        public IClientAffinitySocket Socket
+        public ClientFailoverSocket Socket
         {
             get { return _socket; }
         }

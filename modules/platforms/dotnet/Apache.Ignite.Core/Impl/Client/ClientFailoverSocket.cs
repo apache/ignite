@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Client
     /// <summary>
     /// Socket wrapper with reconnect/failover functionality: reconnects on failure.
     /// </summary>
-    internal class ClientFailoverSocket : IClientAffinitySocket
+    internal class ClientFailoverSocket : IClientSocket
     {
         /** Underlying socket. */
         private ClientSocket _socket;
@@ -108,7 +108,9 @@ namespace Apache.Ignite.Core.Impl.Client
             return GetSocket().DoOutInOp(opId, writeAction, readFunc, errorFunc);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Performs a send-receive operation with affinity awareness.
+        /// </summary>
         public T DoOutInOpAffinity<T, TKey>(
             ClientOp opId,
             Action<IBinaryStream> writeAction,
@@ -120,6 +122,23 @@ namespace Apache.Ignite.Core.Impl.Client
             var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
 
             return socket.DoOutInOp(opId, writeAction, readFunc, errorFunc);
+        }
+
+        /// <summary>
+        /// Performs an async send-receive operation with affinity awareness.
+        /// </summary>
+        public Task<T> DoOutInOpAffinityAsync<T, TKey>(
+            ClientOp opId,
+            Action<IBinaryStream> writeAction,
+            Func<IBinaryStream, T> readFunc,
+            int cacheId,
+            TKey key,
+            Func<ClientStatusCode, string, T> errorFunc = null)
+        {
+            // TODO: Async GetAffinitySocket? How do we handle races?
+            var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
+
+            return socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
         }
 
         /** <inheritdoc /> */
