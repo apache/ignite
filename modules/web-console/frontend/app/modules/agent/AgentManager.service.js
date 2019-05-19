@@ -101,7 +101,7 @@ class ConnectionState {
 
         if (count === 0)
             this.state = State.AGENT_DISCONNECTED;
-        else if (demo || _.get(this.cluster, 'connected'))
+        else if (demo || this.cluster)
             this.state = State.CONNECTED;
         else
             this.state = State.CLUSTER_DISCONNECTED;
