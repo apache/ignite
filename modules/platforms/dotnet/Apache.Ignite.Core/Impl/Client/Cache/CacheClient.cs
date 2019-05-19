@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutOpAsync(ClientOp.CachePut, w => WriteKeyVal(w, key, val));
+            return DoOutOpAffinityAsync(ClientOp.CachePut, key, w => WriteKeyVal(w, key, val));
         }
 
         /** <inheritDoc /> */
@@ -568,6 +568,14 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private Task DoOutOpAsync(ClientOp opId, Action<BinaryWriter> writeAction = null)
         {
             return DoOutInOpAsync<object>(opId, writeAction, null);
+        }
+
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
+        private Task DoOutOpAffinityAsync(ClientOp opId, TK key, Action<BinaryWriter> writeAction = null)
+        {
+            return DoOutInOpAffinityAsync<object>(opId, key, writeAction, null);
         }
 
         /// <summary>
