@@ -26,7 +26,7 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
@@ -40,7 +40,7 @@ import org.apache.ignite.ml.tree.leaf.DecisionTreeLeafBuilder;
  *
  * @param <T> Type of impurity measure.
  */
-public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends DatasetTrainer<DecisionTreeNode, Double> {
+public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleLabelDatasetTrainer<DecisionTreeNode> {
     /** Max tree deep. */
     int maxDeep;
 

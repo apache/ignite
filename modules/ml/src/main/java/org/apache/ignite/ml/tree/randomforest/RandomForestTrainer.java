@@ -42,7 +42,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
-import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.tree.randomforest.data.FeaturesCountSelectionStrategies;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
@@ -67,7 +67,7 @@ import org.apache.ignite.ml.tree.randomforest.data.statistics.NormalDistribution
  * @param <T> Type of child of RandomForestTrainer using in with-methods.
  */
 public abstract class RandomForestTrainer<L, S extends ImpurityComputer<BootstrappedVector, S>,
-    T extends RandomForestTrainer<L, S, T>> extends DatasetTrainer<ModelsComposition, Double> {
+    T extends RandomForestTrainer<L, S, T>> extends SingleLabelDatasetTrainer<ModelsComposition> {
     /** Bucket size factor. */
     private static final double BUCKET_SIZE_FACTOR = (1 / 10.0);
 

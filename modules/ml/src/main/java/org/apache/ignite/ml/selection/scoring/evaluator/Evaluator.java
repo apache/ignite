@@ -25,9 +25,13 @@ import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.metric.AbstractMetrics;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
+import org.apache.ignite.ml.selection.scoring.metric.MetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 
 /**
  * Evaluator that computes metrics from predictions and ground truth values.
@@ -194,6 +198,47 @@ public class Evaluator {
     }
 
     /**
+     * Computes the regression metrics on the given cache.
+     *
+     * @param dataCache Data cache.
+     * @param filter Filter.
+     * @param mdl Model.
+     * @param preprocessor Preprocessor.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    public static <K, V> RegressionMetricValues evaluateRegression(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter,
+        IgniteModel<Vector, Double> mdl,
+        Preprocessor<K, V> preprocessor) {
+        return calcRegressionMetricValues(
+            dataCache,
+            filter,
+            mdl,
+            preprocessor
+        );
+    }
+
+    /**
+     * Computes the regression metrics on the given cache.
+     *
+     * @param dataCache Data cache.
+     * @param filter Filter.
+     * @param mdl Model.
+     * @param preprocessor Preprocessor.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    private static <K, V> RegressionMetricValues calcRegressionMetricValues(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter,
+        IgniteModel<Vector, Double> mdl,
+        Preprocessor<K, V> preprocessor) {
+        return calcMetricValues(dataCache, filter, mdl, preprocessor, new RegressionMetrics());
+    }
+
+    /**
      * Computes the given metrics on the given cache.
      *
      * @param dataCache    The given cache.
@@ -317,5 +362,37 @@ public class Evaluator {
         }
 
         return metricRes;
+    }
+
+    /**
+     * Computes regression metrics on the given cache.
+     *
+     * @param dataCache The given cache.
+     * @param filter The given filter.
+     * @param mdl The model.
+     * @param preprocessor The preprocessor.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    private static <K, V, M extends MetricValues> M calcMetricValues(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter,
+        IgniteModel<Vector, Double> mdl,
+        Preprocessor<K, V> preprocessor, AbstractMetrics<M> metrics) {
+        M metricValues;
+
+        try (LabelPairCursor<Double> cursor = new CacheBasedLabelPairCursor<>(
+            dataCache,
+            filter,
+            preprocessor,
+            mdl
+        )) {
+            metricValues = metrics.scoreAll(cursor.iterator());
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return metricValues;
     }
 }
