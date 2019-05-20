@@ -119,7 +119,6 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
      * @throws Exception
      */
     @Test
-    @Ignore
     public void testPartitionConsistencyCancelledRebalanceCoordinatorIsDemander() throws Exception {
         backups = 2;
 

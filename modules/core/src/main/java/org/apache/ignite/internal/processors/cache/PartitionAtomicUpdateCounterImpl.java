@@ -130,7 +130,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean empty() {
+    @Override public boolean empty() {
         return get() == 0;
     }
 
