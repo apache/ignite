@@ -25,7 +25,13 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.ml.naivebayes.compound.Data.*;
+import static org.apache.ignite.ml.naivebayes.compound.Data.LABEL_2;
+import static org.apache.ignite.ml.naivebayes.compound.Data.binarizedDataThresholds;
+import static org.apache.ignite.ml.naivebayes.compound.Data.classProbabilities;
+import static org.apache.ignite.ml.naivebayes.compound.Data.labels;
+import static org.apache.ignite.ml.naivebayes.compound.Data.means;
+import static org.apache.ignite.ml.naivebayes.compound.Data.probabilities;
+import static org.apache.ignite.ml.naivebayes.compound.Data.variances;
 import static org.junit.Assert.assertEquals;
 
 /** Tests for {@link CompoundNaiveBayesModel} */
@@ -52,7 +58,7 @@ public class CompoundNaiveBayesModelTest {
     @Test /** */
     public void testPredictOnlyDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
-            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, asList(0,1,2), null);
+            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, asList(0, 1, 2), null);
 
         Vector observation = VectorUtils.of(1, 0, 1, 1, 0);
 
@@ -67,18 +73,18 @@ public class CompoundNaiveBayesModelTest {
     @Test /** */
     public void testPredictGausAndDiscrete() {
         DiscreteNaiveBayesModel discreteModel =
-                new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, asList(0,1,2), null);
+            new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, binarizedDataThresholds, asList(0, 1, 2), null);
 
         GaussianNaiveBayesModel gaussianModel =
-            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, asList(3,4,5,6,7), null);
+            new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, asList(3, 4, 5, 6, 7), null);
 
         CompoundNaiveBayesModel model = new CompoundNaiveBayesModel()
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withGaussianModel(gaussianModel)
-            .withGaussianSkipFuture(asList(3,4,5,6,7))
+            .withGaussianSkipFuture(asList(3, 4, 5, 6, 7))
             .withDiscreteModel(discreteModel)
-            .withDiscreteSkipFuture(asList(0,1,2));
+            .withDiscreteSkipFuture(asList(0, 1, 2));
 
         Vector observation = VectorUtils.of(6, 130, 8, 1, 0, 1, 1, 0);
 
