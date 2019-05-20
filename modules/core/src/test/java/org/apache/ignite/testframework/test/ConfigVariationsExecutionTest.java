@@ -30,13 +30,13 @@ public class ConfigVariationsExecutionTest extends IgniteConfigVariationsAbstrac
 
     /** Executes after test class. Checks that {@link #testCheck()} method was executed indeed. */
     @AfterClass
-    public static void validatetestExecution(){
+    public static void validatetestExecution() {
         assertTrue(testExecuted);
     }
 
     /** JUnit test method. */
     @Test
-    public void testCheck(){
+    public void testCheck() {
         testExecuted = true;
     }
 }

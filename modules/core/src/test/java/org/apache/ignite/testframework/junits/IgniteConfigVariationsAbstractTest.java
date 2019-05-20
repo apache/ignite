@@ -94,7 +94,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** Check that test name is not null. */
     @Before
-    public void checkTestName(){
+    public void checkTestName() {
         assert getName() != null : "getName returned null";
     }
 
