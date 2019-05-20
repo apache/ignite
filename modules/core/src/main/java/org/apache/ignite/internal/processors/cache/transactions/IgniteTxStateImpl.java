@@ -399,7 +399,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-            assert cacheCtx != null : "cacheCtx == null";
+            assert cacheCtx != null : "cacheCtx == null, cacheId=" + cacheId;
 
             onTxEnd(cacheCtx, tx, commit);
         }

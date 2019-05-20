@@ -3246,10 +3246,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param exchActions Change requests.
      */
     private void rollbackCoveredTx(ExchangeActions exchActions) {
-        Set<Integer> cachesToStop;
-
         if (!exchActions.cacheGroupsToStop().isEmpty() || !exchActions.cacheStopRequests().isEmpty()) {
-            cachesToStop = new HashSet<>();
+            Set<Integer> cachesToStop = new HashSet<>();
 
             for (ExchangeActions.CacheGroupActionData act : exchActions.cacheGroupsToStop()) {
                 @Nullable CacheGroupContext grpCtx = context().cache().cacheGroup(act.descriptor().groupId());

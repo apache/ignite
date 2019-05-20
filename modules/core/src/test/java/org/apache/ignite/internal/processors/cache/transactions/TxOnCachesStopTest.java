@@ -59,9 +59,6 @@ import java.util.concurrent.CountDownLatch;
  *
  */
 public class TxOnCachesStopTest extends GridCommonAbstractTest {
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** Cache1 name. */
     private static final String CACHE_1_NAME = "cache1";
 
@@ -80,9 +77,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
-        discoverySpi.setIpFinder(ipFinder);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
         cfg.setCommunicationSpi(commSpi);
@@ -154,21 +148,19 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
             for (TransactionIsolation iso : TransactionIsolation.values())
                 runTxOnCacheStop(conc, iso, ig, true);
 
-        ig.getOrCreateCache(destroyCacheCfg).destroy();
-        ig.getOrCreateCache(surviveCacheCfg).destroy();
+        ig.destroyCache(destroyCacheCfg.getName());
+        ig.destroyCache(surviveCacheCfg.getName());
 
         for (TransactionConcurrency conc : TransactionConcurrency.values())
             for (TransactionIsolation iso : TransactionIsolation.values())
                 runTxOnCacheStop(conc, iso, ig, false);
 
-        ig.getOrCreateCache(destroyCacheCfg).destroy();
-        ig.getOrCreateCache(surviveCacheCfg).destroy();
+        ig.destroyCache(destroyCacheCfg.getName());
+        ig.destroyCache(surviveCacheCfg.getName());
 
         for (TransactionConcurrency conc : TransactionConcurrency.values())
             for (TransactionIsolation iso : TransactionIsolation.values())
                 runCacheStopInMidTx(conc, iso, ig);
-
-        ig.cluster().active(false);
     }
 
     /**
@@ -191,7 +183,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
             try {
                 destroyLatch.await();
 
-                IgniteInternalFuture fInt = GridTestUtils.runAsync(() -> {
+                IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
                     try {
                         U.sleep(rnd.nextInt(500));
                     } catch (IgniteInterruptedCheckedException e) {
@@ -203,7 +195,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
                 cache.destroy();
 
-                fInt.get();
+                f.get();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -223,13 +215,9 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
             byte[] val = new byte[1024];
 
             try (Transaction tx = ig.transactions().txStart(conc, iso, 1_000, 2)) {
-                try {
-                    cache.put(100, val);
+                cache.put(100, val);
 
-                    cache2.put(100, val);
-                } catch (IgniteCacheRestartingException e) {
-                    e.restartFuture().get();
-                }
+                cache2.put(100, val);
 
                 tx.commit();
             } catch (IgniteException e) {
@@ -242,7 +230,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         f0.get();
 
         try {
-            assertTrue(cache2.get(100) == cache.get(100));
+            assertEquals(cache2.get(100), cache.get(100));
         } catch (IllegalStateException e) {
             assertTrue(X.hasCause(e, CacheStoppedException.class));
         }
@@ -283,15 +271,11 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
             byte[] val = new byte[1024];
 
             try (Transaction tx = ig.transactions().txStart(conc, iso, 1_000, 2)) {
-                try {
-                    cache.put(100, val);
+                cache.put(100, val);
 
-                    cache2.put(100, val);
+                cache2.put(100, val);
 
-                    putLatch.countDown();
-                } catch (IgniteCacheRestartingException e) {
-                    e.restartFuture().get();
-                }
+                putLatch.countDown();
 
                 destroyLatch.await();
 
