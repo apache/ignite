@@ -21,6 +21,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -31,8 +32,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,7 +48,9 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_RAW_FILE;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.FILE_FORMAT;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.RAW_FILE_FORMAT;
 
 /**
  *
@@ -133,7 +142,29 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
 
         assertTrue(!records.isEmpty());
 
-        assertTrue(records.stream().anyMatch(line -> line.contains("PageSnapshot")));
+        assertTrue(records.stream().anyMatch(line -> line.contains("CheckpointRecord")));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void dumpRawPageHistoryToDefaultDir() throws Exception {
+        diagnosticProcessor.dumpPageHistory(new PageHistoryDiagnoster.DiagnosticPageBuilder()
+            .pageIds(expectedPageId)
+            .addAction(PRINT_TO_RAW_FILE)
+        );
+
+        Path path = Paths.get(U.defaultWorkDirectory(), DEFAULT_TARGET_FOLDER);
+        File dumpFile = path.toFile().listFiles((dir, name) -> name.endsWith(RAW_FILE_FORMAT))[0];
+
+        try (SegmentIO io = new SegmentIO(0L, new RandomAccessFileIO(dumpFile, StandardOpenOption.READ))) {
+            SegmentHeader hdr = RecordV1Serializer.readSegmentHeader(io, new SimpleSegmentFileInputFactory());
+
+            assertFalse(hdr.isCompacted());
+
+            assertEquals(RecordSerializerFactory.LATEST_SERIALIZER_VERSION, hdr.getSerializerVersion());
+        }
     }
 
     /**
@@ -155,7 +186,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
 
             assertTrue(!records.isEmpty());
 
-            assertTrue(records.stream().anyMatch(line -> line.contains("PageSnapshot")));
+            assertTrue(records.stream().anyMatch(line -> line.contains("CheckpointRecord")));
         }
         finally {
             U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), TEST_DUMP_PAGE_FILE, false));
@@ -181,7 +212,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
 
         assertTrue(!records.isEmpty());
 
-        assertTrue(records.stream().anyMatch(line -> line.contains("PageSnapshot")));
+        assertTrue(records.stream().anyMatch(line -> line.contains("CheckpointRecord")));
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 import java.io.File;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 
 /**
  * Holder of {@link ScannerHandlers}.
@@ -51,5 +52,14 @@ public class ScannerHandlers {
      */
     public static ScannerHandler printToFile(File file, FileIOFactory ioFactory) {
         return new PrintToFileHandler(file, ioFactory);
+    }
+
+    /**
+     * @param file File to write.
+     * @param serializer WAL records serializer.
+     * @return Handler which write record to file.
+     */
+    public static ScannerHandler printToRawFile(File file, RecordSerializer serializer) {
+        return new PrintToRawFileHandler(file, serializer);
     }
 }

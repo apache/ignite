@@ -26,16 +26,19 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -44,6 +47,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.ScanTerminateStep;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticFileWriteMode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -56,6 +62,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.partitionMetaStateUpdate;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToRawFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
 
 /**
@@ -73,7 +80,7 @@ public class PageHistoryDiagnoster {
     private File[] walFolders;
 
     /** Function to provide target end file to store diagnostic info. */
-    private final Function<File, File> targetFileSupplier;
+    private final BiFunction<File, DiagnosticFileWriteMode, File> targetFileSupplier;
 
     private final IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
 
@@ -84,7 +91,7 @@ public class PageHistoryDiagnoster {
      * @param ctx Kernal context.
      * @param supplier Function to provide target end file to store diagnostic info.
      */
-    public PageHistoryDiagnoster(GridKernalContext ctx, Function<File, File> supplier) {
+    public PageHistoryDiagnoster(GridKernalContext ctx, BiFunction<File, DiagnosticFileWriteMode, File> supplier) {
         log = ctx.log(getClass());
         this.ctx = ctx;
         targetFileSupplier = supplier;
@@ -166,9 +173,8 @@ public class PageHistoryDiagnoster {
         // Check gaps in the reserved interval.
         List<T2<Long, Long>> gaps = iteratorFactory.hasGaps(descs.subList(descIdx, descs.size()));
 
-        if (!gaps.isEmpty()) {
+        if (!gaps.isEmpty())
             log.warning("Potentialy missed record because WAL has gaps: " + gapsToString(gaps));
-        }
 
         try {
             scan(builder, params, action, reserved);
@@ -300,10 +306,36 @@ public class PageHistoryDiagnoster {
         switch (action) {
             case PRINT_TO_LOG:
                 return printToLog(log);
+
             case PRINT_TO_FILE:
-                return printToFile(targetFileSupplier.apply(customFile));
+                return printToFile(targetFileSupplier.apply(customFile, DiagnosticFileWriteMode.HUMAN_READABLE));
+
+            case PRINT_TO_RAW_FILE:
+                return printToRawFile(targetFileSupplier.apply(customFile, DiagnosticFileWriteMode.RAW), serializer());
+
             default:
                 throw new IllegalArgumentException("Unknown diagnostic action : " + action);
+        }
+    }
+
+    /**
+     * @return WAL records serializer.
+     * @throws IgniteException If serializer initialization failed for some reason.
+     */
+    private RecordSerializer serializer() {
+        GridCacheSharedContext<?, ?> cctx = ctx.cache().context();
+
+        int serializerVer = cctx.wal().serializerVersion();
+
+        try {
+            return new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
+        }
+        catch (IgniteCheckedException e) {
+            log.error(
+                "Failed to create WAL records serializer for diagnostic purposes [serializerVer=" + serializerVer + "]"
+            );
+
+            throw new IgniteException(e);
         }
     }
 

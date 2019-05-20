@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.DEFAULT_WAL_RECORD_PREFIX;
 
@@ -56,19 +57,25 @@ class PrintToFileHandler implements ScannerHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
+    @Override public final void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
         initIfRequired();
 
-        byte[] writes = (DEFAULT_WAL_RECORD_PREFIX + record.get2() + "\n").getBytes(StandardCharsets.UTF_8);
+        writeFully(getBytes(record));
+    }
 
-        int written = 0;
+    /**
+     * @param record WAL record with its pointer.
+     * @return Bytes repersentation of data to be written in dump file.
+     */
+    protected byte[] getBytes(IgniteBiTuple<WALPointer, WALRecord> record) {
+        return (DEFAULT_WAL_RECORD_PREFIX + record.get2() + "\n").getBytes(StandardCharsets.UTF_8);
+    }
 
-        try {
-            while ((written += fileToWrite.writeFully(writes, written, writes.length - written)) < writes.length);
-        }
-        catch (IOException ex) {
-            throw new IgniteException(ex);
-        }
+    /**
+     * @return Optional header for the diagnostic file. {@code null} if there should be no header.
+     */
+    @Nullable protected byte[] getHeader() {
+        return null;
     }
 
     /**
@@ -82,6 +89,28 @@ class PrintToFileHandler implements ScannerHandler {
             catch (IOException e) {
                 throw new IgniteException(e);
             }
+        }
+
+        byte[] hdr = getHeader();
+
+        if (hdr != null)
+            writeFully(hdr);
+    }
+
+    /**
+     * Write byte array into file.
+     *
+     * @param bytes Data.
+     * @throws IgniteException If write failed.
+     */
+    private void writeFully(byte[] bytes) {
+        int written = 0;
+
+        try {
+            while ((written += fileToWrite.writeFully(bytes, written, bytes.length - written)) < bytes.length);
+        }
+        catch (IOException ex) {
+            throw new IgniteException(ex);
         }
     }
 

@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_FILE;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_LOG;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DiagnosticAction.PRINT_TO_RAW_FILE;
 import static org.apache.ignite.internal.util.IgniteStopwatch.logTime;
 
 /**
@@ -48,6 +49,8 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     static final String DEFAULT_TARGET_FOLDER = "diagnostic";
     /** File format. */
     static final String FILE_FORMAT = ".txt";
+    /** Raw file format. */
+    static final String RAW_FILE_FORMAT = ".raw";
     /** Full path for store dubug info. */
     private final Path diagnosticPath;
 
@@ -108,6 +111,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
                         .pageIds(pageIds)
                         .addAction(PRINT_TO_LOG)
                         .addAction(PRINT_TO_FILE)
+                        .addAction(PRINT_TO_RAW_FILE)
                 );
             }
             catch (IgniteCheckedException e) {
@@ -129,26 +133,47 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
      * Resolve file to store diagnostic info.
      *
      * @param customFile Custom file if customized.
+     * @param writeMode Diagnostic file write mode.
      * @return File to store diagnostic info.
      */
-    private File diagnosticFile(File customFile) {
+    private File diagnosticFile(File customFile, DiagnosticFileWriteMode writeMode) {
         if (customFile == null)
-            return finalizeFile(diagnosticPath);
+            return finalizeFile(diagnosticPath, writeMode);
 
         if (customFile.isAbsolute())
-            return finalizeFile(customFile.toPath());
+            return finalizeFile(customFile.toPath(), writeMode);
 
-        return finalizeFile(diagnosticPath.resolve(customFile.toPath()));
+        return finalizeFile(diagnosticPath.resolve(customFile.toPath()), writeMode);
     }
 
     /**
      * @param diagnosticPath Path to diagnostic file.
+     * @param writeMode Diagnostic file write mode.
      * @return File to store diagnostic info.
      */
-    private static File finalizeFile(Path diagnosticPath) {
+    private static File finalizeFile(Path diagnosticPath, DiagnosticFileWriteMode writeMode) {
         diagnosticPath.toFile().mkdirs();
 
-        return diagnosticPath.resolve(LocalDateTime.now().format(TIME_FORMATTER) + FILE_FORMAT).toFile();
+        return diagnosticPath.resolve(LocalDateTime.now().format(TIME_FORMATTER) + getFileExtension(writeMode)).toFile();
+    }
+
+    /**
+     * Get file format for given write mode.
+     *
+     * @param writeMode Diagnostic file write mode.
+     * @return File extention with dot.
+     */
+    private static String getFileExtension(DiagnosticFileWriteMode writeMode) {
+        switch (writeMode) {
+            case HUMAN_READABLE:
+                return FILE_FORMAT;
+
+            case RAW:
+                return RAW_FILE_FORMAT;
+
+            default:
+                throw new IllegalArgumentException("writeMode=" + writeMode);
+        }
     }
 
     /**
@@ -158,6 +183,18 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
         /** Print result to log. */
         PRINT_TO_LOG,
         /** Print result to file. */
-        PRINT_TO_FILE
+        PRINT_TO_FILE,
+        /** Print result to file in raw format. */
+        PRINT_TO_RAW_FILE
+    }
+
+    /**
+     * Mode of diagnostic dump file.
+     */
+    public enum DiagnosticFileWriteMode {
+        /** Use humanly readable data representation. */
+        HUMAN_READABLE,
+        /** Use raw data format. */
+        RAW
     }
 }
