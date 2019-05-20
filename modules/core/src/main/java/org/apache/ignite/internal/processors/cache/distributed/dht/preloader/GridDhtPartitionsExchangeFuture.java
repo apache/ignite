@@ -994,7 +994,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // Case for baseline node leave.
         if ((firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
             && firstEvtDiscoCache.baselineNodes() != null) {
-            if (isInMemoryCachesConfigured())
+            if (changedBaseline())
                 return false;
 
             // Check that there are no moving partitions.
@@ -1006,16 +1006,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return false;
-    }
-
-    /**
-     * Checks that in-memory caches configured.
-     *
-     * @return {@code true} true if in-memory caches configured.
-     */
-    private boolean isInMemoryCachesConfigured() {
-        return !nonLocalCacheGroupDescriptors().stream().allMatch(
-            grpDesc -> CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()));
     }
 
     /**
