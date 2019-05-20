@@ -2058,31 +2058,29 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         null,
                         mvccSnapshot)
                         .init()
-                        .chain(new C1<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>, Map<K1, V1>>() {
-                            @Override public Map<K1, V1> apply(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> f) {
-                                try {
-                                    for (Map.Entry<KeyCacheObject, EntryGetResult> entry : f.get().entrySet()) {
-                                        EntryGetResult getRes = entry.getValue();
+                        .chain((fut) -> {
+                            try {
+                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                                    EntryGetResult getRes = entry.getValue();
 
-                                        ctx.addResult(map,
-                                            entry.getKey(),
-                                            getRes.value(),
-                                            skipVals,
-                                            keepCacheObjects,
-                                            deserializeBinary,
-                                            false,
-                                            getRes,
-                                            getRes.version(),
-                                            0,
-                                            0,
-                                            needVer);
-                                    }
+                                    ctx.addResult(map,
+                                        entry.getKey(),
+                                        getRes.value(),
+                                        skipVals,
+                                        keepCacheObjects,
+                                        deserializeBinary,
+                                        false,
+                                        getRes,
+                                        getRes.version(),
+                                        0,
+                                        0,
+                                        needVer);
+                                }
 
-                                    return map;
-                                }
-                                catch (Exception e) {
-                                    throw new GridClosureException(e);
-                                }
+                                return map;
+                            }
+                            catch (Exception e) {
+                                throw new GridClosureException(e);
                             }
                         });
                 }

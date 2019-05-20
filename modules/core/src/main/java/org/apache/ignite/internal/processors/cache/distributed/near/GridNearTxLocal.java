@@ -2390,54 +2390,50 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 label(),
                                 mvccSnapshot)
                                 .init()
-                                .chain(
-                                    new C1<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>, Map<K, V>>() {
-                                        @Override public Map<K, V> apply(
-                                            IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> f) {
-                                            try {
-                                                // For every fixed entry.
-                                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : f.get().entrySet()) {
-                                                    EntryGetResult getRes = entry.getValue();
+                                .chain((fut) -> {
+                                        try {
+                                            // For every fixed entry.
+                                            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                                                EntryGetResult getRes = entry.getValue();
 
-                                                    enlistWrite(
-                                                        cacheCtx,
-                                                        entryTopVer,
-                                                        entry.getKey(),
-                                                        getRes.value(),
-                                                        expiryPlc0,
-                                                        null,
-                                                        null,
-                                                        false,
-                                                        false,
-                                                        null,
-                                                        null,
-                                                        skipStore,
-                                                        false,
-                                                        !deserializeBinary,
-                                                        recovery,
-                                                        consistency,
-                                                        null);
+                                                enlistWrite(
+                                                    cacheCtx,
+                                                    entryTopVer,
+                                                    entry.getKey(),
+                                                    getRes.value(),
+                                                    expiryPlc0,
+                                                    null,
+                                                    null,
+                                                    false,
+                                                    false,
+                                                    null,
+                                                    null,
+                                                    skipStore,
+                                                    false,
+                                                    !deserializeBinary,
+                                                    recovery,
+                                                    consistency,
+                                                    null);
 
-                                                    // Rewriting fixed, initially filled by explicit lock operation.
-                                                    cacheCtx.addResult(retMap,
-                                                        entry.getKey(),
-                                                        getRes.value(),
-                                                        skipVals,
-                                                        keepCacheObjects,
-                                                        deserializeBinary,
-                                                        false,
-                                                        getRes,
-                                                        getRes.version(),
-                                                        0,
-                                                        0,
-                                                        needVer);
-                                                }
-
-                                                return Collections.emptyMap();
+                                                // Rewriting fixed, initially filled by explicit lock operation.
+                                                cacheCtx.addResult(retMap,
+                                                    entry.getKey(),
+                                                    getRes.value(),
+                                                    skipVals,
+                                                    keepCacheObjects,
+                                                    deserializeBinary,
+                                                    false,
+                                                    getRes,
+                                                    getRes.version(),
+                                                    0,
+                                                    0,
+                                                    needVer);
                                             }
-                                            catch (Exception e) {
-                                                throw new GridClosureException(e);
-                                            }
+
+                                            return Collections.emptyMap();
+                                        }
+                                        catch (Exception e) {
+                                            throw new GridClosureException(e);
                                         }
                                     }
                                 );
@@ -3126,27 +3122,25 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     lb,
                     mvccSnapshot)
                     .init()
-                    .chain(new C1<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>, Void>() {
-                        @Override public Void apply(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> f) {
-                            try {
-                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : f.get().entrySet())
-                                    processLoaded(
-                                        entry.getKey(),
-                                        needVer ? entry.getValue() : entry.getValue().value(),
-                                        needVer,
-                                        skipVals,
-                                        c);
+                    .chain((fut) -> {
+                        try {
+                            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet())
+                                processLoaded(
+                                    entry.getKey(),
+                                    needVer ? entry.getValue() : entry.getValue().value(),
+                                    needVer,
+                                    skipVals,
+                                    c);
 
-                                return null;
-                            }
-                            catch (IgniteConsistencyViolationException e) {
-                                throw new GridClosureException(e);
-                            }
-                            catch (Exception e) {
-                                setRollbackOnly();
+                            return null;
+                        }
+                        catch (IgniteConsistencyViolationException e) {
+                            throw new GridClosureException(e);
+                        }
+                        catch (Exception e) {
+                            setRollbackOnly();
 
-                                throw new GridClosureException(e);
-                            }
+                            throw new GridClosureException(e);
                         }
                     });
             }
