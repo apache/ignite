@@ -97,7 +97,7 @@ class ReadOnlyDistributedMetaStorageBridge implements DistributedMetaStorageBrid
         for (; idx < locFullData.length && locFullData[idx].key.startsWith(globalKeyPrefix); ++idx) {
             DistributedMetaStorageKeyValuePair item = locFullData[idx];
 
-            cb.accept(item.key, unmarshal ? unmarshal(marshaller, item.valBytes) : item.valBytes);
+            cb.accept(item.key, unmarshal ? unmarshal(marshaller, item.valBytes) : (Serializable)item.valBytes);
         }
     }
 

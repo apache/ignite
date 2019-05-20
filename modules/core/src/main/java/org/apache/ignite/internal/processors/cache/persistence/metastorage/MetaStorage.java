@@ -353,7 +353,7 @@ public class MetaStorage implements DbCheckpointListener, ReadWriteMetastorage {
                 cb.accept(key, val);
             }
             else
-                cb.accept(key, valBytes);
+                cb.accept(key, (Serializable)valBytes);
         }
     }
 

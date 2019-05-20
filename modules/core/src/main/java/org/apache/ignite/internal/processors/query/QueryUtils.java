@@ -108,9 +108,6 @@ public class QueryUtils {
     /** Field name for value. */
     public static final String VAL_FIELD_NAME = "_VAL";
 
-    /** Version field name. */
-    public static final String VER_FIELD_NAME = "_VER";
-
     /** Well-known template name for PARTITIONED cache. */
     public static final String TEMPLATE_PARTITIONED = "PARTITIONED";
 

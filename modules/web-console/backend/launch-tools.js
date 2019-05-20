@@ -115,7 +115,7 @@ const migrate = (dbConnectionUri, group, migrationsPath, collectionName) => {
  * Check version of used MongoDB.
  */
 const checkMongo = () => {
-    const versionValid = (mijor, minor) => mijor === 3 && minor >= 2 && minor <= 4;
+    const versionValid = (mijor, minor) => mijor === 3 && minor >= 0 && minor <= 4;
 
     const admin = new mongoose.mongo.Admin(mongoose.connection.db, null, global.Promise);
 

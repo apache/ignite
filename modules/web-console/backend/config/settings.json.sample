@@ -1,29 +1,4 @@
 {
-<<<<<<< HEAD
-    "server": {
-        "port": 3000,
-        "sessionSecret": "ignite",
-        "ssl": false,
-        "key": "serve/keys/test.key",
-        "cert": "serve/keys/test.crt",
-        "keyPassphrase": "password",
-        "disable": {
-            "signup": false
-        }
-    },
-    "mongodb": {
-        "url": "mongodb://localhost/console"
-    },
-    "mail": {
-        "service": "",
-        "from": "Some Company Web Console <some_username@some_company.com>",
-        "greeting": "Some Company Web Console",
-        "sign": "Kind regards,<br>Some Company Team",
-        "auth": {
-            "user": "some_username@some_company.com",
-            "pass": ""
-        }
-=======
   "server": {
     "port": 3000,
     "sessionSecret": "CHANGE ME",
@@ -38,7 +13,7 @@
     "rejectUnauthorized": false,
     "disable": {
       "signup": false
->>>>>>> upstream/master
+
     }
   },
   "mongodb": {

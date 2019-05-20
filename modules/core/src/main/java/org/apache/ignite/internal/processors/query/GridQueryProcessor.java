@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
@@ -88,6 +89,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeD
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaCommandOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -818,6 +820,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                                         processDynamicDropColumn(typeDesc, opDropCol.columns());
                                     }
+                                    else if (op0 instanceof SchemaCommandOperation) {
+                                    	
+                                    }
                                     else
                                         assert false;
                                 }
@@ -1107,6 +1112,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
         }
+        else if (op instanceof SchemaCommandOperation) {
+      
+        }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
 
@@ -1272,6 +1280,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
         }
+        //add@byron
+        else if (op instanceof SchemaCommandOperation) {
+        	SchemaCommandOperation op0 = (SchemaCommandOperation) op;
+        	
+        	SqlFieldsQueryEx qry = new SqlFieldsQueryEx(op0.cmd(),false);
+        	qry.setLocal(true);
+        	qry.setSkipReducerOnUpdate(true);
+        	
+        	//nsql.getCmd().update();
+        	//idx.querySqlFields(op0.schemaName(),qry, null, false, true, null);             	
+        	//end@byron
+        }
         else
             err = new SchemaOperationException("Unsupported operation: " + op);
 
@@ -1392,8 +1412,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idxs.remove(idxKey);
                 }
                 else {
-                    assert (op instanceof SchemaAlterTableAddColumnOperation ||
-                        op instanceof SchemaAlterTableDropColumnOperation);
+                	//remove@byron
+                    //- assert (op instanceof SchemaAlterTableAddColumnOperation || op instanceof SchemaAlterTableDropColumnOperation);
 
                     // No-op - all processing is done at "local" stage
                     // as we must update both table and type descriptor atomically.
@@ -1453,7 +1473,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         GridCacheContextInfo cacheInfo = idx.registeredCacheInfo(cacheName);
 
-        if (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId()))
+        if (type!=null && (cacheInfo == null || !F.eq(depId, cacheInfo.dynamicDeploymentId())))
             throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
 
         try {
@@ -1497,6 +1517,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 idx.dynamicDropColumn(op0.schemaName(), op0.tableName(), op0.columns(), op0.ifTableExists(),
                     op0.ifExists());
+            }
+            else if(op instanceof SchemaCommandOperation) { //add#byron support other schemaCmd
+            	SchemaCommandOperation op0 = (SchemaCommandOperation) op;
+            	
+            	SqlFieldsQueryEx qry = new SqlFieldsQueryEx(op0.cmd(),false);
+            	qry.setLocal(true);
+            	qry.setSkipReducerOnUpdate(true);
+            	
+            	//nsql.getCmd().update();
+            	idx.querySqlFields(op0.schemaName(),qry, null, false, true, null);             	
+            	//end@byron
             }
             else
                 throw new SchemaOperationException("Unsupported operation: " + op);
@@ -2553,12 +2584,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Start distributed index change operation.
+     * Start distributed index change operation. modify@byron change private to public
      *
      * @param op Operation.
      * @return Future.
      */
-    private IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
+    public IgniteInternalFuture<?> startIndexOperationDistributed(SchemaAbstractOperation op) {
         SchemaOperationClientFuture fut = new SchemaOperationClientFuture(op.id());
 
         SchemaOperationClientFuture oldFut = schemaCliFuts.put(op.id(), fut);

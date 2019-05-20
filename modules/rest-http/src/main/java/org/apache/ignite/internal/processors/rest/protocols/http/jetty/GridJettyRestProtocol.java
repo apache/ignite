@@ -284,13 +284,13 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                     "cannot be cast to integer: " + srvPortStr);
             }
 
-            httpSrv = new Server(new QueuedThreadPool(200, 20));
+            httpSrv = new Server(new QueuedThreadPool(200, 4));
 
             ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
 
             srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
             srvConn.setPort(srvPort);
-            srvConn.setIdleTimeout(30000L);
+            srvConn.setIdleTimeout(60000L);
             srvConn.setReuseAddress(true);
 
             httpSrv.addConnector(srvConn);
@@ -336,10 +336,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 		context.setAttribute("gridKernalContext", ctx);
 		context.setServer(httpSrv);
 		
-	
+		context.setResourceBase(warFile);
+		
 		File workDir = new File(ctx.config().getWorkDirectory(),"webapp");
 		context.setTempDirectory(workDir); 
-		//context.setClassLoader(Thread.currentThread().getContextClassLoader());  
+		context.setClassLoader(Thread.currentThread().getContextClassLoader());  
 		
 
 		 // Create a handler list to store our static and servlet context handlers.

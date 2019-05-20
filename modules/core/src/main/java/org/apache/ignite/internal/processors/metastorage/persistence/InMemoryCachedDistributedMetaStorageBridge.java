@@ -54,7 +54,7 @@ class InMemoryCachedDistributedMetaStorageBridge implements DistributedMetaStora
     ) throws IgniteCheckedException {
         for (Map.Entry<String, byte[]> entry : cache.entrySet()) {
             if (entry.getKey().startsWith(globalKeyPrefix))
-                cb.accept(entry.getKey(), unmarshal ? unmarshal(dms.marshaller, entry.getValue()) : entry.getValue());
+                cb.accept(entry.getKey(), unmarshal ? unmarshal(dms.marshaller, entry.getValue()) : (Serializable)entry.getValue());
         }
     }
 

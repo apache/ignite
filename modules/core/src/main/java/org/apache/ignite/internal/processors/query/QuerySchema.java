@@ -276,7 +276,7 @@ public class QuerySchema implements Serializable {
                 if (replaceTarget)
                     ((List<QueryEntity>)entities).set(targetIdx, target);
             }
-            else {
+            else if(op instanceof SchemaAlterTableDropColumnOperation){
                 assert op instanceof SchemaAlterTableDropColumnOperation;
 
                 SchemaAlterTableDropColumnOperation op0 = (SchemaAlterTableDropColumnOperation)op;

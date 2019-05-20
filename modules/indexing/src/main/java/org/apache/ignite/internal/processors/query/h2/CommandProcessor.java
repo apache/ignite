@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaCommandOperation;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
@@ -878,26 +879,22 @@ public class CommandProcessor {
             else if(cmdH2 instanceof GridSqlSchemaStatement){
             	//add@byron broadcast native sql stmt to all node.
             	GridSqlSchemaStatement nsql = (GridSqlSchemaStatement) cmdH2;             	
-            	SqlFieldsQueryEx qry = new SqlFieldsQueryEx(nsql.toString(),false);
-            	qry.setSkipReducerOnUpdate(true);
             	
             	isDdlOnSchemaSupported(nsql.schemaName());
 
-               if(nsql!=null) {
+                if(nsql.getSQL().startsWith("/**!local")) {
             	   int ret = nsql.getCmd().update();    
-               }
+                }
+                else {
             	
-            	//nsql.getCmd().update();
-            	//idx.querySqlFields(nsql.schemaName(),qry, null, false, true, null);            	
+	               SchemaCommandOperation schemaCmd = new SchemaCommandOperation(
+	            		   UUID.randomUUID(), "default",
+	            		   nsql.schemaName(), nsql.getSQL());
+	               
+	               fut = ctx.query().startIndexOperationDistributed(schemaCmd);
+                }
+               
             	
-            	// it is update stmt.
-            	//idx.mapDistributedUpdate(nsql.schemaName(),qry, null, null, false);
-            	UpdateResult result = idx.executeUpdateOnDataNode(nsql.schemaName(),qry, null, null, false);
-            	
-            	
-            	log.debug(nsql.toString()+" execute result count " + result.counter());
-            	
-            	result.throwIfError();
             	//end@
             }
             else

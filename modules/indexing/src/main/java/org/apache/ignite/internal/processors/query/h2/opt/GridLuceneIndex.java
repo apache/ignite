@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -90,11 +95,12 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  */
 public class GridLuceneIndex implements AutoCloseable {
     /** Field name for string representation of value. */
-    public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";
+    public static final String VAL_STR_FIELD_NAME = "_gg_val_str__";  
+    
     public static final String DLF_LUCENE_CONFIG = "default";
     
-    
-    static ApplicationContext springCtx = null;
+    /** spring ctx for lucene.xml */
+    public static ApplicationContext springCtx = null;
 
     /** */
     private final String cacheName;
@@ -130,7 +136,7 @@ public class GridLuceneIndex implements AutoCloseable {
         
         try{
         	if(springCtx==null)
-        		springCtx = initContext(this.getClass().getResourceAsStream("/lucene.xml"));    
+        		springCtx = initContext(new FileInputStream(ctx.config().getIgniteHome()+"/config/lucene.xml"));    
         	
     		if(springCtx.containsBean(cacheName)){
     			this.config = springCtx.getBean(cacheName,LuceneConfiguration.class);
@@ -283,40 +289,20 @@ public class GridLuceneIndex implements AutoCloseable {
         	}
             stringsFound = true;
         }        
-
+        Object[] row = new Object[idxdFields.length]; 
         for (int i = 0, last = idxdFields.length - 1; i < last; i++) {
             Object fieldVal = type.value(idxdFields[i], key, val);
-
-            if (fieldVal != null) {
-            	if(fieldVal.getClass().isArray()){
-            		if(fieldVal instanceof String[]){
-                		String[] terms = (String[])fieldVal;
-                		for(int j=0;j<terms.length;j++){
-                			if(terms[j]!=null)
-                				doc.add(new TextField(idxdFields[i], terms[j], storeText));    
-                		}
-                	}
-                	else if(fieldVal instanceof Object[]){
-                		Object[] terms = (Object[])fieldVal;
-                		for(int j=0;j<terms.length;j++){
-                			if(terms[j]!=null)
-                				doc.add(new TextField(idxdFields[i], terms[j].toString(), storeText));    
-                		}
-                	}
-            	}
-            	else{
-            		doc.add(new TextField(idxdFields[i], fieldVal.toString(), storeText));
-            	}
-
-                stringsFound = true;
-            }
+            row[i] = fieldVal;
         }
 
+        
         BytesRef keyByteRef = new BytesRef(k.valueBytes(coctx));
 
         try {
             final Term term = new Term(KEY_FIELD_NAME, keyByteRef);
-
+            // build doc body
+            stringsFound = FullTextLucene.FullTextTrigger.buildDocument(doc,this.idxdFields,row,storeText); 
+            
             if (!stringsFound) {
             	indexAccess.writer.deleteDocuments(term);
 
@@ -333,14 +319,14 @@ public class GridLuceneIndex implements AutoCloseable {
             }
             //end@
 
-            doc.add(new StoredField(QueryUtils.VER_FIELD_NAME, ver.toString()));
+            doc.add(new StoredField(FullTextLucene.VER_FIELD_NAME, ver.toString()));
 
             doc.add(new LongPoint(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, expires));
 
             // Next implies remove than add atomically operation.
             indexAccess.writer.updateDocument(term, doc);
         }
-        catch (IOException e) {
+        catch (IOException | SQLException e) {
             throw new IgniteCheckedException(e);
         }
         finally {
@@ -591,7 +577,7 @@ public class GridLuceneIndex implements AutoCloseable {
 
         /** {@inheritDoc} */
         @Override protected void onClose() throws IgniteCheckedException {
-            //- U.closeQuiet(reader);
+            //- U.closeQuiet(reader);        	
         }
     }
 }

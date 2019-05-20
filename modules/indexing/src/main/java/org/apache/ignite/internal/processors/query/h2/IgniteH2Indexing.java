@@ -125,6 +125,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSchemaStatement;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridMapQueryExecutor;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
@@ -963,6 +964,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridSqlStatement cmdH2 = cmd.commandH2();
 
         if (qryDesc.local()) {
+        	//add@byron
+        	if(cmdH2!=null && cmdH2 instanceof GridSqlSchemaStatement) {
+        		GridSqlSchemaStatement sCmdH2 = (GridSqlSchemaStatement) cmdH2;
+        		
+        		int ret = sCmdH2.getCmd().update();
+        		
+        		if(ret>0) {
+        			return zeroCursor();
+        		}
+        		return zeroCursor();
+        	}
+        	//end@
             throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }

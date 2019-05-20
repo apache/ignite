@@ -84,11 +84,12 @@ module.exports.factory = function(settings, mongoose, schemas) {
 
             const helper = new MongodHelper(['--port', '27017', '--dbpath', `${process.cwd()}/user_data`]);
 
+/** remove@byron not download mongodb
             helper.mongoBin.mongoDBPrebuilt.mongoDBDownload = new MongoDBDownload({
                 downloadDir: `${process.cwd()}/libs/mongodb`,
                 version: '3.4.7'
             });
-
+*/
             let mongodRun;
 
             if (settings.packaged) {
