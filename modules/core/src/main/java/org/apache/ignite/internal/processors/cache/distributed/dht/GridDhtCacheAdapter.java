@@ -811,7 +811,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         MvccSnapshot mvccSnapshot,
         AffinityTopologyVersion topVer
     ) {
-        IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut = getAllAsync0(keys,
+        return getAllAsync0(keys,
             readerArgs,
             readThrough,
             /*don't check local tx. */false,
@@ -822,33 +822,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
-            false,
+            consistency,
             /*need version*/true,
             txLbl,
             mvccSnapshot);
-
-        if (!consistency)
-            return fut;
-        else {
-            GridConsistencyGetWithCheckFuture cFut = new GridConsistencyGetWithCheckFuture(
-                topVer,
-                fut,
-                ctx,
-                keys,
-                readThrough,
-                subjId,
-                taskName,
-                false,
-                recovery,
-                expiryPlc,
-                skipVals,
-                txLbl,
-                mvccSnapshot);
-
-            cFut.init();
-
-            return cFut;
-        }
     }
 
     /**

@@ -73,8 +73,7 @@ public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstrac
             expiryPlc,
             skipVals,
             txLbl,
-            mvccSnapshot,
-            false);
+            mvccSnapshot);
 
         this.ctx = ctx;
     }
@@ -86,18 +85,6 @@ public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstrac
 
         if (checkIsDone())
             onDone(checkAndFix());
-    }
-
-    /**
-     *
-     */
-    private boolean checkIsDone() {
-        for (IgniteInternalFuture fut : futs.values()) {
-            if (!fut.isDone())
-                return false;
-        }
-
-        return true;
     }
 
     /**

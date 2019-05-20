@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridConsistencyGetWithCheckFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -2041,6 +2042,50 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
 
                 boolean readNoEntry = ctx.readNoEntry(expiry, readerArgs != null);
+
+                if (consistency) {
+                    return new GridConsistencyGetWithCheckFuture(
+                        topVer,
+                        ctx,
+                        keys,
+                        readThrough,
+                        subjId,
+                        taskName,
+                        false,
+                        recovery,
+                        expiry,
+                        skipVals,
+                        null,
+                        mvccSnapshot)
+                        .init()
+                        .chain(new C1<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>, Map<K1, V1>>() {
+                            @Override public Map<K1, V1> apply(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> f) {
+                                try {
+                                    for (Map.Entry<KeyCacheObject, EntryGetResult> entry : f.get().entrySet()) {
+                                        EntryGetResult getRes = entry.getValue();
+
+                                        ctx.addResult(map,
+                                            entry.getKey(),
+                                            getRes.value(),
+                                            skipVals,
+                                            keepCacheObjects,
+                                            deserializeBinary,
+                                            false,
+                                            getRes,
+                                            getRes.version(),
+                                            0,
+                                            0,
+                                            needVer);
+                                    }
+
+                                    return map;
+                                }
+                                catch (Exception e) {
+                                    throw new GridClosureException(e);
+                                }
+                            }
+                        });
+                }
 
                 for (KeyCacheObject key : keys) {
                     while (true) {

@@ -18,30 +18,26 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.consistency;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 
 /**
- * Checks data consistency.
- * Checks that each backup value equals to primary value.
+ * Checks data consistency. Checks that each backup value equals to primary value.
  */
 public class GridConsistencyGetWithCheckFuture extends GridConsistencyAbstractGetFuture {
-    /** Primary node's (current) get future. */
-    private final IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> primaryFut;
-
     /**
      *
      */
     public GridConsistencyGetWithCheckFuture(
         AffinityTopologyVersion topVer,
-        IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> primaryFut,
         GridCacheContext cctx,
         Collection<KeyCacheObject> keys,
         boolean readThrough,
@@ -64,12 +60,7 @@ public class GridConsistencyGetWithCheckFuture extends GridConsistencyAbstractGe
             expiryPlc,
             skipVals,
             txLbl,
-            mvccSnapshot,
-            true);
-
-        this.primaryFut = primaryFut;
-
-        primaryFut.listen(this::onResult);
+            mvccSnapshot);
     }
 
     /** {@inheritDoc} */
@@ -78,45 +69,34 @@ public class GridConsistencyGetWithCheckFuture extends GridConsistencyAbstractGe
             return;
 
         if (checkIsDone()) {
-            if (isConsistent())
-                onDone(primaryFut.result());
-            else {
-                onDone(null,
-                    new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
+            try {
+                onDone(checkAndFill());
+            }
+            catch (IgniteConsistencyViolationException e) {
+                onDone(e);
             }
         }
     }
 
     /**
-     *
+     * Fill entries map and check consistency.
      */
-    private boolean checkIsDone() {
-        for (IgniteInternalFuture fut : futs.values()) {
-            if (!fut.isDone())
-                return false;
-        }
+    private Map<KeyCacheObject, EntryGetResult> checkAndFill() throws IgniteConsistencyViolationException {
+        Map<KeyCacheObject, EntryGetResult> map = new HashMap<>();
 
-        return primaryFut.isDone();
-    }
+        for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
+            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
+                KeyCacheObject key = entry.getKey();
+                EntryGetResult candidae = entry.getValue();
+                EntryGetResult old = map.get(key);
 
-    /**
-     *
-     */
-    private boolean isConsistent() {
-        Map<KeyCacheObject, EntryGetResult> primaryRes = primaryFut.result();
+                if (old != null && old.version().compareTo(candidae.version()) != 0)
+                    throw new IgniteConsistencyViolationException("Distributed cache consistency violation detected.");
 
-        for (IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut : futs.values()) {
-            Map<KeyCacheObject, EntryGetResult> backupRes = fut.result();
-
-            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : backupRes.entrySet()) {
-                EntryGetResult primary = primaryRes.get(entry.getKey());
-                EntryGetResult backup = backupRes.get(entry.getKey());
-
-                if (!primary.version().equals(backup.version()))
-                    return false;
+                map.put(key, candidae);
             }
         }
 
-        return true;
+        return map;
     }
 }

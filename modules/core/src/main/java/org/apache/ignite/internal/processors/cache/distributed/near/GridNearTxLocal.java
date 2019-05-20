@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridConsistencyGetWithCheckFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridConsistencyGetWithRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
@@ -2375,7 +2376,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (consistency) {
-                            GridConsistencyGetWithRecoveryFuture fut = new GridConsistencyGetWithRecoveryFuture(
+                            return new GridConsistencyGetWithRecoveryFuture(
                                 topVer,
                                 cacheCtx,
                                 keys,
@@ -2387,56 +2388,59 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 cacheCtx.cache().expiryPolicy(expiryPlc0),
                                 skipVals,
                                 label(),
-                                mvccSnapshot);
+                                mvccSnapshot)
+                                .init()
+                                .chain(
+                                    new C1<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>, Map<K, V>>() {
+                                        @Override public Map<K, V> apply(
+                                            IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> f) {
+                                            try {
+                                                // For every fixed entry.
+                                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : f.get().entrySet()) {
+                                                    EntryGetResult getRes = entry.getValue();
 
-                            fut.init();
+                                                    enlistWrite(
+                                                        cacheCtx,
+                                                        entryTopVer,
+                                                        entry.getKey(),
+                                                        getRes.value(),
+                                                        expiryPlc0,
+                                                        null,
+                                                        null,
+                                                        false,
+                                                        false,
+                                                        null,
+                                                        null,
+                                                        skipStore,
+                                                        false,
+                                                        !deserializeBinary,
+                                                        recovery,
+                                                        consistency,
+                                                        null);
 
-                            return new GridEmbeddedFuture<>(
-                                new IgniteBiClosure<Map<KeyCacheObject, EntryGetResult>, Exception, Map<K, V>>() {
-                                    @Override public Map<K, V>
-                                    apply(Map<KeyCacheObject, EntryGetResult> map, Exception e) {
-                                        // For every fixed entry.
-                                        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : map.entrySet()) {
-                                            EntryGetResult getRes = entry.getValue();
+                                                    // Rewriting fixed, initially filled by explicit lock operation.
+                                                    cacheCtx.addResult(retMap,
+                                                        entry.getKey(),
+                                                        getRes.value(),
+                                                        skipVals,
+                                                        keepCacheObjects,
+                                                        deserializeBinary,
+                                                        false,
+                                                        getRes,
+                                                        getRes.version(),
+                                                        0,
+                                                        0,
+                                                        needVer);
+                                                }
 
-                                            enlistWrite(
-                                                cacheCtx,
-                                                entryTopVer,
-                                                entry.getKey(),
-                                                getRes.value(),
-                                                expiryPlc0,
-                                                null,
-                                                null,
-                                                false,
-                                                false,
-                                                null,
-                                                null,
-                                                skipStore,
-                                                false,
-                                                !deserializeBinary,
-                                                recovery,
-                                                consistency,
-                                                null);
-
-                                            cacheCtx.addResult(retMap,
-                                                entry.getKey(),
-                                                getRes.value(),
-                                                skipVals,
-                                                keepCacheObjects,
-                                                deserializeBinary,
-                                                false,
-                                                getRes,
-                                                getRes.version(),
-                                                0,
-                                                0,
-                                                needVer);
+                                                return Collections.emptyMap();
+                                            }
+                                            catch (Exception e) {
+                                                throw new GridClosureException(e);
+                                            }
                                         }
-
-                                        return Collections.emptyMap();
                                     }
-                                },
-                                fut
-                            );
+                                );
                         }
 
                         return new GridFinishedFuture<>(Collections.emptyMap());
@@ -2637,9 +2641,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         // Because of found violation entry was not finally marked as valid (!hasPreviousValue).
                         // Retrying get operation to get fixed value.
                         if (consistency && !txEntry.hasPreviousValue()) {
-                            while (true) {
-                                assert optimistic() || readCommitted();
+                            assert optimistic() || readCommitted();
 
+                            while (true) {
                                 try {
                                     missed.put(key, txEntry.cached().version());
 
@@ -3107,6 +3111,46 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             });
         }
         else if (cacheCtx.isColocated()) {
+            if (consistency) {
+                return new GridConsistencyGetWithCheckFuture(
+                    topVer,
+                    cacheCtx,
+                    keys,
+                    readThrough,
+                    subjId,
+                    taskName,
+                    false,
+                    recovery,
+                    expiryPlc0,
+                    skipVals,
+                    lb,
+                    mvccSnapshot)
+                    .init()
+                    .chain(new C1<IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>>, Void>() {
+                        @Override public Void apply(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> f) {
+                            try {
+                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : f.get().entrySet())
+                                    processLoaded(
+                                        entry.getKey(),
+                                        needVer ? entry.getValue() : entry.getValue().value(),
+                                        needVer,
+                                        skipVals,
+                                        c);
+
+                                return null;
+                            }
+                            catch (IgniteConsistencyViolationException e) {
+                                throw new GridClosureException(e);
+                            }
+                            catch (Exception e) {
+                                setRollbackOnly();
+
+                                throw new GridClosureException(e);
+                            }
+                        }
+                    });
+            }
+
             if (keys.size() == 1) {
                 final KeyCacheObject key = F.first(keys);
 

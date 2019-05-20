@@ -58,16 +58,13 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
         IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         String txLbl,
-        MvccSnapshot mvccSnapshot,
-        boolean backups) {
+        MvccSnapshot mvccSnapshot) {
         this.topVer = topVer;
 
         Map<ClusterNode, Collection<KeyCacheObject>> mappings = new HashMap<>();
 
         for (KeyCacheObject key : keys) {
-            Collection<ClusterNode> nodes = backups ?
-                ctx.affinity().backupsByKey(key, topVer) :
-                ctx.affinity().nodesByKey(key, topVer);
+            Collection<ClusterNode> nodes = ctx.affinity().nodesByKey(key, topVer);
 
             for (ClusterNode node : nodes) {
                 mappings.computeIfAbsent(node, k -> new HashSet<>());
@@ -106,9 +103,23 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
     /**
      *
      */
-    public void init() {
+    public GridConsistencyAbstractGetFuture init() {
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values())
             fut.init(topVer);
+
+        return this;
+    }
+
+    /**
+     *
+     */
+    protected boolean checkIsDone() {
+        for (IgniteInternalFuture fut : futs.values()) {
+            if (!fut.isDone())
+                return false;
+        }
+
+        return true;
     }
 
     /**
