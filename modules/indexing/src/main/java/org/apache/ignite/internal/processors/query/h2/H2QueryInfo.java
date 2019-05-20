@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.command.Prepared;
 import org.h2.engine.Session;
 
 /**
@@ -52,8 +53,8 @@ public class H2QueryInfo {
     /** Lazy mode. */
     private final boolean lazy;
 
-    /** Query plan. */
-    private final String queryPlan;
+    /** Prepared statement. */
+    private final Prepared stmt;
 
     /**
      * @param type Query type.
@@ -76,7 +77,7 @@ public class H2QueryInfo {
             enforceJoinOrder = s.isForceJoinOrder();
             distributedJoin = s.isJoinBatchEnabled();
             lazy = s.isLazyQueryExecution();
-            queryPlan = GridSqlQueryParser.prepared(stmt).getPlanSQL();
+            this.stmt = GridSqlQueryParser.prepared(stmt);
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Cannot collect query info", IgniteQueryErrorCode.UNKNOWN, e);
@@ -119,7 +120,7 @@ public class H2QueryInfo {
             .append(sql);
 
         if (type != QueryType.REDUCE)
-            msgSb.append("', plan=").append(queryPlan);
+            msgSb.append("', plan=").append(stmt.getPlanSQL());
 
         msgSb.append(']');
 

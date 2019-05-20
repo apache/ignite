@@ -198,6 +198,37 @@ public class H2PkHashIndex extends GridH2IndexBase {
         throw new UnsupportedOperationException();
     }
 
+    /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
+        CacheDataRowStore.setSkipVersion(true);
+
+        try {
+            Collection<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
+
+            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+                int part = store.partId();
+
+                if (partsFilter == null || partsFilter.applyPartition(part))
+                    cursors.add(store.cursor(cctx.cacheId()));
+            }
+
+            Cursor pkHashCursor = new H2PkHashIndexCursor(cursors.iterator());
+
+            long res = 0;
+
+            while (pkHashCursor.next())
+                res++;
+
+            return res;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            CacheDataRowStore.setSkipVersion(false);
+        }
+    }
+
     /**
      * Cursor.
      */

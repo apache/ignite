@@ -50,6 +50,8 @@ import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
@@ -71,7 +73,6 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_MAX_SNAPSHOT;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
@@ -221,8 +222,8 @@ public class GridH2Table extends TableBase {
 
         lock = new ReentrantReadWriteLock();
 
-        if (hasHashIndex) { // We are on affinity node if hash index exists.
-            long totalTblSize = rowCountAllSegments(false);
+        if (cacheInfo.affinityNode()) {
+            long totalTblSize = rowCount(false);
 
             size.add(totalTblSize);
         }
@@ -1111,7 +1112,7 @@ public class GridH2Table extends TableBase {
      * @return {@code True} if the current query is a local query.
      */
     private boolean localQuery() {
-        QueryContext qctx = contextRegistry().getThreadLocal();
+        QueryContext qctx = rowDescriptor().indexing().queryContextRegistry().getThreadLocal();
 
         assert qctx != null;
 
@@ -1129,7 +1130,7 @@ public class GridH2Table extends TableBase {
 
         // Update stats if total table size changed significantly since the last stats update.
         if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt)) {
-            long primaryRowCnt = rowCountAllSegments(true);
+            long primaryRowCnt = rowCount(true);
 
             tblStats = new TableStatistics(curTotalRowCnt, primaryRowCnt);
         }
@@ -1145,7 +1146,7 @@ public class GridH2Table extends TableBase {
 
         double relativeChange = delta / (statsRowCnt + 1); // Add 1 to avoid division by zero.
 
-        // Return true if actual table size has changed more than the threshold since last stats update.
+        // Return true if an actual table size has changed more than the threshold since the last stats update.
         return relativeChange > STATS_UPDATE_THRESHOLD;
     }
 
@@ -1153,75 +1154,25 @@ public class GridH2Table extends TableBase {
      * Retrieves partitions rows count for all segments.
      *
      * @param primaryOnly If {@code true}, only primary rows will be counted.
-     * @return Primary rows count.
+     * @return Rows count.
      */
-    private long rowCountAllSegments(boolean primaryOnly) {
-        int segCnt = ((GridH2IndexBase)getUniqueIndex()).segmentsCount();
+    private long rowCount(boolean primaryOnly) {
+        IndexingQueryCacheFilter partsFilter = primaryOnly ? backupFilter() : null;
 
-        long size = 0;
-
-        for (int seg = 0; seg < segCnt; seg++)
-            size += rowCountForSegment(seg, primaryOnly);
-
-        return size;
+        return ((GridH2IndexBase)getUniqueIndex()).totalRowCount(partsFilter);
     }
 
     /**
-     * Retrieves row count for the given segment.
-     *
-     * @param seg Segment.
-     * @param primaryOnly If {@code true}, only primary rows will be counted.
-     * @return Primary rows count.
+     * @return Backup filter for the current topology.
      */
-    private long rowCountForSegment(int seg, boolean primaryOnly) {
-        // Save previous context.
-        QueryContext prevQryCtx = contextRegistry().getThreadLocal();
-
-        contextRegistry().clearThreadLocal();
-
-        setRowCountContext(seg, primaryOnly);
-
-        try {
-            return getRowCount(null);
-        }
-        finally {
-            contextRegistry().clearThreadLocal();
-
-            // Restore the previous context.
-            contextRegistry().setThreadLocal(prevQryCtx);
-        }
-    }
-
-    /**
-     * @return Query context registry.
-     */
-    private QueryContextRegistry contextRegistry() {
-        return rowDescriptor().indexing().queryContextRegistry();
-    }
-
-    /**
-     * Sets temporary query context for retrieving partitions row count in the given segment.
-     *
-     * @param seg Segment.
-     * @param primaryOnly If {@code true}, only primary rows will be counted.
-     */
-    private void setRowCountContext(int seg, boolean primaryOnly) {
+    @Nullable private IndexingQueryCacheFilter backupFilter() {
         IgniteH2Indexing indexing = rowDescriptor().indexing();
 
         AffinityTopologyVersion topVer = indexing.readyTopologyVersion();
 
-        boolean mvcc = indexing.kernalContext().cache().context().cacheContext(cacheId()).mvccEnabled();
+        IndexingQueryFilter filter = indexing.backupFilter(topVer, null);
 
-        QueryContext qctx = new QueryContext(
-            seg,
-            primaryOnly ? indexing.backupFilter(topVer, null) : null,
-            null,
-            mvcc ? MVCC_MAX_SNAPSHOT : null,
-            null,
-            true
-        );
-
-        contextRegistry().setThreadLocal(qctx);
+        return filter.forCache(cacheName());
     }
 
     /** {@inheritDoc} */
