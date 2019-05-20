@@ -19,7 +19,6 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 
 import java.io.Serializable;
 import java.util.Collection;
-
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -54,7 +53,8 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @param sumsHolder Feature sum, squared sum and count sum per label. This data is used for future model updating.
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
-                                   double[] classProbabilities, double[] labels, Collection<Integer> featureIdsToSkip, GaussianNaiveBayesSumsHolder sumsHolder) {
+        double[] classProbabilities, double[] labels, Collection<Integer> featureIdsToSkip,
+        GaussianNaiveBayesSumsHolder sumsHolder) {
         this.means = means;
         this.variances = variances;
         this.classProbabilities = classProbabilities;
@@ -73,7 +73,7 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         double[] probapilityPowers = probabilityPowers(vector);
 
         int max = 0;
-        for (int i = 0; i <probapilityPowers.length; i++) {
+        for (int i = 0; i < probapilityPowers.length; i++) {
             probapilityPowers[i] += Math.log(classProbabilities[i]);
 
             if (probapilityPowers[i] > probapilityPowers[max]) {
@@ -83,8 +83,10 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return labels[max];
     }
 
-    /** Returns an array where the index correapons a label, and value corresponds probalility to be this label.
-     * The prior probabilities are not count. */
+    /**
+     * Returns an array where the index correapons a label, and value corresponds probalility to be this label. The
+     * prior probabilities are not count.
+     */
     public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[classProbabilities.length];
 

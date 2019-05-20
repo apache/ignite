@@ -44,7 +44,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     /** {@inheritDoc} */
     @Override public boolean isUpdateable(CompoundNaiveBayesModel mdl) {
         return gaussianNaiveBayesTrainer.isUpdateable(mdl.getGaussianModel())
-                && discreteNaiveBayesTrainer.isUpdateable(mdl.getDiscreteModel());
+            && discreteNaiveBayesTrainer.isUpdateable(mdl.getDiscreteModel());
     }
 
     /** {@inheritDoc} */
@@ -56,21 +56,21 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
 
         CompoundNaiveBayesModel compoundModel = new CompoundNaiveBayesModel()
-                .withLabels(labels)
-                .wirhPriorProbabilities(clsProbabilities);
+            .withLabels(labels)
+            .wirhPriorProbabilities(clsProbabilities);
 
         if (gaussianNaiveBayesTrainer != null) {
             GaussianNaiveBayesModel model = (mdl == null)
-                    ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor)
-                    : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor) ;
+                ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor)
+                : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor);
 
             compoundModel.withGaussianModel(model);
         }
 
         if (discreteNaiveBayesTrainer != null) {
             DiscreteNaiveBayesModel model = (mdl == null)
-                    ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor)
-                    : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor) ;
+                ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor)
+                : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor);
 
             compoundModel.withDiscreteModel(model);
         }

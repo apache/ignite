@@ -48,11 +48,11 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         }
 
         if (discreteModel != null) {
-            probapilityPowers = sum(probapilityPowers,  discreteModel.probabilityPowers(vector));
+            probapilityPowers = sum(probapilityPowers, discreteModel.probabilityPowers(vector));
         }
 
         if (gaussianModel != null) {
-            probapilityPowers = sum(probapilityPowers,  gaussianModel.probabilityPowers(vector));
+            probapilityPowers = sum(probapilityPowers, gaussianModel.probabilityPowers(vector));
         }
 
         int maxLabelIndex = 0;
@@ -97,7 +97,7 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
         double[] result = new double[arr1.length];
 
-        for (int i = 0; i <arr1.length; i++) {
+        for (int i = 0; i < arr1.length; i++) {
             result[i] = arr1[i] + arr2[i];
         }
         return result;

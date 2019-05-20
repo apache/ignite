@@ -113,7 +113,8 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                     sqSum = res.featureSquaredSumsPerLbl.get(label);
                     int index = 0;
                     for (int j = 0; j < features.size(); j++) {
-                        if (featureIdsToSkip.contains(j)) continue;
+                        if (featureIdsToSkip.contains(j))
+                            continue;
                         double x = features.get(index);
                         toMeans[index] += x;
                         sqSum[index] += x * x;
@@ -155,7 +156,8 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
                 int index = 0;
                 for (int i = 0; i < featureCount; i++) {
-                    if(featureIdsToSkip.contains(i)) continue;
+                    if (featureIdsToSkip.contains(i))
+                        continue;
                     means[lbl][index] = sum[index] / count;
                     variances[lbl][i] = (sqSum[index] - sum[index] * sum[index] / count) / count;
                     ++index;

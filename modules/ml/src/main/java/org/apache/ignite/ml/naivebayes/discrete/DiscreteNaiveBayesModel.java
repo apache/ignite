@@ -19,7 +19,6 @@ package org.apache.ignite.ml.naivebayes.discrete;
 
 import java.io.Serializable;
 import java.util.Collection;
-
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -62,7 +61,7 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @param sumsHolder Amount values which are abouve the threshold per label.
      */
     public DiscreteNaiveBayesModel(double[][][] probabilities, double[] clsProbabilities, double[] labels,
-                                   double[][] bucketThresholds, Collection<Integer> featureIdsToSkip, DiscreteNaiveBayesSumsHolder sumsHolder) {
+        double[][] bucketThresholds, Collection<Integer> featureIdsToSkip, DiscreteNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.clsProbabilities = clsProbabilities;
         this.labels = labels;
@@ -92,12 +91,13 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             }
         }
 
-
         return labels[maxLabelIndex];
     }
 
-    /** Returns an array where the index correapons a label, and value corresponds probalility to be this label.
-     * The prior probabilities are not count. */
+    /**
+     * Returns an array where the index correapons a label, and value corresponds probalility to be this label. The
+     * prior probabilities are not count.
+     */
     public double[] probabilityPowers(Vector vector) {
         double[] probapilityPowers = new double[clsProbabilities.length];
 
