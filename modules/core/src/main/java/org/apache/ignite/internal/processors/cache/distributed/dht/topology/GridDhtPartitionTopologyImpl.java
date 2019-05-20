@@ -782,7 +782,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                             "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                 }
 
-                                if (exchFut.isClearingPartition(grp, p))
+                                // If partition was not still cleared yet start clearing if needed.
+                                // Important: avoid calling clearAsync multiple times in the same rebalance session
+                                // or bad things may happen depending on timing.
+                                if (exchFut.isClearingPartition(grp, p) && !locPart.isClearing() && !locPart.isEmpty())
                                     locPart.clearAsync();
                             }
                             else

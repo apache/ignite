@@ -1172,9 +1172,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.name = name;
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            pCntr = grp.hasAtomicCaches() ? new PartitionAtomicUpdateCounterImpl() :
-                    ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
-                        new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
+
+            if (grp.hasAtomicCaches())
+                pCntr = new PartitionAtomicUpdateCounterImpl();
+            else {
+                pCntr = ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
+                    new PartitionTxUpdateCounterDebugWrapper(grp, partId) : new PartitionTxUpdateCounterImpl();
+            }
         }
 
         /**
