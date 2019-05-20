@@ -200,7 +200,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @GridToStringExclude
     private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap<>();
 
-    /** */
+    /** Last initialized topology future. */
     @Nullable private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
     /** */
@@ -1229,7 +1229,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public void refreshPartitions() { refreshPartitions(cctx.cache().cacheGroups()); }
 
     /**
-     * @param nodes Nodes.
+     * @param nodes Target Nodes.
      * @param msgTopVer Topology version. Will be added to full message.
      * @param grps Selected cache groups.
      */

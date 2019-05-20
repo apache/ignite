@@ -109,7 +109,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** */
     private final AtomicReferenceArray<GridDhtLocalPartition> locParts;
 
-    /** Node to partition map. */
+    /** Node to partition map from all nodes. */
     private GridDhtPartitionFullMap node2part;
 
     /** */
@@ -632,7 +632,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         ClusterNode oldest = discoCache.oldestAliveServerNode();
 
-        // If this is the oldest node.
+        // If this is the oldest node (coordinator) or cache was added during this exchange
         if (oldest != null && (ctx.localNode().equals(oldest) || grpStarted)) {
             if (node2part == null) {
                 node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
