@@ -53,7 +53,10 @@ public enum MLSandboxDatasets {
     BOSTON_HOUSE_PRICES("modules/ml/src/main/resources/datasets/boston_housing_dataset.txt", false, ","),
 
     /** Example from book Barber D. Bayesian reasoning and machine learning. Chapter 10. */
-    ENGLISH_VS_SCOTTISH("modules/ml/src/main/resources/datasets/english_vs_scottish_binary_dataset.csv", true, ",");
+    ENGLISH_VS_SCOTTISH("modules/ml/src/main/resources/datasets/english_vs_scottish_binary_dataset.csv", false, ","),
+
+    /** A dataset with discrete and continious features. */
+    MIXED_DATASET("modules/ml/src/main/resources/datasets/mixed_dataset.csv", true, ",");
 
     /** Filename. */
     private final String filename;
