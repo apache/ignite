@@ -50,7 +50,6 @@ public class TestRecovery extends TestDb {
             testRecoverTestMode();
         }
         testRecoverClob();
-        testRecoverFulltext();
         testRedoTransactions();
         testCorrupt();
         testWithTransactionLog();
@@ -85,25 +84,6 @@ public class TestRecovery extends TestDb {
                 getBaseDir() + "/recovery.h2.sql'");
         stat = conn.createStatement();
         stat.execute("select * from test");
-        conn.close();
-    }
-
-    private void testRecoverFulltext() throws Exception {
-        DeleteDbFiles.execute(getBaseDir(), "recovery", true);
-        Connection conn = getConnection("recovery");
-        Statement stat = conn.createStatement();
-        stat.execute("CREATE ALIAS IF NOT EXISTS FTL_INIT " +
-                "FOR \"org.h2.fulltext.FullTextLucene.init\"");
-        stat.execute("CALL FTL_INIT()");
-        stat.execute("create table test(id int primary key, name varchar) as " +
-                "select 1, 'Hello'");
-        stat.execute("CALL FTL_CREATE_INDEX('PUBLIC', 'TEST', 'NAME')");
-        conn.close();
-        Recover.main("-dir", getBaseDir(), "-db", "recovery");
-        DeleteDbFiles.execute(getBaseDir(), "recovery", true);
-        conn = getConnection(
-                "recovery;init=runscript from '" +
-                getBaseDir() + "/recovery.h2.sql'");
         conn.close();
     }
 

@@ -50,8 +50,6 @@
 
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
-        <osgi.version>4.2.0</osgi.version>
-        <h2.lucene.version>5.5.5</h2.lucene.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -63,37 +61,9 @@
             <version>3.1.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>${h2.lucene.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-analyzers-common</artifactId>
-            <version>${h2.lucene.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-queryparser</artifactId>
-            <version>${h2.lucene.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j16.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.core</artifactId>
-            <version>${osgi.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.enterprise</artifactId>
-            <version>${osgi.version}</version>
         </dependency>
         <dependency>
             <groupId>org.locationtech.jts</groupId>
@@ -108,12 +78,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j16.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.2.5.jre7</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -154,7 +118,6 @@
                     <include>**/*.js</include>
                     <include>org/h2/res/help.csv</include>
                     <include>org/h2/res/javadoc.properties</include>
-                    <include>org/h2/server/pg/pg_catalog.sql</include>
                     <include>META-INF/**</include>
                 </includes>
             </resource>
@@ -214,7 +177,6 @@
                         <h2.useThreadContextClassLoader>true</h2.useThreadContextClassLoader>
                         <h2.clientTraceDirectory>target/trace.db/</h2.clientTraceDirectory>
                         <h2.javaSystemCompiler>false</h2.javaSystemCompiler>
-                        <!--<java.io.tmpdir>./target/temp</java.io.tmpdir>-->
                     </systemPropertyVariables>
                     <additionalClasspathElements>
                         <additionalClasspathElement>${project.build.outputDirectory}</additionalClasspathElement>
