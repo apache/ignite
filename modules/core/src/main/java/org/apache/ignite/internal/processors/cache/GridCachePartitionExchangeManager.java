@@ -2584,12 +2584,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (currentThreadIsExchanger())
             exchWorker.blockingSectionEnd();
     }
-
-    /** */
-    public boolean currentThreadIsExchanger() {
-        return exchWorker != null && Thread.currentThread() == exchWorker.runner();
-    }
-
     /**
      * @return {@code True} If there is any exchange future in progress.
      */
