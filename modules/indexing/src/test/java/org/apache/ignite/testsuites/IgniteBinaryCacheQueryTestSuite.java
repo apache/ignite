@@ -259,20 +259,20 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    // Dynamic index create/drop tests.
-    SchemaExchangeSelfTest.class,
+    SqlConnectorConfigurationValidationSelfTest.class,
+    ClientConnectorConfigurationValidationSelfTest.class,
 
-    DynamicIndexServerCoordinatorBasicSelfTest.class,
-    DynamicIndexServerBasicSelfTest.class,
-    DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class,
-    DynamicIndexServerNodeFIlterBasicSelfTest.class,
-    DynamicIndexClientBasicSelfTest.class,
+    SqlSchemaSelfTest.class,
+    SqlIllegalSchemaSelfTest.class,
+    MultipleStatementsSqlQuerySelfTest.class,
 
-    // Parsing
-    GridQueryParsingTest.class,
-    IgniteCacheSqlQueryErrorSelfTest.class,
-    IgniteCacheSqlDmlErrorSelfTest.class,
-    SqlUnsupportedSelfTest.class,
+    BasicIndexTest.class,
+    BasicIndexMultinodeTest.class,
+
+    // Misc tests.
+    QueryEntityValidationSelfTest.class,
+    DuplicateKeyValueClassesSelfTest.class,
+    GridCacheLazyQueryPartitionsReleaseTest.class,
 
     // Config.
     IgniteCacheDuplicateEntityConfigurationSelfTest.class,
