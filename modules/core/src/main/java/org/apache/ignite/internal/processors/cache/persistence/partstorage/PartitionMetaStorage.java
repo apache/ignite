@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
+ * Provides a way to associate any {@link Storable} implementation as partition metadata.
  */
 public interface PartitionMetaStorage<T extends Storable> {
     /**
@@ -32,7 +33,6 @@ public interface PartitionMetaStorage<T extends Storable> {
 
     /**
      * @param row Row.
-     * @param statHolder Stat holder.
      */
     public void insertDataRow(T row) throws IgniteCheckedException;
 
@@ -43,7 +43,7 @@ public interface PartitionMetaStorage<T extends Storable> {
     public void removeDataRowByLink(long link) throws IgniteCheckedException;
 
     /**
-     * Save metadata to pagememory.
+     * Saves storage metadata.
      */
     public void saveMetadata() throws IgniteCheckedException;
 }
