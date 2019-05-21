@@ -3,11 +3,12 @@
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * (the "License");
+  you may not use this file except in compliance with* the License.
+  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,12 +29,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -41,7 +43,9 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
@@ -74,8 +78,11 @@ public class JdbcThinTcpIo {
     /** Version 2.7.0. */
     private static final ClientListenerProtocolVersion VER_2_7_0 = ClientListenerProtocolVersion.create(2, 7, 0);
 
+    /** Version 2.8.0. */
+    private static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
+
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_7_0;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -121,6 +128,9 @@ public class JdbcThinTcpIo {
 
     /** Mutex. */
     private final Object mux = new Object();
+
+    /** Connection mutex. */
+    private final Object connMux = new Object();
 
     /** Current protocol version used to connection to Ignite. */
     private ClientListenerProtocolVersion srvProtocolVer;
@@ -377,7 +387,8 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_5_0.equals(srvProtoVer0)
+            if (VER_2_7_0.equals(srvProtoVer0)
+                || VER_2_5_0.equals(srvProtoVer0)
                 || VER_2_4_0.equals(srvProtoVer0)
                 || VER_2_3_0.equals(srvProtoVer0)
                 || VER_2_1_5.equals(srvProtoVer0))
@@ -464,14 +475,7 @@ public class JdbcThinTcpIo {
                     + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
             }
 
-            int cap = guessCapacity(req);
-
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
-                null, null);
-
-            req.writeBinary(writer, srvProtocolVer);
-
-            send(writer.array());
+            sendRequestRaw(req);
         }
         finally {
             synchronized (mux) {
@@ -482,12 +486,13 @@ public class JdbcThinTcpIo {
 
     /**
      * @param req Request.
+     * @param stmt Statement.
      * @return Server response.
      * @throws IOException In case of IO error.
      * @throws SQLException On concurrent access to JDBC connection.
      */
     @SuppressWarnings("unchecked")
-    JdbcResponse sendRequest(JdbcRequest req) throws SQLException, IOException {
+    JdbcResponse sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
                 throw new SQLException("Concurrent access to JDBC connection is not allowed"
@@ -499,15 +504,30 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            int cap = guessCapacity(req);
+            if (stmt != null) {
+                synchronized (stmt.cancellationMutex()) {
+                    if (stmt.isCancelled()) {
+                        if (req instanceof JdbcQueryCloseRequest)
+                            return new JdbcResponse(null);
 
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
+                        return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
+                    }
 
-            req.writeBinary(writer, srvProtocolVer);
+                    sendRequestRaw(req);
 
-            send(writer.array());
+                    if (req instanceof JdbcQueryExecuteRequest || req instanceof JdbcBatchExecuteRequest)
+                        stmt.currentRequestId(req.requestId());
+                }
+            }
+            else
+                sendRequestRaw(req);
 
-            return readResponse();
+            JdbcResponse resp = readResponse();
+
+            if (stmt != null && stmt.isCancelled())
+                return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, QueryCancelledException.ERR_MSG);
+            else
+                return resp;
         }
         finally {
             synchronized (mux) {
@@ -517,12 +537,23 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Sends cancel request.
+     *
+     * @param cancellationReq contains request id to be cancelled
+     * @throws IOException In case of IO error.
+     */
+    void sendCancelRequest(JdbcQueryCancelRequest cancellationReq) throws IOException {
+        sendRequestRaw(cancellationReq);
+    }
+
+    /**
      * @return Server response.
      * @throws IOException In case of IO error.
      */
     @SuppressWarnings("unchecked")
     JdbcResponse readResponse() throws IOException {
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null,
+            null, false);
 
         JdbcResponse res = new JdbcResponse();
 
@@ -530,7 +561,6 @@ public class JdbcThinTcpIo {
 
         return res;
     }
-
 
     /**
      * Try to guess request capacity.
@@ -559,6 +589,23 @@ public class JdbcThinTcpIo {
             cap = DYNAMIC_SIZE_MSG_CAP;
 
         return cap;
+    }
+
+    /**
+     * @param req Request.
+     * @throws IOException In case of IO error.
+     */
+    private void sendRequestRaw(JdbcRequest req) throws IOException {
+        int cap = guessCapacity(req);
+
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
+            null, null);
+
+        req.writeBinary(writer, srvProtocolVer);
+
+        synchronized (connMux) {
+            send(writer.array());
+        }
     }
 
     /**
@@ -651,6 +698,15 @@ public class JdbcThinTcpIo {
         assert srvProtocolVer != null;
 
         return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
+    }
+
+    /**
+     * @return True if query cancellation supported, false otherwise.
+     */
+    boolean isQueryCancellationSupported() {
+        assert srvProtocolVer != null;
+
+        return srvProtocolVer.compareTo(VER_2_8_0) >= 0;
     }
 
     /**

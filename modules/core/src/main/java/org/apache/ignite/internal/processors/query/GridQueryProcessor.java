@@ -3,11 +3,12 @@
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * (the "License");
+  you may not use this file except in compliance with* the License.
+  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -2114,6 +2115,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
+     * @param cancel Hook for query cancellation.
      * @return Cursor.
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(
@@ -2177,9 +2179,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
                 @Override public List<FieldsQueryCursor<List<?>>> applyx() {
                         GridQueryCancel cancel0 = cancel != null ? cancel : new GridQueryCancel();
-                    GridQueryCancel cancel = new GridQueryCancel();List<FieldsQueryCursor<List<?>>> res =
-                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, null,
-                            cancel );
+
+                        List<FieldsQueryCursor<List<?>>> res =
+                            idx.querySqlFields(
+                                schemaName,
+                                qry,
+                                cliCtx,
+                                keepBinary,
+                                failOnMultipleStmts,
+                                null,
+                                cancel0
+                            );
 
                         if (cctx != null)
                             sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
