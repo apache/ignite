@@ -42,7 +42,13 @@ public enum CommandList {
     CACHE("--cache", new CacheCommands()),
 
     /** */
-    WAL("--wal", new WalCommands());
+    WAL("--wal", new WalCommands()),
+
+    /** */
+    READ_ONLY_ENABLE("--read-only-on", new ClusterReadOnlyModeEnableCommand()),
+
+    /** */
+    READ_ONLY_DISABLE("--read-only-off", new ClusterReadOnlyModeDisableCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
@@ -90,7 +96,7 @@ public enum CommandList {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() { 
-        return text; 
+    @Override public String toString() {
+        return text;
     }
 }

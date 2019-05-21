@@ -51,7 +51,6 @@ import static org.apache.ignite.internal.commandline.cache.argument.ValidateInde
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -136,7 +135,7 @@ public class CommandHandlerParsingTest {
             fail("Expected exception hasn't been thrown");
         }
         catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            /* No-op */
         }
 
         try {
@@ -145,13 +144,11 @@ public class CommandHandlerParsingTest {
             fail("Expected exception hasn't been thrown");
         }
         catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            /* No-op */
         }
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testFindAndDeleteGarbage() {
         String nodeId = UUID.randomUUID().toString();
@@ -174,24 +171,21 @@ public class CommandHandlerParsingTest {
 
             FindAndDeleteGarbage.Arguments arg = (FindAndDeleteGarbage.Arguments)subcommand.subcommand().arg();
 
-            if (list.contains(nodeId)) {
+            if (list.contains(nodeId))
                 assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeId().toString());
-            }
-            else {
+            else
                 assertNull(arg.nodeId());
-            }
 
             assertEquals(list.contains(delete), arg.delete());
 
-            if (list.contains(groups)) {
+            if (list.contains(groups))
                 assertEquals(3, arg.groups().size());
-            }
-            else {
+            else
                 assertNull(arg.groups());
-            }
         }
     }
 
+    /** */
     private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>...optional) {
         List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
 
@@ -233,9 +227,8 @@ public class CommandHandlerParsingTest {
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
 
-        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1))) {
+        if (stopFunc != null && stopFunc.test(res.get(res.size() - 1)))
             return;
-        }
 
         if (source.size() == 1) {
             ArrayList<T> list = new ArrayList<>(res);
@@ -266,6 +259,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testExperimentalCommandIsDisabled() {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
 
         try {
             parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
@@ -301,7 +295,7 @@ public class CommandHandlerParsingTest {
                 fail("expected exception: Expected truststore");
             }
             catch (IllegalArgumentException e) {
-                e.printStackTrace();
+                /* No-op */
             }
 
             ConnectionAndSslParameters args = parseArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
@@ -346,7 +340,7 @@ public class CommandHandlerParsingTest {
                 fail("expected exception: Expected password");
             }
             catch (IllegalArgumentException e) {
-                e.printStackTrace();
+                /* No-op */
             }
 
             ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
@@ -386,7 +380,7 @@ public class CommandHandlerParsingTest {
             fail("expected exception: invalid arguments for --wal command");
         }
         catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            /* No-op */
         }
 
         try {
@@ -395,7 +389,7 @@ public class CommandHandlerParsingTest {
             fail("expected exception: invalid arguments for --wal command");
         }
         catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            /* No-op */
         }
     }
 
@@ -405,9 +399,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAutoConfirmationFlag() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd != CommandList.DEACTIVATE
-                && cmd != CommandList.BASELINE
-                && cmd != CommandList.TX)
+            if (cmd.command().confirmationPrompt() == null)
                 continue;
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
@@ -455,8 +447,12 @@ public class CommandHandlerParsingTest {
     }
 
     /** */
-    private void checkCommonParametersCorrectlyParsed(Command cmd, Arguments args, boolean autoConfirm) {
-        assertEquals(cmd, args.command());
+    private void checkCommonParametersCorrectlyParsed(
+        CommandList cmd,
+        ConnectionAndSslParameters args,
+        boolean autoConfirm
+    ) {
+        assertEquals(cmd.command(), args.command());
         assertEquals(DFLT_HOST, args.host());
         assertEquals(DFLT_PORT, args.port());
         assertEquals(autoConfirm, args.autoConfirmation());
@@ -469,7 +465,7 @@ public class CommandHandlerParsingTest {
     @Test
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (commandHaveRequeredArguments(cmd))
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
@@ -609,17 +605,6 @@ public class CommandHandlerParsingTest {
         assertNull(arg.getProjection());
         assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
     }
-
-    /** */
-    private boolean commandHaveRequeredArguments(Command cmd) {
-        return cmd == CommandList.CACHE ||
-            cmd == CommandList.WAL;
-        // TODO: FIX ME!
-//        ||
-//            cmd == Command.READ_ONLY_DISABLE ||
-//            cmd == Command.READ_ONLY_ENABLE;
-    }
-
 
     /**
      * @param args Raw arg list.
