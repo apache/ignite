@@ -259,24 +259,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    SqlConnectorConfigurationValidationSelfTest.class,
-    ClientConnectorConfigurationValidationSelfTest.class,
-
-    SqlSchemaSelfTest.class,
     SqlIllegalSchemaSelfTest.class,
-    MultipleStatementsSqlQuerySelfTest.class,
-
-    BasicIndexTest.class,
-    BasicIndexMultinodeTest.class,
-
-    // Misc tests.
-    QueryEntityValidationSelfTest.class,
-    DuplicateKeyValueClassesSelfTest.class,
-    GridCacheLazyQueryPartitionsReleaseTest.class,
-
-    // Config.
-    IgniteCacheDuplicateEntityConfigurationSelfTest.class,
-    IncorrectQueryEntityTest.class,
     IgniteDynamicSqlRestoreTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite {
