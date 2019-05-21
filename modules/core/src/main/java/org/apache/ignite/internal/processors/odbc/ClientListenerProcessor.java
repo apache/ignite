@@ -205,7 +205,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         log.warning(">>>> onKernelStart active=" + active + ", name=" + ctx.igniteInstanceName());
 
         if (srv != null) {
-            log.warning(">>>> Listener started");
+            log.warning(">>>> Listener started on port " + srv.port());
 
             srv.start();
         }

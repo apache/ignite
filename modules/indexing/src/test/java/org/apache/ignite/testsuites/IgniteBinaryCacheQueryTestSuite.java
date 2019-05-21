@@ -259,21 +259,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    SqlConnectorConfigurationValidationSelfTest.class,
-    ClientConnectorConfigurationValidationSelfTest.class,
-
-    SqlSchemaSelfTest.class,
-    SqlIllegalSchemaSelfTest.class,
-    MultipleStatementsSqlQuerySelfTest.class,
-
-    BasicIndexTest.class,
-    BasicIndexMultinodeTest.class,
-
-    // Misc tests.
-    QueryEntityValidationSelfTest.class,
-    DuplicateKeyValueClassesSelfTest.class,
-    GridCacheLazyQueryPartitionsReleaseTest.class,
-
     // Dynamic index create/drop tests.
     SchemaExchangeSelfTest.class,
 
