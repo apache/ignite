@@ -51,8 +51,6 @@ public class IgniteCacheTestSuite9 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty(GridAbstractTest.PERSISTENCE_IN_TESTS_IS_ALLOWED_PROPERTY, "false");
-
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 9");
 
         suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
