@@ -259,24 +259,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    AffinityKeyNameAndValueFieldNameConflictTest.class,
-    DmlInsideTransactionTest.class,
-    ComplexPrimaryKeyUnwrapSelfTest.class,
-    SqlNestedQuerySelfTest.class,
-    ExplainSelfTest.class,
-    RunningQueriesTest.class,
-
-    PartitionedSqlTest.class,
-    ReplicatedSqlTest.class,
-
-    SqlParserCreateIndexSelfTest.class,
-    SqlParserDropIndexSelfTest.class,
-    SqlParserTransactionalKeywordsSelfTest.class,
-    SqlParserBulkLoadSelfTest.class,
-    SqlParserSetStreamingSelfTest.class,
-    SqlParserKillQuerySelfTest.class,
-    SqlParserMultiStatementSelfTest.class,
-
     SqlConnectorConfigurationValidationSelfTest.class,
     ClientConnectorConfigurationValidationSelfTest.class,
 

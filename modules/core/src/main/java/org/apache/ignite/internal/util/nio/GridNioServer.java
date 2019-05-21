@@ -3030,6 +3030,8 @@ public class GridNioServer<T> {
                     if (log.isDebugEnabled())
                         log.debug("Accepted new client connection: " + sockCh.socket().getRemoteSocketAddress());
 
+                    log.warning(">>>> Accepted new client connection: " + sockCh.socket().getRemoteSocketAddress());
+
                     addRegistrationRequest(sockCh);
                 }
             }
