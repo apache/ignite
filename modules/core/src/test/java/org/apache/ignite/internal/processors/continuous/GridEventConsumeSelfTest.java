@@ -49,6 +49,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -119,7 +120,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            assertEquals(grid(0).cluster().nodes().toString(), GRID_CNT, grid(0).cluster().nodes().size());
+            assertTrue(GridTestUtils.waitForCondition(() -> GRID_CNT == grid(0).cluster().nodes().size(), 3000));
 
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
