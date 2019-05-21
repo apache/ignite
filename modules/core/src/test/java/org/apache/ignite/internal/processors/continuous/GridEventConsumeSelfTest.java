@@ -96,6 +96,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         if (include)
@@ -120,7 +122,10 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            assertTrue(GridTestUtils.waitForCondition(() -> GRID_CNT == grid(0).cluster().nodes().size(), 3000));
+            assertTrue(
+                grid(0).cluster().nodes().toString(),
+                GridTestUtils.waitForCondition(() -> GRID_CNT == grid(0).cluster().nodes().size(), 3000)
+            );
 
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
