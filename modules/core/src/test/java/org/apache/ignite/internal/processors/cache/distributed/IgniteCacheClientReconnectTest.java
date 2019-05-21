@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -123,29 +124,23 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      * @throws Exception If failed
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, value = "1")
     public void testClientReconnectOnExchangeHistoryExhaustion() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
+        startGrids(SRV_CNT);
 
-        try {
-            startGrids(SRV_CNT);
+        client = true;
 
-            client = true;
+        startGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
 
-            startGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
+        waitForTopology(SRV_CNT + CLIENTS_CNT);
 
-            waitForTopology(SRV_CNT + CLIENTS_CNT);
+        awaitPartitionMapExchange();
 
-            awaitPartitionMapExchange();
+        verifyPartitionToNodeMappings();
 
-            verifyPartitionToNodeMappings();
+        verifyAffinityTopologyVersions();
 
-            verifyAffinityTopologyVersions();
-
-            verifyCacheOperationsOnClients();
-        }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE);
-        }
+        verifyCacheOperationsOnClients();
     }
 
     /**
@@ -156,35 +151,28 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      * @throws Exception If failed
      */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, value = "1")
     public void testClientInForceServerModeStopsOnExchangeHistoryExhaustion() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
+        startGrids(SRV_CNT);
+
+        client = true;
+
+        forceServerMode = true;
+
+        int clientNodes = 24;
 
         try {
-            startGrids(SRV_CNT);
-
-            client = true;
-
-            forceServerMode = true;
-
-            int clientNodes = 10;
-
-            try {
-                startGridsMultiThreaded(SRV_CNT, clientNodes);
-            }
-            catch (IgniteCheckedException e) {
-                //Ignored: it is expected to get exception here
-            }
-
-            awaitPartitionMapExchange();
-
-            int topSize = G.allGrids().size();
-
-            assertTrue("Actual size: " + topSize, topSize < SRV_CNT + clientNodes);
-
+            startGridsMultiThreaded(SRV_CNT, clientNodes);
         }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE);
+        catch (IgniteCheckedException e) {
+            //Ignored: it is expected to get exception here
         }
+
+        awaitPartitionMapExchange();
+
+        int topSize = G.allGrids().size();
+
+        assertTrue("Actual size: " + topSize, topSize < SRV_CNT + clientNodes);
     }
 
     /**
