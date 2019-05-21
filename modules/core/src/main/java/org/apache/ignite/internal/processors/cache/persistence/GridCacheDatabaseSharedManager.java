@@ -4654,6 +4654,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     try {
                         GridFutureAdapter<?> res = new GridFutureAdapter<>();
 
+                        res.listen(fut -> updateHeartbeat());
+
                         asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
 
                         pendingTaskFuture.add(res);
