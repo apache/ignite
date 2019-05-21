@@ -304,6 +304,21 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isCancellationCommand(int cmdId) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerRequest(long reqId, int cmdType) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unregisterRequest(long reqId) {
+        // No-op.
+    }
+
     /**
      * Make query considering handler configuration.
      * @param schema Schema.

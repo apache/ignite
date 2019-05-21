@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -79,8 +79,8 @@ public class JdbcThinResultSet implements ResultSet {
     /** Statement. */
     private final JdbcThinStatement stmt;
 
-    /** Query ID. */
-    private final Long qryId;
+    /** Cursor ID. */
+    private final Long cursorId;
 
     /** Metadata. */
     private List<JdbcColumnMeta> meta;
@@ -139,7 +139,7 @@ public class JdbcThinResultSet implements ResultSet {
     JdbcThinResultSet(List<List<Object>> fields, List<JdbcColumnMeta> meta) {
         stmt = null;
         fetchSize = 0;
-        qryId = -1L;
+        cursorId = -1L;
         finished = true;
         isQuery = true;
         updCnt = -1;
@@ -159,7 +159,7 @@ public class JdbcThinResultSet implements ResultSet {
      * Creates new result set.
      *
      * @param stmt Statement.
-     * @param qryId Query ID.
+     * @param cursorId Cursor ID.
      * @param fetchSize Fetch size.
      * @param finished Finished flag.
      * @param rows Rows.
@@ -169,13 +169,13 @@ public class JdbcThinResultSet implements ResultSet {
      * @param closeStmt Close statement on the result set close.
      */
     @SuppressWarnings("OverlyStrongTypeCast")
-    JdbcThinResultSet(JdbcThinStatement stmt, long qryId, int fetchSize, boolean finished,
+    JdbcThinResultSet(JdbcThinStatement stmt, long cursorId, int fetchSize, boolean finished,
         List<List<Object>> rows, boolean isQuery, boolean autoClose, long updCnt, boolean closeStmt) {
         assert stmt != null;
         assert fetchSize > 0;
 
         this.stmt = stmt;
-        this.qryId = qryId;
+        this.cursorId = cursorId;
         this.fetchSize = fetchSize;
         this.finished = finished;
         this.isQuery = isQuery;
@@ -195,10 +195,10 @@ public class JdbcThinResultSet implements ResultSet {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean next() throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
 
         if ((rowsIter == null || !rowsIter.hasNext()) && !finished) {
-            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(qryId, fetchSize));
+            JdbcQueryFetchResult res = stmt.conn.sendRequest(new JdbcQueryFetchRequest(cursorId, fetchSize), stmt);
 
             rows = res.items();
             finished = res.last();
@@ -241,8 +241,8 @@ public class JdbcThinResultSet implements ResultSet {
             return;
 
         try {
-            if (!finished || (isQuery && !autoClose))
-                stmt.conn.sendRequest(new JdbcQueryCloseRequest(qryId));
+            if (!(stmt != null && stmt.isCancelled()) && (!finished || (isQuery && !autoClose)))
+                stmt.conn.sendRequest(new JdbcQueryCloseRequest(cursorId), stmt);
         }
         finally {
             closed = true;
@@ -719,8 +719,11 @@ public class JdbcThinResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        if (jdbcMeta == null)
+        if (jdbcMeta == null) {
+            ensureNotCancelled();
+
             jdbcMeta = new JdbcThinResultSetMetadata(meta());
+        }
 
         return jdbcMeta;
     }
@@ -1839,7 +1842,7 @@ public class JdbcThinResultSet implements ResultSet {
      */
     @SuppressWarnings("unchecked")
     private Object getValue(int colIdx) throws SQLException {
-        ensureNotClosed();
+        ensureAlive();
         ensureHasCurrentRow();
 
         try {
@@ -1865,6 +1868,27 @@ public class JdbcThinResultSet implements ResultSet {
     }
 
     /**
+     * Ensures that result set is not cancelled.
+     *
+     * @throws SQLException If result set is cancelled.
+     */
+    private void ensureNotCancelled() throws SQLException {
+        if (stmt != null && stmt.isCancelled())
+            throw new SQLException("The query was cancelled while executing.", SqlStateCode.QUERY_CANCELLED);
+    }
+
+    /**
+     * Ensures that result set is not closed or cancelled.
+     *
+     * @throws SQLException If result set is closed or cancelled.
+     */
+    private void ensureAlive() throws SQLException {
+        ensureNotClosed();
+
+        ensureNotCancelled();
+    }
+
+    /**
      * Ensures that result set is positioned on a row.
      *
      * @throws SQLException If result set is not positioned on a row.
@@ -1883,11 +1907,11 @@ public class JdbcThinResultSet implements ResultSet {
             throw new SQLException("Server cursor is already closed.", SqlStateCode.INVALID_CURSOR_STATE);
 
         if (!metaInit) {
-          JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(qryId));
+            JdbcQueryMetadataResult res = stmt.conn.sendRequest(new JdbcQueryMetadataRequest(cursorId), stmt);
 
-           meta = res.meta();
+            meta = res.meta();
 
-           metaInit = true;
+            metaInit = true;
         }
 
         return meta;

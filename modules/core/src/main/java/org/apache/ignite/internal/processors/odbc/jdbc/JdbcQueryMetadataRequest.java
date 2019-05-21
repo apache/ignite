@@ -26,8 +26,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC query metadata request.
  */
 public class JdbcQueryMetadataRequest extends JdbcRequest {
-    /** Query ID. */
-    private long qryId;
+    /** Cursor ID. */
+    private long cursorId;
 
     /**
      * Constructor.
@@ -37,19 +37,19 @@ public class JdbcQueryMetadataRequest extends JdbcRequest {
     }
 
     /**
-     * @param qryId Query ID.
+     * @param cursorId Cursor ID.
      */
-    public JdbcQueryMetadataRequest(long qryId) {
+    public JdbcQueryMetadataRequest(long cursorId) {
         super(QRY_META);
 
-        this.qryId = qryId;
+        this.cursorId = cursorId;
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return qryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /** {@inheritDoc} */
@@ -57,7 +57,7 @@ public class JdbcQueryMetadataRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        writer.writeLong(qryId);
+        writer.writeLong(cursorId);
     }
 
     /** {@inheritDoc} */
@@ -65,7 +65,7 @@ public class JdbcQueryMetadataRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
-        qryId = reader.readLong();
+        cursorId = reader.readLong();
     }
 
     /** {@inheritDoc} */

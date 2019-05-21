@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,32 +23,33 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC query close request.
+ * JDBC query cancel request.
  */
-public class JdbcQueryCloseRequest extends JdbcRequest {
-    /** Cursor ID. */
-    private long cursorId;
+public class JdbcQueryCancelRequest extends JdbcRequest {
+
+    /** Id of a request to be cancelled. */
+    private long reqIdToCancel;
 
     /**
      */
-    JdbcQueryCloseRequest() {
-        super(QRY_CLOSE);
+    public JdbcQueryCancelRequest() {
+        super(QRY_CANCEL);
     }
 
     /**
-     * @param cursorId Cursor ID.
+     * @param reqIdToCancel Id of a request to be cancelled.
      */
-    public JdbcQueryCloseRequest(long cursorId) {
-        super(QRY_CLOSE);
+    public JdbcQueryCancelRequest(long reqIdToCancel) {
+        super(QRY_CANCEL);
 
-        this.cursorId = cursorId;
+        this.reqIdToCancel = reqIdToCancel;
     }
 
     /**
-     * @return Cursor ID.
+     * @return Id of a request to be cancelled.
      */
-    public long cursorId() {
-        return cursorId;
+    public long requestIdToBeCancelled() {
+        return reqIdToCancel;
     }
 
     /** {@inheritDoc} */
@@ -56,7 +57,7 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        writer.writeLong(cursorId);
+        writer.writeLong(reqIdToCancel);
     }
 
     /** {@inheritDoc} */
@@ -64,11 +65,11 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
-        cursorId = reader.readLong();
+        reqIdToCancel = reader.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryCloseRequest.class, this);
+        return S.toString(JdbcQueryCancelRequest.class, this);
     }
 }
