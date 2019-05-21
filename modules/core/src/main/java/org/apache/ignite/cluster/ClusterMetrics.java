@@ -701,18 +701,4 @@ public interface ClusterMetrics {
      * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} if there is no running PME.
      */
     public long getCurrentPmeDuration();
-
-    /**
-     * Gets cluster read-only mode status.
-     *
-     * @return {@code True} if cluster read-only mode enabled, and {@code False} otherwise.
-     */
-    public boolean isReadOnlyMode();
-
-    /**
-     * Gets duration of cluster in read-only mode.
-     *
-     * @return Duration of cluster in read-only mode in seconds, or {@code 0} if read-only mode disabled
-     */
-    public long getReadOnlyModeDuration();
 }

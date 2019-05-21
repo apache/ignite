@@ -334,18 +334,4 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
          {"Attribute name.", "Attribute value.", "Include server nodes.", "Include client nodes."}
      )
      public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs, boolean includeClients);
-
-    /**
-     * Gets cluster read-only mode status.
-     */
-     @Override
-     @MXBeanDescription("Cluster read-only mode status.")
-     public boolean isReadOnlyMode();
-
-    /**
-     * Gets duration of read-only mode enabled on cluster.
-     */
-     @Override
-     @MXBeanDescription("Duration of read-only mode enabled on cluster.")
-     public long getReadOnlyModeDuration();
 }

@@ -1171,7 +1171,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             fail = true;
 
-            СlusterReadOnlyModeCheckedException roEx = U.cause(e, СlusterReadOnlyModeCheckedException.class);
+            СlusterReadOnlyModeCheckedException roEx = X.cause(e, СlusterReadOnlyModeCheckedException.class);
 
             if (roEx != null) {
                 throw new IgniteSQLException(

@@ -449,16 +449,6 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
         return nodes;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isReadOnlyMode() {
-        return cluster.ignite().cluster().readOnly();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getReadOnlyModeDuration() {
-        return metrics().getReadOnlyModeDuration();
-    }
-
     /**
      * Get list with the specified node types.
      *

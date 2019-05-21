@@ -2063,7 +2063,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     if (cause instanceof ClusterTopologyCheckedException)
                         err = new ClusterTopologyCheckedException(msg, cause);
-                    else if (U.hasCause(cause, СlusterReadOnlyModeCheckedException.class))
+                    else if (X.hasCause(cause, СlusterReadOnlyModeCheckedException.class))
                         err = new СlusterReadOnlyModeCheckedException(msg, cause);
                     else
                         err = new IgniteCheckedException(msg, cause);

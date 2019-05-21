@@ -93,9 +93,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         4/*outbound messages queue size*/ +
         4/*total nodes*/ +
         8/*total jobs execution time*/ +
-        8/*current PME time*/ +
-        1/*cluster read-only mode*/ +
-        8/*time change of cluster read-only mode*/;
+        8/*current PME time*/;
 
     /** */
     private long lastUpdateTime = -1;
@@ -262,12 +260,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** */
     private long currentPmeDuration = -1;
 
-    /** */
-    private boolean readOnlyMode = false;
-
-    /** */
-    private long readOnlyModeDuration = -1;
-
     /**
      * Create empty snapshot.
      */
@@ -340,7 +332,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         rcvdBytesCnt = 0;
         outMesQueueSize = 0;
         heapTotal = 0;
-        readOnlyModeDuration = 0;
         totalNodes = nodes.size();
         currentPmeDuration = 0;
 
@@ -421,8 +412,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             avgLoad += m.getCurrentCpuLoad();
 
             currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
-
-            readOnlyModeDuration = max(readOnlyModeDuration, m.getReadOnlyModeDuration());
         }
 
         curJobExecTime /= size;
@@ -440,8 +429,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             nodeStartTime = oldestNodeMetrics.getNodeStartTime();
             startTime = oldestNodeMetrics.getStartTime();
-
-            readOnlyMode = oldestNodeMetrics.isReadOnlyMode();
         }
 
         Map<String, Collection<ClusterNode>> neighborhood = U.neighborhood(nodes);
@@ -985,16 +972,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         return currentPmeDuration;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isReadOnlyMode() {
-        return readOnlyMode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getReadOnlyModeDuration() {
-        return readOnlyModeDuration;
-    }
-
     /**
      * Sets available processors.
      *
@@ -1229,6 +1206,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         this.totalNodes = totalNodes;
     }
 
+
     /**
      * Sets execution duration for current partition map exchange.
      *
@@ -1236,24 +1214,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      */
     public void setCurrentPmeDuration(long currentPmeDuration) {
         this.currentPmeDuration = currentPmeDuration;
-    }
-
-    /**
-     * Sets cluster read-only mode.
-     *
-     * @param readOnlyMode New cluster read-only mode.
-     */
-    public void setReadOnlyMode(boolean readOnlyMode) {
-        this.readOnlyMode = readOnlyMode;
-    }
-
-    /**
-     * Sets duration of cluster in read-only mode.
-     *
-     * @param readOnlyModeDuration Duration.
-     */
-    public void setReadOnlyModeDuration(long readOnlyModeDuration) {
-        this.readOnlyModeDuration = readOnlyModeDuration;
     }
 
     /**
@@ -1328,28 +1288,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             }
 
         return oldest;
-    }
-
-    /**
-     * Converts from byte to boolean.
-     *
-     * @param b Incoming byte.
-     * @return Converted boolean.
-     */
-    private static boolean toBoolean(byte b) {
-        assert b == 0 || b == 1 : "Invalid byte value. " + b;
-
-        return b == 1;
-    }
-
-    /**
-     * Converts from boolean to byte.
-     *
-     * @param b Incoming boolean.
-     * @return Converted byte.
-     */
-    private static byte fromBoolean(boolean b) {
-        return (byte)(b ? 1 : 0);
     }
 
     /**
@@ -1431,8 +1369,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putInt(metrics.getTotalNodes());
         buf.putLong(metrics.getTotalJobsExecutionTime());
         buf.putLong(metrics.getCurrentPmeDuration());
-        buf.put(fromBoolean(metrics.isReadOnlyMode()));
-        buf.putLong(metrics.getReadOnlyModeDuration());
 
         assert !buf.hasRemaining() : "Invalid metrics size [expected=" + METRICS_SIZE + ", actual="
             + (buf.position() - off) + ']';
@@ -1519,10 +1455,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             metrics.setCurrentPmeDuration(buf.getLong());
         else
             metrics.setCurrentPmeDuration(0);
-
-        // For compatibility with metrics serialized by old ignite versions.
-        metrics.setReadOnlyMode(buf.remaining() >= 1 ? toBoolean(buf.get()) : false);
-        metrics.setReadOnlyModeDuration(buf.remaining() >= 8 ? buf.getLong() : 0);
 
         return metrics;
     }

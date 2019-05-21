@@ -43,7 +43,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.X;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
@@ -233,7 +233,7 @@ public class DmlBatchSender {
                 cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
             }
 
-            СlusterReadOnlyModeCheckedException roEx = U.cause(e, СlusterReadOnlyModeCheckedException.class);
+            СlusterReadOnlyModeCheckedException roEx = X.cause(e, СlusterReadOnlyModeCheckedException.class);
 
             if (roEx != null) {
                 SQLException sqlEx = new SQLException(

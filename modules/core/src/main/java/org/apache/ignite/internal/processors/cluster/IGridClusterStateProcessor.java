@@ -125,7 +125,7 @@ public interface IGridClusterStateProcessor extends GridProcessor {
     );
 
     /**
-     * @param readOnly Enable read-only mode.
+     * @param readOnly Enable/disable read-only mode.
      * @return State change future.
      */
     IgniteInternalFuture<?> changeGlobalState(boolean readOnly);
