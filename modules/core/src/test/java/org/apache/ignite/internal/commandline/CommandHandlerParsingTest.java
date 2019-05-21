@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +34,8 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -49,6 +50,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.VALIDATE_INDEXES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -70,7 +72,7 @@ public class CommandHandlerParsingTest {
             int expectedCheckThrough = 11;
             UUID nodeId = UUID.randomUUID();
 
-            ConnectionAndSslParameters args = parseArgs(Arrays.asList(
+            ConnectionAndSslParameters args = parseArgs(asList(
                 CACHE.text(),
                 VALIDATE_INDEXES.text(),
                 "cache1, cache2",
@@ -99,7 +101,7 @@ public class CommandHandlerParsingTest {
             int expectedParam = 11;
             UUID nodeId = UUID.randomUUID();
 
-            ConnectionAndSslParameters args = parseArgs(Arrays.asList(
+            ConnectionAndSslParameters args = parseArgs(asList(
                     CACHE.text(),
                     VALIDATE_INDEXES.text(),
                     nodeId.toString(),
@@ -122,30 +124,8 @@ public class CommandHandlerParsingTest {
             e.printStackTrace();
         }
 
-        try {
-            parseArgs(
-                Arrays.asList(
-                    CACHE.text(),
-                    VALIDATE_INDEXES.text(),
-                    CHECK_FIRST.toString(),
-                    "0"
-                )
-            );
-
-            fail("Expected exception hasn't been thrown");
-        }
-        catch (IllegalArgumentException e) {
-            /* No-op */
-        }
-
-        try {
-            parseArgs(Arrays.asList(CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString()));
-
-            fail("Expected exception hasn't been thrown");
-        }
-        catch (IllegalArgumentException e) {
-            /* No-op */
-        }
+        assertParseArgsThrows("Value for '--check-first' property should be positive.", CACHE.text(), VALIDATE_INDEXES.text(), CHECK_FIRST.toString(), "0");
+        assertParseArgsThrows("Numeric value for '--check-through' parameter expected.", CACHE.text(), VALIDATE_INDEXES.text(), CHECK_THROUGH.toString());
     }
 
     /** */
@@ -187,7 +167,7 @@ public class CommandHandlerParsingTest {
 
     /** */
     private List<List<String>> generateArgumentList(String subcommand, T2<String, Boolean>...optional) {
-        List<List<T2<String, Boolean>>> lists = generateAllCombinations(Arrays.asList(optional), (x) -> x.get2());
+        List<List<T2<String, Boolean>>> lists = generateAllCombinations(asList(optional), (x) -> x.get2());
 
         ArrayList<List<String>> res = new ArrayList<>();
 
@@ -209,6 +189,7 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
+    /** */
     private <T> List<List<T>> generateAllCombinations(List<T> source, Predicate<T> stopFunc) {
         List<List<T>> res = new ArrayList<>();
 
@@ -223,7 +204,7 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-
+    /** */
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
 
@@ -256,28 +237,13 @@ public class CommandHandlerParsingTest {
     /**
      * Test that experimental command (i.e. WAL command) is disabled by default.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11859")
     @Test
     public void testExperimentalCommandIsDisabled() {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
-
-        try {
-            parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            assertTrue(e instanceof IllegalArgumentException);
-        }
-
-        try {
-            parseArgs(Arrays.asList(WAL.text(), WAL_DELETE));
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            assertTrue(e instanceof IllegalArgumentException);
-        }
+        assertParseArgsThrows(null, WAL.text(), WAL_PRINT);
+        assertParseArgsThrows(null, WAL.text(), WAL_DELETE);
     }
 
     /**
@@ -289,14 +255,7 @@ public class CommandHandlerParsingTest {
             if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
-            try {
-                parseArgs(asList("--truststore"));
-
-                fail("expected exception: Expected truststore");
-            }
-            catch (IllegalArgumentException e) {
-                /* No-op */
-            }
+            assertParseArgsThrows("Expected SSL trust store path", "--truststore");
 
             ConnectionAndSslParameters args = parseArgs(asList("--keystore", "testKeystore", "--keystore-password", "testKeystorePassword", "--keystore-type", "testKeystoreType",
                 "--truststore", "testTruststore", "--truststore-password", "testTruststorePassword", "--truststore-type", "testTruststoreType",
@@ -325,23 +284,8 @@ public class CommandHandlerParsingTest {
             if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
                 continue; // --cache subcommand requires its own specific arguments.
 
-            try {
-                parseArgs(asList("--user"));
-
-                fail("expected exception: Expected user name");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--password"));
-
-                fail("expected exception: Expected password");
-            }
-            catch (IllegalArgumentException e) {
-                /* No-op */
-            }
+            assertParseArgsThrows("Expected user name", "--user");
+            assertParseArgsThrows("Expected password", "--password");
 
             ConnectionAndSslParameters args = parseArgs(asList("--user", "testUser", "--password", "testPass", cmd.text()));
 
@@ -356,7 +300,7 @@ public class CommandHandlerParsingTest {
      */
     @Test
     public void testParseAndValidateWalActions() {
-        ConnectionAndSslParameters args = parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
+        ConnectionAndSslParameters args = parseArgs(asList(WAL.text(), WAL_PRINT));
 
         assertEquals(WAL.command(), args.command());
 
@@ -366,7 +310,7 @@ public class CommandHandlerParsingTest {
 
         String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
 
-        args = parseArgs(Arrays.asList(WAL.text(), WAL_DELETE, nodes));
+        args = parseArgs(asList(WAL.text(), WAL_DELETE, nodes));
 
         arg = ((WalCommands)args.command()).arg();
 
@@ -374,23 +318,11 @@ public class CommandHandlerParsingTest {
 
         assertEquals(nodes, arg.get2());
 
-        try {
-            parseArgs(Collections.singletonList(WAL.text()));
+        assertParseArgsThrows("Expected arguments for " + WAL.text(), WAL.text());
 
-            fail("expected exception: invalid arguments for --wal command");
-        }
-        catch (IllegalArgumentException e) {
-            /* No-op */
-        }
+        String rnd = UUID.randomUUID().toString();
 
-        try {
-            parseArgs(Arrays.asList(WAL.text(), UUID.randomUUID().toString()));
-
-            fail("expected exception: invalid arguments for --wal command");
-        }
-        catch (IllegalArgumentException e) {
-            /* No-op */
-        }
+        assertParseArgsThrows("Unexpected action "  + rnd + " for " + WAL.text(), WAL.text(), rnd);
     }
 
     /**
@@ -425,7 +357,7 @@ public class CommandHandlerParsingTest {
                         BaselineArguments arg = ((BaselineCommand)args.command()).arg();
 
                         assertEquals(baselineAct, arg.getCmd().text());
-                        assertEquals(new HashSet<>(Arrays.asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
+                        assertEquals(new HashSet<>(asList("c_id1","c_id2")), new HashSet<>(arg.getConsistentIds()));
                     }
 
                     break;
@@ -483,32 +415,9 @@ public class CommandHandlerParsingTest {
             assertEquals(5000, args.pingInterval());
             assertEquals(40000, args.pingTimeout());
 
-            try {
-                parseArgs(asList("--port", "wrong-port", cmd.text()));
-
-                fail("expected exception: Invalid value for port:");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--ping-interval", "-10", cmd.text()));
-
-                fail("expected exception: Ping interval must be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                parseArgs(asList("--ping-timeout", "-20", cmd.text()));
-
-                fail("expected exception: Ping timeout must be specified");
-            }
-            catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
+            assertParseArgsThrows("Invalid value for port: wrong-port", "--port", "wrong-port", cmd.text());
+            assertParseArgsThrows("Invalid value for ping interval: -10", "--ping-interval", "-10", cmd.text());
+            assertParseArgsThrows("Invalid value for ping timeout: -20", "--ping-timeout", "-20", cmd.text());
         }
     }
 
@@ -521,61 +430,13 @@ public class CommandHandlerParsingTest {
 
         parseArgs(asList("--tx"));
 
-        try {
-            parseArgs(asList("--tx", "minDuration"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minDuration", "-1"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minSize"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "minSize", "-1"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "label"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "label", "tx123["));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
-
-        try {
-            parseArgs(asList("--tx", "servers", "nodes", "1,2,3"));
-
-            fail("Expected exception");
-        }
-        catch (IllegalArgumentException ignored) {
-        }
+        assertParseArgsThrows("Expecting --min-duration", "--tx", "--min-duration");
+        assertParseArgsThrows("Invalid value for --min-duration: -1", "--tx", "--min-duration", "-1");
+        assertParseArgsThrows("Expecting --min-size", "--tx", "--min-size");
+        assertParseArgsThrows("Invalid value for --min-size: -1", "--tx", "--min-size", "-1");
+        assertParseArgsThrows("--label", "--tx", "--label");
+        assertParseArgsThrows("Illegal regex syntax", "--tx", "--label", "tx123[");
+        assertParseArgsThrows("Projection can't be used together with list of consistent ids.", "--tx", "--servers", "--nodes", "1,2,3");
 
         args = parseArgs(asList("--tx", "--min-duration", "120", "--min-size", "10", "--limit", "100", "--order", "SIZE", "--servers"));
 
@@ -603,7 +464,7 @@ public class CommandHandlerParsingTest {
         arg = ((TxCommands)args.command()).arg();
 
         assertNull(arg.getProjection());
-        assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
+        assertEquals(asList("1", "2", "3"), arg.getConsistentIds());
     }
 
     /**
@@ -613,5 +474,15 @@ public class CommandHandlerParsingTest {
     private ConnectionAndSslParameters parseArgs(List<String> args) {
         return new CommonArgParser(new CommandLogger()).
             parseAndValidate(args.iterator());
+    }
+
+    /**
+     * Checks that parse arguments fails with {@link IllegalArgumentException} and {@code failMsg} message.
+     *
+     * @param failMsg Exception message (optional).
+     * @param args Incoming arguments.
+     */
+    private void assertParseArgsThrows(@Nullable String failMsg, String... args) {
+        assertThrows(null, () -> parseArgs(asList(args)), IllegalArgumentException.class, failMsg);
     }
 }
