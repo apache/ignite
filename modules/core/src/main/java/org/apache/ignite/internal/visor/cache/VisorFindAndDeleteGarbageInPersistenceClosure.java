@@ -161,7 +161,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
     }
 
     /**
-     * By calling this method we would delete found garbarge in partitions and would try to
+     * By calling this method we would delete found garbage in partitions and would try to
      * cleanup indexes.
      *
      * @param grpIdToPartIdToGarbageCount GrpId -&gt; PartId -&gt; Garbage count.
