@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -42,11 +43,16 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -57,6 +63,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
 
 /**
@@ -149,6 +156,15 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         final CountDownLatch evtLatch0 = new CountDownLatch(1);
 
+        TestCommunicationSpi commSpi0 = ((TestCommunicationSpi)ignite0.configuration().getCommunicationSpi());
+
+        commSpi0.record((instanceName, msg) -> {
+            if (getTestIgniteInstanceName(1).equals(instanceName) && msg instanceof GridDhtPartitionSupplyMessage)
+                return ((GridDhtPartitionSupplyMessage)msg).groupId() == CU.cacheId(DEFAULT_CACHE_NAME);
+
+            return false;
+        });
+
         ignite0.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 log.info("Rebalance event: " + evt);
@@ -163,13 +179,21 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         Ignite ignite1 = startGrid(1);
 
-        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+
+        assertFalse(commSpi0.hasBlockedMessages());
 
         ignite1.close();
 
-        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+
+        assertFalse(commSpi0.hasBlockedMessages());
+
+        client = false;
 
         ignite1 = startGrid(1);
+
+        commSpi0.waitForBlocked();
 
         final CountDownLatch evtLatch1 = new CountDownLatch(1);
 
@@ -183,14 +207,10 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
             }
         }, EventType.EVT_CACHE_REBALANCE_STARTED, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        commSpi0.stopBlock();
 
-        client = false;
-
-        startGrid(2);
-
-        assertTrue(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
-        assertFalse(evtLatch1.await(1000, TimeUnit.MILLISECONDS));
+        assertFalse(evtLatch0.await(1000, TimeUnit.MILLISECONDS));
+        assertTrue(evtLatch1.await(1000, TimeUnit.MILLISECONDS));
     }
 
     /**
@@ -641,6 +661,12 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** */
+        private IgniteBiPredicate<String, Message> recordP;
+
+        /** */
+        private List<T2<ClusterNode, GridIoMessage>> blockedMsgs = new ArrayList<>();
+
+        /** */
         private AtomicInteger partSingleMsgs = new AtomicInteger();
 
         /** */
@@ -652,6 +678,25 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure) {
+            if (msg instanceof GridIoMessage) {
+                GridIoMessage ioMsg = (GridIoMessage)msg;
+
+                Message msg0 = ioMsg.message();
+
+                synchronized (this) {
+                    if (recordP != null && recordP.apply((String)node.attributes().get(ATTR_IGNITE_INSTANCE_NAME), msg0)) {
+                        ignite.log().info("Block message [node=" + node.id() + ", order=" + node.order() +
+                            ", msg=" + msg0 + ']');
+
+                        blockedMsgs.add(new T2<>(node, ioMsg));
+
+                        notifyAll();
+
+                        return;
+                    }
+                }
+            }
+
             super.sendMessage(node, msg, ackClosure);
 
             Object msg0 = ((GridIoMessage)msg).message();
@@ -669,6 +714,58 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
                     partFullMsgs.incrementAndGet();
                 }
+            }
+        }
+
+        /**
+         * @throws InterruptedException If interrupted.
+         */
+        public void waitForBlocked() throws InterruptedException {
+            synchronized (this) {
+                while (blockedMsgs.isEmpty())
+                    wait();
+            }
+        }
+
+        /**
+         * @return {@code True} if there are blocked messages.
+         */
+        public boolean hasBlockedMessages() {
+            synchronized (this) {
+                return !blockedMsgs.isEmpty();
+            }
+        }
+
+        /**
+         * @param recordP Record predicate.
+         */
+        public void record(IgniteBiPredicate<String, Message> recordP) {
+            synchronized (this) {
+                this.recordP = recordP;
+            }
+        }
+
+        /**
+         * Stops block messages and sends all already blocked messages.
+         */
+        public void stopBlock() {
+            synchronized (this) {
+                recordP = null;
+
+                for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+                    try {
+                        ignite.log().info("Send blocked message [node=" + msg.get1().id() +
+                            ", order=" + msg.get1().order() +
+                            ", msg=" + msg.get2().message() + ']');
+
+                        super.sendMessage(msg.get1(), msg.get2());
+                    }
+                    catch (Throwable e) {
+                        U.error(ignite.log(), "Failed to send blocked message: " + msg, e);
+                    }
+                }
+
+                blockedMsgs.clear();
             }
         }
 
