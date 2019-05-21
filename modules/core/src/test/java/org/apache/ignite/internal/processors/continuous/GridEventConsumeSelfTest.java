@@ -1225,8 +1225,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
-                    startGrid("anotherGrid");
-                    stopGrid("anotherGrid");
+                    try {
+                        startGrid("anotherGrid");
+                    }
+                    finally {
+                        stopGrid("anotherGrid");
+                    }
                 }
 
                 return null;
