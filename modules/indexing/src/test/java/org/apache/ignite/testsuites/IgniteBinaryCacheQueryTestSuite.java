@@ -259,6 +259,57 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    AffinityKeyNameAndValueFieldNameConflictTest.class,
+    DmlInsideTransactionTest.class,
+    ComplexPrimaryKeyUnwrapSelfTest.class,
+    SqlNestedQuerySelfTest.class,
+    ExplainSelfTest.class,
+    RunningQueriesTest.class,
+
+    PartitionedSqlTest.class,
+    ReplicatedSqlTest.class,
+
+    SqlParserCreateIndexSelfTest.class,
+    SqlParserDropIndexSelfTest.class,
+    SqlParserTransactionalKeywordsSelfTest.class,
+    SqlParserBulkLoadSelfTest.class,
+    SqlParserSetStreamingSelfTest.class,
+    SqlParserKillQuerySelfTest.class,
+    SqlParserMultiStatementSelfTest.class,
+
+    SqlConnectorConfigurationValidationSelfTest.class,
+    ClientConnectorConfigurationValidationSelfTest.class,
+
+    SqlSchemaSelfTest.class,
+    SqlIllegalSchemaSelfTest.class,
+    MultipleStatementsSqlQuerySelfTest.class,
+
+    BasicIndexTest.class,
+    BasicIndexMultinodeTest.class,
+
+    // Misc tests.
+    QueryEntityValidationSelfTest.class,
+    DuplicateKeyValueClassesSelfTest.class,
+    GridCacheLazyQueryPartitionsReleaseTest.class,
+
+    // Dynamic index create/drop tests.
+    SchemaExchangeSelfTest.class,
+
+    DynamicIndexServerCoordinatorBasicSelfTest.class,
+    DynamicIndexServerBasicSelfTest.class,
+    DynamicIndexServerNodeFilterCoordinatorBasicSelfTest.class,
+    DynamicIndexServerNodeFIlterBasicSelfTest.class,
+    DynamicIndexClientBasicSelfTest.class,
+
+    // Parsing
+    GridQueryParsingTest.class,
+    IgniteCacheSqlQueryErrorSelfTest.class,
+    IgniteCacheSqlDmlErrorSelfTest.class,
+    SqlUnsupportedSelfTest.class,
+
+    // Config.
+    IgniteCacheDuplicateEntityConfigurationSelfTest.class,
+    IncorrectQueryEntityTest.class,
     IgniteDynamicSqlRestoreTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite {
