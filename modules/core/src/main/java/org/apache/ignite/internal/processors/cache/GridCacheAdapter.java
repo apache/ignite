@@ -1907,7 +1907,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.consistency(),
+            consistency,
             forcePrimary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
