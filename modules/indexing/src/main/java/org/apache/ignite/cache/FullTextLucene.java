@@ -81,6 +81,8 @@ import org.h2.util.StringUtils;
 import org.h2.util.Utils;
 import org.h2.value.DataType;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -139,7 +141,7 @@ public class FullTextLucene {
     /**
      * The hit score.
      */
-    public static final String FIELD_SCORE = "_SCORE";
+    public static final String SCORE_FIELD_NAME = "_SCORE";
    
 
     private static final HashMap<String, LuceneIndexAccess> INDEX_ACCESS = new HashMap<>();
@@ -217,8 +219,8 @@ public class FullTextLucene {
     static boolean inited = false;
     
     @QuerySqlFunction(alias="ftl_init")
-    public static void init(Connection conn) throws SQLException {    	
-    	if(inited) return;
+    public static boolean init(Connection conn) throws SQLException {    	
+    	if(inited) return false;
     	
     	if (ctx == null){ //not init ctx.
     		execute("CREATE SCHEMA IF NOT EXISTS " + SCHEMA);
@@ -252,7 +254,7 @@ public class FullTextLucene {
         
         
         inited = true;
-        
+        return inited;
     }
 
     
@@ -324,13 +326,12 @@ public class FullTextLucene {
             String table, String columnList) throws SQLException {
     	init(conn);
     	//TODO@byron use ignite sql api
-        String prep = String.format("INSERT INTO " + SCHEMA
+        String prep = String.format("MERGE INTO " + SCHEMA
                 + ".INDEXES(SCHEMA, TABLE, COLUMNS) VALUES('%s', '%s', '%s')",schema,table,columnList);
        
         querySql(prep);
         
-        createTrigger(conn, schema, table);
-        indexExistingRows(conn, schema, table);
+        reindex(conn,schema, table);
         
         return cacheName(schema,table);
     }
@@ -408,20 +409,33 @@ public class FullTextLucene {
      * @param conn the connection
      */
     @QuerySqlFunction(alias="FTL_DROP_ALL")
-    public static void dropAll(Connection conn,String forschema) throws SQLException {
-    	init(conn);
-    	PreparedStatement prep = conn.prepareStatement("DELETE FROM " + SCHEMA + ".INDEXES WHERE SCHEMA=?");
-        prep.setString(1, forschema);
-      
-        int rowCount = prep.executeUpdate();
-        if (rowCount == 0) {
-            return;
-        }
+    public static String[] dropAll(Connection conn,String forschema) throws SQLException {
+    	 init(conn);    
+		 List<String> result = new ArrayList<>();
+		
+		 //result.addColumn(FIELD_TABLE, Types.VARCHAR, 0, 0);       
+		
+		 Statement stat = conn.createStatement();
+		 ResultSet rs = stat.executeQuery("SELECT * FROM " + SCHEMA + ".INDEXES WHERE SCHEMA='"+forschema+"'");        
+		 while (rs.next()) {
+		     String schema = rs.getString("SCHEMA");
+		     String table = rs.getString("TABLE");
+		     
+		     removeIndexFiles(conn,forschema,table);
+		     createTrigger(conn, schema, table);
+		     result.add(table);         
+		 }       
+		 stat.close();
+		 
+		 String prep = String.format("DELETE FROM " + SCHEMA + ".INDEXES WHERE SCHEMA='%s'",forschema);        
+	        
+		 querySql(prep);  
+        
         //Statement stat = conn.createStatement();
         //stat.execute("DROP SCHEMA IF EXISTS " + SCHEMA);
-        removeAllTriggers(conn, TRIGGER_PREFIX, forschema,null);
+        removeAllTriggers(conn, TRIGGER_PREFIX, forschema, null);  
         
-        //-removeIndexFiles(conn,forschema);
+        return result.toArray(new String[result.size()]);
     }
 
     /**
@@ -633,17 +647,13 @@ public class FullTextLucene {
 	                    String cols = rs.getString(1);
 	                    if (cols != null) {
 	                        for (String s : StringUtils.arraySplit(cols, ',', true)) {
-	                            indexList.add(s);
+	                        	if(!s.isEmpty() && s.charAt(0)!='_'){
+	                    			indexList.add(s);
+	                    		}
 	                        }
 	                        access.fields.addAll(indexList);
 	                    }
-	                    else if(access.type()!=null){ //add all field to fulltext indexs
-	                    	for(String f: access.type().fields().keySet()){
-	                    		if(!f.isEmpty() && f.charAt(0)!='_'){
-	                    			access.fields.add(f);
-	                    		}
-	                    	}                    	
-	                    }	                    
+	                                      
 	                }  
                 }
             }
@@ -686,7 +696,7 @@ public class FullTextLucene {
             String table) throws SQLException {
         FullTextLucene.FullTextTrigger existing = new FullTextLucene.FullTextTrigger();
         existing.init(conn, schema, null, table, false, Trigger.INSERT);
-        String sql = "SELECT _key,_val,0 AS _ver,* FROM " + StringUtils.quoteIdentifier(schema) +
+        String sql = "SELECT _key,_val,* FROM " + StringUtils.quoteIdentifier(schema) +
                 "." + StringUtils.quoteIdentifier(table);
         int c = 0;
         ResultSet rs = conn.createStatement().executeQuery(sql);
@@ -766,7 +776,7 @@ public class FullTextLucene {
         result.addColumn(QueryUtils.VAL_FIELD_NAME, valType, 0, 0);   
         result.addColumn(VER_FIELD_NAME, valType, 0, 0);   
         result.addColumn(FIELD_TABLE, Types.VARCHAR, 0, 0);
-        result.addColumn(FIELD_SCORE, Types.FLOAT, 0, 0);
+        result.addColumn(SCORE_FIELD_NAME, Types.FLOAT, 0, 0);
         if (data && type!=null) {
         	for(Map.Entry<String,Class<?>> ent: fields.entrySet()){
         		int colType = DataType.getTypeFromClass(ent.getValue());
@@ -924,7 +934,8 @@ public class FullTextLucene {
                 	if(v!=null && v instanceof BinaryObject){
                 		BinaryObject bobj = (BinaryObject) v;
 	                	for(String f : access.type().fields().keySet()){
-	                		row[c++] = bobj.field(f);
+	                		Object fieldVal = access.type().value(f, k, bobj);
+	                		row[c++] = fieldVal; //bobj.field(f.toLowerCase());
 	                	}
                 	}                	
                     result.addRow(row);
@@ -1026,8 +1037,7 @@ public class FullTextLucene {
             }
             ArrayList<String> indexList = New.arrayList();
             PreparedStatement prep = conn.prepareStatement(
-                    "SELECT COLUMNS FROM " + SCHEMA
-                    + ".INDEXES WHERE SCHEMA=? AND TABLE=?");
+                    "SELECT COLUMNS FROM " + SCHEMA + ".INDEXES WHERE SCHEMA=? AND TABLE=?");
             prep.setString(1, schemaName);
             prep.setString(2, tableName);
             rs = prep.executeQuery();
@@ -1035,26 +1045,21 @@ public class FullTextLucene {
                 String cols = rs.getString(1);
                 if (cols != null) {
                     for (String s : StringUtils.arraySplit(cols, ',', true)) {
-                        indexList.add(s);
+                    	if(!s.isEmpty() && s.charAt(0)!='_'){
+                			indexList.add(s);
+                		}
                     }
                 }
                 
             }
-            
-            if (indexList.size() == 0) {
-            	for(String f: columnList){
-            		if(!f.isEmpty() && f.charAt(0)!='_'){
-            			indexList.add(f);
-            		}
-            	}              
-            }           
+           
             this.indexAccess.fields.addAll(indexList);
             
             keys = new int[keyList.size()];
             setColumns(keys, keyList, columnList);
             indexColumns = new int[indexList.size()];
             setColumns(indexColumns, indexList, columnList);
-            indexColumnNames = (String[])indexList.toArray();
+            indexColumnNames = indexList.toArray(new String[indexList.size()]);
         }
 
         /**
@@ -1100,10 +1105,11 @@ public class FullTextLucene {
         }
 
        
-        public static boolean buildDocument(Document doc,String[] idxdFields,Object[] row,Field.Store storeText) throws SQLException {
+        public static boolean buildDocument(Document doc,String[] idxdFields,int[] indexColumns,Object[] row,Field.Store storeText) throws SQLException {
         	boolean stringsFound = false;
             for (int i = 0, last = idxdFields.length; i < last; i++) {
-                Object fieldVal = row[i];
+            	int col = indexColumns!=null? indexColumns[i]:i;
+                Object fieldVal = row[col];
 
                 if (fieldVal != null) {
                 	if(fieldVal.getClass().isArray()){ // fieldval is array type
@@ -1178,30 +1184,34 @@ public class FullTextLucene {
          */
         protected void insert(Object[] row, boolean commitIndex) throws SQLException {
         	
-        	
+        	long time = System.currentTimeMillis();
+            long expires = Long.MAX_VALUE;  
             Field.Store storeText = indexAccess.config.isStoreTextFieldValue() ?  Field.Store.YES : Field.Store.NO;
             
             Document doc = new Document(); 
             BytesRef _key = getBytes(row,0);
             doc.add(new StringField(FIELD_KEY, _key, Field.Store.YES));
             
-            doc.add(new StringField(VER_FIELD_NAME, getBytes(row,2), Field.Store.YES));
+            doc.add(new StoredField(VER_FIELD_NAME, time));
             
-            doc.add(new StringField(FIELD_TABLE, table, Field.Store.YES));
-            
-            long time = System.currentTimeMillis();
-            long expires = Long.MAX_VALUE;            
-           
+            doc.add(new StringField(FIELD_TABLE, table, Field.Store.YES));           
             
             doc.add(new StringField(LUCENE_FIELD_MODIFIED,
                     DateTools.timeToString(time, DateTools.Resolution.SECOND),
                     Field.Store.YES));
             
-            doc.add(new StoredField(EXPIRATION_TIME_FIELD_NAME, expires));
+            doc.add(new LongPoint(EXPIRATION_TIME_FIELD_NAME, expires));
            
             try {                     
             	
-            	buildDocument(doc,this.indexColumnNames,row,storeText);
+            	boolean stringsFound = buildDocument(doc,this.indexColumnNames,this.indexColumns,row,storeText);
+            	
+            	final Term term = new Term(KEY_FIELD_NAME, _key);
+            	if (!stringsFound) {
+                	indexAccess.writer.deleteDocuments(term);
+
+                    return; // We did not find any strings to be indexed, will not store data at all.
+                }
             	
                 indexAccess.writer.addDocument(doc);
                 if (commitIndex) {

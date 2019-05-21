@@ -301,7 +301,7 @@ public class GridLuceneIndex implements AutoCloseable {
         try {
             final Term term = new Term(KEY_FIELD_NAME, keyByteRef);
             // build doc body
-            stringsFound = FullTextLucene.FullTextTrigger.buildDocument(doc,this.idxdFields,row,storeText); 
+            stringsFound = FullTextLucene.FullTextTrigger.buildDocument(doc,this.idxdFields,null,row,storeText); 
             
             if (!stringsFound) {
             	indexAccess.writer.deleteDocuments(term);
