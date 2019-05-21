@@ -3262,27 +3262,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (!cachesToStop.isEmpty()) {
                 IgniteTxManager tm = context().tm();
 
-                Collection<IgniteInternalTx> active = tm.activeTransactions();
-
-                GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> compFut = new GridCompoundFuture<>();
-
-                for (IgniteInternalTx tx : active) {
-                    for (IgniteTxEntry e : tx.allEntries()) {
-                        if (cachesToStop.contains(e.context().cacheId())) {
-                            compFut.add(tx.rollbackAsync());
-
-                            break;
-                        }
-                    }
-                }
-
-                compFut.markInitialized();
-
-                try {
-                    compFut.get();
-                } catch (IgniteCheckedException e) {
-                    U.error(log, "Error occured during tx rollback.", e);
-                }
+                tm.rollbackTransactionsForCaches(cachesToStop);
             }
         }
     }

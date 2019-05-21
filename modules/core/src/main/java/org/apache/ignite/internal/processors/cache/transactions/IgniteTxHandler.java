@@ -349,7 +349,7 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<GridNearTxPrepareResponse>  prepareNearTxLocal(
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTxLocal(
         final GridNearTxLocal originTx,
         final GridNearTxPrepareRequest req) {
         // Make sure not to provide Near entries to DHT cache.

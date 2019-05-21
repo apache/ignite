@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -41,9 +40,6 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -115,11 +111,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        stopAllGrids();
-
-        cleanPersistenceDir();
+        afterTest();
     }
 
     /** {@inheritDoc} */
@@ -143,7 +135,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         IgniteEx ig = startGrid("client");
 
         ig.cluster().active(true);
-
         for (TransactionConcurrency conc : TransactionConcurrency.values())
             for (TransactionIsolation iso : TransactionIsolation.values())
                 runTxOnCacheStop(conc, iso, ig, true);
@@ -253,8 +244,6 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         final IgniteCache<Integer, byte[]> cache2 = ig.getOrCreateCache(surviveCacheCfg);
 
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ig);
-
         IgniteInternalFuture f0 = GridTestUtils.runAsync(() -> {
             try {
                 putLatch.await();
@@ -294,7 +283,5 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         f0.get();
 
         assertNull(cache2.get(100));
-
-        spi.stopBlock();
     }
 }
