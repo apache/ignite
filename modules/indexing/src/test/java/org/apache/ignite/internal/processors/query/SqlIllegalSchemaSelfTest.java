@@ -65,7 +65,6 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testBadCacheNameDynamic() throws Exception {
         doubleConsumerAccept(
             (node)->{
@@ -93,7 +92,6 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testBadSchemaLower() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
@@ -113,7 +111,6 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testBadSchemaLowerDynamic() throws Exception {
         doubleConsumerAccept(
             (node) -> {
@@ -141,7 +138,6 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testBadSchemaUpper() throws Exception {
         IgniteConfiguration cfg = getConfiguration();
 
@@ -161,7 +157,6 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testBadSchemaUpperDynamic() throws Exception {
         doubleConsumerAccept(
             (node) -> {
@@ -209,7 +204,6 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
     public void testBadSchemaQuotedDynamic() throws Exception {
         doubleConsumerAccept(
             (node) -> {

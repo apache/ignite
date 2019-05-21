@@ -96,7 +96,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
-    @Test
+
     public void testMergeChangedConfigOnCoordinator() throws Exception {
         {
             //given: two started nodes with test table
@@ -289,7 +289,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
-    @Test
+
     public void testTakeConfigFromJoiningNodeOnInactiveGrid() throws Exception {
         {
             //given: two started nodes with test table
@@ -329,7 +329,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
-    @Test
+
     public void testResaveConfigAfterMerge() throws Exception {
         {
             //given: two started nodes with test table
@@ -378,7 +378,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
      * @throws Exception if failed.
      */
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-    @Test
+
     public void testMergeChangedConfigOnInactiveGrid() throws Exception {
         {
             //given: two started nodes with test table
@@ -466,7 +466,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
-    @Test
+
     public void testTakeChangedConfigOnActiveGrid() throws Exception {
         {
             //given: two started nodes with test table
@@ -522,7 +522,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
      * @throws Exception if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    @Test
+
     public void testFailJoiningNodeBecauseDifferentSql() throws Exception {
         {
             //given: two started nodes with test table
@@ -568,7 +568,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
      * @throws Exception if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    @Test
+
     public void testFailJoiningNodeBecauseFieldInlineSizeIsDifferent() throws Exception {
         {
             //given: two started nodes with test table
@@ -610,7 +610,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
      * @throws Exception if failed.
      */
     @SuppressWarnings("ConstantConditions")
-    @Test
+
     public void testFailJoiningNodeBecauseNeedConfigUpdateOnActiveGrid() throws Exception {
         {
             startGrid(0);

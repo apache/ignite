@@ -166,6 +166,10 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
                         srv = srv0;
 
+                        log.warning(">>>> " + ctx.igniteInstanceName() + " server created on port " + srv.port());
+
+                        //srv.start();
+
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
                         if (log.isInfoEnabled())
@@ -202,10 +206,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         super.onKernalStart(active);
 
-        log.warning(">>>> onKernelStart active=" + active + ", name=" + ctx.igniteInstanceName());
-
         if (srv != null) {
-            log.warning(">>>> Listener started on port " + srv.port());
+            log.warning(">>>> " + ctx.igniteInstanceName() + " listener started on port " + srv.port());
 
             srv.start();
         }
@@ -348,6 +350,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         if (srv != null) {
             busyLock.block();
 
+            log.warning(">>>> onKernelStop, port=" + srv.port());
             srv.stop();
 
             ctx.ports().deregisterPorts(getClass());
