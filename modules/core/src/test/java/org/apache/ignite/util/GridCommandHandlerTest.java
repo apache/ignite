@@ -102,7 +102,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionState;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -1098,17 +1097,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://ggsystems.atlassian.net/browse/GG-18828")
     public void testCacheIdleVerifyNodeFilter() throws Exception {
         IgniteEx ignite = startGrids(3);
 
         ignite.cluster().active(true);
 
-        UUID lastNodeId = ignite.localNode().id();
+        Object lastNodeCId = ignite.localNode().consistentId();
 
         ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setNodeFilter(node -> !node.id().equals(lastNodeId))
+            .setNodeFilter(node -> !node.consistentId().equals(lastNodeCId))
             .setBackups(1));
 
         try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {

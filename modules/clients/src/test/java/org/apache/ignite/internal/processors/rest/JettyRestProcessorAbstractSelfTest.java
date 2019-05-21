@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -33,9 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -1396,7 +1394,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         CacheConfiguration<Integer, String> partialCacheCfg = new CacheConfiguration<>("partial");
 
         partialCacheCfg.setIndexedTypes(Integer.class, String.class);
-        partialCacheCfg.setNodeFilter(new NodeIdFilter(grid(1).localNode().id()));
+        partialCacheCfg.setNodeFilter(new NodeConsistentIdFilter(grid(1).localNode().consistentId()));
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
 
@@ -2859,21 +2857,21 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
     }
 
-    /** Filter by node ID. */
-    private static class NodeIdFilter implements IgnitePredicate<ClusterNode> {
+    /** Filter by consistent id. */
+    private static class NodeConsistentIdFilter implements IgnitePredicate<ClusterNode> {
         /** */
-        private final UUID nid;
+        private final Object consistentId;
 
         /**
-         * @param nid Node ID where cache should be started.
+         * @param consistentId Consistent id where cache should be started.
          */
-        NodeIdFilter(UUID nid) {
-            this.nid = nid;
+        NodeConsistentIdFilter(Object consistentId) {
+            this.consistentId = consistentId;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
-            return n.id().equals(nid);
+            return n.consistentId().equals(consistentId);
         }
     }
 

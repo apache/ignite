@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,15 +51,14 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.util.lang.GridNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -556,7 +555,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
             .setGroupName("cache_grp")
-            .setNodeFilter(new TestNodeFilter(ignite0.cluster().localNode()))
+            .setNodeFilter(new TestNodeFilter(ignite0.cluster().localNode().consistentId()))
         );
 
         ignite0.getOrCreateCache(new CacheConfiguration<>()
@@ -572,7 +571,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(CacheMode.PARTITIONED)
             .setGroupName("cache_grp")
-            .setNodeFilter(new TestNodeFilter(ignite0.cluster().localNode()))
+            .setNodeFilter(new TestNodeFilter(ignite0.cluster().localNode().consistentId()))
         );
 
         ignite0.getOrCreateCache(new CacheConfiguration<>()
@@ -699,7 +698,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         ClusterMetricsImpl original = getField(node, "metrics");
 
-        setField(node, "metrics", new MockedClusterMetrics(original));;
+        setField(node, "metrics", new MockedClusterMetrics(original));
 
         List<?> durationMetrics = execSql(ign,
             "SELECT " +
@@ -857,12 +856,20 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     /**
      *
      */
-    private static class TestNodeFilter extends GridNodePredicate {
+    private static class TestNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final Object consistentId;
+
         /**
-         * @param node Node.
+         * @param consistentId Consistent id where cache should be started.
          */
-        public TestNodeFilter(ClusterNode node) {
-            super(node);
+        TestNodeFilter(Object consistentId) {
+            this.consistentId = consistentId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode n) {
+            return n.consistentId().equals(consistentId);
         }
 
         /** {@inheritDoc} */

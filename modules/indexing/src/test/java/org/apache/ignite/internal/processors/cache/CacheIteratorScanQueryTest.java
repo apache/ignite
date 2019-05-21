@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,20 +16,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.List;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.Cache;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -85,9 +82,9 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
         client = true;
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration("test-cache-replicated").setCacheMode(REPLICATED)
-                .setNodeFilter(new AlwaysFalseCacheFilter()),
+                .setNodeFilter(F.alwaysFalse()),
             new CacheConfiguration("test-cache-partitioned").setCacheMode(PARTITIONED)
-                .setNodeFilter(new AlwaysFalseCacheFilter())
+                .setNodeFilter(F.alwaysFalse())
         };
 
         Ignite client = startGrid(1);
@@ -148,16 +145,6 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
 
                 exp++;
             }
-        }
-    }
-
-    /**
-     * Return always false.
-     */
-    public static class AlwaysFalseCacheFilter implements IgnitePredicate<ClusterNode> {
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode node) {
-            return false;
         }
     }
 }
