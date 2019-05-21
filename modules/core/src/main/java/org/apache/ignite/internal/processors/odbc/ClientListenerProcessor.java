@@ -202,8 +202,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         super.onKernalStart(active);
 
-        if (srv != null)
+        log.warning(">>>> onKernelStart active=" + active + ", name=" + ctx.igniteInstanceName());
+
+        if (srv != null) {
+            log.warning(">>>> Listener started");
+
             srv.start();
+        }
     }
 
     /**

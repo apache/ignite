@@ -217,6 +217,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
      * @param msg Message bytes.
      */
     private void onHandshake(GridNioSession ses, byte[] msg) {
+        log.warning(">>>> onHandshake");
+
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null, true);
@@ -293,6 +295,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
                 writer.writeInt(ClientStatus.FAILED);
         }
+
+        log.warning(">>>> Sending handshake, length=" + writer.array().length);
 
         ses.send(writer.array());
     }
