@@ -777,7 +777,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.consistency(),
+            consistency,
             forcePrimary,
             null,
             skipVals,
