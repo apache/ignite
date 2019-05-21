@@ -169,7 +169,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
             forceServerMode = true;
 
-            int clientNodes = 10;
+            int clientNodes = 24;
 
             try {
                 startGridsMultiThreaded(SRV_CNT, clientNodes);
