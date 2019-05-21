@@ -221,7 +221,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             IgniteH2Indexing indexing = (IgniteH2Indexing)qry.getIndexing();
 
             for (GridCacheContext ctx : grpCtx.caches()) {
-                if (cacheNames.contains(ctx.name())) {
+                if (cacheNames == null || cacheNames.contains(ctx.name())) {
                     Collection<GridQueryTypeDescriptor> types = qry.types(ctx.name());
 
                     if (!F.isEmpty(types)) {
