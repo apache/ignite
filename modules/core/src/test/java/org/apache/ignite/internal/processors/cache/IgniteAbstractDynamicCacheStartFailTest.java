@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -710,7 +709,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     ) {
         assert unluckyCfg >= 0 && unluckyCfg < cacheNum;
 
-        final UUID uuid = ignite(unluckyNode).cluster().localNode().id();
+        final Object consistentId = ignite(unluckyNode).cluster().localNode().consistentId();
 
         List<CacheConfiguration> cfgs = new ArrayList<>();
 
@@ -721,7 +720,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
                 cfg.setAffinity(new BrokenAffinityFunction(failOnAllNodes, getTestIgniteInstanceName(unluckyNode)));
 
             if (useFilter)
-                cfg.setNodeFilter(new NodeFilter(uuid));
+                cfg.setNodeFilter(new NodeFilter(consistentId));
 
             cfgs.add(cfg);
         }
@@ -749,7 +748,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     ) {
         assert unluckyCfg >= 0 && unluckyCfg < cacheNum;
 
-        final UUID uuid = ignite(unluckyNode).cluster().localNode().id();
+        final Object consistentId = ignite(unluckyNode).cluster().localNode().consistentId();
 
         List<CacheConfiguration> cfgs = new ArrayList<>();
 
@@ -762,7 +761,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
                 cfg.setCacheStoreFactory(new BrokenStoreFactory(failOnAllNodes, getTestIgniteInstanceName(unluckyNode)));
 
             if (useFilter)
-                cfg.setNodeFilter(new NodeFilter(uuid));
+                cfg.setNodeFilter(new NodeFilter(consistentId));
 
             cfgs.add(cfg);
         }
@@ -853,19 +852,19 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
      * Filter specifying on which node the cache should be started.
      */
     public static class NodeFilter implements IgnitePredicate<ClusterNode> {
-        /** Cache should be created node with certain UUID. */
-        public UUID uuid;
+        /** Cache should be created node with certain consistent id. */
+        public Object consistentId;
 
         /**
-         * @param uuid node ID.
+         * @param consistentId Consistent id.
          */
-        public NodeFilter(UUID uuid) {
-            this.uuid = uuid;
+        public NodeFilter(Object consistentId) {
+            this.consistentId = consistentId;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            return clusterNode.id().equals(uuid);
+            return clusterNode.consistentId().equals(consistentId);
         }
     }
 

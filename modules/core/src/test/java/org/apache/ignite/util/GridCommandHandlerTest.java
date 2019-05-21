@@ -1229,11 +1229,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         ignite.cluster().active(true);
 
-        UUID lastNodeId = ignite.localNode().id();
+        Object lastNodeCId = ignite.localNode().consistentId();
 
         ignite.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setNodeFilter(node -> !node.id().equals(lastNodeId))
+            .setNodeFilter(node -> !node.consistentId().equals(lastNodeCId))
             .setBackups(1));
 
         try (IgniteDataStreamer streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {

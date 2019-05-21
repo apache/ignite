@@ -16,19 +16,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.List;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.Cache;
-import java.util.Collections;
-import java.util.List;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -81,9 +79,9 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
         client = true;
         ccfgs = new CacheConfiguration[] {
             new CacheConfiguration("test-cache-replicated").setCacheMode(REPLICATED)
-                .setNodeFilter(new AlwaysFalseCacheFilter()),
+                .setNodeFilter(F.alwaysFalse()),
             new CacheConfiguration("test-cache-partitioned").setCacheMode(PARTITIONED)
-                .setNodeFilter(new AlwaysFalseCacheFilter())
+                .setNodeFilter(F.alwaysFalse())
         };
 
         Ignite client = startGrid(1);
@@ -144,16 +142,6 @@ public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
 
                 exp++;
             }
-        }
-    }
-
-    /**
-     * Return always false.
-     */
-    public static class AlwaysFalseCacheFilter implements IgnitePredicate<ClusterNode> {
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode node) {
-            return false;
         }
     }
 }

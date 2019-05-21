@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -264,7 +263,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
 
         IgniteCache<Object, Object> cache = node0.createCache(
             cacheConfiguration(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 1, 16)
-                .setNodeFilter(new NodeFilter(node0.cluster().node().id())));
+                .setNodeFilter(new NodeFilter(node0.cluster().node().consistentId())));
 
         cache.put(1, 0);
 
@@ -359,19 +358,19 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
      * Filter specifying on which node the cache should be started.
      */
     public static class NodeFilter implements IgnitePredicate<ClusterNode> {
-        /** Cache should be created node with certain UUID. */
-        public UUID uuid;
+        /** Cache should be created node with certain consistentId. */
+        public Object consistentId;
 
         /**
-         * @param uuid node ID.
+         * @param consistentId node ID.
          */
-        public NodeFilter(UUID uuid) {
-            this.uuid = uuid;
+        public NodeFilter(Object consistentId) {
+            this.consistentId = consistentId;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
-            return clusterNode.id().equals(uuid);
+            return clusterNode.consistentId().equals(consistentId);
         }
     }
 }

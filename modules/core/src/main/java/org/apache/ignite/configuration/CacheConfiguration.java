@@ -783,6 +783,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets filter which determines on what nodes the cache should be started.
      *
+     * Note: Do not use {@link ClusterNode#id()} and {@link ClusterNode#order()}, they do not guarantee
+     * that they would return the same result on all nodes in all circumstances.
+     *
      * @param nodeFilter Predicate specifying on which nodes the cache should be started.
      * @return {@code this} for chaining.
      */

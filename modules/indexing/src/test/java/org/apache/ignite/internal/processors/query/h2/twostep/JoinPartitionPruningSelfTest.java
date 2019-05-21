@@ -26,10 +26,9 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /**
@@ -682,7 +681,7 @@ public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTe
         ccfg.setAffinity(affFunc);
 
         if (nodeFilter)
-            ccfg.setNodeFilter(new CustomNodeFilter());
+            ccfg.setNodeFilter(F.alwaysTrue());
 
         if (persistent)
             ccfg.setDataRegionName(REGION_DISK);
@@ -822,15 +821,6 @@ public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTe
      */
     private static class CustomRendezvousAffinityFunction extends RendezvousAffinityFunction {
         // No-op.
-    }
-
-    /**
-     * Custom node filter.
-     */
-    private static class CustomNodeFilter implements IgnitePredicate<ClusterNode> {
-        @Override public boolean apply(ClusterNode clusterNode) {
-            return true;
-        }
     }
 
     /**

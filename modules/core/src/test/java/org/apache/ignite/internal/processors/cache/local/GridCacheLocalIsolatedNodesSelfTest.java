@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
@@ -58,13 +57,13 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
     @Test
     public void testIsolatedNodes() throws Exception {
         Ignite g1 = grid(0);
-        UUID nid1 = g1.cluster().localNode().id();
+        Object nid1 = g1.cluster().localNode().consistentId();
 
         Ignite g2 = grid(1);
-        UUID nid2 = g2.cluster().localNode().id();
+        Object nid2 = g2.cluster().localNode().consistentId();
 
         Ignite g3 = grid(2);
-        UUID nid3 = g3.cluster().localNode().id();
+        Object nid3 = g3.cluster().localNode().consistentId();
 
         assert !nid1.equals(nid2);
         assert !nid1.equals(nid3);
@@ -72,7 +71,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         // Local cache on first node only.
         CacheConfiguration<String, String> ccfg1 = new CacheConfiguration<>("A1");
         ccfg1.setCacheMode(LOCAL);
-        ccfg1.setNodeFilter(new NodeIdFilter(nid1));
+        ccfg1.setNodeFilter(new NodeConsistentIdFilter(nid1));
 
         IgniteCache<String, String> c1 = g1.createCache(ccfg1);
         c1.put("g1", "c1");
@@ -80,7 +79,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         // Local cache on second node only.
         CacheConfiguration<String, String> ccfg2 = new CacheConfiguration<>("A2");
         ccfg2.setCacheMode(LOCAL);
-        ccfg2.setNodeFilter(new NodeIdFilter(nid2));
+        ccfg2.setNodeFilter(new NodeConsistentIdFilter(nid2));
 
         IgniteCache<String, String> c2 = g2.createCache(ccfg2);
         c2.put("g2", "c2");
@@ -88,7 +87,7 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         // Local cache on third node only.
         CacheConfiguration<String, String> ccfg3 = new CacheConfiguration<>("A3");
         ccfg3.setCacheMode(LOCAL);
-        ccfg3.setNodeFilter(new NodeIdFilter(nid3));
+        ccfg3.setNodeFilter(new NodeConsistentIdFilter(nid3));
 
         IgniteCache<String, String> c3 = g3.createCache(ccfg3);
         c3.put("g3", "c3");
@@ -101,22 +100,21 @@ public class GridCacheLocalIsolatedNodesSelfTest extends GridCommonAbstractTest 
         assertNull(c3.get("g2"));
     }
 
-    /** Filter by node ID. */
-    private static class NodeIdFilter implements IgnitePredicate<ClusterNode> {
+    /** Filter by consistent id. */
+    private static class NodeConsistentIdFilter implements IgnitePredicate<ClusterNode> {
         /** */
-        private final UUID nid;
+        private final Object consistentId;
 
         /**
-         * @param nid Node ID where cache should be started.
+         * @param consistentId Consistent id where cache should be started.
          */
-        NodeIdFilter(UUID nid) {
-            this.nid = nid;
+        NodeConsistentIdFilter(Object consistentId) {
+            this.consistentId = consistentId;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
-            return n.id().equals(nid);
+            return n.consistentId().equals(consistentId);
         }
     }
-
 }
