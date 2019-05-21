@@ -119,7 +119,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            assertEquals(GRID_CNT, grid(0).cluster().nodes().size());
+            assertEquals(grid(0).cluster().nodes().toString(), GRID_CNT, grid(0).cluster().nodes().size());
 
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
@@ -878,7 +878,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             include = true;
 
-            startGrid("anotherGrid");
+            startGrid("anotherGridNodeJoin");
 
             grid(0).compute().broadcast(F.noop());
 
@@ -888,7 +888,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT + 1, cnt.get());
         }
         finally {
-            stopGrid("anotherGrid");
+            stopGrid("anotherGridNodeJoin");
 
             grid(0).events().stopRemoteListen(consumeId);
         }
@@ -926,11 +926,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             include = true;
 
-            startGrid("anotherGrid1");
+            startGrid("anotherGridNodeJoinWithProjection1");
 
             include = false;
 
-            startGrid("anotherGrid2");
+            startGrid("anotherGridNodeJoinWithProjection2");
 
             grid(0).compute().broadcast(F.noop());
 
@@ -940,8 +940,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT, cnt.get());
         }
         finally {
-            stopGrid("anotherGrid1");
-            stopGrid("anotherGrid2");
+            stopGrid("anotherGridNodeJoinWithProjection1");
+            stopGrid("anotherGridNodeJoinWithProjection2");
 
             grid(0).events().stopRemoteListen(consumeId);
         }
@@ -981,7 +981,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         try {
             assertNotNull(consumeId);
 
-            startGrid("anotherGrid");
+            startGrid("anotherGridNodeJoinWithP2P");
 
             grid(0).compute().broadcast(F.noop());
 
@@ -991,7 +991,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             assertEquals(GRID_CNT + 1, cnt.get());
         }
         finally {
-            stopGrid("anotherGrid");
+            stopGrid("anotherGridNodeJoinWithP2P");
 
             grid(0).events().stopRemoteListen(consumeId);
         }
@@ -1059,7 +1059,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     public void testMasterNodeLeave() throws Exception {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
-        Ignite g = startGrid("anotherGrid");
+        Ignite g = startGrid("anotherGridMasterNodeLeave");
 
         try {
             final UUID nodeId = g.cluster().localNode().id();
@@ -1086,7 +1086,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         }
         finally {
-            stopGrid("anotherGrid");
+            stopGrid("anotherGridMasterNodeLeave");
         }
 
         assert latch.await(3000, MILLISECONDS);
@@ -1097,7 +1097,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMasterNodeLeaveNoAutoUnsubscribe() throws Exception {
-        Ignite g = startGrid("anotherGrid");
+        Ignite g = startGrid("anotherGridMasterNodeLeaveNoAutoUnsubscribe");
 
         final CountDownLatch discoLatch;
 
@@ -1138,7 +1138,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             grid(0).compute().broadcast(F.noop());
         }
         finally {
-            stopGrid("anotherGrid");
+            stopGrid("anotherGridMasterNodeLeaveNoAutoUnsubscribe");
         }
 
         discoLatch.await(3000, MILLISECONDS);
@@ -1226,10 +1226,10 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     try {
-                        startGrid("anotherGrid");
+                        startGrid("anotherGridMultithreadedWithNodeRestart");
                     }
                     finally {
-                        stopGrid("anotherGrid");
+                        stopGrid("anotherGridMultithreadedWithNodeRestart");
                     }
                 }
 
