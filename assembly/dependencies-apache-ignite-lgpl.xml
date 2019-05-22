@@ -136,6 +136,7 @@
                 <exclude>org.gridgain:ignite-extdata-platform</exclude>
                 <exclude>org.gridgain:ignite-compatibility</exclude>
                 <exclude>org.gridgain:ignite-sqlline</exclude>
+                <exclude>org.gridgain:ignite-h2</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>
