@@ -45,4 +45,24 @@ public interface CommunicationListener<T extends Serializable> extends EventList
      * @param nodeId Node ID.
      */
     public void onDisconnected(UUID nodeId);
+
+    /**
+     * Process channel configuration requests.
+     *
+     * @param ch Channel to configure.
+     * @param msg Configuration message.
+     */
+    public default void onChannelConfigure(Channel ch, T msg) {
+        // No-op.
+    }
+
+    /**
+     * Listen to channel creation event from remote connection.
+     *
+     * @param nodeId Remote node id.
+     * @param ch Local created channel endpoint.
+     */
+    public default void onChannelCreated(UUID nodeId, Channel ch) {
+        // No-op.
+    }
 }

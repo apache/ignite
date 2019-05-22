@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Sto
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.preload.GridCachePreloadSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -261,6 +262,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
 
+    /** */
+    private GridCachePreloadSharedManager preloadMgr;
+
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache cache) {
@@ -355,6 +359,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         super.start0();
 
         exchWorker = new ExchangeWorker();
+
+        preloadMgr = cctx.preloadMgr();
 
         latchMgr = new ExchangeLatchManager(cctx.kernalContext());
 
@@ -3230,6 +3236,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (task instanceof ForceRebalanceExchangeTask)
                             forcedRebFut = ((ForceRebalanceExchangeTask)task).forcedRebalanceFuture();
 
+                        if (preloadMgr != null)
+                            r = preloadMgr.addNodeAssignments(assignsMap, resVer, forcePreload, cnt);
+
                         for (Integer order : orderMap.descendingKeySet()) {
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
@@ -3238,6 +3247,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
+
+                                if (preloadMgr != null && preloadMgr.partitionRebalanceRequired(grp, assigns))
+                                    continue;
 
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,

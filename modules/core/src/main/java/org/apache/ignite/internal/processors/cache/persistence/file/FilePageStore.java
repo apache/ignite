@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -80,6 +81,9 @@ public class FilePageStore implements PageStore {
     private final AllocatedPageTracker allocatedTracker;
 
     /** */
+    private final PageStoreWriteHandler storeHandler;
+
+    /** */
     protected final int pageSize;
 
     /** */
@@ -105,8 +109,11 @@ public class FilePageStore implements PageStore {
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker
+        AllocatedPageTracker allocatedTracker,
+        PageStoreWriteHandler storeHandler
     ) {
+        assert storeHandler != null;
+
         this.type = type;
         this.cfgFile = file;
         this.dbCfg = cfg;
@@ -114,6 +121,7 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
+        this.storeHandler = storeHandler;
     }
 
     /** {@inheritDoc} */
@@ -153,10 +161,8 @@ public class FilePageStore implements PageStore {
         return cfgFile.exists() && cfgFile.length() > headerSize();
     }
 
-    /**
-     * Size of page store header.
-     */
-    public int headerSize() {
+    /** {@inheritDoc} */
+    @Override public int headerSize() {
         return HEADER_SIZE;
     }
 
@@ -453,10 +459,8 @@ public class FilePageStore implements PageStore {
         }
     }
 
-    /**
-     * @throws StorageException If failed to initialize store file.
-     */
-    private void init() throws StorageException {
+    /** {@inheritDoc} */
+    @Override public void init() throws StorageException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -601,8 +605,8 @@ public class FilePageStore implements PageStore {
                     long off = pageOffset(pageId);
 
                     assert (off >= 0 && off <= allocated.get()) || recover :
-                        "off=" + U.hexLong(off) + ", allocated=" + U.hexLong(allocated.get()) +
-                            ", pageId=" + U.hexLong(pageId) + ", file=" + cfgFile.getPath();
+                        "off=" + off + ", allocated=" + allocated.get() +
+                            ", pageId=" + pageId + ", file=" + cfgFile.getPath();
 
                     assert pageBuf.position() == 0;
                     assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
@@ -621,6 +625,8 @@ public class FilePageStore implements PageStore {
                         "CRC hasn't been calculated, crc=0";
 
                     assert pageBuf.position() == 0 : pageBuf.position();
+
+                    storeHandler.onPageWrite(this, pageId);
 
                     fileIO.writeFully(pageBuf, off);
 

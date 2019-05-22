@@ -71,6 +71,27 @@ public interface GridNioSession {
     public long closeTime();
 
     /**
+     * @return {@code True} if session was closed.
+     */
+    public default boolean closed() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return {@code True} to close SocketChannel on session close.
+     */
+    public default boolean closeSocketOnSessionClose() {
+        return true;
+    }
+
+    /**
+     * @param closeSocket {@code False} remain SocketChannel open on session close.
+     */
+    public default void closeSocketOnSessionClose(boolean closeSocket) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Returns the time when last read activity was performed on this session.
      *
      * @return Lats receive time.

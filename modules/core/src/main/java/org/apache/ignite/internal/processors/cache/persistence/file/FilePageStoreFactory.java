@@ -21,6 +21,7 @@ import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 
 /**
@@ -33,5 +34,10 @@ public interface FilePageStoreFactory {
      * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
      * @param file File Page store file.
      */
-    PageStore createPageStore(byte type, File file, AllocatedPageTracker allocatedTracker) throws IgniteCheckedException;
+    public PageStore createPageStore(
+        byte type,
+        File file,
+        AllocatedPageTracker allocatedTracker,
+        PageStoreWriteHandler storeHandler
+    ) throws IgniteCheckedException;
 }

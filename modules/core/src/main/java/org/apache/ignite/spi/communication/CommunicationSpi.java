@@ -109,4 +109,13 @@ public interface CommunicationSpi<T extends Serializable> extends IgniteSpi {
      * @param lsnr Listener to set or {@code null} to unset the listener.
      */
     public void setListener(@Nullable CommunicationListener<T> lsnr);
+
+    /**
+     * @param remote Destination cluster node to communicate with.
+     * @param msg Configuration channel message.
+     * @throws IgniteSpiException If fails.
+     */
+    public default Channel channel(ClusterNode remote, T msg) throws IgniteSpiException {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.util.EventListener;
+import java.util.UUID;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.spi.communication.tcp.channel.IgniteSocketChannel;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -76,4 +78,11 @@ public interface GridNioServerListener<T> extends EventListener {
      * Called when critical failure occurs in server implementation.
      */
     public void onFailure(FailureType failureType, Throwable failure);
+
+    /**
+     * Called when new {@link IgniteSocketChannel} is created by NIO server.
+     */
+    public default void onChannelCreated(UUID nodeId, IgniteSocketChannel ch) {
+        // No-op.
+    }
 }

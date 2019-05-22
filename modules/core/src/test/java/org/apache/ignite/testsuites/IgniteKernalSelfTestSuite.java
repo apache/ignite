@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
 import org.apache.ignite.internal.LongJVMPauseDetectorTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
+import org.apache.ignite.internal.managers.communication.GridIoManagerChannelSelfTest;
 import org.apache.ignite.internal.managers.deployment.DeploymentRequestOfUnknownClassProcessingTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCacheSelfTest;
@@ -73,6 +74,7 @@ import org.junit.runners.Suite;
     GridCommunicationSelfTest.class,
     GridEventStorageManagerSelfTest.class,
     GridCommunicationSendMessageSelfTest.class,
+    GridIoManagerChannelSelfTest.class,
     GridCacheMessageSelfTest.class,
     GridDeploymentManagerStopSelfTest.class,
     GridManagerStopSelfTest.class,

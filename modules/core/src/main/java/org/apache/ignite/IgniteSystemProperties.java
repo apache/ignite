@@ -1142,6 +1142,9 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_BASELINE_AUTO_ADJUST_ENABLED = "IGNITE_BASELINE_AUTO_ADJUST_ENABLED";
 
+    /** Flag to enable persistence rebalance. */
+    public static final String IGNITE_PERSISTENCE_REBALANCE_ENABLED = "IGNITE_PERSISTENCE_REBALANCE_ENABLED";
+
     /**
      * Maximum number of diagnostic warning messages per category, when waiting for PME.
      */

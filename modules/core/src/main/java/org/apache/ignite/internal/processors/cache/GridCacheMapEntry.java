@@ -4393,7 +4393,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void removeValue() throws IgniteCheckedException {
         assert lock.isHeldByCurrentThread();
 
-        cctx.offheap().remove(cctx, key, partition(), localPartition());
+        cctx.offheap().remove(cctx, key, partition(), localPartition(), false);
     }
 
     /** {@inheritDoc} */

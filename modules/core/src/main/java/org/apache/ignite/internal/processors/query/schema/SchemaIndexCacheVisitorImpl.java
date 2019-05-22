@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -58,6 +60,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     /** Row filter. */
     private final SchemaIndexCacheFilter rowFilter;
 
+    /** The partition filter. */
+    private final Predicate<GridDhtLocalPartition> pred;
+
     /** Cancellation token. */
     private final SchemaIndexOperationCancellationToken cancel;
 
@@ -72,7 +77,15 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      *  @param cctx Cache context.
      */
     public SchemaIndexCacheVisitorImpl(GridCacheContext cctx) {
-        this(cctx, null, null, 0);
+        this(cctx, null, null, 0, p -> true);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param pred The cache partition filter.
+     */
+    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, Predicate<GridDhtLocalPartition> pred) {
+        this(cctx, null, null, 0, pred);
     }
 
     /**
@@ -84,7 +97,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param parallelism Degree of parallelism.
      */
     public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, SchemaIndexCacheFilter rowFilter,
-        SchemaIndexOperationCancellationToken cancel, int parallelism) {
+        SchemaIndexOperationCancellationToken cancel, int parallelism, Predicate<GridDhtLocalPartition> pred) {
+        assert pred != null;
+
         this.rowFilter = rowFilter;
         this.cancel = cancel;
 
@@ -97,13 +112,16 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
 
         this.cctx = cctx;
+        this.pred = pred;
     }
 
     /** {@inheritDoc} */
     @Override public void visit(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException {
         assert clo != null;
 
-        List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
+        List<GridDhtLocalPartition> parts = cctx.topology().localPartitions().stream()
+            .filter(pred)
+            .collect(Collectors.toList());
 
         if (parts.isEmpty())
             return;

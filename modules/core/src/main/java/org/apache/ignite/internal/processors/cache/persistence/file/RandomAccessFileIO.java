@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.OpenOption;
 import org.apache.ignite.internal.processors.compress.FileSystemUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -146,5 +148,26 @@ public class RandomAccessFileIO extends AbstractFileIO {
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
         force(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long transferTo(long position, long count, WritableByteChannel target) throws IOException {
+        if (count < 0 || position < 0)
+            throw new IllegalArgumentException("Position out of range: " + position);
+
+        return ch.transferTo(position, count, target);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long transferFrom(ReadableByteChannel src, long position, long count) throws IOException {
+        if (count < 0 || position < 0)
+            throw new IllegalArgumentException("Position out of range: " + position);
+
+        long written = ch.transferFrom(src, position, count);
+
+        if (written > 0)
+            position(position + written);
+
+        return written;
     }
 }

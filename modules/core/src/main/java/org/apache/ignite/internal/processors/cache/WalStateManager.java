@@ -405,6 +405,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             if (grp.isLocal() || !grp.affinityNode() || !grp.persistenceEnabled())
                 continue;
 
+            // Do not process groups if they will be rebalanced by partitions.
+            if (cctx.preloadMgr() != null && cctx.preloadMgr().rebalanceByPartitionSupported(grp, topVer))
+                continue;
+
             boolean hasOwning = false;
             boolean hasMoving = false;
 

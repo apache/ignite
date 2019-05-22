@@ -1809,6 +1809,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return null;
         }
 
+        return execRebuildIndexes(cctx, clo, new SchemaIndexCacheVisitorImpl(cctx));
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param clo Closure.
+     * @param visitor The visitor.
+     * @return The ruture which will be completed when the rebuild will be fihished.
+     */
+    private IgniteInternalFuture<?> execRebuildIndexes(
+        GridCacheContext cctx,
+        SchemaIndexCacheVisitorClosure clo,
+        SchemaIndexCacheVisitor visitor
+    ) {
         // Closure prepared, do rebuild.
         final GridWorkerFuture<?> fut = new GridWorkerFuture<>();
 
@@ -1817,7 +1831,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
             @Override protected void body() {
                 try {
-                    rebuildIndexesFromHash0(cctx, clo);
+                    doRebuildIndexesVisit(cctx, clo, visitor);
 
                     markIndexRebuild(cctx.name(), false);
 
@@ -1843,17 +1857,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return fut;
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> rebuildIndexesOnDemand(
+        GridCacheContext cctx,
+        SchemaIndexCacheVisitor cacheVisitor
+    ) {
+        return execRebuildIndexes(cctx, new IndexRebuildFullClosure(cctx.queries(), cctx.mvccEnabled()), cacheVisitor);
+    }
+
     /**
-     * Do index rebuild.
-     *
      * @param cctx Cache context.
      * @param clo Closure.
+     * @param visitor The visitor.
      * @throws IgniteCheckedException If failed.
      */
-    protected void rebuildIndexesFromHash0(GridCacheContext cctx, SchemaIndexCacheVisitorClosure clo)
-        throws IgniteCheckedException {
-        SchemaIndexCacheVisitor visitor = new SchemaIndexCacheVisitorImpl(cctx);
-
+    protected void doRebuildIndexesVisit(
+        GridCacheContext cctx,
+        SchemaIndexCacheVisitorClosure clo,
+        SchemaIndexCacheVisitor visitor
+    ) throws IgniteCheckedException {
         visitor.visit(clo);
     }
 

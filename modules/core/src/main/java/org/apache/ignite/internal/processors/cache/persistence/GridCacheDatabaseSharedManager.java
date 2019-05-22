@@ -143,6 +143,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.CompoundSnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -1501,6 +1502,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> rebuildIndexesOnDemand(
+        GridCacheContext cacheCtx,
+        Predicate<GridDhtLocalPartition> pred,
+        boolean restore
+    ) {
+        GridQueryProcessor qryProc = cctx.kernalContext().query();
+
+        if (!qryProc.moduleEnabled())
+            return null;
+
+        // TODO do we need to take checkpoint readLock here?
+        // TODO to evict all rebuilded index entries in case of node crash need to write undo-WAL records.
+        return qryProc.rebuildIndexesOnDemand(cacheCtx, pred, restore);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteInternalFuture indexRebuildFuture(int cacheId) {
         return idxRebuildFuts.get(cacheId);
     }
@@ -1896,6 +1913,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return null;
 
         return cp.wakeupForCheckpoint(0, reason);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CheckpointFuture wakeupForCheckpointOperation(SnapshotOperation op, String reason) {
+        Checkpointer cp = checkpointer;
+
+        if (cp == null)
+            return null;
+
+        return cp.wakeupForCheckpointOperation(op, reason, false);
     }
 
     /** {@inheritDoc} */
@@ -2616,6 +2643,96 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @param it WalIterator.
+     * @param recPredicate Wal record filter.
+     * @param entryPredicate Entry filter.
+     */
+    public void applyUpdates(
+        WALIterator it,
+        IgniteBiPredicate<WALPointer, WALRecord> recPredicate,
+        IgnitePredicate<DataEntry> entryPredicate,
+        boolean restore
+    ) {
+        if (it == null)
+            return;
+
+        while (it.hasNext()) {
+            IgniteBiTuple<WALPointer, WALRecord> next = it.next();
+
+            WALRecord rec = next.get2();
+
+            if (!recPredicate.apply(next.get1(), rec))
+                break;
+
+            applyWALRecord(rec, entryPredicate, restore);
+        }
+    }
+
+    /**
+     * @param rec The WAL record to process.
+     * @param entryPredicate An entry filter to apply.
+     */
+    public void applyWALRecord(WALRecord rec, IgnitePredicate<DataEntry> entryPredicate, boolean restore) {
+        switch (rec.type()) {
+            case MVCC_DATA_RECORD:
+            case DATA_RECORD:
+                checkpointReadLock();
+
+                try {
+                    DataRecord dataRec = (DataRecord)rec;
+
+                    for (DataEntry dataEntry : dataRec.writeEntries()) {
+                        if (entryPredicate.apply(dataEntry)) {
+                            checkpointReadLock();
+
+                            try {
+                                int cacheId = dataEntry.cacheId();
+
+                                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                                if (cacheCtx != null)
+                                    applyUpdate(cacheCtx, dataEntry, restore);
+                                else if (log != null)
+                                    log.warning("Cache is not started. Updates cannot be applied " +
+                                        "[cacheId=" + cacheId + ']');
+                            }
+                            finally {
+                                checkpointReadUnlock();
+                            }
+                        }
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+
+                break;
+
+            case MVCC_TX_RECORD:
+                checkpointReadLock();
+
+                try {
+                    MvccTxRecord txRecord = (MvccTxRecord)rec;
+
+                    byte txState = convertToTxState(txRecord.state());
+
+                    cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
+                }
+                finally {
+                    checkpointReadUnlock();
+                }
+
+                break;
+
+            default:
+                // Skip other records.
+        }
+    }
+
+    /**
      * Apply update from some iterator and with specific filters.
      *
      * @param it WalIterator.
@@ -2631,72 +2748,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return;
 
         cctx.walState().runWithOutWAL(() -> {
-            while (it.hasNext()) {
-                IgniteBiTuple<WALPointer, WALRecord> next = it.next();
-
-                WALRecord rec = next.get2();
-
-                if (!recPredicate.apply(next.get1(), rec))
-                    break;
-
-                switch (rec.type()) {
-                    case MVCC_DATA_RECORD:
-                    case DATA_RECORD:
-                        checkpointReadLock();
-
-                        try {
-                            DataRecord dataRec = (DataRecord)rec;
-
-                            for (DataEntry dataEntry : dataRec.writeEntries()) {
-                                if (entryPredicate.apply(dataEntry)) {
-                                    checkpointReadLock();
-
-                                    try {
-                                        int cacheId = dataEntry.cacheId();
-
-                                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
-
-                                        if (cacheCtx != null)
-                                            applyUpdate(cacheCtx, dataEntry);
-                                        else if (log != null)
-                                            log.warning("Cache is not started. Updates cannot be applied " +
-                                                "[cacheId=" + cacheId + ']');
-                                    }
-                                    finally {
-                                        checkpointReadUnlock();
-                                    }
-                                }
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
-                        finally {
-                            checkpointReadUnlock();
-                        }
-
-                        break;
-
-                    case MVCC_TX_RECORD:
-                        checkpointReadLock();
-
-                        try {
-                            MvccTxRecord txRecord = (MvccTxRecord)rec;
-
-                            byte txState = convertToTxState(txRecord.state());
-
-                            cctx.coordinators().updateState(txRecord.mvccVersion(), txState, true);
-                        }
-                        finally {
-                            checkpointReadUnlock();
-                        }
-
-                        break;
-
-                    default:
-                        // Skip other records.
-                }
-            }
+            applyUpdates(it, recPredicate, entryPredicate, false);
         });
     }
 
@@ -2763,7 +2815,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     cctx.kernalContext().query().markAsRebuildNeeded(cacheCtx);
 
                                 try {
-                                    applyUpdate(cacheCtx, dataEntry);
+                                    applyUpdate(cacheCtx, dataEntry, false);
                                 }
                                 catch (IgniteCheckedException e) {
                                     U.error(log, "Failed to apply data entry, dataEntry=" + dataEntry +
@@ -2890,9 +2942,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param cacheCtx Cache context to apply an update.
      * @param dataEntry Data entry to apply.
+     * @param restore <tt>true</tt> shows the key will be updated on restore data store.
      * @throws IgniteCheckedException If failed to restore.
      */
-    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry) throws IgniteCheckedException {
+    private void applyUpdate(GridCacheContext cacheCtx, DataEntry dataEntry, boolean restore) throws IgniteCheckedException {
         int partId = dataEntry.partitionId();
 
         if (partId == -1)
@@ -2914,6 +2967,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         ((MvccDataEntry)dataEntry).mvccVer());
                 }
                 else {
+                    // TODO load to restore true\false
                     cacheCtx.offheap().update(
                         cacheCtx,
                         dataEntry.key(),
@@ -2921,7 +2975,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         dataEntry.writeVersion(),
                         dataEntry.expireTime(),
                         locPart,
-                        null);
+                        null,
+                        restore);
                 }
 
                 if (dataEntry.partitionCounter() != 0)
@@ -2941,7 +2996,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         ((MvccDataEntry)dataEntry).mvccVer());
                 }
                 else
-                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart);
+                    // TODO load to restore true\false
+                    cacheCtx.offheap().remove(cacheCtx, dataEntry.key(), partId, locPart, restore);
 
                 if (dataEntry.partitionCounter() != 0)
                     cacheCtx.offheap().onPartitionInitialCounterUpdated(partId, dataEntry.partitionCounter());
@@ -3591,23 +3647,36 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param snapshotOperation Snapshot operation.
          */
         public IgniteInternalFuture wakeupForSnapshotCreation(SnapshotOperation snapshotOperation) {
-            GridFutureAdapter<Object> ret;
+            return wakeupForCheckpointOperation(snapshotOperation, "snapshot", true).beginFuture();
+        }
+
+        /**
+         * @param op Snapshot operation to execute.
+         * @param reason The text message on
+         * @param isSnapshot {@code True} than operation will be executed as snapshot.
+         * @return The future represents checkpoint progress states.
+         */
+        private CheckpointFuture wakeupForCheckpointOperation(SnapshotOperation op, String reason, boolean isSnapshot) {
+            CheckpointProgress progress;
 
             synchronized (this) {
+                progress = scheduledCp;
+
                 scheduledCp.nextCpTs = U.currentTimeMillis();
 
-                scheduledCp.reason = "snapshot";
+                scheduledCp.reason = reason;
 
-                scheduledCp.nextSnapshot = true;
+                if (isSnapshot)
+                    scheduledCp.nextSnapshot = true;
+                else
+                    scheduledCp.collectCtxInfo = true;
 
-                scheduledCp.snapshotOperation = snapshotOperation;
-
-                ret = scheduledCp.cpBeginFut;
+                scheduledCp.snapshotOperation.addSnapshotOperation(op, isSnapshot);
 
                 notifyAll();
             }
 
-            return ret;
+            return new CheckpointProgressSnapshot(progress);
         }
 
         /**
@@ -4020,6 +4089,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 assert curCpProgress == curr : "Concurrent checkpoint begin should not be happened";
 
+                // Invoke listeners to provide consistent state before any changes saved (meta info not saved yet).
+                for (DbCheckpointListener lsnr : lsnrs)
+                    lsnr.beforeMarkCheckpointBegin(ctx0);
+
                 tracker.onMarkStart();
 
                 // Listeners must be invoked before we write checkpoint record to WAL.
@@ -4300,6 +4373,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 /** {@inheritDoc} */
+                @Override public boolean collectContextInfo() {
+                    return delegate.collectContextInfo();
+                }
+
+                /** {@inheritDoc} */
                 @Override public PartitionAllocationMap partitionStatMap() {
                     return delegate.partitionStatMap();
                 }
@@ -4448,6 +4526,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 this.curr = curr;
                 this.map = map;
                 this.pendingTaskFuture = asyncRunner == null ? null : new GridCompoundFuture();
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean collectContextInfo() {
+                return curr.collectCtxInfo;
             }
 
             /** {@inheritDoc} */
@@ -4909,6 +4992,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         };
 
+        /**
+         * Flag indicates that additional info must be collected into {@link DbCheckpointListener.Context}
+         * on checkpoint begin phase. Information will be collected under the write lock to guarantee consistency.
+         */
+        private volatile boolean collectCtxInfo;
+
         /** Flag indicates that snapshot operation will be performed after checkpoint. */
         private volatile boolean nextSnapshot;
 
@@ -4916,7 +5005,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile boolean started;
 
         /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
-        private volatile SnapshotOperation snapshotOperation;
+        private volatile CompoundSnapshotOperation snapshotOperation = new CompoundSnapshotOperation();
 
         /** Partitions destroy queue. */
         private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
@@ -4963,7 +5052,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        @Override public GridFutureAdapter beginFuture() {
+        @Override public GridFutureAdapter<Object> beginFuture() {
             return cpBeginFut;
         }
 

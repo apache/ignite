@@ -141,6 +141,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
+import org.apache.ignite.internal.processors.cache.persistence.preload.GridPartitionBatchDemandMessage;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -200,6 +201,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.messages.ChannelCreateRequestMessage;
+import org.apache.ignite.spi.communication.tcp.messages.ChannelCreateResponseMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
@@ -357,6 +360,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE:
                 msg = new HandshakeWaitMessage();
+
+                break;
+
+            case ChannelCreateRequestMessage.CHANNEL_REQUEST_MSG_TYPE:
+                msg = new ChannelCreateRequestMessage();
+
+                break;
+
+            case ChannelCreateResponseMessage.CHANNEL_RESPONSE_MSG_TYPE:
+                msg = new ChannelCreateResponseMessage();
 
                 break;
 
@@ -1161,7 +1174,12 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            // [-3..119] [124..129] [-23..-28] [-36..-55] - this
+            case 175:
+                msg = new GridPartitionBatchDemandMessage();
+
+                break;
+
+            // [-3..119] [124..129] [-23..-29] [-36..-55] - this
             // [120..123] - DR
             // [-4..-22, -30..-35] - SQL
             // [2048..2053] - Snapshots
