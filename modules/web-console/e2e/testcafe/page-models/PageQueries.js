@@ -65,4 +65,8 @@ export class PageQueriesNotebooksList {
 
         return this.createNotebookModal.confirm();
     }
+
+    getNotebookByName(name) {
+        return Selector('a[href*="/notebook/"]').withExactText(name);
+    }
 }

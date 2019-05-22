@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import {Selector} from 'testcafe';
-import {getLocationPathname} from '../../helpers';
+import {getLocationPathname, scrollIntoView, scrollToPageBottom} from '../../helpers';
 import {dropTestDB, insertTestUser, resolveUrl} from '../../environment/envtools';
 import {createRegularUser} from '../../roles';
 import {PageConfigurationOverview} from '../../page-models/PageConfigurationOverview';
@@ -73,7 +72,10 @@ test('Cluster edit basic/advanced redirect based on caches amount', async(t) => 
     const cachesAmountThreshold = 5;
 
     await t.click(overviewPage.createClusterConfigButton);
-    await repeat(cachesAmountThreshold, () => basicConfigPage.cachesList.addItem());
+    await repeat(cachesAmountThreshold, async() => {
+        await scrollToPageBottom();
+        basicConfigPage.cachesList.addItem();
+    });
     await basicConfigPage.saveWithoutDownload();
     await t
         .click(configureNavButton)
@@ -81,9 +83,11 @@ test('Cluster edit basic/advanced redirect based on caches amount', async(t) => 
         .expect(getLocationPathname()).contains('basic', `Opens basic with ${cachesAmountThreshold} caches`);
     await basicConfigPage.cachesList.addItem();
     await basicConfigPage.saveWithoutDownload();
+    await scrollIntoView.with({dependencies: {el: configureNavButton}});
     await t
-        .click(configureNavButton)
-        .click(clusterEditLink)
+        .expect(configureNavButton.visible).ok()
+        .click(configureNavButton.with({timeout: 0}))
+        .click(clusterEditLink.with({timeout: 0}))
         .expect(getLocationPathname()).contains('advanced', `Opens advanced with ${cachesAmountThreshold + 1} caches`);
     await t.click(configureNavButton);
     await overviewPage.removeAllItems();
@@ -112,6 +116,7 @@ test('Cluster cell values', async(t) => {
     const igfsAmount = 1;
 
     await t
+        .resizeWindow(1200, 1080)
         .click(overviewPage.createClusterConfigButton)
         .typeText(basicConfigPage.clusterNameInput.control, name, {replace: true});
     await basicConfigPage.clusterDiscoveryInput.selectOption(staticDiscovery);

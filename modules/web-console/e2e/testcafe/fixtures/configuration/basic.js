@@ -18,6 +18,7 @@ import {dropTestDB, insertTestUser, resolveUrl} from '../../environment/envtools
 import {createRegularUser} from '../../roles';
 import {PageConfigurationBasic} from '../../page-models/PageConfigurationBasic';
 import {successNotification} from '../../components/notifications';
+import {scrollIntoView, scrollToPageBottom} from '../../helpers';
 
 const regularUser = createRegularUser();
 
@@ -61,11 +62,15 @@ test('Basic editing', async(t) => {
     await t
         .expect(page.buttonPreviewProject.visible).notOk('Preview project button is hidden for new cluster configs')
         .typeText(page.clusterNameInput.control, clusterName, {replace: true});
+    await scrollToPageBottom();
     await page.cachesList.addItem();
+    await scrollToPageBottom();
     await page.cachesList.addItem();
+    await scrollToPageBottom();
     await page.cachesList.addItem();
 
     const cache1 = page.cachesList.getItem(1);
+    await scrollIntoView.with({dependencies: {el: cache1._selector}});
     await cache1.startEdit();
     await t.typeText(cache1.fields.name.control, 'Foobar');
     await cache1.fields.cacheMode.selectOption(localMode);

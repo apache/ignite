@@ -187,10 +187,11 @@ if (stop) {
 
 /**
  * @param {string} targetUrl
+ * @param {string?} host
  * @returns {string}
  */
-const resolveUrl = (targetUrl) => {
-    return url.resolve(process.env.APP_URL || 'http://localhost:9001', targetUrl);
+const resolveUrl = (targetUrl, host = 'http://localhost:9001') => {
+    return url.resolve(process.env.APP_URL || host, targetUrl);
 };
 
 module.exports = { startEnv, insertTestUser, dropTestDB, resolveUrl };

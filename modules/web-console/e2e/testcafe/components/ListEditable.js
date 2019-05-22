@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import {Selector, t} from 'testcafe'
-import {FormField} from './FormField'
+import {Selector, t} from 'testcafe';
+import {FormField} from './FormField';
 
-const addItemButton = Selector(value => {
+const addItemButton = Selector((value) => {
     value = value();
     const innerButton = value.querySelector('.le-row:not(.ng-hide) list-editable-add-item-button [ng-click]');
 
@@ -44,39 +44,42 @@ export class ListEditableItem {
         /** @type {SelectorAPI} */
         this.itemView = this._selector.find('list-editable-item-view');
         /** @type {Object.<string, FormField>} Inline form fields */
-        this.fields = Object.keys(fieldsMap).reduce((acc, key) => ({...acc, [key]: new FormField(this._fieldsMap[key])}), {})
+        this.fields = Object.keys(fieldsMap).reduce((acc, key) => ({...acc, [key]: new FormField(this._fieldsMap[key])}), {});
     }
+
     async startEdit() {
-        await t.click(this.itemView)
+        await t.click(this.itemView);
     }
+
     async stopEdit() {
-        await t.click('.wrapper')
+        await t.click('.wrapper');
     }
     /**
      * @param {number} index
      */
     getItemViewColumn(index) {
-        return this.itemView.child(index)
+        return this.itemView.child(index);
     }
 }
 
 export class ListEditable {
     static ADD_ITEM_BUTTON_SELECTOR = '[ng-click="$ctrl.addItem()"]';
+
     /** @param {SelectorAPI} selector */
     constructor(selector, fieldsMap) {
         this._selector = selector;
         this._fieldsMap = fieldsMap;
-        this.addItemButton = Selector(addItemButton(selector))
+        this.addItemButton = Selector(addItemButton(selector));
     }
 
     async addItem() {
-        await t.click(this.addItemButton)
+        await t.click(this.addItemButton);
     }
 
     /**
      * @param {number} index Zero-based index of item in the list
      */
     getItem(index) {
-        return new ListEditableItem(this._selector.find(`.le-body>.le-row[ng-repeat]`).nth(index), this._fieldsMap)
+        return new ListEditableItem(this._selector.find(`.le-body>.le-row[ng-repeat]`).nth(index), this._fieldsMap);
     }
 }

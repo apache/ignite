@@ -20,12 +20,12 @@ const findCell = Selector((table, rowIndex, columnLabel) => {
     table = table();
 
     const columnIndex = [].constructor.from(
-        table.querySelectorAll('.ui-grid-header-cell:not(.ui-grid-header-span)'),
+        table.querySelectorAll('.ui-grid-render-container:not(.left) .ui-grid-header-cell:not(.ui-grid-header-span)'),
         (e) => e.textContent
     ).findIndex((t) => t.includes(columnLabel));
 
     const row = table.querySelector(`.ui-grid-render-container:not(.left) .ui-grid-viewport .ui-grid-row:nth-of-type(${rowIndex + 1})`);
-    const cell = row.querySelector(`.ui-grid-cell:nth-of-type(${columnIndex})`);
+    const cell = row.querySelectorAll(`.ui-grid-cell`)[columnIndex];
 
     return cell;
 });

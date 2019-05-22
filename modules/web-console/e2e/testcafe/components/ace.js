@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
+ * 
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-import {Selector} from 'testcafe';
-import {FormField} from '../components/FormField';
-import {isVisible} from '../helpers';
-import {PanelCollapsible} from '../components/PanelCollapsible';
+import {Selector, t} from 'testcafe';
 
-export const createModelButton = Selector('pc-items-table footer-slot .link-success').filter(isVisible);
-export const general = {
-    generatePOJOClasses: new FormField({id: 'generatePojoInput'}),
-    queryMetadata: new FormField({id: 'queryMetadataInput'}),
-    keyType: new FormField({id: 'keyTypeInput'}),
-    valueType: new FormField({id: 'valueTypeInput'}),
-    panel: new PanelCollapsible('General')
+/**
+ * @param {ReturnType<Selector>} selector
+ */
+export const ace = (selector) => selector.find('textarea.ace_text-input');
+
+/**
+ * @param {ReturnType<typeof ace>} ace
+ * @param {string} text
+ * @param options
+ */
+export const enterAceText = async(ace, text, options = {replace: false}) => {
+    await t.click(ace);
+
+    if (options.replace)
+        await t.typeText(ace, 'A', {modifiers: {ctrl: true}});
+
+    await t.typeText(ace, text, {replace: options.replace});
 };

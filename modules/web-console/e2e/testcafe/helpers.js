@@ -35,4 +35,7 @@ const isVisible = (node) => !!node.getBoundingClientRect().width;
 
 const scrollIntoView = ClientFunction(() => el().scrollIntoView());
 
-module.exports = { mouseenterTrigger, getLocationPathname, isVisible, scrollIntoView };
+const scrollToPageBottom = ClientFunction(() => document.scrollingElement.scrollTop = 9999999);
+const scrollBy = ClientFunction(() => document.scrollingElement.scrollTop += amount);
+
+module.exports = { mouseenterTrigger, getLocationPathname, isVisible, scrollIntoView, scrollToPageBottom, scrollBy };

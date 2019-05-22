@@ -18,12 +18,12 @@ import { Role, t } from 'testcafe';
 import { resolveUrl } from './environment/envtools';
 import {pageSignin as page} from './page-models/pageSignin';
 
-export const createRegularUser = () => {
+export const createRegularUser = (login = 'a@a', password = 'a') => {
     return Role(resolveUrl('/signin'), async() => {
         await t.eval(() => window.localStorage.clear());
 
         // Disable "Getting started" modal.
         await t.eval(() => window.localStorage.showGettingStarted = 'false');
-        await page.login('a@a', 'a');
+        await page.login(login, password);
     });
 };
