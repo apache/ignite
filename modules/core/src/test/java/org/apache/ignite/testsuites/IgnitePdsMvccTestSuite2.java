@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalF
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorExceptionDuringReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionNoArchiverTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionSwitchOnTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRolloverTypesTest;
@@ -83,6 +84,7 @@ public class IgnitePdsMvccTestSuite2 extends TestSuite {
         ignoredTests.add(IgniteUidAsConsistentIdMigrationTest.class);
         ignoredTests.add(IgniteWalSerializerVersionTest.class);
         ignoredTests.add(WalCompactionTest.class);
+        ignoredTests.add(WalCompactionNoArchiverTest.class);
         ignoredTests.add(WalCompactionSwitchOnTest.class);
         ignoredTests.add(IgniteWalIteratorSwitchSegmentTest.class);
         ignoredTests.add(IgniteWalIteratorExceptionDuringReadTest.class);
