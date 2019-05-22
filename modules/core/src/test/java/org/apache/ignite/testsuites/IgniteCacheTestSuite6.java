@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessim
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
+import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossDetectionOnNodeLeftTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheTryLockMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.ExchangeMergeStaleServerNodesTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThread
 import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
@@ -126,6 +128,10 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, CacheParallelStartTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheNoAffinityExchangeTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CachePartitionLossDetectionOnNodeLeftTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TxLocalDhtMixedCacheModesTest.class, ignoredTests);
 
         //GridTestUtils.addTestIfNeeded(suite, CacheClientsConcurrentStartTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingOrderingTest.class, ignoredTests);

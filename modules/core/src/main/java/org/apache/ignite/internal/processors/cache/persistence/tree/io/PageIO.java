@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastoreDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
@@ -250,6 +251,9 @@ public abstract class PageIO {
 
     /** */
     public static final short T_TX_LOG_INNER = 31;
+
+    /** */
+    public static final short T_DATA_PART = 32;
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
@@ -667,6 +671,9 @@ public abstract class PageIO {
                 return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
             case T_DATA_METASTORAGE:
+                return (Q)MetastoreDataPageIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_PART:
                 return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
 
             default:
