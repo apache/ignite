@@ -65,10 +65,10 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
     private static final GridRandom rnd = new GridRandom();
 
     /** */
-    private static CacheConfiguration<Integer, byte[]> destroyCacheCfg;
+    private CacheConfiguration<Integer, byte[]> destroyCacheCfg;
 
     /** */
-    private static CacheConfiguration<Integer, byte[]> surviveCacheCfg;
+    private CacheConfiguration<Integer, byte[]> surviveCacheCfg;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -111,12 +111,19 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        afterTest();
+        super.beforeTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
+        grid(0).destroyCache(destroyCacheCfg.getName());
+        grid(0).destroyCache(surviveCacheCfg.getName());
 
         stopAllGrids();
 
@@ -127,27 +134,47 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testTxOnCacheStop() throws Exception {
-        startGrids(2);
+    public void testTxOnCacheStopNoMessageBlock() throws Exception {
+        testTxOnCacheStop(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTxOnCacheStopWithMessageBlock() throws Exception {
+        testTxOnCacheStop(true);
+    }
+
+    /**
+     * @param block {@code True} To block GridNearTxPrepareRequest message.
+     */
+    public void testTxOnCacheStop(boolean block) throws Exception {
+        startGridsMultiThreaded(2);
 
         Ignition.setClientMode(true);
 
         IgniteEx ig = startGrid("client");
 
         ig.cluster().active(true);
-        for (TransactionConcurrency conc : TransactionConcurrency.values())
-            for (TransactionIsolation iso : TransactionIsolation.values())
-                runTxOnCacheStop(conc, iso, ig, true);
-
-        ig.destroyCache(destroyCacheCfg.getName());
-        ig.destroyCache(surviveCacheCfg.getName());
 
         for (TransactionConcurrency conc : TransactionConcurrency.values())
             for (TransactionIsolation iso : TransactionIsolation.values())
-                runTxOnCacheStop(conc, iso, ig, false);
+                runTxOnCacheStop(conc, iso, ig, block);
+    }
 
-        ig.destroyCache(destroyCacheCfg.getName());
-        ig.destroyCache(surviveCacheCfg.getName());
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTxOnCacheStopInMid() throws Exception {
+        startGridsMultiThreaded(2);
+
+        Ignition.setClientMode(true);
+
+        IgniteEx ig = startGrid("client");
+
+        ig.cluster().active(true);
 
         for (TransactionConcurrency conc : TransactionConcurrency.values())
             for (TransactionIsolation iso : TransactionIsolation.values())
@@ -175,11 +202,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 destroyLatch.await();
 
                 IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
-                    try {
-                        U.sleep(rnd.nextInt(500));
-                    } catch (IgniteInterruptedCheckedException e) {
-                        // no op.
-                    }
+                    doSleep(rnd.nextInt(500));
 
                     spi.stopBlock();
                 });
@@ -187,7 +210,8 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 cache.destroy();
 
                 f.get();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
         });
@@ -211,7 +235,8 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 cache2.put(100, val);
 
                 tx.commit();
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 assertTrue(X.hasCause(e, IgniteTxTimeoutCheckedException.class)
                     || X.hasCause(e, CacheInvalidStateException.class) || X.hasCause(e, IgniteException.class));
             }
@@ -222,7 +247,8 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         try {
             assertEquals(cache2.get(100), cache.get(100));
-        } catch (IllegalStateException e) {
+        }
+        catch (IllegalStateException e) {
             assertTrue(X.hasCause(e, CacheStoppedException.class));
         }
 
@@ -251,7 +277,8 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 cache.destroy();
 
                 destroyLatch.countDown();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 e.printStackTrace();
             }
         });
@@ -269,11 +296,13 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
                 destroyLatch.await();
 
                 tx.commit();
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 assertTrue(X.hasCause(e, CacheInvalidStateException.class) ||
                     X.hasCause(e, CacheStoppedException.class) || X.hasCause(e, TransactionRollbackException.class) ||
                     X.hasCause(e, IgniteException.class));
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 e.printStackTrace();
             }
 

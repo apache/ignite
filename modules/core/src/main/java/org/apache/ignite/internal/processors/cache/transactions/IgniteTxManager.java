@@ -345,7 +345,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             try {
                 compFut.get();
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 U.error(log, "Error occured during tx rollback.", e);
             }
         }
