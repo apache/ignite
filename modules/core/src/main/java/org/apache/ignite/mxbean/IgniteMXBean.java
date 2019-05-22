@@ -512,7 +512,7 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Enable or disable cluster read-only mode.")
     @MXBeanParametersNames("readOnly")
-    @MXBeanParametersDescriptions("true - enable read-only mode, false - disable read-only mode.")
+    @MXBeanParametersDescriptions("True - enable read-only mode, false - disable read-only mode.")
     void readOnlyMode(boolean readOnly);
 
     /**
