@@ -19,6 +19,7 @@ package org.apache.ignite.console.agent.rest;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
+import java.net.SocketException;
 import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
@@ -228,7 +229,7 @@ public class RestExecutor implements AutoCloseable {
 
                 return res;
             }
-            catch (ConnectException ignored) {
+            catch (SocketException ignored) {
                 LT.warn(log, "Failed connect to cluster [url=" + nodeUrl + "]");
             }
         }
