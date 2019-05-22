@@ -28,6 +28,7 @@ import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CorruptedPersistenceException;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -140,7 +141,10 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (IGNITE_DUMP_THREADS_ON_FAILURE)
             U.dumpThreads(log);
 
-        ctx.diagnostic().onFailure(ignite, failureCtx);
+        DiagnosticProcessor diagnosticProcessor = ctx.diagnostic();
+
+        if (diagnosticProcessor != null)
+            diagnosticProcessor.onFailure(ignite, failureCtx);
 
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 
