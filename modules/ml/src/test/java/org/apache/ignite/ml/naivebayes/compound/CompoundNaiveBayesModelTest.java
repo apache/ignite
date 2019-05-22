@@ -82,9 +82,7 @@ public class CompoundNaiveBayesModelTest {
             .wirhPriorProbabilities(classProbabilities)
             .withLabels(labels)
             .withGaussianModel(gaussianModel)
-            .withGaussianSkipFuture(asList(3, 4, 5, 6, 7))
-            .withDiscreteModel(discreteModel)
-            .withDiscreteSkipFuture(asList(0, 1, 2));
+            .withDiscreteModel(discreteModel);
 
         Vector observation = VectorUtils.of(6, 130, 8, 1, 0, 1, 1, 0);
 

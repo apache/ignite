@@ -27,13 +27,11 @@ public class CompoundNaiveBayesExample {
             IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
                 .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            double[] labels = {1., 2.};
             double[] classProbabilities = new double[] {.5, .5};
             double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 
             System.out.println(">>> Create new naive Bayes classification trainer object.");
             CompoundNaiveBayesTrainer trainer = new CompoundNaiveBayesTrainer()
-                .setLabels(labels)
                 .setClsProbabilities(classProbabilities)
                 .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer()
                     .withEquiprobableClasses()

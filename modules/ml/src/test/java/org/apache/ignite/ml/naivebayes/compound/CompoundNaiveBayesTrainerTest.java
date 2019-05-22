@@ -32,7 +32,6 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     @Before
     public void createTrainer() {
         trainer = new CompoundNaiveBayesTrainer()
-            .setLabels(labels)
             .setClsProbabilities(classProbabilities)
             .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer().setFeatureIdsToSkip(asList(3, 4, 5, 6, 7)))
             .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()

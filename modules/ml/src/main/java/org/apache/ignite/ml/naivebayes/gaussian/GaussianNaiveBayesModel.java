@@ -120,6 +120,11 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     }
 
     /** */
+    public double[] getLabels() {
+        return labels;
+    }
+
+    /** */
     public GaussianNaiveBayesSumsHolder getSumsHolder() {
         return sumsHolder;
     }

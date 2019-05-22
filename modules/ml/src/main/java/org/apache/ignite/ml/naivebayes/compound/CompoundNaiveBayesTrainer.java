@@ -31,8 +31,6 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
 
     /** Prior probabilities of each class */
     private double[] clsProbabilities;
-    /** Labels. */
-    private double[] labels;
     private GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
     private DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
 
@@ -56,7 +54,6 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
 
         CompoundNaiveBayesModel compoundModel = new CompoundNaiveBayesModel()
-            .withLabels(labels)
             .wirhPriorProbabilities(clsProbabilities);
 
         if (gaussianNaiveBayesTrainer != null) {
@@ -64,7 +61,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                 ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor)
                 : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor);
 
-            compoundModel.withGaussianModel(model);
+            compoundModel.withGaussianModel(model).withLabels(model.getLabels());
         }
 
         if (discreteNaiveBayesTrainer != null) {
@@ -72,7 +69,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                 ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor)
                 : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor);
 
-            compoundModel.withDiscreteModel(model);
+            compoundModel.withDiscreteModel(model).withLabels(model.getLabels());
         }
 
         return compoundModel;
@@ -81,12 +78,6 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     /** */
     public CompoundNaiveBayesTrainer setClsProbabilities(double[] clsProbabilities) {
         this.clsProbabilities = clsProbabilities.clone();
-        return this;
-    }
-
-    /** */
-    public CompoundNaiveBayesTrainer setLabels(double[] labels) {
-        this.labels = labels.clone();
         return this;
     }
 

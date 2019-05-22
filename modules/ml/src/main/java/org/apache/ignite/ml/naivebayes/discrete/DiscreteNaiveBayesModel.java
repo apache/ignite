@@ -132,6 +132,11 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     }
 
     /** */
+    public double[] getLabels() {
+        return labels;
+    }
+
+    /** */
     public DiscreteNaiveBayesSumsHolder getSumsHolder() {
         return sumsHolder;
     }
