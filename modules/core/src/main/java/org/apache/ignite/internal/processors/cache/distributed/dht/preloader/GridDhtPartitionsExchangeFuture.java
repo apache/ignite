@@ -1002,7 +1002,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // Case for baseline node leave.
         if ((firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
             && firstEvtDiscoCache.baselineNodes() != null) {
-            if (changedBaseline())
+            if (!CU.isPersistenceEnabled(cctx.kernalContext().config()))
                 return false;
 
             if (isCacheLostPolicyConfigured())
