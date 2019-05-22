@@ -48,6 +48,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -995,9 +996,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} if affinity can be recalculated locally.
      */
     private boolean isLocalAffinityRecalculationExchange() {
-//        if (true)
-//            return false;
-
         if (!allNodesSupports(firstEvtDiscoCache.allNodes(), LOCAL_AFFINITY_RECALCULATION_EXCHANGE))
             return false;
 
@@ -1007,24 +1005,23 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (changedBaseline())
                 return false;
 
-            boolean res = true;
+            if (isCacheLostPolicyConfigured())
+                return false;
 
-            // Check that there are no moving partitions that may be lost.
-            if (!cctx.affinity().isLastAffinityIdeal(this, crd != null && crd.isLocal()))
-                res =  false;
-
-            if (res)
-                res =  firstEvtDiscoCache.baselineNodes().stream()
-                    .anyMatch(node -> node.consistentId().equals(firstDiscoEvt.eventNode().consistentId()));
-
-            System.out.println("MY EXCHANGE light="+res+
-                " n="+cctx.localNode().id()+" nodes="+F.nodeIds(firstEventCache().serverNodes())
-                +" leave="+firstEvent().eventNode());
-
-            return res;
+            return firstEvtDiscoCache.baselineNodes().stream()
+                .anyMatch(node -> node.consistentId().equals(firstDiscoEvt.eventNode().consistentId()));
         }
 
         return false;
+    }
+
+    /**
+     *
+     */
+    private boolean isCacheLostPolicyConfigured() {
+        return cctx.kernalContext().cache().cacheGroups().stream().anyMatch( context -> {
+            return !context.isLocal() && context.config().getPartitionLossPolicy() != PartitionLossPolicy.IGNORE;
+        });
     }
 
     /**

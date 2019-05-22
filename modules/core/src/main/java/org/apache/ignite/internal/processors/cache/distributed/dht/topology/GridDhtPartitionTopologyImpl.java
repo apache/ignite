@@ -2048,7 +2048,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
 
-
                         if (!hasOwner) {
                             lost = true;
 
@@ -2591,11 +2590,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == MOVING) {
-//
-//                    if (ctx.igniteInstanceName().endsWith("3") && !grp.systemCache()) {
-//                        System.out.println("MY TRY TO MAKE OWN REBALANCE p=" + locPart + "\n\n");
-//                    }
-
                     boolean reserved = locPart.reserve();
 
                     try {
