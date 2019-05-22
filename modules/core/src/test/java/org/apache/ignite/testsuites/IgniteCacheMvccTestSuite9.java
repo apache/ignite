@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimar
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateConsistencyHistoryRebalanceTest;
 import org.apache.ignite.internal.stat.IoStatisticsCachePersistenceSelfTest;
 import org.apache.ignite.internal.stat.IoStatisticsCacheSelfTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -81,6 +82,7 @@ public class IgniteCacheMvccTestSuite9 {
         ignoredTests.add(TxPartitionCounterStateTwoPrimaryTwoBackupsTest.class);
         ignoredTests.add(TxPartitionCounterStateWithFilterTest.class);
         ignoredTests.add(TxPartitionCounterStateConsistencyTest.class);
+        ignoredTests.add(TxPartitionCounterStateConsistencyHistoryRebalanceTest.class);
 
         // IO statistics.
         ignoredTests.add(IoStatisticsCacheSelfTest.class);
