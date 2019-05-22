@@ -40,7 +40,6 @@ import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
@@ -92,6 +91,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 

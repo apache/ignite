@@ -144,7 +144,6 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     @Test
     public void testMultipleDeploy() throws Exception {
-        System.out.println("~~! " + testsCfg.description());
         runInAllDataModes(new ServiceTestRunnable(true, new DeployClosure() {
             @Override public void run(IgniteServices services, String svcName, TestService svc) throws Exception {
                 services.deployMultiple(svcName, (Service)svc, 0, 1);
