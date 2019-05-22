@@ -67,7 +67,6 @@ import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -286,8 +285,12 @@ public class GridDhtPartitionDemander {
         if ((delay == 0 || force) && assignments != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
-            if (compareAssignments(assignments, oldFut))
+            if (compareAssignments(assignments, oldFut)) {
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to already started.");
+
                 return null;
+            }
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
 
@@ -420,6 +423,9 @@ public class GridDhtPartitionDemander {
     private boolean compareAssignments(GridDhtPreloaderAssignments assignments, RebalanceFuture oldFut) {
         if (oldFut.isInitial() || oldFut.isCancelled())
             return false;
+
+        if (assignments.isEmpty())
+            return true;
 
         synchronized (oldFut) {
             if (oldFut.remaining.size() < assignments.size())
