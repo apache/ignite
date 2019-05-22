@@ -479,7 +479,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param affVer Affinity version.
      * @param aff Affinity assignments.
      * @param updateSeq Update sequence.
-     * @param exchFut
+     * @param exchFut Exchange future for this version.
      */
     private void createPartitions(AffinityTopologyVersion affVer, List<List<ClusterNode>> aff, long updateSeq,
         GridDhtPartitionsExchangeFuture exchFut) {
@@ -2719,6 +2719,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 if (part.group().persistenceEnabled() &&
                                     part.group().walEnabled() &&
                                     !part.group().mvccEnabled()) {
+                                    // Rollback record tracks applied out-of-order updates while finalizeUpdateCounters
+                                    // return gaps (missing updates). The code below transforms gaps to updates.
                                     RollbackRecord rec = new RollbackRecord(part.group().groupId(), part.id(),
                                         gapStart - 1, gapStop - gapStart + 1);
 

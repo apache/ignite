@@ -46,6 +46,8 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
 
     /**
      * Get LWM.
+     *
+     * @return Current LWM.
      */
     public long get();
 
@@ -60,6 +62,7 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
      * Increment LWM by delta.
      *
      * @param delta Delta.
+     * @return New LWM.
      */
     public long next(long delta);
 
@@ -73,6 +76,7 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
 
     /**
      * Returns HWM.
+     * @return Current HWM.
      */
     public long reserved();
 
@@ -126,7 +130,7 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public boolean empty();
 
     /**
-     * @return Iterator for pairs [start, delta] for each out-of-order update in the update counter sequence.
+     * @return Iterator for pairs [start, range] for each out-of-order update in the update counter sequence.
      */
     @Override public Iterator<long[]> iterator();
 }

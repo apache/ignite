@@ -1441,7 +1441,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.dataTree = dataTree;
             if (grp.mvccEnabled())
                 pCntr = new PartitionMvccTxUpdateCounterImpl();
-            else if (grp.hasAtomicCaches())
+            else if (grp.hasAtomicCaches() || !grp.persistenceEnabled())
                 pCntr = new PartitionAtomicUpdateCounterImpl();
             else {
                 pCntr = ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
