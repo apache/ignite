@@ -41,6 +41,7 @@ import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -49,7 +50,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -122,10 +122,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            assertTrue(
-                grid(0).cluster().nodes().toString(),
-                GridTestUtils.waitForCondition(() -> GRID_CNT == grid(0).cluster().nodes().size(), 3000)
-            );
+            assertEquals(GRID_CNT, grid(0).cluster().nodes().size());
 
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
@@ -1178,11 +1175,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     try {
                         IgniteEvents evts = grid(idx).events();
 
-                        UUID consumeId = evts.remoteListenAsync(new P2<UUID, Event>() {
-                            @Override public boolean apply(UUID uuid, Event evt) {
-                                return true;
-                            }
-                        }, null, EVT_JOB_STARTED).get(3000);
+                        UUID consumeId = evts.remoteListenAsync((uuid, evt) -> true, null, EVT_JOB_STARTED).get(5000);
 
                         started.add(consumeId);
 
@@ -1195,11 +1188,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     U.sleep(10);
                 }
 
-                stop.set(true);
-
                 return null;
             }
         }, 8, "consume-starter");
+
+        starterFut.listen(fut -> stop.set(true));
 
         IgniteInternalFuture<?> stopperFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1231,12 +1224,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
-                    try {
-                        startGrid("anotherGridMultithreadedWithNodeRestart");
-                    }
-                    finally {
-                        stopGrid("anotherGridMultithreadedWithNodeRestart");
-                    }
+                    startGrid("anotherGridMultithreadedWithNodeRestart");
+                    stopGrid("anotherGridMultithreadedWithNodeRestart");
                 }
 
                 return null;
@@ -1260,10 +1249,16 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             }
         }, 1, "job-runner");
 
-        starterFut.get();
-        stopperFut.get();
-        nodeRestarterFut.get();
-        jobRunnerFut.get();
+        GridCompoundFuture compoundFut = new GridCompoundFuture();
+
+        compoundFut.add(starterFut);
+        compoundFut.add(stopperFut);
+        compoundFut.add(nodeRestarterFut);
+        compoundFut.add(jobRunnerFut);
+
+        compoundFut.markInitialized();
+
+        compoundFut.get();
 
         IgniteBiTuple<Integer, UUID> t;
 
