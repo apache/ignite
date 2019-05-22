@@ -1176,7 +1176,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     try {
                         IgniteEvents evts = grid(idx).events();
 
-                        UUID consumeId = evts.remoteListenAsync((uuid, evt) -> true, null, EVT_JOB_STARTED).get(5000);
+                        UUID consumeId = evts.remoteListenAsync(new P2<UUID, Event>() {
+                            @Override public boolean apply(UUID uuid, Event evt) {
+                                return true;
+                            }
+                        }, null, EVT_JOB_STARTED).get(5000);
 
                         started.add(consumeId);
 
