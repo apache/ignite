@@ -37,8 +37,7 @@
             "baselineAutoAdjustEnabled",
             "baselineAutoAdjustTimeout",
             "baselineAutoAdjustStatus",
-            "readOnlyMode",
-            "getReadOnlyModeDuration"
+            "readOnly"
         };
 
         /** Members that are missing on .NET side and should be added in future. */
