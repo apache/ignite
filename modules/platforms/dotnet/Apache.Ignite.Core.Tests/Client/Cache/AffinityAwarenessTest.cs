@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
@@ -222,6 +224,41 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Assert.AreEqual(14, _cache.Get(14));
                 Assert.AreEqual(1, GetClientRequestGridIndex());
             }
+        }
+
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        [TestCase(3, 0)]
+        [TestCase(4, 1)]
+        [TestCase(5, 1)]
+        [TestCase(6, 2)]
+        public void AllKeyBasedOperations_PrimitiveKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
+        {
+            TestOperation(() => _cache.Get(key), gridIdx);
+            TestAsyncOperation(() => _cache.GetAsync(key), gridIdx);
+
+            TestOperation(() => _cache.Put(key, key), gridIdx);
+            TestAsyncOperation(() => _cache.PutAsync(key, key), gridIdx);
+
+            TestOperation(() => _cache.Clear(key), gridIdx);
+            TestAsyncOperation(() => _cache.ClearAsync(key), gridIdx);
+
+            // TODO: Check coverage
+        }
+
+        private void TestOperation(Action action, int expectedGridIdx)
+        {
+            ClearLoggers();
+            action();
+            Assert.AreEqual(expectedGridIdx, GetClientRequestGridIndex());
+        }
+
+        private void TestAsyncOperation<T>(Func<T> action, int expectedGridIdx) where T : Task
+        {
+            ClearLoggers();
+            action().Wait();
+            Assert.AreEqual(expectedGridIdx, GetClientRequestGridIndex());
         }
     }
 }
