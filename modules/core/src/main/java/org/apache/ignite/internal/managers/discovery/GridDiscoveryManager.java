@@ -1100,8 +1100,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     private GridLocalMetrics createMetrics() {
         return new GridLocalMetrics() {
+            private final int osAvailableProcessors = os.getAvailableProcessors();
+
             @Override public int getAvailableProcessors() {
-                return os.getAvailableProcessors();
+                return osAvailableProcessors;
             }
 
             @Override public double getCurrentCpuLoad() {
