@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimistic
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStopTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncNearCacheTest;
@@ -89,6 +90,9 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxLabelTest.class);
 
         suite.addTestSuite(TxMultiCacheAsyncOpsTest.class);
+
+        suite.addTestSuite(TxOnCachesStartTest.class);
+        suite.addTestSuite(TxOnCachesStopTest.class);
 
         suite.addTestSuite(TxOnCachesStartTest.class);
 
