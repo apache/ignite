@@ -23,6 +23,17 @@ module.exports = {
     implements: 'services/utils'
 };
 
+async function cursor_to_list(cursor){	
+   let list = []
+   
+   var doc;
+   while ((doc = await cursor.next())) {    
+     list.push(doc);
+   }
+   console.log(list); 
+   return list; 
+}
+
 /**
  * @returns {UtilsService}
  */
@@ -45,6 +56,12 @@ module.exports.factory = () => {
 
             return res;
         }
+        
+        static cursor_to_array(cursor){
+       	 	
+		   return cursor_to_list(cursor); 
+       }
+        
     }
 
     return UtilsService;

@@ -35,8 +35,7 @@
       "routes/*",
       "services/*",
       "templates/*",
-      "node_modules/getos/logic/*",
-      "node_modules/mongodb-download/node_modules/getos/logic/*"
+      "node_modules/getos/logic/*"      
     ],
     "scripts": [
       "app/*.js",

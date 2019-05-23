@@ -23,7 +23,7 @@ const _ = require('lodash');
 
 module.exports = {
     implements: 'services/domains',
-    inject: ['mongo', 'services/spaces', 'services/caches', 'errors']
+    inject: ['mongo', 'services/spaces', 'services/caches', 'services/utils', 'errors']
 };
 
 /**
@@ -33,7 +33,7 @@ module.exports = {
  * @param errors
  * @returns {DomainsService}
  */
-module.exports.factory = (mongo, spacesService, cachesService, errors) => {
+module.exports.factory = (mongo, spacesService, cachesService,utilsService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
@@ -182,7 +182,11 @@ module.exports.factory = (mongo, spacesService, cachesService, errors) => {
                                 ]
                             }
                         }}
-                    ]).exec();
+                    ]).cursor({batchSize:100,async: true}).exec().then((data)=>{ //add@byron
+                    	
+                    	data = utilsService.cursor_to_array(data);      
+                    	return data;
+                    });
                 });
         }
 

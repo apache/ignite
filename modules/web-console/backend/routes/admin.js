@@ -47,6 +47,12 @@ module.exports.factory = function(settings, mongo, spacesService, sessionsServic
                 .then(res.api.ok)
                 .catch(res.api.error);
         });
+        //add@byron
+        router.get('/list', (req, res) => {        	
+        	usersService.list(req.body)
+             	.then(res.api.ok)
+             	.catch(res.api.error);
+        });
 
         // Remove user.
         router.post('/remove', (req, res) => {

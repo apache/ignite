@@ -39,7 +39,9 @@
         <maven.build.timestamp.format>yyMMddHHmmss</maven.build.timestamp.format>
     </properties>
 
-    <dependencies>
+    <dependencies>  
+
+		
         <dependency>
             <groupId>io.socket</groupId>
             <artifactId>socket.io-client</artifactId>
