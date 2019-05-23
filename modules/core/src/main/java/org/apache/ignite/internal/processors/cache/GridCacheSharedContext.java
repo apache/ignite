@@ -1045,10 +1045,9 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param tx Transaction to rollback.
-     * @throws IgniteCheckedException If failed.
      * @return Rollback future.
      */
-    public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
+    public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) {
         boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
