@@ -106,6 +106,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTI
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
+import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -160,13 +161,13 @@ public class IgniteTxHandler {
      * @param nearNode Sender node.
      * @param req Request.
      */
-    private void processNearTxPrepareRequest0(ClusterNode nearNode, GridNearTxPrepareRequest req) {
+    private IgniteInternalFuture<GridNearTxPrepareResponse> processNearTxPrepareRequest0(ClusterNode nearNode, GridNearTxPrepareRequest req) {
         IgniteInternalFuture<GridNearTxPrepareResponse> fut;
 
         if (req.firstClientRequest() && req.allowWaitTopologyFuture()) {
             for (;;) {
                 if (waitForExchangeFuture(nearNode, req))
-                    return;
+                    return new GridFinishedFuture<>();
 
                 fut = prepareNearTx(nearNode, req);
 
@@ -179,6 +180,8 @@ public class IgniteTxHandler {
 
         assert req.txState() != null || fut == null || fut.error() != null ||
             (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+
+        return fut;
     }
 
     /**
@@ -346,7 +349,7 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<GridNearTxPrepareResponse>  prepareNearTxLocal(
+    public IgniteInternalFuture<GridNearTxPrepareResponse> prepareNearTxLocal(
         final GridNearTxLocal originTx,
         final GridNearTxPrepareRequest req) {
         // Make sure not to provide Near entries to DHT cache.
@@ -621,10 +624,26 @@ public class IgniteTxHandler {
                                 return;
                             }
                             ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, () -> {
+                                IgniteInternalFuture<GridNearTxPrepareResponse> fut = null;
+
+                                Throwable err = null;
+
                                 try {
-                                    processNearTxPrepareRequest0(node, req);
+                                    for (IgniteTxEntry itm : F.concat(false, req.writes(), req.reads())) {
+                                        err = topFut.validateCache(itm.context(), req.recovery(), isEmpty(req.writes()),
+                                            null, null);
+
+                                        if (err != null)
+                                            break;
+                                    }
+
+                                    if (err == null)
+                                        fut = processNearTxPrepareRequest0(node, req);
                                 }
                                 finally {
+                                    if (fut == null || fut.error() != null || err != null)
+                                        sendResponseOnTimeoutOrError(e, topFut, node, req);
+
                                     ctx.io().onMessageProcessed(req);
                                 }
                             });
