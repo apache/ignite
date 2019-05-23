@@ -252,11 +252,26 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         assert globalState != null;
 
+        try {
+            throw new RuntimeException();
+        }
+        catch (RuntimeException e) {
+            log.error("IGNITE-11256 asyncWaitForTransition:" + asyncWaitForTransition + " transition: " + globalState.transition() + " active: " + globalState.active(), e);
+        }
+
         if (globalState.transition() && globalState.active()) {
             Boolean transitionRes = globalState.transitionResult();
 
-            if (transitionRes != null)
+            if (transitionRes != null) {
+                try {
+                    throw new RuntimeException();
+                }
+                catch (RuntimeException e) {
+                    log.error("IGNITE-11256 transitionRes: " + transitionRes);
+                }
+
                 return new IgniteFinishedFutureImpl<>(transitionRes);
+            }
             else {
                 GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
 
@@ -272,19 +287,42 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                             }
                         }));
                     }
-                    else
+                    else {
+                        try {
+                            throw new RuntimeException();
+                        }
+                        catch (RuntimeException e) {
+                            log.error("IGNITE-11256 globalState.baselineChanged(): " + globalState.baselineChanged());
+                        }
+
                         return new IgniteFinishedFutureImpl<>(globalState.baselineChanged());
+                    }
                 }
 
                 transitionRes = globalState.transitionResult();
 
                 assert transitionRes != null;
 
+                try {
+                    throw new RuntimeException();
+                }
+                catch (RuntimeException e) {
+                    log.error("IGNITE-11256 globalState.transitionResult(): " + globalState.transitionResult());
+                }
+
                 return new IgniteFinishedFutureImpl<>(transitionRes);
             }
         }
-        else
+        else {
+            try {
+                throw new RuntimeException();
+            }
+            catch (RuntimeException e) {
+                log.error("IGNITE-11256 globalState.transition() && globalState.active(): " + globalState.active());
+            }
+
             return new IgniteFinishedFutureImpl<>(globalState.active());
+        }
     }
 
     /** {@inheritDoc} */
