@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.database.baseline;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,5 +64,11 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
         stopAllGrids();
 
         cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int getRebalanceCount(AtomicInteger restartCnt) {
+        //Restarts nodes out of baseline does not lead to rebalance.
+        return 0;
     }
 }

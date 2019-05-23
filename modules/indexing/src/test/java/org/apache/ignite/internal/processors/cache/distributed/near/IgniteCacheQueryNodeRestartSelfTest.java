@@ -167,12 +167,21 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
         info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
 
-        boolean success = lsnr.awaitEvents(GRID_CNT * restartCnt.get(), 15000);
+        boolean success = lsnr.awaitEvents(getRebalanceCount(restartCnt), 15000);
 
         for (int i = 0; i < GRID_CNT; i++)
             grid(i).events().stopLocalListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         assert success;
+    }
+
+    /**
+     * @param restartCnt Server restarts.
+     * @return Count of rebalances were executed.
+     */
+    protected int getRebalanceCount(AtomicInteger restartCnt) {
+        //Each stopping of server node lead to rebalance on eache other server nodes.
+        return gridCount() * restartCnt.get();
     }
 
     /**
