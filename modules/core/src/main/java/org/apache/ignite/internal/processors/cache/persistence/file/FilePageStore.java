@@ -24,7 +24,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -61,13 +61,10 @@ public class FilePageStore implements PageStore {
     public static final int HEADER_SIZE = 8/*SIGNATURE*/ + 4/*VERSION*/ + 1/*type*/ + 4/*page size*/;
 
     /** */
-    private volatile File cfgFile;
-
-    /** */
-    private final IgniteOutClosure<File> fileProvider;
+    private final IgniteOutClosure<Path> pathProvider;
 
     /**
-     * Caches the existance state of storage file. After it is initialized, it will be not set to null
+     * Caches the existence state of storage file. After it is initialized, it will be not set to null
      * during FilePageStore lifecycle.
      */
     private volatile Boolean fileExists;
@@ -108,43 +105,21 @@ public class FilePageStore implements PageStore {
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /**
-     * @param file File.
-     */
+    /** */
     public FilePageStore(
         byte type,
-        File file,
-        IgniteOutClosure<File> fileProvider,
+        IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
         AllocatedPageTracker allocatedTracker
     ) {
         this.type = type;
-        this.cfgFile = file;
-        this.fileProvider = fileProvider;
+        this.pathProvider = pathProvider;
         this.dbCfg = cfg;
         this.ioFactory = factory;
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
-    }
-
-    /**
-     * Getter for {@link FilePageStore#cfgFile}, returning cfgFile instance from provider, if field is dereferenced.
-     *
-     * @return cfgFile
-     */
-    private File getCfgFile() {
-        File file = cfgFile;
-
-        return file == null ? fileProvider.apply() : file;
-    }
-
-    /**
-     * Dereference cfgFile for better heap utilization.
-     */
-    public void dereferenceFile() {
-        cfgFile = null;
     }
 
     /** {@inheritDoc} */
@@ -181,19 +156,19 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public boolean exists() {
-        File cfgFile = this.cfgFile;
+        if (fileExists == null) {
+            lock.writeLock().lock();
 
-        if (cfgFile == null) {
-            if (fileExists == null) {
-                cfgFile = getCfgFile();
-
-                fileExists = cfgFile.exists();
+            try {
+                if (fileExists == null)
+                    fileExists = Files.exists(pathProvider.apply());
             }
-
-            return fileExists;
+            finally {
+                lock.writeLock().unlock();
+            }
         }
-        else
-            return cfgFile.exists();
+
+        return fileExists;
     }
 
     /**
@@ -250,7 +225,16 @@ public class FilePageStore implements PageStore {
         }
         catch (ClosedByInterruptException e) {
             // If thread was interrupted written header can be inconsistent.
-            Files.delete(Paths.get(getFileAbsolutePath()));
+            lock.writeLock().lock();
+
+            try {
+                Files.delete(pathProvider.apply());
+
+                fileExists = false;
+            }
+            finally {
+                lock.writeLock().unlock();
+            }
 
             throw e;
         }
@@ -324,8 +308,11 @@ public class FilePageStore implements PageStore {
 
             fileIO = null;
 
-            if (delete)
-                Files.delete(getCfgFile().toPath());
+            if (delete) {
+                Files.delete(pathProvider.apply());
+
+                fileExists = false;
+            }
         }
         catch (IOException e) {
             throw new StorageException("Failed to stop serving partition file [file=" + getFileAbsolutePath()
@@ -344,6 +331,8 @@ public class FilePageStore implements PageStore {
     @Override public void truncate(int tag) throws StorageException {
         init();
 
+        Path filePath = pathProvider.apply();
+
         lock.writeLock().lock();
 
         try {
@@ -355,10 +344,12 @@ public class FilePageStore implements PageStore {
 
             fileIO = null;
 
-            Files.delete(getCfgFile().toPath());
+            Files.delete(filePath);
+
+            fileExists = false;
         }
         catch (IOException e) {
-            throw new StorageException("Failed to truncate partition file [file=" + getFileAbsolutePath() + "]", e);
+            throw new StorageException("Failed to truncate partition file [file=" + filePath.toAbsolutePath() + "]", e);
         }
         finally {
             allocatedTracker.updateTotalAllocatedPages(-1L * allocated.getAndSet(0) / pageSize);
@@ -443,7 +434,8 @@ public class FilePageStore implements PageStore {
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
             assert off <= allocated.get() : "calculatedOffset=" + off +
-                ", allocated=" + allocated.get() + ", headerSize=" + headerSize() + ", cfgFile=" + getCfgFile();
+                ", allocated=" + allocated.get() + ", headerSize=" + headerSize() + ", cfgFile=" +
+                pathProvider.apply().toAbsolutePath();
 
             int n = readWithFailover(pageBuf, off);
 
@@ -516,11 +508,11 @@ public class FilePageStore implements PageStore {
 
                         while (true) {
                             try {
-                                File cfgFile = getCfgFile();
+                                File cfgFile = pathProvider.apply().toFile();
 
                                 this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                                fileExists = cfgFile.exists();
+                                fileExists = true;
 
                                 newSize = (cfgFile.length() == 0 ? initFile(fileIO) : checkFile(fileIO, cfgFile)) - headerSize();
 
@@ -594,11 +586,11 @@ public class FilePageStore implements PageStore {
                     try {
                         fileIO = null;
 
-                        File cfgFile = getCfgFile();
+                        File cfgFile = pathProvider.apply().toFile();
 
                         fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                        fileExists = cfgFile.exists();
+                        fileExists = true;
 
                         checkFile(fileIO, cfgFile);
 
@@ -772,7 +764,7 @@ public class FilePageStore implements PageStore {
      * @return File absolute path.
      */
     public String getFileAbsolutePath() {
-        return getCfgFile().getAbsolutePath();
+        return pathProvider.apply().toAbsolutePath().toString();
     }
 
     /**

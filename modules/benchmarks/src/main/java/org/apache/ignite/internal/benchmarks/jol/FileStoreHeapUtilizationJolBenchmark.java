@@ -16,13 +16,14 @@
  */
 package org.apache.ignite.internal.benchmarks.jol;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,13 +31,20 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.benchmarks.AbstractOptimizationTestBenchmark;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.jetbrains.annotations.Nullable;
 import org.openjdk.jol.info.GraphLayout;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
  */
-public class FileStoreHeapUtilizationJolBenchmark extends AbstractOptimizationTestBenchmark {
+public class FileStoreHeapUtilizationJolBenchmark {
     /** */
     private static final String CACHE_NAME = "testCache";
 
@@ -53,8 +61,36 @@ public class FileStoreHeapUtilizationJolBenchmark extends AbstractOptimizationTe
     private static final TestResultParameterInfo CACHE_WORK_TIME_PARAM = new TestResultParameterInfo(CACHE_WORK_TIME, false);
 
     /** */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    private final IgniteLogger log = new BenchmarkLogger();
+
+    /**
+     * Cleans persistent directory.
+     *
+     * @throws Exception if failed.
+     */
+    private void cleanPersistenceDir() throws Exception {
+        if (!F.isEmpty(G.allGrids()))
+            throw new IgniteException("Grids are not stopped");
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+    }
+
+    /** */
+    private IgniteConfiguration getConfiguration(String igniteInstanceName) {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setIgniteInstanceName(igniteInstanceName);
+
+        cfg.setDiscoverySpi(
+            new TcpDiscoverySpi()
+                .setIpFinder(
+                    new TcpDiscoveryVmIpFinder()
+                        .setAddresses(Collections.singleton("127.0.0.1:47500..47502"))
+                )
+        );
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
@@ -77,25 +113,13 @@ public class FileStoreHeapUtilizationJolBenchmark extends AbstractOptimizationTe
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void enableOptimization(boolean enable) {
-        /* No-op */
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean canDisableOptimization() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Map<TestResultParameterInfo, Comparable> testGrid() {
+    /** */
+    private Map<TestResultParameterInfo, Comparable> testGrid() {
         String name = UUID.randomUUID().toString().substring(0, 8);
 
         Ignite ignite = Ignition.start(getConfiguration(name));
 
         ignite.cluster().active(true);
-
-        GraphLayout layout = GraphLayout.parseInstance(ignite);
 
         long start = System.currentTimeMillis();
 
@@ -112,6 +136,8 @@ public class FileStoreHeapUtilizationJolBenchmark extends AbstractOptimizationTe
 
         long time = System.currentTimeMillis() - start;
 
+        GraphLayout layout = GraphLayout.parseInstance(ignite);
+
         ignite.cluster().active(false);
 
         Ignition.stop(name, true);
@@ -122,29 +148,122 @@ public class FileStoreHeapUtilizationJolBenchmark extends AbstractOptimizationTe
         }};
     }
 
-    /** {@inheritDoc} */
-    @Override protected Collection<TestResultParameterInfo> testingResults() {
-        return Arrays.asList(HEAP_USAGE_PARAM, CACHE_WORK_TIME_PARAM);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    /** */
+    private void beforeTest() throws Exception {
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /** */
+    private void afterTest() throws Exception {
         cleanPersistenceDir();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeBenchmark() {
-        //warming up
-        testGrid();
+    /**
+     * Benchmark body
+     *
+     * @throws Exception if failed.
+     */
+    private void benchmark() throws Exception {
+        beforeTest();
+
+        Map<TestResultParameterInfo, Comparable> results = testGrid();
+
+        afterTest();
+
+        log.info("Benchmark results: ");
+
+        results.forEach((k, v) -> {
+            log.info(k.name + ": " + v);
+        });
     }
 
     /** */
     public static void main(String[] args) throws Exception {
         new FileStoreHeapUtilizationJolBenchmark().benchmark();
+    }
+
+    /** */
+    private static class BenchmarkLogger implements IgniteLogger {
+        /**
+         * Default constructor.
+         */
+        BenchmarkLogger() {
+            /* No-op */
+        }
+
+        /** */
+        @Override public IgniteLogger getLogger(Object ctgr) {
+            return null;
+        }
+
+        /** */
+        @Override public void trace(String msg) {
+            if (isTraceEnabled())
+                System.out.println(msg);
+        }
+
+        /** */
+        @Override public void debug(String msg) {
+            if (isDebugEnabled())
+                System.out.println(msg);
+        }
+
+        /** */
+        @Override public void info(String msg) {
+            if (isInfoEnabled())
+                System.out.println(msg);
+        }
+
+        /** */
+        @Override public void warning(String msg, @Nullable Throwable e) {
+            System.err.println(msg);
+        }
+
+        /** */
+        @Override public void error(String msg, @Nullable Throwable e) {
+            System.err.println(msg);
+        }
+
+        /** */
+        @Override public boolean isTraceEnabled() {
+            return true;
+        }
+
+        /** */
+        @Override public boolean isDebugEnabled() {
+            return true;
+        }
+
+        /** */
+        @Override public boolean isInfoEnabled() {
+            return true;
+        }
+
+        /** */
+        @Override public boolean isQuiet() {
+            return false;
+        }
+
+        /** */
+        @Override public String fileName() {
+            return null;
+        }
+    }
+
+    /**
+     * This class contains info about single parameter, which is measured by benchmark (e.g. heap usage, etc.).
+     */
+    private static class TestResultParameterInfo {
+        /** */
+        final String name;
+
+        /** */
+        final boolean greaterIsBetter;
+
+        /** */
+        TestResultParameterInfo(String name, boolean better) {
+            this.name = name;
+            greaterIsBetter = better;
+        }
     }
 }
