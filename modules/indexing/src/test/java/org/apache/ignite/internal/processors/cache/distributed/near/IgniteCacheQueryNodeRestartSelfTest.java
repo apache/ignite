@@ -181,21 +181,20 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
     protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
         return multithreadedAsync(new Callable<Object>() {
             /** */
-            private final long nodeLifeTime = 2 * 1000;
-
-            /** */
             private final int logFreq = 50;
 
             @SuppressWarnings({"BusyWait"})
             @Override public Object call() throws Exception {
                 while (!done.get()) {
-                    int idx = GRID_CNT;
+                    startGrid(gridCount());
 
-                    startGrid(idx);
+                    changeBaseline();
 
-                    Thread.sleep(nodeLifeTime);
+                    awaitPartitionMapExchange();
 
-                    stopGrid(idx);
+                    stopGrid(gridCount());
+
+                    changeBaseline();
 
                     int c = restartCnt.incrementAndGet();
 
@@ -206,6 +205,10 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
                 return true;
             }
         }, 1, "restart-thread");
+    }
+
+    /** Change baseline topology. */
+    protected void changeBaseline() {
     }
 
     /** Listener that will wait for specified number of events received. */
