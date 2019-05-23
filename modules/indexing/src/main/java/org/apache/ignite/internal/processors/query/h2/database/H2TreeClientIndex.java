@@ -84,7 +84,7 @@ public class H2TreeClientIndex extends H2TreeIndexBase {
 
     /** {@inheritDoc} */
     @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
-        return 0;
+        throw unsupported();
     }
 
     /** {@inheritDoc} */
