@@ -1176,11 +1176,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     try {
                         IgniteEvents evts = grid(idx).events();
 
-                        UUID consumeId = evts.remoteListenAsync(new P2<UUID, Event>() {
+                        UUID consumeId = evts.remoteListen(new P2<UUID, Event>() {
+                            private static final long serialVersionUID = 0L;
+
                             @Override public boolean apply(UUID uuid, Event evt) {
                                 return true;
                             }
-                        }, null, EVT_JOB_STARTED).get(timeout * 2);
+                        }, null, EVT_JOB_STARTED);
 
                         started.add(consumeId);
 
@@ -1215,7 +1217,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     try {
                         IgniteEvents evts = grid(idx).events();
 
-                        evts.stopRemoteListenAsync(consumeId).get(timeout);
+                        evts.stopRemoteListen(consumeId);
 
                         stopped.add(consumeId);
                     }
