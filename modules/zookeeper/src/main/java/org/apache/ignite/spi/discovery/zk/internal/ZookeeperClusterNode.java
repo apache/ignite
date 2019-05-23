@@ -342,10 +342,10 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
         // Cluster metrics
         byte[] mtr = null;
 
-        ClusterMetrics metrics = this.metrics;
-
-        if (metrics != null)
-            mtr = ClusterMetricsSnapshot.serialize(metrics);
+//        ClusterMetrics metrics = this.metrics;
+//
+//        if (metrics != null)
+//            mtr = ClusterMetricsSnapshot.serialize(metrics);
 
         U.writeByteArray(out, mtr);
     }
