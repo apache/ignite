@@ -238,6 +238,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestOperation(() => _cache.Get(key), gridIdx);
             TestAsyncOperation(() => _cache.GetAsync(key), gridIdx);
 
+            // TODO: Put fails?
             TestOperation(() => _cache.Put(key, key), gridIdx);
             TestAsyncOperation(() => _cache.PutAsync(key, key), gridIdx);
 
