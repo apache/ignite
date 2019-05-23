@@ -31,11 +31,11 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//    GridCachePartitionedNodeRestartTest.class,
-//    IgniteCacheEntryListenerWithZkDiscoAtomicTest.class,
-//    IgniteClientReconnectCacheTest.class,
-//    GridCachePartitionedMultiNodeFullApiSelfTest.class,
-//    GridCacheReplicatedMultiNodeFullApiSelfTest.class,
+    GridCachePartitionedNodeRestartTest.class,
+    IgniteCacheEntryListenerWithZkDiscoAtomicTest.class,
+    IgniteClientReconnectCacheTest.class,
+    GridCachePartitionedMultiNodeFullApiSelfTest.class,
+    GridCacheReplicatedMultiNodeFullApiSelfTest.class,
     GridCommandHandlerTest.class
 })
 public class ZookeeperDiscoverySpiTestSuite2  {
