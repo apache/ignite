@@ -47,7 +47,7 @@
         </file>
 
         <file>
-            <source>modules/h2/target/ignite-h2-${ignite.version}.jar</source>
+            <source>modules/h2/target/ignite-h2-${project.version}.jar</source>
             <outputDirectory>/libs/ignite-indexing</outputDirectory>
         </file>
     </files>
