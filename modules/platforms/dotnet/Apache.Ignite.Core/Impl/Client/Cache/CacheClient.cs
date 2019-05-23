@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            DoOutOp(ClientOp.CacheClearKey, w => w.WriteObjectDetached(key));
+            DoOutOpAffinity(ClientOp.CacheClearKey, key);
         }
 
         /** <inheritDoc /> */
@@ -415,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutOpAsync(ClientOp.CacheClearKey, w => w.WriteObjectDetached(key));
+            return DoOutOpAffinityAsync(ClientOp.CacheClearKey, key);
         }
 
         /** <inheritDoc /> */
@@ -439,7 +439,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(ClientOp.CacheRemoveKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
+            return DoOutInOpAffinity(ClientOp.CacheRemoveKey, key, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpAsync(ClientOp.CacheRemoveKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
+            return DoOutInOpAffinityAsync(ClientOp.CacheRemoveKey, key, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -456,7 +456,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp(ClientOp.CacheRemoveIfEquals, w => WriteKeyVal(w, key, val), r => r.ReadBool());
+            return DoOutInOpAffinity(ClientOp.CacheRemoveIfEquals, key, val, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -465,7 +465,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpAsync(ClientOp.CacheRemoveIfEquals, w => WriteKeyVal(w, key, val), r => r.ReadBool());
+            return DoOutInOpAffinityAsync(ClientOp.CacheRemoveIfEquals, key, val, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
