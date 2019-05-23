@@ -252,16 +252,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         assert globalState != null;
 
-        log.error("IGNITE-11256 publicApiActiveStateAsync() asyncWaitForTransition: " + asyncWaitForTransition);
-
         if (globalState.transition() && globalState.active()) {
             Boolean transitionRes = globalState.transitionResult();
 
-            if (transitionRes != null) {
-                log.error("IGNITE-11256 publicApiActiveStateAsync() transitionRes:" + transitionRes);
-
+            if (transitionRes != null)
                 return new IgniteFinishedFutureImpl<>(transitionRes);
-            }
             else {
                 GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
 
@@ -273,33 +268,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                                 assert res != null;
 
-                                log.error("IGNITE-11256 publicApiActiveStateAsync() fut res:" + res);
-
                                 return res;
                             }
                         }));
                     }
-                    else {
-                        log.error("IGNITE-11256 publicApiActiveStateAsync() baselineChanged:" + globalState.baselineChanged());
-
+                    else
                         return new IgniteFinishedFutureImpl<>(globalState.baselineChanged());
-                    }
                 }
 
                 transitionRes = globalState.transitionResult();
 
                 assert transitionRes != null;
 
-                log.error("IGNITE-11256 publicApiActiveStateAsync() else transitionRes:" + transitionRes);
-
                 return new IgniteFinishedFutureImpl<>(transitionRes);
             }
         }
-        else {
-            log.error("IGNITE-11256 publicApiActiveStateAsync() active:" + globalState.active());
-
+        else
             return new IgniteFinishedFutureImpl<>(globalState.active());
-        }
     }
 
     /** {@inheritDoc} */
