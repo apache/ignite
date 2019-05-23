@@ -351,7 +351,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(oldVal, "oldVal");
             IgniteArgumentCheck.NotNull(newVal, "newVal");
 
-            return DoOutInOpAffinity(ClientOp.CacheReplaceIfEquals, w =>
+            return DoOutInOpAffinity(ClientOp.CacheReplaceIfEquals, key, w =>
             {
                 w.WriteObjectDetached(key);
                 w.WriteObjectDetached(oldVal);
@@ -608,6 +608,21 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             return _ignite.Socket.DoOutInOpAffinity(
                 opId,
                 stream => WriteRequest(w => w.WriteObjectDetached(key), stream),
+                readFunc,
+                _id,
+                key,
+                HandleError<T>);
+        }
+
+        /// <summary>
+        /// Does the out in op.
+        /// </summary>
+        private T DoOutInOpAffinity<T>(ClientOp opId, TK key, Action<BinaryWriter> writeAction,
+            Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinity(
+                opId,
+                stream => WriteRequest(writeAction, stream),
                 readFunc,
                 _id,
                 key,
