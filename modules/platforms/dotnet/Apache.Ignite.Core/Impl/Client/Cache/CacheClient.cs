@@ -366,7 +366,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(oldVal, "oldVal");
             IgniteArgumentCheck.NotNull(newVal, "newVal");
 
-            return DoOutInOpAsync(ClientOp.CacheReplaceIfEquals, w =>
+            return DoOutInOpAffinityAsync(ClientOp.CacheReplaceIfEquals, key, w =>
             {
                 w.WriteObjectDetached(key);
                 w.WriteObjectDetached(oldVal);
