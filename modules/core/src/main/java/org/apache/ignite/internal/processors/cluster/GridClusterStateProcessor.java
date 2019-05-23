@@ -250,6 +250,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         DiscoveryDataClusterState globalState = this.globalState;
 
+        try {
+            throw new RuntimeException();
+        }
+        catch (RuntimeException e) {
+            log.error("IGNITE-11256 asyncWaitForTransition:" + asyncWaitForTransition + " transition: " + globalState.transition() + " active: " + globalState.active(), e);
+        }
+
         assert globalState != null;
 
         if (globalState.transition() && globalState.active()) {
