@@ -45,6 +45,11 @@
             <source>config/java.util.logging.properties</source>
             <outputDirectory>/config</outputDirectory>
         </file>
+
+        <file>
+            <source>modules/h2/target/ignite-h2-${project.version}.jar</source>
+            <outputDirectory>/libs/ignite-indexing</outputDirectory>
+        </file>
     </files>
 
     <fileSets>
