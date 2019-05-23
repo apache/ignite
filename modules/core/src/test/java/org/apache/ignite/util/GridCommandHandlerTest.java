@@ -397,6 +397,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertTrue(ignite.cluster().readOnly());
 
+        assertTrue(ignite.cluster().active());
+
+        awaitPartitionMapExchange();
+
+        log.error("IGNITE-11256 state");
+
         assertEquals(EXIT_CODE_OK, execute("--state"));
 
         assertTrue(testOut.toString(), testOut.toString().contains("Cluster is active mode: read-only"));
