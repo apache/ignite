@@ -150,7 +150,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            DoOutOp(ClientOp.CachePut, w => WriteKeyVal(w, key, val));
+            DoOutOpAffinity(ClientOp.CachePut, key, val);
         }
 
         /** <inheritDoc /> */
@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(ClientOp.CacheContainsKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
+            return DoOutInOpAffinity(ClientOp.CacheContainsKey, key, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -560,6 +560,22 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         private void DoOutOp(ClientOp opId, Action<BinaryWriter> writeAction = null)
         {
             DoOutInOp<object>(opId, writeAction, null);
+        }
+
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
+        private void DoOutOpAffinity(ClientOp opId, TK key)
+        {
+            DoOutInOpAffinity<object>(opId, key, null);
+        }
+
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
+        private void DoOutOpAffinity(ClientOp opId, TK key, TV val)
+        {
+            DoOutInOpAffinity<object>(opId, key, val, null);
         }
 
         /// <summary>
