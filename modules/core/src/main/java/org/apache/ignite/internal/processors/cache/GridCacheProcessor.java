@@ -128,7 +128,9 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryMana
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -3276,8 +3278,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ((GridServiceProcessor)ctx.service()).updateUtilityCache();
         }
 
+        rollbackCoveredTx(exchActions);
+
         if (err == null)
             processCacheStopRequestOnExchangeDone(exchActions);
+    }
+
+    /**
+     * Rollback tx covered by stopped caches.
+     *
+     * @param exchActions Change requests.
+     */
+    private void rollbackCoveredTx(ExchangeActions exchActions) {
+        if (!exchActions.cacheGroupsToStop().isEmpty() || !exchActions.cacheStopRequests().isEmpty()) {
+            Set<Integer> cachesToStop = new HashSet<>();
+
+            for (ExchangeActions.CacheGroupActionData act : exchActions.cacheGroupsToStop()) {
+                @Nullable CacheGroupContext grpCtx = context().cache().cacheGroup(act.descriptor().groupId());
+
+                if (grpCtx != null && grpCtx.sharedGroup())
+                    cachesToStop.addAll(grpCtx.cacheIds());
+            }
+
+            for (ExchangeActions.CacheActionData act : exchActions.cacheStopRequests())
+                cachesToStop.add(act.descriptor().cacheId());
+
+            if (!cachesToStop.isEmpty()) {
+                IgniteTxManager tm = context().tm();
+
+                tm.rollbackTransactionsForCaches(cachesToStop);
+            }
+        }
     }
 
     /**
