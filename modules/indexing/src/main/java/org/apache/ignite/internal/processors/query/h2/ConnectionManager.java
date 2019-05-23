@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -47,7 +48,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_
  */
 public class ConnectionManager {
     /** Default DB options. */
-    private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
+    private static final String DEFAULT_DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=true;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0" +
         ";MAX_OPERATION_MEMORY=0;BATCH_JOINS=1" +
         ";ROW_FACTORY=\"" + H2PlainRowFactory.class.getName() + "\"" +
@@ -142,7 +143,10 @@ public class ConnectionManager {
      * @param ctx Context.
      */
     public ConnectionManager(GridKernalContext ctx) {
-        dbUrl = "jdbc:h2:mem:" + ctx.localNodeId() + DB_OPTIONS;
+        String localResultFactoryClass = System.getProperty(IgniteSystemProperties.IGNITE_H2_LOCAL_RESULT_FACTORY, H2LocalResultFactory.class.getName());
+
+        dbUrl = "jdbc:h2:mem:" + ctx.localNodeId() + DEFAULT_DB_OPTIONS +
+            ";LOCAL_RESULT_FACTORY=\""+ localResultFactoryClass +"\"";
 
         log = ctx.log(ConnectionManager.class);
 

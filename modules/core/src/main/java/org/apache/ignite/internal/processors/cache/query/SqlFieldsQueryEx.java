@@ -45,6 +45,9 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
     /** Batched arguments list. */
     private List<Object[]> batchedArgs;
 
+    /** Max memory available for query. */
+    private long maxMem;
+
     /**
      * @param sql SQL query.
      * @param isQry Flag indicating whether this object denotes a query or an update operation.
@@ -66,6 +69,7 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
         this.autoCommit = qry.autoCommit;
         this.nestedTxMode = qry.nestedTxMode;
         this.batchedArgs = qry.batchedArgs;
+        this.maxMem = qry.maxMem;
     }
 
     /**
@@ -237,5 +241,38 @@ public final class SqlFieldsQueryEx extends SqlFieldsQuery {
      */
     public boolean isBatched() {
         return !F.isEmpty(batchedArgs);
+    }
+
+    /**
+     * Return memory limit for query.
+     *
+     * Note: Negative value means unlimited. Zero value means a default value is used.
+     *
+     * Note: Every query (Map\Reduce) will have own limit and track memory independently.
+     * Query can have few Map queries (e.g. an additional Map query per sub-select).
+     * With QueryParallelism query can allocate MaxMemory*QueryParallelismLevel.
+     *
+     * @return Memory size in bytes.
+     */
+    public long getMaxMemory() {
+        return maxMem;
+    }
+
+    /**
+     * Sets memory limit for query.
+     *
+     * Note: Negative value means unlimited. Zero value means a default value is used.
+     *
+     * Note: Every query (Map\Reduce) will have own limit and track memory independently.
+     * Query can have few Map queries (e.g. an additional Map query per sub-select).
+     * With QueryParallelism query can allocate MaxMemory*QueryParallelismLevel.
+     *
+     * @param maxMem Memory size in bytes.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setMaxMemory(long maxMem) {
+        this.maxMem = maxMem;
+
+        return this;
     }
 }

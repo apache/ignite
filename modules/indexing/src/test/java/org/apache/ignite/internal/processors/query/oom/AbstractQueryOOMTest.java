@@ -50,6 +50,7 @@ import org.junit.Test;
 /**
  * Tests for OOME on query.
  */
+@Deprecated //TODO: GG-18628: Drop these tests.
 public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /** */
     private static final long KEY_CNT = 1_000_000L;

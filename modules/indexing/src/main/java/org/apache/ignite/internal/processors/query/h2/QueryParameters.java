@@ -16,11 +16,10 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
-
-import java.util.List;
 
 /**
  * Query parameters which vary between requests having the same execution plan. Essentially, these are the arguments
@@ -60,6 +59,9 @@ public class QueryParameters {
      */
     private final int updateBatchSize;
 
+    /** Memory limit for query results. */
+    private final long maxMem;
+
     /**
      * Create parameters from query.
      *
@@ -70,6 +72,7 @@ public class QueryParameters {
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
         boolean autoCommit = true;
         List<Object[]> batchedArgs = null;
+        long maxMem = 0;
 
         if (qry instanceof SqlFieldsQueryEx) {
             SqlFieldsQueryEx qry0 = (SqlFieldsQueryEx)qry;
@@ -80,6 +83,8 @@ public class QueryParameters {
             autoCommit = qry0.isAutoCommit();
 
             batchedArgs = qry0.batchedArguments();
+
+            maxMem = qry0.getMaxMemory();
         }
 
         return new QueryParameters(
@@ -88,6 +93,7 @@ public class QueryParameters {
             qry.getTimeout(),
             qry.isLazy(),
             qry.getPageSize(),
+            maxMem,
             qry.isDataPageScanEnabled(),
             nestedTxMode,
             autoCommit,
@@ -104,6 +110,7 @@ public class QueryParameters {
      * @param timeout Timeout.
      * @param lazy Lazy flag.
      * @param pageSize Page size.
+     * @param maxMem Query memory limit.
      * @param dataPageScanEnabled Data page scan enabled flag.
      * @param nestedTxMode Nested TX mode.
      * @param autoCommit Auto-commit flag.
@@ -117,6 +124,7 @@ public class QueryParameters {
         int timeout,
         boolean lazy,
         int pageSize,
+        long maxMem,
         Boolean dataPageScanEnabled,
         NestedTxMode nestedTxMode,
         boolean autoCommit,
@@ -128,6 +136,7 @@ public class QueryParameters {
         this.timeout = timeout;
         this.lazy = lazy;
         this.pageSize = pageSize;
+        this.maxMem = maxMem;
         this.dataPageScanEnabled = dataPageScanEnabled;
         this.nestedTxMode = nestedTxMode;
         this.autoCommit = autoCommit;
@@ -212,6 +221,15 @@ public class QueryParameters {
     }
 
     /**
+     * Returns max memory available for query.
+     * .
+     * @return Memory limit in bytes.
+     */
+    public long maxMemory() {
+        return maxMem;
+    }
+
+    /**
      * Convert current batched arguments to a form with single arguments.
      *
      * @param args Arguments.
@@ -224,6 +242,7 @@ public class QueryParameters {
             this.timeout,
             this.lazy,
             this.pageSize,
+            this.maxMem,
             this.dataPageScanEnabled,
             this.nestedTxMode,
             this.autoCommit,

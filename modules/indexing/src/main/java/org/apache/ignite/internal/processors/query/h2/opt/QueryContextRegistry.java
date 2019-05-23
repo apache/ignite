@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -136,6 +137,8 @@ public class QueryContextRegistry {
 
         if (ctx == null)
             return false;
+
+        U.closeQuiet(ctx.queryMemoryManager());
 
         ctx.clearContext(nodeStop);
 

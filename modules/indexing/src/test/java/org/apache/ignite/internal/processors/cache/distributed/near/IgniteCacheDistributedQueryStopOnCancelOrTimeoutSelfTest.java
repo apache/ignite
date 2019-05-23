@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -205,7 +206,7 @@ public class IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest extends Gr
 
             assertEquals(0, cache.localSize());
 
-            SqlFieldsQuery qry = new SqlFieldsQuery(sql);
+            SqlFieldsQuery qry = new SqlFieldsQueryEx(sql, true).setMaxMemory(-1);
 
             final QueryCursor<List<?>> cursor;
             if (timeout) {

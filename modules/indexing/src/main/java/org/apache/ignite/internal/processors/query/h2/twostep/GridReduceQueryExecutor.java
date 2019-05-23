@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.query.h2.ReduceH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedUpdateRun;
+import org.apache.ignite.internal.processors.query.h2.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -328,6 +329,7 @@ public class GridReduceQueryExecutor {
      * @param mvccTracker Query tracker.
      * @param dataPageScanEnabled If data page scan is enabled.
      * @param pageSize Page size.
+     * @param maxMem Query memory limit.
      * @return Rows iterator.
      */
     @SuppressWarnings({"BusyWait", "IfMayBeConditional"})
@@ -343,7 +345,8 @@ public class GridReduceQueryExecutor {
         boolean lazy,
         MvccQueryTracker mvccTracker,
         Boolean dataPageScanEnabled,
-        int pageSize
+        int pageSize,
+        long maxMem
     ) {
         // If explicit partitions are set, but there are no real tables, ignore.
         if (!qry.hasCacheIds() && parts != null)
@@ -589,7 +592,8 @@ public class GridReduceQueryExecutor {
                     .parameters(params)
                     .flags(flags)
                     .timeout(timeoutMillis)
-                    .schemaName(schemaName);
+                    .schemaName(schemaName)
+                    .maxMemory(maxMem);
 
                 if (mvccTracker != null)
                     req.mvccSnapshot(mvccTracker.snapshot());
@@ -644,8 +648,8 @@ public class GridReduceQueryExecutor {
                             null,
                             null,
                             null,
-                            null
-                        );
+                            null,
+                            maxMem < 0 ? null : new QueryMemoryTracker(maxMem));
 
                         H2Utils.setupConnection(r.connection(), qctx, false, enforceJoinOrder);
 
@@ -675,7 +679,7 @@ public class GridReduceQueryExecutor {
                                 qryInfo
                                 );
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, detachedConn);
+                            resIter = new H2FieldsIterator(res, mvccTracker, qctx, detachedConn);
 
                             // don't recycle at final block
                             detachedConn = null;
@@ -683,6 +687,9 @@ public class GridReduceQueryExecutor {
                             mvccTracker = null; // To prevent callback inside finally block;
                         }
                         finally {
+                            if (detachedConn != null)
+                                U.closeQuiet(qctx.queryMemoryManager());
+
                             qryCtxRegistry.clearThreadLocal();
                         }
                     }
@@ -1040,6 +1047,9 @@ public class GridReduceQueryExecutor {
         }
         catch (SQLException e) {
             throw new IgniteCheckedException(e);
+        }
+        finally {
+            U.closeQuiet(rs);
         }
     }
 

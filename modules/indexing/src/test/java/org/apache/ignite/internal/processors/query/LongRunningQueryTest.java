@@ -25,10 +25,10 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -149,7 +149,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @return Results cursor.
      */
     private FieldsQueryCursor<List<?>> sql(String sql, Object ... args) {
-        return grid().context().query().querySqlFields(new SqlFieldsQuery(sql)
+        return grid().context().query().querySqlFields(new SqlFieldsQueryEx(sql, true)
+            .setMaxMemory(-1)
             .setTimeout(10, TimeUnit.SECONDS)
             .setLocal(local)
             .setSchema("TEST")

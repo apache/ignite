@@ -26,6 +26,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -124,7 +125,7 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
 
         loadCache(cache);
 
-        SqlFieldsQuery qry = new SqlFieldsQuery(QUERY);
+        SqlFieldsQuery qry = new SqlFieldsQueryEx(QUERY, true).setMaxMemory(-1);
 
         final QueryCursor<List<?>> cursor;
         if (timeout) {

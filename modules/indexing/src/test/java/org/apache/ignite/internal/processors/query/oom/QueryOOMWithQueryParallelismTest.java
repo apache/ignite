@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.oom;
 /**
  * Tests for OOME on query.
  */
+@Deprecated //TODO: GG-18628: Drop these tests.
 public class QueryOOMWithQueryParallelismTest extends AbstractQueryOOMTest {
     /** {@inheritDoc} */
     @Override protected int queryParallelism() {

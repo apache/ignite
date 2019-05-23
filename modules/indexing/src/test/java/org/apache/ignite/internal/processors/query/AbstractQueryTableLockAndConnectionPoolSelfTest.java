@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -271,13 +272,14 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
             @Override public void run() {
                 while(!end.get()) {
                     try {
-                        FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
+                        FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQueryEx(
                             "SELECT pers.id, pers.name " +
                             "FROM (SELECT DISTINCT p.id, p.name " +
                             "FROM \"pers\".PERSON as p) as pers " +
                             "JOIN \"pers\".PERSON p on p.id = pers.id " +
                             "JOIN (SELECT t.persId as persId, SUM(t.time) totalTime " +
-                            "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id")
+                            "FROM \"persTask\".PersonTask as t GROUP BY t.persId) as task ON task.persId = pers.id", true)
+                            .setMaxMemory(-1)
                             .setLazy(lazy())
                             .setPageSize(PAGE_SIZE_SMALL));
 

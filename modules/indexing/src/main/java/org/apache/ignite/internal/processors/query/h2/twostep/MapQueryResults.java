@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -181,6 +182,8 @@ class MapQueryResults {
 
         if (lazy)
             releaseQueryContext();
+
+        U.closeQuiet(qctx.queryMemoryManager());
     }
 
     /**

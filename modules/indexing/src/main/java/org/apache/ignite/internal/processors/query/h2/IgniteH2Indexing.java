@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -518,13 +519,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (mvccEnabled)
                 mvccSnapshot = mvccTracker.snapshot();
 
+            long maxMem = qryParams.maxMemory();
+
             final QueryContext qctx = new QueryContext(
                 0,
                 filter,
                 null,
                 mvccSnapshot,
-                null
-            );
+                null,
+                maxMem < 0 ? null : new QueryMemoryTracker(maxMem));
 
             return new GridQueryFieldsResultAdapter(select.meta(), null) {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
@@ -560,9 +563,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry)
                         );
 
-                        return new H2FieldsIterator(rs, mvccTracker, conn);
+                        return new H2FieldsIterator(rs, mvccTracker, qctx, conn);
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
+                        U.closeQuiet(qctx.queryMemoryManager());
+
                         conn.recycle();
 
                         try {
@@ -882,7 +887,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
-                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");            return rs;
+                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");
+
+            return rs;
         }
         catch (Throwable e) {
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
@@ -1380,7 +1387,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+                    throw new CacheException(e);
                 }
             };
         }
@@ -1667,7 +1674,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             qryParams.lazy(),
                             mvccTracker,
                             qryParams.dataPageScanEnabled(),
-                            qryParams.pageSize()
+                            qryParams.pageSize(),
+                            qryParams.maxMemory()
                         );
                     }
                     catch (Throwable e) {

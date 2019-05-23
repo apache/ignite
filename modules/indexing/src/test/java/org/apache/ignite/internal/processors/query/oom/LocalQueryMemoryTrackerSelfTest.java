@@ -16,19 +16,12 @@
 
 package org.apache.ignite.internal.processors.query.oom;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for queries produces OOME in some cases.
+ * Query memory manager for local queries.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    //Query history.
-    QueryOOMWithoutQueryParallelismTest.class,
-    QueryOOMWithQueryParallelismTest.class,
-})
-@Deprecated //TODO: GG-18628: Drop these tests.
-public class IgniteQueryOOMTestSuite {
+public class LocalQueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean isLocal() {
+        return true;
+    }
 }
-

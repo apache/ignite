@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
+import org.apache.ignite.internal.processors.query.h2.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
@@ -230,7 +231,8 @@ public class GridMapQueryExecutor {
                             params,
                             lazy,
                             req.mvccSnapshot(),
-                            dataPageScanEnabled);
+                            dataPageScanEnabled,
+                            req.maxMemory());
 
                         return null;
                     }
@@ -255,7 +257,8 @@ public class GridMapQueryExecutor {
             params,
             lazy,
             req.mvccSnapshot(),
-            dataPageScanEnabled);
+            dataPageScanEnabled,
+            req.maxMemory());
     }
 
     /**
@@ -277,6 +280,7 @@ public class GridMapQueryExecutor {
      * @param lazy Streaming flag.
      * @param mvccSnapshot MVCC snapshot.
      * @param dataPageScanEnabled If data page scan is enabled.
+     * @param maxMem Query memory limit.
      */
     private void onQueryRequest0(
         final ClusterNode node,
@@ -296,8 +300,8 @@ public class GridMapQueryExecutor {
         final Object[] params,
         boolean lazy,
         @Nullable final MvccSnapshot mvccSnapshot,
-        Boolean dataPageScanEnabled
-    ) {
+        Boolean dataPageScanEnabled,
+        long maxMem) {
         // Prepare to run queries.
         GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
 
@@ -344,8 +348,8 @@ public class GridMapQueryExecutor {
                 h2.backupFilter(topVer, parts),
                 distributedJoinCtx,
                 mvccSnapshot,
-                reserved
-            );
+                reserved,
+                maxMem < 0 ? null : new QueryMemoryTracker(maxMem));
 
             qryResults = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, lazy, qctx);
 
@@ -840,6 +844,8 @@ public class GridMapQueryExecutor {
             qr.closeResult(qry);
 
             if (qr.isAllClosed()) {
+                qr.close();
+
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
 
                 // Clear context, release reservations
