@@ -41,7 +41,6 @@ import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -1159,6 +1158,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultithreadedWithNodeRestart() throws Exception {
+        final long timeout = 3000;
         final AtomicBoolean stop = new AtomicBoolean();
         final BlockingQueue<IgniteBiTuple<Integer, UUID>> queue = new LinkedBlockingQueue<>();
         final Collection<UUID> started = new GridConcurrentHashSet<>();
@@ -1180,7 +1180,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                             @Override public boolean apply(UUID uuid, Event evt) {
                                 return true;
                             }
-                        }, null, EVT_JOB_STARTED).get(15000);
+                        }, null, EVT_JOB_STARTED).get(timeout * 2);
 
                         started.add(consumeId);
 
@@ -1192,6 +1192,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                     U.sleep(10);
                 }
+
+                stop.set(true);
 
                 return null;
             }
@@ -1213,7 +1215,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     try {
                         IgniteEvents evts = grid(idx).events();
 
-                        evts.stopRemoteListenAsync(consumeId).get(15000);
+                        evts.stopRemoteListenAsync(consumeId).get(timeout);
 
                         stopped.add(consumeId);
                     }
@@ -1243,7 +1245,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        grid(idx).compute().runAsync(F.noop()).get(15000);
+                        grid(idx).compute().runAsync(F.noop()).get(timeout);
                     }
                     catch (IgniteException ignored) {
                         // Ignore all job execution related errors.
@@ -1262,7 +1264,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             int idx = t.get1();
             UUID consumeId = t.get2();
 
-            grid(idx).events().stopRemoteListenAsync(consumeId).get(15000);
+            grid(idx).events().stopRemoteListenAsync(consumeId).get(timeout);
 
             stopped.add(consumeId);
         }
