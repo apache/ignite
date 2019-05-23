@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-//import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
-//import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
-//import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
-//import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
+import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -31,11 +31,11 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//    GridCachePartitionedNodeRestartTest.class,
-//    IgniteCacheEntryListenerWithZkDiscoAtomicTest.class,
-//    IgniteClientReconnectCacheTest.class,
-//    GridCachePartitionedMultiNodeFullApiSelfTest.class,
-//    GridCacheReplicatedMultiNodeFullApiSelfTest.class,
+    GridCachePartitionedNodeRestartTest.class,
+    IgniteCacheEntryListenerWithZkDiscoAtomicTest.class,
+    IgniteClientReconnectCacheTest.class,
+    GridCachePartitionedMultiNodeFullApiSelfTest.class,
+    GridCacheReplicatedMultiNodeFullApiSelfTest.class,
     GridCommandHandlerTest.class
 })
 public class ZookeeperDiscoverySpiTestSuite2  {
