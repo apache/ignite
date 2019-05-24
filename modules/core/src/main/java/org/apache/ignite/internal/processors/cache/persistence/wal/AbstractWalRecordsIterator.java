@@ -455,10 +455,16 @@ public abstract class AbstractWalRecordsIterator
 
         /** {@inheritDoc} */
         @Override public boolean apply(WALRecord.RecordType type, WALPointer pointer) {
-            if (start.fileOffset() == ((FileWALPointer)pointer).fileOffset())
-                startReached = true;
+            FileWALPointer filePointer = (FileWALPointer)pointer;
 
-            return startReached;
+            if (filePointer.index() == start.index()) {
+                if (start.fileOffset() == filePointer.fileOffset())
+                    startReached = true;
+
+                return startReached;
+            }
+            else
+                return filePointer.index() > start.index();
         }
     }
 
