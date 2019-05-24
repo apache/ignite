@@ -44,29 +44,29 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IoomFailureHandlerTest.class,
-    ClusterBaselineNodesMetricsSelfTest.class,
-    GridMarshallerMappingConsistencyTest.class,
-    SystemWorkersTerminationTest.class,
-    FailureHandlingConfigurationTest.class,
-    SystemWorkersBlockingTest.class,
-    CheckpointReadLockFailureTest.class,
+//    IoomFailureHandlerTest.class,
+//    ClusterBaselineNodesMetricsSelfTest.class,
+//    GridMarshallerMappingConsistencyTest.class,
+//    SystemWorkersTerminationTest.class,
+//    FailureHandlingConfigurationTest.class,
+//    SystemWorkersBlockingTest.class,
+//    CheckpointReadLockFailureTest.class,
 
-    GridCommandHandlerTest.class,
-    GridCommandHandlerSslTest.class,
-    GridInternalTaskUnusedWalSegmentsTest.class,
-
-    GridNodeMetricsLogPdsSelfTest.class,
-
-    EncryptedCacheBigEntryTest.class,
-    EncryptedCacheCreateTest.class,
-    EncryptedCacheDestroyTest.class,
-    EncryptedCacheGroupCreateTest.class,
-    EncryptedCacheNodeJoinTest.class,
-    EncryptedCacheRestartTest.class,
-    EncryptedCachePreconfiguredRestartTest.class,
-
-    SingleNodePersistenceSslTest.class
+    GridCommandHandlerTest.class
+//    GridCommandHandlerSslTest.class,
+//    GridInternalTaskUnusedWalSegmentsTest.class,
+//
+//    GridNodeMetricsLogPdsSelfTest.class,
+//
+//    EncryptedCacheBigEntryTest.class,
+//    EncryptedCacheCreateTest.class,
+//    EncryptedCacheDestroyTest.class,
+//    EncryptedCacheGroupCreateTest.class,
+//    EncryptedCacheNodeJoinTest.class,
+//    EncryptedCacheRestartTest.class,
+//    EncryptedCachePreconfiguredRestartTest.class,
+//
+//    SingleNodePersistenceSslTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }
