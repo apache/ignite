@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.consistency;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
@@ -31,17 +32,25 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheConsistencyTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "getEntry={0}")
+    @Parameterized.Parameters(name = "getEntry={0}, async={1}")
     public static Collection parameters() {
-        return Arrays.asList(new Object[][] {
-            {true},
-            {false}
-        });
+        List<Object[]> res = new ArrayList<>();
+
+        for (boolean raw : new boolean[] {false, true}) {
+            for (boolean async : new boolean[] {false, true})
+                res.add(new Object[] {raw, async});
+        }
+
+        return res;
     }
 
     /** GetEntry or just get. */
     @Parameterized.Parameter
     public boolean raw;
+
+    /** Async. */
+    @Parameterized.Parameter(1)
+    public boolean async;
 
     /**
      *
@@ -49,20 +58,21 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     @Test
     public void test() throws Exception {
         for (Ignite node : G.allGrids()) {
-            testGet(node, raw);
-            testGetAllVariations(node, raw);
-            testGetNull(node, raw);
+            testGet(node);
+            testGetAllVariations(node);
+            testGetNull(node);
         }
     }
 
     /**
      *
      */
-    private void testGet(Ignite initiator, boolean raw) throws Exception {
+    private void testGet(Ignite initiator) throws Exception {
         prepareAndCheck(
             initiator,
             1,
             raw,
+            async,
             (ConsistencyRecoveryData data) -> {
                 GET_CHECK_AND_FIX.accept(data);
                 ENSURE_FIXED.accept(data);
@@ -72,22 +82,23 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    private void testGetAllVariations(Ignite initiator, boolean raw) throws Exception {
-        testGetAll(initiator, 1, raw); // 1 (all keys available at primary)
-        testGetAll(initiator, 2, raw); // less than backups
-        testGetAll(initiator, 3, raw); // equals to backups
-        testGetAll(initiator, 4, raw); // equals to backups + primary
-        testGetAll(initiator, 10, raw); // more than backups
+    private void testGetAllVariations(Ignite initiator) throws Exception {
+        testGetAll(initiator, 1); // 1 (all keys available at primary)
+        testGetAll(initiator, 2); // less than backups
+        testGetAll(initiator, 3); // equals to backups
+        testGetAll(initiator, 4); // equals to backups + primary
+        testGetAll(initiator, 10); // more than backups
     }
 
     /**
      *
      */
-    private void testGetAll(Ignite initiator, Integer amount, boolean raw) throws Exception {
+    private void testGetAll(Ignite initiator, Integer amount) throws Exception {
         prepareAndCheck(
             initiator,
             amount,
             raw,
+            async,
             (ConsistencyRecoveryData data) -> {
                 GETALL_CHECK_AND_FIX.accept(data);
                 ENSURE_FIXED.accept(data);
@@ -97,11 +108,12 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    private void testGetNull(Ignite initiator, boolean raw) throws Exception {
+    private void testGetNull(Ignite initiator) throws Exception {
         prepareAndCheck(
             initiator,
             1,
             raw,
+            async,
             (ConsistencyRecoveryData data) -> {
                 GET_NULL.accept(data); // first attempt.
                 GET_NULL.accept(data); // second attempt (checks first attempt causes no changes/fixes/etc).

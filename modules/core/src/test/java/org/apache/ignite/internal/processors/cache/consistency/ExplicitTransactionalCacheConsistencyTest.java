@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.consistency;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.transactions.Transaction;
@@ -35,25 +36,20 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheConsistencyTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}")
+    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}")
     public static Collection parameters() {
-        return Arrays.asList(new Object[][] {
-            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED, true},
-            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, true},
-            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, true},
+        List<Object[]> res = new ArrayList<>();
 
-            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED, true},
-            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, true},
-            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE, true},
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                for (boolean raw : new boolean[] {false, true}) {
+                    for (boolean async : new boolean[] {false, true})
+                        res.add(new Object[] {concurrency, isolation, raw, async});
+                }
+            }
+        }
 
-            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED, false},
-            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, false},
-            {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, false},
-
-            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED, false},
-            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, false},
-            {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE, false}
-        });
+        return res;
     }
 
     /** Concurrency. */
@@ -68,32 +64,31 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     @Parameterized.Parameter(2)
     public boolean raw;
 
+    /** Async. */
+    @Parameterized.Parameter(3)
+    public boolean async;
+
     /**
      *
      */
     @Test
     public void test() throws Exception {
         for (Ignite node : G.allGrids()) {
-            testGet(node, concurrency, isolation, 1, raw, false);
-            testGetAllVariations(node, concurrency, isolation, raw);
-            testGetNull(node, concurrency, isolation, 1, raw);
+            testGet(node, 1, false);
+            testGetAllVariations(node);
+            testGetNull(node, 1);
         }
     }
 
     /**
      *
      */
-    protected void testGet(
-        Ignite initiator,
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
-        Integer cnt,
-        boolean raw,
-        boolean all) throws Exception {
+    protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
             initiator,
             cnt,
             raw,
+            async,
             (ConsistencyRecoveryData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     // Recovery (inside tx).
@@ -119,30 +114,23 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    private void testGetAllVariations(
-        Ignite initiator,
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
-        boolean raw) throws Exception {
-        testGet(initiator, concurrency, isolation, 1, raw, true); // 1 (all keys available at primary)
-        testGet(initiator, concurrency, isolation, 2, raw, true); // less than backups
-        testGet(initiator, concurrency, isolation, 3, raw, true); // equals to backups
-        testGet(initiator, concurrency, isolation, 4, raw, true); // equals to backups + primary
-        testGet(initiator, concurrency, isolation, 10, raw, true); // more than backups
+    private void testGetAllVariations(Ignite initiator) throws Exception {
+        testGet(initiator, 1, true); // 1 (all keys available at primary)
+        testGet(initiator, 2, true); // less than backups
+        testGet(initiator, 3, true); // equals to backups
+        testGet(initiator, 4, true); // equals to backups + primary
+        testGet(initiator, 10, true); // more than backups
     }
 
     /**
      *
      */
-    private void testGetNull(Ignite initiator,
-        TransactionConcurrency concurrency,
-        TransactionIsolation isolation,
-        Integer cnt,
-        boolean raw) throws Exception {
+    private void testGetNull(Ignite initiator, Integer cnt) throws Exception {
         prepareAndCheck(
             initiator,
             cnt,
             raw,
+            async,
             (ConsistencyRecoveryData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     GET_NULL.accept(data);

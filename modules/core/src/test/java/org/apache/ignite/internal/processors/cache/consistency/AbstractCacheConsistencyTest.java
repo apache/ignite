@@ -70,6 +70,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
+        boolean async = data.async;
 
         assert keys.size() == 1;
 
@@ -78,9 +79,14 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 Integer key = entry.getKey();
                 Integer latest = entry.getValue().latest;
 
-                Integer res = raw ?
-                    cache.withConsistencyCheck().getEntry(key).getValue() :
-                    cache.withConsistencyCheck().get(key);
+                Integer res =
+                    raw ?
+                        async ?
+                            cache.withConsistencyCheck().getEntryAsync(key).get().getValue() :
+                            cache.withConsistencyCheck().getEntry(key).getValue() :
+                        async ?
+                            cache.withConsistencyCheck().getAsync(key).get() :
+                            cache.withConsistencyCheck().get(key);
 
                 assertEquals(latest, res);
 
@@ -99,18 +105,25 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
+        boolean async = data.async;
 
         assert !keys.isEmpty();
 
         try {
             if (raw) {
-                Collection<CacheEntry<Integer, Integer>> res = cache.withConsistencyCheck().getEntries(keys);
+                Collection<CacheEntry<Integer, Integer>> res =
+                    async ?
+                        cache.withConsistencyCheck().getEntriesAsync(keys).get() :
+                        cache.withConsistencyCheck().getEntries(keys);
 
                 for (CacheEntry<Integer, Integer> entry : res)
                     assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
             }
             else {
-                Map<Integer, Integer> res = cache.withConsistencyCheck().getAll(keys);
+                Map<Integer, Integer> res =
+                    async ?
+                        cache.withConsistencyCheck().getAllAsync(keys).get() :
+                        cache.withConsistencyCheck().getAll(keys);
 
                 for (Map.Entry<Integer, Integer> entry : res.entrySet())
                     assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
@@ -130,6 +143,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         IgniteCache<Integer, Integer> cache = data.cache;
         Set<Integer> keys = data.data.keySet();
         boolean raw = data.raw;
+        boolean async = data.async;
 
         assert keys.size() == 1;
 
@@ -137,9 +151,14 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
             try {
                 Integer key = entry.getKey() * -1; // Negative.
 
-                Object res = raw ?
-                    cache.withConsistencyCheck().getEntry(key) :
-                    cache.withConsistencyCheck().get(key);
+                Object res =
+                    raw ?
+                        async ?
+                            cache.withConsistencyCheck().getEntryAsync(key).get() :
+                            cache.withConsistencyCheck().getEntry(key) :
+                        async ?
+                            cache.withConsistencyCheck().getAsync(key).get() :
+                            cache.withConsistencyCheck().get(key);
 
                 assertEquals(null, res);
             }
@@ -288,6 +307,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         Ignite initiator,
         Integer cnt,
         boolean raw,
+        boolean async,
         Consumer<ConsistencyRecoveryData> c)
         throws Exception {
         IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
@@ -318,7 +338,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 }
             }
 
-            c.accept(new ConsistencyRecoveryData(cache, results, raw));
+            c.accept(new ConsistencyRecoveryData(cache, results, raw, async));
         }
     }
 
@@ -397,16 +417,21 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         /** Raw read flag. True means required GetEntry() instead of get(). */
         boolean raw;
 
+        /** Async read flag. */
+        boolean async;
+
         /**
          *
          */
         public ConsistencyRecoveryData(
             IgniteCache<Integer, Integer> cache,
             Map<Integer, InconsistencyValuesMapping> data,
-            boolean raw) {
+            boolean raw,
+            boolean async) {
             this.cache = cache;
             this.data = new HashMap<>(data);
             this.raw = raw;
+            this.async = async;
         }
     }
 
