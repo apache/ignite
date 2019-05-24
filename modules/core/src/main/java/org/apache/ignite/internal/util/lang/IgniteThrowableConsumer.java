@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Represents an operation that accepts a single input argument and returns no result. Unlike most other functional
- * interfaces, {@code Consumer} is expected to operate via side-effects.
+ * interfaces, {@code IgniteThrowableConsumer} is expected to operate via side-effects.
  *
  * Also it is able to throw {@link IgniteCheckedException} unlike {@link java.util.function.Consumer}.
  *
