@@ -5045,12 +5045,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final IgniteTxManager tm = ctx.tm();
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        GridFutureAdapter<R> fut0 = new GridFutureAdapter<>();
+        GridFutureAdapter<R> res = new GridFutureAdapter<>();
 
         fut.listen(new CIX1<IgniteInternalFuture<R>>() {
             @Override public void applyx(IgniteInternalFuture<R> fut) throws IgniteCheckedException {
                 try {
-                    fut0.onDone(fut.get());
+                    res.onDone(fut.get());
                 }
                 catch (IgniteConsistencyViolationException e) {
                     assert tx == null || tx.optimistic() || tx.readCommitted();
@@ -5063,7 +5063,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             ctx.operationContextPerCall(opCtx);
 
                             try {
-                                fut0.onDone(retry.get().get());
+                                res.onDone(retry.get().get());
                             }
                             finally {
                                 tm.tx(prevTx);
@@ -5075,7 +5075,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         });
 
-        return fut0;
+        return res;
     }
 
     /**
