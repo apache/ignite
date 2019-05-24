@@ -18,7 +18,7 @@ import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
 import {Subject, defer, from, of, merge, timer, EMPTY} from 'rxjs';
-import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, ignoreElements, map, mergeMap, pluck, switchMap, takeUntil, takeWhile, take, tap} from 'rxjs/operators';
+import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, ignoreElements, map, pluck, switchMap, takeUntil, takeWhile, take, tap} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
 
@@ -1605,10 +1605,16 @@ export class NotebookCtrl {
             }
         };
 
-        const addLimit = (query, limitSize) =>
-            `SELECT * FROM (
-            ${query} 
+        const addLimit = (query, limitSize) => {
+            let qry = query.trim();
+
+            if (qry.endsWith(';'))
+                qry = qry.substring(0, qry.length - 1);
+
+            return `SELECT * FROM (
+                ${qry} 
             ) LIMIT ${limitSize}`;
+        };
 
         $scope.nonCollocatedJoinsAvailable = () => {
             return Version.since(this.agentMgr.clusterVersion, NON_COLLOCATED_JOINS_SINCE);
