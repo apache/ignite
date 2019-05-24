@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-const path = require('path');
 const merge = require('webpack-merge');
 
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 const commonCfg = require('./webpack.common');
-
-const basedir = path.join(__dirname, '../');
+const {devProdScss} = require('./styles');
 
 module.exports = merge(commonCfg, {
     bail: true, // Cancel build on error.
@@ -33,14 +31,14 @@ module.exports = merge(commonCfg, {
                 test: /\.css$/,
                 use: [MiniCssExtractPlugin.loader, 'css-loader']
             },
+            ...devProdScss(false),
             {
-                test: /\.scss$/,
-                use: [MiniCssExtractPlugin.loader, 'css-loader', {
-                    loader: 'sass-loader',
-                    options: {
-                        includePaths: [basedir]
-                    }
-                }]
+                test: /\.html$/,
+                use: 'file-loader'
+            },
+            {
+                test: /\.(ts)$/,
+                use: ['angular2-template-loader?keepUrl=true']
             }
         ]
     },

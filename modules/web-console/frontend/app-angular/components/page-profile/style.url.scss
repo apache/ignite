@@ -14,26 +14,34 @@
  * limitations under the License.
  */
 
-import {Component, Input, Inject} from '@angular/core';
-import {FormFieldErrorStyles} from './errorStyles.provider';
-import {VALIDATION_MESSAGES} from './validationMessages.provider';
+:host {
+    display: block;
+    max-width: 800px;
+}
 
-@Component({
-    selector: 'form-field-errors',
-    templateUrl: './errors.template.html',
-    styleUrls: ['./errors.style.url.scss']
-})
-export class FormFieldErrors<T extends {[errorType: string]: string}> {
-    @Input()
-    errorStyle: FormFieldErrorStyles;
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: var(--form-gap);
 
-    @Input()
-    extraErrorMessages: T = {} as T;
+    .span-1 {
+        grid-column: span 1;
+    }
+    .span-2 {
+        grid-column: span 2;
+    }
+}
 
-    @Input()
-    errorType: keyof T;
+.security-token-generate-button-container {
+    align-items: flex-end;
+    display: flex;
+    padding-bottom: 9px;
+}
 
-    static parameters = [[new Inject(VALIDATION_MESSAGES)]];
-
-    constructor(private defaultMessages: VALIDATION_MESSAGES) {}
+footer {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    justify-content: flex-end;
+    grid-gap: var(--form-gap);
 }

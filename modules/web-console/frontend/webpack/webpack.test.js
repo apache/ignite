@@ -38,7 +38,22 @@ module.exports = merge(commonCfg, {
     module: {
         exprContextCritical: false,
         rules: [
-            {test: /\.s?css$/, use: ['ignore-loader']}
+            {
+                test: /\.(ts)$/,
+                exclude: /\.spec\.ts$/,
+                use: [
+                    require.resolve('./fix-component-template-import-loader.js'),
+                    'angular2-template-loader'
+                ]
+            },
+            {
+                test: /\.s?css$/,
+                use: ['blank-loader']
+            },
+            {
+                test: /\.(html)$/,
+                use: 'raw-loader'
+            }
         ]
     }
 });

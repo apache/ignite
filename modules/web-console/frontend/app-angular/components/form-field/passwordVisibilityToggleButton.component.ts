@@ -18,36 +18,8 @@ import {Component, Input} from '@angular/core';
 
 @Component({
     selector: 'password-visibility-toggle-button-angular',
-    template: `
-        <button
-            type='button'
-            (click)='toggleVisibility()'
-            [popper]='isVisible ? "Hide password" : "Show password"'
-            popperApplyClass='ignite-popper,ignite-popper__tooltip'
-            popperAppendTo='body'
-            popperTrigger='hover'
-            popperPlacement='top'
-        >
-            <ignite-icon [name]='isVisible ? "eyeOpened" : "eyeClosed"'></ignite-icon>
-        </button>
-    `,
-    styles: [`
-        :host {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        button {
-            border: none;
-            margin: 0;
-            padding: 0;
-            background: none;
-            display: inline-flex;
-        }
-        button:hover, button:active {
-            color: #0067b9;
-        }
-    `]
+    templateUrl: `./passwordVisibilityToggleButton.template.html`,
+    styleUrls: ['./passwordVisibilityToggleButton.style.url.scss']
 })
 export class PasswordVisibilityToggleButton {
     @Input()

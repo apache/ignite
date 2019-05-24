@@ -14,26 +14,20 @@
  * limitations under the License.
  */
 
-import {Component, Input, Inject} from '@angular/core';
-import {FormFieldErrorStyles} from './errorStyles.provider';
-import {VALIDATION_MESSAGES} from './validationMessages.provider';
-
-@Component({
-    selector: 'form-field-errors',
-    templateUrl: './errors.template.html',
-    styleUrls: ['./errors.style.url.scss']
-})
-export class FormFieldErrors<T extends {[errorType: string]: string}> {
-    @Input()
-    errorStyle: FormFieldErrorStyles;
-
-    @Input()
-    extraErrorMessages: T = {} as T;
-
-    @Input()
-    errorType: keyof T;
-
-    static parameters = [[new Inject(VALIDATION_MESSAGES)]];
-
-    constructor(private defaultMessages: VALIDATION_MESSAGES) {}
+:host {
+    display: block;
+}
+.inline {
+    padding: 5px 10px 0;
+    color: #ee2b27;
+    font-size: 12px;
+    line-height: 14px;
+}
+.icon {
+    color: #ee2b27;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

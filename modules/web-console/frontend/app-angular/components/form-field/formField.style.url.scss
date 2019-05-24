@@ -14,34 +14,9 @@
  * limitations under the License.
  */
 
-page-profile {
-    display: block;
-    max-width: 800px;
-
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-gap: var(--form-gap);
-
-        .span-1 {
-            grid-column: span 1;
-        }
-        .span-2 {
-            grid-column: span 2;
-        }
-    }
-
-    .security-token-generate-button-container {
-        align-items: flex-end;
-        display: flex;
-        padding-bottom: 9px;
-    }
-
-    footer {
-        display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: max-content;
-        justify-content: flex-end;
-        grid-gap: var(--form-gap);
-    }
+.angular-form-field__input {
+    position: relative;
+}
+.input-overlay {
+    display: grid;
 }

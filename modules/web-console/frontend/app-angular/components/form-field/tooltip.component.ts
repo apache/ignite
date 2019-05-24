@@ -19,23 +19,8 @@ import {PopperContent} from 'ngx-popper';
 
 @Component({
     selector: 'form-field-tooltip',
-    template: `
-        <ignite-icon
-            name='info'
-            [popper]='content'
-            popperApplyClass='ignite-popper,ignite-popper__tooltip'
-            popperTrigger='hover'
-            popperAppendTo='body'
-        ></ignite-icon>
-    `,
-    styles: [`
-        :host {
-            display: inline-flex;
-        }
-        ignite-icon {
-            color: #0067b9;
-        }
-    `]
+    templateUrl: './tooltip.template.html',
+    styleUrls: ['./tooltip.style.url.scss']
 })
 export class FormFieldTooltip {
     @Input()

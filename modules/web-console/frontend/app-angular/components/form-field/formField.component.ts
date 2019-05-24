@@ -30,40 +30,8 @@ export class FORM_FIELD_OPTIONS {
 
 @Component({
     selector: 'form-field',
-    template: `
-        <ng-template #errors>
-            <form-field-errors
-                *ngIf='(control?.dirty || control?.touched) && control?.invalid'
-                [errorStyle]='errorStyle'
-                [errorType]='_getErrorType(control?.control)'
-                [extraErrorMessages]='extraMessages'
-            ></form-field-errors>
-        </ng-template>
-        <div class="angular-form-field__label">
-            <ng-content select="label"></ng-content>
-            <form-field-tooltip *ngIf='hint' [content]='hint.popper'></form-field-tooltip>
-        </div>
-        <div class="angular-form-field__input" [attr.data-overlay-items-count]='overlayEl.childElementCount'>
-            <ng-content></ng-content>
-        </div>
-        <div class="input-overlay" #overlayEl>
-            <ng-container *ngIf='errorStyle === "icon"'>
-                <ng-container *ngTemplateOutlet='errors'></ng-container>
-            </ng-container>
-            <ng-content select='[formFieldOverlay]'></ng-content>
-        </div>
-        <ng-container *ngIf='errorStyle === "inline"'>
-            <ng-container *ngTemplateOutlet='errors'></ng-container>
-        </ng-container>
-    `,
-    styles: [`
-        .angular-form-field__input {
-            position: relative;
-        }
-        .input-overlay {
-            display: grid;
-        }
-    `]
+    templateUrl: './formField.template.html',
+    styleUrls: [`./formField.style.url.scss`]
 })
 export class FormField implements AfterViewInit {
     static parameters = [[new Inject(FORM_FIELD_OPTIONS)]];

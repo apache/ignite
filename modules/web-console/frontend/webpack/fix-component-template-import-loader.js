@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-import {Component, Input, Inject} from '@angular/core';
-import {FormFieldErrorStyles} from './errorStyles.provider';
-import {VALIDATION_MESSAGES} from './validationMessages.provider';
+/**
+ * This is a workaround for the following issues:
+ * https://github.com/TheLarkInn/angular2-template-loader/issues/86
+ * https://github.com/webpack-contrib/raw-loader/issues/78
+ */
 
-@Component({
-    selector: 'form-field-errors',
-    templateUrl: './errors.template.html',
-    styleUrls: ['./errors.style.url.scss']
-})
-export class FormFieldErrors<T extends {[errorType: string]: string}> {
-    @Input()
-    errorStyle: FormFieldErrorStyles;
+const templateRegExp = /template:\s*require\(['"`].+['"`]\)/gm;
 
-    @Input()
-    extraErrorMessages: T = {} as T;
+/**
+ * @param {string} source
+ * @param sourcemap
+ */
+module.exports = function(source, sourcemap) {
+    this.cacheable && this.cacheable();
 
-    @Input()
-    errorType: keyof T;
+    const newSource = source.replace(templateRegExp, (match) => `${match}.default`);
 
-    static parameters = [[new Inject(VALIDATION_MESSAGES)]];
-
-    constructor(private defaultMessages: VALIDATION_MESSAGES) {}
-}
+    if (this.callback)
+        this.callback(null, newSource, sourcemap);
+    else
+        return newSource;
+};
