@@ -61,7 +61,9 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                 ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor)
                 : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor);
 
-            compoundModel.withGaussianModel(model).withLabels(model.getLabels());
+            compoundModel.withGaussianModel(model)
+                    .withLabels(model.getLabels())
+                    .wirhPriorProbabilities(clsProbabilities);
         }
 
         if (discreteNaiveBayesTrainer != null) {
@@ -69,7 +71,9 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                 ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor)
                 : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor);
 
-            compoundModel.withDiscreteModel(model).withLabels(model.getLabels());
+            compoundModel.withDiscreteModel(model)
+                    .withLabels(model.getLabels())
+                    .wirhPriorProbabilities(clsProbabilities);
         }
 
         return compoundModel;

@@ -14,7 +14,6 @@ import static org.apache.ignite.ml.naivebayes.compound.Data.LABEL_2;
 import static org.apache.ignite.ml.naivebayes.compound.Data.binarizedDataThresholds;
 import static org.apache.ignite.ml.naivebayes.compound.Data.classProbabilities;
 import static org.apache.ignite.ml.naivebayes.compound.Data.data;
-import static org.apache.ignite.ml.naivebayes.compound.Data.labels;
 import static org.junit.Assert.assertEquals;
 
 /** Integration tests for Compound naive Bayes algorithm with different datasets. */
@@ -30,7 +29,6 @@ public class CompoundNaiveBayesTest {
             .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer().setFeatureIdsToSkip(asList(3, 4, 5, 6, 7)))
             .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
                 .setBucketThresholds(binarizedDataThresholds)
-                .withEquiprobableClasses()
                 .setFeatureIdsToSkip(asList(0, 1, 2)));
 
         CompoundNaiveBayesModel model = trainer.fit(

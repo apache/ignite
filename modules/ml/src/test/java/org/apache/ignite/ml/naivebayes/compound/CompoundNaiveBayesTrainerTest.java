@@ -36,7 +36,6 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
             .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer().setFeatureIdsToSkip(asList(3, 4, 5, 6, 7)))
             .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
                 .setBucketThresholds(binarizedDataThresholds)
-                .withEquiprobableClasses()
                 .setFeatureIdsToSkip(asList(0, 1, 2)));
     }
 
