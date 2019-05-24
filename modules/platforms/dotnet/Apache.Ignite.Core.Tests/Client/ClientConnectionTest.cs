@@ -179,6 +179,57 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Test authentication.
+        /// </summary>
+        [Test]
+        public void TestAuthenticationLongToken()
+        {
+            using (var srv = Ignition.Start(SecureServerConfig()))
+            {
+                string user = new string('G', 59);
+                string pass = new string('q', 16 * 1024);
+
+                srv.GetCluster().SetActive(true);
+
+                using (var cli = Ignition.StartClient(GetSecureClientConfig()))
+                {
+                    CacheClientConfiguration ccfg = new CacheClientConfiguration
+                    {
+                        Name = "TestCache",
+                        QueryEntities = new[]
+                        {
+                            new QueryEntity
+                            {
+                                KeyType = typeof(string),
+                                ValueType = typeof(string),
+                            },
+                        },
+                    };
+
+                    ICacheClient<string, string> cache = cli.GetOrCreateCache<string, string>(ccfg);
+
+                    cache.Put("key1", "val1");
+
+                    cache.Query(new SqlFieldsQuery("CREATE USER \"" + user + "\" WITH PASSWORD '" + pass + "'")).GetAll();
+                }
+
+                var cliCfg = GetSecureClientConfig();
+
+                cliCfg.UserName = user;
+                cliCfg.Password = pass;
+
+                using (var cli = Ignition.StartClient(cliCfg))
+                {
+                    ICacheClient<string, string> cache = cli.GetCache<string, string>("TestCache");
+
+                    string val = cache.Get("key1");
+
+                    Assert.True(val == "val1");
+                }
+            }
+        }
+
+        /// <summary>
         /// Tests that multiple clients can connect to one server.
         /// </summary>
         [Test]
