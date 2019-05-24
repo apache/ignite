@@ -51,7 +51,7 @@ public class CacheOperationContext implements Serializable {
     private final boolean recovery;
 
     /** */
-    private final boolean consistency;
+    private final boolean readRepair;
 
     /** Client ID which operates over this projection. */
     private final UUID subjId;
@@ -78,7 +78,7 @@ public class CacheOperationContext implements Serializable {
         expiryPlc = null;
         noRetries = false;
         recovery = false;
-        consistency = false;
+        readRepair = false;
         dataCenterId = null;
         allowAtomicOpsInTx = DFLT_ALLOW_ATOMIC_OPS_IN_TX;
     }
@@ -89,7 +89,7 @@ public class CacheOperationContext implements Serializable {
      * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
-     * @param consistency Consistency check.
+     * @param readRepair Read Repair.
      */
     public CacheOperationContext(
         boolean skipStore,
@@ -99,7 +99,7 @@ public class CacheOperationContext implements Serializable {
         boolean noRetries,
         @Nullable Byte dataCenterId,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         boolean allowAtomicOpsInTx
     ) {
         this.skipStore = skipStore;
@@ -109,7 +109,7 @@ public class CacheOperationContext implements Serializable {
         this.noRetries = noRetries;
         this.dataCenterId = dataCenterId;
         this.recovery = recovery;
-        this.consistency = consistency;
+        this.readRepair = readRepair;
         this.allowAtomicOpsInTx = allowAtomicOpsInTx;
     }
 
@@ -141,7 +141,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -178,7 +178,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -204,7 +204,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -230,7 +230,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -247,7 +247,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -264,7 +264,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -281,15 +281,15 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
     /**
-     * @param consistency Consistency check flag.
-     * @return New instance of CacheOperationContext with consistency flag.
+     * @param readRepair Read Repair flag.
+     * @return New instance of CacheOperationContext with Read Repair flag.
      */
-    public CacheOperationContext setConsistency(boolean consistency) {
+    public CacheOperationContext setReadRepair(boolean readRepair) {
         return new CacheOperationContext(
             skipStore,
             subjId,
@@ -298,7 +298,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             allowAtomicOpsInTx);
     }
 
@@ -310,10 +310,10 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
-     * @return Consistency check flag.
+     * @return Read Repair flag.
      */
-    public boolean consistency() {
-        return consistency;
+    public boolean readRepair() {
+        return readRepair;
     }
 
     /**
@@ -335,7 +335,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            consistency,
+            readRepair,
             true);
     }
 

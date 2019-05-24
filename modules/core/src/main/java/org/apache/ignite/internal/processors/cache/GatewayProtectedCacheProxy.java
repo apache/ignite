@@ -232,29 +232,32 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> withConsistencyCheck() {
+    @Override public IgniteCache<K, V> withReadRepair() {
         CacheOperationGate opGate = onEnter();
 
         try {
             if (context().mvccEnabled())
-                throw new UnsupportedOperationException("Consistency check is not supported at MVCC mode.");
+                throw new UnsupportedOperationException("Read Repair is not supported at MVCC mode.");
 
-            if (!context().transactional())
-                throw new UnsupportedOperationException("Consistency check is not supported for atomic caches.");
+            if (context().atomic())
+                throw new UnsupportedOperationException("Read Repair is not supported for atomic caches.");
 
             if (context().isLocal())
-                throw new UnsupportedOperationException("Consistency check is not supported for local caches.");
+                throw new UnsupportedOperationException("Read Repair is not supported for local caches.");
+
+            if (context().isNear())
+                throw new UnsupportedOperationException("Read Repair is not supported for near caches.");
 
             if (context().config().getBackups() == 0)
-                throw new UnsupportedOperationException("Consistency check is suitable only in case " +
+                throw new UnsupportedOperationException("Read Repair is suitable only in case " +
                     "at least 1 backup configured for cache.");
 
-            boolean consistency = opCtx.consistency();
+            boolean readRepair = opCtx.readRepair();
 
-            if (consistency)
+            if (readRepair)
                 return this;
 
-            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setConsistency(true), lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setReadRepair(true), lock);
         }
         finally {
             onLeave(opGate);

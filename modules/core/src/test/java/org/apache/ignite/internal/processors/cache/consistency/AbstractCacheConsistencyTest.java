@@ -82,11 +82,11 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 Integer res =
                     raw ?
                         async ?
-                            cache.withConsistencyCheck().getEntryAsync(key).get().getValue() :
-                            cache.withConsistencyCheck().getEntry(key).getValue() :
+                            cache.withReadRepair().getEntryAsync(key).get().getValue() :
+                            cache.withReadRepair().getEntry(key).getValue() :
                         async ?
-                            cache.withConsistencyCheck().getAsync(key).get() :
-                            cache.withConsistencyCheck().get(key);
+                            cache.withReadRepair().getAsync(key).get() :
+                            cache.withReadRepair().get(key);
 
                 assertEquals(latest, res);
 
@@ -113,8 +113,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
             if (raw) {
                 Collection<CacheEntry<Integer, Integer>> res =
                     async ?
-                        cache.withConsistencyCheck().getEntriesAsync(keys).get() :
-                        cache.withConsistencyCheck().getEntries(keys);
+                        cache.withReadRepair().getEntriesAsync(keys).get() :
+                        cache.withReadRepair().getEntries(keys);
 
                 for (CacheEntry<Integer, Integer> entry : res)
                     assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
@@ -122,8 +122,8 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
             else {
                 Map<Integer, Integer> res =
                     async ?
-                        cache.withConsistencyCheck().getAllAsync(keys).get() :
-                        cache.withConsistencyCheck().getAll(keys);
+                        cache.withReadRepair().getAllAsync(keys).get() :
+                        cache.withReadRepair().getAll(keys);
 
                 for (Map.Entry<Integer, Integer> entry : res.entrySet())
                     assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
@@ -154,11 +154,11 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
                 Object res =
                     raw ?
                         async ?
-                            cache.withConsistencyCheck().getEntryAsync(key).get() :
-                            cache.withConsistencyCheck().getEntry(key) :
+                            cache.withReadRepair().getEntryAsync(key).get() :
+                            cache.withReadRepair().getEntry(key) :
                         async ?
-                            cache.withConsistencyCheck().getAsync(key).get() :
-                            cache.withConsistencyCheck().get(key);
+                            cache.withReadRepair().getAsync(key).get() :
+                            cache.withReadRepair().get(key);
 
                 assertEquals(null, res);
             }

@@ -139,7 +139,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private boolean recovery;
 
     /** */
-    private boolean consistency;
+    private boolean readRepair;
 
     /** */
     @GridToStringInclude
@@ -173,7 +173,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param consistency Read with consistency check flag.
+     * @param readRepair Read Repair flag.
      * @param txLbl Transaction label.
      */
     public GridPartitionedSingleGetFuture(
@@ -190,7 +190,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean needVer,
         boolean keepCacheObjects,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
@@ -219,7 +219,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
-        this.consistency = consistency;
+        this.readRepair = readRepair;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
 
@@ -282,7 +282,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     expiryPlc,
                     skipVals,
                     recovery,
-                    consistency,
+                    readRepair,
                     txLbl,
                     mvccSnapshot
                 );
@@ -352,7 +352,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 needVer,
                 cctx.deploymentEnabled(),
                 recovery,
-                consistency,
+                readRepair,
                 txLbl,
                 mvccSnapshot
             );
@@ -389,7 +389,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap, consistency);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap, readRepair);
 
         // Failed if none balanced node found.
         if (affNode == null) {
@@ -418,7 +418,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean fastLocGet = !cctx.mvccEnabled() &&
             (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer) &&
-            !consistency;
+            !readRepair;
 
         if (fastLocGet) {
             try {

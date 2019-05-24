@@ -194,7 +194,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final boolean recovery = opCtx != null && opCtx.recovery();
-        final boolean consistency = opCtx != null && opCtx.consistency();
+        final boolean readRepair = opCtx != null && opCtx.readRepair();
 
         // Get operation bypass Tx in Mvcc mode.
         if (!ctx.mvccEnabled() && tx != null && !tx.implicit() && !skipTx) {
@@ -208,7 +208,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
-                        consistency,
+                        readRepair,
                         needVer);
 
                     return fut.chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, V>() {
@@ -275,7 +275,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             /*keepCacheObjects*/false,
             opCtx != null && opCtx.recovery(),
-            consistency,
+            readRepair,
             null,
             mvccSnapshot);
 

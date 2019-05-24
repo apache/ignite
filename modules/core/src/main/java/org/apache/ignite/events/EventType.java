@@ -894,7 +894,7 @@ public interface EventType {
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see CacheConsistencyViolationEvent
-     * @see IgniteCache#withConsistencyCheck
+     * @see IgniteCache#withReadRepair
      */
     public static final int EVT_CONSISTENCY_VIOLATION = 135;
 

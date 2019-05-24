@@ -139,8 +139,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Gets an instance of {@code IgniteCache} that will perform backup nodes check on each get attempt.
      *
-     * Consistency check means that each backup node will be checked to have the same entry as primary node has.
-     * In case consistency violation found:
+     * Read Repair means that each backup node will be checked to have the same entry as primary node has,
+     * and in case consistency violation found:
      * - values across the topology will be replaced by latest versioned value:
      * -- automaticaly for OPTIMISTIC || READ_COMMITTED transactions
      * -- at commit() for PESSIMISTIC && !READ_COMMITTED transactions
@@ -148,11 +148,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
      * already cached inside the transaction. In case you use !READ_COMMITTED isolation mode and already have
-     * cached value, for example read the value or performed a write, you'll gain the cached value.
+     * cached value, for example already read the value or performed a write, you'll gain the cached value.
      *
-     * @return Cache with explicit consistency check on each read.
+     * @return Cache with explicit consistency check on each read and repair if necessary.
      */
-    public IgniteCache<K, V> withConsistencyCheck();
+    public IgniteCache<K, V> withReadRepair();
 
     /**
      * Returns cache that will operate with binary objects.
