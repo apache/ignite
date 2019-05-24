@@ -69,7 +69,7 @@
     "passport-local": "1.0.0",
     "passport-local-mongoose": "^5.0.1",
     "passport.socketio": "3.7.0",
-    "pkg": "^4.3.7",
+    "pkg": "4.3.8",
     "socket.io": "2.1.1",
     "uuid": "^3.3.2"
   },
