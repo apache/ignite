@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -42,14 +41,14 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  * Prepares recovery data.
  * Records consistency violation event.
  */
-public class GridConsistencyGetWithRecoveryFuture extends GridConsistencyAbstractGetFuture {
+public class GridReadWithConsistencyRepairFuture extends GridReadWithConsistencyAbstractFuture {
     /** Context. */
     GridCacheContext ctx;
 
     /**
      *
      */
-    public GridConsistencyGetWithRecoveryFuture(
+    public GridReadWithConsistencyRepairFuture(
         AffinityTopologyVersion topVer,
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,

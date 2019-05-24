@@ -91,7 +91,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridConsistencyGetWithCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridReadWithConsistencyCheckFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -2074,7 +2074,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 boolean readNoEntry = ctx.readNoEntry(expiry, readerArgs != null);
 
                 if (readRepair) {
-                    return new GridConsistencyGetWithCheckFuture(
+                    return new GridReadWithConsistencyCheckFuture(
                         topVer,
                         ctx,
                         keys,

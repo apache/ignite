@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 /**
  *
  */
-public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
+public abstract class GridReadWithConsistencyAbstractFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
     /** Affinity node's get futures. */
     protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
@@ -46,7 +46,7 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
     /**
      *
      */
-    protected GridConsistencyAbstractGetFuture(
+    protected GridReadWithConsistencyAbstractFuture(
         AffinityTopologyVersion topVer,
         GridCacheContext<KeyCacheObject, EntryGetResult> ctx,
         Collection<KeyCacheObject> keys,
@@ -85,7 +85,7 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
                 taskName,
                 deserializeBinary,
                 recovery,
-                false, // This request goes to backup during consistency check procedure.
+                false, // This request goes to backup during Read Repair procedure.
                 expiryPlc,
                 skipVals,
                 true, // Version required to check consistency.
@@ -103,11 +103,11 @@ public abstract class GridConsistencyAbstractGetFuture extends GridFutureAdapter
     /**
      *
      */
-    public GridConsistencyAbstractGetFuture init() {
+    public GridReadWithConsistencyAbstractFuture init() {
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values())
             fut.init(topVer);
 
-        return this;
+        return this; // For chaining.
     }
 
     /**

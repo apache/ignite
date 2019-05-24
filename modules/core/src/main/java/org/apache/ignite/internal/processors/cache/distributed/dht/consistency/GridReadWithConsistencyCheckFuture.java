@@ -32,11 +32,11 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 /**
  * Checks data consistency. Checks that each backup value equals to primary value.
  */
-public class GridConsistencyGetWithCheckFuture extends GridConsistencyAbstractGetFuture {
+public class GridReadWithConsistencyCheckFuture extends GridReadWithConsistencyAbstractFuture {
     /**
      *
      */
-    public GridConsistencyGetWithCheckFuture(
+    public GridReadWithConsistencyCheckFuture(
         AffinityTopologyVersion topVer,
         GridCacheContext cctx,
         Collection<KeyCacheObject> keys,
