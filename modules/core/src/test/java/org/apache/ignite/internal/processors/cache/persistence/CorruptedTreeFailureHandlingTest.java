@@ -46,7 +46,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTre
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -210,9 +212,15 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
                 @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
                     int type = PageIO.getType(srcBuf);
 
-                    if (type == PageIO.T_DATA_REF_LEAF) {
-                        DataLeafIO dataLeafIO = DataLeafIO.VERSIONS.latest();
+                    AbstractDataLeafIO dataLeafIO = null;
 
+                    if (type == PageIO.T_DATA_REF_LEAF)
+                        dataLeafIO = DataLeafIO.VERSIONS.latest();
+
+                    if (type == PageIO.T_DATA_REF_MVCC_LEAF)
+                        dataLeafIO = MvccDataLeafIO.VERSIONS.latest();
+
+                    if (dataLeafIO != null) {
                         long pageAddr = GridUnsafe.bufferAddress(srcBuf);
 
                         int itemIdx = dataLeafIO.getCount(pageAddr) - 1;
