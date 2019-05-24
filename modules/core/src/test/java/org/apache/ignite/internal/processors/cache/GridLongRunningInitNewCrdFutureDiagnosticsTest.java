@@ -20,19 +20,18 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Test class for diagnostics of long running {@link InitNewCoordinatorFuture}.
+ * Test class for diagnostics of long running InitNewCoordinatorFuture.
  */
 public class GridLongRunningInitNewCrdFutureDiagnosticsTest extends GridCommonAbstractTest  {
     /** Node with diagnostic logger. */
     private static final int NODE_WITH_DIAGNOSTIC_LOG = 2;
 
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, GridAbstractTest.log);
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
 
     /** Test recording communication spi. */
     private TestRecordingCommunicationSpi testRecordingCommSpi;
@@ -45,7 +44,7 @@ public class GridLongRunningInitNewCrdFutureDiagnosticsTest extends GridCommonAb
         testRecordingCommSpi = new TestRecordingCommunicationSpi();
 
         return super.getConfiguration(igniteInstanceName)
-            .setGridLogger(log)
+            .setGridLogger(listeningLog)
             .setConsistentId(igniteInstanceName)
             .setCommunicationSpi(testRecordingCommSpi);
     }
@@ -59,7 +58,7 @@ public class GridLongRunningInitNewCrdFutureDiagnosticsTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        log.clearListeners();
+        listeningLog.clearListeners();
 
         stopAllGrids();
     }
@@ -91,7 +90,7 @@ public class GridLongRunningInitNewCrdFutureDiagnosticsTest extends GridCommonAb
     private LogListener expectLogEvent(String evtMsg, int cnt) {
         LogListener lsnr = LogListener.matches(s -> s.startsWith(evtMsg)).atLeast(cnt).build();
 
-        log.registerListener(lsnr);
+        listeningLog.registerListener(lsnr);
 
         return lsnr;
     }
