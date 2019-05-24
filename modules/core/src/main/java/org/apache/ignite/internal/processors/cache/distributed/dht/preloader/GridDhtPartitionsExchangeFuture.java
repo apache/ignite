@@ -4984,13 +4984,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** {@inheritDoc} */
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext diagCtx) {
         if (!isDone()) {
-            ClusterNode crd;
-            Set<UUID> remaining;
+            final ClusterNode crd;
+            final Set<UUID> remaining;
+            final InitNewCoordinatorFuture newCrdFut;
 
             synchronized (mux) {
                 crd = this.crd;
                 remaining = new HashSet<>(this.remaining);
+                newCrdFut = this.newCrdFut;
             }
+
+            if(newCrdFut != null)
+                newCrdFut.addDiagnosticRequest(diagCtx);
 
             if (crd != null) {
                 if (!crd.isLocal()) {
@@ -5014,7 +5019,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         return "GridDhtPartitionsExchangeFuture [topVer=" + initialVersion() +
             ", evt=" + (firstDiscoEvt != null ? IgniteUtils.gridEventName(firstDiscoEvt.type()) : -1) +
             ", evtNode=" + (firstDiscoEvt != null ? firstDiscoEvt.eventNode() : null) +
-            ", done=" + isDone() + ']';
+            ", done=" + isDone() +
+            ", newCrdFut=" + this.newCrdFut + ']';
     }
 
     /** {@inheritDoc} */
