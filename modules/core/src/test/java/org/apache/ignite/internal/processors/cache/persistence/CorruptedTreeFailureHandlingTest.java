@@ -64,7 +64,7 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
     /** */
     private static final int CACHE_ENTRIES = 10;
 
-    /** Partition file wi corrupted page. */
+    /** Partition file with corrupted page. */
     private final AtomicReference<File> fileRef = new AtomicReference<>();
 
     /** Link to corrupted page. */
@@ -88,9 +88,6 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
             .setAffinity(new RendezvousAffinityFunction().setPartitions(1))
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
         );
-
-        if (!gridName.endsWith("0"))
-            cfg.setClientMode(true);
 
         return cfg;
     }
