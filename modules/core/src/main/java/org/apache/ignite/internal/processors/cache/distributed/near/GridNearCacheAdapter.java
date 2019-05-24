@@ -227,7 +227,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
@@ -253,7 +253,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             needVer,
             false,
             recovery,
-            consistency);
+            readRepair);
 
         // init() will register future for responses if future has remote mappings.
         fut.init(null);

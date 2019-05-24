@@ -60,7 +60,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     public static final int RECOVERY_FLAG_MASK = 0x20;
 
     /** */
-    public static final int CONSISTENCY_FLAG_MASK = 0x40;
+    public static final int READ_REPAIR_FLAG_MASK = 0x40;
 
     /** Future ID. */
     private long futId;
@@ -132,7 +132,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean needVer,
         boolean addDepInfo,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -165,8 +165,8 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
 
-        if (consistency)
-            flags |= CONSISTENCY_FLAG_MASK;
+        if (readRepair)
+            flags |= READ_REPAIR_FLAG_MASK;
     }
 
     /**
@@ -286,10 +286,10 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * @return {@code True} if consistency flag is set.
+     * @return {@code True} if Read Repair flag is set.
      */
-    public boolean consistency() {
-        return (flags & CONSISTENCY_FLAG_MASK) != 0;
+    public boolean readRepair() {
+        return (flags & READ_REPAIR_FLAG_MASK) != 0;
     }
 
     /** {@inheritDoc} */

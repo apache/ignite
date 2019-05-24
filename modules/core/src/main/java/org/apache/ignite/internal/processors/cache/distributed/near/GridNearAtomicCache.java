@@ -408,7 +408,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         boolean skipVals,
         boolean needVer
     ) {
@@ -431,7 +431,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             taskName,
             deserializeBinary,
             recovery,
-            consistency,
+            readRepair,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             opCtx != null && opCtx.skipStore(),

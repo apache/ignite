@@ -496,14 +496,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean deserializeBinary,
         boolean needVer,
         boolean recovery,
-        boolean consistency) throws IgniteCheckedException {
+        boolean readRepair) throws IgniteCheckedException {
         return getAllAsyncInternal(keys,
             !ctx.config().isReadFromBackup(),
             null,
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
             recovery,
-            consistency,
+            readRepair,
             false,
             needVer,
             false).get();
@@ -518,7 +518,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final boolean consistency,
+        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -528,7 +528,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskName,
             deserializeBinary,
             recovery,
-            consistency,
+            readRepair,
             skipVals,
             needVer,
             true);
@@ -552,7 +552,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final boolean consistency,
+        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer,
         boolean asyncOp
@@ -584,7 +584,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         taskName,
                         deserializeBinary,
                         recovery,
-                        consistency,
+                        readRepair,
                         expiryPlc,
                         skipVals,
                         skipStore,
@@ -599,7 +599,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 taskName,
                 deserializeBinary,
                 recovery,
-                consistency,
+                readRepair,
                 expiryPlc,
                 skipVals,
                 skipStore,
@@ -1401,7 +1401,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
      * @param recovery Partition recover.
-     * @param consistency Consistency.
+     * @param readRepair Read Repair.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param skipStore Skip store flag.
@@ -1414,7 +1414,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1437,7 +1437,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             needVer,
             false,
             recovery,
-            consistency,
+            readRepair,
             null,
             null);
 
@@ -1466,7 +1466,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1479,7 +1479,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean evt = !skipVals;
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary && !consistency && ctx.affinityNode()) {
+        if (!forcePrimary && !readRepair && ctx.affinityNode()) {
             try {
                 Map<K, V> locVals = U.newHashMap(keys.size());
 
@@ -1642,7 +1642,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskName,
             deserializeBinary,
             recovery,
-            consistency,
+            readRepair,
             expiry,
             skipVals,
             needVer,

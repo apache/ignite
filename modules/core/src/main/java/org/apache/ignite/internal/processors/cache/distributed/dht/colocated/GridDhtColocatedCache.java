@@ -304,7 +304,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final boolean consistency,
+        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -333,7 +333,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         false,
                         opCtx != null && opCtx.skipStore(),
                         recovery,
-                        consistency,
+                        readRepair,
                         needVer);
                 }
             }, opCtx, /*retry*/false);
@@ -379,7 +379,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             taskName,
             deserializeBinary,
             recovery,
-            consistency,
+            readRepair,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
             needVer,
@@ -431,7 +431,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean needVer,
         boolean keepCacheObj,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable MvccSnapshot mvccSnapshot,
         @Nullable String txLbl
     ) {
@@ -448,7 +448,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             keepCacheObj,
             recovery,
-            consistency,
+            readRepair,
             txLbl,
             mvccSnapshot);
 
@@ -482,7 +482,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
@@ -499,7 +499,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc = expiryPolicy(null);
 
         // Optimization: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary && !consistency && ctx.affinityNode()) {
+        if (!forcePrimary && !readRepair && ctx.affinityNode()) {
             try {
                 Map<K, V> locVals = null;
 
@@ -673,7 +673,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             taskName,
             deserializeBinary,
             recovery,
-            consistency,
+            readRepair,
             expiryPlc,
             skipVals,
             needVer,

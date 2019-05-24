@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdat
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridConsistencyGetWithCheckFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
@@ -763,7 +762,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         boolean skipVals,
         boolean needVer
     ) {
@@ -777,7 +776,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            consistency,
+            readRepair,
             forcePrimary,
             null,
             skipVals,
@@ -805,7 +804,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         IgniteCacheExpiryPolicy expiryPlc,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot,
@@ -822,7 +821,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
-            consistency,
+            readRepair,
             /*need version*/true,
             txLbl,
             mvccSnapshot);
@@ -854,7 +853,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -869,7 +868,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
-            consistency,
+            readRepair,
             addReaders,
             txLbl,
             mvccSnapshot);
@@ -906,7 +905,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -923,7 +922,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
-            consistency,
+            readRepair,
             txLbl,
             mvccSnapshot);
 
@@ -954,7 +953,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
-                req.consistency(),
+                req.readRepair(),
                 req.txLabel(),
                 req.mvccSnapshot());
 
@@ -1071,7 +1070,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
-                req.consistency(),
+                req.readRepair(),
                 req.txLabel(),
                 req.mvccSnapshot());
 

@@ -315,7 +315,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         boolean deserializeBinary,
         boolean needVer,
         boolean recovery,
-        boolean consistency) throws IgniteCheckedException {
+        boolean readRepair) throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
         String taskName = ctx.kernalContext().job().currentTaskName();
@@ -338,7 +338,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {

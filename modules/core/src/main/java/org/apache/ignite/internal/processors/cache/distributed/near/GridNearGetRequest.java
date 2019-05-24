@@ -69,7 +69,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     public static final int RECOVERY_FLAG_MASK = 0x08;
 
     /** */
-    public static final int CONSISTENCY_FLAG_MASK = 0x10;
+    public static final int READ_REPAIR_FLAG_MASK = 0x10;
 
     /** Future ID. */
     private IgniteUuid futId;
@@ -158,7 +158,7 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         boolean skipVals,
         boolean addDepInfo,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
@@ -204,8 +204,8 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
 
-        if (consistency)
-            flags |= CONSISTENCY_FLAG_MASK;
+        if (readRepair)
+            flags |= READ_REPAIR_FLAG_MASK;
     }
 
     /**
@@ -280,10 +280,10 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     }
 
     /**
-     * @return Consistency flag.
+     * @return Read Repair flag.
      */
-    public boolean consistency() {
-        return (flags & CONSISTENCY_FLAG_MASK) != 0;
+    public boolean readRepair() {
+        return (flags & READ_REPAIR_FLAG_MASK) != 0;
     }
 
     public boolean addReaders() {

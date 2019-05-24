@@ -2235,7 +2235,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         Set<ClusterNode> invalidNodes,
         int partId,
         boolean canRemap,
-        boolean consistency
+        boolean readRepair
     ) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
@@ -2254,7 +2254,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             }
         }
 
-        if (!readFromBackup || consistency) {
+        if (!readFromBackup || readRepair) {
             ClusterNode first = affNodes.get(0);
 
             return !invalidNodes.contains(first) ? first : null;

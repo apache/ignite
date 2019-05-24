@@ -121,7 +121,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private final boolean recovery;
 
     /** */
-    private final boolean consistency;
+    private final boolean readRepair;
 
     /** */
     private final boolean addReaders;
@@ -158,7 +158,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         boolean addReaders,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
@@ -179,7 +179,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
-        this.consistency = consistency;
+        this.readRepair = readRepair;
         this.addReaders = addReaders;
         this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
@@ -480,7 +480,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 expiryPlc,
                 skipVals,
                 recovery,
-                consistency,
+                readRepair,
                 expiryPlc,
                 txLbl,
                 mvccSnapshot,
@@ -508,7 +508,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             expiryPlc,
                             skipVals,
                             recovery,
-                            consistency,
+                            readRepair,
                             expiryPlc,
                             txLbl,
                             mvccSnapshot,

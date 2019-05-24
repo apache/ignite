@@ -94,7 +94,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
@@ -116,7 +116,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             needVer,
             keepCacheObjects,
             recovery,
-            consistency
+            readRepair
         );
 
         assert (mvccSnapshot == null) == !cctx.mvccEnabled();
@@ -254,7 +254,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
-                        consistency,
+                        readRepair,
                         txLbl,
                         mvccSnapshot()
                     );
@@ -354,7 +354,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         // Get remote node for request for this key.
         ClusterNode node = premapped == null ?
-            cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, consistency) :
+            cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, readRepair) :
             premapped;
 
         // Failed if none remote node found.
@@ -414,7 +414,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean fastLocGet = !cctx.mvccEnabled() &&
             (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer) &&
-            !consistency && // not an initial get-with-consistency which should read value from primary.
+            !readRepair && // not an initial get-with-consistency which should read value from primary.
             premapped == null; // not a subsequent get-with-consistency which should read value from explicit backup or primary.
 
         if (fastLocGet) {
@@ -677,7 +677,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 skipVals,
                 cctx.deploymentEnabled(),
                 recovery,
-                consistency,
+                readRepair,
                 txLbl,
                 mvccSnapshot()
             );

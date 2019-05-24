@@ -1921,7 +1921,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         boolean skipVals,
         final boolean needVer
     ) {
@@ -1937,7 +1937,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            consistency,
+            readRepair,
             forcePrimary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
@@ -1968,7 +1968,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final boolean consistency,
+        final boolean readRepair,
         final boolean forcePrimary,
         @Nullable IgniteCacheExpiryPolicy expiry,
         final boolean skipVals,
@@ -1990,7 +1990,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             skipVals,
             /*keep cache objects*/false,
             recovery,
-            consistency,
+            readRepair,
             needVer,
             null,
             null); // TODO IGNITE-7371
@@ -2024,7 +2024,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean skipVals,
         final boolean keepCacheObjects,
         final boolean recovery,
-        final boolean consistency,
+        final boolean readRepair,
         final boolean needVer,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
@@ -2073,7 +2073,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 boolean readNoEntry = ctx.readNoEntry(expiry, readerArgs != null);
 
-                if (consistency) {
+                if (readRepair) {
                     return new GridConsistencyGetWithCheckFuture(
                         topVer,
                         ctx,
@@ -2432,7 +2432,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         false,
                         !readThrough,
                         recovery,
-                        consistency,
+                        readRepair,
                         needVer);
                 }
             }, ctx.operationContextPerCall(), /*retry*/false);
@@ -4902,7 +4902,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final K key,
         boolean deserializeBinary,
         final boolean needVer,
-        boolean consistency) {
+        boolean readRepair) {
         try {
             checkJta();
         }
@@ -4919,11 +4919,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*skip vals*/false,
             needVer);
 
-        if (consistency)
+        if (readRepair)
             return getWithRepairAsync(
                 fut,
                 () -> repairAsync(key),
-                () -> repairableGetAsync(key, deserializeBinary, needVer, consistency));
+                () -> repairableGetAsync(key, deserializeBinary, needVer, readRepair));
 
         return fut;
     }
@@ -4940,14 +4940,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean deserializeBinary,
         boolean needVer,
         boolean recovery,
-        boolean consistency) throws IgniteCheckedException {
+        boolean readRepair) throws IgniteCheckedException {
         try {
-            return getAll(keys, deserializeBinary, needVer, recovery, consistency);
+            return getAll(keys, deserializeBinary, needVer, recovery, readRepair);
         }
         catch (IgniteConsistencyViolationException e) {
             repairAsync(keys).get();
 
-            return repairableGetAll(keys, deserializeBinary, needVer, recovery, consistency);
+            return repairableGetAll(keys, deserializeBinary, needVer, recovery, readRepair);
         }
     }
 
@@ -4963,7 +4963,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean deserializeBinary,
         boolean needVer,
         boolean recovery,
-        boolean consistency) throws IgniteCheckedException {
+        boolean readRepair) throws IgniteCheckedException {
         checkJta();
 
         return getAllAsync(keys,
@@ -4973,7 +4973,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
             recovery,
-            consistency,
+            readRepair,
             /*skip vals*/false,
             needVer).get();
     }
@@ -4999,7 +4999,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean consistency,
+        boolean readRepair,
         boolean skipVals,
         final boolean needVer
     ) {
@@ -5011,11 +5011,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializeBinary,
             recovery,
-            consistency,
+            readRepair,
             skipVals,
             needVer);
 
-        if (consistency)
+        if (readRepair)
             return getWithRepairAsync(
                 fut,
                 () -> repairAsync(keys),
@@ -5027,7 +5027,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     taskName,
                     deserializeBinary,
                     recovery,
-                    consistency,
+                    readRepair,
                     skipVals,
                     needVer));
 
