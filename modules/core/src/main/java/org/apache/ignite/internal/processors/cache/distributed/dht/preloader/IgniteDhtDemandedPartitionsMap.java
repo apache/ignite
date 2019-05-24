@@ -40,8 +40,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
 
     public IgniteDhtDemandedPartitionsMap(
         @Nullable CachePartitionPartialCountersMap historical,
-        @Nullable Set<Integer> full)
-    {
+        @Nullable Set<Integer> full) {
         this.historical = historical;
         this.full = full;
     }
@@ -68,6 +67,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
 
     /**
      * Adds partition for preloading from all current data.
+     *
      * @param partId Partition ID.
      */
     public void addFull(int partId) {
@@ -81,6 +81,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
 
     /**
      * Removes partition.
+     *
      * @param partId Partition ID.
      * @return {@code True} if changed.
      */

@@ -18,7 +18,10 @@ package org.apache.ignite.internal.visor.tx;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -26,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -82,5 +86,12 @@ public class FetchNearXidVersionTask extends VisorMultiNodeTask<TxVerboseId, Gri
 
             return null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<TxVerboseId> arg) {
+        return ignite.cluster().nodes().stream()
+            .map(ClusterNode::id)
+            .collect(Collectors.toList());
     }
 }

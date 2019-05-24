@@ -923,6 +923,9 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     // Exception may happen in non-failoversafe mode.
                     if (failoverSafe)
                         throw e;
+                    // problem already occurred, test is being shutdown
+                    if (Thread.currentThread().isInterrupted())
+                        throw e;
                 }
                 finally {
                     // Broken lock cannot be used in non-failoversafe mode.

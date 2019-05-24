@@ -107,7 +107,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
      *  @param ctx Kernal Context.
      * @param ses Session.
      * @param busyLock Shutdown busy lock.
-     * @param connId
+     * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
     public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
@@ -167,11 +167,14 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         }
 
-
         Boolean dataPageScanEnabled = null;
+        Integer updateBatchSize = null;
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (ver.compareTo(VER_2_8_0) >= 0) {
             dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
+
+            updateBatchSize = JdbcUtils.readNullableInteger(reader);
+        }
 
         if (ver.compareTo(VER_2_5_0) >= 0) {
             String user = null;
@@ -207,7 +210,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
-            dataPageScanEnabled, actx, ver, this);
+            dataPageScanEnabled, updateBatchSize, actx, ver, this);
 
         handler.start();
     }
