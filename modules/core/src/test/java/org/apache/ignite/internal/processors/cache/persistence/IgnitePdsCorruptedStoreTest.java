@@ -331,6 +331,8 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReadOnlyMetaStore() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-18916");
+
         IgniteEx ignite0 = startGrid(0);
 
         ignite0.cluster().active(true);
