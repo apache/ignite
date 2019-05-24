@@ -363,9 +363,6 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         try {
             return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
         finally {
             leave();
         }
