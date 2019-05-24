@@ -137,7 +137,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testActivate() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -153,7 +153,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testDeactivate() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -173,7 +173,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testState() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -191,7 +191,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineCollect() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -209,7 +209,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineCollectCrd() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -266,7 +266,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testFindAndDeleteGarbage() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -336,7 +336,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineAdd() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -357,7 +357,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineRemove() throws Exception {
         Ignite ignite = startGrids(1);
         Ignite other = startGrid("nodeToStop");
@@ -381,7 +381,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineRemoveOnNotActiveCluster() throws Exception {
         Ignite ignite = startGrids(1);
         Ignite other = startGrid("nodeToStop");
@@ -414,7 +414,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineSet() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -436,7 +436,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineVersion() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -458,7 +458,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineAutoAdjustmentSettings() throws Exception {
         Ignite ignite = startGrid();
 
@@ -505,7 +505,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineAutoAdjustmentAutoRemoveNode() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -542,7 +542,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineAutoAdjustmentAutoAddNode() throws Exception {
         Ignite ignite = startGrids(1);
 
@@ -581,7 +581,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testActiveTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
@@ -739,7 +739,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      * Smoke test for --tx --info command.
      */
-    //@Test
+    @Test
     public void testTransactionInfo() throws Exception {
         Ignite ignite = startGridsMultiThreaded(5);
 
@@ -794,7 +794,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      * Smoke test for historical mode of --tx --info command.
      */
-    //@Test
+    @Test
     public void testTransactionHistoryInfo() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
@@ -869,7 +869,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      *
      */
-    //@Test
+    @Test
     public void testKillHangingLocalTransactions() throws Exception {
         Ignite ignite = startGridsMultiThreaded(2);
 
@@ -939,7 +939,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      * Simulate uncommitted backup transactions and test rolling back using utility.
      */
-    //@Test
+    @Test
     public void testKillHangingRemoteTransactions() throws Exception {
         final int cnt = 3;
 
@@ -1117,7 +1117,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testBaselineAddOnNotActiveCluster() throws Exception {
         Ignite ignite = startGrid(1);
 
@@ -1144,7 +1144,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
     /**
      */
-    //@Test
+    @Test
     public void testCacheHelp() {
         injectTestSystemOut();
 
@@ -1168,7 +1168,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
     /**
      */
-    //@Test
+    @Test
     public void testCorrectCacheOptionsNaming() {
         Pattern p = Pattern.compile("^--([a-z]+(-)?)+([a-z]+)");
 
@@ -1183,7 +1183,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
     /**
      */
-    //@Test
+    @Test
     public void testHelp() {
         injectTestSystemOut();
 
@@ -1198,7 +1198,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerify() throws Exception {
         IgniteEx ignite = startGrids(2);
 
@@ -1224,7 +1224,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyNodeFilter() throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -1254,7 +1254,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyTwoConflictTypes() throws Exception {
         IgniteEx ignite = startGrids(2);
 
@@ -1284,7 +1284,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpSkipZerosUpdateCounters() throws Exception {
         IgniteEx ignite = startGrids(2);
 
@@ -1341,7 +1341,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDump() throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -1399,33 +1399,33 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception if failed
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyMultipleCacheFilterOptions() throws Exception {
         IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
         ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setGroupName("shared_grp")
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME));
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setGroupName("shared_grp")
+                .setBackups(1)
+                .setName(DEFAULT_CACHE_NAME));
 
         ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setGroupName("shared_grp")
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME + "_second"));
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setGroupName("shared_grp")
+                .setBackups(1)
+                .setName(DEFAULT_CACHE_NAME + "_second"));
 
         ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 64))
-            .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME + "_third"));
+                .setAffinity(new RendezvousAffinityFunction(false, 64))
+                .setBackups(1)
+                .setName(DEFAULT_CACHE_NAME + "_third"));
 
         ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 128))
-            .setBackups(1)
-            .setName("wrong_cache"));
+                .setAffinity(new RendezvousAffinityFunction(false, 128))
+                .setBackups(1)
+                .setName("wrong_cache"));
 
         injectTestSystemOut();
 
@@ -1541,15 +1541,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         String logFileName = (out.split("See log for additional information. ")[1]).split(".txt")[0];
 
-        log.error("BEFORE FILE READ:");
-        log.error("=======================");
-
-        for (File f : new File(logFileName.substring(0, logFileName.lastIndexOf(File.separatorChar))).listFiles()) {
-            log.error(f.getAbsolutePath());
-        }
-
-        log.error("=======================");
-
         String logFile = new String(Files.readAllBytes(new File(logFileName + ".txt").toPath()));
 
         assertContains(log, logFile, "Checkpoint with dirty pages started! Cluster not idle!");
@@ -1632,7 +1623,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedData() throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -1678,7 +1669,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpWhenNodeFailing() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -1714,7 +1705,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpWhenSeveralNodesFailing() throws Exception {
         int nodes = 6;
 
@@ -1761,7 +1752,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheIdleVerifyCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--check-crc");
 
@@ -1772,7 +1763,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpCrcWithCorruptedPartition() throws Exception {
         testCacheIdleVerifyWithCorruptedPartition("--cache", "idle_verify", "--dump", "--check-crc");
 
@@ -1878,7 +1869,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnSystemCache() throws Exception {
         int parts = 32;
 
@@ -1939,7 +1930,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnPersistenceClientCache() throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -1955,7 +1946,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpForCorruptedDataOnNonePersistenceClientCache() throws Exception {
         int parts = 32;
 
@@ -2006,7 +1997,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpExcludedCacheGrp() throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -2046,7 +2037,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyDumpExcludedCaches() throws Exception {
         IgniteEx ignite = startGrids(3);
 
@@ -2101,7 +2092,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    //@Test
+    @Test
     public void testCacheIdleVerifyMovingParts() throws Exception {
         IgniteEx ignite = startGrids(2);
 
@@ -2136,7 +2127,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      *
      */
-    //@Test
+    @Test
     public void testCacheContention() throws Exception {
         int cnt = 10;
 
@@ -2212,7 +2203,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      *
      */
-    //@Test
+    @Test
     public void testCacheSequence() throws Exception {
         Ignite ignite = startGrid();
 
@@ -2239,7 +2230,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      *
      */
-    //@Test
+    @Test
     public void testCacheGroups() throws Exception {
         Ignite ignite = startGrid();
 
@@ -2264,7 +2255,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      *
      */
-    //@Test
+    @Test
     public void testCacheAffinity() throws Exception {
         Ignite ignite = startGrid();
 
@@ -2291,43 +2282,43 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheConfigNoOutputFormat() throws Exception {
         testCacheConfig(null, 1, 1);
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheConfigSingleLineOutputFormatSingleNodeSignleCache() throws Exception {
         testCacheConfigSingleLineOutputFormat(1, 1);
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheConfigSingleLineOutputFormatTwoNodeSignleCache() throws Exception {
         testCacheConfigSingleLineOutputFormat(2, 1);
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheConfigSingleLineOutputFormatTwoNodeManyCaches() throws Exception {
         testCacheConfigSingleLineOutputFormat(2, 100);
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheConfigMultiLineOutputFormatSingleNodeSingleCache() throws Exception {
         testCacheConfigMultiLineOutputFormat(1, 1);
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheConfigMultiLineOutputFormatTwoNodeSingleCache() throws Exception {
         testCacheConfigMultiLineOutputFormat(2, 1);
     }
 
     /** */
-    //@Test
+    @Test
     public void testCacheConfigMultiLineOutputFormatTwoNodeManyCaches() throws Exception {
         testCacheConfigMultiLineOutputFormat(2, 100);
     }
@@ -2402,7 +2393,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      *
      */
-    //@Test
+    @Test
     public void testCacheDistribution() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -2447,7 +2438,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     /**
      *
      */
-    //@Test
+    @Test
     public void testCacheResetLostPartitions() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -2496,7 +2487,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception if failed.
      */
-    //@Test
+    @Test
     public void testUnusedWalPrint() throws Exception {
         Ignite ignite = startGrids(2);
 
@@ -2534,7 +2525,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
      *
      * @throws Exception if failed.
      */
-    //@Test
+    @Test
     public void testUnusedWalDelete() throws Exception {
         Ignite ignite = startGrids(2);
 

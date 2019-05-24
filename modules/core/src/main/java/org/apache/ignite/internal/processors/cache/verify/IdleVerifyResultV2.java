@@ -27,7 +27,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -168,27 +167,14 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                 pw.flush();
 
                 printer.accept("See log for additional information. " + f.getAbsolutePath() + "\n");
+
+                return f.getAbsolutePath();
             }
             catch (FileNotFoundException e) {
                 printer.accept("Can't write exceptions to file " + f.getAbsolutePath() + " " + e.getMessage() + "\n");
 
                 e.printStackTrace();
-
-                return null;
             }
-
-            File dir = new File(System.getProperty("user.dir"));
-
-            printer.accept("==========================\n");
-            printer.accept("contents in " + dir.getAbsolutePath() + "\n");
-
-            for (File ff : dir.listFiles()) {
-                printer.accept(ff.getAbsolutePath() +"\n");
-            }
-
-            printer.accept("==========================\n");
-
-            return f.getAbsolutePath();
         }
 
         return null;
