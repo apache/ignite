@@ -1,6 +1,7 @@
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.util.Arrays;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
@@ -33,8 +34,7 @@ public class CompoundNaiveBayesTest {
 
         CompoundNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+                new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Vector observation1 = VectorUtils.of(5.92, 165, 10, 1, 1, 0, 0, 0);

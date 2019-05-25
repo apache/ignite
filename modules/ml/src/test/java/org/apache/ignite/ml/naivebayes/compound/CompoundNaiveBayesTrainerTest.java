@@ -1,9 +1,9 @@
 package org.apache.ignite.ml.naivebayes.compound;
 
-import java.util.Arrays;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
@@ -15,7 +15,6 @@ import static java.util.Arrays.asList;
 import static org.apache.ignite.ml.naivebayes.compound.Data.binarizedDataThresholds;
 import static org.apache.ignite.ml.naivebayes.compound.Data.classProbabilities;
 import static org.apache.ignite.ml.naivebayes.compound.Data.data;
-import static org.apache.ignite.ml.naivebayes.compound.Data.labels;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -43,8 +42,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     public void test() {
         CompoundNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+                new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertDiscreteModel(model.getDiscreteModel());
