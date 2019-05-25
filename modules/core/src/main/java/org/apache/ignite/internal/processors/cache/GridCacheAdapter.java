@@ -5021,17 +5021,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Performs repair and retries get.
      */
     private <R> IgniteInternalFuture<R> getWithRepairAsync(
-        IgniteInternalFuture<R> fut,
+        IgniteInternalFuture<R> orig,
         Function<CacheOperationContext, IgniteInternalFuture<Void>> repair,
         Supplier<IgniteInternalFuture<R>> retry) {
         final GridNearTxLocal tx = checkCurrentTx();
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        GridFutureAdapter<R> res = new GridFutureAdapter<>();
+        GridFutureAdapter<R> fut = new GridFutureAdapter<>();
 
-        fut.listen((f) -> {
+        orig.listen((f) -> {
             try {
-                res.onDone(f.get());
+                fut.onDone(f.get());
             }
             catch (IgniteConsistencyViolationException e1) {
                 assert tx == null || tx.optimistic() || tx.readCommitted();
@@ -5043,10 +5043,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ctx.operationContextPerCall(opCtx);
 
                     try {
-                        res.onDone(retry.get().get());
+                        fut.onDone(retry.get().get());
                     }
                     catch (IgniteCheckedException e2) {
-                        res.onDone(e2);
+                        fut.onDone(e2);
                     }
                     finally {
                         ctx.tm().tx(prevTx);
@@ -5055,11 +5055,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 });
             }
             catch (IgniteCheckedException e1) {
-                res.onDone(e1);
+                fut.onDone(e1);
             }
         });
 
-        return res;
+        return fut;
     }
 
     /**
