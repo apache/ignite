@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.naivebayes.compound;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -24,8 +25,13 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 
-/** Created by Ravil on 04/02/2019. */
-public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel> {
+/**
+ * A compound Naive Bayes model which uses a composition of{@code GaussianNaiveBayesModel} and {@code
+ * DiscreteNaiveBayesModel}.
+ */
+public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable {
+    /** */
+    private static final long serialVersionUID = -5045925321135798960L;
     /** Prior probabilities of each class. */
     private double[] priorProbabilities;
     /** Labels. */
@@ -64,34 +70,41 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return labels[maxLabelIndex];
     }
 
+    /** */
     public GaussianNaiveBayesModel getGaussianModel() {
         return gaussianModel;
     }
 
+    /** */
     public DiscreteNaiveBayesModel getDiscreteModel() {
         return discreteModel;
     }
 
+    /** */
     public CompoundNaiveBayesModel wirhPriorProbabilities(double[] priorProbabilities) {
         this.priorProbabilities = priorProbabilities.clone();
         return this;
     }
 
+    /** */
     public CompoundNaiveBayesModel withLabels(double[] labels) {
         this.labels = labels.clone();
         return this;
     }
 
+    /** */
     public CompoundNaiveBayesModel withGaussianModel(GaussianNaiveBayesModel gaussianModel) {
         this.gaussianModel = gaussianModel;
         return this;
     }
 
+    /** */
     public CompoundNaiveBayesModel withDiscreteModel(DiscreteNaiveBayesModel discreteModel) {
         this.discreteModel = discreteModel;
         return this;
     }
 
+    /** Returns index by index sum of two arrays. */
     private static double[] sum(double[] arr1, double[] arr2) {
         assert arr1.length == arr2.length;
 
