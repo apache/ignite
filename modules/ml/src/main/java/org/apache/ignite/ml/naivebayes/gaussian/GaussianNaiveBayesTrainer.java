@@ -50,7 +50,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     /** {@inheritDoc} */
     @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
-                                                        Preprocessor<K, V> extractor) {
+        Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -65,15 +65,8 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-        return super.updateModel(mdl, datasetBuilder, featureExtractor, lbExtractor);
-    }
-
-    /** {@inheritDoc} */
     @Override protected <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
-                                                                   DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
+        DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
         assert datasetBuilder != null;
 
         try (Dataset<EmptyContext, GaussianNaiveBayesSumsHolder> dataset = datasetBuilder.build(
@@ -81,14 +74,13 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             (env, upstream, upstreamSize) -> new EmptyContext(),
             (env, upstream, upstreamSize, ctx) -> {
 
-
                 GaussianNaiveBayesSumsHolder res = new GaussianNaiveBayesSumsHolder();
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
 
                     LabeledVector lv = extractor.apply(entity.getKey(), entity.getValue());
                     Vector features = lv.features();
-                    Double label = (Double) lv.label();
+                    Double label = (Double)lv.label();
 
                     double[] toMeans;
                     double[] sqSum;
