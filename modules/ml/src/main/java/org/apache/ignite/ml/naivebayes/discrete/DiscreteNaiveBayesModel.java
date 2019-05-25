@@ -24,6 +24,7 @@ import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * Discrete naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
@@ -48,18 +49,21 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * bucket.
      */
     private final double[][] bucketThresholds;
+    /** Feature ids which should be skipped. By defaut all features are processed. */
+    private final Collection<Integer> featureIdsToSkip;
     /** Amount values in each buckek for each feature per label. */
     private final DiscreteNaiveBayesSumsHolder sumsHolder;
 
     /**
      * @param probabilities Probabilities of features for classes.
      * @param clsProbabilities Prior probabilities for classes.
-     * @param bucketThresholds The threshold to convert a feature to a binary value.
-     * @param sumsHolder Amount values which are abouve the threshold per label.
      * @param labels Labels.
+     * @param bucketThresholds The threshold to convert a feature to a binary value.
+     * @param featureIdsToSkip Feature ids which should be skip.
+     * @param sumsHolder Amount values which are abouve the threshold per label.
      */
     public DiscreteNaiveBayesModel(double[][][] probabilities, double[] clsProbabilities, double[] labels,
-        double[][] bucketThresholds, DiscreteNaiveBayesSumsHolder sumsHolder) {
+        double[][] bucketThresholds, Collection<Integer> featureIdsToSkip, DiscreteNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.clsProbabilities = clsProbabilities;
         this.labels = labels;
