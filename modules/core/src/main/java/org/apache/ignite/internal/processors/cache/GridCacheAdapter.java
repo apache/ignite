@@ -106,7 +106,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -129,7 +128,6 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
-import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -5031,31 +5029,33 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         GridFutureAdapter<R> res = new GridFutureAdapter<>();
 
-        fut.listen(new CIX1<IgniteInternalFuture<R>>() {
-            @Override public void applyx(IgniteInternalFuture<R> fut) throws IgniteCheckedException {
-                try {
-                    res.onDone(fut.get());
-                }
-                catch (IgniteConsistencyViolationException e) {
-                    assert tx == null || tx.optimistic() || tx.readCommitted();
+        fut.listen((f) -> {
+            try {
+                res.onDone(f.get());
+            }
+            catch (IgniteConsistencyViolationException e1) {
+                assert tx == null || tx.optimistic() || tx.readCommitted();
 
-                    repair.apply(opCtx).listen(new CIX1<IgniteInternalFuture<Void>>() {
-                        @Override public void applyx(IgniteInternalFuture<Void> fut) throws IgniteCheckedException {
-                            IgniteInternalTx prevTx = ctx.tm().tx(tx);
-                            CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+                repair.apply(opCtx).listen((ignored) -> {
+                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                            ctx.operationContextPerCall(opCtx);
+                    IgniteInternalTx prevTx = ctx.tm().tx(tx);
+                    ctx.operationContextPerCall(opCtx);
 
-                            try {
-                                res.onDone(retry.get().get());
-                            }
-                            finally {
-                                ctx.tm().tx(prevTx);
-                                ctx.operationContextPerCall(prevOpCtx);
-                            }
-                        }
-                    });
-                }
+                    try {
+                        res.onDone(retry.get().get());
+                    }
+                    catch (IgniteCheckedException e2) {
+                        res.onDone(e2);
+                    }
+                    finally {
+                        ctx.tm().tx(prevTx);
+                        ctx.operationContextPerCall(prevOpCtx);
+                    }
+                });
+            }
+            catch (IgniteCheckedException e1) {
+                res.onDone(e1);
             }
         });
 
