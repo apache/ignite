@@ -833,8 +833,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
 
-        if (ctx.config().isPeerClassLoadingEnabled())
+        if (ctx.config().isPeerClassLoadingEnabled()) {
             hnd.p2pMarshal(ctx);
+
+            assert !(hnd instanceof CacheContinuousQueryHandler) || ((CacheContinuousQueryHandler)hnd).isMarshalled();
+        }
 
         // Register routine locally.
         locInfos.put(routineId, new LocalRoutineInfo(prjPred, hnd, bufSize, interval, autoUnsubscribe));

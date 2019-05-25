@@ -1259,7 +1259,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @return Whether the handler is marshalled for peer class loading.
      */
     public boolean isMarshalled() {
-        return rmtFilter == null || rmtFilterDep != null;
+        return rmtFilter == null || U.isGrid(rmtFilter.getClass()) || rmtFilterDep != null;
     }
 
     /**

@@ -158,7 +158,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     /** {@inheritDoc} */
     @Override public boolean isMarshalled() {
         return super.isMarshalled() &&
-            (rmtTransFactory == null || rmtTransFactoryDep != null);
+            (rmtTransFactory == null || U.isGrid(rmtTransFactory.getClass()) || rmtTransFactoryDep != null);
     }
 
     /** {@inheritDoc} */
