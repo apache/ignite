@@ -49,7 +49,7 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @param variances Variances of features for all classes.
      * @param classProbabilities Probabilities for all classes.
      * @param labels Labels.
-     * @param featureIdsToSkip
+     * @param featureIdsToSkip Feature ids which should be skip.
      * @param sumsHolder Feature sum, squared sum and count sum per label. This data is used for future model updating.
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
@@ -130,7 +130,7 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     }
 
     /** Gauss distribution */
-    private double gauss(double x, double mean, double variance) {
+    private static double gauss(double x, double mean, double variance) {
         return Math.exp(-1. * Math.pow(x - mean, 2) / (2. * variance)) / Math.sqrt(2. * Math.PI * variance);
     }
 }
