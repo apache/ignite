@@ -23,10 +23,15 @@ import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
-/** Created by Ravil on 04/02/2019. */
+/**
+ * Trainer for the compound Naive Bayes classifier model. It uses a model composition of {@code
+ * GaussianNaiveBayesTrainer} and {@code DiscreteNaiveBayesTrainer}. To distinguish which features with which trainer
+ * should be used, each trainer should have a collection of feature ids which should be skipped. It can be set by {@code
+ * #setFeatureIdsToSkip()} method.
+ */
 public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<CompoundNaiveBayesModel> {
 
     /** Prior probabilities of each class */
@@ -34,8 +39,9 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     private GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
     private DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
 
+    /** {@inheritDoc} */
     @Override public <K, V> CompoundNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -50,8 +56,9 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         return (CompoundNaiveBayesTrainer)super.withEnvironmentBuilder(envBuilder);
     }
 
+    /** {@inheritDoc} */
     @Override protected <K, V> CompoundNaiveBayesModel updateModel(CompoundNaiveBayesModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
+        DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         CompoundNaiveBayesModel compoundModel = new CompoundNaiveBayesModel()
             .wirhPriorProbabilities(clsProbabilities);
@@ -62,8 +69,8 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                 : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor);
 
             compoundModel.withGaussianModel(model)
-                    .withLabels(model.getLabels())
-                    .wirhPriorProbabilities(clsProbabilities);
+                .withLabels(model.getLabels())
+                .wirhPriorProbabilities(clsProbabilities);
         }
 
         if (discreteNaiveBayesTrainer != null) {
@@ -72,8 +79,8 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                 : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor);
 
             compoundModel.withDiscreteModel(model)
-                    .withLabels(model.getLabels())
-                    .wirhPriorProbabilities(clsProbabilities);
+                .withLabels(model.getLabels())
+                .wirhPriorProbabilities(clsProbabilities);
         }
 
         return compoundModel;
