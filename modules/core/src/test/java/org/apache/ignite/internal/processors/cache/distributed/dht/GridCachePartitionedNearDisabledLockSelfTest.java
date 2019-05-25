@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedLockSelfTest;
-import org.junit.Ignore;
-import org.junit.Test;
 
 /**
  *
@@ -40,12 +38,5 @@ public class GridCachePartitionedNearDisabledLockSelfTest extends GridCacheParti
     /** {@inheritDoc} */
     @Override protected boolean isPartitioned() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-835")
-    @Test
-    @Override public void testLockReentrancy() throws Throwable {
-        // No-op
     }
 }

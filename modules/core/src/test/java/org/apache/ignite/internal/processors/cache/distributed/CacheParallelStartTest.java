@@ -38,7 +38,11 @@ import org.junit.Test;
  */
 public class CacheParallelStartTest extends GridCommonAbstractTest {
     /** */
-    private static final int CACHES_COUNT = 500;
+    private static final int CACHES_COUNT = 5000;
+
+    /** */
+    private static final int GROUPS_COUNT = 50;
+
 
     /** */
     private static final String STATIC_CACHE_PREFIX = "static-cache-";
@@ -54,11 +58,15 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
 
         cfg.setSystemThreadPoolSize(Runtime.getRuntime().availableProcessors() * 3);
 
-        long sz = 100 * 1024 * 1024;
+        long sz = 512 * 1024 * 1024;
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setPageSize(1024)
                 .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration().setPersistenceEnabled(false).setInitialSize(sz).setMaxSize(sz))
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(false)
+                        .setInitialSize(sz)
+                        .setMaxSize(sz)
+                )
                 .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(24L * 60 * 60 * 1000);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -66,7 +74,7 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
         ArrayList<Object> staticCaches = new ArrayList<>(CACHES_COUNT);
 
         for (int i = 0; i < CACHES_COUNT; i++)
-            staticCaches.add(cacheConfiguration(STATIC_CACHE_PREFIX + i));
+            staticCaches.add(cacheConfiguration(STATIC_CACHE_PREFIX, i));
 
         cfg.setCacheConfiguration(staticCaches.toArray(new CacheConfiguration[CACHES_COUNT]));
 
@@ -77,12 +85,12 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String cacheName) {
+    private CacheConfiguration cacheConfiguration(String cacheName, int i) {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setName(cacheName);
+        cfg.setName(cacheName + i);
         cfg.setBackups(1);
-        cfg.setGroupName(STATIC_CACHE_CACHE_GROUP_NAME);
+        cfg.setGroupName(STATIC_CACHE_CACHE_GROUP_NAME + i % GROUPS_COUNT);
         cfg.setIndexedTypes(Long.class, Long.class);
 
         return cfg;
@@ -175,20 +183,22 @@ public class CacheParallelStartTest extends GridCommonAbstractTest {
      *
      */
     private void assertCaches(IgniteEx igniteEx) {
-        Collection<GridCacheContext> caches = igniteEx
-                .context()
-                .cache()
-                .cacheGroup(CU.cacheId(STATIC_CACHE_CACHE_GROUP_NAME))
-                .caches();
+        for (int i = 0; i < GROUPS_COUNT; i++) {
+            Collection<GridCacheContext> caches = igniteEx
+                    .context()
+                    .cache()
+                    .cacheGroup(CU.cacheId(STATIC_CACHE_CACHE_GROUP_NAME + i))
+                    .caches();
 
-        assertEquals(CACHES_COUNT, caches.size());
+            assertEquals(CACHES_COUNT / GROUPS_COUNT, caches.size());
 
-        @Nullable CacheGroupContext cacheGroup = igniteEx
-                .context()
-                .cache()
-                .cacheGroup(CU.cacheId(STATIC_CACHE_CACHE_GROUP_NAME));
+            @Nullable CacheGroupContext cacheGrp = igniteEx
+                    .context()
+                    .cache()
+                    .cacheGroup(CU.cacheId(STATIC_CACHE_CACHE_GROUP_NAME + i));
 
-        for (GridCacheContext cacheContext : caches)
-            assertEquals(cacheContext.group(), cacheGroup);
+            for (GridCacheContext cacheContext : caches)
+                assertEquals(cacheContext.group(), cacheGrp);
+        }
     }
 }

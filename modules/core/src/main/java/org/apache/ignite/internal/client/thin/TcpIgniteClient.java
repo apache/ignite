@@ -195,11 +195,9 @@ public class TcpIgniteClient implements IgniteClient {
 
     /**
      * Initializes new instance of {@link IgniteClient}.
-     * <p>
-     * Server connection will be lazily initialized when first required.
      *
      * @param cfg Thin client configuration.
-     * @return Successfully opened thin client connection.
+     * @return Client with successfully opened thin client connection.
      */
     public static IgniteClient start(ClientConfiguration cfg) throws ClientException {
         return new TcpIgniteClient(cfg);
@@ -327,8 +325,12 @@ public class TcpIgniteClient implements IgniteClient {
         private Map<Integer, String> cache = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public boolean registerClassName(byte platformId, int typeId, String clsName)
-            throws IgniteCheckedException {
+        @Override public boolean registerClassName(
+            byte platformId,
+            int typeId,
+            String clsName,
+            boolean failIfUnregistered
+        ) throws IgniteCheckedException {
 
             if (platformId != MarshallerPlatformIds.JAVA_ID)
                 throw new IllegalArgumentException("platformId");
@@ -356,6 +358,13 @@ public class TcpIgniteClient implements IgniteClient {
             }
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        @Deprecated
+        public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException {
+            return registerClassName(platformId, typeId, clsName, false);
         }
 
         /** {@inheritDoc} */

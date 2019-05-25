@@ -56,7 +56,9 @@ import org.junit.runners.Suite;
 
     // Eager ttl expiration tests.
     GridCacheTtlManagerNotificationTest.class,
-    IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class
+    IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class,
+
+    IgniteCacheExpireWhileRebalanceTest.class
 })
 public class IgniteCacheExpiryPolicyTestSuite {
 }

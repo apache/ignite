@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Code">
+      <UniqueIdentifier>{89eb3c72-85c7-4c46-ba6d-a668ab852e02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\network">
+      <UniqueIdentifier>{383a382d-5683-417b-87f5-702df88a791a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\network\ssl">
+      <UniqueIdentifier>{1bb8ce28-5b9b-4735-88b3-9d979de21d10}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\network\end_point.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\network\socket_client.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\network\tcp_range.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\network\utils.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\ssl\secure_socket_client.h">
+      <Filter>Code\network\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\ssl\ssl_gateway.h">
+      <Filter>Code\network\ssl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\tcp_socket_client.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\network\network.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\src\network\sockets.h">
+      <Filter>Code\network</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\network\ssl\secure_socket_client.cpp">
+      <Filter>Code\network\ssl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\ssl\ssl_gateway.cpp">
+      <Filter>Code\network\ssl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\network.cpp">
+      <Filter>Code\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\network\tcp_socket_client.cpp">
+      <Filter>Code\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\network\utils.cpp">
+      <Filter>Code\network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\network\sockets.cpp">
+      <Filter>Code\network</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

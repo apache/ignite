@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Data storage configuration for Ignite page memory.
@@ -169,6 +170,11 @@ namespace Apache.Ignite.Core.Configuration
         public const long DefaultMaxWalArchiveSize = 1024 * 1024 * 1024;
 
         /// <summary>
+        /// Default value for <see cref="WalPageCompression"/>.
+        /// </summary>
+        public const DiskPageCompression DefaultWalPageCompression = DiskPageCompression.Disabled;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         public DataStorageConfiguration()
@@ -196,13 +202,15 @@ namespace Apache.Ignite.Core.Configuration
             PageSize = DefaultPageSize;
             WalAutoArchiveAfterInactivity = DefaultWalAutoArchiveAfterInactivity;
             MaxWalArchiveSize = DefaultMaxWalArchiveSize;
+            WalPageCompression = DefaultWalPageCompression;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DataStorageConfiguration"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal DataStorageConfiguration(IBinaryRawReader reader)
+        /// <param name="srvVer">Server version.</param>
+        internal DataStorageConfiguration(IBinaryRawReader reader, ClientProtocolVersion srvVer)
         {
             Debug.Assert(reader != null);
 
@@ -235,19 +243,21 @@ namespace Apache.Ignite.Core.Configuration
             ConcurrencyLevel = reader.ReadInt();
             WalAutoArchiveAfterInactivity = reader.ReadLongAsTimespan();
             CheckpointReadLockTimeout = reader.ReadTimeSpanNullable();
+            WalPageCompression = (DiskPageCompression)reader.ReadInt();
+            WalPageCompressionLevel = reader.ReadIntNullable();
 
             var count = reader.ReadInt();
 
             if (count > 0)
             {
                 DataRegionConfigurations = Enumerable.Range(0, count)
-                    .Select(x => new DataRegionConfiguration(reader))
+                    .Select(x => new DataRegionConfiguration(reader, srvVer))
                     .ToArray();
             }
 
             if (reader.ReadBoolean())
             {
-                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader);
+                DefaultDataRegionConfiguration = new DataRegionConfiguration(reader, srvVer);
             }
         }
 
@@ -255,7 +265,8 @@ namespace Apache.Ignite.Core.Configuration
         /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
+        /// <param name="srvVer">Server version.</param>
+        internal void Write(IBinaryRawWriter writer, ClientProtocolVersion srvVer)
         {
             Debug.Assert(writer != null);
 
@@ -288,6 +299,8 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteInt(ConcurrencyLevel);
             writer.WriteTimeSpanAsLong(WalAutoArchiveAfterInactivity);
             writer.WriteTimeSpanAsLongNullable(CheckpointReadLockTimeout);
+            writer.WriteInt((int)WalPageCompression);
+            writer.WriteIntNullable(WalPageCompressionLevel);
 
             if (DataRegionConfigurations != null)
             {
@@ -301,7 +314,7 @@ namespace Apache.Ignite.Core.Configuration
                             "DataStorageConfiguration.DataRegionConfigurations must not contain null items.");
                     }
 
-                    region.Write(writer);
+                    region.Write(writer, srvVer);
                 }
             }
             else
@@ -312,7 +325,7 @@ namespace Apache.Ignite.Core.Configuration
             if (DefaultDataRegionConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                DefaultDataRegionConfiguration.Write(writer);
+                DefaultDataRegionConfiguration.Write(writer, srvVer);
             }
             else
             {
@@ -494,6 +507,16 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets the timeout for checkpoint read lock acquisition.
         /// </summary>
         public TimeSpan? CheckpointReadLockTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets the compression algorithm for WAL page snapshot records.
+        /// </summary>
+        public DiskPageCompression WalPageCompression { get; set; }
+
+        /// <summary>
+        /// Gets or sets the compression level for WAL page snapshot records.
+        /// </summary>
+        public int? WalPageCompressionLevel { get; set; }
 
         /// <summary>
         /// Gets or sets the data region configurations.

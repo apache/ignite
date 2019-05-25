@@ -204,7 +204,10 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
 
         server().close();
 
-        assertTrue(latch.await(CLIENT_FAILURE_DETECTION_TIMEOUT * 2, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(
+                CLIENT_FAILURE_DETECTION_TIMEOUT * 2 + CLIENT_FAILURE_DETECTION_TIMEOUT/10,
+                TimeUnit.MILLISECONDS
+        ));
 
         task.run();
     }

@@ -138,7 +138,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
             this.val = val;
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void writeObject(ObjectOutputStream out) throws IOException {
             try {
                 byte[] arr = marshal(str);
@@ -153,7 +153,7 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
             }
         }
 
-        /** {@inheritDoc} */
+        /** */
         private void readObject(ObjectInputStream in) throws IOException {
             try {
                 byte[] arr = new byte[in.readInt()];

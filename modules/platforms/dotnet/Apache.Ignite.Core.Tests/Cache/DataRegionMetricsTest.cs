@@ -61,8 +61,23 @@ namespace Apache.Ignite.Core.Tests.Cache
             var ignite = StartIgniteWithThreeDataRegions();
             
             // Verify metrics.
-            var metrics = ignite.GetDataRegionMetrics().OrderBy(x => x.Name).ToArray();
-            Assert.AreEqual(6, metrics.Length);  // three defined plus system, metastorage and TxLog.
+            var metrics = ignite.GetDataRegionMetrics()
+                .OrderBy(x => x.Name, StringComparer.InvariantCultureIgnoreCase).ToArray();
+
+            var names = metrics.Select(x => x.Name).ToArray();
+
+            Assert.AreEqual(
+                new[]
+                {
+                    "metastoreMemPlc",
+                    RegionNoMetrics,
+                    RegionWithMetrics,
+                    RegionWithMetricsAndPersistence,
+                    "sysMemPlc",
+                    "TxLog"
+                },
+                names,
+                string.Join(", ", names));
 
             var emptyMetrics = metrics[1];
             Assert.AreEqual(RegionNoMetrics, emptyMetrics.Name);
@@ -222,8 +237,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             cacheWithMetricsAndPersistence.Put(1, 1);
             cacheWithMetricsAndPersistence.Get(1);
 
-            // Wait for checkpoint.
-            Thread.Sleep(CheckpointFrequency);
+            // Wait for checkpoint. Wait for two times than CheckpointFrequency.
+            Thread.Sleep(CheckpointFrequency.Add(CheckpointFrequency));
             
             return ignite;
         }

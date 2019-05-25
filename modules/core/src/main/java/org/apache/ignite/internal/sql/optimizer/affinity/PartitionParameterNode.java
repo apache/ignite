@@ -27,40 +27,54 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class PartitionParameterNode extends PartitionSingleNode {
     /** Indexing. */
     @GridToStringExclude
-    private final PartitionResolver partResolver;
+    private final PartitionResolver partRslvr;
 
     /** Index. */
     private final int idx;
 
-    /** Data type. */
-    private final int dataType;
+    /** Parameter data type. */
+    private final int type;
+
+    /** Client parameter type. */
+    private final PartitionParameterType clientType;
 
     /**
      * Constructor.
      *
      * @param tbl Table descriptor.
-     * @param partResolver Partition resolver.
+     * @param partRslvr Partition resolver.
      * @param idx Parameter index.
-     * @param dataType Parameter data type.
+     * @param type Parameter data type.
+     * @param clientType Mapped parameter type to be used by thin clients.
      */
-    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partResolver, int idx, int dataType) {
+    public PartitionParameterNode(PartitionTable tbl, PartitionResolver partRslvr, int idx, int type,
+        PartitionParameterType clientType) {
         super(tbl);
 
-        this.partResolver = partResolver;
+        this.partRslvr = partRslvr;
         this.idx = idx;
-        this.dataType = dataType;
+        this.type = type;
+        this.clientType = clientType;
     }
 
     /** {@inheritDoc} */
-    @Override public int applySingle(Object... args) throws IgniteCheckedException {
+    @Override public Integer applySingle(PartitionClientContext cliCtx, Object... args) throws IgniteCheckedException {
         assert args != null;
         assert idx < args.length;
 
-        return partResolver.partition(
-            args[idx],
-            dataType,
-            tbl.cacheName()
-        );
+        Object arg = args[idx];
+
+        if (cliCtx != null)
+            return cliCtx.partition(arg, clientType);
+        else {
+            assert partRslvr != null;
+
+            return partRslvr.partition(
+                arg,
+                type,
+                tbl.cacheName()
+            );
+        }
     }
 
     /** {@inheritDoc} */
@@ -71,6 +85,20 @@ public class PartitionParameterNode extends PartitionSingleNode {
     /** {@inheritDoc} */
     @Override public int value() {
         return idx;
+    }
+
+    /**
+     * @return Parameter data type.
+     */
+    public int type() {
+        return type;
+    }
+
+    /**
+     * @return Client parameter type.
+     */
+    public PartitionParameterType clientType() {
+        return clientType;
     }
 
     /** {@inheritDoc} */

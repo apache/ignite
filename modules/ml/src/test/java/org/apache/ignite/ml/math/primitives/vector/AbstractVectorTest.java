@@ -361,11 +361,6 @@ public class AbstractVectorTest {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
             @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
             }
@@ -403,11 +398,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
             }
 
             /** {@inheritDoc} */
@@ -435,11 +425,6 @@ public class AbstractVectorTest {
             }
 
             /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
             @Override public Vector copy() {
                 return getAbstractVector(this.getStorage());
             }
@@ -472,11 +457,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
             }
 
             /** {@inheritDoc} */

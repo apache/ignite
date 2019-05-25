@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-
-import java.util.Collection;
-import java.util.Collections;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Node with a single partition.
@@ -42,17 +42,22 @@ public abstract class PartitionSingleNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) throws IgniteCheckedException {
-        return Collections.singletonList(applySingle(args));
+    @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args)
+        throws IgniteCheckedException {
+        Integer part = applySingle(cliCtx, args);
+
+        return part != null ? Collections.singletonList(part) : null;
     }
 
     /**
      * Apply arguments and get single partition.
      *
+     * @param cliCtx Client context.
      * @param args Arguments.
-     * @return Partition.
+     * @return Partition or {@code null} if failed.
      */
-    public abstract int applySingle(Object... args) throws IgniteCheckedException;
+    public abstract Integer applySingle(@Nullable PartitionClientContext cliCtx, Object... args)
+        throws IgniteCheckedException;
 
     /**
      * @return {@code True} if constant, {@code false} if argument.
@@ -62,6 +67,15 @@ public abstract class PartitionSingleNode implements PartitionNode {
     /** {@inheritDoc} */
     @Override public int joinGroup() {
         return tbl.joinGroup();
+    }
+
+    /**
+     * @return Cache name. Should be used only on server side.
+     */
+    @Override public String cacheName() {
+        assert tbl != null;
+
+        return tbl.cacheName();
     }
 
     /**
@@ -81,7 +95,9 @@ public abstract class PartitionSingleNode implements PartitionNode {
         int hash = (constant() ? 1 : 0);
 
         hash = 31 * hash + value();
-        hash = 31 * hash + tbl.alias().hashCode();
+
+        if (tbl != null)
+            hash = 31 * hash + tbl.alias().hashCode();
 
         return hash;
     }

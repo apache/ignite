@@ -17,11 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
@@ -46,6 +53,7 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionJoinCondition;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNoneNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionSingleNode;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
@@ -55,12 +63,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Partition tree extractor.
@@ -78,18 +80,24 @@ public class PartitionExtractor {
     /** Maximum number of partitions to be used in case of between expression. */
     private final int maxPartsCntBetween;
 
+    /** Grid kernal context. */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
      * @param partResolver Partition resolver.
+     * @param ctx Grid kernal context.
      */
-    public PartitionExtractor(H2PartitionResolver partResolver) {
+    public PartitionExtractor(H2PartitionResolver partResolver, GridKernalContext ctx) {
         this.partResolver = partResolver;
 
         maxPartsCntBetween = Integer.getInteger(
             IgniteSystemProperties.IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN,
             DFLT_MAX_EXTRACTED_PARTS_FROM_BETWEEN
         );
+
+        this.ctx = ctx;
     }
 
     /**
@@ -120,7 +128,8 @@ public class PartitionExtractor {
             return null;
 
         // Done.
-        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()));
+        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()),
+            ctx.cache().context().exchange().readyAffinityVersion());
     }
 
     /**
@@ -155,6 +164,8 @@ public class PartitionExtractor {
         // Merge.
         PartitionNode tree = null;
 
+        AffinityTopologyVersion affinityTopVer = null;
+
         for (GridCacheSqlQuery qry : qrys) {
             PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
 
@@ -162,6 +173,12 @@ public class PartitionExtractor {
                 tree = qryRes.tree();
             else
                 tree = new PartitionCompositeNode(tree, qryRes.tree(), PartitionCompositeNodeOperator.OR);
+
+
+            if (affinityTopVer == null)
+                affinityTopVer = qryRes.topologyVersion();
+            else
+                assert affinityTopVer.equals(qryRes.topologyVersion());
         }
 
         // Optimize.
@@ -175,7 +192,12 @@ public class PartitionExtractor {
         // If there is no affinity, then we assume "NONE" result.
         assert aff != null || tree == PartitionNoneNode.INSTANCE;
 
-        return new PartitionResult(tree, aff);
+        // Affinity topology version expected to be the same for all partition results derived from map queries.
+        // TODO: 09.04.19 IGNITE-11507: SQL: Ensure that affinity topology version doesn't change
+        // TODO: during PartitionResult construction/application.
+        assert affinityTopVer != null;
+        
+        return new PartitionResult(tree, aff, affinityTopVer);
     }
 
     /**
@@ -623,10 +645,63 @@ public class PartitionExtractor {
 
             return new PartitionConstantNode(tbl0, part);
         }
-        else if (rightParam != null)
-            return new PartitionParameterNode(tbl0, partResolver, rightParam.index(), leftCol0.getType());
+        else if (rightParam != null) {
+            int colType = leftCol0.getType();
+
+            return new PartitionParameterNode(
+                tbl0,
+                partResolver,
+                rightParam.index(),
+                leftCol0.getType(),
+                mappedType(colType)
+            );
+        }
         else
             return null;
+    }
+
+    /**
+     * Mapped Ignite type for H2 type.
+     *
+     * @param type H2 type.
+     * @return ignite type.
+     */
+    @Nullable private static PartitionParameterType mappedType(int type) {
+        // Try map if possible.
+        switch (type) {
+            case Value.BOOLEAN:
+                return PartitionParameterType.BOOLEAN;
+
+            case Value.BYTE:
+                return PartitionParameterType.BYTE;
+
+            case Value.SHORT:
+                return PartitionParameterType.SHORT;
+
+            case Value.INT:
+                return PartitionParameterType.INT;
+
+            case Value.LONG:
+                return PartitionParameterType.LONG;
+
+            case Value.FLOAT:
+                return PartitionParameterType.FLOAT;
+
+            case Value.DOUBLE:
+                return PartitionParameterType.DOUBLE;
+
+            case Value.STRING:
+                return PartitionParameterType.STRING;
+
+            case Value.DECIMAL:
+                return PartitionParameterType.DECIMAL;
+
+            case Value.UUID:
+                return PartitionParameterType.UUID;
+        }
+
+        // Otherwise we do not support it.
+        return null;
     }
 
     /**

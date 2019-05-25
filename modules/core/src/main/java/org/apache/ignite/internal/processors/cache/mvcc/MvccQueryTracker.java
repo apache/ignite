@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -25,17 +24,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 /**
  * Mvcc tracker.
  */
-public interface MvccQueryTracker {
-    /** */
-    public static final AtomicLong ID_CNTR = new AtomicLong();
-
-    /** */
-    public static final long MVCC_TRACKER_ID_NA = -1;
-
+public interface MvccQueryTracker extends MvccCoordinatorChangeAware {
     /**
      * @return Tracker id.
      */
-    public long id();
+    default long id() {
+        return MVCC_TRACKER_ID_NA;
+    }
 
     /**
      * @return Requested MVCC snapshot.
@@ -64,11 +59,4 @@ public interface MvccQueryTracker {
      */
     public void onDone();
 
-    /**
-     * Mvcc coordinator change callback.
-     *
-     * @param newCrd New mvcc coordinator.
-     * @return Query id if exists.
-     */
-    long onMvccCoordinatorChange(MvccCoordinator newCrd);
 }

@@ -16,6 +16,7 @@
  */
 
 import _ from 'lodash';
+import moment from 'moment';
 
 /**
  * @typedef {{x: number, y: {[key: string]: number}}} IgniteChartDataPoint
@@ -28,6 +29,18 @@ const RANGE_RATE_PRESET = [
     {label: '15 min', value: 15},
     {label: '30 min', value: 30}
 ];
+
+/**
+ * Determines what label format was chosen by determineLabelFormat function
+ * in Chart.js streaming plugin.
+ * 
+ * @param {string} label
+ */
+const inferLabelFormat = (label) => {
+    if (label.match(/\.\d{3} (am|pm)$/)) return 'MMM D, YYYY h:mm:ss.SSS a';
+    if (label.match(/:\d{1,2} (am|pm)$/)) return 'MMM D, YYYY h:mm:ss a';
+    if (label.match(/ \d{4}$/)) return 'MMM D, YYYY';
+};
 
 export class IgniteChartController {
     /** @type {import('chart.js').ChartConfiguration} */
@@ -197,7 +210,7 @@ export class IgniteChartController {
                     bodyFontSize: 13,
                     callbacks: {
                         title: (tooltipItem) => {
-                            return tooltipItem[0].xLabel.slice(0, -7);
+                            return tooltipItem[0].xLabel = moment(tooltipItem[0].xLabel, inferLabelFormat(tooltipItem[0].xLabel)).format('HH:mm:ss');
                         },
                         label: (tooltipItem, data) => {
                             const label = data.datasets[tooltipItem.datasetIndex].label || '';

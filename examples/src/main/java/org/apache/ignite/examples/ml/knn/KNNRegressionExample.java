@@ -18,17 +18,18 @@
 package org.apache.ignite.examples.ml.knn;
 
 import java.io.FileNotFoundException;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 import org.apache.ignite.ml.util.MLSandboxDatasets;
 import org.apache.ignite.ml.util.SandboxMLCache;
 
@@ -56,55 +57,30 @@ public class KNNRegressionExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.CLEARED_MACHINES);
 
-            KNNRegressionTrainer trainer = new KNNRegressionTrainer();
+                KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
-            KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            ).withK(5)
-                .withDistanceMeasure(new ManhattanDistance())
-                .withStrategy(NNStrategy.WEIGHTED);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            System.out.println(">>> ---------------------------------");
-            System.out.println(">>> | Prediction\t| Ground Truth\t|");
-            System.out.println(">>> ---------------------------------");
+                KNNRegressionModel knnMdl = (KNNRegressionModel)trainer.fit(ignite, dataCache, vectorizer)
+                    .withK(5)
+                    .withDistanceMeasure(new ManhattanDistance())
+                    .withStrategy(NNStrategy.WEIGHTED);
 
-            int totalAmount = 0;
-            // Calculate mean squared error (MSE)
-            double mse = 0.0;
-            // Calculate mean absolute error (MAE)
-            double mae = 0.0;
+                double rmse = Evaluator.evaluate(
+                    dataCache,
+                    knnMdl,
+                    vectorizer,
+                    new RegressionMetrics()
+                );
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
-
-                    double prediction = knnMdl.predict(inputs);
-
-                    mse += Math.pow(prediction - groundTruth, 2.0);
-                    mae += Math.abs(prediction - groundTruth);
-
-                    totalAmount++;
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                mse /= totalAmount;
-                System.out.println("\n>>> Mean squared error (MSE) " + mse);
-
-                mae /= totalAmount;
-                System.out.println("\n>>> Mean absolute error (MAE) " + mae);
-
-                System.out.println(">>> kNN regression over cached dataset usage example completed.");
+                System.out.println("\n>>> Rmse = " + rmse);
+            } finally {
+                dataCache.destroy();
             }
         }
     }

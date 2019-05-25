@@ -75,6 +75,9 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
 
                     while (!stop.get()) {
                         try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                            // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11793
+                            streamer.allowOverwrite(atomicityMode == TRANSACTIONAL);
+
                             for (int i = 0; i < 1; i++)
                                 streamer.addData(rnd.nextInt(KEYS), String.valueOf(i));
                         }

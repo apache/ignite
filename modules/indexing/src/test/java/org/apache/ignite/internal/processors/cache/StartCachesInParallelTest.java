@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -33,9 +34,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_START_CACHES
  * Tests, that cluster could start and activate with all possible values of IGNITE_ALLOW_START_CACHES_IN_PARALLEL.
  */
 public class StartCachesInParallelTest extends GridCommonAbstractTest {
-    /** IGNITE_ALLOW_START_CACHES_IN_PARALLEL option value before tests. */
-    private String allowParallel;
-
     /** Test failure handler. */
     private TestStopNodeFailureHandler failureHnd;
 
@@ -59,23 +57,6 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        allowParallel = System.getProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        if (allowParallel != null)
-            System.setProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL, allowParallel);
-        else
-            System.clearProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -95,36 +76,34 @@ public class StartCachesInParallelTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_ALLOW_START_CACHES_IN_PARALLEL, value = "true")
     public void testWithEnabledOption() throws Exception {
-        doTest("true");
+        doTest();
     }
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_ALLOW_START_CACHES_IN_PARALLEL, value = "true")
     public void testWithDisabledOption() throws Exception {
-        doTest("false");
+        doTest();
     }
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_ALLOW_START_CACHES_IN_PARALLEL, value = "")
     public void testWithoutOption() throws Exception {
-        doTest(null);
+        System.clearProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL);
+
+        doTest();
     }
 
     /**
      * Test routine.
      *
-     * @param optionVal IGNITE_ALLOW_START_CACHES_IN_PARALLEL value.
      * @throws Exception If failed.
      */
-    private void doTest(String optionVal) throws Exception {
-        if (optionVal == null)
-            System.clearProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL);
-        else {
-            Boolean.parseBoolean(optionVal);
-
-            System.setProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL, optionVal);
-        }
+    private void doTest() throws Exception {
+        String optionVal = System.getProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL);
 
         assertEquals("Property wasn't set", optionVal, System.getProperty(IGNITE_ALLOW_START_CACHES_IN_PARALLEL));
 

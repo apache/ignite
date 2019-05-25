@@ -398,6 +398,13 @@ public class BaselineTopology implements Serializable {
     }
 
     /**
+     * @return {@code true} If it is new baseline topology.
+     */
+    public boolean isNewTopology(){
+        return lastBranchingPointType == BranchingPointType.NEW_BASELINE_TOPOLOGY && id == 0;
+    }
+
+    /**
      * @param nodes Nodes.
      * @param id ID of BaselineTopology to build.
      * @return Baseline topology consisting of given nodes.

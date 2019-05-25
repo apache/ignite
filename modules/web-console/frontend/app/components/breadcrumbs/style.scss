@@ -18,16 +18,14 @@
 breadcrumbs {
     $side-margin: 5px;
 
-    padding-left: $side-margin;
-    padding-right: $side-margin;
+    padding: 3px $side-margin;
     display: inline-flex;
     align-items: center;
     flex-direction: row;
 
-    height: 26px;
+    min-height: 20px;
     border-radius: 4px;
     background-color: rgba(197, 197, 197, 0.1);
-    font-family: Roboto, sans-serif;
     font-size: 12px;
     line-height: 1.08;
     text-align: left;

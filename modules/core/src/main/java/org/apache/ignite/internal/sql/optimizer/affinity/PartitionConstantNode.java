@@ -39,7 +39,7 @@ public class PartitionConstantNode extends PartitionSingleNode {
     }
 
     /** {@inheritDoc} */
-    @Override public int applySingle(Object... args) {
+    @Override public Integer applySingle(PartitionClientContext cliCtx, Object... args) {
         return part;
     }
 

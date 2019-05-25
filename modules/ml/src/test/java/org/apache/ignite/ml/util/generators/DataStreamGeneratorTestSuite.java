@@ -41,7 +41,8 @@ import org.junit.runners.Suite;
     VectorGeneratorPrimitivesTest.class,
     VectorGeneratorsFamilyTest.class,
     VectorGeneratorTest.class,
-    DataStreamGeneratorTest.class
+    DataStreamGeneratorTest.class,
+    DataStreamGeneratorFillCacheTest.class
 })
 public class DataStreamGeneratorTestSuite {
 }

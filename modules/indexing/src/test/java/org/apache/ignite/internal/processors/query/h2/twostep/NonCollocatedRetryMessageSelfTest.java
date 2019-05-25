@@ -35,6 +35,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
@@ -42,18 +43,13 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 /**
  * Failed to execute non-collocated query root cause message test
  */
+@WithSystemProperty(key = IGNITE_SQL_RETRY_TIMEOUT, value = "500")
 public class NonCollocatedRetryMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
 
     /** */
     private static final String ORG = "org";
-
-    /** */
-    private static final int TEST_SQL_RETRY_TIMEOUT = 500;
-
-    /** */
-    private String sqlRetryTimeoutBackup;
 
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
@@ -87,10 +83,6 @@ public class NonCollocatedRetryMessageSelfTest extends AbstractIndexingCommonTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        sqlRetryTimeoutBackup = System.getProperty(IGNITE_SQL_RETRY_TIMEOUT);
-
-        System.setProperty(IGNITE_SQL_RETRY_TIMEOUT, String.valueOf(TEST_SQL_RETRY_TIMEOUT));
-
         startGridsMultiThreaded(NODES_COUNT, false);
 
         CacheConfiguration<String, JoinSqlTestHelper.Person> ccfg1 = new CacheConfiguration<>("pers");
@@ -116,9 +108,6 @@ public class NonCollocatedRetryMessageSelfTest extends AbstractIndexingCommonTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() {
-        if (sqlRetryTimeoutBackup != null)
-            System.setProperty(IGNITE_SQL_RETRY_TIMEOUT, sqlRetryTimeoutBackup);
-
         stopAllGrids();
     }
 
@@ -136,7 +125,7 @@ public class NonCollocatedRetryMessageSelfTest extends AbstractIndexingCommonTes
 
                 if (GridH2IndexRangeRequest.class.isAssignableFrom(gridMsg.message().getClass())) {
                     try {
-                        U.sleep(TEST_SQL_RETRY_TIMEOUT);
+                        U.sleep(Long.getLong(IGNITE_SQL_RETRY_TIMEOUT));
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         fail("Test was interrupted.");

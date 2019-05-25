@@ -21,8 +21,8 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -30,13 +30,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
 
 /**
@@ -80,8 +84,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     @After
     public void after() throws Exception {
         stopAllGrids();
-
-        System.clearProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES);
     }
 
     /**
@@ -113,7 +115,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testMultipleNodes() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 
@@ -139,7 +141,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnWrite() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 
@@ -172,7 +174,7 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     public void testListenersOnRemove() throws Exception {
         int cnt = 4;
 
-        startGridsMultiThreaded(cnt);
+        startGrids(cnt);
 
         grid(0).cluster().active(true);
 
@@ -260,9 +262,8 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testJoinCleanNodeFullData() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         IgniteEx ignite = startGrid(0);
 
         ignite.cluster().active(true);
@@ -284,9 +285,8 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testDeactivateActivate() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         startGrid(0);
 
         grid(0).cluster().active(true);
@@ -299,25 +299,170 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        CountDownLatch grid1MetaStorageStartLatch = new CountDownLatch(1);
-
-        grid(1).context().internalSubscriptionProcessor().registerDistributedMetastorageListener(
-            new DistributedMetastorageLifecycleListener() {
-                @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                    grid1MetaStorageStartLatch.countDown();
-                }
-            }
-        );
-
         grid(0).cluster().active(true);
 
         assertEquals("value1", metastorage(0).read("key1"));
 
         assertEquals("value2", metastorage(0).read("key2"));
 
-        grid1MetaStorageStartLatch.await(1, TimeUnit.SECONDS);
-
         assertDistributedMetastoragesAreEqual(grid(0), grid(1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    public void testOptimizedWriteTwice() throws Exception {
+        startGrid(0).cluster().active(true);
+
+        assertEquals(0, metastorage(0).getUpdatesCount());
+
+        metastorage(0).write("key1", "value1");
+
+        assertEquals(1, metastorage(0).getUpdatesCount());
+
+        metastorage(0).write("key2", "value2");
+
+        assertEquals(2, metastorage(0).getUpdatesCount());
+
+        metastorage(0).write("key1", "value1");
+
+        assertEquals(2, metastorage(0).getUpdatesCount());
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    public void testClient() throws Exception {
+        startGrid(0).cluster().active(true);
+
+        metastorage(0).write("key0", "value0");
+
+        startClient(1);
+
+        AtomicInteger clientLsnrUpdatesCnt = new AtomicInteger();
+
+        assertEquals(1, metastorage(1).getUpdatesCount());
+
+        assertEquals("value0", metastorage(1).read("key0"));
+
+        metastorage(1).listen(key -> true, (key, oldVal, newVal) -> clientLsnrUpdatesCnt.incrementAndGet());
+
+        metastorage(1).write("key1", "value1");
+
+        assertEquals(1, clientLsnrUpdatesCnt.get());
+
+        assertEquals("value1", metastorage(1).read("key1"));
+
+        assertEquals("value1", metastorage(0).read("key1"));
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
+    public void testClientReconnect() throws Exception {
+        startGrid(0).cluster().active(true);
+
+        startClient(1);
+
+        metastorage(0).write("key0", "value0");
+
+        startGrid(2);
+
+        stopGrid(0);
+
+        stopGrid(2);
+
+        startGrid(2).cluster().active(true);
+
+        metastorage(2).write("key1", "value1");
+
+        metastorage(2).write("key2", "value2");
+
+        int expUpdatesCnt = isPersistent() ? 3 : 2;
+
+        // Wait enough to cover failover timeout.
+        assertTrue(GridTestUtils.waitForCondition(() -> metastorage(1).getUpdatesCount() == expUpdatesCnt, 15_000));
+
+        if (isPersistent())
+            assertEquals("value0", metastorage(1).read("key0"));
+
+        assertEquals("value1", metastorage(1).read("key1"));
+
+        assertEquals("value2", metastorage(1).read("key2"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUnstableTopology() throws Exception {
+        int cnt = 8;
+
+        startGridsMultiThreaded(cnt);
+
+        grid(0).cluster().active(true);
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        AtomicInteger gridIdxCntr = new AtomicInteger(0);
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            int gridIdx = gridIdxCntr.incrementAndGet();
+
+            try {
+                while (!stop.get()) {
+                    stopGrid(gridIdx, true);
+
+                    Thread.sleep(100L);
+
+                    startGrid(gridIdx);
+
+                    Thread.sleep(100L);
+                }
+            }
+            catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        }, cnt - 1);
+
+        long start = System.currentTimeMillis();
+
+        long duration = GridTestUtils.SF.applyLB(15_000, 5_000);
+
+        try {
+            for (int i = 0; System.currentTimeMillis() < start + duration; i++) {
+                metastorage(0).write(
+                    "key" + i, Integer.toString(ThreadLocalRandom.current().nextInt(1000))
+                );
+            }
+        }
+        finally {
+            stop.set(true);
+
+            fut.get();
+        }
+
+        awaitPartitionMapExchange();
+
+        for (int i = 0; i < cnt; i++) {
+            DistributedMetaStorage distributedMetastorage = metastorage(i);
+
+            assertNull(U.field(distributedMetastorage, "startupExtras"));
+        }
+
+        for (int i = 1; i < cnt; i++)
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
+    }
+
+    /** */
+    protected IgniteEx startClient(int idx) throws Exception {
+        return startGrid(getConfiguration(getTestIgniteInstanceName(idx)).setClientMode(true));
     }
 
     /**

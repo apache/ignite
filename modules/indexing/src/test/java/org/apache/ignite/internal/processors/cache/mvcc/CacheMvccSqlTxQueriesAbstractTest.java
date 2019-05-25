@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,6 +41,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -63,8 +65,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -1215,7 +1219,6 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9470")
     @Test
     public void testQueryInsertUpdateMultithread() throws Exception {
         ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
@@ -1233,26 +1236,33 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                 IgniteEx node = grid(0);
 
                 try {
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
+                    while (true) {
+                        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            tx.timeout(TX_TIMEOUT);
 
-                        IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
+                            IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
-                        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+                            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
 
-                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                            cur.getAll();
+                            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                                cur.getAll();
+                            }
+
+                            awaitPhase(phaser, 2);
+
+                            qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
+
+                            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                                cur.getAll();
+                            }
+
+                            tx.commit();
+
+                            break;
                         }
-
-                        awaitPhase(phaser, 2);
-
-                        qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (4,4),(5,5),(6,6)");
-
-                        try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                            cur.getAll();
+                        catch (CacheException e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
                         }
-
-                        tx.commit();
                     }
                 }
                 catch (Exception e) {
@@ -1268,24 +1278,30 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                 try {
                     phaser.arriveAndAwaitAdvance();
 
-                    try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TX_TIMEOUT);
+                    while (true) {
+                        try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            tx.timeout(TX_TIMEOUT);
 
-                        IgniteCache<Integer, Integer> cache0 = node.cache(DEFAULT_CACHE_NAME);
+                            IgniteCache<Integer, Integer> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
-                        cache0.invokeAllAsync(F.asSet(1, 2, 3, 4, 5, 6), new EntryProcessor<Integer, Integer, Void>() {
-                            @Override
-                            public Void process(MutableEntry<Integer, Integer> entry,
-                                Object... arguments) throws EntryProcessorException {
-                                entry.setValue(entry.getValue() * 10);
+                            cache0.invokeAllAsync(F.asSet(1, 2, 3, 4, 5, 6), new EntryProcessor<Integer, Integer, Void>() {
+                                @Override public Void process(MutableEntry<Integer, Integer> entry,
+                                    Object... arguments) throws EntryProcessorException {
+                                    entry.setValue(entry.getValue() * 10);
 
-                                return null;
-                            }
-                        });
+                                    return null;
+                                }
+                            });
 
-                        phaser.arrive();
+                            phaser.arrive();
 
-                        tx.commit();
+                            tx.commit();
+
+                            break;
+                        }
+                        catch (Exception e) {
+                            assertTrue(e instanceof TransactionSerializationException);
+                        }
                     }
                 }
                 catch (Exception e) {
@@ -1381,10 +1397,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
             }
         }, 2, "tx-thread");
 
-        IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
-
-        assertNotNull("Exception has not been thrown.", ex0);
-        assertTrue(ex0.getMessage().startsWith("Cannot serialize transaction due to write conflict"));
+        MvccFeatureChecker.assertMvccWriteConflict(ex.get());
     }
 
     /**
@@ -1594,7 +1607,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
                 return null;
             }
-        }, CacheException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl");
+        }, TransactionDuplicateKeyException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl");
     }
 
     /**
@@ -1751,6 +1764,100 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
             assertEquals(6, cur.getAll().size());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateExplicitPartitionsWithoutReducer() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 10)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        Affinity<Object> affinity = internalCache0(cache).affinity();
+
+        int keysCnt = 10, retryCnt = 0;
+
+        Integer test = 0;
+
+        Map<Integer, Integer> vals = new LinkedHashMap<>();
+
+        while (vals.size() < keysCnt) {
+            int partition = affinity.partition(test);
+
+            if (partition == 1 || partition == 2)
+                vals.put(test, 0);
+            else
+                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
+
+            test++;
+        }
+
+        cache.putAll(vals);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=2").setPartitions(1,2);
+
+        List<List<?>> all = cache.query(qry).getAll();
+
+        assertEquals(Long.valueOf(keysCnt), all.stream().findFirst().orElseThrow(AssertionError::new).get(0));
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery("SELECT _val FROM Integer")).getAll();
+
+        assertEquals(keysCnt, rows.size());
+        assertTrue(rows.stream().map(r -> r.get(0)).map(Integer.class::cast).allMatch(v -> v == 2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUpdateExplicitPartitionsWithReducer() throws Exception {
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, 10)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite ignite = startGridsMultiThreaded(4);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        Affinity<Object> affinity = internalCache0(cache).affinity();
+
+        int keysCnt = 10, retryCnt = 0;
+
+        Integer test = 0;
+
+        Map<Integer, Integer> vals = new LinkedHashMap<>();
+
+        while (vals.size() < keysCnt) {
+            int partition = affinity.partition(test);
+
+            if (partition == 1 || partition == 2)
+                vals.put(test, 0);
+            else
+                assertTrue("Maximum retry number exceeded", ++retryCnt < 1000);
+
+            test++;
+        }
+
+        cache.putAll(vals);
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer set _val=(SELECT 2 FROM DUAL)").setPartitions(1,2);
+
+        List<List<?>> all = cache.query(qry).getAll();
+
+        assertEquals(Long.valueOf(keysCnt), all.stream().findFirst().orElseThrow(AssertionError::new).get(0));
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery("SELECT _val FROM Integer")).getAll();
+
+        assertEquals(keysCnt, rows.size());
+        assertTrue(rows.stream().map(r -> r.get(0)).map(Integer.class::cast).allMatch(v -> v == 2));
     }
 
     /**

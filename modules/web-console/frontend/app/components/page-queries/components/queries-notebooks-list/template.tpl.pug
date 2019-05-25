@@ -41,7 +41,14 @@ page-queries-slot(slot-name="'queriesButtons'" ng-if="!$root.IgniteDemoMode")
                 })
 
         .panel-collapse(ignite-loading='notebooksLoading' ignite-loading-text='Loading notebooks...')
-            .grid.ui-grid--ignite#queriesNotebooksList(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-hovering)
+            ignite-grid-table(
+                items='$ctrl.notebooks'
+                column-defs='$ctrl.columnDefs'
+                grid-api='$ctrl.gridApi'
+                grid-thin='true'
+                on-selection-change='$ctrl.onSelectionChanged()'
+            )
+
             grid-no-data(grid-api='$ctrl.gridApi')
                 | You have no notebooks.
                 a.link-success(ng-click='$ctrl.createNotebook()') Create one?

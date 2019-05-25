@@ -29,6 +29,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -42,12 +44,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
-import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager.exchangeProtocolVersion;
 
 /**
  *
  */
-public class InitNewCoordinatorFuture extends GridCompoundFuture {
+public class InitNewCoordinatorFuture extends GridCompoundFuture implements IgniteDiagnosticAware {
+    /** */
+    private final ClusterNode locNode;
+
     /** */
     private GridDhtPartitionsFullMessage fullMsg;
 
@@ -80,6 +85,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
      */
     InitNewCoordinatorFuture(GridCacheSharedContext cctx) {
         this.log = cctx.logger(getClass());
+        this.locNode = cctx.localNode();
     }
 
     /**
@@ -238,7 +244,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
                 if (fullMsg0 != null && fullMsg0.resultTopologyVersion() != null) {
                     assert fullMsg == null || fullMsg.resultTopologyVersion().equals(fullMsg0.resultTopologyVersion());
 
-                    fullMsg  = fullMsg0;
+                    fullMsg = fullMsg0;
                 }
                 else
                     msgs.put(node, msg);
@@ -262,7 +268,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
             AffinityTopologyVersion resVer = fullMsg.resultTopologyVersion();
 
             for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator();
-                 it.hasNext();) {
+                it.hasNext(); ) {
                 Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> e = it.next();
 
                 GridDhtPartitionExchangeId msgVer = joinedNodes.get(e.getKey().id());
@@ -292,7 +298,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
             }
         }
         else {
-            for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator(); it.hasNext();) {
+            for (Iterator<Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage>> it = msgs.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<ClusterNode, GridDhtPartitionsSingleMessage> e = it.next();
 
                 GridDhtPartitionExchangeId msgVer = joinedNodes.get(e.getKey().id());
@@ -345,5 +351,24 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
         if (done)
             restoreStateFut.onDone();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext diagCtx) {
+        if (!isDone()) {
+            synchronized (this) {
+                diagCtx.exchangeInfo(locNode.id(), initTopVer, "InitNewCoordinatorFuture waiting for " +
+                    "GridDhtPartitionsSingleMessages from nodes=" + awaited);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "InitNewCoordinatorFuture [" +
+            "initTopVer=" + initTopVer +
+            ", awaited=" + awaited +
+            ", joinedNodes=" + joinedNodes +
+            ']';
     }
 }

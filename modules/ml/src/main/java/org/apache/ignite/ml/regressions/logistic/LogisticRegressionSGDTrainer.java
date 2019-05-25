@@ -18,12 +18,10 @@
 package org.apache.ignite.ml.regressions.logistic;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -35,7 +33,9 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.jetbrains.annotations.NotNull;
 
@@ -46,8 +46,8 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     /** Update strategy. */
     private UpdatesStrategy updatesStgy = new UpdatesStrategy<>(
         new SimpleGDUpdateCalculator(0.2),
-        SimpleGDParameterUpdate::sumLocal,
-        SimpleGDParameterUpdate::avg
+        SimpleGDParameterUpdate.SUM_LOCAL,
+        SimpleGDParameterUpdate.AVG
     );
 
     /** Max number of iteration. */
@@ -64,7 +64,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
 
     /** {@inheritDoc} */
     @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -72,10 +72,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     /** {@inheritDoc} */
     @Override protected <K, V> LogisticRegressionModel updateModel(LogisticRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
-
-        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
-        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
+        Preprocessor<K, V> extractor) {
 
         IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier = dataset -> {
             Integer cols = dataset.compute(data -> {
@@ -88,6 +85,9 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
                     return b;
                 return a;
             });
+
+            if (cols == null)
+                throw new IllegalStateException("Cannot train on empty dataset");
 
             MLPArchitecture architecture = new MLPArchitecture(cols);
             architecture = architecture.withAddedLayer(1, true, Activators.SIGMOID);
@@ -103,16 +103,20 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
             batchSize,
             locIterations,
             seed
-        );
+        ).withEnvironmentBuilder(envBuilder);
 
-        IgniteBiFunction<K, V, double[]> lbExtractorWrapper = (k, v) -> new double[] {lbExtractor.apply(k, v)};
         MultilayerPerceptron mlp;
+
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
+
+        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
+
         if (mdl != null) {
             mlp = restoreMLPState(mdl);
-            mlp = trainer.update(mlp, datasetBuilder, featureExtractor, lbExtractorWrapper);
+            mlp = trainer.update(mlp, datasetBuilder, patchedPreprocessor);
         }
         else
-            mlp = trainer.fit(datasetBuilder, featureExtractor, lbExtractorWrapper);
+            mlp = trainer.fit(datasetBuilder, patchedPreprocessor);
 
         double[] params = mlp.parameters().getStorage().data();
 

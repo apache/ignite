@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -53,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
 /**
@@ -87,6 +88,9 @@ final class BinaryMetadataTransport {
 
     /** */
     private final ConcurrentMap<SyncKey, MetadataUpdateResultFuture> syncMap = new ConcurrentHashMap<>();
+
+    /** It store pending update future for typeId. It allow to do only one update in one moment. */
+    private final ConcurrentMap<Integer, MetadataUpdateResultFuture> pendingTypeIdMap = new ConcurrentHashMap<>();
 
     /** */
     private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap<>();
@@ -160,22 +164,66 @@ final class BinaryMetadataTransport {
     /**
      * Sends request to cluster proposing update for given metadata.
      *
-     * @param metadata Metadata proposed for update.
+     * @param newMeta Metadata proposed for update.
      * @return Future to wait for update result on.
      */
-    GridFutureAdapter<MetadataUpdateResult> requestMetadataUpdate(BinaryMetadata metadata) {
-        MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
+    GridFutureAdapter<MetadataUpdateResult>  requestMetadataUpdate(BinaryMetadata newMeta) {
+        int typeId = newMeta.typeId();
 
-        if (log.isDebugEnabled())
-            log.debug("Requesting metadata update for " + metadata.typeId() + "; caller thread is blocked on future "
-                + resFut);
+        MetadataUpdateResultFuture resFut;
+
+        do {
+            BinaryMetadataHolder metaHolder = metaLocCache.get(typeId);
+
+            BinaryMetadata oldMeta = Optional.ofNullable(metaHolder)
+                .map(BinaryMetadataHolder::metadata)
+                .orElse(null);
+
+            BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta, null);
+
+            if (mergedMeta == oldMeta) {
+                if (metaHolder.pendingVersion() == metaHolder.acceptedVersion())
+                    return null;
+
+                return awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
+            }
+
+            resFut = new MetadataUpdateResultFuture(typeId);
+        }
+        while (!putAndWaitPendingUpdate(typeId, resFut));
+
+        BinaryMetadataHolder metadataHolder = metaLocCache.get(typeId);
+
+        BinaryMetadata oldMeta = Optional.ofNullable(metadataHolder)
+            .map(BinaryMetadataHolder::metadata)
+            .orElse(null);
+
+        Set<Integer> changedSchemas  = new LinkedHashSet<>();
+
+        //Ensure after putting pending future, metadata still has difference.
+        BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta, changedSchemas);
+
+        if (mergedMeta == oldMeta) {
+            resFut.onDone(MetadataUpdateResult.createSuccessfulResult());
+
+            return null;
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("Requesting metadata update [typeId=" + typeId +
+                ", typeName=" + mergedMeta.typeName() +
+                ", changedSchemas=" + changedSchemas +
+                ", holder=" + metadataHolder +
+                ", fut=" + resFut +
+                ']');
+        }
 
         try {
             synchronized (this) {
                 unlabeledFutures.add(resFut);
 
                 if (!stopping)
-                    discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(metadata, ctx.localNodeId()));
+                    discoMgr.sendCustomEvent(new MetadataUpdateProposedMessage(mergedMeta, ctx.localNodeId()));
                 else
                     resFut.onDone(MetadataUpdateResult.createUpdateDisabledResult());
             }
@@ -188,6 +236,31 @@ final class BinaryMetadataTransport {
             onDisconnected();
 
         return resFut;
+    }
+
+    /**
+     * Put new update future and it are waiting pending future if it exists.
+     *
+     * @param typeId Type id.
+     * @param metaUpdateFut New metadata update future.
+     * @return {@code true} If given future put successfully.
+     */
+    private boolean putAndWaitPendingUpdate(int typeId, MetadataUpdateResultFuture metaUpdateFut) {
+        MetadataUpdateResultFuture oldFut = pendingTypeIdMap.putIfAbsent(typeId, metaUpdateFut);
+
+        if (oldFut != null) {
+            try {
+                oldFut.get();
+            }
+            catch (IgniteCheckedException ignore) {
+                //Stacktrace will be logged in thread which created this future.
+                log.warning("Pending update metadata process was failed. Trying to update to new metadata.");
+            }
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -315,7 +388,7 @@ final class BinaryMetadataTransport {
                 try {
                     Set<Integer> changedSchemas = new LinkedHashSet<>();
 
-                    BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata(), changedSchemas);
+                    BinaryMetadata mergedMeta = mergeMetadata(locMeta, msg.metadata(), changedSchemas);
 
                     if (log.isDebugEnabled())
                         log.debug("Versions are stamped on coordinator" +
@@ -394,7 +467,7 @@ final class BinaryMetadataTransport {
                     Set<Integer> changedSchemas = new LinkedHashSet<>();
 
                     try {
-                        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(locMeta, msg.metadata(), changedSchemas);
+                        BinaryMetadata mergedMeta = mergeMetadata(locMeta, msg.metadata(), changedSchemas);
 
                         BinaryMetadataHolder newHolder = new BinaryMetadataHolder(mergedMeta, pendingVer, acceptedVer);
 
@@ -547,10 +620,10 @@ final class BinaryMetadataTransport {
      * Future class responsible for blocking threads until particular events with metadata updates happen,
      * e.g. arriving {@link MetadataUpdateAcceptedMessage} acknowledgment or {@link MetadataResponseMessage} response.
      */
-    private final class MetadataUpdateResultFuture extends GridFutureAdapter<MetadataUpdateResult> {
+    public final class MetadataUpdateResultFuture extends GridFutureAdapter<MetadataUpdateResult> {
         /** */
-        MetadataUpdateResultFuture() {
-            // No-op.
+        MetadataUpdateResultFuture(int typeId) {
+            this.key = new SyncKey(typeId, 0);
         }
 
         /**
@@ -569,8 +642,10 @@ final class BinaryMetadataTransport {
 
             boolean done = super.onDone(res, err);
 
-            if (done && key != null)
+            if (done && key != null) {
                 syncMap.remove(key, this);
+                pendingTypeIdMap.remove(key.typeId, this);
+            }
 
             return done;
         }

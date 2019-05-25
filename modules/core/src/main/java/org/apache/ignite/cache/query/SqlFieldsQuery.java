@@ -30,8 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
- * on SQL {@code 'select'} clause, as opposed to {@link SqlQuery}, which always returns
- * the whole key and value objects back.
+ * on SQL {@code 'select'} clause.
  * <h1 class="header">Collocated Flag</h1>
  * Collocation flag is used for optimization purposes. Whenever Ignite executes
  * a distributed query, it sends sub-queries to individual cluster members.
@@ -50,6 +49,13 @@ import org.jetbrains.annotations.Nullable;
 public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Default value of the update internal batch size. */
+    private static final int DFLT_UPDATE_BATCH_SIZE = 1;
+
+    /** Do not remove. For tests only. */
+    @SuppressWarnings("NonConstantFieldWithUpperCaseName")
+    private static boolean DFLT_LAZY;
 
     /** SQL Query. */
     private String sql;
@@ -73,8 +79,8 @@ public class SqlFieldsQuery extends Query<List<?>> {
     /** */
     private boolean replicatedOnly;
 
-    /** */
-    private boolean lazy;
+    /** Lazy mode is default since Ignite v.2.8. */
+    private boolean lazy = DFLT_LAZY;
 
     /** Partitions for query */
     private int[] parts;
@@ -84,6 +90,12 @@ public class SqlFieldsQuery extends Query<List<?>> {
 
     /** */
     private Boolean dataPageScanEnabled;
+
+    /**
+     * Update internal batch size. Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     */
+    private int updateBatchSize = DFLT_UPDATE_BATCH_SIZE;
 
     /**
      * Copy constructs SQL fields query.
@@ -102,6 +114,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
         parts = qry.parts;
         schema = qry.schema;
         dataPageScanEnabled = qry.dataPageScanEnabled;
+        updateBatchSize = qry.updateBatchSize;
     }
 
     /**
@@ -403,6 +416,31 @@ public class SqlFieldsQuery extends Query<List<?>> {
      */
     public Boolean isDataPageScanEnabled() {
         return dataPageScanEnabled;
+    }
+
+    /**
+     * Gets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @return Update internal batch size
+     */
+    public int getUpdateBatchSize() {
+        return updateBatchSize;
+    }
+
+    /**
+     * Sets update internal bach size.
+     * Default is 1 to prevent deadlock on update where keys sequence are different in
+     * several concurrent updates.
+     *
+     * @param updateBatchSize Update internal batch size.
+     * @return {@code this} for chaining.
+     */
+    public SqlFieldsQuery setUpdateBatchSize(int updateBatchSize) {
+        this.updateBatchSize = updateBatchSize;
+
+        return this;
     }
 
     /**

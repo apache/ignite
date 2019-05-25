@@ -246,9 +246,15 @@ class UUIDObject(StandardObject):
     """
     Universally unique identifier (UUID), aka Globally unique identifier
     (GUID). Payload takes up 16 bytes.
+
+    Byte order in :py:meth:`~pyignite.datatypes.standard.UUIDObject.to_python`
+    and :py:meth:`~pyignite.datatypes.standard.UUIDObject.from_python` methods
+    is changed for compatibility with `java.util.UUID`.
     """
     type_code = TC_UUID
     _object_c_type = None
+
+    UUID_BYTE_ORDER = (7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8)
 
     @classmethod
     def build_c_type(cls):
@@ -274,7 +280,7 @@ class UUIDObject(StandardObject):
             cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
-        for i, byte in enumerate(bytearray(value.bytes)):
+        for i, byte in zip(cls.UUID_BYTE_ORDER, bytearray(value.bytes)):
             data_object.value[i] = byte
         return bytes(data_object)
 
@@ -285,7 +291,10 @@ class UUIDObject(StandardObject):
             byteorder=PROTOCOL_BYTE_ORDER
         ):
             return None
-        return uuid.UUID(bytes=bytes(ctypes_object.value))
+        uuid_array = bytearray(ctypes_object.value)
+        return uuid.UUID(
+            bytes=bytes([uuid_array[i] for i in cls.UUID_BYTE_ORDER])
+        )
 
 
 class TimestampObject(StandardObject):

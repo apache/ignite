@@ -85,7 +85,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
@@ -161,7 +161,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityProcessor securityProc;
+    private IgniteSecurity security;
 
     /** */
     @GridToStringExclude
@@ -304,9 +304,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private ClusterProcessor cluster;
 
-    /**
-     *
-     */
+    /** */
     @GridToStringExclude
     private CompressionProcessor compressProc;
 
@@ -395,6 +393,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private WorkersRegistry workersRegistry;
 
     /** */
+    @GridToStringExclude
+    private LongJVMPauseDetector pauseDetector;
+
+    /** */
     private Thread.UncaughtExceptionHandler hnd;
 
     /** */
@@ -471,6 +473,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param plugins Plugin providers.
      * @param workerRegistry Worker registry.
      * @param hnd Default uncaught exception handler used by thread pools.
+     * @param pauseDetector Long JVM pause detector.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -497,7 +500,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         List<PluginProvider> plugins,
         IgnitePredicate<String> clsFilter,
         WorkersRegistry workerRegistry,
-        Thread.UncaughtExceptionHandler hnd
+        Thread.UncaughtExceptionHandler hnd,
+        LongJVMPauseDetector pauseDetector
     ) {
         assert grid != null;
         assert cfg != null;
@@ -524,6 +528,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.customExecSvcs = customExecSvcs;
         this.workersRegistry = workerRegistry;
         this.hnd = hnd;
+        this.pauseDetector = pauseDetector;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
 
@@ -582,8 +587,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             failoverMgr = (GridFailoverManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridSecurityProcessor)
-            securityProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
@@ -666,6 +669,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
         else if (comp instanceof IgniteAuthenticationProcessor)
             authProc = (IgniteAuthenticationProcessor)comp;
+        else if (comp instanceof IgniteSecurity)
+            security = (IgniteSecurity)comp;
         else if (comp instanceof CompressionProcessor)
             compressProc = (CompressionProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -836,8 +841,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityProcessor security() {
-        return securityProc;
+    @Override public IgniteSecurity security() {
+        return security;
     }
 
     /** {@inheritDoc} */
@@ -968,6 +973,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return perf;
+    }
+
+    /** {@inheritDoc} */
+    @Override public LongJVMPauseDetector longJvmPauseDetector() {
+        return pauseDetector;
     }
 
     /** {@inheritDoc} */

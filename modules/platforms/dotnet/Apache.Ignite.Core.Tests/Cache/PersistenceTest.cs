@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Configuration;
     using NUnit.Framework;
@@ -224,6 +225,8 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestBaselineTopology()
         {
+            Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", "false");
+
             var cfg1 = new IgniteConfiguration(GetPersistentConfiguration())
             {
                 ConsistentId = "node1"
@@ -280,6 +283,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var res = cluster.GetBaselineTopology();
                 CollectionAssert.AreEquivalent(new[] { "node1", "node2" }, res.Select(x => x.ConsistentId));
             }
+
+            Environment.SetEnvironmentVariable("IGNITE_BASELINE_AUTO_ADJUST_ENABLED", null);
         }
 
         /// <summary>
@@ -316,6 +321,42 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 ex = Assert.Throws<IgniteException>(() => cluster.EnableWal("bar"));
                 Assert.AreEqual("Cache doesn't exist: bar", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Test the configuration of IsBaselineAutoAdjustEnabled flag
+        /// </summary>
+        [Test]
+        public void TestBaselineTopologyAutoAdjustEnabledDisabled()
+        {
+            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            {
+                ICluster cluster = ignite.GetCluster();
+                cluster.SetActive(true);
+
+                bool isEnabled = cluster.IsBaselineAutoAdjustEnabled();
+                cluster.SetBaselineAutoAdjustEnabledFlag(!isEnabled);
+
+                Assert.AreNotEqual(isEnabled, cluster.IsBaselineAutoAdjustEnabled());
+            }
+        }
+
+        /// <summary>
+        /// Test the configuration of BaselineAutoAdjustTimeout property
+        /// </summary>
+        [Test]
+        public void TestBaselineTopologyAutoAdjustTimeoutWriteRead()
+        {
+            const long newTimeout = 333000;
+            using (var ignite = Ignition.Start(GetPersistentConfiguration()))
+            {
+                ICluster cluster = ignite.GetCluster();
+                cluster.SetActive(true);
+
+                cluster.SetBaselineAutoAdjustTimeout(newTimeout);
+
+                Assert.AreEqual(newTimeout, cluster.GetBaselineAutoAdjustTimeout());
             }
         }
 

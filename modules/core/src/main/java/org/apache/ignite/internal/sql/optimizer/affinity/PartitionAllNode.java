@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Node denoting all available partitions
@@ -36,7 +35,7 @@ public class PartitionAllNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) {
+    @Override public Collection<Integer> apply(PartitionClientContext cliCtx, Object... args) {
         return null;
     }
 
@@ -48,5 +47,10 @@ public class PartitionAllNode implements PartitionNode {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionAllNode.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
+        return null;
     }
 }

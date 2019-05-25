@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.DEFAULT_VER;
 
 /**
  * Closure to apply dot net configuration.
@@ -195,7 +195,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
 
-        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg, CURRENT_VER);
+        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg, DEFAULT_VER);
 
         // Process beans
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);

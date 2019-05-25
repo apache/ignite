@@ -17,6 +17,11 @@
 
 package org.apache.ignite.ml.composition.bagging;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.composition.combinators.parallel.TrainersParallelComposition;
@@ -25,17 +30,11 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.AdaptableDatasetTrainer;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.transformers.BaggingUpstreamTransformer;
 import org.apache.ignite.ml.util.Utils;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Trainer encapsulating logic of bootstrap aggregating (bagging).
@@ -150,15 +149,15 @@ public class BaggedTrainer<L> extends
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
-        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, extractor);
+        Preprocessor<K, V> preprocessor) {
+        IgniteModel<Vector, Double> fit = getTrainer().fit(datasetBuilder, preprocessor);
         return new BaggedModel(fit);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> BaggedModel update(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
-        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, extractor);
+        Preprocessor<K, V> preprocessor) {
+        IgniteModel<Vector, Double> updated = getTrainer().update(mdl.model(), datasetBuilder, preprocessor);
         return new BaggedModel(updated);
     }
 
@@ -191,7 +190,7 @@ public class BaggedTrainer<L> extends
      * @return Updated model.
      */
     @Override protected <K, V> BaggedModel updateModel(BaggedModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, L> extractor) {
+        Preprocessor<K, V> preprocessor) {
         // Should be never called.
         throw new IllegalStateException();
     }

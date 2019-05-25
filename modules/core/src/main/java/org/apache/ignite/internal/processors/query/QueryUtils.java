@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMa
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.property.QueryClassProperty;
 import org.apache.ignite.internal.processors.query.property.QueryFieldAccessor;
@@ -65,10 +67,15 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
@@ -90,7 +97,7 @@ public class QueryUtils {
     public static final String DFLT_SCHEMA = "PUBLIC";
 
     /** Schema for system view. */
-    public static final String SCHEMA_SYS = "IGNITE";
+    public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE, false) ? "IGNITE" : "SYS";
 
     /** Schema for system view. */
     public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
@@ -1392,6 +1399,18 @@ public class QueryUtils {
     }
 
     /**
+     * Checks whether affinity key mapper is custom or default.
+     *
+     * @param affinityKeyMapper Affinity key mapper.
+     * @return {@code true} if affinity key mapper is custom.
+     */
+    public static boolean isCustomAffinityMapper(AffinityKeyMapper affinityKeyMapper) {
+        return affinityKeyMapper != null &&
+                !(affinityKeyMapper instanceof CacheDefaultBinaryAffinityKeyMapper) &&
+                !(affinityKeyMapper instanceof GridCacheDefaultAffinityKeyMapper);
+    }
+
+    /**
      * Checks if given column can be removed from table using its {@link QueryEntity}.
      *
      * @param entity Query entity.
@@ -1461,6 +1480,45 @@ public class QueryUtils {
     }
 
     /**
+     * Converts exception in to IgniteSqlException.
+     * @param e Exception.
+     * @return IgniteSqlException.
+     */
+    @NotNull public static SQLException toSqlException(Exception e) {
+        String sqlState;
+
+        int code;
+
+        if (e instanceof IgniteSQLException) {
+            sqlState = ((IgniteSQLException)e).sqlState();
+
+            code = ((IgniteSQLException)e).statusCode();
+        }
+        else if (e instanceof TransactionDuplicateKeyException){
+            code = IgniteQueryErrorCode.DUPLICATE_KEY;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else if (e instanceof TransactionSerializationException){
+            code = IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else if (e instanceof TransactionAlreadyCompletedException){
+            code = IgniteQueryErrorCode.TRANSACTION_COMPLETED;
+
+            sqlState = IgniteQueryErrorCode.codeToSqlState(code);
+        }
+        else {
+            sqlState = SqlStateCode.INTERNAL_ERROR;
+
+            code = IgniteQueryErrorCode.UNKNOWN;
+        }
+
+        return new SQLException(e.getMessage(), sqlState, code, e);
+    }
+
+    /**
      * Get global query ID.
      *
      * @param nodeId Node ID.
@@ -1488,6 +1546,35 @@ public class QueryUtils {
         String regex = SqlListenerUtils.translateSqlWildcardsToRegex(sqlPtrn);
 
         return str.matches(regex);
+    }
+
+    /**
+     * Get field name by alias.
+     *
+     * @param entity Query entity.
+     * @param alias Filed's alias.
+     * @return Field name.
+     */
+    public static String fieldNameByAlias(QueryEntity entity, String alias) {
+        if (!F.isEmpty(entity.getAliases())) {
+            for (Map.Entry<String, String> aliasEntry : entity.getAliases().entrySet()) {
+                if (F.eq(aliasEntry.getValue(), alias))
+                    return aliasEntry.getKey();
+            }
+        }
+
+        return alias;
+    }
+
+    /**
+     * Remove field by alias.
+     *
+     * @param entity Query entity.
+     * @param alias Filed's alias.
+     * @return {@code true} if the field is removed. Otherwise returns {@code false}.
+     */
+    public static boolean removeField(QueryEntity entity, String alias) {
+        return entity.getFields().remove(fieldNameByAlias(entity, alias)) != null;
     }
 
     /**

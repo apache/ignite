@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Flat group of partitions.
@@ -46,12 +45,19 @@ public class PartitionGroupNode implements PartitionNode {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> apply(Object... args) throws IgniteCheckedException {
+    @Override public Collection<Integer> apply(PartitionClientContext ctx, Object... args)
+        throws IgniteCheckedException {
         // Deduplicate same partitions which may appear during resolution.
         HashSet<Integer> res = new HashSet<>(siblings.size());
 
-        for (PartitionSingleNode sibling : siblings)
-            res.add(sibling.applySingle(args));
+        for (PartitionSingleNode sibling : siblings) {
+            Integer part = sibling.applySingle(ctx, args);
+
+            if (part == null)
+                return null;
+
+            res.add(part);
+        }
 
         return res;
     }
@@ -105,5 +111,10 @@ public class PartitionGroupNode implements PartitionNode {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PartitionGroupNode.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
+        return siblings.iterator().next().cacheName();
     }
 }

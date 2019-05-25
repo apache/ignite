@@ -801,7 +801,6 @@ public class GridBasicPerformanceTest {
     /**
      * @param q Queue.
      */
-    @SuppressWarnings("StatementWithEmptyBody")
     private static void testQueue(Queue<Integer> q) {
         System.gc();
 
@@ -871,7 +870,6 @@ public class GridBasicPerformanceTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
-                @SuppressWarnings("StatementWithEmptyBody")
                 @Nullable @Override public Object call() throws Exception {
                     latch2.await();
 

@@ -22,12 +22,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.tutorial.TitanicUtils;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.sparkmodelparser.SparkModelParser;
 import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
 
@@ -39,8 +39,7 @@ import org.apache.ignite.ml.sparkmodelparser.SupportedSparkModels;
  */
 public class LogRegFromSparkExample {
     /** Path to Spark LogReg model. */
-    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/logreg/data" +
-        "/part-00000-7551081d-c0a8-4ed7-afe4-a464aabc7f80-c000.snappy.parquet";
+    public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/logreg";
 
     /** Run example. */
     public static void main(String[] args) throws FileNotFoundException {
@@ -50,36 +49,31 @@ public class LogRegFromSparkExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = TitanicUtils.readPassengers(ignite);
 
-            IgniteBiFunction<Integer, Object[], Vector> featureExtractor = (k, v) -> {
-                double[] data = new double[] {(double)v[0], (double)v[5], (double)v[6]};
-                data[0] = Double.isNaN(data[0]) ? 0 : data[0];
-                data[1] = Double.isNaN(data[1]) ? 0 : data[1];
-                data[2] = Double.isNaN(data[2]) ? 0 : data[2];
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 5, 6).labeled(1);
 
-                return VectorUtils.of(data);
-            };
-
-            IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double)v[1];
-
-            LogisticRegressionModel mdl = (LogisticRegressionModel) SparkModelParser.parse(
-                SPARK_MDL_PATH,
-                SupportedSparkModels.LOG_REGRESSION
+                LogisticRegressionModel mdl = (LogisticRegressionModel)SparkModelParser.parse(
+                    SPARK_MDL_PATH,
+                    SupportedSparkModels.LOG_REGRESSION
                 );
 
-            System.out.println(">>> Logistic regression model: " + mdl);
+                System.out.println(">>> Logistic regression model: " + mdl);
 
-            double accuracy = BinaryClassificationEvaluator.evaluate(
-                dataCache,
-                mdl,
-                featureExtractor,
-                lbExtractor,
-                new Accuracy<>()
-            );
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    vectorizer,
+                    new Accuracy<>()
+                );
 
-            System.out.println("\n>>> Accuracy " + accuracy);
-            System.out.println("\n>>> Test Error " + (1 - accuracy));
+                System.out.println("\n>>> Accuracy " + accuracy);
+                System.out.println("\n>>> Test Error " + (1 - accuracy));
+            } finally {
+                dataCache.destroy();
+            }
         }
     }
 }
