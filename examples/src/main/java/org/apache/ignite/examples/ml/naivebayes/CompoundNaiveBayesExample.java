@@ -25,7 +25,7 @@ public class CompoundNaiveBayesExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+                .fillCacheWith(MLSandboxDatasets.MIXED_DATASET);
 
             double[] classProbabilities = new double[] {.5, .5};
             double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
