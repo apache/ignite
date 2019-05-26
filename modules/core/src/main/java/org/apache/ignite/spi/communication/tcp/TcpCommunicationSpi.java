@@ -3546,6 +3546,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     throw e;
                 }
                 catch (Exception e) {
+                   log.error("TODO for TC1", e);
+
                     // Most probably IO error on socket connect or handshake.
                     if (ses != null) {
                         ses.close();
