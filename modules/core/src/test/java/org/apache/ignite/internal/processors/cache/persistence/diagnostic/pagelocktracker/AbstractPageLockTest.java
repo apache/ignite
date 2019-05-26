@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 /** */
 public abstract class AbstractPageLockTest {
     /** */
-    protected void randomLocks(int deep, Runnable r) {
+    protected void doRunnable(int deep, Runnable r) {
         for (int i = 0; i < deep; i++)
             r.run();
     }

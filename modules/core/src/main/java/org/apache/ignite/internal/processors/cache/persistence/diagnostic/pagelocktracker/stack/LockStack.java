@@ -67,7 +67,7 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
 
         reset();
 
-        if (headIdx + 1 > capacity()) {
+        if (headIdx / 2 + 1 > capacity()) {
             invalid("Stack overflow, size=" + capacity() +
                 ", headIdx=" + headIdx + " " + argsToString(structureId, pageId, op));
 
@@ -83,9 +83,15 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
             return;
         }
 
-        setByIndex(headIdx, pageId);
+        int curIdx = holdedLockCnt << OP_OFFSET & LOCK_IDX_MASK;
 
-        headIdx++;
+        long meta = meta(structureId, curIdx | op);
+
+        setByIndex(headIdx, pageId);
+        setByIndex(headIdx + 1, meta);
+
+        headIdx += 2;
+        holdedLockCnt++;
     }
 
     /**
@@ -101,24 +107,27 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
 
         reset();
 
-        if (headIdx > 1) {
-            int last = headIdx - 1;
+        if (headIdx > 2) {
+            int last = headIdx - 2;
 
             long val = getByIndex(last);
 
             if (val == pageId) {
                 setByIndex(last, 0);
+                setByIndex(last + 1, 0);
 
                 //Reset head to the first not empty element.
                 do {
-                    headIdx--;
+                    headIdx -= 2;
+                    holdedLockCnt--;
                 }
-                while (headIdx > 0 && getByIndex(headIdx - 1) == 0);
+                while (headIdx > 0 && getByIndex(headIdx - 2) == 0);
             }
             else {
-                for (int idx = last - 1; idx >= 0; idx--) {
+                for (int idx = last - 2; idx >= 0; idx -= 2) {
                     if (getByIndex(idx) == pageId) {
                         setByIndex(idx, 0);
+                        setByIndex(idx + 1, 0);
 
                         return;
                     }
@@ -146,8 +155,10 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
 
             if (val == pageId) {
                 setByIndex(0, 0);
+                setByIndex(1, 0);
 
                 headIdx = 0;
+                holdedLockCnt = 0;
             }
             else
                 invalid("Can not find pageId in stack, headIdx=" + headIdx + " "

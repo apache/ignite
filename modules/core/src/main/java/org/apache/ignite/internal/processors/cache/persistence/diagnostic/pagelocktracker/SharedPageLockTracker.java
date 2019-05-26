@@ -24,42 +24,98 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
 //TODO Calculate overhad and capacity for all structures.
 //TODO Fast local get thread local.
 //TODO Test deadlock
 //TODO Dynamic enable/disable tracing.
 //TODO Collect page content to dump. AG
-//TODO Create dump by timeout.
 
-/** */
+/**
+ *
+ */
 public class SharedPageLockTracker implements PageLockListener, DumpSupported<ThreadPageLocksDumpLock> {
-    /** */
-    private static final int THREAD_LIMITS = 1000;
-
-    /** */
-    private static final int TIME_OUT_WORKER_INTERVAL = 60_000;
-
-    /** */
+    /**
+     *
+     */
+    public final int threadLimits;
+    /**
+     *
+     */
+    public final int timeOutWorkerInterval;
+    /**
+     *
+     */
     private final Map<Long, PageLockTracker<? extends PageLockDump>> threadStacks = new HashMap<>();
-    /** */
+    /**
+     *
+     */
     private final Map<Long, Thread> threadIdToThreadRef = new HashMap<>();
-
-    /** */
+    /**
+     *
+     */
     private final Map<String, Integer> structureNameToId = new HashMap<>();
-
     /** Thread for clean terminated threads from map. */
     private final TimeOutWorker timeOutWorker = new TimeOutWorker();
-
-    /** */
+    /**
+     *
+     */
+    private Map<Long, SharedPageLockTracker.State> prevThreadsState = new HashMap<>();
+    /**
+     *
+     */
     private int idGen;
+    /**
+     *
+     */
+    private final Consumer<List<SharedPageLockTracker.State>> hangThreadsCallBack;
+    /**
+     *
+     */
+    private final ThreadLocal<PageLockTracker> lockTracker = ThreadLocal.withInitial(this::createTracker);
 
-    /** */
-    private final ThreadLocal<PageLockTracker> lockTracker = ThreadLocal.withInitial(() -> {
+    /**
+     *
+     */
+    public SharedPageLockTracker() {
+        this((ids) -> { });
+    }
+
+    /**
+     *
+     */
+    public SharedPageLockTracker(Consumer<List<SharedPageLockTracker.State>> hangThreadsCallBack) {
+        this(1000, getInteger(IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, 60_000), hangThreadsCallBack);
+    }
+
+    /**
+     *
+     */
+    public SharedPageLockTracker(
+        int threadLimits,
+        int timeOutWorkerInterval,
+        Consumer<List<SharedPageLockTracker.State>> hangThreadsCallBack
+    ) {
+        this.threadLimits = threadLimits;
+        this.timeOutWorkerInterval = timeOutWorkerInterval;
+        this.hangThreadsCallBack = hangThreadsCallBack;
+    }
+
+    /**
+     * Factory method for creating thread local {@link PageLockTracker}.
+     *
+     * @return PageLockTracer instance.
+     */
+    private PageLockTracker createTracker(){
         Thread thread = Thread.currentThread();
 
         String threadName = thread.getName();
@@ -72,21 +128,25 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
 
             threadIdToThreadRef.put(threadId, thread);
 
-            if (threadIdToThreadRef.size() > THREAD_LIMITS)
+            if (threadIdToThreadRef.size() > threadLimits)
                 cleanTerminatedThreads();
         }
 
         return tracker;
-    });
+    }
 
-    /** */
+    /**
+     *
+     */
     void onStart() {
         timeOutWorker.setDaemon(true);
 
         timeOutWorker.start();
     }
 
-    /** */
+    /**
+     *
+     */
     public synchronized PageLockListener registrateStructure(String structureName) {
         Integer id = structureNameToId.get(structureName);
 
@@ -180,7 +240,9 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
         return new ThreadPageLocksDumpLock(time, idToStructureName0, threadStates0);
     }
 
-    /** */
+    /**
+     *
+     */
     private synchronized void cleanTerminatedThreads() {
         Iterator<Map.Entry<Long, Thread>> it = threadIdToThreadRef.entrySet().iterator();
 
@@ -201,53 +263,66 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
         }
     }
 
-    /** */
-    private synchronized Map<Long, Long> getThreadOperationCounters() {
+    /**
+     *
+     */
+    private synchronized Map<Long, State> getThreadOperationState() {
         return threadStacks.entrySet().stream().collect(Collectors.toMap(
             Map.Entry::getKey,
-            e -> e.getValue().operationsCounter()
+            e -> {
+                PageLockTracker<? extends PageLockDump> lt = e.getValue();
+
+                return new State(lt.operationsCounter(), lt.holdedLocksNumber(), threadIdToThreadRef.get(e.getKey()));
+            }
         ));
     }
 
-    /** */
-    private class TimeOutWorker extends Thread {
-        /** */
-        private Map<Long, Long> prevThreadsOperationCounters = new HashMap<>();
+    /**
+     *
+     */
+    private synchronized List<State> hangThreads() {
+        List<State> hangsThreads = new ArrayList<>();
 
+        Map<Long, SharedPageLockTracker.State> currentThreadsOperationState = getThreadOperationState();
+
+        prevThreadsState.forEach((threadId, prevState) -> {
+            State state = currentThreadsOperationState.get(threadId);
+
+            if (state == null)
+                return;
+
+            boolean threadHoldedLocks = state.holdedLockCnt != 0;
+
+            // If thread holds a lock and does not change state it may be hanged.
+            if (prevState.equals(state) && threadHoldedLocks)
+                hangsThreads.add(state);
+        });
+
+        prevThreadsState = currentThreadsOperationState;
+
+        return hangsThreads;
+    }
+
+    /**
+     *
+     */
+    private class TimeOutWorker extends Thread {
+        /**
+         *
+         */
         @Override public void run() {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    sleep(TIME_OUT_WORKER_INTERVAL);
+                    sleep(timeOutWorkerInterval);
 
                     cleanTerminatedThreads();
 
-                    List<Long> hangsThreads = null;
+                    if (hangThreadsCallBack != null) {
+                        List<SharedPageLockTracker.State> threadIds = hangThreads();
 
-                    Map<Long, Long> currentThreadsOperationCounters = getThreadOperationCounters();
-
-                    for (Map.Entry<Long, Long> entry : prevThreadsOperationCounters.entrySet()) {
-                        Long threadId = entry.getKey();
-
-                        Long currOpCnt = currentThreadsOperationCounters.get(threadId);
-
-                        if (currOpCnt == null)
-                            continue;
-
-                        Long prevOpCnt = entry.getValue();
-
-                        if (prevOpCnt.equals(currOpCnt)) {
-                            if (hangsThreads == null)
-                                hangsThreads = new ArrayList<>();
-
-                            hangsThreads.add(threadId);
-                        }
+                        if (!F.isEmpty(threadIds))
+                            hangThreadsCallBack.accept(threadIds);
                     }
-
-                    if (!F.isEmpty(hangsThreads)) {
-                        // TODO.
-                    }
-
-                    prevThreadsOperationCounters = currentThreadsOperationCounters;
                 }
             }
             catch (InterruptedException e) {
@@ -256,17 +331,71 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
         }
     }
 
-    /** */
+    /**
+     *
+     */
+    public static class State {
+        /**
+         *
+         */
+        final long threadOpCnt;
+        /**
+         *
+         */
+        final long holdedLockCnt;
+        /**
+         *
+         */
+        final Thread thread;
+
+        /**
+         *
+         */
+        private State(long threadOpCnt, long holdedLockCnt, Thread thread) {
+            this.threadOpCnt = threadOpCnt;
+            this.holdedLockCnt = holdedLockCnt;
+            this.thread = thread;
+        }
+
+        /**
+         *
+         */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            State state = (State)o;
+            return threadOpCnt == state.threadOpCnt &&
+                holdedLockCnt == state.holdedLockCnt &&
+                Objects.equals(thread, state.thread);
+        }
+
+        /**
+         *
+         */
+        @Override public int hashCode() {
+            return Objects.hash(threadOpCnt, holdedLockCnt, thread);
+        }
+    }
+
+    /**
+     *
+     */
     @Override public IgniteFuture<ThreadPageLocksDumpLock> dumpSync() {
         throw new UnsupportedOperationException();
     }
 
-    /** */
+    /**
+     *
+     */
     @Override public boolean acquireSafePoint() {
         throw new UnsupportedOperationException();
     }
 
-    /** */
+    /**
+     *
+     */
     @Override public boolean releaseSafePoint() {
         throw new UnsupportedOperationException();
     }

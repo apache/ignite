@@ -575,9 +575,9 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         IgniteInternalFuture f = GridTestUtils.runAsync(() -> {
             while (!done.get()) {
-                int deep = nextRandomWaitTimeout(maxdeep);
+                int iter = nextRandomWaitTimeout(maxdeep);
 
-                randomLocks(deep, () -> {
+                doRunnable(iter, () -> {
                     awaitRandom(100);
 
                     lockLog.onBeforeReadLock(STRUCTURE_ID, pageId, page);
@@ -591,7 +591,7 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
                     awaitRandom(maxWaitTime);
                 }
                 finally {
-                    randomLocks(deep, () -> {
+                    doRunnable(iter, () -> {
                         lockLog.onReadUnlock(STRUCTURE_ID, pageId, page, pageAddr);
                     });
                 }

@@ -30,6 +30,13 @@ import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
  * Abstract page lock tracker.
  */
 public abstract class PageLockTracker<T extends PageLockDump> implements PageLockListener, DumpSupported<T> {
+    /** */
+    public static final int OP_OFFSET = 16;
+    /** */
+    public static final int LOCK_IDX_MASK = 0xFFFF0000;
+    /** */
+    public static final int LOCK_OP_MASK = 0x000000000000FF;
+
     /** Page read lock operation id. */
     public static final int READ_LOCK = 1;
     /** Page read unlock operation id. */
@@ -47,6 +54,8 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     protected final String name;
     /** */
     protected final int capacity;
+    /** Counter for track lock/unlock operations. */
+    protected int holdedLockCnt;
     /** */
     private volatile boolean dump;
     /** */
@@ -258,6 +267,21 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     }
 
     /**
+     * Build long from two int.
+     *
+     * @param structureId Structure id.
+     * @param flags Flags.
+     */
+    protected long meta(int structureId, int flags) {
+        long major = ((long)flags) << 32;
+
+        long minor = structureId & 0xFFFFFFFFL;
+
+        return major | minor;
+    }
+
+
+    /**
      * @return Number of locks operations.
      */
     public long operationsCounter(){
@@ -265,6 +289,16 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
         boolean locked = this.locked;
 
         return opCntr;
+    }
+
+    /**
+     *
+     */
+    public int holdedLocksNumber() {
+        // Read  volatile for thread safety.
+        boolean locked = this.locked;
+
+        return holdedLockCnt;
     }
 
     /** */
@@ -330,7 +364,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /** */
     public static String pageIdToString(long pageId) {
         return "pageId=" + pageId
-            + " [pageIdxHex=" + hexLong(pageId)
+            + " [pageIdHex=" + hexLong(pageId)
             + ", partId=" + pageId(pageId) + ", pageIdx=" + pageIndex(pageId)
             + ", flags=" + hexInt(flag(pageId)) + "]";
     }

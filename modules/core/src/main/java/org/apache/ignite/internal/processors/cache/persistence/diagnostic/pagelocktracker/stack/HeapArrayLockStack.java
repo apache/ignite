@@ -33,7 +33,7 @@ public class HeapArrayLockStack extends LockStack {
     public HeapArrayLockStack(String name, int capacity) {
         super(name, capacity);
 
-        this.pageIdLocksStack = new long[capacity];
+        this.pageIdLocksStack = new long[capacity * 2];
     }
 
     /** {@inheritDoc} */

@@ -23,7 +23,7 @@ import static java.util.Arrays.copyOf;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
- *  Page lock stack build in on offheap.
+ * Page lock stack build in on offheap.
  */
 public class OffHeapLockStack extends LockStack {
     /** */
@@ -37,7 +37,7 @@ public class OffHeapLockStack extends LockStack {
     public OffHeapLockStack(String name, int size) {
         super(name, size);
 
-        this.stackSize = capacity * 8;
+        this.stackSize = capacity * 8 * 2;
 
         this.ptr = allocate(stackSize);
     }
@@ -78,7 +78,7 @@ public class OffHeapLockStack extends LockStack {
 
     /** {@inheritDoc} */
     @Override public PageLockStackSnapshot snapshot() {
-        long[] stack = new long[capacity];
+        long[] stack = new long[capacity * 2];
 
         GridUnsafe.copyMemory(null, ptr, stack, GridUnsafe.LONG_ARR_OFF, stackSize);
 

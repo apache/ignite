@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
 import java.io.File;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker.State;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Page lock manager.
@@ -38,15 +41,60 @@ public class PageLockTrackerManager {
     /** */
     private final IgniteLogger log;
 
+    /** */
+    private List<State> threads;
+
     /**
      * Default constructor.
      */
     public PageLockTrackerManager(IgniteLogger log) {
-        mxBean = new PageLockTrackerMXBeanImpl(this);
-        sharedPageLockTracker = new SharedPageLockTracker();
+        this.mxBean = new PageLockTrackerMXBeanImpl(this);
+        this.sharedPageLockTracker = new SharedPageLockTracker(this::onHangThreads);
         this.log = log;
 
         sharedPageLockTracker.onStart();
+    }
+
+    /**
+     * @param threads Hang threads.
+     */
+    private void onHangThreads(@NotNull List<State> threads) {
+        assert threads != null;
+
+        // Processe only one for same list thread state.
+        // Protection of spam.
+        if (!threads.equals(this.threads)) {
+            this.threads = threads;
+
+            ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
+
+            StringBuilder sb = new StringBuilder();
+
+            threads.forEach(s -> {
+                Thread th = s.thread;
+                sb.append("(")
+                    .append(th.getName())
+                    .append("-")
+                    .append(th.getId())
+                    .append(", ")
+                    .append(th.getState())
+                    .append(")");
+
+            });
+
+            log.warning("Threads hanged: [" + sb + "]");
+            // If some thread is hangs
+            // Print to log.
+            log.warning(ToStringDumpProcessor.toStringDump(dump));
+
+            try {
+                // Write dump to file.
+                ToFileDumpProcessor.toFileDump(dump, new File(U.defaultWorkDirectory()));
+            }
+            catch (IgniteCheckedException e) {
+                log.warning("Faile to save locks dump file.", e);
+            }
+        }
     }
 
     /**

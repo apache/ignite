@@ -26,15 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
  **/
 public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
     /** */
-    public static final int OP_OFFSET = 16;
-    /** */
-    public static final int LOCK_IDX_MASK = 0xFFFF0000;
-    /** */
-    public static final int LOCK_OP_MASK = 0x000000000000FF;
-    /** */
     protected int headIdx;
-    /** Counter for track lock/unlock operations. */
-    protected int holdedLockCnt;
 
     /**
      * Constructor.
@@ -131,20 +123,6 @@ public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
             setByIndex(i, 0);
 
         headIdx = 0;
-    }
-
-    /**
-     * Build long from two int.
-     *
-     * @param structureId Structure id.
-     * @param flags Flags.
-     */
-    private long meta(int structureId, int flags) {
-        long major = ((long)flags) << 32;
-
-        long minor = structureId & 0xFFFFFFFFL;
-
-        return major | minor;
     }
 
     /** {@inheritDoc} */
