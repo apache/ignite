@@ -415,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutOpAffinityAsync(ClientOp.CacheClearKey, key);
+            return DoOutOpAffinityAsync(ClientOp.CacheClearKey, key, w => w.WriteObjectDetached(key));
         }
 
         /** <inheritDoc /> */
