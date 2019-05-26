@@ -63,9 +63,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             base.FixtureSetUp();
 
             _cache = Client.CreateCache<int, int>("c");
-            InitTestData();
 
             // Warm up client partition data.
+            InitTestData();
             _cache.Get(1);
             _cache.Get(2);
         }
@@ -74,6 +74,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             base.TestSetUp();
 
+            InitTestData();
             ClearLoggers();
         }
 
@@ -130,6 +131,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
         {
             // TODO: This is broken in Java, we don't get any data on annotation-configured types.
+            // Use manual configuration instead
             var cache = Client.GetOrCreateCache<TestKeyWithAffinity, int>("c_custom_key_aff");
 
             var ex = Assert.Throws<IgniteException>(() => cache.Put(new TestKeyWithAffinity(1, "1"), 1));
