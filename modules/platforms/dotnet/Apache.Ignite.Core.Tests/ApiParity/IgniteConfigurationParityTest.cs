@@ -72,6 +72,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] MissingProperties =
         {
             "RebalanceThreadPoolSize",
+            "RebalanceTimeout",
+            "RebalanceBatchesPrefetchCount",
+            "RebalanceThrottle",
+            "RebalanceBatchSize",
             "SegmentationPolicy",
             "isWaitForSegmentOnStart",
             "isAllSegmentationResolversPassRequired",
@@ -82,7 +86,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "TimeServerPortRange",
             "IncludeProperties",
             "isAutoActivationEnabled",  // IGNITE-7301
-            "NetworkCompressionLevel"
+            "NetworkCompressionLevel",
+            "PluginProviders"
         };
 
         /// <summary>

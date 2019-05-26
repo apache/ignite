@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -75,6 +76,8 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
+        storageCfg.setPageSize(1024).setWalMode(LOG_ONLY).setWalSegmentSize(8 * 1024 * 1024);
+
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true)
             .setMaxSize(500L * 1024 * 1024);
@@ -104,7 +107,7 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE)
-            .setAffinity(new RendezvousAffinityFunction(false, 1024))
+            .setAffinity(new RendezvousAffinityFunction(false, 64))
             .setIndexedTypes(String.class, String.class);
     }
 

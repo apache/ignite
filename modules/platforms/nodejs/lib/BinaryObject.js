@@ -491,7 +491,7 @@ class BinaryObjectField {
         else if (offset < 0x10000) {
             return BinaryUtils.TYPE_CODE.SHORT;
         }
-        return BinaryUtils.TYPE_CODE.INTEGER;        
+        return BinaryUtils.TYPE_CODE.INTEGER;
     }
 
     static _fromBuffer(communicator, buffer, offset, length, id) {
