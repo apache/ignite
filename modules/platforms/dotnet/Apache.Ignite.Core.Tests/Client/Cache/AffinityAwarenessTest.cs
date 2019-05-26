@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Text.RegularExpressions;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
@@ -257,7 +258,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         private int GetClientRequestGridIndex(string message = null)
         {
-            message = message ?? "ClientCacheGetRequest";
+            var messageRegex = new Regex(
+                @"Client request received \[reqId=\d+, addr=/127.0.0.1:\d+, " +
+                "req=org.apache.ignite.internal.processors.platform.client.cache." +
+                (message ?? "ClientCacheGetRequest"));
 
             try
             {
@@ -265,7 +269,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 {
                     var logger = _loggers[i];
 
-                    if (logger.Messages.Any(m => m.Contains(message)))
+                    if (logger.Messages.Any(m => messageRegex.IsMatch(m)))
                     {
                         return i;
                     }
