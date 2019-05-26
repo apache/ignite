@@ -199,8 +199,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(6, 2)]
         public void AllKeyBasedOperations_PrimitiveKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
+            // TODO: Check coverage
+            int val;
+
             TestOperation(() => _cache.Get(key), gridIdx);
             TestAsyncOperation(() => _cache.GetAsync(key), gridIdx);
+
+            TestOperation(() => _cache.TryGet(key, out val), gridIdx);
+            TestAsyncOperation(() => _cache.TryGetAsync(key), gridIdx);
 
             TestOperation(() => _cache.Put(key, key), gridIdx, "ClientCachePutRequest");
             TestAsyncOperation(() => _cache.PutAsync(key, key), gridIdx, "ClientCachePutRequest");
@@ -214,7 +220,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestOperation(() => _cache.Clear(key), gridIdx, "ClientCacheClearKeyRequest");
             TestAsyncOperation(() => _cache.ClearAsync(key), gridIdx, "ClientCacheClearKeyRequest");
 
-            // TODO: Check coverage
+            TestOperation(() => _cache.ContainsKey(key), gridIdx, "ClientCacheContainsKeyRequest");
+            TestAsyncOperation(() => _cache.ContainsKeyAsync(key), gridIdx, "ClientCacheContainsKeyRequest");
+
+            TestOperation(() => _cache.GetAndPut(key, key), gridIdx, "ClientCacheGetAndPutRequest");
+            TestAsyncOperation(() => _cache.GetAndPutAsync(key, key), gridIdx, "ClientCacheGetAndPutRequest");
+
+            TestOperation(() => _cache.GetAndReplace(key, key), gridIdx, "ClientCacheGetAndReplaceRequest");
+            TestAsyncOperation(() => _cache.GetAndReplaceAsync(key, key), gridIdx, "ClientCacheGetAndReplaceRequest");
+
+            TestOperation(() => _cache.GetAndRemove(key), gridIdx, "ClientCacheGetAndRemoveRequest");
+            TestAsyncOperation(() => _cache.GetAndRemoveAsync(key), gridIdx, "ClientCacheGetAndRemoveRequest");
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
