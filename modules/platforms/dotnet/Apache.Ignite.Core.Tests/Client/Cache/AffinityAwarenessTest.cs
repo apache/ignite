@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             base.FixtureSetUp();
 
             _cache = Client.CreateCache<int, int>("c");
-            _cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
+            InitTestData();
 
             // Warm up client partition data.
             _cache.Get(1);
@@ -191,6 +191,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestOperation(() => _cache.PutIfAbsent(key, key), gridIdx, "ClientCachePutIfAbsentRequest");
             TestAsyncOperation(() => _cache.PutIfAbsentAsync(key, key), gridIdx, "ClientCachePutIfAbsentRequest");
 
+            TestOperation(() => _cache.GetAndPutIfAbsent(key, key), gridIdx, "ClientCacheGetAndPutIfAbsentRequest");
+            TestAsyncOperation(() => _cache.GetAndPutIfAbsentAsync(key, key), gridIdx, "ClientCacheGetAndPutIfAbsentRequest");
+
             TestOperation(() => _cache.Clear(key), gridIdx, "ClientCacheClearKeyRequest");
             TestAsyncOperation(() => _cache.ClearAsync(key), gridIdx, "ClientCacheClearKeyRequest");
 
@@ -254,6 +257,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         private void TestOperation(Action action, int expectedGridIdx, string message = null)
         {
+            InitTestData();
             ClearLoggers();
             action();
             Assert.AreEqual(expectedGridIdx, GetClientRequestGridIndex(message));
@@ -265,6 +269,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             ClearLoggers();
             action().Wait();
             Assert.AreEqual(expectedGridIdx, GetClientRequestGridIndex(message));
+        }
+
+        private void InitTestData()
+        {
+            _cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
         }
     }
 }
