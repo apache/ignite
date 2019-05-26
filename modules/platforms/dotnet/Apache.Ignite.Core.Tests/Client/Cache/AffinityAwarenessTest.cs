@@ -185,12 +185,14 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestOperation(() => _cache.Get(key), gridIdx);
             TestAsyncOperation(() => _cache.GetAsync(key), gridIdx);
 
-            // TODO: Index check only expects Get operation
             TestOperation(() => _cache.Put(key, key), gridIdx, "ClientCachePutRequest");
             TestAsyncOperation(() => _cache.PutAsync(key, key), gridIdx, "ClientCachePutRequest");
 
-            TestOperation(() => _cache.Clear(key), gridIdx);
-            TestAsyncOperation(() => _cache.ClearAsync(key), gridIdx);
+            TestOperation(() => _cache.PutIfAbsent(key, key), gridIdx, "ClientCachePutIfAbsentRequest");
+            TestAsyncOperation(() => _cache.PutIfAbsentAsync(key, key), gridIdx, "ClientCachePutIfAbsentRequest");
+
+            TestOperation(() => _cache.Clear(key), gridIdx, "ClientCacheClearKeyRequest");
+            TestAsyncOperation(() => _cache.ClearAsync(key), gridIdx, "ClientCacheClearKeyRequest");
 
             // TODO: Check coverage
         }
