@@ -77,59 +77,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             ClearLoggers();
         }
 
-        protected override IgniteConfiguration GetIgniteConfiguration()
-        {
-            var cfg = base.GetIgniteConfiguration();
-
-            var logger = new ListLogger();
-            cfg.Logger = logger;
-            _loggers.Add(logger);
-
-            return cfg;
-        }
-
-        protected override IgniteClientConfiguration GetClientConfiguration()
-        {
-            var cfg = base.GetClientConfiguration();
-
-            cfg.EnableAffinityAwareness = true;
-            cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 1));
-            cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 2));
-
-            return cfg;
-        }
-
-        private int GetClientRequestGridIndex()
-        {
-            try
-            {
-                for (var i = 0; i < _loggers.Count; i++)
-                {
-                    var logger = _loggers[i];
-
-                    if (logger.Messages.Any(m => m.Contains("ClientCacheGetRequest")))
-                    {
-                        return i;
-                    }
-                }
-
-                return -1;
-            }
-            finally
-            {
-                ClearLoggers();
-            }
-        }
-
-
-        private void ClearLoggers()
-        {
-            foreach (var logger in _loggers)
-            {
-                logger.Clear();
-            }
-        }
-
         [Test]
         [TestCase(1, 1)]
         [TestCase(2, 0)]
@@ -239,8 +186,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestAsyncOperation(() => _cache.GetAsync(key), gridIdx);
 
             // TODO: Index check only expects Get operation
-            TestOperation(() => _cache.Put(key, key), gridIdx);
-            TestAsyncOperation(() => _cache.PutAsync(key, key), gridIdx);
+            TestOperation(() => _cache.Put(key, key), gridIdx, "ClientCachePutRequest");
+            TestAsyncOperation(() => _cache.PutAsync(key, key), gridIdx, "ClientCachePutRequest");
 
             TestOperation(() => _cache.Clear(key), gridIdx);
             TestAsyncOperation(() => _cache.ClearAsync(key), gridIdx);
@@ -248,18 +195,74 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             // TODO: Check coverage
         }
 
-        private void TestOperation(Action action, int expectedGridIdx)
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            var cfg = base.GetIgniteConfiguration();
+
+            var logger = new ListLogger();
+            cfg.Logger = logger;
+            _loggers.Add(logger);
+
+            return cfg;
+        }
+
+        protected override IgniteClientConfiguration GetClientConfiguration()
+        {
+            var cfg = base.GetClientConfiguration();
+
+            cfg.EnableAffinityAwareness = true;
+            cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 1));
+            cfg.Endpoints.Add(string.Format("{0}:{1}", IPAddress.Loopback, IgniteClientConfiguration.DefaultPort + 2));
+
+            return cfg;
+        }
+
+        private int GetClientRequestGridIndex(string message = null)
+        {
+            message = message ?? "ClientCacheGetRequest";
+
+            try
+            {
+                for (var i = 0; i < _loggers.Count; i++)
+                {
+                    var logger = _loggers[i];
+
+                    if (logger.Messages.Any(m => m.Contains(message)))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+            finally
+            {
+                ClearLoggers();
+            }
+        }
+
+
+        private void ClearLoggers()
+        {
+            foreach (var logger in _loggers)
+            {
+                logger.Clear();
+            }
+        }
+
+        private void TestOperation(Action action, int expectedGridIdx, string message = null)
         {
             ClearLoggers();
             action();
-            Assert.AreEqual(expectedGridIdx, GetClientRequestGridIndex());
+            Assert.AreEqual(expectedGridIdx, GetClientRequestGridIndex(message));
         }
 
-        private void TestAsyncOperation<T>(Func<T> action, int expectedGridIdx) where T : Task
+        private void TestAsyncOperation<T>(Func<T> action, int expectedGridIdx, string message = null)
+            where T : Task
         {
             ClearLoggers();
             action().Wait();
-            Assert.AreEqual(expectedGridIdx, GetClientRequestGridIndex());
+            Assert.AreEqual(expectedGridIdx, GetClientRequestGridIndex(message));
         }
     }
 }
