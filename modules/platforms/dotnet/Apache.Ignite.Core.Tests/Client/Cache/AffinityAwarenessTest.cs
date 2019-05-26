@@ -205,48 +205,66 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestOperation(() => _cache.TryGet(key, out unused), gridIdx);
             TestAsyncOperation(() => _cache.TryGetAsync(key), gridIdx);
 
-            TestOperation(() => _cache.Put(key, key), gridIdx, "ClientCachePutRequest");
-            TestAsyncOperation(() => _cache.PutAsync(key, key), gridIdx, "ClientCachePutRequest");
+            TestOperation(() => _cache.Put(key, key), gridIdx, "Put");
+            TestAsyncOperation(() => _cache.PutAsync(key, key), gridIdx, "Put");
 
-            TestOperation(() => _cache.PutIfAbsent(key, key), gridIdx, "ClientCachePutIfAbsentRequest");
-            TestAsyncOperation(() => _cache.PutIfAbsentAsync(key, key), gridIdx, "ClientCachePutIfAbsentRequest");
+            TestOperation(() => _cache.PutIfAbsent(key, key), gridIdx, "PutIfAbsent");
+            TestAsyncOperation(() => _cache.PutIfAbsentAsync(key, key), gridIdx, "PutIfAbsent");
 
-            TestOperation(() => _cache.GetAndPutIfAbsent(key, key), gridIdx, "ClientCacheGetAndPutIfAbsentRequest");
-            TestAsyncOperation(() => _cache.GetAndPutIfAbsentAsync(key, key), gridIdx, "ClientCacheGetAndPutIfAbsentRequest");
+            TestOperation(() => _cache.GetAndPutIfAbsent(key, key), gridIdx, "GetAndPutIfAbsent");
+            TestAsyncOperation(() => _cache.GetAndPutIfAbsentAsync(key, key), gridIdx, "GetAndPutIfAbsent");
 
-            TestOperation(() => _cache.Clear(key), gridIdx, "ClientCacheClearKeyRequest");
-            TestAsyncOperation(() => _cache.ClearAsync(key), gridIdx, "ClientCacheClearKeyRequest");
+            TestOperation(() => _cache.Clear(key), gridIdx, "ClearKey");
+            TestAsyncOperation(() => _cache.ClearAsync(key), gridIdx, "ClearKey");
 
-            TestOperation(() => _cache.ContainsKey(key), gridIdx, "ClientCacheContainsKeyRequest");
-            TestAsyncOperation(() => _cache.ContainsKeyAsync(key), gridIdx, "ClientCacheContainsKeyRequest");
+            TestOperation(() => _cache.ContainsKey(key), gridIdx, "ContainsKey");
+            TestAsyncOperation(() => _cache.ContainsKeyAsync(key), gridIdx, "ContainsKey");
 
-            TestOperation(() => _cache.GetAndPut(key, key), gridIdx, "ClientCacheGetAndPutRequest");
-            TestAsyncOperation(() => _cache.GetAndPutAsync(key, key), gridIdx, "ClientCacheGetAndPutRequest");
+            TestOperation(() => _cache.GetAndPut(key, key), gridIdx, "GetAndPut");
+            TestAsyncOperation(() => _cache.GetAndPutAsync(key, key), gridIdx, "GetAndPut");
 
-            TestOperation(() => _cache.GetAndReplace(key, key), gridIdx, "ClientCacheGetAndReplaceRequest");
-            TestAsyncOperation(() => _cache.GetAndReplaceAsync(key, key), gridIdx, "ClientCacheGetAndReplaceRequest");
+            TestOperation(() => _cache.GetAndReplace(key, key), gridIdx, "GetAndReplace");
+            TestAsyncOperation(() => _cache.GetAndReplaceAsync(key, key), gridIdx, "GetAndReplace");
 
-            TestOperation(() => _cache.GetAndRemove(key), gridIdx, "ClientCacheGetAndRemoveRequest");
-            TestAsyncOperation(() => _cache.GetAndRemoveAsync(key), gridIdx, "ClientCacheGetAndRemoveRequest");
+            TestOperation(() => _cache.GetAndRemove(key), gridIdx, "GetAndRemove");
+            TestAsyncOperation(() => _cache.GetAndRemoveAsync(key), gridIdx, "GetAndRemove");
 
-            TestOperation(() => _cache.Replace(key, key), gridIdx, "ClientCacheReplaceRequest");
-            TestAsyncOperation(() => _cache.ReplaceAsync(key, key), gridIdx, "ClientCacheReplaceRequest");
+            TestOperation(() => _cache.Replace(key, key), gridIdx, "Replace");
+            TestAsyncOperation(() => _cache.ReplaceAsync(key, key), gridIdx, "Replace");
 
-            TestOperation(() => _cache.Replace(key, key, key + 1), gridIdx, "ClientCacheReplaceIfEqualsRequest");
-            TestAsyncOperation(() => _cache.ReplaceAsync(key, key, key + 1), gridIdx, "ClientCacheReplaceIfEqualsRequest");
+            TestOperation(() => _cache.Replace(key, key, key + 1), gridIdx, "ReplaceIfEquals");
+            TestAsyncOperation(() => _cache.ReplaceAsync(key, key, key + 1), gridIdx, "ReplaceIfEquals");
 
-            TestOperation(() => _cache.Remove(key), gridIdx, "ClientCacheRemoveKeyRequest");
-            TestAsyncOperation(() => _cache.RemoveAsync(key), gridIdx, "ClientCacheRemoveKeyRequest");
+            TestOperation(() => _cache.Remove(key), gridIdx, "RemoveKey");
+            TestAsyncOperation(() => _cache.RemoveAsync(key), gridIdx, "RemoveKey");
 
-            TestOperation(() => _cache.Remove(key, key), gridIdx, "ClientCacheRemoveIfEqualsRequest");
-            TestAsyncOperation(() => _cache.RemoveAsync(key, key), gridIdx, "ClientCacheRemoveIfEqualsRequest");
+            TestOperation(() => _cache.Remove(key, key), gridIdx, "RemoveIfEquals");
+            TestAsyncOperation(() => _cache.RemoveAsync(key, key), gridIdx, "RemoveIfEquals");
         }
 
         [Test]
         public void CacheGet_RepeatedCall_DoesNotRequestAffinityMapping()
         {
             // Test that affinity mapping is not requested when known.
-            Assert.Fail("TODO");
+            // Start new cache to enforce partition mapping request.
+            Client.CreateCache<int, int>("repeat-call-test");
+            ClearLoggers();
+
+            _cache.Get(1);
+            _cache.Get(1);
+            _cache.Get(1);
+
+            var requests = GetCacheRequestNames(_loggers[1]).ToArray();
+
+            var expectedRequests = new[]
+            {
+                "Partitions",
+                "Get",
+                "Get",
+                "Get"
+            };
+
+            Assert.AreEqual(expectedRequests, requests);
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -273,7 +291,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         private int GetClientRequestGridIndex(string message = null)
         {
-            message = message ?? "ClientCacheGetRequest";
+            message = message ?? "Get";
 
             try
             {
@@ -299,7 +317,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var messageRegex = new Regex(
                 @"Client request received \[reqId=\d+, addr=/127.0.0.1:\d+, " +
-                @"req=org.apache.ignite.internal.processors.platform.client.cache.(\w+)@");
+                @"req=org.apache.ignite.internal.processors.platform.client.cache.ClientCache(\w+)Request@");
 
             return logger.Messages
                 .Select(m => messageRegex.Match(m))
