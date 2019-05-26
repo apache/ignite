@@ -232,6 +232,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             TestOperation(() => _cache.GetAndRemove(key), gridIdx, "ClientCacheGetAndRemoveRequest");
             TestAsyncOperation(() => _cache.GetAndRemoveAsync(key), gridIdx, "ClientCacheGetAndRemoveRequest");
+
+            TestOperation(() => _cache.Replace(key, key), gridIdx, "ClientCacheReplaceRequest");
+            TestAsyncOperation(() => _cache.ReplaceAsync(key, key), gridIdx, "ClientCacheReplaceRequest");
+
+            TestOperation(() => _cache.Replace(key, key, key + 1), gridIdx, "ClientCacheReplaceIfEqualsRequest");
+            TestAsyncOperation(() => _cache.ReplaceAsync(key, key, key + 1), gridIdx, "ClientCacheReplaceIfEqualsRequest");
+
+            TestOperation(() => _cache.Remove(key), gridIdx, "ClientCacheRemoveRequest");
+            TestAsyncOperation(() => _cache.RemoveAsync(key), gridIdx, "ClientCacheRemoveRequest");
+
+            TestOperation(() => _cache.Remove(key, key), gridIdx, "ClientCacheRemoveIfEqualsRequest");
+            TestAsyncOperation(() => _cache.RemoveAsync(key, key), gridIdx, "ClientCacheRemoveIfEqualsRequest");
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
