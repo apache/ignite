@@ -242,6 +242,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestAsyncOperation(() => _cache.RemoveAsync(key, key), gridIdx, "ClientCacheRemoveIfEqualsRequest");
         }
 
+        [Test]
+        public void CacheGet_RepeatedCall_DoesNotRequestAffinityMapping()
+        {
+            // Test that affinity mapping is not requested when known.
+            Assert.Fail("TODO");
+        }
+
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
             var cfg = base.GetIgniteConfiguration();
@@ -266,18 +273,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         private int GetClientRequestGridIndex(string message = null)
         {
-            var messageRegex = new Regex(
-                @"Client request received \[reqId=\d+, addr=/127.0.0.1:\d+, " +
-                "req=org.apache.ignite.internal.processors.platform.client.cache." +
-                (message ?? "ClientCacheGetRequest"));
+            message = message ?? "ClientCacheGetRequest";
 
             try
             {
                 for (var i = 0; i < _loggers.Count; i++)
                 {
-                    var logger = _loggers[i];
+                    var requests = GetCacheRequestNames(_loggers[i]);
 
-                    if (logger.Messages.Any(m => messageRegex.IsMatch(m)))
+                    if (requests.Contains(message))
                     {
                         return i;
                     }
@@ -289,6 +293,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 ClearLoggers();
             }
+        }
+
+        private static IEnumerable<string> GetCacheRequestNames(ListLogger logger)
+        {
+            var messageRegex = new Regex(
+                @"Client request received \[reqId=\d+, addr=/127.0.0.1:\d+, " +
+                @"req=org.apache.ignite.internal.processors.platform.client.cache.(\w+)@");
+
+            return logger.Messages
+                .Select(m => messageRegex.Match(m))
+                .Where(m => m.Success)
+                .Select(m => m.Groups[1].Value);
         }
 
 
