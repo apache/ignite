@@ -37,11 +37,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     {
         // TODO:
         // * Test disabled/enabled
-        // * Test request routing (using local cache events)
         // * Test hash code for all primitives
         // * Test hash code for complex key
-        // * Test hash code for complex key with AffinityKeyMapped
-        // * Test topology update
 
         /** */
         private readonly List<ListLogger> _loggers = new List<ListLogger>();
