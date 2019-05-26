@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Common;
@@ -130,12 +131,26 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         public void CachePut_UserDefinedTypeWithAffinityKey_ThrowsIgniteException()
         {
-            // TODO: This is broken in Java, we don't get any data on annotation-configured types.
-            // Use manual configuration instead
-            var cache = Client.GetOrCreateCache<TestKeyWithAffinity, int>("c_custom_key_aff");
+            // Note: annotation-based configuration is not supported on Java side.
+            // Use manual configuration instead.
+            var cacheClientConfiguration = new CacheClientConfiguration("c_custom_key_aff")
+            {
+                KeyConfiguration = new List<CacheKeyConfiguration>
+                {
+                    new CacheKeyConfiguration(typeof(TestKeyWithAffinity))
+                    {
+                        AffinityKeyFieldName = "_i"
+                    }
+                }
+            };
+            var cache = Client.GetOrCreateCache<TestKeyWithAffinity, int>(cacheClientConfiguration);
 
             var ex = Assert.Throws<IgniteException>(() => cache.Put(new TestKeyWithAffinity(1, "1"), 1));
-            Assert.AreEqual("TODO", ex.Message);
+
+            var expected = string.Format("Affinity keys are not supported. Object '{0}' has an affinity key.",
+                typeof(TestKeyWithAffinity));
+
+            Assert.AreEqual(expected, ex.Message);
         }
 
         [Test]
