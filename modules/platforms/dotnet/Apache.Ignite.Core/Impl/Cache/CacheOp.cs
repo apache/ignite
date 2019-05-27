@@ -113,6 +113,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         SizeLong = 90,
         SizeLongAsync = 91,
         SizeLongLoc = 92,
-        WithConsistency = 93
+        WithReadRepair = 93
     }
 }

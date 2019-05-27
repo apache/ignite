@@ -108,7 +108,7 @@ namespace Apache.Ignite.AspNet.Tests
 
             public bool IsKeepBinary { get; private set; }
             
-            public bool IsConsistency { get; private set; }
+            public bool IsReadRepair { get; private set; }
 
             public bool IsAllowAtomicOpsInTx { get; private set; }
 
@@ -132,7 +132,7 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public ICache<int, int> WithConsistency()
+            public ICache<int, int> WithReadRepair()
             {
                 throw new NotImplementedException();
             }

@@ -78,9 +78,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public bool IsConsistency
+        public bool IsReadRepair
         {
-            get { return _cache.IsConsistency; }
+            get { return _cache.IsReadRepair; }
         }
 
         /** <inheritDoc /> */
@@ -113,9 +113,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
-        public ICache<TK, TV> WithConsistency()
+        public ICache<TK, TV> WithReadRepair()
         {
-            return _cache.WithConsistency().WrapAsync();
+            return _cache.WithReadRepair().WrapAsync();
         }
 
         /** <inheritDoc /> */

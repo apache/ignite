@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Gets a value indicating whether to consistency should be checked and fixed if necessary.
         /// </summary>
-        bool IsConsistency { get; }
+        bool IsReadRepair { get; }
 
         /// <summary>
         /// Gets a value indicating whether to allow use atomic operations in transactions.
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Cache
         /// will be compared with primary and fixed in case consistency violation found.
         /// </summary>
         /// <returns>Cache instance with consistency mode enabled.</returns>
-        ICache<TK, TV> WithConsistency();
+        ICache<TK, TV> WithReadRepair();
 
         /// <summary>
         /// Executes <see cref="LocalLoadCache"/> on all cache nodes.
