@@ -290,6 +290,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [Test]
         [TestCase(1, 1)]
         [TestCase(2, 0)]
+        [TestCase((uint) 1, 1)]
+        [TestCase((uint) 2, 0)]
+        [TestCase((byte) 1, 1)]
+        [TestCase((byte) 2, 0)]
+        [TestCase((sbyte) 1, 1)]
+        [TestCase((sbyte) 2, 0)]
+        [TestCase((short) 1, 1)]
+        [TestCase((short) 2, 0)]
+        [TestCase((ushort) 1, 1)]
+        [TestCase((ushort) 2, 0)]
+        [TestCase((long) 1, 1)]
+        [TestCase((long) 2, 0)]
+        [TestCase((ulong) 1, 1)]
+        [TestCase((ulong) 2, 0)]
         public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)
         {
             var cache = Client.GetCache<object, object>(_cache.Name);
