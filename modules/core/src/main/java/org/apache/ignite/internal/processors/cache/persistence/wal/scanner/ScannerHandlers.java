@@ -60,6 +60,6 @@ public class ScannerHandlers {
      * @return Handler which write record to file.
      */
     public static ScannerHandler printToRawFile(File file, RecordSerializer serializer) {
-        return new PrintToRawFileHandler(file, serializer);
+        return new PrintRawToFileHandler(file, serializer);
     }
 }

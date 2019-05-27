@@ -29,13 +29,18 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-/** */
-public class PrintToRawFileHandler extends PrintToFileHandler {
+/**
+ * Handler to print raw pages data into file for further diagnostic.
+ */
+public class PrintRawToFileHandler extends PrintToFileHandler {
     /** */
     private final RecordSerializer serializer;
 
-    /** */
-    public PrintToRawFileHandler(File file, RecordSerializer serializer) {
+    /**
+     * @param file Output file.
+     * @param serializer Serializer for WAL records.
+     */
+    public PrintRawToFileHandler(File file, RecordSerializer serializer) {
         super(file, null);
 
         this.serializer = serializer;
