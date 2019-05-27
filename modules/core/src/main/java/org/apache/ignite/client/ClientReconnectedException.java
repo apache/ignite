@@ -15,30 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.client.thin;
-
-import java.util.Collection;
-import org.apache.ignite.client.ClientException;
+package org.apache.ignite.client;
 
 /**
- * Extracts paged data
+ * Indicates that previous connection was lost and a new connection established,
+ * which can lead to inconsistency of non-atomic operations.
  */
-interface QueryPager<T> extends AutoCloseable {
-    /**
-     * Reads next page. Call {@link this#hasNext()} to check if there is data to read before calling this method.
-     */
-    public Collection<T> next() throws ClientException;
+public class ClientReconnectedException extends ClientException {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * @return {@code true} if there are more pages to read; {@code false} otherwise.
+     * Default constructor.
      */
-    public boolean hasNext();
-
-    /** Indicates if initial query response was received. */
-    public boolean hasFirstPage();
+    public ClientReconnectedException() {
+    }
 
     /**
-     * Reset query pager.
+     * Constructs a new exception with the specified message.
      */
-    public void reset();
+    public ClientReconnectedException(String msg) {
+        super(msg);
+    }
 }
