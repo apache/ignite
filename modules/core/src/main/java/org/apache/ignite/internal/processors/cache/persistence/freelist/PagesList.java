@@ -662,7 +662,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final void put(
-        ReuseBag bag,
+        @Nullable ReuseBag bag,
         final long dataId,
         final long dataPage,
         final long dataAddr,
@@ -671,10 +671,13 @@ public abstract class PagesList extends DataStructure {
         throws IgniteCheckedException {
         assert bag == null ^ dataAddr == 0L;
 
+        if (bag != null && bag.isEmpty()) // Skip allocating stripe for empty bag.
+            return;
+
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForPut(bucket, bag);
 
-            // No need to continue if bag has been utilized at getPageForPut.
+            // No need to continue if bag has been utilized at getPageForPut (free page can be used for pagelist).
             if (bag != null && bag.isEmpty())
                 return;
 
@@ -938,7 +941,6 @@ public abstract class PagesList extends DataStructure {
                 int idx = io.addPage(prevAddr, nextId, pageSize());
 
                 if (idx == -1) { // Attempt to add page failed: the node page is full.
-
                     final long nextPage = acquirePage(nextId, statHolder);
 
                     try {
@@ -1097,7 +1099,7 @@ public abstract class PagesList extends DataStructure {
      * @return Removed page ID.
      * @throws IgniteCheckedException If failed.
      */
-    protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers,
+    protected long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForTake(bucket);
@@ -1280,6 +1282,8 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * Removes data page from bucket, merges bucket list if needed.
+     *
      * @param dataId Data page ID.
      * @param dataPage Data page pointer.
      * @param dataAddr Data page address.
@@ -1644,7 +1648,7 @@ public abstract class PagesList extends DataStructure {
         public volatile long tailId;
 
         /** */
-        volatile boolean empty;
+        public volatile boolean empty;
 
         /**
          * @param tailId Tail ID.

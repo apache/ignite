@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -379,6 +381,15 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testCheckpointFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
 
+        ignite.cluster().active(true);
+
+        forceCheckpoint(); // Trigger empty checkpoint to make sure initial checkpoint on node start will finish.
+
+        ignite.cache(CACHE_NAME1).put(0, 0); // Mark some pages as dirty.
+
+        AtomicBoolean fail = new AtomicBoolean(true);
+        AtomicReference<FileIO> ref = new AtomicReference<>();
+
         failingFileIOFactory.createClosure(new IgniteBiClosure<File, OpenOption[], FileIO>() {
             @Override public FileIO apply(File file, OpenOption[] options) {
                 if (file.getName().indexOf("-END.bin") >= 0) {
@@ -391,27 +402,38 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
                         return null;
                     }
 
-                    return new FileIODecorator(delegate) {
+                    FileIODecorator dec = new FileIODecorator(delegate) {
                         @Override public void close() throws IOException {
-                            throw new IOException("Checkpoint failed");
+                            if (fail.get())
+                                throw new IOException("Checkpoint failed");
+                            else
+                                super.close();
                         }
                     };
+
+                    ref.set(dec);
+
+                    return dec;
                 }
 
                 return null;
             }
         });
 
-        ignite.cluster().active(true);
-
         try {
-            forceCheckpoint(ignite);
-        }
-        catch (Exception ignore) {
-            // No-op.
-        }
+            try {
+                forceCheckpoint(ignite);
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
 
-        waitFailure(IOException.class);
+            waitFailure(IOException.class);
+        }
+        finally {
+            fail.set(false);
+            ref.get().close(); // Release file for any test outcome.
+        }
     }
 
     /**
