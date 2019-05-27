@@ -877,9 +877,7 @@ public abstract class IgniteUtils {
 
         m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
-                IgniteInterruptedException e0 = new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
-                e0.addSuppressed(e);
-                return e0;
+                return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
             }
         });
 
