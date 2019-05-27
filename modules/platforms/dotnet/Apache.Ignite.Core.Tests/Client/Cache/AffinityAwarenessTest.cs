@@ -35,11 +35,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// </summary>
     public class AffinityAwarenessTest : ClientTestBase
     {
-        // TODO:
-        // * Test disabled/enabled
-        // * Test hash code for all primitives
-        // * Test hash code for complex key
-
         /** */
         private readonly List<ListLogger> _loggers = new List<ListLogger>();
 
@@ -268,7 +263,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        public void CacheGet_AffinityAwarenessDisabled_RoutesRequestsWithRoundRobin()
+        public void CacheGet_AffinityAwarenessDisabled_RequestIsRoutedToDefaultNode()
         {
             var cfg = GetClientConfiguration();
             cfg.EnableAffinityAwareness = false;
@@ -290,6 +285,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // Affinity awareness disabled - all requests go to same socket, picked with round-robin on connect.
                 Assert.AreEqual(1, requestTargets.Length);
             }
+        }
+
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)
+        {
+            var cache = Client.GetCache<object, object>(_cache.Name);
+            TestOperation(() => cache.Put(key, key), gridIdx, "Put");
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
