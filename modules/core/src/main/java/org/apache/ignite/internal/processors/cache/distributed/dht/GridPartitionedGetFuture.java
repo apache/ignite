@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -277,11 +276,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 add(fut.chain(f -> {
                     try {
                         return createResultMap(f.get());
-                    }
-                    catch (IgniteConsistencyViolationException e){
-                        onDone(e);
-
-                        return Collections.emptyMap();
                     }
                     catch (Exception e) {
                         U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);

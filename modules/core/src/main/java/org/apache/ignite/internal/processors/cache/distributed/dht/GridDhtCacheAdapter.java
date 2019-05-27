@@ -1001,16 +1001,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 catch (NodeStoppingException ignored) {
                     return;
                 }
-                catch (IgniteConsistencyViolationException e) {
-                    res = new GridNearSingleGetResponse(ctx.cacheId(),
-                        req.futureId(),
-                        req.topologyVersion(),
-                        null,
-                        false,
-                        req.addDeploymentInfo());
-
-                    res.error(e);
-                }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed processing get request: " + req, e);
 
@@ -1083,9 +1073,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
                 catch (NodeStoppingException ignored) {
                     return;
-                }
-                catch (IgniteConsistencyViolationException e) {
-                    res.error(e);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed processing get request: " + req, e);
