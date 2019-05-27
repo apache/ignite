@@ -609,7 +609,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 /*singleRmv*/false,
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
-                false,
                 dataCenterId);
 
             try {
@@ -1022,7 +1021,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean singleRmv,
         boolean keepBinary,
         boolean recovery,
-        boolean readRepair,
         Byte dataCenterId) {
         GridFutureAdapter<Void> enlistFut = new GridFutureAdapter<>();
 
@@ -1082,7 +1080,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     retval,
                     keepBinary,
                     recovery,
-                    readRepair,
                     expiryPlc);
 
                 loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
@@ -1282,7 +1279,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     retval,
                     keepBinary,
                     recovery,
-                    false,
                     expiryPlc);
 
                 loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
@@ -2408,7 +2404,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                                     false,
                                                     !deserializeBinary,
                                                     recovery,
-                                                    readRepair,
                                                     null);
 
                                                 // Rewriting fixed, initially filled by explicit lock operation.
@@ -2880,7 +2875,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean retval,
         final boolean keepBinary,
         final boolean recovery,
-        final boolean readRepair,
         final ExpiryPolicy expiryPlc) {
         GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c =
             new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
@@ -2959,7 +2953,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             needReadVer,
             keepBinary,
             recovery,
-            readRepair,
+            false,
             expiryPlc,
             c);
     }
