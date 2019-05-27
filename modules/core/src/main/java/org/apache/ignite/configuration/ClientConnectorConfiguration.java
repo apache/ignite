@@ -44,6 +44,9 @@ public class ClientConnectorConfiguration {
     /** Default size of thread pool. */
     public static final int DFLT_THREAD_POOL_SIZE = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
+    /** Default handshake timeout. */
+    public static final int DFLT_HANDSHAKE_TIMEOUT = 10_000;
+
     /** Default idle timeout. */
     public static final int DFLT_IDLE_TIMEOUT = 0;
 
@@ -76,6 +79,9 @@ public class ClientConnectorConfiguration {
 
     /** Idle timeout. */
     private long idleTimeout = DFLT_IDLE_TIMEOUT;
+
+    /** Handshake timeout. */
+    private long handshakeTimeout = DFLT_HANDSHAKE_TIMEOUT;
 
     /** JDBC connections enabled flag. */
     private boolean jdbcEnabled = true;
@@ -122,6 +128,10 @@ public class ClientConnectorConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         threadPoolSize = cfg.getThreadPoolSize();
         idleTimeout = cfg.getIdleTimeout();
+        handshakeTimeout = cfg.getHandshakeTimeout();
+        jdbcEnabled = cfg.jdbcEnabled;
+        odbcEnabled = cfg.odbcEnabled;
+        thinCliEnabled = cfg.thinCliEnabled;
         sslEnabled = cfg.isSslEnabled();
         sslClientAuth = cfg.isSslClientAuth();
         useIgniteSslCtxFactory = cfg.isUseIgniteSslContextFactory();
@@ -327,6 +337,34 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets handshake timeout for client connections.
+     * If no successful handshake is performed within this timeout upon successfull establishment of TCP connection,
+     * the connection is closed.
+     * Zero or negative means no timeout.
+     *
+     * @return Handshake timeout in milliseconds.
+     */
+    public long getHandshakeTimeout() {
+        return handshakeTimeout;
+    }
+
+    /**
+     * Sets handshake timeout for client connections.
+     * If no successful handshake is performed within this timeout upon successfull establishment of TCP connection,
+     * the connection is closed.
+     * Zero or negative means no timeout.
+     *
+     * @param handshakeTimeout Idle timeout in milliseconds.
+     * @see #getHandshakeTimeout()
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setHandshakeTimeout(long handshakeTimeout) {
+        this.handshakeTimeout = handshakeTimeout;
 
         return this;
     }

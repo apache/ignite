@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -54,11 +55,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Thin client handshake code. */
     public static final byte THIN_CLIENT = 2;
 
-    /** Connection handshake passed. */
-    public static final int CONN_CTX_HANDSHAKE_PASSED = GridNioSessionMetaKey.nextUniqueKey();
-
-    /** Maximum size of the handshake message. */
-    public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
+    /** Connection handshake timeout task. */
+    public static final int CONN_CTX_HANDSHAKE_TIMEOUT_TASK = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Connection-related metadata key. */
     public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
@@ -94,9 +92,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         this.ctx = ctx;
         this.busyLock = busyLock;
-        this.maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         this.cliConnCfg = cliConnCfg;
 
+        maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         log = ctx.log(getClass());
     }
 
@@ -104,6 +102,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     @Override public void onConnected(GridNioSession ses) {
         if (log.isDebugEnabled())
             log.debug("Client connected: " + ses.remoteAddress());
+
+        long handshakeTimeout = cliConnCfg.getHandshakeTimeout();
+
+        if (handshakeTimeout > 0)
+            scheduleHandshakeTimeout(ses, handshakeTimeout);
     }
 
     /** {@inheritDoc} */
@@ -214,6 +217,42 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     }
 
     /**
+     * Schedule handshake timeout.
+     * @param ses Connection session.
+     * @param handshakeTimeout Handshake timeout.
+     */
+    private void scheduleHandshakeTimeout(GridNioSession ses, long handshakeTimeout) {
+        assert handshakeTimeout > 0;
+
+        Closeable timeoutTask = ctx.timeout().schedule(new Runnable() {
+            @Override public void run() {
+                ses.close();
+
+                U.warn(log, "Unable to perform handshake within timeout " +
+                    "[timeout=" + handshakeTimeout + ", remoteAddr=" + ses.remoteAddress() + ']');
+            }
+        }, handshakeTimeout, -1);
+
+        ses.addMeta(CONN_CTX_HANDSHAKE_TIMEOUT_TASK, timeoutTask);
+    }
+
+    /**
+     * Cancel handshake timeout task execution.
+     * @param ses Connection session.
+     */
+    private void cancelHandshakeTimeout(GridNioSession ses) {
+        Closeable timeoutTask = ses.removeMeta(CONN_CTX_HANDSHAKE_TIMEOUT_TASK);
+
+        try {
+            if (timeoutTask != null)
+                timeoutTask.close();
+        } catch (Exception e) {
+            U.warn(log, "Failed to cancel handshake timeout task " +
+                "[remoteAddr=" + ses.remoteAddress() + ", err=" + e + ']');
+        }
+    }
+
+    /**
      * Perform handshake.
      *
      * @param ses Session.
@@ -259,9 +298,9 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             else
                 throw new IgniteCheckedException("Unsupported version.");
 
-            connCtx.handler().writeHandshake(writer);
+            cancelHandshakeTimeout(ses);
 
-            ses.addMeta(CONN_CTX_HANDSHAKE_PASSED, true);
+            connCtx.handler().writeHandshake(writer);
         }
         catch (IgniteAccessControlException authEx) {
             writer.writeBoolean(false);
