@@ -804,10 +804,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        IgniteCacheExpiryPolicy expiryPlc,
         @Nullable String txLbl,
-        MvccSnapshot mvccSnapshot,
-        AffinityTopologyVersion topVer
+        MvccSnapshot mvccSnapshot
     ) {
         return getAllAsync0(keys,
             readerArgs,

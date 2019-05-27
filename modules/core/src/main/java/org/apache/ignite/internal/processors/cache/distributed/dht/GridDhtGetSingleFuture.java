@@ -419,10 +419,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 expiryPlc,
                 skipVals,
                 recovery,
-                expiryPlc,
                 txLbl,
-                mvccSnapshot,
-                topVer);
+                mvccSnapshot);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -448,10 +446,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 expiryPlc,
                                 skipVals,
                                 recovery,
-                                expiryPlc,
                                 null,
-                                mvccSnapshot,
-                                topVer);
+                                mvccSnapshot);
 
                         fut0.listen(createGetFutureListener());
                     }

@@ -904,7 +904,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 false,
                 keepBinary,
                 opCtx != null && opCtx.recovery(),
-                false,
                 dataCenterId);
 
             try {
@@ -1153,7 +1152,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         final boolean singleRmv,
         final boolean keepBinary,
         final boolean recovery,
-        final boolean readRepair,
         Byte dataCenterId
     ) {
         assert retval || invokeMap == null;
@@ -1284,7 +1282,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     retval,
                     keepBinary,
                     recovery,
-                    readRepair,
+                    false,
                     expiryPlc);
 
                 loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
@@ -1772,7 +1770,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             singleRmv,
             keepBinary,
             opCtx != null && opCtx.recovery(),
-            false,
             dataCenterId
         );
 

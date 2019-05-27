@@ -475,10 +475,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 expiryPlc,
                 skipVals,
                 recovery,
-                expiryPlc,
                 txLbl,
-                mvccSnapshot,
-                topVer);
+                mvccSnapshot);
         }
         else {
             final ReaderArguments args = readerArgs;
@@ -502,10 +500,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             expiryPlc,
                             skipVals,
                             recovery,
-                            expiryPlc,
                             txLbl,
-                            mvccSnapshot,
-                            topVer);
+                            mvccSnapshot);
                     }
                 }
             );

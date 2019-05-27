@@ -471,7 +471,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean recovery = opCtx != null && opCtx.recovery();
-        final boolean readRepair = opCtx != null && opCtx.readRepair();
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
@@ -481,7 +480,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     taskName,
                     deserializeBinary,
                     recovery,
-                    readRepair,
                     expiryPlc,
                     skipVals,
                     skipStore,
@@ -584,7 +582,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         taskName,
                         deserializeBinary,
                         recovery,
-                        readRepair,
                         expiryPlc,
                         skipVals,
                         skipStore,
@@ -599,7 +596,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 taskName,
                 deserializeBinary,
                 recovery,
-                readRepair,
                 expiryPlc,
                 skipVals,
                 skipStore,
@@ -1400,8 +1396,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary flag.
-     * @param recovery Partition recover.
-     * @param readRepair Read Repair.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param skipStore Skip store flag.
@@ -1414,7 +1408,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1465,7 +1458,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1478,7 +1470,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean evt = !skipVals;
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary && !readRepair && ctx.affinityNode()) {
+        if (!forcePrimary && ctx.affinityNode()) {
             try {
                 Map<K, V> locVals = U.newHashMap(keys.size());
 
