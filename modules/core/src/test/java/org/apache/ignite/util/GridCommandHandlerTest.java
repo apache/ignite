@@ -2693,16 +2693,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
+        String dir = U.defaultWorkDirectory() + "/";
+
         assertEquals(EXIT_CODE_OK, execute("--diagnostic"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "help"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "status"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "disable"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "enable"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "log"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "file"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "file", "path"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "file", dir));
     }
 
     /**
