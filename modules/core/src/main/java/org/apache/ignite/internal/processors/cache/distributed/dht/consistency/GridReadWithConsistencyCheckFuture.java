@@ -64,24 +64,7 @@ public class GridReadWithConsistencyCheckFuture extends GridReadWithConsistencyA
     }
 
     /** {@inheritDoc} */
-    @Override protected void onResult() {
-        if (isDone())
-            return;
-
-        if (checkIsDone()) {
-            try {
-                onDone(checkAndFill());
-            }
-            catch (IgniteConsistencyViolationException e) {
-                onDone(e);
-            }
-        }
-    }
-
-    /**
-     * Fill entries map and check consistency.
-     */
-    private Map<KeyCacheObject, EntryGetResult> checkAndFill() throws IgniteConsistencyViolationException {
+    @Override protected void reduce() {
         Map<KeyCacheObject, EntryGetResult> map = new HashMap<>();
 
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
@@ -90,13 +73,16 @@ public class GridReadWithConsistencyCheckFuture extends GridReadWithConsistencyA
                 EntryGetResult candidae = entry.getValue();
                 EntryGetResult old = map.get(key);
 
-                if (old != null && old.version().compareTo(candidae.version()) != 0)
-                    throw new IgniteConsistencyViolationException("Distributed cache consistency violation detected.");
+                if (old != null && old.version().compareTo(candidae.version()) != 0) {
+                    onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
+
+                    return;
+                }
 
                 map.put(key, candidae);
             }
         }
 
-        return map;
+        onDone(map);
     }
 }

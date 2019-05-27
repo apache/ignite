@@ -80,15 +80,15 @@ public abstract class GridReadWithConsistencyAbstractFuture extends GridFutureAd
                 ctx,
                 mapping.getValue(),
                 readThrough,
-                false, // Local get.
+                false, // Local get required.
                 subjId,
                 taskName,
                 deserializeBinary,
                 recovery,
-                false, // This request goes to backup during Read Repair procedure.
+                false, // Regular get.
                 expiryPlc,
                 skipVals,
-                true, // Version required to check consistency.
+                true, // Version required to check the consistency.
                 true,
                 txLbl,
                 mvccSnapshot,
@@ -113,27 +113,26 @@ public abstract class GridReadWithConsistencyAbstractFuture extends GridFutureAd
     /**
      *
      */
-    protected boolean checkIsDone() {
+    protected synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> ignored) {
+        if (isDone())
+            return;
+
         for (IgniteInternalFuture fut : futs.values()) {
             if (!fut.isDone())
-                return false;
+                return;
+
+            if (fut.error() != null) {
+                onDone(error());
+
+                return;
+            }
         }
 
-        return true;
+        reduce();
     }
 
     /**
-     *
+     * Reduces fut's results.
      */
-    protected synchronized void onResult(IgniteInternalFuture<Map<KeyCacheObject, EntryGetResult>> fut) {
-        if (fut.error() == null)
-            onResult();
-        else
-            onDone(fut.error());
-    }
-
-    /**
-     *
-     */
-    protected abstract void onResult();
+    protected abstract void reduce();
 }

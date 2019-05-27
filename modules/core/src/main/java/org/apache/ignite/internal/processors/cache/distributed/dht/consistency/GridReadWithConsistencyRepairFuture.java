@@ -36,10 +36,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 
 /**
- * Checks data consistency.
- * Checks that each affinity node's value equals other's.
- * Prepares recovery data.
- * Records consistency violation event.
+ * Checks data consistency. Checks that each affinity node's value equals other's. Prepares recovery data. Records
+ * consistency violation event.
  */
 public class GridReadWithConsistencyRepairFuture extends GridReadWithConsistencyAbstractFuture {
     /** Context. */
@@ -78,18 +76,7 @@ public class GridReadWithConsistencyRepairFuture extends GridReadWithConsistency
     }
 
     /** {@inheritDoc} */
-    @Override protected void onResult() {
-        if (isDone())
-            return;
-
-        if (checkIsDone())
-            onDone(checkAndFix());
-    }
-
-    /**
-     * Returns latest (by version) entry for each key with consistency violation.
-     */
-    private Map<KeyCacheObject, EntryGetResult> checkAndFix() {
+    @Override protected void reduce() {
         Map<KeyCacheObject, EntryGetResult> newestMap = new HashMap<>();
         Map<KeyCacheObject, EntryGetResult> fixedMap = new HashMap<>();
 
@@ -115,13 +102,13 @@ public class GridReadWithConsistencyRepairFuture extends GridReadWithConsistency
 
         recordConsistencyViolation(fixedMap);
 
-        return fixedMap;
+        onDone(fixedMap);
     }
 
     /**
-     * @param fixedMap Fixed map.
+     * @param fixedRaw Fixed map.
      */
-    private void recordConsistencyViolation(Map<KeyCacheObject, EntryGetResult> fixedMap) {
+    private void recordConsistencyViolation(Map<KeyCacheObject, EntryGetResult> fixedRaw) {
         GridEventStorageManager evtMgr = ctx.gridEvents();
 
         if (!evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION)) {
@@ -131,17 +118,17 @@ public class GridReadWithConsistencyRepairFuture extends GridReadWithConsistency
             return;
         }
 
-        if (fixedMap.isEmpty())
+        if (fixedRaw.isEmpty())
             return;
 
-        Map<Object, Object> consistentMap = new HashMap<>();
+        Map<Object, Object> fixedMap = new HashMap<>();
 
-        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fixedMap.entrySet()) {
+        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fixedRaw.entrySet()) {
             KeyCacheObject key = entry.getKey();
             CacheObject val = entry.getValue().value();
 
             ctx.addResult(
-                consistentMap,
+                fixedMap,
                 key,
                 val,
                 false,
@@ -153,7 +140,7 @@ public class GridReadWithConsistencyRepairFuture extends GridReadWithConsistency
                 0);
         }
 
-        Map<UUID, Map<Object, Object>> inconsistentMap = new HashMap<>();
+        Map<UUID, Map<Object, Object>> originalMap = new HashMap<>();
 
         for (Map.Entry<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> pair : futs.entrySet()) {
             ClusterNode node = pair.getKey();
@@ -162,30 +149,33 @@ public class GridReadWithConsistencyRepairFuture extends GridReadWithConsistency
 
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
                 KeyCacheObject key = entry.getKey();
-                CacheObject val = entry.getValue().value();
 
-                inconsistentMap.computeIfAbsent(node.id(), id -> new HashMap<>());
+                if (fixedRaw.containsKey(key)) {
+                    CacheObject val = entry.getValue().value();
 
-                Map<Object, Object> map = inconsistentMap.get(node.id());
+                    originalMap.computeIfAbsent(node.id(), id -> new HashMap<>());
 
-                ctx.addResult(
-                    map,
-                    key,
-                    val,
-                    false,
-                    false,
-                    true,
-                    false,
-                    null,
-                    0,
-                    0);
+                    Map<Object, Object> map = originalMap.get(node.id());
+
+                    ctx.addResult(
+                        map,
+                        key,
+                        val,
+                        false,
+                        false,
+                        true,
+                        false,
+                        null,
+                        0,
+                        0);
+                }
             }
         }
 
         evtMgr.record(new CacheConsistencyViolationEvent(
             ctx.discovery().localNode(),
-            "Consistency violation detected.",
-            inconsistentMap,
-            consistentMap));
+            "Consistency violation fixed.",
+            originalMap,
+            fixedMap));
     }
 }
