@@ -59,7 +59,7 @@ public class ScannerHandlers {
      * @param serializer WAL records serializer.
      * @return Handler which write record to file.
      */
-    public static ScannerHandler printToRawFile(File file, RecordSerializer serializer) {
+    public static ScannerHandler printRawToFile(File file, RecordSerializer serializer) {
         return new PrintRawToFileHandler(file, serializer);
     }
 }

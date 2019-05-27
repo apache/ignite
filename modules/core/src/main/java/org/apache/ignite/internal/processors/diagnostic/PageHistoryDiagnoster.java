@@ -61,7 +61,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.partitionMetaStateUpdate;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToRawFile;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printRawToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
 
 /**
@@ -310,7 +310,7 @@ public class PageHistoryDiagnoster {
                 return printToFile(targetFileSupplier.apply(customFile, DiagnosticFileWriteMode.HUMAN_READABLE));
 
             case PRINT_TO_RAW_FILE:
-                return printToRawFile(targetFileSupplier.apply(customFile, DiagnosticFileWriteMode.RAW), serializer());
+                return printRawToFile(targetFileSupplier.apply(customFile, DiagnosticFileWriteMode.RAW), serializer());
 
             default:
                 throw new IllegalArgumentException("Unknown diagnostic action : " + action);
