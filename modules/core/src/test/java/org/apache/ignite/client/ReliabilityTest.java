@@ -181,7 +181,7 @@ public class ReliabilityTest extends GridCommonAbstractTest {
                         dropAllThinClientConnections(Ignition.allGrids().get(0));
                 }
 
-                assertEquals(2, cnt);
+                fail("ClientReconnectedException must be thrown");
             }
             catch (ClientReconnectedException expected) {
                 // No-op.
