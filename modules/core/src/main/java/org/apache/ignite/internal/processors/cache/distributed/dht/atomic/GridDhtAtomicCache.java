@@ -501,7 +501,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
             recovery,
-            readRepair,
             false,
             needVer,
             false).get();
@@ -526,7 +525,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskName,
             deserializeBinary,
             recovery,
-            readRepair,
             skipVals,
             needVer,
             true);
@@ -550,7 +548,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
-        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer,
         boolean asyncOp

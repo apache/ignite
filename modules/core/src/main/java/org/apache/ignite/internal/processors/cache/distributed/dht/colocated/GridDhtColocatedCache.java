@@ -301,7 +301,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 needVer);
                         }
 
-                        return (V)F.firstValue(map);
+                        return F.firstValue(map);
                     }
                     catch (Exception e) {
                         throw new GridClosureException(e);
