@@ -267,6 +267,30 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(expectedRequests, requests);
         }
 
+        [Test]
+        public void CacheGet_AffinityAwarenessDisabled_RoutesRequestsWithRoundRobin()
+        {
+            var cfg = GetClientConfiguration();
+            cfg.EnableAffinityAwareness = false;
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var cache = client.GetCache<int, int>(_cache.Name);
+
+                cache.Get(1);
+                var gridIdx1 = GetClientRequestGridIndex();
+
+                cache.Get(1);
+                var gridIdx2 = GetClientRequestGridIndex();
+
+                cache.Get(1);
+                var gridIdx3 = GetClientRequestGridIndex();
+
+                Assert.AreNotEqual(gridIdx1, gridIdx2);
+                Assert.AreNotEqual(gridIdx2, gridIdx3);
+            }
+        }
+
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
             var cfg = base.GetIgniteConfiguration();
