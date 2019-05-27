@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.consistency;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -76,23 +77,37 @@ public abstract class GridReadWithConsistencyAbstractFuture extends GridFutureAd
         futs = new HashMap<>(mappings.size());
 
         for (Map.Entry<ClusterNode, Collection<KeyCacheObject>> mapping : mappings.entrySet()) {
-            GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut = new GridPartitionedGetFuture<>(
-                ctx,
-                mapping.getValue(),
-                readThrough,
-                false, // Local get required.
-                subjId,
-                taskName,
-                deserializeBinary,
-                recovery,
-                false, // Regular get.
-                expiryPlc,
-                skipVals,
-                true, // Version required to check the consistency.
-                true,
-                txLbl,
-                mvccSnapshot,
-                mapping.getKey()); // Explicit node instead of automated mapping.
+            ClusterNode node = mapping.getKey();
+
+            GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
+                new GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>(
+                    ctx,
+                    mapping.getValue(),
+                    readThrough,
+                    false, // Local get required.
+                    subjId,
+                    taskName,
+                    deserializeBinary,
+                    recovery,
+                    expiryPlc,
+                    skipVals,
+                    true, // Version required to check the consistency.
+                    true,
+                    txLbl,
+                    mvccSnapshot) {
+                    @Override protected boolean map(
+                        KeyCacheObject key,
+                        AffinityTopologyVersion topVer,
+                        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> nodesToKeysMapping,
+                        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
+                        Map<KeyCacheObject, EntryGetResult> locVals) {
+                        addNodeMapping(key, node, nodesToKeysMapping); // Explicit node instead of automated mapping.
+
+                        assert nodesToKeysMapping.size() == 1; // One future per node.
+
+                        return !node.isLocal();
+                    }
+                };
 
             fut.listen(this::onResult);
 

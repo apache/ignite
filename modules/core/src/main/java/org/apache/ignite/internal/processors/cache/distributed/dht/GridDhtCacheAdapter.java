@@ -804,7 +804,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        boolean readRepair,
         IgniteCacheExpiryPolicy expiryPlc,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot,
@@ -821,7 +820,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             skipVals,
             /*keep cache objects*/true,
             recovery,
-            readRepair,
+            false,
             /*need version*/true,
             txLbl,
             mvccSnapshot);
@@ -853,7 +852,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        boolean readRepair,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -868,7 +866,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
-            readRepair,
             addReaders,
             txLbl,
             mvccSnapshot);
@@ -905,7 +902,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
         boolean recovery,
-        boolean readRepair,
         String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -922,7 +918,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             recovery,
-            readRepair,
             txLbl,
             mvccSnapshot);
 
@@ -953,7 +948,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
-                req.readRepair(),
                 req.txLabel(),
                 req.mvccSnapshot());
 
@@ -1070,7 +1064,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues(),
                 req.recovery(),
-                req.readRepair(),
                 req.txLabel(),
                 req.mvccSnapshot());
 

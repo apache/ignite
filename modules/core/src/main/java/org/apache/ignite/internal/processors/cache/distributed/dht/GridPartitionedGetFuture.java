@@ -65,9 +65,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
-    /** Premapped node (always backup or primary). */
-    private ClusterNode premapped;
-
     /**
      * @param cctx Context.
      * @param keys Keys.
@@ -94,14 +91,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
-        boolean readRepair,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
         @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot,
-        @Nullable ClusterNode premapped
+        @Nullable MvccSnapshot mvccSnapshot
     ) {
         super(
             cctx,
@@ -115,15 +110,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             skipVals,
             needVer,
             keepCacheObjects,
-            recovery,
-            readRepair
+            recovery
         );
 
         assert (mvccSnapshot == null) == !cctx.mvccEnabled();
 
         this.mvccSnapshot = mvccSnapshot;
+
         this.txLbl = txLbl;
-        this.premapped = premapped;
 
         initLogger(GridPartitionedGetFuture.class);
     }
@@ -254,7 +248,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
-                        readRepair,
                         txLbl,
                         mvccSnapshot()
                     );
@@ -328,7 +321,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param missedNodesToKeysMapping Previously mapped.
      * @return {@code True} if has remote nodes.
      */
-    private boolean map(
+    protected boolean map(
         KeyCacheObject key,
         AffinityTopologyVersion topVer,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> nodesToKeysMapping,
@@ -353,9 +346,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
         // Get remote node for request for this key.
-        ClusterNode node = premapped == null ?
-            cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap, readRepair) :
-            premapped;
+        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
 
         // Failed if none remote node found.
         if (node == null) {
@@ -382,7 +373,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param node Mapped node.
      * @param mappings Full node mapping.
      */
-    private void addNodeMapping(
+    protected void addNodeMapping(
         KeyCacheObject key,
         ClusterNode node,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings
@@ -413,9 +404,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = !cctx.mvccEnabled() &&
             (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer) &&
-            !readRepair && // not an initial get-with-consistency which should read value from primary.
-            premapped == null; // not a subsequent get-with-consistency which should read value from explicit backup or primary.
+            cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
             try {
@@ -677,7 +666,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 skipVals,
                 cctx.deploymentEnabled(),
                 recovery,
-                readRepair,
                 txLbl,
                 mvccSnapshot()
             );

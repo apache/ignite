@@ -139,9 +139,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private boolean recovery;
 
     /** */
-    private boolean readRepair;
-
-    /** */
     @GridToStringInclude
     private ClusterNode node;
 
@@ -173,7 +170,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param readRepair Read Repair flag.
      * @param txLbl Transaction label.
      */
     public GridPartitionedSingleGetFuture(
@@ -190,7 +186,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean needVer,
         boolean keepCacheObjects,
         boolean recovery,
-        boolean readRepair,
         String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
@@ -219,7 +214,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
-        this.readRepair = readRepair;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
 
@@ -282,7 +276,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     expiryPlc,
                     skipVals,
                     recovery,
-                    readRepair,
                     txLbl,
                     mvccSnapshot
                 );
@@ -352,7 +345,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 needVer,
                 cctx.deploymentEnabled(),
                 recovery,
-                readRepair,
                 txLbl,
                 mvccSnapshot
             );
@@ -389,7 +381,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (tryLocalGet(key, part, topVer, affNodes))
             return null;
 
-        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap, readRepair);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, getInvalidNodes(), part, canRemap);
 
         // Failed if none balanced node found.
         if (affNode == null) {
@@ -417,8 +409,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = !cctx.mvccEnabled() &&
             (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.reserveForFastLocalGet(part, topVer) &&
-            !readRepair;
+            cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
             try {

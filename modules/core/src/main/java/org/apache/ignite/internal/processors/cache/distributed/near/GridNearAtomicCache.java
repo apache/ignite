@@ -431,7 +431,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             taskName,
             deserializeBinary,
             recovery,
-            readRepair,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             opCtx != null && opCtx.skipStore(),

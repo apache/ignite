@@ -59,9 +59,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** */
     public static final int RECOVERY_FLAG_MASK = 0x20;
 
-    /** */
-    public static final int READ_REPAIR_FLAG_MASK = 0x40;
-
     /** Future ID. */
     private long futId;
 
@@ -132,7 +129,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         boolean needVer,
         boolean addDepInfo,
         boolean recovery,
-        boolean readRepair,
         @Nullable String txLbl,
         MvccSnapshot mvccSnapshot
     ) {
@@ -164,9 +160,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
 
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
-
-        if (readRepair)
-            flags |= READ_REPAIR_FLAG_MASK;
     }
 
     /**
@@ -283,13 +276,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      */
     public boolean recovery() {
         return (flags & RECOVERY_FLAG_MASK) != 0;
-    }
-
-    /**
-     * @return {@code True} if Read Repair flag is set.
-     */
-    public boolean readRepair() {
-        return (flags & READ_REPAIR_FLAG_MASK) != 0;
     }
 
     /** {@inheritDoc} */

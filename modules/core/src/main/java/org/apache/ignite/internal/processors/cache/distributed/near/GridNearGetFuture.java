@@ -94,8 +94,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
-        boolean recovery,
-        boolean consistency
+        boolean recovery
     ) {
         super(
             cctx,
@@ -109,8 +108,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             skipVals,
             needVer,
             keepCacheObjects,
-            recovery,
-            consistency
+            recovery
         );
 
         assert !F.isEmpty(keys);
@@ -250,7 +248,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         expiryPlc,
                         skipVals,
                         recovery,
-                        readRepair,
                         null,
                         null
                     ); // TODO IGNITE-7371
@@ -413,7 +410,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     Set<ClusterNode> invalidNodesSet = getInvalidNodes(part, topVer);
 
                     ClusterNode affNode =
-                        cctx.selectAffinityNodeBalanced(affNodes, invalidNodesSet, part, canRemap, readRepair);
+                        cctx.selectAffinityNodeBalanced(affNodes, invalidNodesSet, part, canRemap);
 
                     if (affNode == null) {
                         onDone(serverNotFoundError(part, topVer));
@@ -768,7 +765,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 skipVals,
                 cctx.deploymentEnabled(),
                 recovery,
-                readRepair,
                 null,
                 null
             ); // TODO IGNITE-7371

@@ -1437,7 +1437,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             needVer,
             false,
             recovery,
-            readRepair,
             null,
             null);
 
@@ -1642,12 +1641,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskName,
             deserializeBinary,
             recovery,
-            readRepair,
             expiry,
             skipVals,
             needVer,
             false,
-            null,
             null,
             null);
 

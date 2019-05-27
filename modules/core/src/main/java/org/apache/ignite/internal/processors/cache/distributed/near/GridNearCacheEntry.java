@@ -357,7 +357,6 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             true,
             /*recovery should have already been checked*/
             false,
-            false,
             null,
             false,
             /*skip store*/false,

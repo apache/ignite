@@ -3085,7 +3085,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 readThrough,
                 /*deserializeBinary*/false,
                 recovery,
-                readRepair,
                 expiryPlc0,
                 skipVals,
                 needVer).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
@@ -3160,7 +3159,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     needVer,
                     /*keepCacheObject*/true,
                     recovery,
-                    readRepair,
                     null,
                     label()
                 ).chain(new C1<IgniteInternalFuture<Object>, Void>() {
@@ -3193,7 +3191,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     resolveTaskName(),
                     /*deserializeBinary*/false,
                     recovery,
-                    readRepair,
                     expiryPlc0,
                     skipVals,
                     needVer,
