@@ -25,6 +25,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.io.FileUtils;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -120,6 +121,10 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
     public void testCorruptedPage() throws Exception {
         IgniteEx srv = startGrid(0);
 
+        File diagnosticDir = new File(srv.context().config().getWorkDirectory(), "diagnostic");
+
+        FileUtils.deleteDirectory(diagnosticDir);
+
         srv.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
@@ -191,9 +196,20 @@ public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest imp
         }
         catch (Throwable e) {
             assertTrue(X.hasCause(e, CorruptedTreeException.class));
-
-            assertTrue(GridTestUtils.waitForCondition(() -> G.allGrids().isEmpty(), 10_000L));
         }
+
+        assertTrue(GridTestUtils.waitForCondition(() -> G.allGrids().isEmpty(), 10_000L));
+
+        assertTrue(diagnosticDir.exists());
+        assertTrue(diagnosticDir.isDirectory());
+
+        File[] txtFiles = diagnosticDir.listFiles((dir, name) -> name.endsWith(".txt"));
+
+        assertTrue(txtFiles != null && txtFiles.length == 1);
+
+        File[] rawFiles = diagnosticDir.listFiles((dir, name) -> name.endsWith(".raw"));
+
+        assertTrue(rawFiles != null && rawFiles.length == 1);
     }
 
     /** */
