@@ -177,8 +177,10 @@ public class ReliabilityTest extends GridCommonAbstractTest {
                 for (Iterator<Cache.Entry<Integer, String>> it = cur.iterator(); it.hasNext(); it.next()) {
                     cnt++;
 
-                    if (cnt == 1)
-                        dropAllThinClientConnections(Ignition.allGrids().get(0));
+                    if (cnt == 1) {
+                        for (int i = 0; i < CLUSTER_SIZE; i++)
+                            dropAllThinClientConnections(Ignition.allGrids().get(i));
+                    }
                 }
 
                 fail("ClientReconnectedException must be thrown");
