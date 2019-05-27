@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler.toStringRecord;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.DEFAULT_WAL_RECORD_PREFIX;
 
 /**
@@ -68,7 +70,7 @@ class PrintToFileHandler implements ScannerHandler {
      * @return Bytes repersentation of data to be written in dump file.
      */
     protected byte[] getBytes(IgniteBiTuple<WALPointer, WALRecord> record) {
-        return (DEFAULT_WAL_RECORD_PREFIX + record.get2() + "\n").getBytes(StandardCharsets.UTF_8);
+        return (DEFAULT_WAL_RECORD_PREFIX + toStringRecord(record.get2()) + System.lineSeparator()).getBytes(UTF_8);
     }
 
     /**
