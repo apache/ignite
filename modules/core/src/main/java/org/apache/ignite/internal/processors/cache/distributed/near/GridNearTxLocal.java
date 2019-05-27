@@ -2623,25 +2623,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         cacheCtx.addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, false,
                             ver, 0, 0);
                     }
-                    else {
-                        // Consistency violation was found at current tx and fixed at another tx.
-                        // Because of found violation entry was not finally marked as valid (!hasPreviousValue).
-                        // Retrying get operation to get fixed value.
-                        if (readRepair && !txEntry.hasPreviousValue()) {
-                            assert optimistic() || readCommitted();
-
-                            while (true) {
-                                try {
-                                    missed.put(key, txEntry.cached().version());
-
-                                    break;
-                                }
-                                catch (GridCacheEntryRemovedException ignored) {
-                                    txEntry.cached(entryEx(cacheCtx, txKey, topVer));
-                                }
-                            }
-                        }
-                    }
                 }
                 else {
                     assert txEntry.op() == TRANSFORM;
@@ -3124,6 +3105,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             return null;
                         }
                         catch (IgniteConsistencyViolationException e) {
+                            for (KeyCacheObject key : keys)
+                                txState().removeEntry(cacheCtx.txKey(key)); // Will be recreated after repair.
+
                             throw new GridClosureException(e);
                         }
                         catch (Exception e) {
