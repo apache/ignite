@@ -77,7 +77,7 @@ public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<WALPo
     }
 
     /** {@inheritDoc} */
-    public IgniteBiTuple<WALPointer, WALRecord> nextX() throws IgniteCheckedException {
+    @Override public IgniteBiTuple<WALPointer, WALRecord> nextX() throws IgniteCheckedException {
         if (!hasNextX())
             throw new NoSuchElementException();
 
@@ -89,22 +89,22 @@ public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<WALPo
     }
 
     /** {@inheritDoc} */
-    public boolean hasNextX() throws IgniteCheckedException {
+    @Override public boolean hasNextX() throws IgniteCheckedException {
         return next != null;
     }
 
     /** {@inheritDoc} */
-    public void removeX() throws IgniteCheckedException {
+    @Override public void removeX() throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    public void close() throws IgniteCheckedException {
+    @Override public void close() throws IgniteCheckedException {
         delegateWalIter.close();
     }
 
     /** {@inheritDoc} */
-    public boolean isClosed() {
+    @Override public boolean isClosed() {
         return delegateWalIter.isClosed();
     }
 }
