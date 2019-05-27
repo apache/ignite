@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTree
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.MemoryLeakAfterRebalanceSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryLazyAllocationTest;
@@ -97,6 +98,8 @@ public class IgnitePdsTestSuite {
         GridTestUtils.addTestIfNeeded(suite, PageMemoryImplTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, PageIdDistributionTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, TrackingPageIOTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, MemoryLeakAfterRebalanceSelfTest.class, ignoredTests);
 
         // BTree tests with store page memory.
         GridTestUtils.addTestIfNeeded(suite, BPlusTreePageMemoryImplTest.class, ignoredTests);

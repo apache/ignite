@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -115,6 +116,16 @@ public class RowStore {
         assert row.key().partition() == PageIdUtils.partId(row.link()) :
             "Constructed a link with invalid partition ID [partId=" + row.key().partition() +
                 ", link=" + U.hexLong(row.link()) + ']';
+    }
+
+    /**
+     * @param rows Rows.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void addRows(Collection<CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        assert ctx.database().checkpointLockIsHeldByThread();
+
+        freeList.insertDataRows(rows.iterator(), statHolder);
     }
 
     /**
