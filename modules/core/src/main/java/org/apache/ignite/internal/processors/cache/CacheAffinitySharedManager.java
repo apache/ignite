@@ -331,6 +331,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Adds historically rebalancing partitions to wait group.
+     * Not doing so could trigger late affinity switching before actual rebalancing will finish.
+     *
      * @param grpId Group id.
      * @param part Part.
      * @param node Node.
@@ -1103,8 +1106,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert assignment != null;
 
-        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
-
         forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                 List<List<ClusterNode>> idealAssignment = aff.idealAssignment();
@@ -1124,7 +1125,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else
                     newAssignment = idealAssignment;
 
-                aff.initialize(topVer, cachedAssignment(aff, newAssignment, affCache));
+                aff.initialize(topVer, newAssignment);
 
                 exchFut.timeBag().finishLocalStage("Affinity recalculate by change affinity message " +
                     "[grp=" + aff.cacheOrGroupName() + "]");
@@ -1159,8 +1160,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         assert !F.isEmpty(affChange) : msg;
 
         final Map<Integer, IgniteUuid> deploymentIds = msg.cacheDeploymentIds();
-
-        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
 
         forAllCacheGroups(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
@@ -1206,7 +1205,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         assignment.set(part, nodes);
                     }
 
-                    aff.initialize(topVer, cachedAssignment(aff, assignment, affCache));
+                    aff.initialize(topVer, assignment);
                 }
                 else
                     aff.clientEventTopologyChange(exchFut.firstEvent(), topVer);
@@ -1425,7 +1424,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             fetchFut.init(false);
 
-            fetchAffinity(evts.topologyVersion(), evts, evts.discoveryCache(), aff, fetchFut);
+            fetchAffinity(evts.topologyVersion(),
+                evts,
+                evts.discoveryCache(),
+                aff,
+                fetchFut);
         }
     }
 
@@ -1477,8 +1480,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         // Please do not use following pattern of code (nodesByOrder, affCache). NEVER.
         final Map<Long, ClusterNode> nodesByOrder = new ConcurrentHashMap<>();
 
-        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
-
         forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                 ExchangeDiscoveryEvents evts = fut.context().events();
@@ -1509,7 +1510,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else
                     newAssignment = idealAssignment;
 
-                aff.initialize(evts.topologyVersion(), cachedAssignment(aff, newAssignment, affCache));
+                aff.initialize(evts.topologyVersion(), newAssignment);
 
                 fut.timeBag().finishLocalStage("Affinity applying from full message " +
                     "[grp=" + aff.cacheOrGroupName() + "]");
@@ -1650,10 +1651,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      *
      * @param fut Current exchange future.
      * @return Computed difference with ideal affinity.
-     * @throws IgniteCheckedException If failed.
      */
     private Map<Integer, CacheGroupAffinityMessage> onReassignmentEnforced(
-        final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        final GridDhtPartitionsExchangeFuture fut) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
@@ -2141,8 +2141,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     @Nullable private WaitRebalanceInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd) {
         final ExchangeDiscoveryEvents evts = fut.context().events();
 
-        final Map<Object, List<List<ClusterNode>>> affCache = new ConcurrentHashMap<>();
-
         final WaitRebalanceInfo waitRebalanceInfo = new WaitRebalanceInfo(evts.lastServerEventVersion());
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
@@ -2160,8 +2158,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     grpAdded,
                     grpHolder.affinity(),
                     crd ? waitRebalanceInfo : null,
-                    latePrimary,
-                    affCache);
+                    latePrimary);
 
                 if (crd && grpAdded) {
                     AffinityAssignment aff = grpHolder.aff.cachedAffinity(grpHolder.aff.lastVersion());
@@ -2222,15 +2219,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param aff Affinity.
      * @param rebalanceInfo Rebalance information.
      * @param latePrimary If {@code true} delays primary assignment if it is not owner.
-     * @param affCache Already calculated assignments (to reduce data stored in history).
      */
     private void initAffinityOnNodeJoin(
         ExchangeDiscoveryEvents evts,
         boolean addedOnExchnage,
         GridAffinityAssignmentCache aff,
         WaitRebalanceInfo rebalanceInfo,
-        boolean latePrimary,
-        Map<Object, List<List<ClusterNode>>> affCache
+        boolean latePrimary
     ) {
         if (addedOnExchnage) {
             if (!aff.lastVersion().equals(evts.topologyVersion()))
@@ -2279,26 +2274,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (newAssignment == null)
             newAssignment = idealAssignment;
 
-        aff.initialize(evts.topologyVersion(), cachedAssignment(aff, newAssignment, affCache));
-    }
-
-    /**
-     * @param aff Assignment cache.
-     * @param assign Assignment.
-     * @param affCache Assignments already calculated for other caches.
-     * @return Assignment.
-     */
-    private List<List<ClusterNode>> cachedAssignment(GridAffinityAssignmentCache aff,
-        List<List<ClusterNode>> assign,
-        Map<Object, List<List<ClusterNode>>> affCache) {
-        List<List<ClusterNode>> assign0 = affCache.get(aff.similarAffinityKey());
-
-        if (assign0 != null && assign0.equals(assign))
-            assign = assign0;
-        else
-            affCache.put(aff.similarAffinityKey(), assign);
-
-        return assign;
+        aff.initialize(evts.topologyVersion(), newAssignment);
     }
 
     /**

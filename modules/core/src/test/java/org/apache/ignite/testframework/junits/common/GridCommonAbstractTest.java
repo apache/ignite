@@ -1271,6 +1271,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param cache Cache.
      * @param part Partition.
+     * @return Unbounded iterator for partition keys.
      */
     protected Iterator<Integer> partitionKeysIterator(IgniteCache<?, ?> cache, int part) {
         IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
@@ -2181,7 +2182,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             if (hasFutures)
-                fail("Some mvcc futures are not finished");
+                fail("Some cache futures are not finished");
 
             Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
 

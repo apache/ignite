@@ -131,5 +131,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
 
         PageIO.setVersion(pageAddr, getVersion());
         setPendingTreeRoot(pageAddr, 0);
+        setPartitionMetaStoreReuseListRoot(pageAddr, 0);
+        setGapsLink(pageAddr, 0);
     }
 }

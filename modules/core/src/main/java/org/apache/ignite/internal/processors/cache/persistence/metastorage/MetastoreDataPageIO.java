@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 
 /**
+ * Data pages IO for using with meta store.
  */
 public class MetastoreDataPageIO extends SimpleDataPageIO {
     /** */

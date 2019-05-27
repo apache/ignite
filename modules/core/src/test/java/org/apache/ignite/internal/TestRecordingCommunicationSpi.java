@@ -313,16 +313,16 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         stopBlock(sndMsgs, unblockPred, true, true);
     }
 
-        /**
-         * Stops block messages and sends all already blocked messages if sndMsgs is 'true' optionally filtered
-         * by unblockPred.
-         *
-         * @param sndMsgs If {@code true} sends blocked messages.
-         * @param unblockPred If not null unblocks only messages allowed by predicate.
-         * @param clearFilters {@code true} to clear filters.
-         * @param rmvBlockedMsgs {@code true} to remove blocked messages. Sometimes useful in conjunction with
-         * {@code sndMsgs=false}.
-         */
+    /**
+     * Stops block messages and sends all already blocked messages if sndMsgs is 'true' optionally filtered by
+     * unblockPred.
+     *
+     * @param sndMsgs If {@code true} sends blocked messages.
+     * @param unblockPred If not null unblocks only messages allowed by predicate.
+     * @param clearFilters {@code true} to clear filters.
+     * @param rmvBlockedMsgs {@code true} to remove blocked messages. Sometimes useful in conjunction with {@code
+     * sndMsgs=false}.
+     */
     public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<T2<ClusterNode, GridIoMessage>> unblockPred,
         boolean clearFilters, boolean rmvBlockedMsgs) {
         synchronized (this) {

@@ -90,8 +90,13 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
      * @param inMemory In memory.
      */
     private CacheConfiguration cacheConfiguration(String name, boolean inMemory) {
-        return new CacheConfiguration(name).setDataRegionName(inMemory ? "mem" : "dflt").setCacheMode(PARTITIONED).setWriteSynchronizationMode(FULL_SYNC).
-            setAtomicityMode(TRANSACTIONAL).setBackups(BACKUPS).setAffinity(new RendezvousAffinityFunction(false, 32));
+        return new CacheConfiguration(name).
+            setDataRegionName(inMemory ? "mem" : "dflt").
+            setCacheMode(PARTITIONED).
+            setWriteSynchronizationMode(FULL_SYNC).
+            setAtomicityMode(TRANSACTIONAL).
+            setBackups(BACKUPS).
+            setAffinity(new RendezvousAffinityFunction(false, 32));
     }
 
     /** {@inheritDoc} */
@@ -257,6 +262,9 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param cacheName Cache name.
+     */
     private void assertCountersSame(String cacheName) throws AssertionFailedError {
         PartitionUpdateCounter c0 = null;
 
@@ -266,7 +274,7 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
             if (c0 == null)
                 c0 = c;
             else {
-                assertEquals(c0, c);
+                assertEquals(ignite.name(), c0, c);
 
                 c0 = c;
             }

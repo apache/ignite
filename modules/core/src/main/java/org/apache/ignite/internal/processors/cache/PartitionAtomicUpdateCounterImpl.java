@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Partition update counter for non-tx scenarios without support for tracking missed updates.
+ * Currently used for atomic, mixed tx-atomic and in-memory cache groups.
  * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
  */
 public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter {
@@ -82,7 +83,7 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /** {@inheritDoc} */
     @Override public GridLongList finalizeUpdateCounters() {
-        return new GridLongList(0);
+        return new GridLongList();
     }
 
     /** {@inheritDoc} */

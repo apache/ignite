@@ -604,7 +604,6 @@ public interface IgniteCacheOffheapManager {
          * Return PendingTree for data store.
          *
          * @return PendingTree instance.
-         * @throws IgniteCheckedException
          */
         PendingEntriesTree pendingTree();
 
@@ -624,7 +623,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * Reset counters for partition.
          */
-        void resetUpdateCounters();
+        void resetUpdateCounter();
 
         /**
          * Partition storage.

@@ -1099,7 +1099,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Reset partition counters.
      */
     public void resetCounters() {
-        store.resetUpdateCounters();
+        store.resetUpdateCounter();
     }
 
     /**

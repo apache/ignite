@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,7 +36,25 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Update counter implementation used for transactional cache groups.
+ * Update counter implementation used for transactional cache groups in persistent mode.
+ * <p>
+ * Implements new partition update counter flow to avoid situations when:
+ * <ol>
+ *     <li>update counter could be incremented and persisted while corresponding update is not recorded to WAL.</li>
+ *     <li>update counter could be prematurely incremented causing missed rebalancing.</li>
+ * </ol>
+ * All these situations are sources of partitions desync.
+ * <p>
+ * Below a short description of new flow:
+ * <ol>
+ *     <li>Update counter is <i>reserved</i> for each update in partition on tx prepare phase (which always happens
+ *     on primary partition owner). Reservation causes HWM increment.</li>
+ *     <li>Reserved counter values are propagated on backup nodes and stored in backup transactions.</li>
+ *     <li>On commit reserved counters are assigned to cache entries.</li>
+ *     <li>LWM is incremented ONLY after corresponding WAL data record for each entry was written.</li>
+ *     <li>In case of rollback (manual or during tx recovery on node failure) reserved updates are also applied and
+ *     logged to WAL using {@link RollbackRecord} for further recovery purposes.</li>
+ * </ol>
  */
 public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     /**
@@ -46,7 +65,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     /** Counter updates serialization version. */
     private static final byte VERSION = 1;
 
-    /** Queue of finished out of order counter updates. */
+    /** Queue of applied out of order counter updates. */
     private TreeSet<Item> queue = new TreeSet<>();
 
     /** LWM. */

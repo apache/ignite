@@ -528,6 +528,7 @@ public class GridDhtPartitionDemander {
 
                             if (log.isInfoEnabled())
                                 log.info("Started rebalance routine [" + grp.cacheOrGroupName() +
+                                    ", topVer=" + fut.topologyVersion() +
                                     ", supplier=" + node.id() + ", topic=" + topicId +
                                     ", fullPartitions=" + S.compact(stripePartitions.get(topicId).fullSet()) +
                                     ", histPartitions=" + S.compact(stripePartitions.get(topicId).historicalSet()) + "]");

@@ -1173,7 +1173,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.rowStore = rowStore;
             this.dataTree = dataTree;
 
-            if (grp.hasAtomicCaches())
+            if (grp.hasAtomicCaches() || !grp.persistenceEnabled())
                 pCntr = new PartitionAtomicUpdateCounterImpl();
             else {
                 pCntr = ctx.logger(PartitionTxUpdateCounterDebugWrapper.class).isDebugEnabled() ?
@@ -1751,10 +1751,16 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             // No-op.
         }
 
-        @Override public void resetUpdateCounters() {
+        /**
+         * Reset update counter to initial state.
+         */
+        @Override public void resetUpdateCounter() {
             pCntr.reset();
         }
 
+        /**
+         * @return Partition meta stoage.
+         */
         @Override public PartitionMetaStorage<SimpleDataRow> partStorage() {
             return null;
         }
