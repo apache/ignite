@@ -17,18 +17,16 @@
 
 package org.apache.ignite.client;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
@@ -77,16 +75,18 @@ public class LocalIgniteCluster implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
+    @Override public synchronized void close() {
         srvs.forEach(Ignite::close);
 
         srvs.clear();
+
+        failedCfgs.clear();
     }
 
     /**
      * Remove one random node.
      */
-    public void failNode() {
+    public synchronized void failNode() {
         if (srvs.isEmpty())
             throw new IllegalStateException("Cannot remove node from empty cluster");
 
@@ -109,7 +109,7 @@ public class LocalIgniteCluster implements AutoCloseable {
     /**
      * Restore one of the failed nodes.
      */
-    public void restoreNode() {
+    public synchronized void restoreNode() {
         if (failedCfgs.isEmpty())
             throw new IllegalStateException("Cannot restore nodes in healthy cluster");
 
@@ -153,10 +153,6 @@ public class LocalIgniteCluster implements AutoCloseable {
     /** */
     private static IgniteConfiguration getConfiguration(NodeConfiguration nodeCfg) {
         IgniteConfiguration igniteCfg = Config.getServerConfiguration();
-
-        ((TcpDiscoverySpi)igniteCfg.getDiscoverySpi()).getIpFinder().registerAddresses(
-            Collections.singletonList(new InetSocketAddress(HOST, nodeCfg.getDiscoveryPort()))
-        );
 
         igniteCfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
             .setHost(HOST)
