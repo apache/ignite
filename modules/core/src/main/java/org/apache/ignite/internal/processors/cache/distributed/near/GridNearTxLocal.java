@@ -3167,9 +3167,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                             return null;
                         }
-                        catch (IgniteConsistencyViolationException e) {
-                            throw new GridClosureException(e);
-                        }
                         catch (Exception e) {
                             setRollbackOnly();
 
@@ -3202,9 +3199,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             processLoaded(map, keys, needVer, c);
 
                             return null;
-                        }
-                        catch (IgniteConsistencyViolationException e) {
-                            throw new GridClosureException(e);
                         }
                         catch (Exception e) {
                             setRollbackOnly();
