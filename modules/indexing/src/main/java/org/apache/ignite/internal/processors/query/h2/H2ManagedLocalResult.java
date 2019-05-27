@@ -76,7 +76,7 @@ public class H2ManagedLocalResult extends H2BaseLocalResult {
         mem.allocate(rowSize);
     }
 
-    /** {@inheritDoc} */
+    /** */
     public long memoryAllocated() {
         return allocMem;
     }

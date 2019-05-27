@@ -67,7 +67,7 @@ public class QueryMemoryTrackerSelfTest extends AbstractQueryMemoryTrackerSelfTe
 
     /** {@inheritDoc} */
     @Test
-    public void testLazyQueryWithHighLimit() {
+    @Override public void testLazyQueryWithHighLimit() {
         // OOM on reducer.
         checkQueryExpectOOM("select * from K LIMIT 8000", true);
 
