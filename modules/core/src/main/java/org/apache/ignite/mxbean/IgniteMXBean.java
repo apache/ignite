@@ -499,14 +499,14 @@ public interface IgniteMXBean {
     /**
      * Gets cluster read-only mode status.
      *
-     * @return {@code True} if cluster active and read-only mode enabled, and {@code False} otherwise.
+     * @return {@code true} if cluster active and read-only mode enabled, and {@code false} otherwise.
      */
     @MXBeanDescription("Cluster read-only mode status.")
     boolean readOnlyMode();
 
     /**
-     * Enable or disable cluster read-only mode. If {@code readOnly} flag is {@code True} read-only mode will be
-     * enabled. If {@code readOnly} flag is {@code False} read-only mode will be disabled.
+     * Enable or disable cluster read-only mode. If {@code readOnly} flag is {@code true} read-only mode will be
+     * enabled. If {@code readOnly} flag is {@code false} read-only mode will be disabled.
      *
      * @param readOnly enable/disable cluster read-only mode flag.
      */

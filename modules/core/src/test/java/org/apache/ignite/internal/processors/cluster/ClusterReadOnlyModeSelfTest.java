@@ -124,7 +124,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
                     return null;
                 },
                 CacheException.class,
-                "Failed to perform cache operation (cluster is in read only mode)"
+                "Failed to perform cache operation (cluster is in read-only mode)"
             );
 
         }

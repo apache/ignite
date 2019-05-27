@@ -44,7 +44,7 @@ public class StateCommand implements Command<Void> {
 
             if (state.active()) {
                 if (state.readOnly())
-                    logger.log("Cluster is active mode: read-only");
+                    logger.log("Cluster is active (read-only)");
                 else
                     logger.log("Cluster is active");
             }
