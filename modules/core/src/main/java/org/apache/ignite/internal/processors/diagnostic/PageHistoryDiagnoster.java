@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler;
+import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner;
 import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.ScanTerminateStep;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -200,43 +201,17 @@ public class PageHistoryDiagnoster {
         ScannerHandler action,
         FileWALPointer from
     ) throws IgniteCheckedException {
-        IgniteBiTuple<WALPointer, WALRecord> lastReadRec = null;
         // Try scan via WAL manager. More safety way on working node.
         try {
-            Set<T2<Integer, Long>> groupAndPageIds0 = new HashSet<>(builder.pageIds);
-
-            // Collect all (group, partition) partition pairs.
-            Set<T2<Integer, Integer>> groupAndParts = groupAndPageIds0.stream()
-                .map((tup) -> new T2<>(tup.get1(), PageIdUtils.partId(tup.get2())))
-                .collect(Collectors.toSet());
-
-            // Build WAL filter. (Checkoint, Page, Partition meta)
-            Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter = checkpoint()
-                .or(pageOwner(groupAndPageIds0))
-                .or(partitionMetaStateUpdate(groupAndParts));
-
-            try (WALIterator it = wal.replay(from)) {
-                while (it.hasNext()) {
-                    IgniteBiTuple<WALPointer, WALRecord> recTup = lastReadRec = it.next();
-
-                    if (filter.test(recTup))
-                        action.handle(recTup);
-                }
-            }
-            finally {
-                action.finish();
-            }
+            buildWalScanner(wal.replay(from))
+                .findAllRecordsFor(builder.pageIds)
+                .forEach(action);
 
             return;
 
         }
         catch (IgniteCheckedException e) {
-            if (lastReadRec != null) {
-                log.warning("Failed to diagnosric scan via WAL manager, lastReadRec:["
-                    + lastReadRec.get1() + ", " + lastReadRec.get2() + "]",e);
-            }
-            else
-                log.warning("Failed to diagnosric scan via WAL manager", e);
+            log.warning("Failed to diagnosric scan via WAL manager", e);
         }
 
         // Try scan via stand alone iterator is not safety if wal still generated and moving to archive.
