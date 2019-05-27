@@ -304,14 +304,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase((long) 2, 0)]
         [TestCase((ulong) 1, 1)]
         [TestCase((ulong) 2, 0)]
-        [TestCase((float) 1, 1)]
-        [TestCase((float) 2, 0)]
-        [TestCase((double) 1, 1)]
-        [TestCase((double) 2, 0)]
+        [TestCase((float) 1.3, 1)]
+        [TestCase((float) 1.4, 2)]
+        [TestCase((double) 51.3, 0)]
+        [TestCase((double) 415.5, 0)]
+        [TestCase((double) 325.5, 0)]
+        [TestCase((double) 255.5, 0)] // TODO: What's wrong with Double?
         [TestCase('1', 2)]
         [TestCase('2', 1)]
         public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)
         {
+            // TODO: Verify actual primary node with Affinity API
             var cache = Client.GetCache<object, object>(_cache.Name);
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");
         }
