@@ -277,17 +277,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             {
                 var cache = client.GetCache<int, int>(_cache.Name);
 
-                cache.Get(1);
-                var gridIdx1 = GetClientRequestGridIndex();
+                var requestTargets = Enumerable
+                    .Range(1, 10)
+                    .Select(x =>
+                    {
+                        cache.Get(x);
+                        return GetClientRequestGridIndex();
+                    })
+                    .Distinct()
+                    .ToArray();
 
-                cache.Get(1);
-                var gridIdx2 = GetClientRequestGridIndex();
-
-                cache.Get(1);
-                var gridIdx3 = GetClientRequestGridIndex();
-
-                Assert.AreNotEqual(gridIdx1, gridIdx2);
-                Assert.AreNotEqual(gridIdx2, gridIdx3);
+                // Affinity awareness disabled - all requests go to same socket, picked with round-robin on connect.
+                Assert.AreEqual(1, requestTargets.Length);
             }
         }
 
