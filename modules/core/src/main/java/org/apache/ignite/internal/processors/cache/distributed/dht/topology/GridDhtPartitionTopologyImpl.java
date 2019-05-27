@@ -781,19 +781,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                                 "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                     }
 
-                                // If partition was not still cleared yet start clearing if needed.
-                                // Important: avoid calling clearAsync multiple times in the same rebalance session
-                                // or bad things may happen depending on timing.
-                                if (exchFut.isClearingPartition(grp, p) && !locPart.isClearing() && !locPart.isEmpty())
-                                    locPart.clearAsync();
+                                    // If partition was not still cleared yet start clearing if needed.
+                                    // Important: avoid calling clearAsync multiple times in the same rebalance session
+                                    // or bad things may happen depending on timing.
+                                    if (exchFut.isClearingPartition(grp, p) && !locPart.isClearing() && !locPart.isEmpty())
+                                        locPart.clearAsync();
+                                }
+                                else
+                                    updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
                             }
-                            else
-                                updateSeq = updateLocal(p, locPart.state(), updateSeq, topVer);
                         }
-                    }
-                    else {
-                        if (locPart != null) {
-                            GridDhtPartitionState state = locPart.state();
+                        else {
+                            if (locPart != null) {
+                                GridDhtPartitionState state = locPart.state();
 
                                 if (state == MOVING) {
                                     locPart.rent(false);
