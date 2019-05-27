@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.commandline.cache.CacheCommand.IDLE_VERIFY;
+import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.IDLE_VERIFY;
 
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
@@ -66,28 +66,22 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
 
-    /** Whether job succeeded or not. */
-    private boolean succeeded = true;
-
     /**
      * @param cntrConflicts Counter conflicts.
      * @param hashConflicts Hash conflicts.
      * @param movingPartitions Moving partitions.
      * @param exceptions Occured exceptions.
-     * @param succeeded Whether succeeded or not.
      */
     public IdleVerifyResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> cntrConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> hashConflicts,
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> movingPartitions,
-        Map<ClusterNode, Exception> exceptions,
-        boolean succeeded
+        Map<ClusterNode, Exception> exceptions
     ) {
         this.cntrConflicts = cntrConflicts;
         this.hashConflicts = hashConflicts;
         this.movingPartitions = movingPartitions;
         this.exceptions = exceptions;
-        this.succeeded = succeeded;
     }
 
     /**
@@ -189,6 +183,8 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /** */
     private void print(Consumer<String> printer, boolean printExceptionMessages) {
         boolean noMatchingCaches = false;
+
+        boolean succeeded = true;
 
         for (Exception e : exceptions.values()) {
             if (e instanceof NoMatchingCachesException) {
