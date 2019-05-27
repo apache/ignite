@@ -70,7 +70,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
@@ -1609,8 +1609,29 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /**
          * @return Name of free pages list.
          */
-        private String freeListName(){
+        private String freeListName() {
             return grp.cacheOrGroupName() + "-" + partId;
+        }
+
+        /**
+         * @return Name of partition meta store.
+         */
+        private String partitionMetaStoreName() {
+            return grp.cacheOrGroupName() + "-partstore-" + partId;
+        }
+
+        /**
+         * @return Name of data tree.
+         */
+        private String dataTreeName() {
+            return treeName(partId);
+        }
+
+        /**
+         * @return Name of pending entires tree.
+         */
+        private String pendingEntriesTreeName() {
+            return "PendingEntries-" + partId;
         }
 
         /**
@@ -1647,17 +1668,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             ", metas=" + metas + ']');
                     }
 
+                    String freeListName = freeListName();
+
                     RootPage reuseRoot = metas.reuseListRoot;
 
-                    freeList = new CacheFreeListImpl(
+                    freeList = new CacheFreeList(
                         grp.groupId(),
-                        grp.cacheOrGroupName() + "-" + partId,
+                        freeListName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
                         null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
-                        reuseRoot.isAllocated()) {
+                        reuseRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName)
+                    ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1665,18 +1690,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
+
+                    String partitionMetaStoreName = partitionMetaStoreName();
 
                     RootPage partMetastoreReuseListRoot = metas.partMetastoreReuseListRoot;
 
                     partStorage = new PartitionMetaStorageImpl<SimpleDataRow>(
                         grp.groupId(),
-                        grp.cacheOrGroupName() + "-partstore-" + partId,
+                        partitionMetaStoreName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
                         freeList,
                         ctx.wal(),
                         partMetastoreReuseListRoot.pageId().pageId(),
-                        partMetastoreReuseListRoot.isAllocated()) {
+                        partMetastoreReuseListRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(partitionMetaStoreName)
+                    ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1684,6 +1713,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
+
+                    String dataTreeName = dataTreeName();
 
                     CacheDataRowStore rowStore = new CacheDataRowStore(grp, freeList, partId);
 
@@ -1691,11 +1722,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     CacheDataTree dataTree = new CacheDataTree(
                         grp,
-                        name,
+                        dataTreeName,
                         freeList,
                         rowStore,
                         treeRoot.pageId().pageId(),
-                        treeRoot.isAllocated()) {
+                        treeRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(dataTreeName)
+                    ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1704,15 +1737,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                     };
 
+                    String pendingEntriesTreeName = pendingEntriesTreeName();
+
                     RootPage pendingTreeRoot = metas.pendingTreeRoot;
 
                     final PendingEntriesTree pendingTree0 = new PendingEntriesTree(
                         grp,
-                        "PendingEntries-" + partId,
+                        pendingEntriesTreeName,
                         grp.dataRegion().pageMemory(),
                         pendingTreeRoot.pageId().pageId(),
                         freeList,
-                        pendingTreeRoot.isAllocated()) {
+                        pendingTreeRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(pendingEntriesTreeName)
+                    ) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1723,7 +1760,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-                    delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree) {
+                    delegate0 = new CacheDataStoreImpl(partId, rowStore, dataTree) {
                         /** {@inheritDoc} */
                         @Override public PendingEntriesTree pendingTree() {
                             return pendingTree0;
