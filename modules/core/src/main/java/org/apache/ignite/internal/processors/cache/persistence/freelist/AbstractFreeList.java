@@ -473,7 +473,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             int remaining = row.size() - written;
 
-            long pageId = takePage(bucket(remaining, false) + 1, REUSE_BUCKET, row, statHolder);
+            long pageId = getPage(bucket(remaining, false) + 1, REUSE_BUCKET, row, statHolder);
 
             AbstractDataPageIO initIo = null;
 
@@ -529,10 +529,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         try {
             T row = iter.next();
 
-            int written = 0;
+            int written;
 
-            while (written != COMPLETE || row.link() == 0) {
-                if ((written = writeLargeFragments(row, statHolder)) == COMPLETE) {
+            do {
+                written = writeLargeFragments(row, statHolder);
+
+                if (written == COMPLETE) {
                     row = iter.hasNext() ? iter.next() : row;
 
                     continue;
@@ -544,7 +546,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 int minBucket = bucket(rowSize % MIN_SIZE_FOR_DATA_PAGE, false);
 
-                long pageId = takePage(REUSE_BUCKET - 1, minBucket, row, statHolder);
+                long pageId = getPage(REUSE_BUCKET - 1, minBucket, row, statHolder);
 
                 if (pageId == 0) {
                     pageId = allocateDataPage(row.partition());
@@ -599,7 +601,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     if (releaseAfterWrite)
                         pageMem.releasePage(grpId, pageId, page);
                 }
-            }
+            } while (written != COMPLETE || row.link() == 0);
         }
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e);
@@ -607,23 +609,23 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Take page from freelist.
+     * Get a page from the free list.
      *
-     * @param from Start bucket.
-     * @param to Finish bucket.
+     * @param min Minimum bucket.
+     * @param max Maximum bucket.
      * @param row Row to process.
      * @param statHolder Statistics holder to track IO operations.
      * @return Page ID or {@code 0} if none available.
      * @throws IgniteCheckedException If failed.
      */
-    private long takePage(int from, int to, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    private long getPage(int min, int max, T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         long pageId = 0;
 
-        int partId = row.partition();
+        int direction = min < max ? 1 : -1;
 
-        int direction = from < to ? 1 : -1;
+        for (int b = min; b != max; b += direction) {
+            assert b != REUSE_BUCKET;
 
-        for (int b = from; b != to; b += direction) {
             pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
             if (pageId != 0L)
@@ -639,16 +641,17 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         if (pageId == 0)
             return 0;
-        else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
+
+        if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
             return initReusedPage(row, pageId, statHolder);
-        else  // Page is taken from free space bucket. For in-memory mode partition must be changed.
-            return PageIdUtils.changePartitionId(pageId, partId);
+        else // For in-memory mode partition must be changed.
+            return PageIdUtils.changePartitionId(pageId, row.partition());
     }
 
     /**
-     * Put page into freelist.
+     * Insert page into the free list.
      *
-     * @param freespace Page free space.
+     * @param freeSpace Page free space.
      * @param pageId Page ID.
      * @param page Page pointer.
      * @param pageAddr Page address.
@@ -656,14 +659,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @throws IgniteCheckedException If failed.
      */
     private void putPage(
-        int freespace,
+        int freeSpace,
         long pageId,
         long page,
         long pageAddr,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
-        if (freespace > MIN_PAGE_FREE_SPACE) {
-            int bucket = bucket(freespace, false);
+        if (freeSpace > MIN_PAGE_FREE_SPACE) {
+            int bucket = bucket(freeSpace, false);
 
             put(null, pageId, page, pageAddr, bucket, statHolder);
         }
