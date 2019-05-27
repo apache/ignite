@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack;
 
-import static java.util.Arrays.copyOf;
-
 /**
  *  Page lock stack build in on offheap.
  */

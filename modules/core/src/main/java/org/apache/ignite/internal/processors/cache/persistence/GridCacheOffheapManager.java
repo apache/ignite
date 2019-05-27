@@ -70,8 +70,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;

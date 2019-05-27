@@ -19,9 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 
 import org.apache.ignite.internal.util.GridUnsafe;
 
-import static java.util.Arrays.copyOf;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-
 /**
  * Page lock stack build in on offheap.
  */

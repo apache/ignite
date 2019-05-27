@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.DumpProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor.toStringDump;
 
 /**
