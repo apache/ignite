@@ -25,7 +25,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -104,9 +103,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
             T2<Integer, Long>[] pageIds = corruptedTreeException.pages();
 
             try {
-                DiagnosticProcessor diagnosticProc = ((IgniteEx)ignite).context().diagnostic();
-
-                diagnosticProc.dumpPageHistory(
+                dumpPageHistory(
                     new PageHistoryDiagnoster.DiagnosticPageBuilder()
                         .pageIds(pageIds)
                         .addAction(PRINT_TO_LOG)
