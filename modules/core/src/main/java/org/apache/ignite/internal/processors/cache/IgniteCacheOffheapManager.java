@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
@@ -189,6 +190,18 @@ public interface IgniteCacheOffheapManager {
      */
     public void invoke(GridCacheContext cctx, KeyCacheObject key, GridDhtLocalPartition part, OffheapInvokeClosure c)
         throws IgniteCheckedException;
+
+    /**
+     * @param cctx Cache context.
+     * @param part Partition.
+     * @param entries Entries.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<CacheDataRow> storeAll(
+        GridCacheContext cctx,
+        GridDhtLocalPartition part,
+        Collection<? extends GridCacheEntryInfo> entries
+    ) throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
@@ -728,6 +741,18 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
+
+
+        /**
+         * @param cctx Cache context.
+         * @param entries Entries.
+         * @return Created rows.
+         * @throws IgniteCheckedException If failed.
+         */
+        public List<CacheDataRow> storeAll(
+            GridCacheContext cctx,
+            Collection<? extends GridCacheEntryInfo> entries
+        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

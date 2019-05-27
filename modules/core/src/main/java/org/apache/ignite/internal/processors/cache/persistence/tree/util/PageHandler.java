@@ -282,15 +282,7 @@ public abstract class PageHandler<X, R> {
             boolean ok = false;
 
             try {
-                if (init != null) {
-                    // It is a new page and we have to initialize it.
-                    doInitPage(pageMem, grpId, pageId, page, pageAddr, init, wal);
-                    walPlc = FALSE;
-                }
-                else
-                    init = PageIO.getPageIO(pageAddr);
-
-                R res = h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
+                R res = writePage(pageMem, grpId, pageId, page, pageAddr, lsnr, h, init, wal, walPlc, arg, intArg, statHolder);
 
                 ok = true;
 
@@ -308,6 +300,33 @@ public abstract class PageHandler<X, R> {
                 pageMem.releasePage(grpId, pageId, page);
         }
     }
+
+    public static <X, R> R writePage(
+        PageMemory pageMem,
+        int grpId,
+        long pageId,
+        long page,
+        long pageAddr,
+        PageLockListener lsnr,
+        PageHandler<X, R> h,
+        PageIO init,
+        IgniteWriteAheadLogManager wal,
+        Boolean walPlc,
+        X arg,
+        int intArg,
+        IoStatisticsHolder statHolder
+    ) throws IgniteCheckedException {
+        if (init != null) {
+            // It is a new page and we have to initialize it.
+            doInitPage(pageMem, grpId, pageId, page, pageAddr, init, wal);
+            walPlc = FALSE;
+        }
+        else
+            init = PageIO.getPageIO(pageAddr);
+
+        return h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
+    }
+
 
     /**
      * @param pageMem Page memory.

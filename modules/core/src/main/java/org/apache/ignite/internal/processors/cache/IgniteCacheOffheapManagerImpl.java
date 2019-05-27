@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -444,6 +445,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         OffheapInvokeClosure c)
         throws IgniteCheckedException {
         dataStore(part).invoke(cctx, key, c);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<CacheDataRow> storeAll(
+        GridCacheContext cctx,
+        GridDhtLocalPartition part,
+        Collection<? extends GridCacheEntryInfo> entries
+    ) throws IgniteCheckedException {
+        return dataStore(part).storeAll(cctx, entries);
     }
 
     /** {@inheritDoc} */
@@ -1691,6 +1701,53 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 default:
                     assert false : c.operationType();
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<CacheDataRow> storeAll(
+            GridCacheContext cctx,
+            Collection<? extends GridCacheEntryInfo> infos
+        ) throws IgniteCheckedException {
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            List<CacheDataRow> rows = new ArrayList<>(infos.size());
+
+            try {
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
+                assert !cctx.mvccEnabled();
+
+                int cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+                IoStatisticsHolder statHolder = grp.statisticsHolderData();
+
+                for (GridCacheEntryInfo info : infos) {
+                    KeyCacheObject key = info.key();
+                    CacheObject val = info.value();
+
+                    CacheObjectContext coCtx = cctx.cacheObjectContext();
+
+                    key.valueBytes(coCtx);
+                    val.valueBytes(coCtx);
+
+                    DataRow row = makeDataRow(key, val, info.version(), info.expireTime(), cacheId);
+
+                    rows.add(row);
+                }
+
+                rowStore().addRows(rows, statHolder);
+
+                if (grp.sharedGroup() && !cctx.group().storeCacheIdInDataPage()) {
+                    for (CacheDataRow row : rows)
+                        ((DataRow)row).cacheId(cctx.cacheId());
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+
+            return rows;
         }
 
         /** {@inheritDoc} */
