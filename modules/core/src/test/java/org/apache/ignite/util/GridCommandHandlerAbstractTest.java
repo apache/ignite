@@ -103,11 +103,7 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         // Delete idle-verify dump files.
-        try (DirectoryStream<Path> files = newDirectoryStream(
-            Paths.get(U.defaultWorkDirectory()),
-            entry -> entry.toFile().getName().startsWith(IDLE_DUMP_FILE_PREFIX)
-        )
-        ) {
+        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()), this::idleVerifyRes)) {
             for (Path path : files)
                 delete(path);
         }
@@ -119,6 +115,11 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         log.info("----------------------------------------");
         if (testOut != null)
             System.out.println(testOut.toString());
+    }
+
+    /** */
+    private boolean idleVerifyRes(Path p) {
+        return p.toFile().getName().startsWith(IDLE_DUMP_FILE_PREFIX);
     }
 
     /** {@inheritDoc} */
