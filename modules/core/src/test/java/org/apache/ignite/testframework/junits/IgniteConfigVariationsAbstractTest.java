@@ -151,8 +151,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         testedNodeIdx = 0;
 
         testsCfg = dummyCfg();
-
-        stopAllGrids();
     }
 
     /**
