@@ -89,7 +89,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             cnt,
             raw,
             async,
-            (ConsistencyRecoveryData data) -> {
+            (ReadRepairData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     // Recovery (inside tx).
                     if (all)
@@ -131,7 +131,7 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             cnt,
             raw,
             async,
-            (ConsistencyRecoveryData data) -> {
+            (ReadRepairData data) -> {
                 try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
                     GET_NULL.accept(data);
 

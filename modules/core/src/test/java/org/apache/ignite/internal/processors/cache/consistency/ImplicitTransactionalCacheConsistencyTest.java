@@ -73,7 +73,7 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             1,
             raw,
             async,
-            (ConsistencyRecoveryData data) -> {
+            (ReadRepairData data) -> {
                 GET_CHECK_AND_FIX.accept(data);
                 ENSURE_FIXED.accept(data);
             });
@@ -99,7 +99,7 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             amount,
             raw,
             async,
-            (ConsistencyRecoveryData data) -> {
+            (ReadRepairData data) -> {
                 GETALL_CHECK_AND_FIX.accept(data);
                 ENSURE_FIXED.accept(data);
             });
@@ -114,7 +114,7 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             1,
             raw,
             async,
-            (ConsistencyRecoveryData data) -> {
+            (ReadRepairData data) -> {
                 GET_NULL.accept(data); // first attempt.
                 GET_NULL.accept(data); // second attempt (checks first attempt causes no changes/fixes/etc).
             });
