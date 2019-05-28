@@ -125,8 +125,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             if (!grpEvictionCtx.partIds.add(part.id()))
                 return;
 
-            bucket = evictionQueue.offer(new PartitionEvictionTask(part, grpEvictionCtx,
-                grp.topology().readyTopologyVersion()));
+            bucket = evictionQueue.offer(new PartitionEvictionTask(part, grpEvictionCtx, grp.affinity().lastVersion()));
         }
 
         grpEvictionCtx.totalTasks.incrementAndGet();
@@ -413,7 +412,10 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public void run() {
             // Stop clearing if outdated topology version or if group is about to stop.
-            if (grpEvictionCtx.shouldStop() || part.group().topology().readyTopologyVersion().compareTo(startVer) > 0) {
+            AffinityTopologyVersion topVer = part.group().affinity().lastVersion();
+
+            if (!startVer.equals(AffinityTopologyVersion.NONE) && topVer.compareTo(startVer) > 0 ||
+                grpEvictionCtx.shouldStop()) {
                 finishFut.onDone();
 
                 return;
