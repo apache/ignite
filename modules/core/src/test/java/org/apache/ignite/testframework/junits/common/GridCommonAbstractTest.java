@@ -2336,6 +2336,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             PartitionUpdateCounter cntr = counter(partId, ignite.name());
 
+            log.info("node=" + ignite.name() + ", cntr=" + cntr);
+
             if (cntr0 != null) {
                 assertEquals("Expecting same counters", cntr0, cntr);
 

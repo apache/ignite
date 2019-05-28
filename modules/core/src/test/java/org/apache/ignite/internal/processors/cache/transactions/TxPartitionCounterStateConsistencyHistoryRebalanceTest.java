@@ -196,4 +196,9 @@ public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPa
 
         assertPartitionsSame(idleVerify(grid(demanderName), DEFAULT_CACHE_NAME));
     }
+
+    @Override
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_CheckpointDuringRebalance() throws Exception {
+        super.testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_CheckpointDuringRebalance();
+    }
 }

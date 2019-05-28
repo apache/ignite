@@ -26,9 +26,14 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
     extends TxPartitionCounterStateOnePrimaryTwoBackupsTest {
+    /** */
+    private boolean skipCheck;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        skipCheck = false;
 
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
     }
@@ -43,7 +48,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
         super.afterTest();
 
         // Expecting only one historical rebalance for test scenario.
-        assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
+        if (!skipCheck)
+            assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
 
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
     }
@@ -51,10 +57,12 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
     /** {@inheritDoc} */
     @Override public void testMissingUpdateBetweenMultipleCheckpoints() throws Exception {
         // No-op.
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testCommitReorderWithRollbackNoRebalanceAfterRestart() throws Exception {
         // No-op.
+        skipCheck = true;
     }
 }

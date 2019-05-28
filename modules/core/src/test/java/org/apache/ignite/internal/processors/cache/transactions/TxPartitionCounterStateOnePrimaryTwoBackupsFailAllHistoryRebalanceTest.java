@@ -26,9 +26,14 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
  */
 public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceTest extends
     TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest {
+    /** */
+    private boolean skipCheck;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        skipCheck = false;
 
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
     }
@@ -42,48 +47,59 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceT
         super.afterTest();
 
         // Expecting only one historical rebalance for test scenario.
-        assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
+        if (!skipCheck)
+            assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
 
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartAllOwnersAfterPartialCommit_2tx_1() throws Exception {
         // Rebalance will not be triggered because counters are same.
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartAllOwnersAfterPartialCommit_2tx_2() throws Exception {
         // Rebalance will not be triggered because counters are same.
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartAllOwnersAfterPartialCommit_2tx_3() throws Exception {
         // Rebalance will not be triggered because counters are same.
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testRestartAllOwnersAfterPartialCommit_2tx_4() throws Exception {
         // Rebalance will not be triggered because counters are same.
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testStopAllOwnersWithPartialCommit_3tx_1_1() throws Exception {
         // Rebalance will not be triggered because counters are same.
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testStopAllOwnersWithPartialCommit_3tx_1_2() throws Exception {
         // Rebalance will not be triggered because counters are same.
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testStopAllOwnersWithPartialCommit_3tx_2_1() throws Exception {
         // Rebalance will not be triggered because counters are same.
+        skipCheck = true;
     }
 
     /** {@inheritDoc} */
     @Override public void testStopAllOwnersWithPartialCommit_3tx_2_2() throws Exception {
         // Rebalance will not be triggered because counters are same.
+        skipCheck = true;
     }
 }

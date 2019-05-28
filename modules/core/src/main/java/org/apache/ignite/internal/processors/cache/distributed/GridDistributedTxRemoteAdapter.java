@@ -680,7 +680,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                null);
+                                                txEntry.updateCounter());
 
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
 
