@@ -494,14 +494,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         for (int p = 0; p < partitions; p++) {
             if (node2part != null && node2part.valid()) {
                 if (localNode(p, aff)) {
-                    // This will make sure that all non-existing partitions
-                    // will be created in MOVING state.
-                    boolean existing = locParts.get(p) != null;
-
                     GridDhtLocalPartition locPart = getOrCreatePartition(p);
-
-                    if (existing && locPart.state() == MOVING && !locPart.isEmpty())
-                        exchFut.addClearingPartition(grp, p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
                 }
@@ -766,7 +759,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (partitionLocalNode(p, topVer)) {
                             // Prepare partition to rebalance if it's not happened on full map update phase.
                             if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
-                                locPart = rebalancePartition(p, true, exchFut);
+                                locPart = rebalancePartition(p, false, exchFut);
 
                             GridDhtPartitionState state = locPart.state();
 
@@ -781,10 +774,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                                 "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                     }
 
-                                    // If partition was not still cleared yet start clearing if needed.
+                                    // If clearing is not yet started for non empty partition - start it.
                                     // Important: avoid calling clearAsync multiple times in the same rebalance session
                                     // or bad things may happen depending on timing.
-                                    if (exchFut.isClearingPartition(grp, p) && !locPart.isClearing() && !locPart.isEmpty())
+                                    if (!exchFut.isHistoryPartition(grp, locPart.id()) && !locPart.isClearing() && !locPart.isEmpty())
                                         locPart.clearAsync();
                                 }
                                 else
@@ -2312,8 +2305,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Prevents ongoing renting if required.
      *
      * @param p Partition id.
-     * @param clear If {@code true} partition have to be cleared before rebalance.
-     *              Required in case of full state transfer to handle removals on supplier.
+     * @param clear If {@code true} partition have to be cleared before rebalance (full rebalance or rebalance restart
+     * after cancellation).
      * @param exchFut Future related to partition state change.
      */
     private GridDhtLocalPartition rebalancePartition(int p, boolean clear, GridDhtPartitionsExchangeFuture exchFut) {
@@ -2335,11 +2328,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (part.state() != MOVING)
             part.moving();
 
-        if (clear) {
-            exchFut.addClearingPartition(grp, part.id());
-
+        if (clear)
             part.clearAsync();
-        }
+        else
+            exchFut.addHistoryPartition(grp, part.id());
 
         assert part.state() == MOVING : part;
 
