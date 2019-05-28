@@ -908,12 +908,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Only one thread is allowed to do such process concurrently.
      * At the end of clearing method completes {@code clearFuture}.
      *
+     * @param evictionCtx Eviction context.
+     * @param startVer Topology version when clearing is started.
+     *
      * @return {@code false} if clearing is not started due to existing reservations.
      * @throws NodeStoppingException If node is stopping.
      */
-    public boolean tryClear(EvictionContext evictionCtx) throws NodeStoppingException {
+    public boolean tryClear(EvictionContext evictionCtx, AffinityTopologyVersion startVer) throws NodeStoppingException {
         if (clearFuture.isDone())
             return true;
+
+        // Stop clearing if outdated topology version or if group is about to stop.
+        AffinityTopologyVersion topVer = group().affinity().lastVersion();
+
+        if (!startVer.equals(AffinityTopologyVersion.NONE) && topVer.compareTo(startVer) > 0) {
+            clearFuture.onDone();
+
+            return true;
+        }
 
         long state = this.state.get();
 

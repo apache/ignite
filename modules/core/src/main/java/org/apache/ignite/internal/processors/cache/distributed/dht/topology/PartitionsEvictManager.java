@@ -396,6 +396,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /**
          * @param part Partition.
          * @param grpEvictionCtx Eviction context.
+         * @param startVer Topology version when clearing was started.
          */
         private PartitionEvictionTask(
             GridDhtLocalPartition part,
@@ -411,18 +412,14 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            // Stop clearing if outdated topology version or if group is about to stop.
-            AffinityTopologyVersion topVer = part.group().affinity().lastVersion();
-
-            if (!startVer.equals(AffinityTopologyVersion.NONE) && topVer.compareTo(startVer) > 0 ||
-                grpEvictionCtx.shouldStop()) {
+            if (grpEvictionCtx.shouldStop()) {
                 finishFut.onDone();
 
                 return;
             }
 
             try {
-                boolean success = part.tryClear(grpEvictionCtx);
+                boolean success = part.tryClear(grpEvictionCtx, startVer);
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())

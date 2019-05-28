@@ -782,10 +782,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                             "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                 }
 
-                                // If partition was not still cleared yet start clearing if needed.
+                                // If clearing is not yet started for non empty partition - start it.
                                 // Important: avoid calling clearAsync multiple times in the same rebalance session
                                 // or bad things may happen depending on timing.
-                                if (exchFut.isClearingPartition(grp, p) && !locPart.isClearing() && !locPart.isEmpty())
+                                if (!locPart.isClearing() && !locPart.isEmpty())
                                     locPart.clearAsync();
                             }
                             else
@@ -1635,7 +1635,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (changed) {
                     if (log.isDebugEnabled())
                         log.debug("Partitions have been scheduled to resend [reason=" +
-                            "Full map update [grp" + grp.cacheOrGroupName() + "]");
+                            "Full map update [grp=" + grp.cacheOrGroupName() + "]");
 
                     ctx.exchange().scheduleResendPartitions();
                 }
@@ -2450,7 +2450,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             if (log.isDebugEnabled())
                                 log.debug("Partitions have been scheduled to resend [reason=" +
-                                    "Evictions are done [grp" + grp.cacheOrGroupName() + "]");
+                                    "Evictions are done [grp=" + grp.cacheOrGroupName() + "]");
 
                             ctx.exchange().scheduleResendPartitions();
                         }

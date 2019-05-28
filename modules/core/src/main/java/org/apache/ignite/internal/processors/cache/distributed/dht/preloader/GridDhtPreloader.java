@@ -472,7 +472,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (updateSeq) {
                 if (log.isDebugEnabled())
                     log.debug("Partitions have been scheduled to resend [reason=" +
-                        "Eviction [grp" + grp.cacheOrGroupName() + " " + part.id() + "]");
+                        "Eviction [grp=" + grp.cacheOrGroupName() + ", id=" + part.id() + "]");
 
                 ctx.exchange().scheduleResendPartitions();
             }

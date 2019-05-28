@@ -190,11 +190,11 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testCorrectRebalancingCurrentlyRentingPartitions() throws Exception {
-        IgniteEx ignite = (IgniteEx) startGrids(3);
+        IgniteEx ignite = startGrids(3);
         ignite.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
-        final int keysCnt = 300_000;
+        final int keysCnt = 500_000;
 
         try (IgniteDataStreamer<Integer, Integer> ds = ignite.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
@@ -203,7 +203,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             for (int k = 1; k <= keysCnt; k++) {
                 ds.addData(k, k);
 
-                if (k % 10_000 == 0)
+                if (k % 50_000 == 0)
                     log.info("Written " + k + " entities.");
             }
 
@@ -226,7 +226,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         // Started node should have partition in RENTING or EVICTED state.
         startGrid(1);
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null, true);
 
         // Check no data loss.
         for (int k = 1; k <= keysCnt; k++) {
@@ -234,5 +234,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             Assert.assertNotNull("Value for " + k + " is null", val);
             Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }
+
+        assertPartitionsSame(idleVerify(ignite));
     }
 }
