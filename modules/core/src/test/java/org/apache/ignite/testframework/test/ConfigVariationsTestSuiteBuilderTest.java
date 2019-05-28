@@ -394,16 +394,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** IMPL NOTE new instances may be created rather arbitrarily, eg per every test case. */
         private final int testClsId = testInstCnt.getAndIncrement();
 
-        /**
-         * IMPL NOTE default config doesn't stop nodes.
-         */
-        @BeforeClass
-        public static void init() {
-            IgniteConfigVariationsAbstractTest.injectTestsConfiguration(new VariationsTestsConfig(
-                new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(),
-                    new int[] {0}), "Dummy config", true, null, 1, false));
-        }
-
         /** {@inheritDoc} */
         @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
             IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -415,6 +405,10 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** {@inheritDoc} */
         @Override protected void beforeTestsStarted() throws Exception {
+            testsCfg = new VariationsTestsConfig(
+                new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(),
+                    new int[] {0}), "Dummy config", true, null, 1, false);
+
             processStage("beforeTestsStarted", 0,  1);
 
             super.beforeTestsStarted();

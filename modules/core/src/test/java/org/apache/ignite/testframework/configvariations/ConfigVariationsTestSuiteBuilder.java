@@ -431,22 +431,33 @@ public class ConfigVariationsTestSuiteBuilder {
         try {
             cl.setSuperclass(cp.get(cls.getName()));
 
-            CtMethod mtd = CtNewMethod.make("public static void init() { "
-                + "injectTestsConfiguration("
+            CtMethod mtdBeforeAll = CtNewMethod.make("protected void beforeTestsStarted() { "
+                + "this.testsCfg = "
                 + ConfigVariationsTestSuiteBuilder.class.getName()
-                + ".getCfg(\"" + clsName + "\")); }", cl);
+                + ".getCfg(\"" + clsName + "\"); "
+                + "super.beforeTestsStarted(); "
+                + "}", cl);
+
+            CtMethod mtdBeforeEach = CtNewMethod.make("protected void beforeTest() { "
+                + "this.testsCfg = "
+                + ConfigVariationsTestSuiteBuilder.class.getName()
+                + ".getCfg(\"" + clsName + "\"); "
+                + "super.beforeTest(); "
+                + "}", cl);
 
             // Create and add annotation.
             ClassFile ccFile = cl.getClassFile();
             ConstPool constpool = ccFile.getConstPool();
 
             AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
-            Annotation annot = new Annotation("org.junit.BeforeClass", constpool);
+            Annotation annot = new Annotation("Override", constpool);
 
             attr.addAnnotation(annot);
-            mtd.getMethodInfo().addAttribute(attr);
+            mtdBeforeAll.getMethodInfo().addAttribute(attr);
+            mtdBeforeEach.getMethodInfo().addAttribute(attr);
 
-            cl.addMethod(mtd);
+            cl.addMethod(mtdBeforeAll);
+            cl.addMethod(mtdBeforeEach);
 
             return cl.toClass();
         }

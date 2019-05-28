@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
@@ -63,9 +64,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
-    /** See {@link IgniteConfigVariationsAbstractTest#injectTestsConfiguration} */
-    private static VariationsTestsConfig testsCfgInjected = dummyCfg();
-
     /** {@inheritDoc} */
     @Override public String getTestIgniteInstanceName(int idx) {
         return getTestIgniteInstanceName() + idx;
@@ -75,35 +73,21 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     @Override public String getTestIgniteInstanceName() {
         return "testGrid";
     }
-
-    /**
-     * Invoked by reflection from {@code ConfigVariationsTestSuiteBuilder}.
-     *
-     * @param testsCfgInjected Tests configuration.
-     */
-    @SuppressWarnings("unused")
-    protected static void injectTestsConfiguration(VariationsTestsConfig testsCfgInjected) {
-        IgniteConfigVariationsAbstractTest.testsCfgInjected = testsCfgInjected;
-    }
-
     /** {@inheritDoc} */
     @Override protected boolean isSafeTopology() {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
+    /** Check that test name is not null. */
+    @Before
+    public void checkTestName() {
         assert getName() != null : "getName returned null";
-
-        assert testsCfgInjected != null;
-
-        testsCfg = testsCfgInjected;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        assert testsCfg != null;
+
         if (Ignition.allGrids().size() != testsCfg.gridCount()) {
             info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
 
@@ -166,7 +150,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected void unconditionalCleanupAfterTests() {
         testedNodeIdx = 0;
 
-        testsCfgInjected = testsCfg = dummyCfg();
+        testsCfg = dummyCfg();
 
         stopAllGrids();
     }
