@@ -351,61 +351,24 @@ public class BlockingSslHandler {
      * @param res Response.
      */
     private SSLEngineResult postHandshakeIfNeded(SSLEngineResult res) throws SSLException, IgniteCheckedException {
-        /*if (res.getHandshakeStatus() == FINISHED && res.getStatus() == OK && inNetBuf.hasRemaining()) {
-            outNetBuf.clear();
+        while (res.getHandshakeStatus() == FINISHED && res.getStatus() == OK) {
+            if (!inNetBuf.hasRemaining()) {
+                inNetBuf.clear();
 
-            res = sslEngine.wrap(handshakeBuf, outNetBuf);
+                readFromNet();
 
-            while (res.getStatus() == BUFFER_OVERFLOW) {
-                outNetBuf = expandBuffer(outNetBuf, outNetBuf.capacity() * 2);
-
-                outNetBuf.flip();
-
-                outNetBuf.clear();
-
-                res = sslEngine.wrap(handshakeBuf, outNetBuf);
+                inNetBuf.flip();
             }
 
-            outNetBuf.flip();
-
-            writeNetBuffer();
+            res = unwrap0();
 
             handshakeStatus = res.getHandshakeStatus();
 
             if (log.isDebugEnabled())
-                log.debug("Wrapped post-handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
+                log.debug("Unrapped post-handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
                     handshakeStatus + ']');
-        }*/
-        log.info("##########1: " + inNetBuf.hasRemaining() + " : " + inNetBuf.position() + " : " + outNetBuf.hasRemaining() + " : " + outNetBuf.hasRemaining());
-        while (res.getHandshakeStatus() == FINISHED && res.getStatus() == OK) {
-            log.info("##########2: " + inNetBuf.hasRemaining() + " : " + inNetBuf.position() + " : " + outNetBuf.hasRemaining() + " : " + outNetBuf.hasRemaining());
-            res = postHandshakeRead();
         }
 
-        return res;
-    }
-
-    /**
-     *
-     */
-    private SSLEngineResult postHandshakeRead() throws IgniteCheckedException, SSLException {
-        SSLEngineResult res;
-
-        if (!inNetBuf.hasRemaining()) {
-            inNetBuf.clear();
-
-            readFromNet();
-
-            inNetBuf.flip();
-        }
-
-        res = unwrap0();
-
-        handshakeStatus = res.getHandshakeStatus();
-
-        if (log.isDebugEnabled())
-            log.debug("Unrapped post-handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
-                handshakeStatus + ']');
         return res;
     }
 

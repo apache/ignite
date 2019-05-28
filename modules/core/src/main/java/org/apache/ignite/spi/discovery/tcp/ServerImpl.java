@@ -7081,19 +7081,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public void interrupt() {
             super.interrupt();
 
-            //TODO java 12 bug?
-            try {
-               sock.shutdownOutput();
-            }catch (Exception ignored) {
-                // No-op.
-            }
-
-            try {
-                sock.shutdownInput();
-            }catch (Exception ignored) {
-                // No-op.
-            }
-
             U.closeQuiet(sock);
         }
 
