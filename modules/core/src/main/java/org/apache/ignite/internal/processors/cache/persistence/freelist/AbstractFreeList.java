@@ -131,13 +131,27 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
     }
 
-    /** */
-    private final PageHandler<T, Integer> writeRow = new WriteRowHandler();
+    /** Write handler which puts memory page into the free list after an update. */
+    private final PageHandler<T, Integer> writeRow = new WriteRowHandler(true);
+
+    /** Write handler which doesn't put memory page into the free list after an update. */
+    private final PageHandler<T, Integer> writeRowNoPut = new WriteRowHandler(false);
 
     /**
      *
      */
     private final class WriteRowHandler extends PageHandler<T, Integer> {
+        /** */
+        private final boolean putPageIntoFreeList;
+
+        /**
+         * @param putPageIntoFreeList Put page into the free list after an update.
+         */
+        WriteRowHandler(boolean putPageIntoFreeList) {
+            this.putPageIntoFreeList = putPageIntoFreeList;
+        }
+
+        /** {@inheritDoc} */
         @Override public Integer run(
             int cacheId,
             long pageId,
@@ -159,6 +173,17 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             // If the full row does not fit into this page write only a fragment.
             written = (written == 0 && oldFreeSpace >= rowSize) ? addRow(pageId, page, pageAddr, io, row, rowSize) :
                 addRowFragment(pageId, page, pageAddr, io, row, written, rowSize);
+
+            if (putPageIntoFreeList) {
+                // Reread free space after update.
+                int newFreeSpace = io.getFreeSpace(pageAddr);
+
+                if (newFreeSpace > MIN_PAGE_FREE_SPACE) {
+                    int bucket = bucket(newFreeSpace, false);
+
+                    put(null, pageId, page, pageAddr, bucket, statHolder);
+                }
+            }
 
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);
@@ -506,44 +531,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 else // Page is taken from free space bucket. For in-memory mode partition must be changed.
                     pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
-                long page = acquirePage(pageId, statHolder);
+                written = write(pageId, writeRow, initIo, row, written, FAIL_I, statHolder);
 
-                try {
-                    long pageAddr = writeLock(pageId, page);
-
-                    assert pageAddr != 0;
-
-                    boolean ok = false;
-
-                    try {
-                        written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this, writeRow, initIo, wal,
-                            null, row, written, statHolder);
-
-                        assert written != FAIL_I; // We can't fail here.
-
-                        int freeSpace = row.ioVersions().latest().getFreeSpace(pageAddr);
-
-                        // Put page into free list if needed.
-                        if (freeSpace > MIN_PAGE_FREE_SPACE) {
-                            int bucket = bucket(freeSpace, false);
-
-                            put(null, pageId, page, pageAddr, bucket, statHolder);
-                        }
-
-                        assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
-
-                        ok = true;
-                    }
-                    finally {
-                        assert writeRow.releaseAfterWrite(grpId, pageId, page, pageAddr, row, 0);
-
-                        writeUnlock(pageId, page, pageAddr, ok);
-                    }
-                }
-                finally {
-                    releasePage(pageId, page);
-                }
-            } while (written != COMPLETE);
+                assert written != FAIL_I; // We can't fail here.
+            }
+            while (written != COMPLETE);
         }
         catch (IgniteCheckedException | Error e) {
             throw e;
@@ -565,6 +557,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             do {
                 written = writeLargeFragments(row, statHolder);
 
+                // If there is no remainder - go to the next row.
                 if (written == COMPLETE) {
                     if (iter.hasNext())
                         row = iter.next();
@@ -572,12 +565,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     continue;
                 }
 
-                AbstractDataPageIO initIo = null;
-
                 long pageId = 0;
 
-                // Search for the most free page with enough free space.
-                int minBucket = bucket(row.size() % MIN_SIZE_FOR_DATA_PAGE, false);
+                // Search for the most free page with enough space.
+                int minBucket = bucket(row.size() - written, false);
 
                 for (int b = REUSE_BUCKET - 1; b != minBucket; b--) {
                     pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
@@ -593,17 +584,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         pageId = reuseList.takeRecycledPage();
                 }
 
+                AbstractDataPageIO initIo = null;
+
                 if (pageId == 0) {
                     pageId = allocateDataPage(row.partition());
 
                     initIo = row.ioVersions().latest();
                 }
-                else
-                if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
+                else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
                     pageId = initReusedPage(row, pageId, statHolder);
                 else // For in-memory mode partition must be changed.
                     pageId = PageIdUtils.changePartitionId(pageId, row.partition());
 
+                // Lock page.
                 long page = acquirePage(pageId, statHolder);
 
                 try {
@@ -616,18 +609,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     boolean ok = false;
 
                     try {
+                        // Fill the page up to the end.
                         do {
                             if (row.link() == 0)
                                 written = writeLargeFragments(row, statHolder);
 
                             if (written != COMPLETE) {
                                 written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this,
-                                    writeRow, initIo, wal, null, row, written, statHolder);
+                                    writeRowNoPut, initIo, wal, null, row, written, statHolder);
+
+                                initIo = null;
                             }
 
                             assert written == COMPLETE : written;
-
-                            initIo = null;
 
                             if (!iter.hasNext())
                                 break;
@@ -638,7 +632,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                         int freeSpace = io.getFreeSpace(pageAddr);
 
-                        // Put page into free list if needed.
+                        // Put page into the free list if needed.
                         if (freeSpace > MIN_PAGE_FREE_SPACE) {
                             int bucket = bucket(freeSpace, false);
 
@@ -650,7 +644,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         ok = true;
                     }
                     finally {
-                        assert writeRow.releaseAfterWrite(grpId, pageId, page, pageAddr, row, 0);
+                        assert writeRowNoPut.releaseAfterWrite(grpId, pageId, page, pageAddr, row, 0);
 
                         writeUnlock(pageId, page, pageAddr, ok);
                     }
@@ -658,7 +652,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 finally {
                     releasePage(pageId, page);
                 }
-            } while (written != COMPLETE || row.link() == 0);
+            }
+            while (written != COMPLETE || row.link() == 0);
         }
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e);
@@ -696,7 +691,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             else
                 pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
-            written = write(pageId, writeRow, initIo, row, written, FAIL_I, statHolder);
+            written = write(pageId, writeRowNoPut, initIo, row, written, FAIL_I, statHolder);
 
             assert written != FAIL_I; // We can't fail here.
 
