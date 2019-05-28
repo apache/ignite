@@ -282,7 +282,8 @@ public abstract class PageHandler<X, R> {
             boolean ok = false;
 
             try {
-                R res = writePage(pageMem, grpId, pageId, page, pageAddr, lsnr, h, init, wal, walPlc, arg, intArg, statHolder);
+                R res = writePage(
+                    pageMem, grpId, pageId, page, pageAddr, lsnr, h, init, wal, walPlc, arg, intArg, statHolder);
 
                 ok = true;
 
@@ -301,6 +302,22 @@ public abstract class PageHandler<X, R> {
         }
     }
 
+    /**
+     * @param pageMem Page memory.
+     * @param grpId Group ID.
+     * @param pageId Page ID.
+     * @param pageAddr Page address.
+     * @param lsnr Lock listener.
+     * @param h Handler.
+     * @param init IO for new page initialization or {@code null} if it is an existing page.
+     * @param wal Write ahead log.
+     * @param walPlc Full page WAL record policy.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param statHolder Statistics holder to track IO operations.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
     public static <X, R> R writePage(
         PageMemory pageMem,
         int grpId,
@@ -326,7 +343,6 @@ public abstract class PageHandler<X, R> {
 
         return h.run(grpId, pageId, page, pageAddr, init, walPlc, arg, intArg, statHolder);
     }
-
 
     /**
      * @param pageMem Page memory.
