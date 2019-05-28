@@ -61,9 +61,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridReadWithConsistencyCheckFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridReadWithConsistencyRepairFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearGetWithConsistencyCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearGetWithConsistencyRepairFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
@@ -2368,7 +2368,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readRepair) {
-                            return new GridReadWithConsistencyRepairFuture(
+                            return new GridNearGetWithConsistencyRepairFuture(
                                 topVer,
                                 cacheCtx,
                                 keys,
@@ -3078,7 +3078,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
         else if (cacheCtx.isColocated()) {
             if (readRepair) {
-                return new GridReadWithConsistencyCheckFuture(
+                return new GridNearGetWithConsistencyCheckFuture(
                     topVer,
                     cacheCtx,
                     keys,
@@ -3089,6 +3089,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     recovery,
                     expiryPlc0,
                     skipVals,
+                    needVer,
                     lb,
                     mvccSnapshot)
                     .init()

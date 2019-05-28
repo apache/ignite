@@ -72,8 +72,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridReadWithConsistencyCheckFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearGetWithConsistencyCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -97,7 +97,6 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.nio.GridNioBackPressureControl;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1426,7 +1425,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
 
         if (readRepair) {
-            return new GridReadWithConsistencyCheckFuture(
+            return new GridNearGetWithConsistencyCheckFuture(
                 topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
@@ -1437,36 +1436,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 recovery,
                 expiry,
                 skipVals,
+                needVer,
                 null,
-                null)
-                .init()
-                .chain((fut) -> {
-                    try {
-                        final Map<K, V> map = new IgniteBiTuple<>();
-
-                        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                            EntryGetResult getRes = entry.getValue();
-
-                            ctx.addResult(map,
-                                entry.getKey(),
-                                getRes.value(),
-                                skipVals,
-                                false,
-                                deserializeBinary,
-                                false,
-                                getRes,
-                                getRes.version(),
-                                0,
-                                0,
-                                needVer);
-                        }
-
-                        return F.firstValue(map);
-                    }
-                    catch (Exception e) {
-                        throw new GridClosureException(e);
-                    }
-                });
+                null).single();
         }
 
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
@@ -1523,7 +1495,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean evt = !skipVals;
 
         if (readRepair) {
-            return new GridReadWithConsistencyCheckFuture(
+            return new GridNearGetWithConsistencyCheckFuture(
                 topVer,
                 ctx,
                 ctx.cacheKeysView(keys),
@@ -1534,36 +1506,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 recovery,
                 expiry,
                 skipVals,
+                needVer,
                 null,
-                null)
-                .init()
-                .chain((fut) -> {
-                    try {
-                        final Map<K, V> map = U.newHashMap(keys.size());
-
-                        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                            EntryGetResult getRes = entry.getValue();
-
-                            ctx.addResult(map,
-                                entry.getKey(),
-                                getRes.value(),
-                                skipVals,
-                                false,
-                                deserializeBinary,
-                                false,
-                                getRes,
-                                getRes.version(),
-                                0,
-                                0,
-                                needVer);
-                        }
-
-                        return map;
-                    }
-                    catch (Exception e) {
-                        throw new GridClosureException(e);
-                    }
-                });
+                null).multi();
         }
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.

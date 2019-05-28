@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht.consistency;
+package org.apache.ignite.internal.processors.cache.distributed.near.consistency;
 
 import org.apache.ignite.IgniteCheckedException;
 
