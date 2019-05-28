@@ -92,24 +92,31 @@ public final class GridTestProperties {
 
     /** */
     static {
-        // Initialize IGNITE_HOME system property.
-        U.getIgniteHome();
+        try {
+            // Initialize IGNITE_HOME system property.
+            U.getIgniteHome();
 
-        // Load default properties.
-        File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
+            // Load default properties.
+            File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
 
-        assert cfgFile != null && cfgFile.exists();
-        assert !cfgFile.isDirectory();
+            assert cfgFile != null && cfgFile.exists();
+            assert !cfgFile.isDirectory();
 
-        dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
+            dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
 
-        if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
-            String user = System.getProperty("user.name");
+            if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
+                String user = System.getProperty("user.name");
 
-            assert user != null;
+                assert user != null;
 
-            // Configure log4j logger.
-            configureLog4j(user);
+                // Configure log4j logger.
+                configureLog4j(user);
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            throw e;
         }
     }
 
