@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
