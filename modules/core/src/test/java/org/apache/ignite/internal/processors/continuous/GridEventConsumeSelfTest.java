@@ -1188,8 +1188,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 0; i < consumeCnt; i++) {
-                    int idx = rnd.nextInt(GRID_CNT);
+                for (int i = 0; i < consumeCnt && !stop.get(); i++) {
+                    int idx = 0;
 
                     try {
                         IgniteEvents evts = grid(idx).events();
@@ -1217,7 +1217,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 8, "consume-starter");
+        }, 16, "consume-starter");
 
         starterFut.listen(fut -> stop.set(true));
 
@@ -1246,7 +1246,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 4, "consume-stopper");
+        }, 8, "consume-stopper");
 
         IgniteInternalFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1262,7 +1262,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> jobRunnerFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
-                    int idx = rnd.nextInt(GRID_CNT);
+                    int idx = 0;
 
                     try {
                         grid(idx).compute().runAsync(F.noop()).get(timeout);

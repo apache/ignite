@@ -1472,6 +1472,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     if (fut != null)
                         fut.initRemoteNodes(discoCache);
+
+                    return;
                 }
 
                 StartRequestDataV2 reqData = msg.startRequestData();
