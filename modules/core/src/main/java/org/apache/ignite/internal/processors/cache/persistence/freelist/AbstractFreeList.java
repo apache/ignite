@@ -535,17 +535,17 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 written = writeLargeFragments(row, statHolder);
 
                 if (written == COMPLETE) {
-                    row = iter.hasNext() ? iter.next() : row;
+                    if (iter.hasNext())
+                        row = iter.next();
 
                     continue;
                 }
 
                 AbstractDataPageIO initIo = null;
 
-                int rowSize = row.size();
+                int minBucket = bucket(row.size() % MIN_SIZE_FOR_DATA_PAGE, false);
 
-                int minBucket = bucket(rowSize % MIN_SIZE_FOR_DATA_PAGE, false);
-
+                // Search for the most free page with enough space.
                 long pageId = getPage(REUSE_BUCKET - 1, minBucket, row, statHolder);
 
                 if (pageId == 0) {
@@ -569,24 +569,24 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                     try {
                         do {
-                            boolean largeRow = rowSize > MIN_SIZE_FOR_DATA_PAGE;
+                            if (row.link() == 0)
+                                written = writeLargeFragments(row, statHolder);
 
-                            written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this, writeRow,
-                                initIo, wal, null, row, largeRow ? written : 0, statHolder);
+                            if (written != COMPLETE) {
+                                written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this,
+                                    writeRow, initIo, wal, null, row, written, statHolder);
+                            }
 
                             assert written == COMPLETE : written;
 
                             initIo = null;
 
-                            while (iter.hasNext() && written == COMPLETE) {
-                                row = iter.next();
+                            if (!iter.hasNext())
+                                break;
 
-                                written = writeLargeFragments(row, statHolder);
-                            }
-
-                            rowSize = row.size();
+                            row = iter.next();
                         }
-                        while (iter.hasNext() && io.getFreeSpace(pageAddr) >= (rowSize % MIN_SIZE_FOR_DATA_PAGE));
+                        while (io.getFreeSpace(pageAddr) >= (row.size() % MIN_SIZE_FOR_DATA_PAGE));
 
                         ok = true;
                     }
