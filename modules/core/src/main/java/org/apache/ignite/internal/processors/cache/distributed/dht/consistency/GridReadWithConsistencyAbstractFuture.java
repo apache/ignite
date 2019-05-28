@@ -82,7 +82,7 @@ public abstract class GridReadWithConsistencyAbstractFuture extends GridFutureAd
             GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
                 new GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>(
                     ctx,
-                    mapping.getValue(),
+                    mapping.getValue(), // Keys.
                     readThrough,
                     false, // Local get required.
                     subjId,
@@ -92,7 +92,7 @@ public abstract class GridReadWithConsistencyAbstractFuture extends GridFutureAd
                     expiryPlc,
                     skipVals,
                     true, // Version required to check the consistency.
-                    true,
+                    true, // Produces EntryGetResults.
                     txLbl,
                     mvccSnapshot) {
                     @Override protected boolean map(

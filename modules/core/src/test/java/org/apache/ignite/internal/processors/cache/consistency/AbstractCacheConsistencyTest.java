@@ -32,6 +32,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -212,6 +213,11 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         return PARTITIONED;
     }
 
+    /** Atomicy mode. */
+    protected CacheAtomicityMode atomicyMode(){
+        return TRANSACTIONAL;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -265,7 +271,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setCacheMode(cacheMode());
-        cfg.setAtomicityMode(TRANSACTIONAL);
+        cfg.setAtomicityMode(atomicyMode());
         cfg.setBackups(backupsCount());
 
         return cfg;

@@ -4992,21 +4992,25 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             catch (IgniteConsistencyViolationException e1) {
                 assert tx == null || tx.optimistic() || tx.readCommitted();
 
-                repair.apply(opCtx).listen((ignored) -> {
-                    CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
+                repair.apply(opCtx).listen((repFut) -> {
+                    if (repFut.error() != null)
+                        fut.onDone(repFut.error());
+                    else {
+                        CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
-                    IgniteInternalTx prevTx = ctx.tm().tx(tx);
-                    ctx.operationContextPerCall(opCtx);
+                        IgniteInternalTx prevTx = ctx.tm().tx(tx); // Within the original tx.
+                        ctx.operationContextPerCall(opCtx); // With the same operation context.
 
-                    try {
-                        fut.onDone(retry.get().get());
-                    }
-                    catch (IgniteCheckedException e2) {
-                        fut.onDone(e2);
-                    }
-                    finally {
-                        ctx.tm().tx(prevTx);
-                        ctx.operationContextPerCall(prevOpCtx);
+                        try {
+                            fut.onDone(retry.get().get());
+                        }
+                        catch (IgniteCheckedException e2) {
+                            fut.onDone(e2);
+                        }
+                        finally {
+                            ctx.tm().tx(prevTx);
+                            ctx.operationContextPerCall(prevOpCtx);
+                        }
                     }
                 });
             }
@@ -5021,7 +5025,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Checks and repairs entries across the topology.
      */
-    private IgniteInternalFuture<Void> repairAsync(Collection<? extends K> keys, final CacheOperationContext opCtx){
+    protected IgniteInternalFuture<Void> repairAsync(Collection<? extends K> keys, final CacheOperationContext opCtx){
         GridCompoundFuture fut = new GridCompoundFuture();
 
         for (K key : keys)
@@ -5035,7 +5039,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Checks and repairs entry across the topology.
      */
-    private IgniteInternalFuture<Void> repairAsync(final K key, final CacheOperationContext opCtx) {
+    protected IgniteInternalFuture<Void> repairAsync(final K key, final CacheOperationContext opCtx) {
+        assert ctx.transactional();
+
         final GridNearTxLocal orig = checkCurrentTx();
 
         assert orig == null || orig.optimistic() || orig.readCommitted();

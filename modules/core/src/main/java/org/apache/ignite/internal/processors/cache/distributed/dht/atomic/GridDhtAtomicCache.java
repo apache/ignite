@@ -72,6 +72,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.GridReadWithConsistencyCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -95,6 +97,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.nio.GridNioBackPressureControl;
 import org.apache.ignite.internal.util.nio.GridNioMessageTracker;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -471,6 +474,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean recovery = opCtx != null && opCtx.recovery();
+        final boolean readRepair = opCtx != null && opCtx.readRepair();
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
@@ -483,6 +487,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     expiryPlc,
                     skipVals,
                     skipStore,
+                    readRepair,
                     needVer);
             }
         });
@@ -501,6 +506,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
             recovery,
+            readRepair,
             false,
             needVer,
             false).get();
@@ -525,6 +531,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskName,
             deserializeBinary,
             recovery,
+            readRepair,
             skipVals,
             needVer,
             true);
@@ -548,6 +555,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
+        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer,
         boolean asyncOp
@@ -579,6 +587,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         taskName,
                         deserializeBinary,
                         recovery,
+                        readRepair,
                         expiryPlc,
                         skipVals,
                         skipStore,
@@ -593,6 +602,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 taskName,
                 deserializeBinary,
                 recovery,
+                readRepair,
                 expiryPlc,
                 skipVals,
                 skipStore,
@@ -1408,11 +1418,56 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
+        boolean readRepair,
         boolean needVer
     ) {
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
+
+        if (readRepair) {
+            return new GridReadWithConsistencyCheckFuture(
+                topVer,
+                ctx,
+                Collections.singleton(ctx.toCacheKeyObject(key)),
+                !skipStore,
+                subjId,
+                taskName,
+                deserializeBinary,
+                recovery,
+                expiry,
+                skipVals,
+                null,
+                null)
+                .init()
+                .chain((fut) -> {
+                    try {
+                        final Map<K, V> map = new IgniteBiTuple<>();
+
+                        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                            EntryGetResult getRes = entry.getValue();
+
+                            ctx.addResult(map,
+                                entry.getKey(),
+                                getRes.value(),
+                                skipVals,
+                                false,
+                                deserializeBinary,
+                                false,
+                                getRes,
+                                getRes.version(),
+                                0,
+                                0,
+                                needVer);
+                        }
+
+                        return F.firstValue(map);
+                    }
+                    catch (Exception e) {
+                        throw new GridClosureException(e);
+                    }
+                });
+        }
 
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
             key,
@@ -1455,6 +1510,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
+        boolean readRepair,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1465,6 +1521,50 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
 
         final boolean evt = !skipVals;
+
+        if (readRepair) {
+            return new GridReadWithConsistencyCheckFuture(
+                topVer,
+                ctx,
+                ctx.cacheKeysView(keys),
+                !skipStore,
+                subjId,
+                taskName,
+                deserializeBinary,
+                recovery,
+                expiry,
+                skipVals,
+                null,
+                null)
+                .init()
+                .chain((fut) -> {
+                    try {
+                        final Map<K, V> map = U.newHashMap(keys.size());
+
+                        for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                            EntryGetResult getRes = entry.getValue();
+
+                            ctx.addResult(map,
+                                entry.getKey(),
+                                getRes.value(),
+                                skipVals,
+                                false,
+                                deserializeBinary,
+                                false,
+                                getRes,
+                                getRes.version(),
+                                0,
+                                0,
+                                needVer);
+                        }
+
+                        return map;
+                    }
+                    catch (Exception e) {
+                        throw new GridClosureException(e);
+                    }
+                });
+        }
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!forcePrimary && ctx.affinityNode()) {
@@ -1691,6 +1791,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
             });
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteInternalFuture<Void> repairAsync(Collection<? extends K> keys,
+        final CacheOperationContext opCtx) {
+        return new GridFinishedFuture<>(
+            new IgniteConsistencyViolationException("Consistency violation detected during Read Repair procedure."));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteInternalFuture<Void> repairAsync(final K key, final CacheOperationContext opCtx) {
+        return new GridFinishedFuture<>(
+            new IgniteConsistencyViolationException("Consistency violation detected during Read Repair procedure."));
     }
 
     /**

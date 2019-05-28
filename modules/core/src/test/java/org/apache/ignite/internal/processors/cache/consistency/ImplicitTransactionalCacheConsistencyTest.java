@@ -67,7 +67,7 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    private void testGet(Ignite initiator) throws Exception {
+    protected void testGet(Ignite initiator) throws Exception {
         prepareAndCheck(
             initiator,
             1,
@@ -93,7 +93,7 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    private void testGetAll(Ignite initiator, Integer amount) throws Exception {
+    protected void testGetAll(Ignite initiator, Integer amount) throws Exception {
         prepareAndCheck(
             initiator,
             amount,

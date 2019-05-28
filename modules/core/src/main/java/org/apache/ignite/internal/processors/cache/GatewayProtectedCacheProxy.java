@@ -239,9 +239,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             if (context().mvccEnabled())
                 throw new UnsupportedOperationException("Read Repair is not supported at MVCC mode.");
 
-            if (context().atomic())
-                throw new UnsupportedOperationException("Read Repair is not supported for atomic caches.");
-
             if (context().isLocal())
                 throw new UnsupportedOperationException("Read Repair is not supported for local caches.");
 
