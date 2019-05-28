@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -158,7 +159,18 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         print(printer, false);
 
         if (!F.isEmpty(exceptions)) {
-            File f = new File(IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
+            File wd = null;
+
+            try {
+                wd = U.resolveWorkDirectory(U.defaultWorkDirectory(), "", false);
+            }
+            catch (IgniteCheckedException e) {
+                printer.accept("Can't find work directory. " + e.getMessage() + "\n");
+
+                e.printStackTrace();
+            }
+
+            File f = new File(wd, IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
             try (PrintWriter pw = new PrintWriter(f)) {
                 print(pw::write, true);
