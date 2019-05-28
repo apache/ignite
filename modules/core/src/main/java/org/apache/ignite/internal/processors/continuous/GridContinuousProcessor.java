@@ -1464,17 +1464,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         final DiscoCache discoCache = ctx.discovery().discoCache(topVer);
 
+        if (snd.id().equals(ctx.localNodeId())) {
+            StartFuture fut = startFuts.get(msg.routineId());
+
+            if (fut != null)
+                fut.initRemoteNodes(discoCache);
+        }
+        else
         // Should not use marshaller and send messages from discovery thread.
         ctx.getSystemExecutorService().execute(new Runnable() {
             @Override public void run() {
-                if (snd.id().equals(ctx.localNodeId())) {
-                    StartFuture fut = startFuts.get(msg.routineId());
-
-                    if (fut != null)
-                        fut.initRemoteNodes(discoCache);
-
-                    return;
-                }
 
                 StartRequestDataV2 reqData = msg.startRequestData();
 
