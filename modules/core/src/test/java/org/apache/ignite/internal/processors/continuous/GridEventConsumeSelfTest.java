@@ -1166,7 +1166,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         final Random rnd = new Random();
 
-        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : 10;
+        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : 20;
 
         IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
