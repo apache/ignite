@@ -46,7 +46,28 @@ Development:
    environment variable points to this directory.
  * To start Apache Ignite as a standalone node use "ignite" binary.
 
- 
+Mac info
+==============
+
+Files list:
+
+ * ignite - executable to start standalone Ignite C++ node.
+ * libignite.dylib - Ignite C++ API library.
+ * libignite-thin-client.dylib - Ignite C++ thin client library.
+
+Development:
+
+ * IGNITE_HOME environment variable must be set to Ignite installation directory.
+ * Once both libraries are built and installed, required headers are placed in the
+   "/usr/local/include/ignite" directory.
+ * Apache Ignite C++ depends on jni.h file located inside ${JAVA_HOME}/include directory.
+   Add this directory to headers search path: "-I${JAVA_HOME}/include".
+ * Library is placed in the "/usr/local/lib" directory. Link it to your project: "-lignite".
+ * Ignite depends on "libjvm.so" library shipped with Java. Typically this library is
+   located inside $JAVA_HOME/jre/lib/server/server directory. Ensure that LD_LIBRARY_PATH
+   environment variable points to this directory.
+ * To start Apache Ignite as a standalone node use "ignite" binary.
+
 Windows info
 ===============
 
@@ -60,6 +81,7 @@ Files list:
 Development:
 
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
+ * OPENSSL_HOME environment various should be set to the correct version of your OpenSSL installation directory.
  * Update Include Directories in Project Properties with paths to:
    * $(IGNITE_HOME)\platforms\cpp\common\include
    * $(IGNITE_HOME)\platforms\cpp\common\os\win\include
