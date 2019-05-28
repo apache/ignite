@@ -60,9 +60,6 @@ public class FileStoreHeapUtilizationJolBenchmark {
     /** */
     private static final TestResultParameterInfo CACHE_WORK_TIME_PARAM = new TestResultParameterInfo(CACHE_WORK_TIME, false);
 
-    /** */
-    private final IgniteLogger log = new BenchmarkLogger();
-
     /**
      * Cleans persistent directory.
      *
@@ -170,84 +167,14 @@ public class FileStoreHeapUtilizationJolBenchmark {
 
         afterTest();
 
-        log.info("Benchmark results: ");
+        System.out.println("Benchmark results: ");
 
-        results.forEach((k, v) -> {
-            log.info(k.name + ": " + v);
-        });
+        results.forEach((k, v) -> System.out.println(k.name + ": " + v));
     }
 
     /** */
     public static void main(String[] args) throws Exception {
         new FileStoreHeapUtilizationJolBenchmark().benchmark();
-    }
-
-    /** */
-    private static class BenchmarkLogger implements IgniteLogger {
-        /**
-         * Default constructor.
-         */
-        BenchmarkLogger() {
-            /* No-op */
-        }
-
-        /** */
-        @Override public IgniteLogger getLogger(Object ctgr) {
-            return null;
-        }
-
-        /** */
-        @Override public void trace(String msg) {
-            if (isTraceEnabled())
-                System.out.println(msg);
-        }
-
-        /** */
-        @Override public void debug(String msg) {
-            if (isDebugEnabled())
-                System.out.println(msg);
-        }
-
-        /** */
-        @Override public void info(String msg) {
-            if (isInfoEnabled())
-                System.out.println(msg);
-        }
-
-        /** */
-        @Override public void warning(String msg, @Nullable Throwable e) {
-            System.err.println(msg);
-        }
-
-        /** */
-        @Override public void error(String msg, @Nullable Throwable e) {
-            System.err.println(msg);
-        }
-
-        /** */
-        @Override public boolean isTraceEnabled() {
-            return true;
-        }
-
-        /** */
-        @Override public boolean isDebugEnabled() {
-            return true;
-        }
-
-        /** */
-        @Override public boolean isInfoEnabled() {
-            return true;
-        }
-
-        /** */
-        @Override public boolean isQuiet() {
-            return false;
-        }
-
-        /** */
-        @Override public String fileName() {
-            return null;
-        }
     }
 
     /**
