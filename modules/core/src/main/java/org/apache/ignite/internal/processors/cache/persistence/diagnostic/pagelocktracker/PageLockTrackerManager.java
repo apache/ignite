@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 
 import java.io.File;
 import java.util.List;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker.State;
@@ -42,7 +43,7 @@ public class PageLockTrackerManager {
     private final IgniteLogger log;
 
     /** */
-    private List<State> threads;
+    private Set<State> threads;
 
     /**
      * Default constructor.
@@ -58,7 +59,7 @@ public class PageLockTrackerManager {
     /**
      * @param threads Hang threads.
      */
-    private void onHangThreads(@NotNull List<State> threads) {
+    private void onHangThreads(@NotNull Set<State> threads) {
         assert threads != null;
 
         // Processe only one for same list thread state.
@@ -103,29 +104,6 @@ public class PageLockTrackerManager {
      */
     public PageLockListener createPageLockTracker(String name) {
         return sharedPageLockTracker.registrateStructure(name);
-    }
-
-    /**
-     * Enable page lock tracking.
-     */
-    public void enableTracking() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Disable page lock tracking.
-     */
-    public void disableTracking() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Check page lock tracking.
-     *
-     * @return {@code True} if tracking enable, {@code False} if disable.
-     */
-    public boolean isTracingEnable() {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -186,5 +164,26 @@ public class PageLockTrackerManager {
      */
     public PageLockTrackerMXBean mxBean() {
         return mxBean;
+    }
+
+    /**
+     * @return Total heap overhead in bytes.
+     */
+    public long getHeapOverhead() {
+        return 0L;
+    }
+
+    /**
+     * @return Total offheap overhead in bytes.
+     */
+    public long getOffHeapOverhead() {
+        return 0L;
+    }
+
+    /**
+     * @return Total overhead in bytes.
+     */
+    public long getTotalOverhead() {
+        return getHeapOverhead() + getOffHeapOverhead();
     }
 }

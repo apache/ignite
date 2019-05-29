@@ -32,21 +32,6 @@ public class PageLockTrackerMXBeanImpl implements PageLockTrackerMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void enableTracking() {
-        mgr.enableTracking();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void disableTracking() {
-        mgr.disableTracking();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isTracingEnable() {
-        return mgr.isTracingEnable();
-    }
-
-    /** {@inheritDoc} */
     @Override public String dumpLocks() {
         return mgr.dumpLocks();
     }

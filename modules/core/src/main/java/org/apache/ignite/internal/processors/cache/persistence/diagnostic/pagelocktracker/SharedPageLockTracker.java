@@ -21,10 +21,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
@@ -77,7 +79,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     /**
      *
      */
-    private final Consumer<List<SharedPageLockTracker.State>> hangThreadsCallBack;
+    private final Consumer<Set<SharedPageLockTracker.State>> hangThreadsCallBack;
     /**
      *
      */
@@ -93,7 +95,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     /**
      *
      */
-    public SharedPageLockTracker(Consumer<List<SharedPageLockTracker.State>> hangThreadsCallBack) {
+    public SharedPageLockTracker(Consumer<Set<State>> hangThreadsCallBack) {
         this(1000, getInteger(IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, 60_000), hangThreadsCallBack);
     }
 
@@ -103,7 +105,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     public SharedPageLockTracker(
         int threadLimits,
         int timeOutWorkerInterval,
-        Consumer<List<SharedPageLockTracker.State>> hangThreadsCallBack
+        Consumer<Set<SharedPageLockTracker.State>> hangThreadsCallBack
     ) {
         this.threadLimits = threadLimits;
         this.timeOutWorkerInterval = timeOutWorkerInterval;
@@ -280,8 +282,8 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     /**
      *
      */
-    private synchronized List<State> hangThreads() {
-        List<State> hangsThreads = new ArrayList<>();
+    private synchronized Set<State> hangThreads() {
+        Set<State> hangsThreads = new HashSet<>();
 
         Map<Long, SharedPageLockTracker.State> currentThreadsOperationState = getThreadOperationState();
 
@@ -318,7 +320,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
                     cleanTerminatedThreads();
 
                     if (hangThreadsCallBack != null) {
-                        List<SharedPageLockTracker.State> threadIds = hangThreads();
+                        Set<SharedPageLockTracker.State> threadIds = hangThreads();
 
                         if (!F.isEmpty(threadIds))
                             hangThreadsCallBack.accept(threadIds);

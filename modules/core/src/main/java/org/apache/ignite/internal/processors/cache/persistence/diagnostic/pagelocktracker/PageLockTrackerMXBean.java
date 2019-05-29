@@ -26,26 +26,6 @@ import org.apache.ignite.mxbean.MXBeanDescription;
 public interface PageLockTrackerMXBean {
     /** */
     public static final String MBEAN_NAME = "PageLockTracker";
-
-    /**
-     * Enable page lock tracking.
-     */
-    @MXBeanDescription("Enable page lock tracking.")
-    void enableTracking();
-
-    /**
-     * Disable page lock tracking.
-     */
-    @MXBeanDescription("Disable page lock tracking.")
-    void disableTracking();
-
-    /**
-     * Check page lock tracking.
-     * @return {@code True} if tracking enable, {@code False} if disable.
-     */
-    @MXBeanDescription("Check page lock tracking enable (true) or disable (false).")
-    boolean isTracingEnable();
-
     /**
      * Take page locks dump.
      *
