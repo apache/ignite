@@ -718,9 +718,8 @@ public class GridH2Table extends TableBase {
     public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable) throws IgniteCheckedException {
         assert desc != null;
 
-        H2CacheRow row0 = (H2CacheRow)desc.createRow(row);
-        H2CacheRow prevRow0 = prevRow != null ? (H2CacheRow)desc.createRow(prevRow) :
-            null;
+        H2CacheRow row0 = desc.createRow(row);
+        H2CacheRow prevRow0 = prevRow != null ? desc.createRow(prevRow) : null;
 
         row0.prepareValuesCache();
 
@@ -1052,6 +1051,8 @@ public class GridH2Table extends TableBase {
         lock(true);
 
         try {
+            ensureNotDestroyed();
+
             ArrayList<Index> idxs = new ArrayList<>(this.idxs);
 
             Index targetIdx = (h2Idx instanceof GridH2ProxyIndex) ?
@@ -1063,18 +1064,30 @@ public class GridH2Table extends TableBase {
                 if (idx == targetIdx || (idx instanceof GridH2ProxyIndex &&
                     ((GridH2ProxyIndex)idx).underlyingIndex() == targetIdx)) {
 
-                    idxs.remove(i);
+                    Index idx0 = idxs.remove(i);
 
-                    if (idx instanceof GridH2ProxyIndex &&
+                    if (idx0 instanceof GridH2ProxyIndex &&
                         idx.getSchema().findIndex(session, idx.getName()) != null)
                         database.removeSchemaObject(session, idx);
+
+                    GridCacheContext cctx0 = cacheInfo.cacheContext();
+
+                    if (cctx0 != null && idx0 instanceof GridH2IndexBase) {
+                        cctx0.shared().database().checkpointReadLock();
+
+                        try {
+                            ((GridH2IndexBase)idx0).destroy(rmIndex);
+                        }
+                        finally {
+                            cctx0.shared().database().checkpointReadUnlock();
+                        }
+                    }
 
                     continue;
                 }
 
                 i++;
             }
-
             this.idxs = idxs;
         }
         finally {
