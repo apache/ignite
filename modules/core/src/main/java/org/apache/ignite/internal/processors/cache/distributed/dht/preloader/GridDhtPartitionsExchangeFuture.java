@@ -352,7 +352,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
 
-    /** TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11799 */
+    /** Partitions scheduled for historical reblanace for this topology version. */
     private Map<Integer, Set<Integer>> histPartitions;
 
     /**
@@ -5046,9 +5046,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * If partition is clearing or already cleared we need full rebalance even if supplier is exists.
-     * (it still could be used by other demanders)
-     *
      * @param grp Group.
      * @param part Partition.
      */

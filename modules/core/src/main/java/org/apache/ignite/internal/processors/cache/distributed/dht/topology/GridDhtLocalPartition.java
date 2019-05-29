@@ -917,10 +917,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (clearFuture.isDone())
             return true;
 
-        // Stop clearing if outdated topology version or if group is about to stop.
+        // Stop clearing if outdated topology version.
         AffinityTopologyVersion topVer = group().affinity().lastVersion();
 
-        if (!startVer.equals(AffinityTopologyVersion.NONE) && topVer.compareTo(startVer) > 0) {
+        if (!startVer.equals(AffinityTopologyVersion.NONE) && topVer.compareTo(startVer) > 0 && state() == MOVING) {
             clearFuture.onDone();
 
             return true;

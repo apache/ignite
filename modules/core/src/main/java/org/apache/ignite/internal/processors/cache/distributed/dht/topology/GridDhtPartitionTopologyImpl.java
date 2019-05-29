@@ -774,10 +774,18 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                                 "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                     }
 
-                                    // If clearing is not yet started for non empty partition - start it.
-                                    // Important: avoid calling clearAsync multiple times in the same rebalance session
-                                    // or bad things may happen depending on timing.
-                                    if (!exchFut.isHistoryPartition(grp, locPart.id()) && !locPart.isClearing() && !locPart.isEmpty())
+                                    // It's important to clear non empty moving partitions before full rebalancing.
+                                    // Consider the scenario:
+                                    // Node1 has keys k1 and k2 in the same partition.
+                                    // Node2 started rebalancing from Node1.
+                                    // Node2 received k1, k2 and failed before moving partition to OWNING state.
+                                    // Node1 removes k2 but update has not been delivered to Node1 because of failure.
+                                    // After new full rebalance Node1 will only send k1 to Node2 causing lost removal.
+                                    // NOTE: avoid calling clearAsync for partition twice per topology version.
+                                    // TODO FIXME clearing is not always needed see IGNITE-11799
+                                    if (!exchFut.isHistoryPartition(grp, locPart.id()) &&
+                                        !locPart.isClearing() &&
+                                        !locPart.isEmpty())
                                         locPart.clearAsync();
                                 }
                                 else
