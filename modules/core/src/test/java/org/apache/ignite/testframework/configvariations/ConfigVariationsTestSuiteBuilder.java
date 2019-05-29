@@ -28,12 +28,7 @@ import java.util.stream.Collectors;
 import javassist.ClassClassPath;
 import javassist.ClassPool;
 import javassist.CtClass;
-import javassist.CtMethod;
-import javassist.CtNewMethod;
-import javassist.bytecode.AnnotationsAttribute;
-import javassist.bytecode.ClassFile;
-import javassist.bytecode.ConstPool;
-import javassist.bytecode.annotation.Annotation;
+import javassist.CtNewConstructor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
@@ -431,33 +426,12 @@ public class ConfigVariationsTestSuiteBuilder {
         try {
             cl.setSuperclass(cp.get(cls.getName()));
 
-            CtMethod mtdBeforeAll = CtNewMethod.make("protected void beforeTestsStarted() { "
-                + "this.testsCfg = "
-                + ConfigVariationsTestSuiteBuilder.class.getName()
-                + ".getCfg(\"" + clsName + "\"); "
-                + "super.beforeTestsStarted(); "
-                + "}", cl);
-
-            CtMethod mtdBeforeEach = CtNewMethod.make("protected void beforeTest() { "
-                + "this.testsCfg = "
-                + ConfigVariationsTestSuiteBuilder.class.getName()
-                + ".getCfg(\"" + clsName + "\"); "
-                + "super.beforeTest(); "
-                + "}", cl);
-
-            // Create and add annotation.
-            ClassFile ccFile = cl.getClassFile();
-            ConstPool constpool = ccFile.getConstPool();
-
-            AnnotationsAttribute attr = new AnnotationsAttribute(constpool, AnnotationsAttribute.visibleTag);
-            Annotation annot = new Annotation("Override", constpool);
-
-            attr.addAnnotation(annot);
-            mtdBeforeAll.getMethodInfo().addAttribute(attr);
-            mtdBeforeEach.getMethodInfo().addAttribute(attr);
-
-            cl.addMethod(mtdBeforeAll);
-            cl.addMethod(mtdBeforeEach);
+            cl.addConstructor(CtNewConstructor.make("public " + clsName + "() { "
+                    + "this.testsCfg = "
+                    + ConfigVariationsTestSuiteBuilder.class.getName()
+                    + ".getCfg(\"" + clsName + "\"); "
+                    + "}"
+                , cl));
 
             return cl.toClass();
         }
