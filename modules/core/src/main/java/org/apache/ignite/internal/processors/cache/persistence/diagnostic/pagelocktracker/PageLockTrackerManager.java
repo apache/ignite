@@ -143,7 +143,7 @@ public class PageLockTrackerManager {
      * Take page locks dump and print it to console.
      */
     public void dumpLocksToLog() {
-        log.info(dumpLocks());
+        log.warning(dumpLocks());
     }
 
     /**

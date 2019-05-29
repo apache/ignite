@@ -137,8 +137,12 @@ public class FailureProcessor extends GridProcessorAdapter {
                 " WAL path: " + ctx.config().getDataStorageConfiguration().getWalPath() +
                 " WAL archive path: " + ctx.config().getDataStorageConfiguration().getWalArchivePath());
 
-        if (IGNITE_DUMP_THREADS_ON_FAILURE)
+        if (IGNITE_DUMP_THREADS_ON_FAILURE){
             U.dumpThreads(log);
+
+            // Dump page locks for data structures.
+            ctx.cache().context().diagnostic().pageLockTracker().dumpLocksToLog();
+        }
 
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 
