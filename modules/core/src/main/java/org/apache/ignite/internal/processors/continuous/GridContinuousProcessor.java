@@ -45,7 +45,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridMessageListenHandler;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -1382,10 +1381,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             U.error(log, "Failed to register handler [nodeId=" + node.id() + ", routineId=" + routineId + ']', e);
         }
 
-        GridContinuousHandler hnd0 = hnd instanceof GridMessageListenHandler ?
-            new GridMessageListenHandler((GridMessageListenHandler)hnd) :
-            hnd;
-
         if (node.isClient()) {
             Map<UUID, LocalRoutineInfo> clientRoutineMap = clientInfos.get(node.id());
 
@@ -1398,7 +1393,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
 
             clientRoutineMap.put(routineId, new LocalRoutineInfo(data.projectionPredicate(),
-                hnd0,
+                hnd,
                 data.bufferSize(),
                 data.interval(),
                 data.autoUnsubscribe()));
@@ -1413,13 +1408,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
                     !locInfos.containsKey(routineId))
-                    registerHandler(node.id(), routineId, hnd0, data.bufferSize(), data.interval(),
+                    registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
 
                 if (!data.autoUnsubscribe())
                     // Register routine locally.
                     locInfos.putIfAbsent(routineId, new LocalRoutineInfo(
-                        prjPred, hnd0, data.bufferSize(), data.interval(), data.autoUnsubscribe()));
+                        prjPred, hnd, data.bufferSize(), data.interval(), data.autoUnsubscribe()));
             }
             catch (IgniteCheckedException e) {
                 err = e;
@@ -1429,14 +1424,14 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         // Load partition counters.
-        if (hnd0.isQuery()) {
+        if (hnd.isQuery()) {
             GridCacheProcessor proc = ctx.cache();
 
             if (proc != null) {
-                GridCacheAdapter cache = ctx.cache().internalCache(hnd0.cacheName());
+                GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
 
                 if (cache != null && !cache.isLocal() && cache.context().userCache())
-                    req.addUpdateCounters(ctx.localNodeId(), hnd0.updateCounters());
+                    req.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
             }
         }
 
@@ -1557,23 +1552,19 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             ((CacheContinuousQueryHandler)hnd).keepBinary(true);
                         }
 
-                        GridContinuousHandler hnd0 = hnd instanceof GridMessageListenHandler ?
-                            new GridMessageListenHandler((GridMessageListenHandler)hnd) :
-                            hnd;
-
                         registerHandler(snd.id(),
                             msg.routineId,
-                            hnd0,
+                            hnd,
                             reqData.bufferSize(),
                             reqData.interval(),
                             reqData.autoUnsubscribe(),
                             false);
 
-                        if (hnd0.isQuery()) {
+                        if (hnd.isQuery()) {
                             GridCacheProcessor proc = ctx.cache();
 
                             if (proc != null) {
-                                GridCacheAdapter cache = ctx.cache().internalCache(hnd0.cacheName());
+                                GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
 
                                 if (cache != null && !cache.isLocal() && cache.context().userCache()) {
                                     CachePartitionPartialCountersMap cntrsMap =
