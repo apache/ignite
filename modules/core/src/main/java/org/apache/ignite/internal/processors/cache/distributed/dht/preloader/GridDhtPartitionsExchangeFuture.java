@@ -961,25 +961,32 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void localAffinityRecalculationExchange() throws IgniteCheckedException {
         assert centralizedAff;
 
-        cctx.affinity().onLocalAffinityRecalculation(this, crd != null && crd.isLocal());
+        if (isDone() || !enterBusy())
+            return;
 
-        for (CacheGroupDescriptor desc : cctx.affinity().cacheGroups().values()) {
-            if (desc.config().getCacheMode() == CacheMode.LOCAL)
-                continue;
+        try {
+            cctx.affinity().onLocalAffinityRecalculation(this, crd != null && crd.isLocal());
 
-            CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
+            for (CacheGroupDescriptor desc : cctx.affinity().cacheGroups().values()) {
+                if (desc.config().getCacheMode() == CacheMode.LOCAL)
+                    continue;
 
-            GridDhtPartitionTopology top = grp != null ? grp.topology() :
-                cctx.exchange().clientTopology(desc.groupId(), events().discoveryCache());
+                CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
-            top.beforeExchange(this, true, false);
+                GridDhtPartitionTopology top = grp != null ? grp.topology() :
+                    cctx.exchange().clientTopology(desc.groupId(), events().discoveryCache());
+
+                top.beforeExchange(this, true, false);
+            }
+
+            timeBag.finishGlobalStage("Local affinity recalculation");
+
+            initDone();
+
+            onDone(initialVersion());
+        } finally {
+            leaveBusy();
         }
-
-        timeBag.finishGlobalStage("Local affinity recalculation");
-
-        initDone();
-
-        onDone(initialVersion());
     }
 
     /**
@@ -988,12 +995,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} if affinity can be recalculated locally.
      */
     private boolean isLocalAffinityRecalculationExchange() {
-        if (!allNodesSupports(firstEvtDiscoCache.allNodes(), LOCAL_AFFINITY_RECALCULATION_EXCHANGE))
-            return false;
-
         // Case for baseline node leave.
         if ((firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED)
             && firstEvtDiscoCache.baselineNodes() != null) {
+            if (!allNodesSupports(firstEvtDiscoCache.allNodes(), LOCAL_AFFINITY_RECALCULATION_EXCHANGE))
+                return false;
+
             if (!CU.isPersistenceEnabled(cctx.kernalContext().config()))
                 return false;
 
