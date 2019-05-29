@@ -67,7 +67,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.cluster.СlusterReadOnlyModeCheckedException;
+import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -2063,8 +2063,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     if (cause instanceof ClusterTopologyCheckedException)
                         err = new ClusterTopologyCheckedException(msg, cause);
-                    else if (X.hasCause(cause, СlusterReadOnlyModeCheckedException.class))
-                        err = new СlusterReadOnlyModeCheckedException(msg, cause);
+                    else if (X.hasCause(cause, ClusterReadOnlyModeCheckedException.class))
+                        err = new ClusterReadOnlyModeCheckedException(msg, cause);
                     else
                         err = new IgniteCheckedException(msg, cause);
                 }

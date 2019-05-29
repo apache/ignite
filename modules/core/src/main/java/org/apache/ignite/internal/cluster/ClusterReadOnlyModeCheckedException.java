@@ -24,14 +24,14 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Exception defines modification data error in read-only cluster. See {@link IgniteCluster#readOnly()}
  */
-public class СlusterReadOnlyModeCheckedException extends IgniteCheckedException {
+public class ClusterReadOnlyModeCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Create empty exception.
      */
-    public СlusterReadOnlyModeCheckedException() {
+    public ClusterReadOnlyModeCheckedException() {
         // No-op.
     }
 
@@ -40,7 +40,7 @@ public class СlusterReadOnlyModeCheckedException extends IgniteCheckedException
      *
      * @param msg Error message.
      */
-    public СlusterReadOnlyModeCheckedException(String msg) {
+    public ClusterReadOnlyModeCheckedException(String msg) {
         super(msg);
     }
 
@@ -50,7 +50,7 @@ public class СlusterReadOnlyModeCheckedException extends IgniteCheckedException
      *
      * @param cause Non-null throwable cause.
      */
-    public СlusterReadOnlyModeCheckedException(Throwable cause) {
+    public ClusterReadOnlyModeCheckedException(Throwable cause) {
         super(cause);
     }
 
@@ -62,7 +62,7 @@ public class СlusterReadOnlyModeCheckedException extends IgniteCheckedException
      * @param writableStackTrace whether or not the stack trace should
      *                           be writable
      */
-    public СlusterReadOnlyModeCheckedException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
+    public ClusterReadOnlyModeCheckedException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
         super(msg, cause, writableStackTrace);
     }
 
@@ -72,7 +72,7 @@ public class СlusterReadOnlyModeCheckedException extends IgniteCheckedException
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public СlusterReadOnlyModeCheckedException(String msg, @Nullable Throwable cause) {
+    public ClusterReadOnlyModeCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 
