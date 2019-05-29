@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.client.integration;
 
+import java.util.Collections;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -27,40 +29,43 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
-import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
+import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
+import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.spi.discovery.tcp.TestAuthProcessor;
 import org.junit.Test;
-
-import java.util.Collections;
 
 /**
  * Tests the Authorization in client-server communication.
  */
 public class ClientTcpAuthTest extends ClientAbstractSelfTest {
 
+    /** {@inheritDoc} */
     @Override
     protected GridClientConfiguration clientConfiguration() throws GridClientException {
         GridClientConfiguration cliCfg = super.clientConfiguration();
         cliCfg.setSecurityCredentialsProvider(
-                new SecurityCredentialsBasicProvider(
-                        new SecurityCredentials("user", "password")));
+            new SecurityCredentialsBasicProvider(
+                new SecurityCredentials("user", "password")));
 
         return cliCfg;
     }
 
+    /** {@inheritDoc} */
     @Override
-    protected IgniteConfiguration getConfiguration( String igniteInstanceName ) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration( igniteInstanceName );
-        cfg.setPluginConfigurations(
-                (TestSecurityPluginConfiguration)TestAuthProcessor::new
-        );
+    protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        cfg.setPluginProviders(new AbstractTestSecurityPluginProvider() {
+            @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
+                return new TestAuthProcessor(ctx);
+            }
+        });
         return cfg;
     }
 
     @Test
-    public void testAuthorization() throws Exception{
+    public void testAuthorization() throws Exception {
         GridClient client = client();
 
         GridClientData data = client.data("cache");

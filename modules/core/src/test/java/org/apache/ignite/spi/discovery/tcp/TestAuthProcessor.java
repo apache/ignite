@@ -17,7 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.IgniteCheckedException;
+import java.io.Serializable;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -32,32 +36,27 @@ import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.UUID;
-
 /**
  * Updates node attributes on disconnect.
  */
 public class TestAuthProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
     /** Enabled flag. */
     public static boolean enabled;
-
+    /** admin user name */
     public String user = "user";
+    /** admin user password */
     public String password = "password";
 
     /**
      * @param ctx Kernal context.
      */
-    public TestAuthProcessor( GridKernalContext ctx) {
+    public TestAuthProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticateNode( ClusterNode node,
-                                                       SecurityCredentials cred) throws IgniteCheckedException {
+    @Override public SecurityContext authenticateNode(ClusterNode node,
+        SecurityCredentials cred) {
         return new AllowAll();
     }
 
@@ -67,54 +66,55 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
     }
 
     /** {@inheritDoc} */
-    @Override public SecurityContext authenticate( AuthenticationContext authCtx) throws IgniteCheckedException {
+    @Override public SecurityContext authenticate(AuthenticationContext authCtx) {
         SecurityCredentials credentials = authCtx.credentials();
-        if(credentials != null && user.equals(credentials.getLogin())) {
-            if(credentials.getPassword().toString().equals(password)) {
+        if (credentials != null && user.equals(credentials.getLogin())) {
+            if (credentials.getPassword().toString().equals(password)) {
                 log.info("Admin access granted by " + authCtx.subjectType() + " from " + authCtx.address());
                 return new AllowAll();
-            } else {
+            }
+            else {
                 log.warning("Admin password error by " + authCtx.subjectType() + " from " + authCtx.address());
             }
         }
         UUID uuid = authCtx.subjectId();
         SecuritySubjectType securitySubjectType = authCtx.subjectType();
         return new AllowSome(
-                new Subject( uuid,
-                             securitySubjectType,
-                             credentials != null ? credentials.getLogin() : null,
-                             authCtx.address() )
+            new Subject(uuid,
+                securitySubjectType,
+                credentials != null ? credentials.getLogin() : null,
+                authCtx.address())
         );
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
+    @Override public Collection<SecuritySubject> authenticatedSubjects() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public SecuritySubject authenticatedSubject( UUID subjId) throws IgniteCheckedException {
+    @Override public SecuritySubject authenticatedSubject(UUID subjId) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm,
         @Nullable SecurityContext securityCtx) throws SecurityException {
-        if(securityCtx != null) {
-            if(AllowSome.class == securityCtx.getClass()) {
-                if( perm != SecurityPermission.TASK_EXECUTE) {
+        if (securityCtx != null) {
+            if (AllowSome.class == securityCtx.getClass()) {
+                if (perm != SecurityPermission.TASK_EXECUTE) {
                     SecuritySubject s = securityCtx.subject();
                     log.info("Access denied on "
-                              + perm
-                              + "@"
-                              + name
-                              + " by "
-                              + s.type()
-                              + " from "
-                              + s.address()
-                              + ". Login "
-                              + s.login());
-                    throw new SecurityException( "Access denied");
+                        + perm
+                        + "@"
+                        + name
+                        + " by "
+                        + s.type()
+                        + " from "
+                        + s.address()
+                        + ". Login "
+                        + s.login());
+                    throw new SecurityException("Access denied");
                 }
             }
         }
@@ -130,6 +130,9 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
         return true;
     }
 
+    /**
+     * Security context for admin users and internal node communications
+     */
     private static class AllowAll implements SecurityContext, Serializable {
         /**
          * Serial version uid.
@@ -148,7 +151,7 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
          * {@inheritDoc}
          */
         @Override
-        public boolean taskOperationAllowed( String taskClsName, SecurityPermission perm ) {
+        public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
             return true;
         }
 
@@ -156,7 +159,7 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
          * {@inheritDoc}
          */
         @Override
-        public boolean cacheOperationAllowed( String cacheName, SecurityPermission perm ) {
+        public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
             return true;
         }
 
@@ -164,7 +167,7 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
          * {@inheritDoc}
          */
         @Override
-        public boolean serviceOperationAllowed( String srvcName, SecurityPermission perm ) {
+        public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
             return true;
         }
 
@@ -172,20 +175,29 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
          * {@inheritDoc}
          */
         @Override
-        public boolean systemOperationAllowed( SecurityPermission perm ) {
+        public boolean systemOperationAllowed(SecurityPermission perm) {
             return true;
         }
     }
 
+    /**
+     * Security context for default users without provided authentications
+     */
     private static class AllowSome implements SecurityContext, Serializable {
         /**
          * Serial version uid.
          */
         private static final long serialVersionUID = 0L;
 
+        /** Security Subject */
         private final SecuritySubject subject;
 
-        AllowSome( SecuritySubject subject ) {
+        /**
+         * Constructor to store SecuritySubject instance
+         *
+         * @param subject SecuritySubject instance
+         */
+        AllowSome(SecuritySubject subject) {
             this.subject = subject;
         }
 
@@ -201,7 +213,7 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
          * {@inheritDoc}
          */
         @Override
-        public boolean taskOperationAllowed( String taskClsName, SecurityPermission perm ) {
+        public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
             return true;
         }
 
@@ -209,7 +221,7 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
          * {@inheritDoc}
          */
         @Override
-        public boolean cacheOperationAllowed( String cacheName, SecurityPermission perm ) {
+        public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
             return true;
         }
 
@@ -217,7 +229,7 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
          * {@inheritDoc}
          */
         @Override
-        public boolean serviceOperationAllowed( String srvcName, SecurityPermission perm ) {
+        public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
             return true;
         }
 
@@ -225,11 +237,14 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
          * {@inheritDoc}
          */
         @Override
-        public boolean systemOperationAllowed( SecurityPermission perm ) {
+        public boolean systemOperationAllowed(SecurityPermission perm) {
             return true;
         }
     }
 
+    /**
+     * Security Subject implementation for test
+     */
     private static class Subject implements SecuritySubject {
         private static final long serialVersionUID = 0L;
         private final UUID id;
@@ -237,33 +252,54 @@ public class TestAuthProcessor extends GridProcessorAdapter implements GridSecur
         private final Object login;
         private final InetSocketAddress address;
 
-        Subject( UUID id, SecuritySubjectType type, Object login, InetSocketAddress address ) {
+        /**
+         * @param id id
+         * @param type type
+         * @param login login
+         * @param address address
+         */
+        Subject(UUID id, SecuritySubjectType type, Object login, InetSocketAddress address) {
             this.id = id;
             this.type = type;
             this.login = login;
             this.address = address;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public UUID id() {
             return id;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public SecuritySubjectType type() {
             return type;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public Object login() {
             return login;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public InetSocketAddress address() {
             return address;
         }
 
+        /**
+         * {@inheritDoc}
+         */
         @Override
         public SecurityPermissionSet permissions() {
             return null;
