@@ -141,14 +141,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * Read Repair means that each backup node will be checked to have the same entry as primary node has,
      * and in case consistency violation found:
+     * for transactional caches:
      * - values across the topology will be replaced by latest versioned value:
      * -- automaticaly for OPTIMISTIC || READ_COMMITTED transactions
      * -- at commit() for PESSIMISTIC && !READ_COMMITTED transactions
      * - consistency violation event will be recorded in case it's configured as recordable
+     * for atomic caches: consistency violation exception will be thrown.
      *
      * One more important thing is that this proxy usage does not guarantee "all copies check" in case value
      * already cached inside the transaction. In case you use !READ_COMMITTED isolation mode and already have
      * cached value, for example already read the value or performed a write, you'll gain the cached value.
+     *
+     * Local caches and caches without backups, obviously, can not be checked using this feature.
      *
      * @return Cache with explicit consistency check on each read and repair if necessary.
      */

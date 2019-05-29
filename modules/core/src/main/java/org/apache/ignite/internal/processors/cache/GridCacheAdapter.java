@@ -4802,7 +4802,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean deserializeBinary,
         boolean needVer) throws IgniteCheckedException {
         try {
-            return get(key, ctx.kernalContext().job().currentTaskName(), deserializeBinary, needVer);
+            return get(
+                key,
+                ctx.kernalContext().job().currentTaskName(),
+                deserializeBinary,
+                needVer);
         }
         catch (IgniteConsistencyViolationException e) {
             repairAsync(key, ctx.operationContextPerCall(), false).get();
