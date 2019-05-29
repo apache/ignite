@@ -21,12 +21,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -68,34 +66,8 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     @Parameterized.Parameter(3)
     public boolean async;
 
-    /**
-     *
-     */
-    @Test
-    public void test() throws Exception {
-        for (Ignite node : G.allGrids()) {
-            testGetVariations(node);
-            testGetNull(node, 1);
-            testContainsVariations(node);
-        }
-    }
-
-    /**
-     *
-     */
-    private void testGetVariations(Ignite initiator) throws Exception {
-        testGet(initiator, 1, false); // just get
-        testGet(initiator, 1, true); // 1 (all keys available at primary)
-        testGet(initiator, 2, true); // less than backups
-        testGet(initiator, 3, true); // equals to backups
-        testGet(initiator, 4, true); // equals to backups + primary
-        testGet(initiator, 10, true); // more than backups
-    }
-
-    /**
-     *
-     */
-    protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
             initiator,
             cnt,
@@ -123,13 +95,11 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             });
     }
 
-    /**
-     *
-     */
-    private void testGetNull(Ignite initiator, Integer cnt) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void testGetNull(Ignite initiator) throws Exception {
         prepareAndCheck(
             initiator,
-            cnt,
+            1,
             raw,
             async,
             (ReadRepairData data) -> {
@@ -148,22 +118,8 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             });
     }
 
-    /**
-     *
-     */
-    private void testContainsVariations(Ignite initiator) throws Exception {
-        testContains(initiator, 1, false); // just contains
-        testContains(initiator, 1, true); // 1 (all keys available at primary)
-        testContains(initiator, 2, true); // less than backups
-        testContains(initiator, 3, true); // equals to backups
-        testContains(initiator, 4, true); // equals to backups + primary
-        testContains(initiator, 10, true); // more than backups
-    }
-
-    /**
-     *
-     */
-    protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
             initiator,
             cnt,

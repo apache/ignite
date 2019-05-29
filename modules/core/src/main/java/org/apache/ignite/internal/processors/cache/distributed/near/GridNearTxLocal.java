@@ -2378,7 +2378,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                                 deserializeBinary,
                                 recovery,
                                 cacheCtx.cache().expiryPolicy(expiryPlc0),
-                                skipVals,
                                 label(),
                                 mvccSnapshot)
                                 .init()

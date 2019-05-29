@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.util.typedef.G;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -52,63 +50,25 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     @Parameterized.Parameter(1)
     public boolean async;
 
-    /**
-     *
-     */
-    @Test
-    public void test() throws Exception {
-        for (Ignite node : G.allGrids()) {
-            testGet(node);
-            testGetAllVariations(node);
-            testGetNull(node);
-        }
-    }
-
-    /**
-     *
-     */
-    protected void testGet(Ignite initiator) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
             initiator,
-            1,
+            cnt,
             raw,
             async,
             (ReadRepairData data) -> {
-                GET_CHECK_AND_FIX.accept(data);
+                if (all)
+                    GETALL_CHECK_AND_FIX.accept(data);
+                else
+                    GET_CHECK_AND_FIX.accept(data);
+
                 ENSURE_FIXED.accept(data);
             });
     }
 
-    /**
-     *
-     */
-    private void testGetAllVariations(Ignite initiator) throws Exception {
-        testGetAll(initiator, 1); // 1 (all keys available at primary)
-        testGetAll(initiator, 2); // less than backups
-        testGetAll(initiator, 3); // equals to backups
-        testGetAll(initiator, 4); // equals to backups + primary
-        testGetAll(initiator, 10); // more than backups
-    }
-
-    /**
-     *
-     */
-    protected void testGetAll(Ignite initiator, Integer amount) throws Exception {
-        prepareAndCheck(
-            initiator,
-            amount,
-            raw,
-            async,
-            (ReadRepairData data) -> {
-                GETALL_CHECK_AND_FIX.accept(data);
-                ENSURE_FIXED.accept(data);
-            });
-    }
-
-    /**
-     *
-     */
-    private void testGetNull(Ignite initiator) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void testGetNull(Ignite initiator) throws Exception {
         prepareAndCheck(
             initiator,
             1,
@@ -117,6 +77,23 @@ public class ImplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
             (ReadRepairData data) -> {
                 GET_NULL.accept(data); // first attempt.
                 GET_NULL.accept(data); // second attempt (checks first attempt causes no changes/fixes/etc).
+            });
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
+        prepareAndCheck(
+            initiator,
+            cnt,
+            raw,
+            async,
+            (ReadRepairData data) -> {
+                if (all)
+                    CONTAINS_ALL_CHECK_AND_FIX.accept(data);
+                else
+                    CONTAINS_CHECK_AND_FIX.accept(data);
+
+                ENSURE_FIXED.accept(data);
             });
     }
 }

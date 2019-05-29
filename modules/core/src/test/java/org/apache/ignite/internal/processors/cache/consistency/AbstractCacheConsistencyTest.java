@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -347,6 +348,57 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
 
         return cfg;
     }
+
+    /**
+     *
+     */
+    @Test
+    public void test() throws Exception {
+        for (Ignite node : G.allGrids()) {
+            testGetVariations(node);
+            testGetNull(node);
+            testContainsVariations(node);
+        }
+    }
+
+    /**
+     *
+     */
+    private void testGetVariations(Ignite initiator) throws Exception {
+        testGet(initiator, 1, false); // just get
+        testGet(initiator, 1, true); // 1 (all keys available at primary)
+        testGet(initiator, 2, true); // less than backups
+        testGet(initiator, 3, true); // equals to backups
+        testGet(initiator, 4, true); // equals to backups + primary
+        testGet(initiator, 10, true); // more than backups
+    }
+
+    /**
+     *
+     */
+    private void testContainsVariations(Ignite initiator) throws Exception {
+        testContains(initiator, 1, false); // just contains
+        testContains(initiator, 1, true); // 1 (all keys available at primary)
+        testContains(initiator, 2, true); // less than backups
+        testContains(initiator, 3, true); // equals to backups
+        testContains(initiator, 4, true); // equals to backups + primary
+        testContains(initiator, 10, true); // more than backups
+    }
+
+    /**
+     *
+     */
+    protected abstract void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception;
+
+    /**
+     *
+     */
+    protected abstract void testGetNull(Ignite initiator) throws Exception;
+
+    /**
+     *
+     */
+    protected abstract void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception;
 
     /**
      *

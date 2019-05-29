@@ -753,7 +753,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        IgniteInternalFuture<Boolean> fut = repairableGetAllAsync(
+        return repairableGetAllAsync(
             keys,
             /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
@@ -778,16 +778,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return true;
             }
         });
-
-        boolean readRepair = opCtx != null && opCtx.readRepair();
-
-        if (readRepair)
-            return getWithRepairAsync(
-                fut,
-                () -> repairAsync(keys, opCtx, true),
-                () -> containsKeysAsync(keys));
-
-        return fut;
     }
 
     /** {@inheritDoc} */

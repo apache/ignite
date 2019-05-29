@@ -57,7 +57,6 @@ public abstract class GridNearGetWithConsistencyAbstractFuture extends GridFutur
         boolean deserializeBinary,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
-        boolean skipVals,
         String txLbl,
         MvccSnapshot mvccSnapshot) {
         this.topVer = topVer;
@@ -90,9 +89,9 @@ public abstract class GridNearGetWithConsistencyAbstractFuture extends GridFutur
                     deserializeBinary,
                     recovery,
                     expiryPlc,
-                    skipVals,
-                    true, // Version required to check the consistency.
-                    true, // Produces EntryGetResults.
+                    false,
+                    true,
+                    true,
                     txLbl,
                     mvccSnapshot) {
                     @Override protected boolean map(

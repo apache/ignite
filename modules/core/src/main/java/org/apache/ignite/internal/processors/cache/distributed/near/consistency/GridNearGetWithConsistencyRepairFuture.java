@@ -56,7 +56,6 @@ public class GridNearGetWithConsistencyRepairFuture extends GridNearGetWithConsi
         boolean deserializeBinary,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
-        boolean skipVals,
         String txLbl,
         MvccSnapshot mvccSnapshot) {
         super(topVer,
@@ -68,7 +67,6 @@ public class GridNearGetWithConsistencyRepairFuture extends GridNearGetWithConsi
             deserializeBinary,
             recovery,
             expiryPlc,
-            skipVals,
             txLbl,
             mvccSnapshot);
 

@@ -80,7 +80,6 @@ public class GridNearGetWithConsistencyCheckFuture extends GridNearGetWithConsis
             deserializeBinary,
             recovery,
             expiryPlc,
-            skipVals,
             txLbl,
             mvccSnapshot);
 

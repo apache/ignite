@@ -110,28 +110,86 @@ public class AtomicCacheConsistencyTest extends ImplicitTransactionalCacheConsis
             }
         };
 
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_FAIL =
+        (data) -> {
+            IgniteCache<Integer, Integer> cache = data.cache;
+            Set<Integer> keys = data.data.keySet();
+            boolean async = data.async;
+
+            assert keys.size() == 1;
+
+            for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
+                try {
+                    Integer key = entry.getKey();
+
+                    boolean res = async ?
+                        cache.withReadRepair().containsKeyAsync(key).get() :
+                        cache.withReadRepair().containsKey(key);
+
+                    fail("Should not happen.");
+                }
+                catch (Exception e) {
+                    assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
+                }
+            }
+        };
+
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_FAIL =
+        (data) -> {
+            IgniteCache<Integer, Integer> cache = data.cache;
+            Set<Integer> keys = data.data.keySet();
+            boolean async = data.async;
+
+            try {
+                boolean res = async ?
+                    cache.withReadRepair().containsKeysAsync(keys).get() :
+                    cache.withReadRepair().containsKeys(keys);
+
+                fail("Should not happen.");
+            }
+            catch (Exception e) {
+                assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
+            }
+        };
+
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicyMode() {
         return CacheAtomicityMode.ATOMIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected void testGet(Ignite initiator) throws Exception {
+    @Override protected void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
             initiator,
-            1,
+            cnt,
             raw,
             async,
-            GET_CHECK_AND_FAIL);
+            (ReadRepairData data) -> {
+                if (all)
+                    GETALL_CHECK_AND_FAIL.accept(data);
+                else
+                    GET_CHECK_AND_FAIL.accept(data);
+            });
     }
 
     /** {@inheritDoc} */
-    @Override protected void testGetAll(Ignite initiator, Integer amount) throws Exception {
+    @Override protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
         prepareAndCheck(
             initiator,
-            amount,
+            cnt,
             raw,
             async,
-            GETALL_CHECK_AND_FAIL);
+            (ReadRepairData data) -> {
+                if (all)
+                    CONTAINS_ALL_CHECK_AND_FAIL.accept(data);
+                else
+                    CONTAINS_CHECK_AND_FAIL.accept(data);
+            });
     }
 }
