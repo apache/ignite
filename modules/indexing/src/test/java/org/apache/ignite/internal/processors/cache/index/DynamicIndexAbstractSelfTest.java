@@ -48,6 +48,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgnitePredicate;
 
+import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.CONC_DESTROY_MSG;
+
 /**
  * Tests for dynamic index creation.
  */
@@ -413,6 +415,11 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
                 ", ids=" + ids + ']', expSize, res.size());
         }
         catch (Exception e) {
+            for (Throwable th = e; th != null; th = th.getCause()) {
+                if (th.getMessage().contains(CONC_DESTROY_MSG))
+                    return;
+            }
+
             // Swallow QueryRetryException.
             if (X.cause(e, QueryRetryException.class) == null)
                 throw e;
