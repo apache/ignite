@@ -19,12 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LongStore;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
 
 /**
  * Abstract page lock log class.
  **/
-public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
+public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
     /** */
     protected int headIdx;
 
@@ -32,10 +33,10 @@ public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
      * Constructor.
      *
      * @param name Page lock log name.
-     * @param capacity Capacity.
+     * @param longStore Capacity.
      */
-    protected LockLog(String name, int capacity) {
-        super(name, capacity);
+    public LockLog(String name, LongStore longStore) {
+        super(name, longStore);
     }
 
     /** {@inheritDoc} */
@@ -69,14 +70,14 @@ public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
         if (!validateOperation(structureId, pageId, op))
             return;
 
-        if ((headIdx + 2) / 2 > capacity()) {
-            invalid("Log overflow, size:" + capacity() +
+        if ((headIdx + 2) / 2 > longStore.capacity()) {
+            invalid("Log overflow, size:" + longStore.capacity() +
                 ", headIdx=" + headIdx + " " + argsToString(structureId, pageId, op));
 
             return;
         }
 
-        long pageId0 = getByIndex(headIdx);
+        long pageId0 = longStore.getByIndex(headIdx);
 
         if (pageId0 != 0L && pageId0 != pageId) {
             invalid("Head should be empty, headIdx=" + headIdx + " " +
@@ -85,7 +86,7 @@ public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
             return;
         }
 
-        setByIndex(headIdx, pageId);
+        longStore.setByIndex(headIdx, pageId);
 
         if (READ_LOCK == op || WRITE_LOCK == op)
             holdedLockCnt++;
@@ -97,7 +98,7 @@ public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
 
         long meta = meta(structureId, curIdx | op);
 
-        setByIndex(headIdx + 1, meta);
+        longStore.setByIndex(headIdx + 1, meta);
 
         if (BEFORE_READ_LOCK == op || BEFORE_WRITE_LOCK == op)
             return;
@@ -120,7 +121,7 @@ public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
      */
     private void reset() {
         for (int i = 0; i < headIdx; i++)
-            setByIndex(i, 0);
+            longStore.setByIndex(i, 0);
 
         headIdx = 0;
     }
@@ -144,10 +145,10 @@ public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
      * @return List of {@link PageLockLogSnapshot.LogEntry}.
      */
     protected List<PageLockLogSnapshot.LogEntry> toList() {
-        List<PageLockLogSnapshot.LogEntry> lockLog = new ArrayList<>(capacity);
+        List<PageLockLogSnapshot.LogEntry> lockLog = new ArrayList<>(longStore.capacity());
 
         for (int i = 0; i < headIdx; i += 2) {
-            long metaOnLock = getByIndex(i + 1);
+            long metaOnLock = longStore.getByIndex(i + 1);
 
             assert metaOnLock != 0;
 
@@ -155,7 +156,7 @@ public abstract class LockLog extends PageLockTracker<PageLockLogSnapshot> {
 
             assert idx >= 0;
 
-            long pageId = getByIndex(i);
+            long pageId = longStore.getByIndex(i);
 
             int op = (int)((metaOnLock >> 32) & LOCK_OP_MASK);
             int structureId = (int)(metaOnLock);

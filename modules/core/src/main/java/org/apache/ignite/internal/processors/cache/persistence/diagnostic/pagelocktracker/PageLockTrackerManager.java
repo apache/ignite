@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
 import java.io.File;
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTracker.State;
@@ -33,6 +33,12 @@ import org.jetbrains.annotations.NotNull;
  * Page lock manager.
  */
 public class PageLockTrackerManager {
+    /** */
+    private static final long OVERHEAD_SIZE = 16 + 8  + 8 + 8 + 8;
+
+    /** */
+    private final MemoryCalculator memoryCalculator = new MemoryCalculator();
+
     /** MXbean */
     private final PageLockTrackerMXBean mxBean;
 
@@ -49,11 +55,13 @@ public class PageLockTrackerManager {
      * Default constructor.
      */
     public PageLockTrackerManager(IgniteLogger log) {
-        this.mxBean = new PageLockTrackerMXBeanImpl(this);
-        this.sharedPageLockTracker = new SharedPageLockTracker(this::onHangThreads);
+        this.mxBean = new PageLockTrackerMXBeanImpl(this, memoryCalculator);
+        this.sharedPageLockTracker = new SharedPageLockTracker(this::onHangThreads, memoryCalculator);
         this.log = log;
 
         sharedPageLockTracker.onStart();
+
+        memoryCalculator.onHeapAllocated(OVERHEAD_SIZE);
     }
 
     /**
@@ -170,14 +178,14 @@ public class PageLockTrackerManager {
      * @return Total heap overhead in bytes.
      */
     public long getHeapOverhead() {
-        return 0L;
+        return memoryCalculator.heapUsed.get();
     }
 
     /**
      * @return Total offheap overhead in bytes.
      */
     public long getOffHeapOverhead() {
-        return 0L;
+        return memoryCalculator.offHeapUsed.get();
     }
 
     /**
@@ -185,5 +193,44 @@ public class PageLockTrackerManager {
      */
     public long getTotalOverhead() {
         return getHeapOverhead() + getOffHeapOverhead();
+    }
+
+    /**
+     *
+     */
+   public static class MemoryCalculator {
+        /** */
+        private final AtomicLong heapUsed = new AtomicLong();
+        /** */
+        private final AtomicLong offHeapUsed = new AtomicLong();
+
+        /** */
+        MemoryCalculator(){
+            onHeapAllocated(16 + (8 + 16) * 2);
+        }
+
+        /** */
+        public void onHeapAllocated(long bytes) {
+            assert bytes >= 0;
+
+            heapUsed.getAndAdd(bytes);
+        }
+
+        /** */
+        public void onOffHeapAllocated(long bytes) {
+            assert bytes >= 0;
+
+            offHeapUsed.getAndAdd(bytes);
+        }
+
+        /** */
+        public void onHeapFree(long bytes) {
+            heapUsed.getAndAdd(-bytes);
+        }
+
+        /** */
+        public void onOffHeapFree(long bytes) {
+            offHeapUsed.getAndAdd(-bytes);
+        }
     }
 }

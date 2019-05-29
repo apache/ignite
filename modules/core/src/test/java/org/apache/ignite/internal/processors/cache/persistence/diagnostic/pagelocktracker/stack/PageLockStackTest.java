@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.AbstractPageLockTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
@@ -582,7 +583,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         // Lock stack should be invalid after this operation because we can get lock more that
         // stack capacity, +1 for overflow.
-        range(0, lockStack.capacity() + 1).forEach((i) -> {
+        range(0, LockTrackerFactory.DEFAULT_CAPACITY + 1).forEach((i) -> {
             lockStack.onReadLock(STRUCTURE_ID, pageId, page, pageAddr);
         });
 
@@ -591,7 +592,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         Assert.assertTrue(lockStack.isInvalid());
         Assert.assertTrue(lockStack.invalidContext().msg.contains("Stack overflow"));
 
-        Assert.assertEquals(lockStack.capacity(), dump.headIdx / 2);
+        Assert.assertEquals(LockTrackerFactory.DEFAULT_CAPACITY, dump.headIdx / 2);
         Assert.assertTrue(!isEmptyArray(dump.pageIdLocksStack));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);

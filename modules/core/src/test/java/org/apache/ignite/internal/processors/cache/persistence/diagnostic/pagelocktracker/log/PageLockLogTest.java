@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.AbstractPageLockTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot.LogEntry;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
@@ -29,6 +30,7 @@ import org.junit.Test;
 import static java.lang.System.out;
 import static java.time.Duration.ofMinutes;
 import static java.util.stream.IntStream.range;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DEFAULT_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.BEFORE_READ_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.READ_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.READ_UNLOCK;
@@ -541,7 +543,7 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         // Lock log should be invalid after this operation because we can get lock more that
         // log capacity, +1 for overflow.
-        range(0, lockLog.capacity() + 1).forEach((i) -> {
+        range(0, DEFAULT_CAPACITY + 1).forEach((i) -> {
             lockLog.onReadLock(STRUCTURE_ID, pageId, page, pageAddr);
         });
 

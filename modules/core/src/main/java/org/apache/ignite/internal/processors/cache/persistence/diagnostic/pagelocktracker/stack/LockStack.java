@@ -17,21 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack;
 
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LongStore;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
 
 /**
  * Abstract page lock stack.
  */
-public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
+public class LockStack extends PageLockTracker<PageLockStackSnapshot> {
     /** */
     protected int headIdx;
 
     /**
      * @param name Page lock stack name.
-     * @param capacity Capacity.
+     * @param longStore Capacity.
      */
-    protected LockStack(String name, int capacity) {
-        super(name, capacity);
+    public LockStack(String name, LongStore longStore) {
+        super(name, longStore);
     }
 
     /** {@inheritDoc} */
@@ -67,14 +68,14 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
 
         reset();
 
-        if (headIdx / 2 + 1 > capacity()) {
-            invalid("Stack overflow, size=" + capacity() +
+        if (headIdx / 2 + 1 > longStore.capacity()) {
+            invalid("Stack overflow, size=" + longStore.capacity() +
                 ", headIdx=" + headIdx + " " + argsToString(structureId, pageId, op));
 
             return;
         }
 
-        long pageId0 = getByIndex(headIdx);
+        long pageId0 = longStore.getByIndex(headIdx);
 
         if (pageId0 != 0L) {
             invalid("Head element should be empty, headIdx=" + headIdx +
@@ -87,8 +88,8 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
 
         long meta = meta(structureId, curIdx | op);
 
-        setByIndex(headIdx, pageId);
-        setByIndex(headIdx + 1, meta);
+        longStore.setByIndex(headIdx, pageId);
+        longStore.setByIndex(headIdx + 1, meta);
 
         headIdx += 2;
         holdedLockCnt++;
@@ -110,24 +111,24 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
         if (headIdx > 2) {
             int last = headIdx - 2;
 
-            long val = getByIndex(last);
+            long val = longStore.getByIndex(last);
 
             if (val == pageId) {
-                setByIndex(last, 0);
-                setByIndex(last + 1, 0);
+                longStore.setByIndex(last, 0);
+                longStore.setByIndex(last + 1, 0);
 
                 //Reset head to the first not empty element.
                 do {
                     headIdx -= 2;
                     holdedLockCnt--;
                 }
-                while (headIdx > 0 && getByIndex(headIdx - 2) == 0);
+                while (headIdx > 0 && longStore.getByIndex(headIdx - 2) == 0);
             }
             else {
                 for (int idx = last - 2; idx >= 0; idx -= 2) {
-                    if (getByIndex(idx) == pageId) {
-                        setByIndex(idx, 0);
-                        setByIndex(idx + 1, 0);
+                    if (longStore.getByIndex(idx) == pageId) {
+                        longStore.setByIndex(idx, 0);
+                        longStore.setByIndex(idx + 1, 0);
 
                         return;
                     }
@@ -145,7 +146,7 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
                 return;
             }
 
-            long val = getByIndex(0);
+            long val = longStore.getByIndex(0);
 
             if (val == 0) {
                 invalid("Stack is empty, can not pop elemnt" + argsToString(structureId, pageId, op));
@@ -154,8 +155,8 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
             }
 
             if (val == pageId) {
-                setByIndex(0, 0);
-                setByIndex(1, 0);
+                longStore.setByIndex(0, 0);
+                longStore.setByIndex(1, 0);
 
                 headIdx = 0;
                 holdedLockCnt = 0;
@@ -164,6 +165,21 @@ public abstract class LockStack extends PageLockTracker<PageLockStackSnapshot> {
                 invalid("Can not find pageId in stack, headIdx=" + headIdx + " "
                     + argsToString(structureId, pageId, op));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected PageLockStackSnapshot snapshot() {
+        long[] stack = longStore.copy();
+
+        return new PageLockStackSnapshot(
+            name,
+            System.currentTimeMillis(),
+            headIdx,
+            stack,
+            nextOp,
+            nextOpStructureId,
+            nextOpPageId
+        );
     }
 
     /**

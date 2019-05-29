@@ -17,18 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
+
 /**
  * Implementation of {@link PageLockTrackerMXBean}.
  */
 public class PageLockTrackerMXBeanImpl implements PageLockTrackerMXBean {
+    /** */
+    private static final long OVERHEAD_SIZE = 16 + 8;
+
     /** Page lock tracker manager */
     private final PageLockTrackerManager mgr;
 
     /**
      * @param mgr Page lock tracker manager.
      */
-    public PageLockTrackerMXBeanImpl(PageLockTrackerManager mgr) {
+    public PageLockTrackerMXBeanImpl(PageLockTrackerManager mgr, MemoryCalculator memoryCalculator) {
         this.mgr = mgr;
+
+        memoryCalculator.onHeapAllocated(OVERHEAD_SIZE);
     }
 
     /** {@inheritDoc} */

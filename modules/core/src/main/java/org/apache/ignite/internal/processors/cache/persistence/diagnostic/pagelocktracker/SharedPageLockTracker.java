@@ -29,12 +29,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DEFAULT_CAPACITY;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DEFAULT_TYPE;
 
 //TODO Calculate overhad and capacity for all structures.
 //TODO Fast local get thread local.
@@ -46,6 +49,16 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  *
  */
 public class SharedPageLockTracker implements PageLockListener, DumpSupported<ThreadPageLocksDumpLock> {
+    /**
+     *
+     */
+    private static final long OVERHEAD_SIZE = 16 + (8 * 8) + (4 * 3);
+
+    /**
+     *
+     */
+    private final MemoryCalculator memCalc;
+
     /**
      *
      */
@@ -89,14 +102,20 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
      *
      */
     public SharedPageLockTracker() {
-        this((ids) -> { });
+        this((ids) -> {
+        }, new MemoryCalculator());
     }
 
     /**
      *
      */
-    public SharedPageLockTracker(Consumer<Set<State>> hangThreadsCallBack) {
-        this(1000, getInteger(IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, 60_000), hangThreadsCallBack);
+    public SharedPageLockTracker(Consumer<Set<State>> hangThreadsCallBack, MemoryCalculator memCalc) {
+        this(
+            1000,
+            getInteger(IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL, 60_000),
+            hangThreadsCallBack,
+            memCalc
+        );
     }
 
     /**
@@ -105,11 +124,15 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     public SharedPageLockTracker(
         int threadLimits,
         int timeOutWorkerInterval,
-        Consumer<Set<SharedPageLockTracker.State>> hangThreadsCallBack
+        Consumer<Set<SharedPageLockTracker.State>> hangThreadsCallBack,
+        MemoryCalculator memCalc
     ) {
         this.threadLimits = threadLimits;
         this.timeOutWorkerInterval = timeOutWorkerInterval;
         this.hangThreadsCallBack = hangThreadsCallBack;
+        this.memCalc = memCalc;
+
+        this.memCalc.onHeapAllocated(OVERHEAD_SIZE);
     }
 
     /**
@@ -117,18 +140,22 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
      *
      * @return PageLockTracer instance.
      */
-    private PageLockTracker createTracker(){
+    private PageLockTracker createTracker() {
         Thread thread = Thread.currentThread();
 
-        String threadName = thread.getName();
+        String name = "name=" + thread.getName();
         long threadId = thread.getId();
 
-        PageLockTracker<? extends PageLockDump> tracker = LockTrackerFactory.create("name=" + threadName);
+        PageLockTracker<? extends PageLockDump> tracker = LockTrackerFactory.create(
+            DEFAULT_TYPE, DEFAULT_CAPACITY, name, memCalc
+        );
 
         synchronized (this) {
             threadStacks.put(threadId, tracker);
 
             threadIdToThreadRef.put(threadId, thread);
+
+            memCalc.onHeapAllocated(((8 + 16 + 8) + 8) * 2);
 
             if (threadIdToThreadRef.size() > threadLimits)
                 cleanTerminatedThreads();
@@ -152,8 +179,15 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
     public synchronized PageLockListener registrateStructure(String structureName) {
         Integer id = structureNameToId.get(structureName);
 
-        if (id == null)
+        if (id == null) {
             structureNameToId.put(structureName, id = (++idGen));
+
+            // Size for new (K,V) pair.
+            memCalc.onHeapAllocated((structureName.getBytes().length + 16) + (8 + 16 + 4));
+        }
+
+        // Size for PageLockListenerIndexAdapter object.
+        memCalc.onHeapAllocated(16 + 4 + 8);
 
         return new PageLockListenerIndexAdapter(id, this);
     }
@@ -257,10 +291,15 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
             if (thread.getState() == Thread.State.TERMINATED) {
                 PageLockTracker tracker = threadStacks.remove(threadId);
 
-                if (tracker != null)
+                if (tracker != null) {
+                    memCalc.onHeapFree((8 + 16 + 8) + 8);
+
                     tracker.free();
+                }
 
                 it.remove();
+
+                memCalc.onHeapFree((8 + 16 + 8) + 8);
             }
         }
     }

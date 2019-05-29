@@ -53,15 +53,9 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /** */
     protected final String name;
     /** */
-    protected final int capacity;
+    protected final LongStore longStore;
     /** Counter for track lock/unlock operations. */
     protected int holdedLockCnt;
-    /** */
-    private volatile boolean dump;
-    /** */
-    private volatile boolean locked;
-    /** */
-    private volatile InvalidContext<T> invalidCtx;
     /** */
     protected int nextOp;
     /** */
@@ -70,11 +64,19 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     protected long nextOpPageId;
     /** */
     private long opCntr;
-
     /** */
-    protected PageLockTracker(String name, int capacity) {
+    private volatile boolean dump;
+    /** */
+    private volatile boolean locked;
+    /** */
+    private volatile InvalidContext<T> invalidCtx;
+
+    /**
+     *
+     */
+    protected PageLockTracker(String name, LongStore longStore) {
         this.name = name;
-        this.capacity = capacity;
+        this.longStore = longStore;
     }
 
     /** */
@@ -204,18 +206,9 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     }
 
     /** */
-    public int capacity() {
-        return capacity;
+    protected void free(){
+        longStore.free();
     }
-
-    /** */
-    protected abstract long getByIndex(int idx);
-
-    /** */
-    protected abstract void setByIndex(int idx, long val);
-
-    /** */
-    protected abstract void free();
 
     /** */
     protected void invalid(String msg) {
@@ -352,7 +345,6 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<T> dumpSync() {
-        //TODO
         throw new UnsupportedOperationException();
     }
 

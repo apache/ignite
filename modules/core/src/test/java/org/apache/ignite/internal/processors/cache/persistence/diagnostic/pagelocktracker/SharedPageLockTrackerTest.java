@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -279,11 +281,11 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
     public void testMemoryLeakOnThreadTerminates() throws Exception {
         int threadLimits = 1000;
         int timeOutWorkerInterval = 10_000;
-        Consumer<List<SharedPageLockTracker.State>> handler = (threads) -> {
+        Consumer<Set<SharedPageLockTracker.State>> handler = (threads) -> {
         };
 
         SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker(
-            threadLimits, timeOutWorkerInterval, handler);
+            threadLimits, timeOutWorkerInterval, handler, new MemoryCalculator());
 
         int threads = 10_000;
 
@@ -424,7 +426,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                 }
 
                 awaitLatch.countDown();
-            }
+            }, new MemoryCalculator()
         );
 
         int cacheId = 1;
