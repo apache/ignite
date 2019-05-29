@@ -32,7 +32,7 @@ import org.junit.runners.Parameterized;
  *
  */
 @RunWith(Parameterized.class)
-public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheConsistencyTest {
+public class ExplicitTransactionalCacheConsistencyTest extends AbstractFullSetCacheConsistencyTest {
     /** Test parameters. */
     @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}")
     public static Collection parameters() {
