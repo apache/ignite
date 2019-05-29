@@ -918,6 +918,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         throws IgniteCheckedException{
         String sql = H2Utils.indexDropSql(schemaName, idxName, ifExists);
 
+        GridH2Table tbl = dataTableForIndex(schemaName, idxName);
+
+        assert tbl != null;
+
+        tbl.setRemoveIndexOnDestroy(true);
+
         executeSql(schemaName, sql);
     }
 

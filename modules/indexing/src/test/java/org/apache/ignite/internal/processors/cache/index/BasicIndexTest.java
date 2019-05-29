@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.QueryEntity;
@@ -41,7 +43,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.query.h2.database.H2Tree.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -61,6 +66,9 @@ public class BasicIndexTest extends GridCommonAbstractTest {
 
     /** */
     private String affKeyFieldName;
+
+    /** Server listening logger. */
+    private GridStringLogger srvLog;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -106,6 +114,9 @@ public class BasicIndexTest extends GridCommonAbstractTest {
         }
 
         igniteCfg.setCacheConfiguration(ccfg);
+
+        if (srvLog != null)
+            igniteCfg.setGridLogger(srvLog);
 
         if (isPersistenceEnabled) {
             igniteCfg.setDataStorageConfiguration(new DataStorageConfiguration()
@@ -301,6 +312,82 @@ public class BasicIndexTest extends GridCommonAbstractTest {
             checkAll();
 
             stopGrid();
+
+            cleanPersistenceDir();
+        }
+    }
+
+    /** */
+    public void testInlineSizeChange() throws Exception {
+        try {
+            System.setProperty(IGNITE_THROTTLE_INLINE_SIZE_CALCULATION, "1");
+
+            isPersistenceEnabled = true;
+
+            indexes = Collections.singletonList(new QueryIndex("valStr"));
+
+            inlineSize = 33;
+
+            srvLog = new GridStringLogger(false, this.log);
+
+            String msg1 = "curSize=1";
+
+            String msg2 = "curSize=2";
+
+            String msg3 = "curSize=3";
+
+            Ignite ig0 = startGrid();
+
+            ig0.cluster().active(true);
+
+            populateCache();
+
+            IgniteCache<Key, Val> cache = grid().cache(DEFAULT_CACHE_NAME);
+
+            cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 1 PARALLEL 28"));
+
+            List<List<?>> res = cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+
+            log.info("exp: " + res.get(0).get(0));
+
+            assertTrue(srvLog.toString().contains(msg1));
+
+            srvLog.reset();
+
+            cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
+
+            cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 2 PARALLEL 28"));
+
+            cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+
+            String ss = srvLog.toString();
+
+            assertTrue(srvLog.toString().contains(msg2));
+
+            srvLog.reset();
+
+            cache.query(new SqlFieldsQuery("drop index \"idx1\"")).getAll();
+
+            stopAllGrids();
+
+            ig0 = startGrid(0);
+
+            ig0.cluster().active(true);
+
+            cache = ig0.cache(DEFAULT_CACHE_NAME);
+
+            cache.query(new SqlFieldsQuery("create index \"idx1\" on Val(valLong) INLINE_SIZE 3 PARALLEL 28"));
+
+            cache.query(new SqlFieldsQuery("explain select * from Val where valLong > ?").setArgs(10)).getAll();
+
+            assertTrue(srvLog.toString().contains(msg3));
+
+            srvLog.reset();
+        }
+        finally {
+            System.clearProperty(IGNITE_THROTTLE_INLINE_SIZE_CALCULATION);
+
+            stopAllGrids();
 
             cleanPersistenceDir();
         }
