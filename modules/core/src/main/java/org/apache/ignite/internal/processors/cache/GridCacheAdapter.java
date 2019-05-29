@@ -42,7 +42,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -92,11 +91,11 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -715,7 +714,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final IgniteInternalFuture<Boolean> containsKeyAsync(K key) {
         A.notNull(key, "key");
 
-        return (IgniteInternalFuture)getAsync(
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        IgniteInternalFuture fut = getAsync(
             key,
             /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
@@ -724,6 +725,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*deserialize binary*/false,
             /*skip values*/true,
             false);
+
+        boolean readRepair = opCtx != null && opCtx.readRepair();
+
+        if (readRepair)
+            return getWithRepairAsync(
+                fut,
+                () -> repairAsync(key, opCtx, true),
+                () -> containsKeyAsync(key));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -742,7 +753,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        return repairableGetAllAsync(
+        IgniteInternalFuture<Boolean> fut = repairableGetAllAsync(
             keys,
             /*force primary*/ !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
@@ -767,6 +778,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return true;
             }
         });
+
+        boolean readRepair = opCtx != null && opCtx.readRepair();
+
+        if (readRepair)
+            return getWithRepairAsync(
+                fut,
+                () -> repairAsync(keys, opCtx, true),
+                () -> containsKeysAsync(keys));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -4794,7 +4815,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return get(key, ctx.kernalContext().job().currentTaskName(), deserializeBinary, needVer);
         }
         catch (IgniteConsistencyViolationException e) {
-            repairAsync(key, ctx.operationContextPerCall()).get();
+            repairAsync(key, ctx.operationContextPerCall(), false).get();
 
             return repairableGet(key, deserializeBinary, needVer);
         }
@@ -4858,11 +4879,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*skip vals*/false,
             needVer);
 
-        if (readRepair)
+        if (readRepair) {
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
             return getWithRepairAsync(
                 fut,
-                (opCtx) -> repairAsync(key, opCtx),
+                () -> repairAsync(key, opCtx, false),
                 () -> repairableGetAsync(key, deserializeBinary, needVer, readRepair));
+        }
 
         return fut;
     }
@@ -4884,7 +4908,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             return getAll(keys, deserializeBinary, needVer, recovery, readRepair);
         }
         catch (IgniteConsistencyViolationException e) {
-            repairAsync(keys, ctx.operationContextPerCall()).get();
+            repairAsync(keys, ctx.operationContextPerCall(), false).get();
 
             return repairableGetAll(keys, deserializeBinary, needVer, recovery, readRepair);
         }
@@ -4954,10 +4978,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             skipVals,
             needVer);
 
-        if (readRepair)
+        if (readRepair) {
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
             return getWithRepairAsync(
                 fut,
-                (opCtx) -> repairAsync(keys, opCtx),
+                () -> repairAsync(keys, opCtx, skipVals),
                 () -> repairableGetAllAsync(
                     keys,
                     forcePrimary,
@@ -4969,6 +4995,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     readRepair,
                     skipVals,
                     needVer));
+        }
 
         return fut;
     }
@@ -4978,7 +5005,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     private <R> IgniteInternalFuture<R> getWithRepairAsync(
         IgniteInternalFuture<R> orig,
-        Function<CacheOperationContext, IgniteInternalFuture<Void>> repair,
+        Supplier<IgniteInternalFuture<Void>> repair,
         Supplier<IgniteInternalFuture<R>> retry) {
         final GridNearTxLocal tx = checkCurrentTx();
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -4990,9 +5017,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 fut.onDone(f.get());
             }
             catch (IgniteConsistencyViolationException e1) {
-                assert tx == null || tx.optimistic() || tx.readCommitted();
-
-                repair.apply(opCtx).listen((repFut) -> {
+                repair.get().listen((repFut) -> {
                     if (repFut.error() != null)
                         fut.onDone(repFut.error());
                     else {
@@ -5025,11 +5050,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Checks and repairs entries across the topology.
      */
-    protected IgniteInternalFuture<Void> repairAsync(Collection<? extends K> keys, final CacheOperationContext opCtx){
+    protected IgniteInternalFuture<Void> repairAsync(
+        Collection<? extends K> keys,
+        final CacheOperationContext opCtx,
+        boolean skipVals) {
         GridCompoundFuture fut = new GridCompoundFuture();
 
         for (K key : keys)
-            fut.add(repairAsync(key, opCtx));
+            fut.add(repairAsync(key, opCtx, skipVals));
 
         fut.markInitialized();
 
@@ -5039,12 +5067,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * Checks and repairs entry across the topology.
      */
-    protected IgniteInternalFuture<Void> repairAsync(final K key, final CacheOperationContext opCtx) {
+    protected IgniteInternalFuture<Void> repairAsync(
+        final K key,
+        final CacheOperationContext opCtx,
+        boolean skipVals) {
         assert ctx.transactional();
 
         final GridNearTxLocal orig = checkCurrentTx();
 
-        assert orig == null || orig.optimistic() || orig.readCommitted();
+        // Pessimistic non-read-committed 'get' should be fixed inside it's own tx, the only exception is 'contains'.
+        assert orig == null || orig.optimistic() || orig.readCommitted() || /*contains*/ skipVals;
 
         // Async check and recover if necessary.
         return ctx.kernalContext().closure().callLocalSafe(new Callable<Void>() {

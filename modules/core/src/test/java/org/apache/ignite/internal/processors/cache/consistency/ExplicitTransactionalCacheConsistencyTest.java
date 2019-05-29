@@ -74,10 +74,22 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     @Test
     public void test() throws Exception {
         for (Ignite node : G.allGrids()) {
-            testGet(node, 1, false);
-            testGetAllVariations(node);
+            testGetVariations(node);
             testGetNull(node, 1);
+            testContainsVariations(node);
         }
+    }
+
+    /**
+     *
+     */
+    private void testGetVariations(Ignite initiator) throws Exception {
+        testGet(initiator, 1, false); // just get
+        testGet(initiator, 1, true); // 1 (all keys available at primary)
+        testGet(initiator, 2, true); // less than backups
+        testGet(initiator, 3, true); // equals to backups
+        testGet(initiator, 4, true); // equals to backups + primary
+        testGet(initiator, 10, true); // more than backups
     }
 
     /**
@@ -114,17 +126,6 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
     /**
      *
      */
-    private void testGetAllVariations(Ignite initiator) throws Exception {
-        testGet(initiator, 1, true); // 1 (all keys available at primary)
-        testGet(initiator, 2, true); // less than backups
-        testGet(initiator, 3, true); // equals to backups
-        testGet(initiator, 4, true); // equals to backups + primary
-        testGet(initiator, 10, true); // more than backups
-    }
-
-    /**
-     *
-     */
     private void testGetNull(Ignite initiator, Integer cnt) throws Exception {
         prepareAndCheck(
             initiator,
@@ -144,6 +145,49 @@ public class ExplicitTransactionalCacheConsistencyTest extends AbstractCacheCons
                 }
 
                 GET_NULL.accept(data); // Checks (outside tx).
+            });
+    }
+
+    /**
+     *
+     */
+    private void testContainsVariations(Ignite initiator) throws Exception {
+        testContains(initiator, 1, false); // just contains
+        testContains(initiator, 1, true); // 1 (all keys available at primary)
+        testContains(initiator, 2, true); // less than backups
+        testContains(initiator, 3, true); // equals to backups
+        testContains(initiator, 4, true); // equals to backups + primary
+        testContains(initiator, 10, true); // more than backups
+    }
+
+    /**
+     *
+     */
+    protected void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception {
+        prepareAndCheck(
+            initiator,
+            cnt,
+            raw,
+            async,
+            (ReadRepairData data) -> {
+                try (Transaction tx = initiator.transactions().txStart(concurrency, isolation)) {
+                    // Recovery (inside tx).
+                    if (all)
+                        CONTAINS_ALL_CHECK_AND_FIX.accept(data);
+                    else
+                        CONTAINS_CHECK_AND_FIX.accept(data);
+
+                    ENSURE_FIXED.accept(data); // Checks (inside tx).
+
+                    try {
+                        tx.commit();
+                    }
+                    catch (TransactionRollbackException e) {
+                        fail("Should not happen. " + e);
+                    }
+                }
+
+                ENSURE_FIXED.accept(data); // Checks (outside tx).
             });
     }
 }

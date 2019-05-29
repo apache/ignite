@@ -153,22 +153,84 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
 
             for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
                 try {
-                    Integer key = entry.getKey() * -1; // Negative.
+                    Integer key = entry.getKey();
+                    Integer missed = key * -1; // Negative to gain null.
 
                     Object res =
                         raw ?
                             async ?
-                                cache.withReadRepair().getEntryAsync(key).get() :
-                                cache.withReadRepair().getEntry(key) :
+                                cache.withReadRepair().getEntryAsync(missed).get() :
+                                cache.withReadRepair().getEntry(missed) :
                             async ?
-                                cache.withReadRepair().getAsync(key).get() :
-                                cache.withReadRepair().get(key);
+                                cache.withReadRepair().getAsync(missed).get() :
+                                cache.withReadRepair().get(missed);
 
                     assertEquals(null, res);
+
+                    checkEvent( // Checking on null expectations.
+                        new ReadRepairData(
+                            cache,
+                            Collections.singletonMap(
+                                missed,
+                                new InconsistentMapping(new HashMap<>(), null, null)),
+                            raw,
+                            async));
                 }
                 catch (CacheException e) {
                     fail("Should not happen." + e);
                 }
+            }
+        };
+
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_FIX =
+        (data) -> {
+            IgniteCache<Integer, Integer> cache = data.cache;
+            Set<Integer> keys = data.data.keySet();
+            boolean async = data.async;
+
+            assert keys.size() == 1;
+
+            for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
+                try {
+                    Integer key = entry.getKey();
+
+                    boolean res = async ?
+                        cache.withReadRepair().containsKeyAsync(key).get() :
+                        cache.withReadRepair().containsKey(key);
+
+                    assertEquals(true, res);
+
+                    checkEvent(data);
+                }
+                catch (CacheException e) {
+                    fail("Should not happen." + e);
+                }
+            }
+        };
+
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_FIX =
+        (data) -> {
+            IgniteCache<Integer, Integer> cache = data.cache;
+            Set<Integer> keys = data.data.keySet();
+            boolean async = data.async;
+
+            try {
+                boolean res = async ?
+                    cache.withReadRepair().containsKeysAsync(keys).get() :
+                    cache.withReadRepair().containsKeys(keys);
+
+                assertEquals(true, res);
+
+                checkEvent(data);
+            }
+            catch (CacheException e) {
+                fail("Should not happen." + e);
             }
         };
 
@@ -214,7 +276,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
     }
 
     /** Atomicy mode. */
-    protected CacheAtomicityMode atomicyMode(){
+    protected CacheAtomicityMode atomicyMode() {
         return TRANSACTIONAL;
     }
 
@@ -298,14 +360,19 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
             fixed.putAll(evt.getFixedEntries()); // Optimistic and read commited transactions produce per key fixes.
         }
 
+        int misses = 0;
+
         for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) {
             Integer key = entry.getKey();
             Integer latest = entry.getValue().latest;
 
+            if (latest == null)
+                misses++;
+
             assertEquals(latest, fixed.get(key));
         }
 
-        assertEquals(data.data.size(), fixed.size());
+        assertEquals(data.data.size() - misses, fixed.size());
 
         assertTrue(evtDeq.isEmpty());
     }
