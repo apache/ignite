@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
@@ -56,6 +58,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -207,6 +210,7 @@ import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteFeatures.TRANSACTION_OWNER_THREAD_DUMP_PROVIDING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
@@ -224,6 +228,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
         "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
         "Deactivate grid and retry node join or clean the joining node.";
+
+    /** Invalid region configuration message. */
+    private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node " +
+        "(Incompatible data region configuration [region=%s, locNodeId=%s, isPersistenceEnabled=%s, rmtNodeId=%s, isPersistenceEnabled=%s])";
+
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
@@ -2799,7 +2808,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String memPlcName = cfg.getDataRegionName();
 
-        DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
+        DataRegion dataRegion = affNode ? sharedCtx.database().dataRegion(memPlcName) : null;
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 
@@ -3127,6 +3136,32 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param node Remote node to check.
+     * @return Data storage configuration
+     */
+    private DataStorageConfiguration extractDataStorage(ClusterNode rmtNode) {
+        return GridCacheUtils.extractDataStorage(
+            rmtNode,
+            ctx.marshallerContext().jdkMarshaller(),
+            U.resolveClassLoader(ctx.config())
+        );
+    }
+
+    /**
+     * @param dataStorageCfg User-defined data regions.
+     */
+    private Map<String, DataRegionConfiguration> dataRegionCfgs(DataStorageConfiguration dataStorageCfg) {
+        if (dataStorageCfg != null) {
+            return Optional.ofNullable(dataStorageCfg.getDataRegionConfigurations())
+                .map(Stream::of)
+                .orElseGet(Stream::empty)
+                .collect(Collectors.toMap(DataRegionConfiguration::getName, e -> e));
+        }
+
+        return Collections.emptyMap();
+    }
+
+    /**
      * Force checkpoint and remove offheap checkpoint listener after it was finished.
      *
      * @param grpToStop Cache group to stop.
@@ -3417,6 +3452,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             StringBuilder errorMessage = new StringBuilder();
 
+            if (!node.isClient()) {
+                validateRmtRegions(node).forEach(error -> {
+                    if (errorMessage.length() > 0)
+                        errorMessage.append("\n");
+
+                    errorMessage.append(error);
+                });
+            }
+
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 try {
                     byte[] secCtxBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
@@ -3531,6 +3575,52 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (fut != null)
                 fut.onDone();
         }
+    }
+
+    /**
+     * @param rmtNode Joining node.
+     * @return List of validation errors.
+     */
+    private List<String> validateRmtRegions(ClusterNode rmtNode) {
+        List<String> errorMessages = new ArrayList<>();
+
+        DataStorageConfiguration rmtStorageCfg = extractDataStorage(rmtNode);
+        Map<String, DataRegionConfiguration> rmtRegionCfgs = dataRegionCfgs(rmtStorageCfg);
+
+        DataStorageConfiguration locStorageCfg = ctx.config().getDataStorageConfiguration();
+
+        if (isDefaultDataRegionPersistent(locStorageCfg) != isDefaultDataRegionPersistent(rmtStorageCfg)) {
+            errorMessages.add(String.format(
+                INVALID_REGION_CONFIGURATION_MESSAGE,
+                "DEFAULT",
+                ctx.localNodeId(),
+                isDefaultDataRegionPersistent(locStorageCfg),
+                rmtNode.id(),
+                isDefaultDataRegionPersistent(rmtStorageCfg)
+            ));
+        }
+
+        for (ClusterNode clusterNode : ctx.discovery().aliveServerNodes()) {
+            Map<String, DataRegionConfiguration> nodeRegionCfg = dataRegionCfgs(extractDataStorage(clusterNode));
+
+            for (Map.Entry<String, DataRegionConfiguration> nodeRegionCfgEntry : nodeRegionCfg.entrySet()) {
+                String regionName = nodeRegionCfgEntry.getKey();
+
+                DataRegionConfiguration rmtRegionCfg = rmtRegionCfgs.get(regionName);
+
+                if (rmtRegionCfg != null && rmtRegionCfg.isPersistenceEnabled() != nodeRegionCfgEntry.getValue().isPersistenceEnabled())
+                    errorMessages.add(String.format(
+                        INVALID_REGION_CONFIGURATION_MESSAGE,
+                        regionName,
+                        ctx.localNodeId(),
+                        nodeRegionCfgEntry.getValue().isPersistenceEnabled(),
+                        rmtNode.id(),
+                        rmtRegionCfg.isPersistenceEnabled()
+                    ));
+            }
+        }
+
+        return errorMessages;
     }
 
     /**

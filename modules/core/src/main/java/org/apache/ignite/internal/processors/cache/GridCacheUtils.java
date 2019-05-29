@@ -98,6 +98,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -1870,6 +1871,43 @@ public class GridCacheUtils {
      */
     public static boolean isPersistenceEnabled(IgniteConfiguration cfg) {
         return isPersistenceEnabled(cfg.getDataStorageConfiguration());
+    }
+
+    /**
+     * @return {@code true} if persistence is enabled for a default data region, {@code false} if not.
+     */
+    public static boolean isDefaultDataRegionPersistent(DataStorageConfiguration cfg) {
+        if (cfg == null)
+            return false;
+
+        DataRegionConfiguration dfltRegionCfg = cfg.getDefaultDataRegionConfiguration();
+
+        if (dfltRegionCfg == null)
+            return false;
+
+        return dfltRegionCfg.isPersistenceEnabled();
+    }
+
+    /**
+     * Extract and unmarshal data storage configuration from given node.
+     *
+     * @param node Source of data storage configuration.
+     * @return Data storage configuration for given node, or {@code null} if this node has not data storage
+     * configuration.
+     */
+    @Nullable public static DataStorageConfiguration extractDataStorage(ClusterNode node, JdkMarshaller marshaller,
+        ClassLoader clsLdr) {
+        Object dsCfgBytes = node.attribute(IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG);
+
+        if (dsCfgBytes instanceof byte[]) {
+            try {
+                return marshaller.unmarshal((byte[])dsCfgBytes, clsLdr);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+        return null;
     }
 
     /**
