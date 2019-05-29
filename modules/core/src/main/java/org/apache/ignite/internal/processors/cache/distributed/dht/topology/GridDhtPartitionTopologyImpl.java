@@ -783,9 +783,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     // After new full rebalance Node1 will only send k1 to Node2 causing lost removal.
                                     // NOTE: avoid calling clearAsync for partition twice per topology version.
                                     // TODO FIXME clearing is not always needed see IGNITE-11799
-                                    if (!exchFut.isHistoryPartition(grp, locPart.id()) &&
-                                        !locPart.isClearing() &&
-                                        !locPart.isEmpty())
+                                    if (grp.persistenceEnabled() && !exchFut.isHistoryPartition(grp, locPart.id()) &&
+                                        !locPart.isClearing() && !locPart.isEmpty())
                                         locPart.clearAsync();
                                 }
                                 else
