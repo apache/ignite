@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes;
 
-
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
@@ -30,8 +32,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -91,11 +91,11 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
 
     /** Trust manager. */
     private TrustManager[] trustAll = new TrustManager[] {
-        new X509TrustManager() {
-            @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-            @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-            @Override public X509Certificate[] getAcceptedIssuers() { return null; }
-        }
+            new X509TrustManager() {
+                @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                @Override public X509Certificate[] getAcceptedIssuers() { return null; }
+            }
     };
 
     /** Host verifier. */
@@ -123,11 +123,22 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     /** SSL context */
     private SSLContext ctx;
 
+    private final ObjectReader reader;
+
     /**
      * Creates an instance of Kubernetes IP finder.
      */
     public TcpDiscoveryKubernetesIpFinder() {
         setShared(true);
+        reader = new ObjectMapper().readerFor(Endpoints.class);
+    }
+
+    /**
+     * Creates an instance of Kubernetes IP finder.
+     */
+    public TcpDiscoveryKubernetesIpFinder(ObjectMapper mapper) {
+        setShared(true);
+        this.reader = mapper.readerFor(Endpoints.class);
     }
 
     /** {@inheritDoc} */
@@ -147,10 +158,7 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
             conn.setSSLSocketFactory(ctx.getSocketFactory());
             conn.addRequestProperty("Authorization", "Bearer " + serviceAccountToken(accountToken));
 
-            // Sending the request and processing a response.
-            ObjectMapper mapper = new ObjectMapper();
-
-            Endpoints endpoints = mapper.readValue(conn.getInputStream(), Endpoints.class);
+            Endpoints endpoints = reader.readValue(conn.getInputStream());
 
             if (endpoints != null) {
                 if (endpoints.subsets != null && !endpoints.subsets.isEmpty()) {
@@ -235,13 +243,13 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
         if (initGuard.compareAndSet(false, true)) {
 
             if (serviceName == null || serviceName.isEmpty() ||
-                namespace == null || namespace.isEmpty() ||
-                master == null || master.isEmpty() ||
-                accountToken == null || accountToken.isEmpty()) {
+                    namespace == null || namespace.isEmpty() ||
+                    master == null || master.isEmpty() ||
+                    accountToken == null || accountToken.isEmpty()) {
                 throw new IgniteSpiException(
-                    "One or more configuration parameters are invalid [setServiceName=" +
-                        serviceName + ", setNamespace=" + namespace + ", setMasterUrl=" +
-                        master + ", setAccountToken=" + accountToken + "]");
+                        "One or more configuration parameters are invalid [setServiceName=" +
+                                serviceName + ", setNamespace=" + namespace + ", setMasterUrl=" +
+                                master + ", setAccountToken=" + accountToken + "]");
             }
 
             try {
