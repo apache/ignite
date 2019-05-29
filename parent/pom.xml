@@ -316,7 +316,7 @@
                             <group>
                                 <title>Common Grid APIs</title>
                                 <packages>
-                                    org.gridgain:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler
+                                    org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler
                                 </packages>
                             </group>
                             <group>
