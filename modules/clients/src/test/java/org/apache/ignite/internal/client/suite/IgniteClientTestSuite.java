@@ -18,6 +18,7 @@ package org.apache.ignite.internal.client.suite;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteClientFailuresTest;
 import org.apache.ignite.internal.TaskEventSubjectIdSelfTest;
 import org.apache.ignite.internal.client.ClientDefaultCacheSelfTest;
 import org.apache.ignite.internal.client.ClientReconnectionSelfTest;
@@ -170,6 +171,8 @@ public class IgniteClientTestSuite extends TestSuite {
 
         // SSL params.
             suite.addTest(new JUnit4TestAdapter(ClientSslParametersTest.class));
+
+            suite.addTest(new JUnit4TestAdapter(IgniteClientFailuresTest.class));
 
         return suite;
     }
