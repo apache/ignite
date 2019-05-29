@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LongStore;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 
 /**
  * Abstract page lock stack.
@@ -31,8 +33,8 @@ public class LockStack extends PageLockTracker<PageLockStackSnapshot> {
      * @param name Page lock stack name.
      * @param longStore Capacity.
      */
-    public LockStack(String name, LongStore longStore) {
-        super(name, longStore);
+    public LockStack(String name, LongStore longStore, MemoryCalculator memCalc) {
+        super(name, longStore, memCalc);
     }
 
     /** {@inheritDoc} */

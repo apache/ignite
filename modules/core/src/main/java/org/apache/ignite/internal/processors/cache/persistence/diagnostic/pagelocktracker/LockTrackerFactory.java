@@ -100,13 +100,13 @@ public final class LockTrackerFactory {
     ) {
         switch (type) {
             case HEAP_STACK:
-                return new LockStack(name, new HeapLongStore(size, memCalc));
+                return new LockStack(name, new HeapLongStore(size, memCalc), memCalc);
             case HEAP_LOG:
-                return new LockLog(name, new HeapLongStore(size, memCalc));
+                return new LockLog(name, new HeapLongStore(size, memCalc), memCalc);
             case OFF_HEAP_STACK:
-                return new LockStack(name, new OffHeapLongStore(size, memCalc));
+                return new LockStack(name, new OffHeapLongStore(size, memCalc), memCalc);
             case OFF_HEAP_LOG:
-                return new LockLog(name, new OffHeapLongStore(size, memCalc));
+                return new LockLog(name, new OffHeapLongStore(size, memCalc), memCalc);
 
             default:
                 throw new IllegalArgumentException(valueOf(type));

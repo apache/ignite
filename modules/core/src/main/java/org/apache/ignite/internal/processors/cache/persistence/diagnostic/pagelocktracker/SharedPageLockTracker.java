@@ -398,9 +398,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
             this.thread = thread;
         }
 
-        /**
-         *
-         */
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -412,31 +410,23 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
                 Objects.equals(thread, state.thread);
         }
 
-        /**
-         *
-         */
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(threadOpCnt, holdedLockCnt, thread);
         }
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
     @Override public IgniteFuture<ThreadPageLocksDumpLock> dumpSync() {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
     @Override public boolean acquireSafePoint() {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
     @Override public boolean releaseSafePoint() {
         throw new UnsupportedOperationException();
     }

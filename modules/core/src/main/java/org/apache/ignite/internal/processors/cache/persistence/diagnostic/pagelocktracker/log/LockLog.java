@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LongStore;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 
 /**
  * Abstract page lock log class.
@@ -35,8 +36,8 @@ public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
      * @param name Page lock log name.
      * @param longStore Capacity.
      */
-    public LockLog(String name, LongStore longStore) {
-        super(name, longStore);
+    public LockLog(String name, LongStore longStore, MemoryCalculator memCalc) {
+        super(name, longStore, memCalc);
     }
 
     /** {@inheritDoc} */

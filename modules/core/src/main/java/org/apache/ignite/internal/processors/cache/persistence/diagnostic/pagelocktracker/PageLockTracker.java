@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.lang.IgniteFuture;
 
@@ -30,6 +31,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
  * Abstract page lock tracker.
  */
 public abstract class PageLockTracker<T extends PageLockDump> implements PageLockListener, DumpSupported<T> {
+    /** */
+    private static final long OVERHEAD_SIZE = 16 + 8 + 8 + 4 + 4 + 4 + 8 + 8 + 4 + 4 + 8;
     /** */
     public static final int OP_OFFSET = 16;
     /** */
@@ -74,9 +77,11 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /**
      *
      */
-    protected PageLockTracker(String name, LongStore longStore) {
+    protected PageLockTracker(String name, LongStore longStore, MemoryCalculator memCalc) {
         this.name = name;
         this.longStore = longStore;
+
+        memCalc.onHeapAllocated(OVERHEAD_SIZE);
     }
 
     /** */

@@ -1,25 +1,38 @@
+/*
+ * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ *
+ * Licensed under the GridGain Community Edition License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.store;
 
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LongStore;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.util.GridUnsafe;
 
+/**
+ *
+ */
 public class OffHeapLongStore implements LongStore {
-    /**
-     *
-     */
+    /** */
+    private static final long OVERHEAD_SIZE = 16 + 4 + 4 + 8 + 8;
+    /** */
     private final int size;
-    /**
-     *
-     */
+    /** */
     private final int capacity;
-    /**
-     *
-     */
+    /** */
     private final long ptr;
-    /**
-     *
-     */
+    /** */
     private final MemoryCalculator memCalc;
 
     /**
@@ -27,10 +40,11 @@ public class OffHeapLongStore implements LongStore {
      */
     public OffHeapLongStore(int capacity, MemoryCalculator memCalc) {
         this.capacity = capacity * 2;
-        this.ptr = allocate(size = (this.capacity * 8));
+        this.size = this.capacity * 8;
+        this.ptr = allocate(size);
         this.memCalc = memCalc;
 
-        memCalc.onOffHeapAllocated(size);
+        memCalc.onOffHeapAllocated(size + OVERHEAD_SIZE);
     }
 
     /**
@@ -44,6 +58,7 @@ public class OffHeapLongStore implements LongStore {
         return ptr;
     }
 
+    /** {@inheritDoc} */
     @Override public int capacity() {
         return capacity / 2;
     }
@@ -65,6 +80,7 @@ public class OffHeapLongStore implements LongStore {
         return headIdx * 8;
     }
 
+    /** {@inheritDoc} */
     @Override public long[] copy() {
         long[] arr = new long[capacity];
 
@@ -77,6 +93,6 @@ public class OffHeapLongStore implements LongStore {
     @Override public void free() {
         GridUnsafe.freeMemory(ptr);
 
-        memCalc.onOffHeapFree(size);
+        memCalc.onOffHeapFree(size + OVERHEAD_SIZE);
     }
 }
