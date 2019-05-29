@@ -19,11 +19,11 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientReconnectedException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
-import org.apache.ignite.client.ClientException;
-import org.apache.ignite.client.ClientConnectionException;
 
 /**
  * Generic query pager. Override {@link this#readResult(BinaryInputStream)} to make it specific.
@@ -88,6 +88,15 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         return hasFirstPage;
     }
 
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        hasFirstPage = false;
+
+        hasNext = true;
+
+        cursorId = null;
+    }
+
     /**
      * Override this method to read entries from the input stream. "Entries" means response data excluding heading
      * cursor ID and trailing "has next page" flag.
@@ -119,21 +128,18 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         return res;
     }
 
-    /** Get page with failover. */
+    /** Get page. */
     private Collection<T> queryPage() throws ClientException {
         try {
             return ch.service(pageQryOp, req -> req.writeLong(cursorId), this::readResult);
         }
         catch (ClientServerError ex) {
-            if (ex.getCode() != ClientStatus.RESOURCE_DOES_NOT_EXIST)
-                throw ex;
-        }
-        catch (ClientConnectionException ignored) {
-        }
+            if (ex.getCode() == ClientStatus.RESOURCE_DOES_NOT_EXIST) {
+                throw new ClientReconnectedException("Client was reconnected in the middle of results fetch, " +
+                    "query results can be inconsistent, please retry the query.");
+            }
 
-        // Retry entire query to failover
-        hasFirstPage = false;
-
-        return ch.service(qryOp, qryWriter, this::readResult);
+            throw ex;
+        }
     }
 }

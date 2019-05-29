@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.impl;
-
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.plugin.PluginConfiguration;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Grid security configuration for tests.
+ * Update counter implementation for MVCC mode.
  */
-@FunctionalInterface
-public interface TestSecurityPluginConfiguration extends PluginConfiguration {
-    /**
-     * @param ctx GridKernalContext.
-     * @return GridSecurityProcessor.
-     */
-    public GridSecurityProcessor build(GridKernalContext ctx);
+public class PartitionMvccTxUpdateCounterImpl extends PartitionTxUpdateCounterImpl {
+    /** {@inheritDoc} */
+    @Override public long reserve(long delta) {
+        return next(delta);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reserved() {
+        return get();
+    }
 }
