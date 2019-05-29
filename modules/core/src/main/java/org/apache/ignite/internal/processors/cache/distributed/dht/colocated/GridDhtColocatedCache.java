@@ -267,6 +267,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             /*keepCacheObjects*/false,
             opCtx != null && opCtx.recovery(),
+            null,
             mvccSnapshot);
 
         fut.init();
@@ -364,6 +365,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             false,
+            null,
             mvccSnapshot);
 
         if(mvccTracker != null){
@@ -393,6 +395,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObj Keep cache objects flag.
+     * @param txLbl Transaction label.
      * @return Load future.
      */
     public final IgniteInternalFuture<Object> loadAsync(
@@ -408,6 +411,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean needVer,
         boolean keepCacheObj,
         boolean recovery,
+        @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
@@ -423,6 +427,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             keepCacheObj,
             recovery,
+            txLbl,
             mvccSnapshot);
 
         fut.init();
@@ -442,6 +447,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObj Keep cache objects flag.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      * @return Load future.
      */
@@ -458,6 +464,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObj,
+        @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert mvccSnapshot == null || ctx.mvccEnabled();
@@ -507,6 +514,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 if (evt) {
                                     ctx.events().readEvent(key,
                                         null,
+                                        txLbl,
                                         row.value(),
                                         subjId,
                                         taskName,
@@ -649,6 +657,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals,
             needVer,
             keepCacheObj,
+            txLbl,
             mvccSnapshot);
 
         fut.init(topVer);

@@ -126,6 +126,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
     private boolean skipCompletedVers;
 
+    /** Transaction label. */
+    @GridToStringInclude
+    @Nullable private String txLbl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -147,6 +151,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param txSize Expected transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param txLbl Transaction label.
      */
     public GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<?, ?> ctx,
@@ -161,7 +166,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         long timeout,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        String txLbl
     ) {
         super(
             ctx,
@@ -179,6 +185,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             taskNameHash);
 
         this.invalidate = invalidate;
+        this.txLbl = txLbl;
 
         commitVersion(commitVer);
 
@@ -994,6 +1001,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 cctx.tm().addAlternateVersion(e.explicitVersion(), this);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String label() {
+        return txLbl;
     }
 
     /** {@inheritDoc} */

@@ -168,6 +168,9 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
+//        gen.generateAndWrite(ProbedTx.class);
+//        gen.generateAndWrite(DeadlockProbe.class);
+
 //        gen.generateAll(true);
 
 //        gen.generateAndWrite(GridCacheMessage.class);
@@ -179,7 +182,12 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridDistributedLockResponse.class);
 //        gen.generateAndWrite(GridNearLockRequest.class);
 //        gen.generateAndWrite(GridNearLockResponse.class);
+//        gen.generateAndWrite(GridNearLockRequest.class);
 //        gen.generateAndWrite(GridDhtLockRequest.class);
+//        gen.generateAndWrite(GridNearSingleGetRequest.class);
+//        gen.generateAndWrite(GridNearGetRequest.class);
+//        gen.generateAndWrite(GridDhtTxPrepareRequest.class);
+//        gen.generateAndWrite(GridNearTxPrepareRequest.class);
 //        gen.generateAndWrite(GridDhtLockResponse.class);
 //
 //        gen.generateAndWrite(GridDistributedTxPrepareRequest.class);

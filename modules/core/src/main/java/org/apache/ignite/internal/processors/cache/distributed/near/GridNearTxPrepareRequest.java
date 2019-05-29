@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -79,6 +80,10 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     @GridToStringExclude
     private byte flags;
+
+    /** Transaction label. */
+    @GridToStringInclude
+    @Nullable private String txLbl;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -145,6 +150,8 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+
+        txLbl = tx.label();
 
         setFlag(near, NEAR_FLAG_MASK);
         setFlag(implicitSingle, IMPLICIT_SINGLE_FLAG_MASK);
@@ -244,6 +251,13 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @return Transaction label.
+     */
+    @Nullable public String txLabel() {
+        return txLbl;
     }
 
     /**
@@ -356,6 +370,12 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 writer.incrementState();
 
+            case 27:
+                if (!writer.writeString("txLbl", txLbl))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -420,6 +440,14 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
+            case 27:
+                txLbl = reader.readString("txLbl");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearTxPrepareRequest.class);
@@ -432,7 +460,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 27;
+        return 28;
     }
 
     /** {@inheritDoc} */

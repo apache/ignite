@@ -112,6 +112,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     /** Recovery context flag. */
     private final boolean recovery;
 
+    /** Transaction label. */
+    private final String txLbl;
+
     /** */
     private final MvccSnapshot mvccSnapshot;
 
@@ -127,6 +130,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @param taskNameHash Task name hash code.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
+     * @param txLbl Transaction label.
      * @param mvccSnapshot Mvcc snapshot.
      */
     public GridDhtGetSingleFuture(
@@ -142,6 +146,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean recovery,
+        @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert reader != null;
@@ -159,6 +164,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.recovery = recovery;
+        this.txLbl = txLbl;
         this.mvccSnapshot = mvccSnapshot;
 
         futId = IgniteUuid.randomUuid();
@@ -400,6 +406,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                 expiryPlc,
                 skipVals,
                 recovery,
+                txLbl,
                 mvccSnapshot);
         }
         else {
@@ -426,6 +433,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                 expiryPlc,
                                 skipVals,
                                 recovery,
+                                null,
                                 mvccSnapshot);
 
                         fut0.listen(createGetFutureListener());

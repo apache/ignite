@@ -190,7 +190,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private TransactionProxyImpl rollbackOnlyProxy;
 
     /** Tx label. */
-    private @Nullable String lb;
+    @Nullable private String lb;
 
     /** */
     private MvccQueryTracker mvccTracker;
@@ -3041,6 +3041,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     needVer,
                     /*keepCacheObject*/true,
                     recovery,
+                    label(),
                     mvccReadSnapshot(cacheCtx)
                 ).chain(new C1<IgniteInternalFuture<Object>, Void>() {
                     @Override public Void apply(IgniteInternalFuture<Object> f) {
@@ -3073,6 +3074,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     skipVals,
                     needVer,
                     /*keepCacheObject*/true,
+                    label(),
                     mvccReadSnapshot(cacheCtx)
                 ).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
                     @Override public Void apply(IgniteInternalFuture<Map<Object, Object>> f) {
@@ -4754,10 +4756,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         return startTime() + timeout();
     }
 
-    /**
-     * @return Tx label.
-     */
-    public String label() {
+    /** {@inheritDoc} */
+    @Override public String label() {
         return lb;
     }
 
