@@ -456,7 +456,7 @@ public class GridDhtPartitionDemander {
 
             GridDhtPartitionDemandMessage d = e.getValue();
 
-            int rmtStripes = Optional.ofNullable((Integer) node.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE))
+            int rmtStripes = Optional.ofNullable((Integer)node.attribute(IgniteNodeAttributes.ATTR_REBALANCE_POOL_SIZE))
                 .orElse(1);
 
             int rmtTotalStripes = rmtStripes <= locStripes ? rmtStripes : locStripes;
@@ -500,7 +500,7 @@ public class GridDhtPartitionDemander {
 
                     demandMsg.topic(rebalanceTopics.get(stripe));
                     demandMsg.rebalanceId(fut.rebalanceId);
-                    demandMsg.timeout(cfg.getRebalanceTimeout());
+                    demandMsg.timeout(grp.preloader().timeout());
 
                     final int topicId = stripe;
 
@@ -828,7 +828,7 @@ public class GridDhtPartitionDemander {
                 supplyMsg.topologyVersion(),
                 grp.groupId());
 
-            d.timeout(grp.config().getRebalanceTimeout());
+            d.timeout(grp.preloader().timeout());
 
             d.topic(rebalanceTopics.get(topicId));
 
@@ -836,7 +836,7 @@ public class GridDhtPartitionDemander {
                 // Send demand message.
                 try {
                     ctx.io().sendOrderedMessage(node, rebalanceTopics.get(topicId),
-                        d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.config().getRebalanceTimeout());
+                        d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.preloader().timeout());
 
                     if (log.isDebugEnabled())
                         log.debug("Send next demand message [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
@@ -1025,8 +1025,10 @@ public class GridDhtPartitionDemander {
             try {
                 cached = cctx.cache().entryEx(entry.key(), topVer);
 
-                if (log.isTraceEnabled())
-                    log.trace("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
+                if (log.isTraceEnabled()) {
+                    log.trace("Rebalancing key [key=" + entry.key() + ", part=" + p + ", fromNode=" +
+                        from.id() + ", grpId=" + grp.groupId() + ']');
+                }
 
                 if (preloadPred == null || preloadPred.apply(entry)) {
                     if (cached.initialValue(
@@ -1350,14 +1352,14 @@ public class GridDhtPartitionDemander {
                 this.topologyVersion(),
                 grp.groupId());
 
-            d.timeout(grp.config().getRebalanceTimeout());
+            d.timeout(grp.preloader().timeout());
 
             try {
                 for (int idx = 0; idx < ctx.gridConfig().getRebalanceThreadPoolSize(); idx++) {
                     d.topic(GridCachePartitionExchangeManager.rebalanceTopic(idx));
 
                     ctx.io().sendOrderedMessage(node, GridCachePartitionExchangeManager.rebalanceTopic(idx),
-                        d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.config().getRebalanceTimeout());
+                        d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.preloader().timeout());
                 }
             }
             catch (IgniteCheckedException ignored) {
@@ -1395,10 +1397,10 @@ public class GridDhtPartitionDemander {
                     int remainingRoutines = remaining.size() - 1;
 
                     U.log(log, "Completed " + ((remainingRoutines == 0 ? "(final) " : "") +
-                            "rebalancing [grp=" + grp.cacheOrGroupName() +
-                            ", supplier=" + nodeId +
-                            ", topVer=" + topologyVersion() +
-                            ", progress=" + (routines - remainingRoutines) + "/" + routines + "]"));
+                        "rebalancing [grp=" + grp.cacheOrGroupName() +
+                        ", supplier=" + nodeId +
+                        ", topVer=" + topologyVersion() +
+                        ", progress=" + (routines - remainingRoutines) + "/" + routines + "]"));
 
                     remaining.remove(nodeId);
                 }

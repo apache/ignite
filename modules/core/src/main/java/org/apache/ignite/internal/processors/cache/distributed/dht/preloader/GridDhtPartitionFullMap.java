@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Full partition map.
+ * Full partition map from all nodes.
  */
 public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable {
     /** */
@@ -225,7 +225,7 @@ public class GridDhtPartitionFullMap extends HashMap<UUID, GridDhtPartitionMap> 
 
         buf.append('{');
 
-        while(true) {
+        while (true) {
             Map.Entry<UUID, GridDhtPartitionMap> e = it.next();
 
             UUID nodeId = e.getKey();

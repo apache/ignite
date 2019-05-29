@@ -60,12 +60,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(
-                    new DataStorageConfiguration()
-                            .setWalMode(WALMode.LOG_ONLY)
-                            .setDefaultDataRegionConfiguration(
-                                    new DataRegionConfiguration()
-                                            .setPersistenceEnabled(true)
-                                            .setMaxSize(100L * 1024 * 1024))
+            new DataStorageConfiguration()
+                .setWalMode(WALMode.LOG_ONLY)
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(100L * 1024 * 1024))
         );
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)

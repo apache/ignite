@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
@@ -44,6 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -51,13 +53,14 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -362,7 +365,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < entries; i++) {
                 map = new IgniteDhtDemandedPartitionsMap();
-                map.addHistorical(0, i, Long.MAX_VALUE, entries);
+                map.addHistorical(0, i, entries, PARTS);
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -382,7 +385,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 }
 
                 map = new IgniteDhtDemandedPartitionsMap();
-                map.addHistorical(1, i, Long.MAX_VALUE, entries);
+                map.addHistorical(1, i, entries, PARTS);
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -417,7 +420,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 long start = System.currentTimeMillis();
 
                 map = new IgniteDhtDemandedPartitionsMap();
-                map.addHistorical(0, i, Long.MAX_VALUE, entries);
+                map.addHistorical(0, i, entries, PARTS);
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     long end = System.currentTimeMillis();
@@ -447,7 +450,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 }
 
                 map = new IgniteDhtDemandedPartitionsMap();
-                map.addHistorical(1, i, Long.MAX_VALUE, entries);
+                map.addHistorical(1, i, entries, PARTS);
 
                 try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                     assertNotNull(it);
@@ -802,6 +805,153 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Simple test for rollback record overlap count.
+     */
+    @Test
+    public void testRollbackRecordOverlap() {
+        RollbackRecord r0 = new RollbackRecord(0, 0, 1, 1);
+        RollbackRecord r1 = new RollbackRecord(0, 0, 1, 4);
+
+        assertEquals(0, r0.overlap(0, 1));
+        assertEquals(1, r0.overlap(1, 2));
+        assertEquals(1, r0.overlap(0, 2));
+        assertEquals(0, r0.overlap(2, 3));
+        assertEquals(1, r0.overlap(1, 2));
+
+        assertEquals(0, r1.overlap(5, 6));
+        assertEquals(1, r1.overlap(4, 6));
+        assertEquals(0, r1.overlap(0, 1));
+        assertEquals(1, r1.overlap(2, 3));
+        assertEquals(2, r1.overlap(2, 4));
+        assertEquals(3, r1.overlap(2, 7));
+        assertEquals(1, r1.overlap(0, 2));
+        assertEquals(2, r1.overlap(0, 3));
+        assertEquals(3, r1.overlap(0, 4));
+        assertEquals(4, r1.overlap(0, 5));
+        assertEquals(4, r1.overlap(1, 5));
+    }
+
+    /**
+     * Tests if history iterator work correctly if partition contains missed due to rollback updates.
+     */
+    @Test
+    public void testWalIteratorOverPartitionWithMissingEntries() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+
+        try {
+            Ignite ignite = startGrid();
+
+            ignite.cluster().active(true);
+
+            awaitPartitionMapExchange();
+
+            int totalKeys = 30;
+
+            final int part = 1;
+
+            List<Integer> keys = partitionKeys(ignite.cache(CACHE_NAME), part, totalKeys, 0);
+
+            ignite.cache(CACHE_NAME).put(keys.get(0), keys.get(0));
+            ignite.cache(CACHE_NAME).put(keys.get(1), keys.get(1));
+
+            int rolledBack = 0;
+
+            rolledBack += prepareTx(ignite, keys.subList(2, 6));
+
+            for (Integer key : keys.subList(6, 10))
+                ignite.cache(CACHE_NAME).put(key, key);
+
+            rolledBack += prepareTx(ignite, keys.subList(10, 14));
+
+            for (Integer key : keys.subList(14, 20))
+                ignite.cache(CACHE_NAME).put(key, key);
+
+            rolledBack += prepareTx(ignite, keys.subList(20, 25));
+
+            for (Integer key : keys.subList(25, 30))
+                ignite.cache(CACHE_NAME).put(key, key);
+
+            assertEquals(totalKeys - rolledBack, ignite.cache(CACHE_NAME).size());
+
+            // Expecting counters: 1-2, missed 3-6, 7-10, missed 11-14, 15-20, missed 21-25, 26-30
+            List<CacheDataRow> rows = rows(ignite, part, 0, 4);
+
+            assertEquals(2, rows.size());
+            assertEquals(keys.get(0), rows.get(0).key().value(null, false));
+            assertEquals(keys.get(1), rows.get(1).key().value(null, false));
+
+            rows = rows(ignite, part, 3, 4);
+            assertEquals(0, rows.size());
+
+            rows = rows(ignite, part, 4, 23);
+            assertEquals(10, rows.size());
+
+            int i = 0;
+            for (Integer key : keys.subList(6, 10))
+                assertEquals(key, rows.get(i++).key().value(null, false));
+            for (Integer key : keys.subList(14, 20))
+                assertEquals(key, rows.get(i++).key().value(null, false));
+
+            i = 0;
+            rows = rows(ignite, part, 16, 26);
+            assertEquals(5, rows.size());
+            for (Integer key : keys.subList(16, 20))
+                assertEquals(key, rows.get(i++).key().value(null, false));
+            assertEquals(keys.get(25), rows.get(i).key().value(null, false));
+        }
+        finally {
+            stopAllGrids();
+
+            System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        }
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param keys Keys.
+     */
+    private int prepareTx(Ignite ignite, List<Integer> keys) throws IgniteCheckedException {
+        try(Transaction tx = ignite.transactions().txStart()) {
+            for (Integer key : keys)
+                ignite.cache(CACHE_NAME).put(key, key);
+
+            GridNearTxLocal tx0 = ((TransactionProxyImpl)tx).tx();
+
+            tx0.prepare(true);
+
+            tx0.rollback();
+        }
+
+        return keys.size();
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param part Partition.
+     * @param from From counter.
+     * @param to To counter.
+     */
+    private List<CacheDataRow> rows(Ignite ignite, int part, long from, long to) throws IgniteCheckedException {
+        CacheGroupContext grp = ((IgniteEx)ignite).context().cache().cacheGroup(CU.cacheId(CACHE_NAME));
+        IgniteCacheOffheapManager offh = grp.offheap();
+        AffinityTopologyVersion topVer = grp.affinity().lastVersion();
+
+        IgniteDhtDemandedPartitionsMap map = new IgniteDhtDemandedPartitionsMap();
+        map.addHistorical(part, from, to, PARTS);
+
+        List<CacheDataRow> rows = new ArrayList<>();
+
+        try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
+            assertNotNull(it);
+
+            while(it.hasNextX())
+                rows.add(it.next());
+        }
+
+        return rows;
+    }
+
+    /**
      * @param ignite Node.
      * @param cacheName Cache name.
      * @return Cache reuse list data.
@@ -883,7 +1033,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         boolean foundTails = false;
 
         for (GridDhtLocalPartition part : parts) {
-            CacheFreeListImpl freeList = GridTestUtils.getFieldValue(part.dataStore(), "freeList");
+            AbstractFreeList freeList = GridTestUtils.getFieldValue(part.dataStore(), "freeList");
 
             if (freeList == null)
                 // Lazy store.
