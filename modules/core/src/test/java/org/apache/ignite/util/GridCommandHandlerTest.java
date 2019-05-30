@@ -2697,8 +2697,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--diagnostic"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "help"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "status"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "log"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "file"));

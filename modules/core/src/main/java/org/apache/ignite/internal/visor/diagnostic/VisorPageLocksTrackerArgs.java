@@ -22,12 +22,18 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
+/**
+ *
+ */
 public class VisorPageLocksTrackerArgs extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private String op;
+    /** */
     private String type;
+    /** */
     private String filePath;
 
     public VisorPageLocksTrackerArgs() {

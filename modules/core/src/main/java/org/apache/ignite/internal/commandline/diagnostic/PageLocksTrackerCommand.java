@@ -74,7 +74,7 @@ public class PageLocksTrackerCommand implements Command<PageLocksTrackerCommand.
             String cmd = argIter.nextArg("").toLowerCase();
 
             if ("dump".equals(cmd)) {
-                String type = null;
+                String type = "file";
                 String filePath = null;
 
                 if (argIter.hasNextSubArg()) {
@@ -89,19 +89,14 @@ public class PageLocksTrackerCommand implements Command<PageLocksTrackerCommand.
 
                 args = new Args("dump", type, filePath);
             }
-            else
-                args = new Args(cmd, null, null);
-
         }
-        else
-            args = new Args("status", null, null);
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         logger.log("View pages locks state information in a node");
         logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump", "// Return dump in string format"));
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump", "// Save dump to file generated in IGNITE_HOME directory."));
         logger.log(CommandLogger.join(" ",
             UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump log","// Pring dump to console on node"));
         logger.log(CommandLogger.join(" ",
@@ -128,9 +123,9 @@ public class PageLocksTrackerCommand implements Command<PageLocksTrackerCommand.
         private final String filePath;
 
         /**
-         * @param op
-         * @param type
-         * @param filePath
+         * @param op Operation.
+         * @param type Type.
+         * @param filePath File path.
          */
         public Args(String op, String type, String filePath) {
             this.op = op;

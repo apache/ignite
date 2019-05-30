@@ -58,41 +58,25 @@ public class VisorPageLocksTrackerTask extends VisorOneNodeTask<VisorPageLocksTr
 
             String result = null;
 
-            switch (op) {
-                case "status":
-                case "enable":
-                case "disable":
-                    result = "Unsupported operation: " + op + ", " + nodeInfo(ignite.localNode());
-                    break;
-                case "dump":
-                    if (arg.type() != null) {
-                        if ("log".equals(arg.type())) {
-                            lockTrackerMgr.dumpLocksToLog();
+            if ("dump".equals(op)) {
+                if ("log".equals(arg.type())) {
+                    lockTrackerMgr.dumpLocksToLog();
 
-                            result = "Page locks dump was printed to console on nodeId=" +
-                                ignite.localNode().id() + ", nodeConsistentId=" + ignite.localNode().consistentId();
-                        }
-                        else if ("file".equals(arg.type())) {
-                            String filePath = arg.filePath() != null ?
-                                lockTrackerMgr.dumpLocksToFile(arg.filePath()) :
-                                lockTrackerMgr.dumpLocksToFile();
+                    result = "Page locks dump was printed to console on nodeId=" +
+                        ignite.localNode().id() + ", consistentId=" + ignite.localNode().consistentId();
+                }
+                else if ("file".equals(arg.type())) {
+                    String filePath = arg.filePath() != null ?
+                        lockTrackerMgr.dumpLocksToFile(arg.filePath()) :
+                        lockTrackerMgr.dumpLocksToFile();
 
-                            result = "Page locks dump was writtern to file " +
-                                filePath + " on nodeId=" +
-                                ignite.localNode().id() + ", nodeConsistentId=" + ignite.localNode().consistentId();
-                        }
-                    }
-                    else {
-                        String dumpLocks = lockTrackerMgr.dumpLocks();
-
-                        result = "Dump:\n" + dumpLocks;
-
-                    }
-
-                    break;
-                default:
-                    result = "Unsupported operation: " + op + ", " + nodeInfo(ignite.localNode());
+                    result = "Page locks dump was writtern to file " +
+                        filePath + " on nodeId=" +
+                        ignite.localNode().id() + ", consistentId=" + ignite.localNode().consistentId();
+                }
             }
+            else
+                result = "Unsupported operation: " + op + ", " + nodeInfo(ignite.localNode());
 
             return new VisorPageLocksTrackerResult(result);
         }
