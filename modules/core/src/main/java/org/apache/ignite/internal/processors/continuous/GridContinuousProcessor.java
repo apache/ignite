@@ -557,8 +557,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void onDiscoveryDataReceivedV1(DiscoveryData data) {
         if (!ctx.isDaemon() && data != null) {
             for (DiscoveryDataItem item : data.items) {
-                registerHandlerOnJoin(data.nodeId, item.routineId, item.prjPred,
-                    item.hnd, item.bufSize, item.interval, item.autoUnsubscribe);
+                if (!locInfos.containsKey(item.routineId)) {
+                    registerHandlerOnJoin(data.nodeId, item.routineId, item.prjPred,
+                        item.hnd, item.bufSize, item.interval, item.autoUnsubscribe);
+                }
+
+                if (!item.autoUnsubscribe) {
+                    locInfos.putIfAbsent(item.routineId, new LocalRoutineInfo(
+                        item.prjPred, item.hnd, item.bufSize, item.interval, item.autoUnsubscribe));
+                }
             }
 
             // Process CQs started on clients.
