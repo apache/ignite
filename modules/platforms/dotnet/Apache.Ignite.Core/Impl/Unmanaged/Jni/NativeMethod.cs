@@ -42,6 +42,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Function pointer (from <see cref="Marshal.GetFunctionPointerForDelegate"/>).
         /// </summary>
+        // ReSharper disable once NotAccessedField.Global
         public IntPtr FuncPtr;
     }
 }
