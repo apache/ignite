@@ -578,12 +578,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     boolean ok = false;
 
                     try {
-                        int freeSpace;
+                        int freeSpace = 0;
 
                         // Fill the page up to the end.
                         do {
-                            if (row.link() == 0 && initIo == null && row.size() >= MIN_SIZE_FOR_DATA_PAGE)
-                                written = writeLargeFragments(row, statHolder);
+                            if (freeSpace != 0 && row.size() >= MIN_SIZE_FOR_DATA_PAGE)
+                                written = writeWholePages(row, statHolder);
 
                             if (written != COMPLETE) {
                                 written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this,
@@ -635,10 +635,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      *
      * @param row Row to process.
      * @param statHolder Statistics holder to track IO operations.
-     * @return Number of bytes written.
+     * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
      * @throws IgniteCheckedException If failed.
      */
-    private int writeLargeFragments(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    private int writeWholePages(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        assert row.link() == 0 : row.link();
+
         int written = 0;
 
         do {
@@ -658,7 +660,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             memMetrics.incrementLargeEntriesPages();
         }
-        while (written != COMPLETE && (row.size() - written) >= MIN_SIZE_FOR_DATA_PAGE);
+        while (row.size() - written >= MIN_SIZE_FOR_DATA_PAGE);
 
         return written;
     }
