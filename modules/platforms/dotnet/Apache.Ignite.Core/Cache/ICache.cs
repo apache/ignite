@@ -706,6 +706,59 @@ namespace Apache.Ignite.Core.Cache
         Task<int> GetSizeAsync(params CachePeekMode[] modes);
 
         /// <summary>
+        /// Gets the number of all entries cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+        /// </summary>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size across all nodes.</returns>
+        long GetSizeLong(params CachePeekMode[] modes);
+        
+        /// <summary>
+        /// Gets the number of all entries in partition cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+        /// </summary>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size across all nodes.</returns>>
+        long GetSizeLong(int partition, params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the number of all entries cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+        /// </summary>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size across all nodes.</returns>
+        Task<long> GetSizeLongAsync(params CachePeekMode[] modes);
+        
+        /// <summary>
+        /// Gets the number of all entries in a partition cached across all nodes as long value.
+        /// <para />
+        /// NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+        /// </summary>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size across all nodes.</returns>
+        Task<long> GetSizeLongAsync(int partition, params CachePeekMode[] modes);
+
+        /// <summary>
+        /// Gets the number of all entries cached on this node as long value.
+        /// </summary>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Cache size on this node.</returns>
+        long GetLocalSizeLong(params CachePeekMode[] modes);
+        
+        /// <summary>
+        /// Gets the number of all entries in a partition cached on this node as long value.
+        /// </summary>
+        /// <param name="partition">Cache partition.</param>
+        /// <param name="modes">Optional peek modes. If not provided, then total cache size is returned.</param>
+        /// <returns>Partition cache size on this node.</returns>
+        long GetLocalSizeLong(int partition, params CachePeekMode[] modes);
+        
+        /// <summary>
         /// Queries cache.
         /// </summary>
         /// <param name="qry">Query.</param>
@@ -930,5 +983,48 @@ namespace Apache.Ignite.Core.Cache
         /// Reset query metrics.
         /// </summary>
         void ResetQueryMetrics();
+
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+        /// exception.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        void PreloadPartition(int partition);
+        
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory asynchronously.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches. Calling this method on an in-memory cache will result in
+        /// exception.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        /// <returns>Task.</returns>
+        Task PreloadPartitionAsync(int partition);
+        
+        /// <summary>
+        /// Efficiently preloads cache partition into page memory if it exists on the local node.
+        /// <para/>
+        /// This is useful for fast iteration over cache partition data if persistence is enabled and the data is "cold".
+        /// <para/>
+        /// Preload will reduce available amount of page memory for subsequent operations and may lead to earlier page
+        /// replacement.
+        /// <para/>
+        /// This method is irrelevant for in-memory caches.
+        /// </summary>
+        /// <param name="partition">Partition number.</param>
+        /// <returns><code>True</code>if partition was preloaded, <code>False</code> if it doesn't belong to local node.</returns>
+        bool LocalPreloadPartition(int partition);
     }
 }

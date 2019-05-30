@@ -23,7 +23,7 @@ package org.apache.ignite.internal.processors.cache;
 public class
 IgniteBinaryWrappedObjectFieldsQuerySelfTest extends IgniteBinaryObjectFieldsQuerySelfTest {
     /** {@inheritDoc} */
-    protected String getPersonClassName() {
+    @Override protected String getPersonClassName() {
         return "org.apache.ignite.tests.p2p.cache.PersonWrapper$Person";
     }
 }

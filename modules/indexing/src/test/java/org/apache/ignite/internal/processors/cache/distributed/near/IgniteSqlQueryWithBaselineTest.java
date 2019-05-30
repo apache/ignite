@@ -27,20 +27,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.cache.Cache;
+import org.junit.Test;
 
 /**
  *
  */
 public class IgniteSqlQueryWithBaselineTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -53,12 +48,6 @@ public class IgniteSqlQueryWithBaselineTest extends GridCommonAbstractTest {
                                         .setPersistenceEnabled(true)
                         )
         );
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }
@@ -110,6 +99,7 @@ public class IgniteSqlQueryWithBaselineTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryWithNodeNotInBLT() throws Exception {
         startGrids(2);
 
@@ -123,6 +113,7 @@ public class IgniteSqlQueryWithBaselineTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryWithoutBLTNode() throws Exception {
         startGrids(2);
 
@@ -137,6 +128,7 @@ public class IgniteSqlQueryWithBaselineTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testQueryFromNotBLTNode() throws Exception {
         startGrid(1);
 

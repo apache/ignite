@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,6 +39,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -53,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -147,6 +151,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testNodeInvalidatedWhenPersistenceIsCorrupted() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -191,6 +196,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testWrongPageCRC() throws Exception {
         System.setProperty(IGNITE_PDS_SKIP_CRC, "true");
 
@@ -224,6 +230,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when meta storage is corrupted.
      */
+    @Test
     public void testMetaStorageCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -231,7 +238,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
-        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, 0);
+        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, PageIdAllocator.METASTORE_PARTITION);
 
         stopGrid(0);
 
@@ -250,6 +257,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when cache meta is corrupted.
      */
+    @Test
     public void testCacheMetaCorruption() throws Exception {
         IgniteEx ignite = startGrid(0);
 
@@ -324,6 +332,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation when meta store is read only.
      */
+    @Test
     public void testReadOnlyMetaStore() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
@@ -368,8 +377,18 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     /**
      * Test node invalidation due to checkpoint error.
      */
+    @Test
     public void testCheckpointFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        forceCheckpoint(); // Trigger empty checkpoint to make sure initial checkpoint on node start will finish.
+
+        ignite.cache(CACHE_NAME1).put(0, 0); // Mark some pages as dirty.
+
+        AtomicBoolean fail = new AtomicBoolean(true);
+        AtomicReference<FileIO> ref = new AtomicReference<>();
 
         failingFileIOFactory.createClosure(new IgniteBiClosure<File, OpenOption[], FileIO>() {
             @Override public FileIO apply(File file, OpenOption[] options) {
@@ -383,27 +402,38 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
                         return null;
                     }
 
-                    return new FileIODecorator(delegate) {
+                    FileIODecorator dec = new FileIODecorator(delegate) {
                         @Override public void close() throws IOException {
-                            throw new IOException("Checkpoint failed");
+                            if (fail.get())
+                                throw new IOException("Checkpoint failed");
+                            else
+                                super.close();
                         }
                     };
+
+                    ref.set(dec);
+
+                    return dec;
                 }
 
                 return null;
             }
         });
 
-        ignite.cluster().active(true);
-
         try {
-            forceCheckpoint(ignite);
-        }
-        catch (Exception ignore) {
-            // No-op.
-        }
+            try {
+                forceCheckpoint(ignite);
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
 
-        waitFailure(IOException.class);
+            waitFailure(IOException.class);
+        }
+        finally {
+            fail.set(false);
+            ref.get().close(); // Release file for any test outcome.
+        }
     }
 
     /**

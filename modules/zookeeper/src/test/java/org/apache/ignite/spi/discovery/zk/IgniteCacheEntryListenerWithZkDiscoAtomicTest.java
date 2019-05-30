@@ -17,6 +17,8 @@
 package org.apache.ignite.spi.discovery.zk;
 
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Class is added to mute {@link #testConcurrentRegisterDeregister} test in ZooKeeper suite
@@ -26,7 +28,9 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomi
  */
 public class IgniteCacheEntryListenerWithZkDiscoAtomicTest extends IgniteCacheEntryListenerAtomicTest {
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8109")
+    @Test
     @Override public void testConcurrentRegisterDeregister() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8109");
+        // No-op.
     }
 }

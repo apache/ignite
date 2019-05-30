@@ -338,7 +338,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @return Annotation value.
      * @param <T> Annotation class.
      */
-    @SuppressWarnings("unchecked")
     public <T extends Annotation> T annotation(Class<?> cls, Class<T> annCls) {
         ConcurrentMap<Class<? extends Annotation>, GridTuple<Annotation>> clsAnns = anns.get(cls);
 
@@ -368,7 +367,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param taskCls Task class.
      * @return {@code True} if task is internal.
      */
-    @SuppressWarnings("unchecked")
     public boolean internalTask(@Nullable ComputeTask task, Class<?> taskCls) {
         assert taskCls != null;
 
@@ -392,7 +390,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param taskCls Task class.
      * @return {@code True} if task is internal.
      */
-    @SuppressWarnings("unchecked")
     public boolean visorManagementTask(@Nullable ComputeTask task, @NotNull Class<?> taskCls) {
         return annotation(task instanceof GridPeerDeployAware ?
                 ((GridPeerDeployAware)task).deployClass() : taskCls,

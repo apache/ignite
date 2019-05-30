@@ -122,6 +122,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     /** */
     private volatile WALDisableContext walDisableContext;
 
+    /** Denies or allows WAL disabling. */
+    private volatile boolean prohibitDisabling;
+
     /**
      * Constructor.
      *
@@ -266,6 +269,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Denies or allows WAL disabling with subsequent {@link #init(Collection, boolean)} call.
+     *
+     * @param val denial status.
+     */
+    public void prohibitWALDisabling(boolean val) {
+        prohibitDisabling = val;
+    }
+
+    /**
+     * Reports whether WAL disabling with subsequent {@link #init(Collection, boolean)} is denied.
+     *
+     * @return denial status.
+     */
+    public boolean prohibitWALDisabling() {
+        return prohibitDisabling;
+    }
+
+    /**
      * Initiate WAL mode change operation.
      *
      * @param cacheNames Cache names.
@@ -273,6 +294,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @return Future completed when operation finished.
      */
     public IgniteInternalFuture<Boolean> init(Collection<String> cacheNames, boolean enabled) {
+        if (!enabled && prohibitDisabling)
+            return errorFuture("WAL disabling is prohibited.");
+
         if (F.isEmpty(cacheNames))
             return errorFuture("Cache names cannot be empty.");
 
@@ -363,9 +387,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * in OWNING state if such feature is enabled.
      *
      * @param topVer Topology version.
+     * @param changedBaseline The exchange is caused by Baseline Topology change.
      */
-    public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer) {
-        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
+    public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer, boolean changedBaseline) {
+        if (changedBaseline
+            && IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED)
+            || !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, true))
             return;
 
         Set<Integer> grpsToEnableWal = new HashSet<>();
@@ -390,7 +417,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     if (hasNonEmptyOwning)
                         break;
 
-                    if (locPart.updateCounter() > 0) {
+                    if (!locPart.isEmpty()) {
                         hasNonEmptyOwning = true;
 
                         break;
@@ -408,9 +435,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     ", grpId=" + grp.groupId() + ", hasOwning=" + hasOwning + ", hasMoving=" + hasMoving +
                     ", WALState=" + grp.walEnabled() + ", parts=" + parts);
 
-            if (hasOwning && !grp.localWalEnabled()) {
+            if (hasOwning && !grp.localWalEnabled())
                 grpsToEnableWal.add(grp.groupId());
-            }
             else if (hasMoving && !hasOwning && grp.localWalEnabled()) {
                 grpsToDisableWal.add(grp.groupId());
 
@@ -449,7 +475,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
         TemporaryDisabledWal session0 = tmpDisabledWal;
 
-        if (session0 == null || !session0.topVer.equals(topVer))
+        if (session0 == null || session0.topVer.compareTo(topVer) > 0)
             return;
 
         session0.remainingGrps.remove(grpId);
@@ -471,20 +497,28 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 tmpDisabledWal = null;
             }
 
+            // Pending updates in groups with disabled WAL are not protected from crash.
+            // Need to trigger checkpoint for attempt to persist them.
             CheckpointFuture cpFut = triggerCheckpoint("wal-local-state-changed-rebalance-finished-" + topVer);
 
             assert cpFut != null;
 
+            // It's safe to switch partitions to owning state only if checkpoint was successfully finished.
             cpFut.finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) {
                     for (Integer grpId0 : session0.disabledGrps) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
 
-                        assert grp != null;
-
-                        grp.topology().ownMoving(session0.topVer);
+                        if (grp != null)
+                            grp.topology().ownMoving(topVer);
+                        else if (log.isDebugEnabled())
+                            log.debug("Cache group was destroyed before checkpoint finished, [grpId=" + grpId0 + ']');
                     }
 
+                    if (log.isDebugEnabled())
+                        log.debug("Refresh partitions due to rebalance finished");
+
+                    // Trigger exchange for switching to ideal assignment when all nodes are ready.
                     cctx.exchange().refreshPartitions();
                 }
             });

@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -59,6 +60,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -359,7 +362,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public class Replace extends GetPageHandler<Put> {
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException  {
             // Check the triangle invariant.
@@ -640,7 +642,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class CutRoot extends PageHandler<Void, Bool> {
         /** {@inheritDoc} */
-        @Override public Bool run(int cacheId, long metaId, long metaPage, long metaAddr, PageIO iox, Boolean walPlc, Void ignore, int lvl)
+        @Override public Bool run(int cacheId, long metaId, long metaPage, long metaAddr, PageIO iox, Boolean walPlc,
+            Void ignore, int lvl,
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             // Safe cast because we should never recycle meta page until the tree is destroyed.
             BPlusMetaIO io = (BPlusMetaIO)iox;
@@ -670,7 +674,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class AddRoot extends PageHandler<Long, Bool> {
         /** {@inheritDoc} */
-        @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc, Long rootPageId, int lvl)
+        @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc,
+            Long rootPageId, int lvl,
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             assert rootPageId != null;
 
@@ -701,7 +707,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class InitRoot extends PageHandler<Long, Bool> {
         /** {@inheritDoc} */
-        @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc, Long rootId, int inlineSize)
+        @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc,
+            Long rootId, int inlineSize,
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             assert rootId != null;
 
@@ -847,7 +855,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             init(rootId, latestLeafIO());
 
             // Initialize meta page with new root page.
-            Bool res = write(metaPageId, initRoot, BPlusMetaIO.VERSIONS.latest(), rootId, inlineSize, FALSE);
+            Bool res = write(metaPageId, initRoot, BPlusMetaIO.VERSIONS.latest(), rootId, inlineSize, FALSE,
+                statisticsHolder());
 
             assert res == TRUE: res;
 
@@ -948,20 +957,25 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             releasePage(metaPageId, metaPage);
         }
 
-        long firstPage = acquirePage(firstPageId);
-
         try {
-            long pageAddr = readLock(firstPageId, firstPage); // We always merge pages backwards, the first page is never removed.
+            long firstPage = acquirePage(firstPageId);
 
             try {
-                cursor.init(pageAddr, io(pageAddr), -1);
+                long pageAddr = readLock(firstPageId, firstPage); // We always merge pages backwards, the first page is never removed.
+
+                try {
+                    cursor.init(pageAddr, io(pageAddr), -1);
+                }
+                finally {
+                    readUnlock(firstPageId, firstPage, pageAddr);
+                }
             }
             finally {
-                readUnlock(firstPageId, firstPage, pageAddr);
+                releasePage(firstPageId, firstPage);
             }
         }
-        finally {
-            releasePage(firstPageId, firstPage);
+        catch (RuntimeException | AssertionError e) {
+            throw new BPlusTreeRuntimeException(e, grpId, metaPageId, firstPageId);
         }
 
         return cursor;
@@ -970,13 +984,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Check if the tree is getting destroyed.
      */
-    private void checkDestroyed() {
+    protected final void checkDestroyed() {
         if (destroyed.get())
             throw new IllegalStateException("Tree is being concurrently destroyed: " + getName());
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+    @Override public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         return find(lower, upper, null);
     }
 
@@ -993,14 +1007,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public final GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
+    public GridCursor<T> find(L lower, L upper, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         checkDestroyed();
+
+        ForwardCursor cursor = new ForwardCursor(lower, upper, c, x);
 
         try {
             if (lower == null)
                 return findLowerUnbounded(upper, c, x);
-
-            ForwardCursor cursor = new ForwardCursor(lower, upper, c, x);
 
             cursor.find();
 
@@ -1010,7 +1024,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+            long[] pageIds = pages(
+                lower == null || cursor == null || cursor.getCursor == null,
+                () -> new long[]{cursor.getCursor.pageId}
+            );
+
+            throw corruptedTreeException(
+                "Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]",
+                e, grpId, pageIds
+            );
         }
         finally {
             checkDestroyed();
@@ -1026,19 +1048,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public void iterate(L lower, L upper, TreeRowClosure<L, T> c) throws IgniteCheckedException {
         checkDestroyed();
 
-        try {
-            ClosureCursor cursor = new ClosureCursor(lower, upper, c);
+        ClosureCursor cursor = new ClosureCursor(lower, upper, c);
 
+        try {
             cursor.iterate();
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
-        catch (RuntimeException e) {
-            throw new IgniteException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
-        }
-        catch (AssertionError e) {
-            throw new AssertionError("Assertion error on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        catch (RuntimeException | AssertionError e) {
+            throw corruptedTreeException(
+                "Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]",
+                e, grpId, pages(cursor.getCursor != null, () -> new long[]{cursor.getCursor.pageId})
+            );
         }
         finally {
             checkDestroyed();
@@ -1085,9 +1107,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public T findFirst(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
         checkDestroyed();
 
+        long curPageId = 0L;
+        long nextPageId = 0L;
+
         try {
             for (;;) {
-                long curPageId;
 
                 long metaPage = acquirePage(metaPageId);
 
@@ -1118,7 +1142,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                                     return getRow(io, curPageAddr, i);
                             }
 
-                            long nextPageId = io.getForward(curPageAddr);
+                            nextPageId = io.getForward(curPageAddr);
 
                             if (nextPageId == 0)
                                 return null;
@@ -1175,7 +1199,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on first row lookup", e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on first row lookup", e);
+            throw corruptedTreeException("Runtime failure on first row lookup", e, grpId, curPageId, nextPageId);
         }
         finally {
             checkDestroyed();
@@ -1183,7 +1207,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public T findLast() throws IgniteCheckedException {
         return findLast(null);
     }
@@ -1197,20 +1220,33 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public T findLast(final TreeRowClosure<L, T> c) throws IgniteCheckedException {
         checkDestroyed();
 
+        Get g = null;
+
         try {
             if (c == null) {
-                GetOne g = new GetOne(null, null, null, true);
+                g = new GetOne(null, null, null, true);
+
                 doFind(g);
 
                 return (T)g.row;
-            } else
-                return new GetLast(c).find();
+            }
+            else {
+                GetLast gLast = new GetLast(c);
+
+                g = gLast;
+
+                return gLast.find();
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Runtime failure on last row lookup", e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new IgniteException("Runtime failure on last row lookup", e);
+            Get g0 = g;
+
+            long[] pageIds = pages(g == null, () -> new long[]{g0.pageId});
+
+            throw corruptedTreeException("Runtime failure on last row lookup", e, grpId, pageIds);
         }
         finally {
             checkDestroyed();
@@ -1233,13 +1269,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Found result or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     public final <R> R findOne(L row, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
-        try {
-            GetOne g = new GetOne(row, c, x, false);
+        GetOne g = new GetOne(row, c, x, false);
 
+        try {
             doFind(g);
 
             return (R)g.row;
@@ -1248,7 +1283,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on lookup row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on lookup row: " + row, e);
+            throw corruptedTreeException("Runtime failure on lookup row: " + row, e, grpId, g.pageId);
         }
         finally {
             checkDestroyed();
@@ -1260,7 +1295,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Found row.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
     @Override public final T findOne(L row) throws IgniteCheckedException {
         return findOne(row, null, null);
     }
@@ -1809,7 +1843,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on search row: " + row, e);
+            throw corruptedTreeException("Runtime failure on search row: " + row, e, grpId, x.pageId);
         }
         finally {
             x.releaseAll();
@@ -1966,7 +2000,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on search row: " + row, e);
+            throw corruptedTreeException("Runtime failure on search row: " + row, e, grpId, r.pageId);
         }
         finally {
             r.releaseAll();
@@ -2095,6 +2129,42 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         checkDestroyed();
 
         return getRootLevel();
+    }
+
+    /**
+     * @return {@code True} in case the tree is empty.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final boolean isEmpty() throws IgniteCheckedException {
+        checkDestroyed();
+
+        for (;;) {
+            TreeMetaData treeMeta = treeMeta();
+
+            long rootId, rootPage = acquirePage(rootId = treeMeta.rootId);
+
+            try {
+                long rootAddr = readLock(rootId, rootPage);
+
+                if (rootAddr == 0) {
+                    checkDestroyed();
+
+                    continue;
+                }
+
+                try {
+                    BPlusIO<L> io = io(rootAddr);
+
+                    return io.getCount(rootAddr) == 0;
+                }
+                finally {
+                    readUnlock(rootId, rootPage, rootAddr);
+                }
+            }
+            finally {
+                releasePage(rootId, rootPage);
+            }
+        }
     }
 
     /**
@@ -2282,7 +2352,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on row: " + row, e);
+            throw corruptedTreeException("Runtime failure on row: " + row, e, grpId, p.pageId);
         }
         finally {
             checkDestroyed();
@@ -2853,7 +2923,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
             // Check if we are on an inner page and can't get row from it.
             if (lvl != 0 && !canGetRowFromInner)
@@ -2997,7 +3066,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cnt Number of rows in the buffer.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void visit(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
                 throws IgniteCheckedException {
             assert io.isLeaf() : io;
@@ -3510,7 +3578,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             releasePage(newRootId, newRootPage);
                         }
 
-                        Bool res = write(metaPageId, addRoot, newRootId, lvl + 1, FALSE);
+                        Bool res = write(metaPageId, addRoot, newRootId, lvl + 1, FALSE, statisticsHolder());
 
                         assert res == TRUE : res;
 
@@ -3550,7 +3618,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 this.fwdId = fwdId;
                 this.pageId = pageId;
 
-                Result res = write(pageId, page, replace, this, lvl, RETRY);
+                Result res = write(pageId, page, replace, this, lvl, RETRY, statisticsHolder());
 
                 // Restore args.
                 this.pageId = oldPageId;
@@ -3580,7 +3648,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.pageId = pageId;
             this.fwdId = fwdId;
 
-            return write(pageId, page, insert, this, lvl, RETRY);
+            return write(pageId, page, insert, this, lvl, RETRY, statisticsHolder());
         }
 
         /**
@@ -3596,7 +3664,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.pageId = pageId;
             this.fwdId = fwdId;
 
-            return write(pageId, page, replace, this, lvl, RETRY);
+            return write(pageId, page, replace, this, lvl, RETRY, statisticsHolder());
         }
 
         /** {@inheritDoc} */
@@ -3736,6 +3804,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     break;
 
                 case NOOP:
+                case IN_PLACE:
                     return;
 
                 default:
@@ -3938,7 +4007,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public long pollFreePage() {
             if (freePages == null)
                 return 0L;
@@ -3957,7 +4025,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public void addFreePage(long pageId) {
             assert pageId != 0L;
 
@@ -4271,7 +4338,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long backPage = acquirePage(backId);
 
             try {
-                return write(backId, backPage, lockBackAndRmvFromLeaf, this, 0, RETRY);
+                return write(backId, backPage, lockBackAndRmvFromLeaf, this, 0, RETRY, statisticsHolder());
             }
             finally {
                 if (canRelease(backId, 0))
@@ -4286,7 +4353,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private Result doRemoveFromLeaf() throws IgniteCheckedException {
             assert page != 0L;
 
-            return write(pageId, page, rmvFromLeaf, this, 0, RETRY);
+            return write(pageId, page, rmvFromLeaf, this, 0, RETRY, statisticsHolder());
         }
 
         /**
@@ -4297,7 +4364,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private Result doLockTail(int lvl) throws IgniteCheckedException {
             assert page != 0L;
 
-            return write(pageId, page, lockTail, this, lvl, RETRY);
+            return write(pageId, page, lockTail, this, lvl, RETRY, statisticsHolder());
         }
 
         /**
@@ -4325,7 +4392,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long backPage = acquirePage(backId);
 
             try {
-                return write(backId, backPage, lockBackAndTail, this, lvl, RETRY);
+                return write(backId, backPage, lockBackAndTail, this, lvl, RETRY, statisticsHolder());
             }
             finally {
                 if (canRelease(backId, lvl))
@@ -4346,7 +4413,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long fwdPage = acquirePage(fwdId);
 
             try {
-                return write(fwdId, fwdPage, lockTailForward, this, lvl, RETRY);
+                return write(fwdId, fwdPage, lockTailForward, this, lvl, RETRY, statisticsHolder());
             }
             finally {
                 // If we were not able to lock forward page as tail, release the page.
@@ -4365,7 +4432,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param idx Index to remove.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void removeDataRowFromLeaf(long pageId, long page, long pageAddr, Boolean walPlc, BPlusIO<L> io, int cnt,
             int idx)
             throws IgniteCheckedException {
@@ -4589,7 +4655,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private void cutRoot(int lvl) throws IgniteCheckedException {
-            Bool res = write(metaPageId, cutRoot, lvl, FALSE);
+            Bool res = write(metaPageId, cutRoot, lvl, FALSE, statisticsHolder());
 
             assert res == TRUE : res;
         }
@@ -4597,7 +4663,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
             if (reuseList != null && freePages != null)
@@ -5133,7 +5198,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      *
      */
-    @SuppressWarnings("unchecked")
     private abstract class AbstractForwardCursor {
         /** */
         long nextPageId;
@@ -5146,6 +5210,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         /** */
         final L upperBound;
+
+        /** Cached value for retrieving diagnosting info in case of failure. */
+        public GetCursor getCursor;
 
         /**
          * @param lowerBound Lower bound.
@@ -5265,7 +5332,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return {@code true} If we were able to fetch rows from this page.
          * @throws IgniteCheckedException If failed.
          */
-        @SuppressWarnings("unchecked")
         private boolean fillFromBuffer(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
             throws IgniteCheckedException {
             assert io.isLeaf() : io;
@@ -5286,7 +5352,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final void find() throws IgniteCheckedException {
             assert lowerBound != null;
 
-            doFind(new GetCursor(lowerBound, lowerShift, this));
+            doFind(getCursor = new GetCursor(lowerBound, lowerShift, this));
         }
 
         /**
@@ -5338,6 +5404,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         readUnlock(pageId, page, pageAddr);
                     }
                 }
+                catch (RuntimeException | AssertionError e) {
+                    throw corruptedTreeException("Runtime failure on cursor iteration", e, grpId, pageId);
+                }
                 finally {
                     releasePage(pageId, page);
                 }
@@ -5361,7 +5430,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Closure cursor.
      */
-    @SuppressWarnings("unchecked")
     private final class ClosureCursor extends AbstractForwardCursor {
         /** */
         private final TreeRowClosure<L, T> p;
@@ -5438,9 +5506,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private void iterate() throws IgniteCheckedException {
             find();
 
-            if (nextPageId == 0) {
+            if (nextPageId == 0)
                 return;
-            }
 
             for (;;) {
                 L lastRow0 = lastRow;
@@ -5458,7 +5525,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * Forward cursor.
      */
-    @SuppressWarnings("unchecked")
     private final class ForwardCursor extends AbstractForwardCursor implements GridCursor<T> {
         /** */
         final Object x;
@@ -5548,7 +5614,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SimplifiableIfStatement")
         @Override public boolean next() throws IgniteCheckedException {
             if (rows == null)
                 return false;
@@ -5599,9 +5664,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private abstract class GetPageHandler<G extends Get> extends PageHandler<G, Result> {
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override public Result run(int cacheId, long pageId, long page, long pageAddr, PageIO iox, Boolean walPlc,
-            G g, int lvl) throws IgniteCheckedException {
+            G g, int lvl, IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert PageIO.getPageId(pageAddr) == pageId;
 
             // If we've passed the check for correct page ID, we can safely cast.
@@ -5753,5 +5817,88 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     protected int getLockRetries() {
         return LOCK_RETRIES;
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @return Page absolute pointer.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final long acquirePage(long pageId) throws IgniteCheckedException {
+        return acquirePage(pageId, statisticsHolder());
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param h Handler.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R read(
+        long pageId,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return read(pageId, h, arg, intArg, lockFailed, statisticsHolder());
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param h Handler.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R read(
+        long pageId,
+        long page,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return read(pageId, page, h, arg, intArg, lockFailed, statisticsHolder());
+    }
+
+    /**
+     * @return Statistics holder to track IO operations.
+     */
+    protected IoStatisticsHolder statisticsHolder() {
+        return IoStatisticsHolderNoOp.INSTANCE;
+    }
+
+    /**
+     * PageIds converter with empty check.
+     *
+     * @param empty Flag for empty array result.
+     * @param pages Pages supplier.
+     * @return Array of page ids.
+     */
+    private long[] pages(boolean empty, Supplier<long[]> pages) {
+        return empty ? GridLongList.EMPTY_ARRAY : pages.get();
+    }
+
+    /**
+     * Construct the exception and invoke failure processor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     * @param grpId Group id.
+     * @param pageIds Pages ids.
+     * @return New CorruptedTreeException instance.
+     */
+    private CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, pageIds);
+
+        if (failureProcessor != null)
+            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+        return e;
     }
 }

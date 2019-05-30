@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
 
 /**
  * Base discovery test class.
@@ -125,6 +126,7 @@ public abstract class AbstractDiscoveryTest<T extends DiscoverySpi> extends Grid
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDiscovery() throws Exception {
         GridLocalEventListener discoLsnr = new DiscoveryListener();
 

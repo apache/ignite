@@ -1,0 +1,432 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+include /app/configuration/mixins
+
+-var form = 'store'
+-var model = '$ctrl.clonedCache'
+
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Store
+    panel-description
+        | Cache store settings.
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            -var storeFactory = `${model}.cacheStoreFactory`;
+            -var storeFactoryKind = `${storeFactory}.kind`;
+            .pc-form-grid-col-60
+                +form-field__dropdown({
+                    label: 'Store factory:',
+                    model: storeFactoryKind,
+                    name: '"cacheStoreFactory"',
+                    placeholder: '{{ ::$ctrl.Caches.cacheStoreFactory.kind.default }}',
+                    options: '::$ctrl.Caches.cacheStoreFactory.values',
+                    tip: `Factory for persistent storage for cache data
+                    <ul>
+                        <li>JDBC POJO store factory - Objects are stored in underlying database by using java beans mapping description via reflection backed by JDBC</li>
+                        <li>JDBC BLOB store factory - Objects are stored in underlying database in BLOB format backed by JDBC</li>
+                        <li>Hibernate BLOB store factory - Objects are stored in underlying database in BLOB format backed by Hibernate</li>
+                    </ul>`
+                })(
+                ui-validate=`{
+                        writeThroughOn: '$ctrl.Caches.cacheStoreFactory.storeDisabledValueOff(${model}, ${model}.writeThrough)',
+                        readThroughOn: '$ctrl.Caches.cacheStoreFactory.storeDisabledValueOff(${model}, ${model}.readThrough)',
+                        writeBehindOn: '$ctrl.Caches.cacheStoreFactory.storeDisabledValueOff(${model}, ${model}.writeBehindEnabled)'
+                    }`
+                ui-validate-watch-collection=`"[${model}.readThrough, ${model}.writeThrough, ${model}.writeBehindEnabled]"`
+                ng-model-options='{allowInvalid: true}'
+                )
+                    +form-field__error({ error: 'writeThroughOn', message: 'Write through is enabled but store is not set' })
+                    +form-field__error({ error: 'readThroughOn', message: 'Read through is enabled but store is not set' })
+                    +form-field__error({ error: 'writeBehindOn', message: 'Write-behind is enabled but store is not set' })
+            .pc-form-group(ng-if=storeFactoryKind)
+                .pc-form-grid-row(ng-if=`${storeFactoryKind} === 'CacheJdbcPojoStoreFactory'`)
+                    -var pojoStoreFactory = `${storeFactory}.CacheJdbcPojoStoreFactory`
+                    -var required = `${storeFactoryKind} === 'CacheJdbcPojoStoreFactory'`
+
+                    .pc-form-grid-col-30
+                        +form-field__text({
+                            label: 'Data source bean name:',
+                            model: `${pojoStoreFactory}.dataSourceBean`,
+                            name: '"pojoDataSourceBean"',
+                            required: required,
+                            placeholder: 'Input bean name',
+                            tip: 'Name of the data source bean in Spring context'
+                        })(
+                            is-valid-java-identifier
+                            not-java-reserved-word
+                        )
+                            +form-field__error({ error: 'required', message: 'Data source bean name is required' })
+                            +form-field__error({ error: 'isValidJavaIdentifier', message: 'Data source bean name is not a valid Java identifier' })
+                            +form-field__error({ error: 'notJavaReservedWord', message: 'Data source bean name should not be a Java reserved word' })
+                    .pc-form-grid-col-30
+                        +form-field__dialect({
+                            label: 'Dialect:',
+                            model: `${pojoStoreFactory}.dialect`,
+                            name: '"pojoDialect"',
+                            required,
+                            tip: 'Dialect of SQL implemented by a particular RDBMS:',
+                            genericDialectName: 'Generic JDBC dialect',
+                            placeholder: 'Choose JDBC dialect',
+                            change:`$ctrl.clearImplementationVersion(${pojoStoreFactory})`
+                        })
+                    .pc-form-grid-col-60(ng-if=`$ctrl.Caches.requiresProprietaryDrivers(${pojoStoreFactory})`)
+                        a.link-success(ng-href=`{{ $ctrl.Caches.jdbcDriverURL(${pojoStoreFactory}) }}` target='_blank')
+                            | Download JDBC drivers?
+                    .pc-form-grid-col-30
+                        +form-field__number({
+                            label:'Batch size:',
+                            model: `${pojoStoreFactory}.batchSize`,
+                            name: '"pojoBatchSize"',
+                            placeholder: '512',
+                            min: '1',
+                            tip: 'Maximum batch size for writeAll and deleteAll operations'
+                        })
+                    .pc-form-grid-col-30
+                        +form-field__number({
+                            label: 'Thread count:',
+                            model: `${pojoStoreFactory}.maximumPoolSize`,
+                            name: '"pojoMaximumPoolSize"',
+                            placeholder: 'availableProcessors',
+                            min: '1',
+                            tip: 'Maximum workers thread count.<br/>\
+                                 These threads are responsible for load cache.'
+                        })
+                    .pc-form-grid-col-30
+                        +form-field__number({
+                            label: 'Maximum write attempts:',
+                            model: `${pojoStoreFactory}.maximumWriteAttempts`,
+                            name: '"pojoMaximumWriteAttempts"',
+                            placeholder: '2',
+                            min: '0',
+                            tip: 'Maximum write attempts in case of database error'
+                        })
+                    .pc-form-grid-col-30
+                        +form-field__number({
+                            label: 'Parallel load threshold:',
+                            model: `${pojoStoreFactory}.parallelLoadCacheMinimumThreshold`,
+                            name: '"pojoParallelLoadCacheMinimumThreshold"',
+                            placeholder: '512',
+                            min: '0',
+                            tip: 'Parallel load cache minimum threshold.<br/>\
+                                 If <b>0</b> then load sequentially.'
+                        })
+                    .pc-form-grid-col-60
+                        +form-field__java-class({
+                            label: 'Hasher:',
+                            model: `${pojoStoreFactory}.hasher`,
+                            name: '"pojoHasher"',
+                            tip: 'Hash calculator',
+                            validationActive: required
+                        })
+                    .pc-form-grid-col-60
+                        +form-field__java-class({
+                            label: 'Transformer:',
+                            model: `${pojoStoreFactory}.transformer`,
+                            name: '"pojoTransformer"',
+                            tip: 'Types transformer',
+                            validationActive: required
+                        })
+                    .pc-form-grid-col-60
+                        +form-field__checkbox({
+                            label: 'Escape table and filed names',
+                            model:`${pojoStoreFactory}.sqlEscapeAll`,
+                            name: '"sqlEscapeAll"',
+                            tip: 'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\
+                                  This enforces case sensitivity for field names and also allows having special characters in table and field names.<br/>\
+                                  Escaped names will be used for CacheJdbcPojoStore internal SQL queries.'
+                        })
+                .pc-form-grid-row(ng-if=`${storeFactoryKind} === 'CacheJdbcBlobStoreFactory'`)
+                    -var blobStoreFactory = `${storeFactory}.CacheJdbcBlobStoreFactory`
+                    -var blobStoreFactoryVia = `${blobStoreFactory}.connectVia`
+
+                    .pc-form-grid-col-60
+                        +form-field__dropdown({
+                            label: 'Connect via:',
+                            model: blobStoreFactoryVia,
+                            name: '"connectVia"',
+                            placeholder: 'Choose connection method',
+                            options: '[\
+                                                        {value: "URL", label: "URL"},\
+                                                        {value: "DataSource", label: "Data source"}\
+                                                    ]',
+                            tip: 'You can connect to database via:\
+                                                    <ul>\
+                                                        <li>JDBC URL, for example: jdbc:h2:mem:myDatabase</li>\
+                                                        <li>Configured data source</li>\
+                                                    </ul>'
+                        })
+
+                    -var required = `${storeFactoryKind} === 'CacheJdbcBlobStoreFactory' && ${blobStoreFactoryVia} === 'URL'`
+
+                    .pc-form-grid-col-60(ng-if-start=`${blobStoreFactoryVia} === 'URL'`)
+                        +form-field__text({
+                            label: 'Connection URL:',
+                            model: `${blobStoreFactory}.connectionUrl`,
+                            name: '"connectionUrl"',
+                            required: required,
+                            placeholder: 'Input URL',
+                            tip: 'URL for database access, for example: jdbc:h2:mem:myDatabase'
+                        })
+                    .pc-form-grid-col-30
+                        +form-field__text({
+                            label: 'User:',
+                            model: `${blobStoreFactory}.user`,
+                            name: '"user"',
+                            required: required,
+                            placeholder: 'Input user name',
+                            tip: 'User name for database access'
+                        })
+                    .pc-form-grid-col-30(ng-if-end)
+                        .pc-form-grid__text-only-item Password will be generated as stub.
+
+                    -var required = `${storeFactoryKind} === 'CacheJdbcBlobStoreFactory' && ${blobStoreFactoryVia} !== 'URL'`
+
+                    .pc-form-grid-col-30(ng-if-start=`${blobStoreFactoryVia} !== 'URL'`)
+                        +form-field__text({
+                            label: 'Data source bean name:',
+                            model: `${blobStoreFactory}.dataSourceBean`,
+                            name: '"blobDataSourceBean"',
+                            required: required,
+                            placeholder: 'Input bean name',
+                            tip: 'Name of the data source bean in Spring context'
+                        })(
+                        is-valid-java-identifier
+                        not-java-reserved-word
+                        )
+                            +form-field__error({ error: 'required', message: 'Data source bean name is required' })
+                            +form-field__error({ error: 'isValidJavaIdentifier', message: 'Data source bean name is not a valid Java identifier' })
+                            +form-field__error({ error: 'notJavaReservedWord', message: 'Data source bean name should not be a Java reserved word' })
+                    .pc-form-grid-col-30(ng-if-end)
+                        +form-field__dialect({
+                            label: 'Database:',
+                            model: `${blobStoreFactory}.dialect`,
+                            name: '"blobDialect"',
+                            required,
+                            tip: 'Supported databases:',
+                            genericDialectName: 'Generic database',
+                            placeholder: 'Choose database'
+                        })
+                    .pc-form-grid-col-60(ng-if=`$ctrl.Caches.requiresProprietaryDrivers(${blobStoreFactory})`)
+                        a.link-success(ng-href=`{{ $ctrl.Caches.jdbcDriverURL(${blobStoreFactory}) }}` target='_blank')
+                            | Download JDBC drivers?
+                    .pc-form-grid-col-60
+                        +form-field__checkbox({
+                            label: 'Init schema',
+                            model: `${blobStoreFactory}.initSchema`,
+                            name: '"initSchema"',
+                            tip: 'Flag indicating whether DB schema should be initialized by Ignite (default behaviour) or was explicitly created by user'
+                        })
+                    .pc-form-grid-col-60
+                        +form-field__text({
+                            label: 'Create query:',
+                            model: `${blobStoreFactory}.createTableQuery`,
+                            name: '"createTableQuery"',
+                            placeholder: 'SQL for table creation',
+                            tip: 'Query for table creation in underlying database<br/>\
+                                 Default value: create table if not exists ENTRIES (key binary primary key, val binary)'
+                        })
+                    .pc-form-grid-col-60
+                        +form-field__text({
+                            label: 'Load query:',
+                            model: `${blobStoreFactory}.loadQuery`,
+                            name: '"loadQuery"',
+                            placeholder: 'SQL for load entry',
+                            tip: 'Query for entry load from underlying database<br/>\
+                                 Default value: select * from ENTRIES where key=?'
+                        })
+                    .pc-form-grid-col-60
+                        +form-field__text({
+                            label: 'Insert query:',
+                            model: `${blobStoreFactory}.insertQuery`,
+                            name: '"insertQuery"',
+                            placeholder: 'SQL for insert entry',
+                            tip: 'Query for insert entry into underlying database<br/>\
+                                 Default value: insert into ENTRIES (key, val) values (?, ?)'
+                        })
+                    .pc-form-grid-col-60
+                        +form-field__text({
+                            label: 'Update query:',
+                            model: `${blobStoreFactory}.updateQuery`,
+                            name: '"updateQuery"',
+                            placeholder: 'SQL for update entry',
+                            tip: 'Query for update entry in underlying database<br/>\
+                                 Default value: update ENTRIES set val=? where key=?'
+                        })
+                    .pc-form-grid-col-60
+                        +form-field__text({
+                            label: 'Delete query:',
+                            model: `${blobStoreFactory}.deleteQuery`,
+                            name: '"deleteQuery"',
+                            placeholder: 'SQL for delete entry',
+                            tip: 'Query for delete entry from underlying database<br/>\
+                                 Default value: delete from ENTRIES where key=?'
+                        })
+
+                .pc-form-grid-row(ng-if=`${storeFactoryKind} === 'CacheHibernateBlobStoreFactory'`)
+                    -var hibernateStoreFactory = `${storeFactory}.CacheHibernateBlobStoreFactory`
+
+                    .pc-form-grid-col-60
+                        .ignite-form-field
+                            +form-field__label({ label: 'Hibernate properties:', name: '"hibernateProperties"' })
+                                +form-field__tooltip({ title: `List of Hibernate properties<bt />
+                                    For example: connection.url=jdbc:h2:mem:exampleDb` })
+
+                            +list-pair-edit({
+                                items: `${hibernateStoreFactory}.hibernateProperties`,
+                                keyLbl: 'Property name',
+                                valLbl: 'Property value',
+                                itemName: 'property',
+                                itemsName: 'properties'
+                            })
+
+            - form = 'store'
+            .pc-form-grid-col-60
+                +form-field__number({
+                    label: 'Concurrent load all threshold:',
+                    model: `${model}.storeConcurrentLoadAllThreshold`,
+                    name: '"storeConcurrentLoadAllThreshold"',
+                    placeholder: '5',
+                    min: '1',
+                    tip: 'Threshold used in cases when values for multiple keys are being loaded from an underlying cache store in parallel'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Keep binary in store',
+                    model: `${model}.storeKeepBinary`,
+                    name: '"storeKeepBinary"',
+                    tip: 'Flag indicating that CacheStore implementation is working with binary objects instead of Java objects'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Load previous value',
+                    model: `${model}.loadPreviousValue`,
+                    name: '"loadPreviousValue"',
+                    tip: 'Flag indicating whether value should be loaded from store if it is not in the cache for following cache operations: \
+                        <ul> \
+                            <li>IgniteCache.putIfAbsent()</li> \
+                            <li>IgniteCache.replace()</li> \
+                            <li>IgniteCache.remove()</li> \
+                            <li>IgniteCache.getAndPut()</li> \
+                            <li>IgniteCache.getAndRemove()</li> \
+                            <li>IgniteCache.getAndReplace()</li> \
+                            <li> IgniteCache.getAndPutIfAbsent()</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Read-through',
+                    model: `${model}.readThrough`,
+                    name: '"readThrough"',
+                    tip: 'Flag indicating whether read-through caching should be used'
+                })(
+                ng-model-options='{allowInvalid: true}'
+                ui-validate=`{
+                        storeEnabledReadOrWriteOn: '$ctrl.Caches.cacheStoreFactory.storeEnabledReadOrWriteOn(${model})'
+                    }`
+                ui-validate-watch-collection=`"[${storeFactoryKind}, ${model}.writeThrough, ${model}.readThrough]"`
+                )
+                    +form-field__error({ error: 'storeEnabledReadOrWriteOn', message: 'Read or write through should be turned on when store kind is set' })
+            .pc-form-grid-col-60
+                +form-field__checkbox({
+                    label: 'Write-through',
+                    model: `${model}.writeThrough`,
+                    name: '"writeThrough"',
+                    tip: 'Flag indicating whether write-through caching should be used'
+                })(
+                ng-model-options='{allowInvalid: true}'
+                ui-validate=`{
+                        storeEnabledReadOrWriteOn: '$ctrl.Caches.cacheStoreFactory.storeEnabledReadOrWriteOn(${model})'
+                    }`
+                ui-validate-watch-collection=`"[${storeFactoryKind}, ${model}.writeThrough, ${model}.readThrough]"`
+                )
+                    +form-field__error({ error: 'storeEnabledReadOrWriteOn', message: 'Read or write through should be turned on when store kind is set' })
+
+            -var enabled = `${model}.writeBehindEnabled`
+
+            .pc-form-grid-col-60.pc-form-group__text-title
+                +form-field__checkbox({
+                    label: 'Write-behind',
+                    model: enabled,
+                    name: '"writeBehindEnabled"',
+                    tip: `
+                        Cache write-behind settings.<br>
+                        Write-behind is a special mode when updates to cache accumulated and then asynchronously flushed to persistent store as a bulk operation.
+                    `
+                })(
+                ng-model-options='{allowInvalid: true}'
+                )
+                    +form-field__error({ error: 'storeDisabledValueOff', message: 'Write-behind is enabled but store kind is not set' })
+            .pc-form-group.pc-form-grid-row(ng-if=enabled)
+                .pc-form-grid-col-30
+                    +form-field__number({
+                        label: 'Batch size:',
+                        model: `${model}.writeBehindBatchSize`,
+                        name: '"writeBehindBatchSize"',
+                        disabled: `!(${enabled})`,
+                        placeholder: '512',
+                        min: '1',
+                        tip: 'Maximum batch size for write-behind cache store operations<br/>\
+                              Store operations(get or remove) are combined in a batch of this size to be passed to cache store'
+                    })
+                .pc-form-grid-col-30
+                    +form-field__number({
+                        label: 'Flush size:',
+                        model: `${model}.writeBehindFlushSize`,
+                        name: '"writeBehindFlushSize"',
+                        placeholder: '10240',
+                        min: `{{ $ctrl.Caches.writeBehindFlush.min(${model}) }}`,
+                        tip: `Maximum size of the write-behind cache<br/>
+                         If cache size exceeds this value, all cached items are flushed to the cache store and write cache is cleared`
+                    })(
+                    ng-model-options='{allowInvalid: true}'
+                    )
+                .pc-form-grid-col-30
+                    +form-field__number({
+                        label: 'Flush frequency:',
+                        model: `${model}.writeBehindFlushFrequency`,
+                        name: '"writeBehindFlushFrequency"',
+                        placeholder: '5000',
+                        min: `{{ $ctrl.Caches.writeBehindFlush.min(${model}) }}`,
+                        tip: `Frequency with which write-behind cache is flushed to the cache store in milliseconds`
+                    })(
+                    ng-model-options='{allowInvalid: true}'
+                    )
+                .pc-form-grid-col-30
+                    +form-field__number({
+                        label: 'Flush threads count:',
+                        model: `${model}.writeBehindFlushThreadCount`,
+                        name: '"writeBehindFlushThreadCount"',
+                        disabled: `!(${enabled})`,
+                        placeholder: '1',
+                        min: '1',
+                        tip: 'Number of threads that will perform cache flushing'
+                    })
+
+                //- Since ignite 2.0
+                .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
+                    +form-field__checkbox({
+                        label: 'Write coalescing',
+                        model: model + '.writeBehindCoalescing',
+                        name: '"WriteBehindCoalescing"',
+                        disabled: `!${enabled}`,
+                        tip: 'Write coalescing flag for write-behind cache store'
+                    })
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheStore', 'domains')

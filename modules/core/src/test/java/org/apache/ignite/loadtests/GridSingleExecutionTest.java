@@ -195,7 +195,6 @@ public final class GridSingleExecutionTest {
      * @return List of configurations.
      * @throws IgniteCheckedException If failed..
      */
-    @SuppressWarnings("unchecked")
     private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath, String log) throws IgniteCheckedException {
         File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 

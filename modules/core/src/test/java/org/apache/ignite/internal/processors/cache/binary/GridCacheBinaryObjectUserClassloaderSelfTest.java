@@ -32,10 +32,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -53,9 +51,6 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     /** */
     private static volatile boolean useWrappingLoader = false;
 
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -66,12 +61,6 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
@@ -140,6 +129,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testConfigurationRegistration() throws Exception {
         useWrappingLoader = false;
 
@@ -149,6 +139,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testConfigurationRegistrationWithWrappingLoader() throws Exception {
         useWrappingLoader = true;
 

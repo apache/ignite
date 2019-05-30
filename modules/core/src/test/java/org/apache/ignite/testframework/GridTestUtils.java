@@ -34,6 +34,9 @@ import java.net.ServerSocket;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,15 +67,13 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -86,6 +87,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
@@ -100,13 +104,17 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Utility class for tests.
@@ -189,13 +197,13 @@ public final class GridTestUtils {
     private static final Map<Class<?>, String> addrs = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> mcastPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> mcastPorts = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> discoPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> discoPorts = new HashMap<>();
 
     /** */
-    private static final Map<Class<? extends Test>, Integer> commPorts = new HashMap<>();
+    private static final Map<Class<? extends GridAbstractTest>, Integer> commPorts = new HashMap<>();
 
     /** */
     private static int[] addr;
@@ -361,7 +369,8 @@ public final class GridTestUtils {
 
             while (t != null) {
                 if (cls == t.getClass() && (msg == null || (t.getMessage() != null && t.getMessage().contains(msg)))) {
-                    log.info("Caught expected exception: " + t.getMessage());
+                    if (log != null && log.isInfoEnabled())
+                        log.info("Caught expected exception: " + t.getMessage());
 
                     return t;
                 }
@@ -562,7 +571,6 @@ public final class GridTestUtils {
      * @param it Input iterable of elements.
      * @param ps Array of predicates (by number of elements in iterable).
      */
-    @SuppressWarnings("ConstantConditions")
     public static <T> void assertOneToOne(Iterable<T> it, IgnitePredicate<T>... ps) {
         Collection<IgnitePredicate<T>> ps0 = new ArrayList<>(Arrays.asList(ps));
         Collection<T2<IgnitePredicate<T>, T>> passed = new ArrayList<>();
@@ -602,7 +610,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next multicast port.
      */
-    public static synchronized int getNextMulticastPort(Class<? extends Test> cls) {
+    public static synchronized int getNextMulticastPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = mcastPorts.get(cls);
 
         if (portRet != null)
@@ -649,7 +657,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next communication port.
      */
-    public static synchronized int getNextCommPort(Class<? extends Test> cls) {
+    public static synchronized int getNextCommPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = commPorts.get(cls);
 
         if (portRet != null)
@@ -676,7 +684,7 @@ public final class GridTestUtils {
      * @param cls Class.
      * @return Next discovery port.
      */
-    public static synchronized int getNextDiscoPort(Class<? extends Test> cls) {
+    public static synchronized int getNextDiscoPort(Class<? extends GridAbstractTest> cls) {
         Integer portRet = discoPorts.get(cls);
 
         if (portRet != null)
@@ -1947,18 +1955,18 @@ public final class GridTestUtils {
     }
 
     /**
-     * Adds test to the suite only if it's not in {@code ignoredTests} set.
+     * Adds test class to the list only if it's not in {@code ignoredTests} set.
      *
-     * @param suite TestSuite where to place the test.
+     * @param suite List where to place the test class.
      * @param test Test.
      * @param ignoredTests Tests to ignore. If test contained in the collection it is not included in suite
      */
-    public static void addTestIfNeeded(@NotNull final TestSuite suite, @NotNull final Class<? extends TestCase> test,
+    public static void addTestIfNeeded(@NotNull final List<Class<?>> suite, @NotNull final Class<?> test,
         @Nullable final Collection<Class> ignoredTests) {
         if (ignoredTests != null && ignoredTests.contains(test))
             return;
 
-        suite.addTestSuite(test);
+        suite.add(test);
     }
 
     /**
@@ -2023,7 +2031,7 @@ public final class GridTestUtils {
 
         /** */
         public static int apply(int val) {
-            return (int) (TEST_SCALE_FACTOR_VALUE * val);
+            return (int)Math.round(TEST_SCALE_FACTOR_VALUE * val);
         }
 
         /** */
@@ -2033,12 +2041,155 @@ public final class GridTestUtils {
 
         /** Apply scale factor with lower bound */
         public static int applyLB(int val, int lowerBound) {
-            return Math.max((int) (TEST_SCALE_FACTOR_VALUE * val), lowerBound);
+            return Math.max(apply(val), lowerBound);
         }
 
         /** Apply scale factor with upper bound */
         public static int applyUB(int val, int upperBound) {
-            return Math.min((int) (TEST_SCALE_FACTOR_VALUE * val), upperBound);
+            return Math.min(apply(val), upperBound);
+        }
+    }
+
+    /**
+     * @param node Node to connect to.
+     * @param params Connection parameters.
+     * @return Thin JDBC connection to specified node.
+     */
+    public static Connection connect(IgniteEx node, String params) throws SQLException {
+        Collection<GridPortRecord> recs = node.context().ports().records();
+
+        GridPortRecord cliLsnrRec = null;
+
+        for (GridPortRecord rec : recs) {
+            if (rec.clazz() == ClientListenerProcessor.class) {
+                cliLsnrRec = rec;
+
+                break;
+            }
+        }
+
+        assertNotNull(cliLsnrRec);
+
+        String connStr = "jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port();
+
+        if (!F.isEmpty(params))
+            connStr += "/?" + params;
+
+        return DriverManager.getConnection(connStr);
+    }
+
+    /**
+     * Removes idle_verify log files created in tests.
+     */
+    public static void cleanIdleVerifyLogFiles() {
+        File dir = new File(".");
+
+        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
+            f.delete();
+    }
+
+    public static class SqlTestFunctions {
+        /** Sleep milliseconds. */
+        public static volatile long sleepMs;
+        /** Fail flag. */
+        public static volatile boolean fail;
+
+        /**
+         * Do sleep {@code sleepMs} milliseconds
+         *
+         * @return amount of milliseconds to sleep
+         */
+        @QuerySqlFunction
+        @SuppressWarnings("BusyWait")
+        public static long sleep() {
+            long end = System.currentTimeMillis() + sleepMs;
+
+            long remainTime =sleepMs;
+
+            do {
+                try {
+                    Thread.sleep(remainTime);
+                }
+                catch (InterruptedException ignored) {
+                    // No-op
+                }
+            }
+            while ((remainTime = end - System.currentTimeMillis()) > 0);
+
+            return sleepMs;
+        }
+
+        /**
+         * Function do fail in case of {@code fail} is true, return 0 otherwise.
+         *
+         * @return in case of {@code fail} is false return 0, fail otherwise.
+         */
+        @QuerySqlFunction
+        public static int can_fail() {
+            if (fail)
+                throw new IllegalArgumentException();
+            else
+                return 0;
+        }
+
+        /**
+         * Function do sleep {@code sleepMs} milliseconds and do fail in case of {@code fail} is true, return 0 otherwise.
+         *
+         * @return amount of milliseconds to sleep in case of {@code fail} is false, fail otherwise.
+         */
+        @QuerySqlFunction
+        public static long sleep_and_can_fail() {
+            long sleep = sleep();
+
+            can_fail();
+
+            return sleep;
+        }
+    }
+
+    /**
+     * Runnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface RunnableX extends Runnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritdoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
+     * IgniteRunnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface IgniteRunnableX extends IgniteRunnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritdoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
-import junit.framework.TestCase;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
@@ -32,21 +31,26 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  *
  */
-public class IgniteDataIntegrityTests extends TestCase {
+public class IgniteDataIntegrityTests {
     /** File input. */
     private SimpleFileInput fileInput;
 
     /** Buffer expander. */
     private ByteBufferExpander expBuf;
 
-    /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
-        super.setUp();
-
+    /** */
+    @Before
+    public void setUp() throws Exception {
         File file = File.createTempFile("integrity", "dat");
         file.deleteOnExit();
 
@@ -77,8 +81,9 @@ public class IgniteDataIntegrityTests extends TestCase {
         fileInput.io().force();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    /** */
+    @After
+    public void tearDown() throws Exception {
         fileInput.io().close();
         expBuf.close();
     }
@@ -86,6 +91,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testSuccessfulPath() throws Exception {
         checkIntegrity();
     }
@@ -93,6 +99,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testIntegrityViolationChecking() throws Exception {
         toggleOneRandomBit(0, 1024 - 16);
 
@@ -108,6 +115,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testSkipingLastCorruptedEntry() throws Exception {
         toggleOneRandomBit(1024 - 16, 1024);
 
@@ -123,6 +131,7 @@ public class IgniteDataIntegrityTests extends TestCase {
     /**
      *
      */
+    @Test
     public void testExpandBuffer() {
         ByteBufferExpander expBuf = new ByteBufferExpander(24, ByteOrder.nativeOrder());
 

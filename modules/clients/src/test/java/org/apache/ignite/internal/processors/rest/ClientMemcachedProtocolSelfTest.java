@@ -29,6 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Assert;
+import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -92,6 +93,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGet() throws Exception {
         jcache().put("getKey1", "getVal1");
         jcache().put("getKey2", "getVal2");
@@ -104,6 +106,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetBulk() throws Exception {
         jcache().put("getKey1", "getVal1");
         jcache().put("getKey2", "getVal2");
@@ -122,6 +125,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSet() throws Exception {
         Assert.assertTrue(client.set("setKey", 0, "setVal").get());
 
@@ -131,6 +135,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSetWithExpiration() throws Exception {
         Assert.assertTrue(client.set("setKey", 2000, "setVal").get());
 
@@ -144,6 +149,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAdd() throws Exception {
         jcache().put("addKey1", "addVal1");
 
@@ -157,6 +163,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAddWithExpiration() throws Exception {
         Assert.assertTrue(client.add("addKey", 2000, "addVal").get());
 
@@ -170,6 +177,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplace() throws Exception {
         Assert.assertFalse(client.replace("replaceKey", 0, "replaceVal").get());
 
@@ -184,6 +192,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReplaceWithExpiration() throws Exception {
         jcache().put("replaceKey", "replaceVal");
 
@@ -199,6 +208,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDelete() throws Exception {
         Assert.assertFalse(client.delete("deleteKey").get());
 
@@ -212,6 +222,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIncrement() throws Exception {
         Assert.assertEquals(5, client.incr("incrKey", 3, 2));
 
@@ -225,6 +236,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDecrement() throws Exception {
         Assert.assertEquals(5, client.decr("decrKey", 10, 15));
 
@@ -238,6 +250,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFlush() throws Exception {
         jcache().put("flushKey1", "flushVal1");
         jcache().put("flushKey2", "flushVal2");
@@ -252,6 +265,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStat() throws Exception {
         jcache().put("statKey1", "statVal1");
         assertEquals("statVal1", jcache().get("statKey1"));
@@ -283,6 +297,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAppend() throws Exception {
         Assert.assertFalse(client.append(0, "appendKey", "_suffix").get());
 
@@ -298,6 +313,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPrepend() throws Exception {
         Assert.assertFalse(client.append(0, "prependKey", "_suffix").get());
 
@@ -313,6 +329,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSpecialTypes() throws Exception {
         Assert.assertTrue(client.set("boolKey", 0, true).get());
 
@@ -361,6 +378,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testComplexObject() throws Exception {
         Assert.assertTrue(client.set("objKey", 0, new ValueObject(10, "String")).get());
 
@@ -370,6 +388,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCustomPort() throws Exception {
         customPort = 11212;
 
@@ -392,6 +411,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testVersion() throws Exception {
         Map<SocketAddress, String> map = client.getVersions();
 

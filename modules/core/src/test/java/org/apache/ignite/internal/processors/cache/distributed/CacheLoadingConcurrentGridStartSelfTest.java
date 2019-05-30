@@ -49,8 +49,11 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -78,6 +81,11 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
     /** Restarts. */
     protected volatile boolean restarts;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -136,6 +144,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamer() throws Exception {
         configured = true;
 
@@ -163,9 +172,9 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-4210")
+    @Test
     public void testLoadCacheFromStore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-4210");
-
         loadCache(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite grid) {
                 grid.cache(DEFAULT_CACHE_NAME).loadCache(null);
@@ -176,6 +185,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialClient() throws Exception {
         client = true;
 
@@ -190,6 +200,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialClientWithConfig() throws Exception {
         client = true;
         configured = true;
@@ -206,6 +217,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequential() throws Exception {
         loadCacheWithDataStreamerSequential();
     }
@@ -213,6 +225,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialWithConfigAndRestarts() throws Exception {
         restarts = true;
         configured = true;
@@ -229,6 +242,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    @Test
     public void testLoadCacheWithDataStreamerSequentialWithConfig() throws Exception {
         configured = true;
 

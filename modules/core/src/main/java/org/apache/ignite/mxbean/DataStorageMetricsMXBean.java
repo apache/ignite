@@ -174,4 +174,12 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
         "Number of subintervals to set."
     )
     public void subIntervals(int subInts);
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Storage space allocated, in bytes.")
+    @Override long getStorageSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Storage space allocated adjusted for possible sparsity, in bytes.")
+    @Override long getSparseStorageSize();
 }

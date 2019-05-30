@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
@@ -37,6 +38,7 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
         "modules/spring/src/test/java/org/apache/ignite/spring/sprint-exclude.xml");
 
     /** Spring should exclude properties by list and ignore beans with class not existing in classpath. */
+    @Test
     public void testExclude() throws Exception {
          IgniteSpringHelper spring = SPRING.create(false);
 
@@ -70,6 +72,7 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
     }
 
     /** Spring should fail if bean class not exist in classpath. */
+    @Test
     public void testFail() throws Exception {
         IgniteSpringHelper spring = SPRING.create(false);
 

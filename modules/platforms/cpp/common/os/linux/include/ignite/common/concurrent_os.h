@@ -78,6 +78,46 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(CriticalSection)
             };
 
+            class IGNITE_IMPORT_EXPORT ReadWriteLock
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                ReadWriteLock();
+
+                /**
+                 * Destructor.
+                 */
+                ~ReadWriteLock();
+
+                /**
+                 * Lock in exclusive mode.
+                 */
+                void LockExclusive();
+
+                /**
+                 * Release in exclusive mode.
+                 */
+                void ReleaseExclusive();
+
+                /**
+                 * Lock in shared mode.
+                 */
+                void LockShared();
+
+                /**
+                 * Release in shared mode.
+                 */
+                void ReleaseShared();
+
+            private:
+                /** Lock. */
+                pthread_rwlock_t lock;
+
+                IGNITE_NO_COPY_ASSIGNMENT(ReadWriteLock)
+            };
+
             /**
              * Special latch with count = 1.
              */

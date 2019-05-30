@@ -49,5 +49,8 @@ public enum TcpDiscoverySpiState {
     CHECK_FAILED,
 
     /** */
-    LOOPBACK_PROBLEM
+    LOOPBACK_PROBLEM,
+
+    /** */
+    RING_FAILED
 }

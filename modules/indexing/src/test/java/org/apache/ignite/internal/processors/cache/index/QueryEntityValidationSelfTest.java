@@ -17,23 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
 
 /**
  * Tests for query entity validation.
  */
-public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
+public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
@@ -47,6 +46,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testValueTypeNull() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
@@ -70,6 +70,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexTypeNull() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 
@@ -112,6 +113,7 @@ public class QueryEntityValidationSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIndexNameDuplicate() throws Exception {
         final CacheConfiguration ccfg = new CacheConfiguration().setName(CACHE_NAME);
 

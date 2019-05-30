@@ -75,8 +75,7 @@ namespace ignite
          * Constructor.
          */
         JvmOptions() :
-            size(0),
-            opts(0)
+            opts()
         {
             // No-op.
         }
@@ -100,39 +99,58 @@ namespace ignite
         {
             Deinit();
 
-            size = 3 + static_cast<int>(cfg.jvmOpts.size());
+            const size_t REQ_OPTS_CNT = 4;
+            const size_t JAVA9_OPTS_CNT = 6;
 
-            if (!home.empty())
-                ++size;
+            opts.reserve(cfg.jvmOpts.size() + REQ_OPTS_CNT + JAVA9_OPTS_CNT);
 
-            // Brackets '()' here guarantee for the array to be zeroed.
-            // Important to avoid crash in case of exception.
-            opts = new char*[size]();
+            std::string fileEncParam = "-Dfile.encoding=";
 
-            int idx = 0;
+            bool hadFileEnc = false;
 
             // 1. Set classpath.
             std::string cpFull = "-Djava.class.path=" + cp;
 
-            opts[idx++] = CopyChars(cpFull.c_str());
+            opts.push_back(CopyChars(cpFull.c_str()));
 
             // 2. Set home.
             if (!home.empty()) {
                 std::string homeFull = "-DIGNITE_HOME=" + home;
 
-                opts[idx++] = CopyChars(homeFull.c_str());
+                opts.push_back(CopyChars(homeFull.c_str()));
             }
 
             // 3. Set Xms, Xmx.
             std::string xmsStr = JvmMemoryString("-Xms", cfg.jvmInitMem);
             std::string xmxStr = JvmMemoryString("-Xmx", cfg.jvmMaxMem);
 
-            opts[idx++] = CopyChars(xmsStr.c_str());
-            opts[idx++] = CopyChars(xmxStr.c_str());
+            opts.push_back(CopyChars(xmsStr.c_str()));
+            opts.push_back(CopyChars(xmxStr.c_str()));
 
             // 4. Set the rest options.
-            for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i)
-                opts[idx++] = CopyChars(i->c_str());
+            for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i) {
+                if (i->find(fileEncParam) != std::string::npos)
+                    hadFileEnc = true;
+
+                opts.push_back(CopyChars(i->c_str()));
+            }
+
+            // 5. Set file.encoding.
+            if (!hadFileEnc) {
+                std::string fileEncFull = fileEncParam + "UTF-8";
+
+                opts.push_back(CopyChars(fileEncFull.c_str()));
+            }
+
+            // Adding options for Java 9 or later
+            if (IsJava9OrLater()) {
+                opts.push_back(CopyChars("--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.base/sun.nio.ch=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED"));
+                opts.push_back(CopyChars("--illegal-access=permit"));
+            }
         }
 
         /**
@@ -140,13 +158,10 @@ namespace ignite
          */
         void Deinit()
         {
-            if (opts)
-            {
-                for (int i = 0; i < size; ++i)
-                    ReleaseChars(opts[i]);
+            for (size_t i = 0; i < opts.size(); ++i)
+                ReleaseChars(opts[i]);
 
-                delete[] opts;
-            }
+            opts.clear();
         }
 
         /**
@@ -154,9 +169,9 @@ namespace ignite
          *
          * @return Built options
          */
-        char** GetOpts() const
+        char** GetOpts()
         {
-            return opts;
+            return &opts[0];
         }
 
         /**
@@ -166,15 +181,12 @@ namespace ignite
          */
         int GetSize() const
         {
-            return size;
+            return static_cast<int>(opts.size());
         }
 
     private:
-        /** Size */
-        int size;
-
         /** Options array. */
-        char** opts;
+        std::vector<char*> opts;
     };
 
     Ignite Ignition::Start(const IgniteConfiguration& cfg)

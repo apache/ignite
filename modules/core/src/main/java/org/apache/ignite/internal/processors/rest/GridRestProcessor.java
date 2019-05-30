@@ -49,7 +49,9 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
@@ -62,6 +64,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -269,7 +272,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                     if (secCtx0 == null || ses.isTokenExpired(sesTokTtl))
                         ses.secCtx = secCtx0 = authenticate(req, ses);
 
-                    authorize(req, secCtx0);
+                    try(OperationSecurityContext s = ctx.security().withContext(secCtx0)) {
+                        authorize(req);
+                    }
                 }
                 catch (SecurityException e) {
                     assert secCtx0 != null;
@@ -486,7 +491,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         super(ctx);
 
         sesTtl = IgniteSystemProperties.getLong(IGNITE_REST_SESSION_TIMEOUT, DFLT_SES_TIMEOUT) * 1000;
-        sesTokTtl = IgniteSystemProperties.getLong(IGNITE_REST_SECURITY_TOKEN_TIMEOUT, DFLT_SES_TOKEN_INVALIDATE_INTERVAL) * 100;
+        sesTokTtl = IgniteSystemProperties.getLong(IGNITE_REST_SECURITY_TOKEN_TIMEOUT, DFLT_SES_TOKEN_INVALIDATE_INTERVAL) * 1000;
 
         sesTimeoutCheckerThread = new IgniteThread(ctx.igniteInstanceName(), "session-timeout-worker",
             new GridWorker(ctx.igniteInstanceName(), "session-timeout-worker", log) {
@@ -500,6 +505,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             if (ses.isTimedOut(sesTtl)) {
                                 clientId2SesId.remove(ses.clientId, ses.sesId);
                                 sesId2Ses.remove(ses.sesId, ses);
+
+                                if (ctx.security().enabled() && ses.secCtx != null && ses.secCtx.subject() != null)
+                                    ctx.security().onSessionExpired(ses.secCtx.subject().id());
                             }
                         }
                     }
@@ -528,6 +536,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridChangeStateCommandHandler(ctx));
             addHandler(new AuthenticationCommandHandler(ctx));
             addHandler(new UserActionCommandHandler(ctx));
+            addHandler(new GridBaselineCommandHandler(ctx));
+            addHandler(new MemoryMetricsCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -814,10 +824,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * @param req REST request.
-     * @param sCtx Security context.
      * @throws SecurityException If authorization failed.
      */
-    private void authorize(GridRestRequest req, SecurityContext sCtx) throws SecurityException {
+    private void authorize(GridRestRequest req) throws SecurityException {
         SecurityPermission perm = null;
         String name = null;
 
@@ -892,10 +901,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CLUSTER_INACTIVE:
             case CLUSTER_ACTIVATE:
             case CLUSTER_DEACTIVATE:
+            case BASELINE_SET:
+            case BASELINE_ADD:
+            case BASELINE_REMOVE:
                 perm = SecurityPermission.ADMIN_OPS;
 
                 break;
 
+            case DATA_REGION_METRICS:
+            case DATA_STORAGE_METRICS:
             case CACHE_METRICS:
             case CACHE_SIZE:
             case CACHE_METADATA:
@@ -909,6 +923,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case NAME:
             case LOG:
             case CLUSTER_CURRENT_STATE:
+            case BASELINE_CURRENT_STATE:
             case AUTHENTICATE:
             case ADD_USER:
             case REMOVE_USER:
@@ -920,7 +935,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         if (perm != null)
-            ctx.security().authorize(name, perm, sCtx);
+            ctx.security().authorize(name, perm);
     }
 
     /**

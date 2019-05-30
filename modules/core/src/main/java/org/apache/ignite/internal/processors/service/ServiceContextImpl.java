@@ -106,7 +106,6 @@ public class ServiceContextImpl implements ServiceContext {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Nullable @Override public <K> K affinityKey() {
         return (K)affKey;
     }

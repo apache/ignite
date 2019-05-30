@@ -23,12 +23,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.junit.Test;
 
 /**
  *
  */
-public class TableViewSubquerySelfTest extends GridCommonAbstractTest {
+public class TableViewSubquerySelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 1;
 
@@ -47,11 +48,20 @@ public class TableViewSubquerySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        ignite = null;
+        initCache = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
     /** */
+    @Test
     public void testSubqueryTableView() {
         final String cacheName = "a1";
 

@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import org.junit.Test;
 
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -52,6 +53,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testExistsPathMissing() throws Exception {
         create(igfsSecondary, paths(DIR), null);
 
@@ -63,6 +65,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testListFilesPathMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
 
@@ -85,6 +88,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testInfoPathMissing() throws Exception {
         create(igfsSecondary, paths(DIR), null);
         create(igfs, null, null);
@@ -101,6 +105,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameFileSourceMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, paths(DIR), null);
@@ -117,6 +122,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameFileSourceMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, null, null);
@@ -133,6 +139,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameFileParentRootSourceMissing() throws Exception {
         IgfsPath file1 = new IgfsPath("/file1");
         IgfsPath file2 = new IgfsPath("/file2");
@@ -151,6 +158,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDirectorySourceMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
@@ -166,6 +174,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDirectorySourceMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
@@ -182,6 +191,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testRenameDirectoryParentRootSourceMissing() throws Exception {
         IgfsPath dir1 = new IgfsPath("/dir1");
         IgfsPath dir2 = new IgfsPath("/dir2");
@@ -200,6 +210,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileSourceMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
@@ -216,6 +227,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileSourceMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR_NEW, SUBDIR_NEW), paths(FILE));
@@ -232,6 +244,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileDestinationMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR, SUBDIR, DIR_NEW), paths(FILE));
@@ -248,6 +261,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileDestinationMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
@@ -264,6 +278,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileSourceAndDestinationMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR, DIR_NEW), null);
@@ -280,6 +295,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileSourceAndDestinationMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, null, null);
@@ -296,6 +312,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileDestinationRootSourceMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, paths(DIR), null);
@@ -312,6 +329,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileDestinationRootSourceMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, null, null);
@@ -328,6 +346,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileSourceParentRootSourceMissing() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
@@ -345,6 +364,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileSourceParentRootDestinationMissingPartially() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
@@ -363,6 +383,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveFileSourceParentRootDestinationMissing() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
@@ -381,6 +402,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileSourceMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
@@ -397,6 +419,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileSourceMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR_NEW, SUBDIR_NEW), paths(FILE));
@@ -413,6 +436,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileDestinationMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR, SUBDIR, DIR_NEW), paths(FILE));
@@ -429,6 +453,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileDestinationMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
@@ -445,6 +470,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileSourceAndDestinationMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, paths(DIR, DIR_NEW), null);
@@ -461,6 +487,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileSourceAndDestinationMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE));
         create(igfs, null, null);
@@ -477,6 +504,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileDestinationRootSourceMissingPartially() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
@@ -495,6 +523,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileDestinationRootSourceMissing() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE.name());
 
@@ -513,6 +542,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileSourceParentRootSourceMissing() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE_NEW.name());
 
@@ -530,6 +560,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileSourceParentRootDestinationMissingPartially() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE_NEW.name());
 
@@ -548,6 +579,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameFileSourceParentRootDestinationMissing() throws Exception {
         IgfsPath file = new IgfsPath("/" + FILE_NEW.name());
 
@@ -566,6 +598,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectorySourceMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR, DIR_NEW, SUBDIR_NEW), null);
@@ -582,6 +615,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectorySourceMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR_NEW, SUBDIR_NEW), null);
@@ -599,6 +633,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectoryDestinationMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW), null);
@@ -615,6 +650,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectoryDestinationMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
@@ -631,6 +667,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectorySourceAndDestinationMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR, DIR_NEW), null);
@@ -647,6 +684,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectorySourceAndDestinationMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, null, null);
@@ -663,6 +701,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectoryDestinationRootSourceMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(igfs, paths(DIR), null);
@@ -679,6 +718,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectoryDestinationRootSourceMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), null);
         create(igfs, null, null);
@@ -695,6 +735,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectorySourceParentRootSourceMissing() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
@@ -712,6 +753,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectorySourceParentRootDestinationMissingPartially() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
@@ -730,6 +772,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveDirectorySourceParentRootDestinationMissing() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
@@ -748,6 +791,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectorySourceMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR, DIR_NEW, SUBDIR_NEW), null);
@@ -764,6 +808,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectorySourceMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR_NEW, SUBDIR_NEW), null);
@@ -781,6 +826,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectoryDestinationMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW), null);
@@ -797,6 +843,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectoryDestinationMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), null);
@@ -813,6 +860,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectorySourceAndDestinationMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, paths(DIR, DIR_NEW), null);
@@ -829,6 +877,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectorySourceAndDestinationMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR, DIR_NEW, SUBDIR_NEW), null);
         create(igfs, null, null);
@@ -845,6 +894,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectoryDestinationRootSourceMissingPartially() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
@@ -863,6 +913,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectoryDestinationRootSourceMissing() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR.name());
 
@@ -881,6 +932,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectorySourceParentRootSourceMissing() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR_NEW.name());
 
@@ -898,6 +950,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectorySourceParentRootDestinationMissingPartially() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR_NEW.name());
 
@@ -916,6 +969,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMoveRenameDirectorySourceParentRootDestinationMissing() throws Exception {
         IgfsPath dir = new IgfsPath("/" + SUBSUBDIR_NEW.name());
 
@@ -934,6 +988,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMkdirsParentPathMissingPartially() throws Exception {
         Map<String, String> props = null;
 
@@ -964,6 +1019,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testMkdrisParentPathMissing() throws Exception {
         Map<String, String> props = null;
 
@@ -995,6 +1051,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeletePathMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
         create(igfs, paths(DIR), null);
@@ -1010,6 +1067,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeletePathMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
         create(igfs, null, null);
@@ -1025,6 +1083,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testDeleteParentRootPathMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
         create(igfs, null, null);
@@ -1039,6 +1098,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdatePathMissingPartially() throws Exception {
         if(!propertiesSupported())
             return;
@@ -1070,6 +1130,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdatePathMissing() throws Exception {
         if(!propertiesSupported())
             return;
@@ -1101,6 +1162,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testUpdateParentRootPathMissing() throws Exception {
         doUpdateParentRootPathMissing(properties("owner", "group", "0555"));
     }
@@ -1131,6 +1193,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testOpenMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
@@ -1145,6 +1208,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateParentMissingPartially() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
@@ -1161,6 +1225,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSetPropertiesOnPartiallyMissingDirectory() throws Exception {
         if (!propertiesSupported())
             return;
@@ -1181,6 +1246,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateParentMissing() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
@@ -1196,6 +1262,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSetPropertiesOnMissingDirectory() throws Exception {
         if (!propertiesSupported())
             return;
@@ -1219,6 +1286,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendParentMissingPartially() throws Exception {
         if (!appendSupported())
             return;
@@ -1240,6 +1308,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testAppendParentMissing() throws Exception {
         if (!appendSupported())
             return;
@@ -1261,6 +1330,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRenameDeleteSourceRemote() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -1317,6 +1387,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRenameDeleteDestinationRemote() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -1369,6 +1440,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentRenamesRemote() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -1429,6 +1501,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testConcurrentDeletesRemote() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
@@ -1522,6 +1595,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception On error.
      */
+    @Test
     public void testAccessAndModificationTimeUpwardsPropagation() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE, FILE2));
 
@@ -1548,6 +1622,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSetTimesMissingPartially() throws Exception {
         if (!timesSupported())
             return;
@@ -1585,6 +1660,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testSecondarySize() throws Exception {
         igfs.mkdirs(SUBDIR);
 

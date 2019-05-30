@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary.streams;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  *
@@ -26,6 +27,7 @@ public class BinaryAbstractOutputStreamTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testCapacity() {
         assertEquals(256, BinaryAbstractOutputStream.capacity(0, 1));
 

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<!--
+    Spring configuration file for test classes in JAR-file.
+-->
+<beans>
+    <description>Spring configuration file for test GridUriDeploymentTestTask9.</description>
+
+    <bean id="task.cfg" class="java.util.HashMap">
+        <constructor-arg>
+            <!--
+                Note: all keys hardcoded in test.
+            -->
+            <map>
+                <entry>
+                    <key><value>testKey1</value></key>
+                    <value>testValue1</value>
+                </entry>
+                <entry>
+                    <key><value>testKey2</value></key>
+                    <value>testValue2</value>
+                </entry>
+            </map>
+        </constructor-arg>
+    </bean>
+</beans>

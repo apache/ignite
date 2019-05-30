@@ -36,15 +36,14 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -52,16 +51,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     private static final int NODES = 4;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ((TcpDiscoverySpi) cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        cfg.setConsistentId(igniteInstanceName);
 
         cfg.setCommunicationSpi(new TestCommunicationSpi());
 
@@ -90,6 +86,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultinodeCacheStart() throws Exception {
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);
@@ -121,6 +118,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestNotAffinityNode1() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             oldestNotAffinityNode1(ccfg);
@@ -135,9 +133,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         IgniteEx ignite = grid(0);
 
-        assertEquals(1L, ignite.localNode().order());
-
-        ccfg.setNodeFilter(new TestFilterExcludeOldest());
+        ccfg.setNodeFilter(new TestFilterExcludeNode(ignite.localNode().consistentId()));
 
         assertNotNull(ignite.getOrCreateCache(ccfg));
 
@@ -149,6 +145,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestNotAffinityNode2() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             oldestNotAffinityNode2(ccfg);
@@ -164,9 +161,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         IgniteEx ignite0 = grid(0);
         IgniteEx ignite1 = grid(1);
 
-        assertEquals(1L, ignite0.localNode().order());
-
-        ccfg.setNodeFilter(new TestFilterExcludeOldest());
+        ccfg.setNodeFilter(new TestFilterExcludeNode(ignite0.localNode().consistentId()));
 
         assertNotNull(ignite1.getOrCreateCache(ccfg));
 
@@ -180,6 +175,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAffinityNode1() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             notAffinityNode1(ccfg);
@@ -194,20 +190,21 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
 
         IgniteEx ignite = grid(1);
 
-        assertEquals(2, ignite.localNode().order());
-
-        ccfg.setNodeFilter(new TestFilterExcludeNode(2));
+        ccfg.setNodeFilter(new TestFilterExcludeNode(ignite.localNode().consistentId()));
 
         assertNotNull(ignite.getOrCreateCache(ccfg));
 
         awaitPartitionMapExchange();
 
         checkCache(ccfg.getName());
+
+        ccfg.setNodeFilter(null);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotAffinityNode2() throws Exception {
         for (CacheConfiguration ccfg : cacheConfigurations())
             notAffinityNode2(ccfg);
@@ -223,9 +220,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         IgniteEx ignite0 = grid(0);
         IgniteEx ignite1 = grid(1);
 
-        assertEquals(2L, ignite1.localNode().order());
-
-        ccfg.setNodeFilter(new TestFilterExcludeNode(2));
+        ccfg.setNodeFilter(new TestFilterExcludeNode(ignite1.localNode().consistentId()));
 
         assertNotNull(ignite0.getOrCreateCache(ccfg));
 
@@ -239,14 +234,13 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged1() throws Exception {
         IgniteEx ignite0 = grid(0);
 
-        assertEquals(1L, ignite0.localNode().order());
-
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setNodeFilter(new TestFilterExcludeOldest());
+        ccfg.setNodeFilter(new TestFilterExcludeNode(ignite0.localNode().consistentId()));
 
         assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
@@ -266,14 +260,11 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged2() throws Exception {
-        IgniteEx ignite0 = grid(0);
-
-        assertEquals(1L, ignite0.localNode().order());
-
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setNodeFilter(new TestFilterIncludeNode(3));
+        ccfg.setNodeFilter(new TestFilterIncludeNode(ignite(2).cluster().localNode().consistentId()));
 
         assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
@@ -291,14 +282,13 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testOldestChanged3() throws Exception {
         IgniteEx ignite0 = grid(0);
 
-        assertEquals(1L, ignite0.localNode().order());
-
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        ccfg.setNodeFilter(new TestFilterIncludeNode(3));
+        ccfg.setNodeFilter(new TestFilterIncludeNode(ignite(2).cluster().localNode().consistentId()));
 
         assertNotNull(ignite(1).getOrCreateCache(ccfg));
 
@@ -400,8 +390,41 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
         {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-            ccfg.setName("cache-4");
+            ccfg.setName("cache-6");
             ccfg.setAtomicityMode(TRANSACTIONAL);
+            ccfg.setBackups(1);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+            res.add(ccfg);
+        }
+
+        {
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+            ccfg.setName("cache-7");
+            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+            ccfg.setBackups(0);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+            res.add(ccfg);
+        }
+
+        {
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+            ccfg.setName("cache-8");
+            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
+            ccfg.setBackups(1);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+            res.add(ccfg);
+        }
+
+        {
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+            ccfg.setName("cache-9");
+            ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
             ccfg.setBackups(1);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -426,18 +449,18 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
      */
     private static class TestFilterExcludeNode implements IgnitePredicate<ClusterNode> {
         /** */
-        private final long excludeOrder;
+        private Object excludeConsistentId;
 
         /**
-         * @param excludeOrder Node order to exclude.
+         * @param excludeConsistentId Node consistent to exclude.
          */
-        public TestFilterExcludeNode(long excludeOrder) {
-            this.excludeOrder = excludeOrder;
+        public TestFilterExcludeNode(Object excludeConsistentId) {
+            this.excludeConsistentId = excludeConsistentId;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            return node.order() != excludeOrder;
+            return !node.consistentId().equals(excludeConsistentId);
         }
     }
 
@@ -446,18 +469,18 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
      */
     private static class TestFilterIncludeNode implements IgnitePredicate<ClusterNode> {
         /** */
-        private final long includeOrder;
+        private final Object includeConsistentId;
 
         /**
-         * @param includeOrder Node order to exclude.
+         * @param includeConsistentId Node consistent to include.
          */
-        public TestFilterIncludeNode(long includeOrder) {
-            this.includeOrder = includeOrder;
+        public TestFilterIncludeNode(Object includeConsistentId) {
+            this.includeConsistentId = includeConsistentId;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            return node.order() == includeOrder;
+            return node.consistentId().equals(includeConsistentId);
         }
     }
 

@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.environment.logging;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
@@ -54,7 +54,7 @@ public class CustomMLLogger implements MLLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
+    @Override public <K, V> IgniteModel<K, V> log(VerboseLevel verboseLevel, IgniteModel<K, V> mdl) {
         log(verboseLevel, mdl.toString(true));
         return mdl;
     }

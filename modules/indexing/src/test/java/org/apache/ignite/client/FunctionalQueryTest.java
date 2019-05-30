@@ -109,23 +109,37 @@ public class FunctionalQueryTest {
                 }
             }
 
-            // Fields query
-            SqlFieldsQuery qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
-                .setArgs(minId)
-                .setPageSize(pageSize);
+            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp, true);
+            checkSqlFieldsQuery(cache, minId, pageSize, expSize, exp, false);
+        }
+    }
 
-            try (QueryCursor<List<?>> cur = cache.query(qry)) {
-                List<List<?>> res = cur.getAll();
+    /**
+     * @param cache Cache.
+     * @param minId Minimal ID.
+     * @param pageSize Page size.
+     * @param expSize The size of the expected results.
+     * @param exp Expected results.
+     * @param lazy Lazy mode flag.
+     */
+    private void checkSqlFieldsQuery(ClientCache<Integer, Person> cache, int minId, int pageSize, int expSize,
+        Map<Integer, Person> exp, boolean lazy) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("select id, name from Person where id >= ?")
+            .setArgs(minId)
+            .setPageSize(pageSize)
+            .setLazy(lazy);
 
-                assertEquals(expSize, res.size());
+        try (QueryCursor<List<?>> cur = cache.query(qry)) {
+            List<List<?>> res = cur.getAll();
 
-                Map<Integer, Person> act = res.stream().collect(Collectors.toMap(
-                    r -> Integer.parseInt(r.get(0).toString()),
-                    r -> new Person(Integer.parseInt(r.get(0).toString()), r.get(1).toString())
-                ));
+            assertEquals(expSize, res.size());
 
-                assertEquals(exp, act);
-            }
+            Map<Integer, Person> act = res.stream().collect(Collectors.toMap(
+                r -> Integer.parseInt(r.get(0).toString()),
+                r -> new Person(Integer.parseInt(r.get(0).toString()), r.get(1).toString())
+            ));
+
+            assertEquals(exp, act);
         }
     }
 
@@ -137,7 +151,7 @@ public class FunctionalQueryTest {
      */
     @Test
     public void testSql() throws Exception {
-        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration()); Ignite ignored2 = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
         ) {
             client.query(
@@ -147,19 +161,32 @@ public class FunctionalQueryTest {
                 )).setSchema("PUBLIC")
             ).getAll();
 
-            int key = 1;
-            Person val = new Person(key, "Person 1");
+            final int KEY_COUNT = 10;
 
-            client.query(new SqlFieldsQuery(
-                "INSERT INTO Person(id, name) VALUES(?, ?)"
-            ).setArgs(val.getId(), val.getName()).setSchema("PUBLIC"))
-                .getAll();
+            for (int i = 0; i < KEY_COUNT; ++i) {
+                int key = i;
+                Person val = new Person(key, "Person " + i);
+
+                client.query(new SqlFieldsQuery(
+                    "INSERT INTO Person(id, name) VALUES(?, ?)"
+                ).setArgs(val.getId(), val.getName()).setSchema("PUBLIC"))
+                    .getAll();
+            }
 
             Object cachedName = client.query(
-                new SqlFieldsQuery("SELECT name from Person WHERE id=?").setArgs(key).setSchema("PUBLIC")
+                new SqlFieldsQuery("SELECT name from Person WHERE id=?").setArgs(1).setSchema("PUBLIC")
             ).getAll().iterator().next().iterator().next();
 
-            assertEquals(val.getName(), cachedName);
+            assertEquals("Person 1", cachedName);
+
+            List<List<?>> rows = client.query(
+                new SqlFieldsQuery("SELECT * from Person WHERE id >= ?")
+                    .setSchema("PUBLIC")
+                    .setArgs(0)
+                    .setPageSize(1)
+            ).getAll();
+
+            assertEquals(KEY_COUNT, rows.size());
         }
     }
 

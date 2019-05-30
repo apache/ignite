@@ -21,6 +21,7 @@ import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.mapreduce.IgfsFileRange;
 import org.apache.ignite.igfs.mapreduce.records.IgfsFixedLengthRecordResolver;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 /**
  * Fixed length split resolver self test.
@@ -31,6 +32,7 @@ public class IgfsFixedLengthRecordResolverSelfTest extends IgfsAbstractRecordRes
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testResolver() throws Exception {
         byte[] data = array(F.t(wrap(1), 24));
 

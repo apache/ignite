@@ -224,7 +224,6 @@ abstract class GridCacheAbstractLoadTest {
     /**
      * @return Write threads count.
      */
-    @SuppressWarnings({"ConstantConditions"})
     protected int writeThreads() {
         int ratio = (int)(threads * writeRatio);
 
@@ -234,7 +233,6 @@ abstract class GridCacheAbstractLoadTest {
     /**
      * @return Read threads count.
      */
-    @SuppressWarnings({"ConstantConditions"})
     protected int readThreads() {
         int ratio = (int)(threads * (1 - writeRatio));
 

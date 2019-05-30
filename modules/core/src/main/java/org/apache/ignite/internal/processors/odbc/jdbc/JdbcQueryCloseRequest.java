@@ -27,8 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC query close request.
  */
 public class JdbcQueryCloseRequest extends JdbcRequest {
-    /** Query ID. */
-    private long queryId;
+    /** Cursor ID. */
+    private long cursorId;
 
     /**
      */
@@ -37,19 +37,19 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
     }
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      */
-    public JdbcQueryCloseRequest(long queryId) {
+    public JdbcQueryCloseRequest(long cursorId) {
         super(QRY_CLOSE);
 
-        this.queryId = queryId;
+        this.cursorId = cursorId;
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long queryId() {
-        return queryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /** {@inheritDoc} */
@@ -57,7 +57,7 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        writer.writeLong(queryId);
+        writer.writeLong(cursorId);
     }
 
     /** {@inheritDoc} */
@@ -65,7 +65,7 @@ public class JdbcQueryCloseRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
-        queryId = reader.readLong();
+        cursorId = reader.readLong();
     }
 
     /** {@inheritDoc} */

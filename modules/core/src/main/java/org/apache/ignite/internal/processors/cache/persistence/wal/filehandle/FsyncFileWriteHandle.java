@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetric
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
@@ -105,6 +104,8 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
     protected final IgniteLogger log;
     /** Fsync delay. */
     private final long fsyncDelay;
+    /** Switch segment record offset. */
+    private int switchSegmentRecordOffset;
 
     /**
      * Thread local byte buffer for saving serialized WAL records chain, see {@link FsyncFileWriteHandle#head}.
@@ -631,6 +632,8 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
                             buf.rewind();
 
                             written += fileIO.writeFully(buf, written);
+
+                            switchSegmentRecordOffset = (int)written;
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -808,6 +811,11 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
         catch (IOException e) {
             return "{Failed to read channel position: " + e.getMessage() + "}";
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getSwitchSegmentRecordOffset() {
+        return switchSegmentRecordOffset;
     }
 
     /**

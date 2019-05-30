@@ -17,25 +17,44 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * Dummy PageIO implementation. For test purposes only.
  */
-public class DummyPageIO extends PageIO {
+public class DummyPageIO extends PageIO implements CompactablePageIO {
+    /** */
+    public static final IOVersions<DummyPageIO> VERSIONS = new IOVersions<>(new DummyPageIO());
+
     /** */
     public DummyPageIO() {
         super(2 * Short.MAX_VALUE, 1);
+
+        PageIO.registerTest(this);
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("DummyPageIO [\n");
         sb.a("addr=").a(addr).a(", ");
         sb.a("pageSize=").a(addr);
         sb.a("\n]");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void compactPage(ByteBuffer page, ByteBuffer out, int pageSize) {
+        copyPage(page, out, pageSize);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restorePage(ByteBuffer p, int pageSize) {
+        assert p.isDirect();
+        assert p.position() == 0;
+        assert p.limit() == pageSize;
     }
 }

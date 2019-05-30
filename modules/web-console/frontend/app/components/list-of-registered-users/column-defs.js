@@ -32,6 +32,7 @@ const VALUE_WITH_TITLE = '<div class="ui-grid-cell-contents"><label bs-tooltip d
 export default [
     {name: 'user', enableHiding: false, displayName: 'User', categoryDisplayName: 'User', field: 'userName', cellTemplate: USER_TEMPLATE, minWidth: 160, enableFiltering: true, pinnedLeft: true, filter: { placeholder: 'Filter by name...' }},
     {name: 'email', displayName: 'Email', categoryDisplayName: 'Email', field: 'email', cellTemplate: EMAIL_TEMPLATE, minWidth: 160, width: 220, enableFiltering: true, filter: { placeholder: 'Filter by email...' }},
+    {name: 'activated', displayName: 'Activated', categoryDisplayName: 'Activated', field: 'activated', width: 220, enableFiltering: true, filter: { placeholder: 'Filter by activation...' }, visible: false},
     {name: 'company', displayName: 'Company', categoryDisplayName: 'Company', field: 'company', cellTemplate: VALUE_WITH_TITLE, minWidth: 180, enableFiltering: true, filter: { placeholder: 'Filter by company...' }},
     {name: 'country', displayName: 'Country', categoryDisplayName: 'Country', field: 'countryCode', cellTemplate: VALUE_WITH_TITLE, minWidth: 160, enableFiltering: true, filter: { placeholder: 'Filter by country...' }},
     {name: 'lastlogin', displayName: 'Last login', categoryDisplayName: 'Last login', field: 'lastLogin', cellTemplate: DATE_WITH_TITLE, minWidth: 135, width: 135, enableFiltering: false, visible: false},

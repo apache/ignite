@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
 
 /**
  * Base discovery random start-stop test class.
@@ -151,6 +152,7 @@ public abstract class AbstractDiscoveryRandomStartStopTest<T extends DiscoverySp
      * @throws Exception If failed.
      */
     @SuppressWarnings({"BusyWait"})
+    @Test
     public void testDiscovery() throws Exception {
         Random rand = new Random();
 

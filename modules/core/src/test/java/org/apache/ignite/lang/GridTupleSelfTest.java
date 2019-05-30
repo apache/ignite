@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -41,6 +42,7 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testGridTupleAsIterable() {
         String str = "A test string";
 
@@ -71,6 +73,7 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testGridTuple2AsIterable() {
         String str1 = "A test string 1";
         String str2 = "A test string 2";
@@ -103,6 +106,7 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testGridTuple2AsMap() {
         String str1 = "A test string 1";
         String str2 = "A test string 2";
@@ -141,6 +145,7 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
     /**
      * JUnit.
      */
+    @Test
     public void testGridTuple3AsIterable() {
         String str1 = "A test string 1";
         String str2 = "A test string 2";

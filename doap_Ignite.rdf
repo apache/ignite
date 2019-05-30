@@ -55,8 +55,8 @@
 
     <repository>
       <GitRepository>
-        <location rdf:resource="https://git-wip-us.apache.org/repos/asf/ignite"/>
-        <browse rdf:resource="https://git-wip-us.apache.org/repos/asf/ignite"/>
+        <location rdf:resource="https://gitbox.apache.org/repos/asf/ignite.git"/>
+        <browse rdf:resource="https://gitbox.apache.org/repos/asf/ignite.git"/>
       </GitRepository>
     </repository>
     <maintainer>

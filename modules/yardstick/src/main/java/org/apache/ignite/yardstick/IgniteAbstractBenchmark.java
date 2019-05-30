@@ -26,6 +26,8 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -68,10 +70,44 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
 
         waitForNodes();
 
+        activateCluster();
+
         IgniteLogger log = ignite().log();
 
         if (log.isInfoEnabled())
             log.info("Benchmark arguments: " + args);
+    }
+
+    /**
+     * Checks if persistence is enabled and activates cluster.
+     */
+    private void activateCluster() {
+        //Flag to set if there is at least one data region with persistence in Ignite configuration.
+        boolean pdsInCfg = false;
+
+        DataStorageConfiguration dsCfg = ignite().configuration().getDataStorageConfiguration();
+
+        if (dsCfg != null) {
+            pdsInCfg = dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled();
+
+            DataRegionConfiguration[] drCfgArr = dsCfg.getDataRegionConfigurations();
+
+            if (drCfgArr != null) {
+                for (DataRegionConfiguration drCfg : drCfgArr) {
+                    if (drCfg.isPersistenceEnabled()) {
+                        pdsInCfg = true;
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ((args.persistentStoreEnabled() || pdsInCfg) && !ignite().cluster().active()) {
+            BenchmarkUtils.println("Activating cluster.");
+
+            ignite().cluster().active(true);
+        }
     }
 
     /**

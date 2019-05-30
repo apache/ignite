@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -31,10 +32,11 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -43,9 +45,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /** */
     public static final int PARTS = 1024;
-
-    /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -69,12 +68,6 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-        discoSpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoSpi);
-
         long sz = 100 * 1024 * 1024;
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setPageSize(1024)
@@ -88,6 +81,20 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        System.setProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED, "false");
+
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        System.clearProperty(IGNITE_BASELINE_AUTO_ADJUST_ENABLED);
+    }
+
+    /** {@inheritDoc} */
     @Override public String getTestIgniteInstanceName(int idx) {
         return "node" + idx;
     }
@@ -95,6 +102,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRentingStateRepairAfterRestart() throws Exception {
         try {
             IgniteEx g0 = startGrid(0);
@@ -107,18 +115,18 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             List<Integer> parts = evictingPartitionsAfterJoin(g0, g0.cache(DEFAULT_CACHE_NAME), 20);
 
-            int toEvictPart = parts.get(0);
+            int delayEvictPart = parts.get(0);
 
             int k = 0;
 
-            while (g0.affinity(DEFAULT_CACHE_NAME).partition(k) != toEvictPart)
+            while (g0.affinity(DEFAULT_CACHE_NAME).partition(k) != delayEvictPart)
                 k++;
 
             g0.cache(DEFAULT_CACHE_NAME).put(k, k);
 
             GridDhtPartitionTopology top = dht(g0.cache(DEFAULT_CACHE_NAME)).topology();
 
-            GridDhtLocalPartition part = top.localPartition(toEvictPart);
+            GridDhtLocalPartition part = top.localPartition(delayEvictPart);
 
             assertNotNull(part);
 
@@ -130,11 +138,20 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             g0.cluster().setBaselineTopology(3);
 
             // Wait until all is evicted except first partition.
-            assertTrue("Failed to wait for partition eviction", waitForCondition(() -> {
-                for (int i = 1; i < parts.size(); i++) { // Skip reserved partition.
+            assertTrue("Failed to wait for partition eviction: reservedPart=" + part.id() + ", otherParts=" +
+                top.localPartitions().stream().map(p -> "[id=" + p.id() + ", state=" + p.state() + ']').collect(Collectors.toList()),
+                waitForCondition(() -> {
+                for (int i = 0; i < parts.size(); i++) {
+                    if (delayEvictPart == i)
+                        continue; // Skip reserved partition.
+
                     Integer p = parts.get(i);
 
-                    if (top.localPartition(p).state() != GridDhtPartitionState.EVICTED)
+                    @Nullable GridDhtLocalPartition locPart = top.localPartition(p);
+
+                    assertNotNull(locPart);
+
+                    if (locPart.state() != GridDhtPartitionState.EVICTED)
                         return false;
                 }
 
@@ -155,7 +172,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            part = dht(g0.cache(DEFAULT_CACHE_NAME)).topology().localPartition(toEvictPart);
+            part = dht(g0.cache(DEFAULT_CACHE_NAME)).topology().localPartition(delayEvictPart);
 
             assertNotNull(part);
 

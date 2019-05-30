@@ -25,10 +25,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Tests if system cache was started before deploying of service.
@@ -36,9 +34,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /** */
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
-
-    /** */
-    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private final PrintStream originalErr = System.err;
@@ -52,11 +47,6 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
-
-        discoverySpi.setIpFinder(ipFinder);
-        cfg.setDiscoverySpi(discoverySpi);
-
         if("server".equals(igniteInstanceName))
             cfg.setServiceConfiguration(serviceConfiguration());
 
@@ -66,6 +56,7 @@ public class SystemCacheNotConfiguredTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void test() throws Exception {
         captureErr();
 

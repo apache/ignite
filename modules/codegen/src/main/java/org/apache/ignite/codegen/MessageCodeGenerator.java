@@ -43,7 +43,9 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
+import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -116,6 +118,7 @@ public class MessageCodeGenerator {
         TYPES.put(BitSet.class, MessageCollectionItemType.BIT_SET);
         TYPES.put(UUID.class, MessageCollectionItemType.UUID);
         TYPES.put(IgniteUuid.class, MessageCollectionItemType.IGNITE_UUID);
+        TYPES.put(AffinityTopologyVersion.class, MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION);
     }
 
     /**
@@ -167,11 +170,12 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
+        gen.generateAndWrite(ProbedTx.class);
+        gen.generateAndWrite(DeadlockProbe.class);
+
 //        gen.generateAll(true);
 
-        gen.generateAndWrite(MvccRecoveryFinishedMessage.class);
-
-//        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
+//        gen.generateAndWrite(GridCacheMessage.class);
 
 //        gen.generateAndWrite(GridMessageCollection.class);
 //        gen.generateAndWrite(DataStreamerEntry.class);
@@ -663,6 +667,8 @@ public class MessageCodeGenerator {
             returnFalseIfFailed(write, "writer.writeUuid", field, getExpr);
         else if (type == IgniteUuid.class)
             returnFalseIfFailed(write, "writer.writeIgniteUuid", field, getExpr);
+        else if (type == AffinityTopologyVersion.class)
+            returnFalseIfFailed(write, "writer.writeAffinityTopologyVersion", field, getExpr);
         else if (type.isEnum()) {
             String arg = getExpr + " != null ? (byte)" + getExpr + ".ordinal() : -1";
 
@@ -745,6 +751,8 @@ public class MessageCodeGenerator {
             returnFalseIfReadFailed(name, "reader.readUuid", setExpr, field);
         else if (type == IgniteUuid.class)
             returnFalseIfReadFailed(name, "reader.readIgniteUuid", setExpr, field);
+        else if (type == AffinityTopologyVersion.class)
+            returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion", setExpr, field);
         else if (type.isEnum()) {
             String loc = name + "Ord";
 

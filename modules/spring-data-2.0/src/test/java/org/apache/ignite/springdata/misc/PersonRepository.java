@@ -48,6 +48,9 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     public Iterable<Person> findFirst10ByFirstNameLike(String val);
 
     /** */
+    public int countByFirstName(String val);
+
+    /** */
     public int countByFirstNameLike(String val);
 
     /** */
@@ -88,4 +91,29 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     /** */
     @Query("SELECT count(1) FROM (SELECT DISTINCT secondName FROM Person WHERE firstName REGEXP ?)")
     public int countQuery(String val);
+
+    /** Top 3 query */
+    public List<Person> findTop3ByFirstName(String val);
+
+    /** Delete query */
+    public long deleteByFirstName(String firstName);
+
+    /** Remove Query */
+    public List<Person> removeByFirstName(String firstName);
+
+    /** Delete using @Query */
+    @Query("DELETE FROM Person WHERE secondName = ?")
+    public void deleteBySecondNameQuery(String secondName);
+
+    /** Delete using @Query but with errors on the query */
+    @Query("DELETE FROM Person WHERE firstName = ? AND ERRORS = 'ERRORS'")
+    public void deleteWrongByFirstNameQuery(String firstName);
+
+    /** Update using @Query */
+    @Query("UPDATE Person SET secondName = ? WHERE firstName = ?")
+    public int setFixedSecondNameFor(String secondName, String firstName);
+
+    /** Update using @Query but with errors on the query */
+    @Query("UPDATE Person SET secondName = ? WHERE firstName = ? AND ERRORS = 'ERRORS'")
+    public int setWrongFixedSecondName(String secondName, String firstName);
 }

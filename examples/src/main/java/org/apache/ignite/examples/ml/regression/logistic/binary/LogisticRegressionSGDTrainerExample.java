@@ -18,21 +18,20 @@
 package org.apache.ignite.examples.ml.regression.logistic.binary;
 
 import java.io.FileNotFoundException;
-import java.util.Arrays;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
-import org.apache.ignite.examples.ml.util.SandboxMLCache;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainer;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.util.MLSandboxDatasets;
+import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run logistic regression model based on <a href="https://en.wikipedia.org/wiki/Stochastic_gradient_descent">
@@ -58,67 +57,42 @@ public class LogisticRegressionSGDTrainerExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            System.out.println(">>> Create new logistic regression trainer object.");
-            LogisticRegressionSGDTrainer<?> trainer = new LogisticRegressionSGDTrainer<>()
-                .withUpdatesStgy(new UpdatesStrategy<>(
-                    new SimpleGDUpdateCalculator(0.2),
-                    SimpleGDParameterUpdate::sumLocal,
-                    SimpleGDParameterUpdate::avg
-                ))
-                .withMaxIterations(100000)
-                .withLocIterations(100)
-                .withBatchSize(10)
-                .withSeed(123L);
+                System.out.println(">>> Create new logistic regression trainer object.");
+                LogisticRegressionSGDTrainer trainer = new LogisticRegressionSGDTrainer()
+                    .withUpdatesStgy(new UpdatesStrategy<>(
+                        new SimpleGDUpdateCalculator(0.2),
+                        SimpleGDParameterUpdate.SUM_LOCAL,
+                        SimpleGDParameterUpdate.AVG
+                    ))
+                    .withMaxIterations(100000)
+                    .withLocIterations(100)
+                    .withBatchSize(10)
+                    .withSeed(123L);
 
-            System.out.println(">>> Perform the training to get the model.");
-            LogisticRegressionModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            );
+                System.out.println(">>> Perform the training to get the model.");
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            System.out.println(">>> Logistic regression model: " + mdl);
+                LogisticRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
 
-            int amountOfErrors = 0;
-            int totalAmount = 0;
+                System.out.println(">>> Logistic regression model: " + mdl);
 
-            // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-            int[][] confusionMtx = {{0, 0}, {0, 0}};
+                double accuracy = Evaluator.evaluate(
+                    dataCache,
+                    mdl,
+                    vectorizer
+                ).accuracy();
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
+                System.out.println("\n>>> Accuracy " + accuracy);
 
-                    double prediction = mdl.apply(inputs);
-
-                    totalAmount++;
-                    if(groundTruth != prediction)
-                        amountOfErrors++;
-
-                    int idx1 = (int)prediction;
-                    int idx2 = (int)groundTruth;
-
-                    confusionMtx[idx1][idx2]++;
-
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
-                }
-
-                System.out.println(">>> ---------------------------------");
-
-                System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
             }
-
-            System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-            System.out.println(">>> ---------------------------------");
-
-            System.out.println(">>> Logistic regression model over partitioned dataset usage example completed.");
         }
     }
 }

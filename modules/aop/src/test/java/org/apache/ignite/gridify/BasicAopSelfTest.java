@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Collection;
 import java.util.List;
+import org.junit.Test;
 
 /**
  * Tries to execute dummy gridified task. It should fail because grid is not started.
@@ -37,6 +38,7 @@ public class BasicAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAop() throws Exception {
         try {
             gridify();

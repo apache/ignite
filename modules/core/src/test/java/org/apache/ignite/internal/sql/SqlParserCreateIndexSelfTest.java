@@ -26,6 +26,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.INLINE_SIZE;
 import static org.apache.ignite.internal.sql.SqlKeyword.PARALLEL;
@@ -43,6 +44,7 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateIndex() throws Exception {
         // Base.
         parseValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);

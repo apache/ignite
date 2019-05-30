@@ -31,6 +31,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+
 /**
  *
  */
@@ -40,6 +42,9 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
 
     /** */
     private MetastorageRowStore rowStore;
+
+    /** Partition id. */
+    private final int partId;
 
     /**
      * @param pageMem Page memory instance.
@@ -60,11 +65,14 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         MetastorageRowStore rowStore,
         long metaPageId,
         boolean initNew,
-        @Nullable FailureProcessor failureProcessor) throws IgniteCheckedException {
+        @Nullable FailureProcessor failureProcessor,
+        int partId) throws IgniteCheckedException {
         super("Metastorage", cacheId, pageMem, wal,
             globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS, failureProcessor);
 
         this.rowStore = rowStore;
+
+        this.partId = partId;
 
         initTree(initNew);
     }
@@ -92,6 +100,11 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
      */
     public MetastorageRowStore rowStore() {
         return rowStore;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+        return pageMem.allocatePage(grpId, partId, FLAG_DATA);
     }
 
     /**

@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Test verifies that it's possible to start caches in Isolated and Private mode when BinaryMarshaller is used.
@@ -72,6 +73,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testStartedInIsolatedMode() throws Exception {
         deploymentMode = DeploymentMode.ISOLATED;
         marshaller = new BinaryMarshaller();
@@ -82,6 +84,7 @@ public class CacheStartupInDeploymentModesTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
+    @Test
     public void testStartedInPrivateMode() throws Exception {
         deploymentMode = DeploymentMode.PRIVATE;
         marshaller = new BinaryMarshaller();

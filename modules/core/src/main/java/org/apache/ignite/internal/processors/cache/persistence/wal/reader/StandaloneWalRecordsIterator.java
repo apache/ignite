@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,8 +29,11 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.FilteredRecord;
-import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MarshalledDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.UnwrapMvccDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -43,13 +45,13 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRe
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.EncryptedDataEntry;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WalSegmentTailReachedException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentFileInputFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleSegmentFileInputFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer.EncryptedDataEntry;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
@@ -174,7 +176,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
 
         if (idx == walFiles.size())
-            throw new IgniteCheckedException("Wal segments not in bounds. loBoundIndex=" + lowBound.index() +
+            throw new StrictBoundsCheckException("Wal segments not in bounds. loBoundIndex=" + lowBound.index() +
                                                 ", indexes=" + printIndexes(walFiles));
 
         long curWalSegmIdx = walFiles.get(idx).idx();
@@ -185,11 +187,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             assert desc != null;
 
             if (curWalSegmIdx != desc.idx())
-                throw new IgniteCheckedException("Wal segment " + curWalSegmIdx + " not found in files " + printIndexes(walFiles));
+                throw new StrictBoundsCheckException("Wal segment " + curWalSegmIdx + " not found in files " + printIndexes(walFiles));
         }
 
         if (highBound.index() < Long.MAX_VALUE && curWalSegmIdx <= highBound.index())
-            throw new IgniteCheckedException("Wal segments not in bounds. hiBoundIndex=" + highBound.index() +
+            throw new StrictBoundsCheckException("Wal segments not in bounds. hiBoundIndex=" + highBound.index() +
                                                 ", indexes=" + printIndexes(walFiles));
     }
 
@@ -350,11 +352,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+    @Override protected @NotNull WALRecord postProcessRecord(@NotNull final WALRecord rec) {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
         IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
 
-        if (processor != null && rec.type() == RecordType.DATA_RECORD) {
+        if (processor != null && (rec.type() == RecordType.DATA_RECORD || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
                 return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
             }
@@ -398,7 +400,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         IgniteCacheObjectProcessor processor
     ) throws IgniteCheckedException {
         final CacheObjectContext fakeCacheObjCtx = new CacheObjectContext(
-            kernalCtx, null, null, false, false, false);
+            kernalCtx, null, null, false, false, false, false, false);
 
         final List<DataEntry> entries = dataRec.writeEntries();
         final List<DataEntry> postProcessedEntries = new ArrayList<>(entries.size());
@@ -409,7 +411,9 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             postProcessedEntries.add(postProcessedEntry);
         }
 
-        DataRecord res = new DataRecord(postProcessedEntries, dataRec.timestamp());
+        DataRecord res = dataRec instanceof MvccDataRecord ?
+            new MvccDataRecord(postProcessedEntries, dataRec.timestamp()) :
+            new DataRecord(postProcessedEntries, dataRec.timestamp());
 
         res.size(dataRec.size());
         res.position(dataRec.position());
@@ -426,20 +430,19 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @return post precessed entry
      * @throws IgniteCheckedException if failed
      */
-    @NotNull private DataEntry postProcessDataEntry(
+    private @NotNull DataEntry postProcessDataEntry(
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {
-        if(dataEntry instanceof EncryptedDataEntry)
+        if (dataEntry instanceof EncryptedDataEntry)
             return dataEntry;
 
         final KeyCacheObject key;
         final CacheObject val;
-        final File marshallerMappingFileStoreDir =
-            fakeCacheObjCtx.kernalContext().marshallerContext().getMarshallerMappingFileStoreDir();
+        boolean keepBinary = this.keepBinary || !fakeCacheObjCtx.kernalContext().marshallerContext().initialized();
 
-        if (dataEntry instanceof LazyDataEntry) {
-            final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;
+        if (dataEntry instanceof MarshalledDataEntry) {
+            final MarshalledDataEntry lazyDataEntry = (MarshalledDataEntry)dataEntry;
 
             key = processor.toKeyCacheObject(fakeCacheObjCtx,
                 lazyDataEntry.getKeyType(),
@@ -457,18 +460,47 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             val = dataEntry.value();
         }
 
-        return new UnwrapDataEntry(
-            dataEntry.cacheId(),
-            key,
-            val,
-            dataEntry.op(),
-            dataEntry.nearXidVersion(),
-            dataEntry.writeVersion(),
-            dataEntry.expireTime(),
-            dataEntry.partitionId(),
-            dataEntry.partitionCounter(),
-            fakeCacheObjCtx,
-            keepBinary || marshallerMappingFileStoreDir == null);
+        return unwrapDataEntry(fakeCacheObjCtx, dataEntry, key, val, keepBinary);
+    }
+
+    /**
+     * Unwrap data entry.
+     * @param coCtx CacheObject context.
+     * @param dataEntry Data entry.
+     * @param key Entry key.
+     * @param val Entry value.
+     * @param keepBinary Don't convert non primitive types.
+     * @return Unwrapped entry.
+     */
+    private DataEntry unwrapDataEntry(CacheObjectContext coCtx, DataEntry dataEntry,
+        KeyCacheObject key, CacheObject val, boolean keepBinary) {
+        if (dataEntry instanceof MvccDataEntry)
+            return new UnwrapMvccDataEntry(
+                dataEntry.cacheId(),
+                key,
+                val,
+                dataEntry.op(),
+                dataEntry.nearXidVersion(),
+                dataEntry.writeVersion(),
+                dataEntry.expireTime(),
+                dataEntry.partitionId(),
+                dataEntry.partitionCounter(),
+                ((MvccDataEntry)dataEntry).mvccVer(),
+                coCtx,
+                keepBinary);
+        else
+            return new UnwrapDataEntry(
+                dataEntry.cacheId(),
+                key,
+                val,
+                dataEntry.op(),
+                dataEntry.nearXidVersion(),
+                dataEntry.writeVersion(),
+                dataEntry.expireTime(),
+                dataEntry.partitionId(),
+                dataEntry.partitionCounter(),
+                coCtx,
+                keepBinary);
     }
 
     /** {@inheritDoc} */

@@ -385,7 +385,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("unchecked")
     <T> T[] readArray(Class<T> compType) throws ClassNotFoundException, IOException {
         int len = in.readInt();
 
@@ -678,7 +677,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("unchecked")
     HashSet<?> readHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
             HashSet<Object> set = (HashSet<Object>)GridUnsafe.allocateInstance(HashSet.class);
@@ -750,7 +748,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
-    @SuppressWarnings("unchecked")
     LinkedHashSet<?> readLinkedHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
             LinkedHashSet<Object> set = (LinkedHashSet<Object>)GridUnsafe.allocateInstance(LinkedHashSet.class);
@@ -1252,7 +1249,6 @@ class OptimizedObjectInputStream extends ObjectInputStream {
          * @param dflt Default value.
          * @return Value.
          */
-        @SuppressWarnings("unchecked")
         private <T> T value(String name, T dflt) {
             return objs[fieldInfo.getIndex(name)] != null ? (T)objs[fieldInfo.getIndex(name)] : dflt;
         }

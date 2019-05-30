@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.io;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
 
@@ -49,6 +50,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSmall() throws Exception {
         final GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 
@@ -62,6 +64,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBig() throws Exception {
         GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 
@@ -75,6 +78,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     @SuppressWarnings("BusyWait")
+    @Test
     public void testChanged1() throws Exception {
         GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 
@@ -93,6 +97,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testChanged2() throws Exception {
         final GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
 

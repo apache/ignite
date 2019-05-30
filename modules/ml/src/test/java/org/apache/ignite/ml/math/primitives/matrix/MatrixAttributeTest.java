@@ -35,8 +35,7 @@ public class MatrixAttributeTest {
         new AttrCfg("isDense", Matrix::isDense,
             DenseMatrix.class),
         new AttrCfg("isArrayBased", Matrix::isArrayBased, DenseMatrix.class),
-        new AttrCfg("isDistributed", Matrix::isDistributed),
-        new AttrCfg("isRandomAccess", Matrix::isRandomAccess, DenseMatrix.class, SparseMatrix.class)
+        new AttrCfg("isDistributed", Matrix::isDistributed)
     );
 
     /** */
@@ -55,12 +54,6 @@ public class MatrixAttributeTest {
     @Test
     public void isArrayBasedTest() {
         assertAttribute("isArrayBased");
-    }
-
-    /** */
-    @Test
-    public void isRandomAccessTest() {
-        assertAttribute("isRandomAccess");
     }
 
     /** */

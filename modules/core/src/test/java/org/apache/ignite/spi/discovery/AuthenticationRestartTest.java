@@ -22,9 +22,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -41,27 +40,21 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1120_000);
 
+        cfg.setPluginProviders(new TestReconnectSecurityPluginProvider());
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        TestReconnectPluginProvider.enabled = true;
-        TestReconnectProcessor.enabled = true;
-
         startGrid("server");
         startGrid("client");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        TestReconnectPluginProvider.enabled = false;
-        TestReconnectProcessor.enabled = false;
     }
 
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientReconnect() throws Exception {
         stopGrid("server");
 

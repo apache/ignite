@@ -31,41 +31,31 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_2_LRU;
+import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -77,6 +67,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccModeMismatchForGroup1() throws Exception {
         final Ignite node = startGrid(0);
 
@@ -98,6 +89,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccModeMismatchForGroup2() throws Exception {
         final Ignite node = startGrid(0);
 
@@ -120,6 +112,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testMvccLocalCacheDisabled() throws Exception {
         final Ignite node1 = startGrid(1);
         final Ignite node2 = startGrid(2);
@@ -152,6 +145,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNodeRestartWithCacheModeChangedTxToMvcc() throws Exception {
         cleanPersistenceDir();
 
@@ -199,6 +193,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testNodeRestartWithCacheModeChangedMvccToTx() throws Exception {
         cleanPersistenceDir();
 
@@ -206,6 +201,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
         DataRegionConfiguration regionCfg = new DataRegionConfiguration();
         regionCfg.setPersistenceEnabled(true);
+        regionCfg.setPageEvictionMode(RANDOM_LRU);
         storageCfg.setDefaultDataRegionConfiguration(regionCfg);
         IgniteConfiguration cfg = getConfiguration("testGrid");
         cfg.setDataStorageConfiguration(storageCfg);
@@ -243,15 +239,56 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMvccInMemoryEvictionDisabled() throws Exception {
+        final String memRegName = "in-memory-evictions";
+
+        // Enable in-memory eviction.
+        DataRegionConfiguration regionCfg = new DataRegionConfiguration();
+        regionCfg.setPersistenceEnabled(false);
+        regionCfg.setPageEvictionMode(RANDOM_2_LRU);
+        regionCfg.setName(memRegName);
+
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        storageCfg.setDefaultDataRegionConfiguration(regionCfg);
+
+        IgniteConfiguration cfg = getConfiguration("testGrid");
+        cfg.setDataStorageConfiguration(storageCfg);
+
+        Ignite node = startGrid(cfg);
+
+        CacheConfiguration ccfg1 = new CacheConfiguration("test1")
+            .setAtomicityMode(TRANSACTIONAL_SNAPSHOT)
+            .setDataRegionName(memRegName);
+
+        try {
+            node.createCache(ccfg1);
+
+            fail("In memory evictions should be disabled for MVCC caches.");
+        }
+        catch (Exception e) {
+            assertTrue(X.getFullStackTrace(e).contains("Data pages evictions cannot be used with TRANSACTIONAL_SNAPSHOT"));
+        }
+    }
+
+    /**
      * Test TRANSACTIONAL_SNAPSHOT and near cache.
      *
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
+    @Test
     public void testTransactionalSnapshotLimitations() throws Exception {
         assertCannotStart(
             mvccCacheConfig().setCacheMode(LOCAL),
             "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setRebalanceMode(CacheRebalanceMode.NONE),
+            "Rebalance mode NONE cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
         );
 
         assertCannotStart(
@@ -286,6 +323,41 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     }
 
     /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
+     * <b>including</b> that throwable itself and it contains passed message.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param cls Cause class to check (if {@code null}, {@code false} is returned).
+     * @param msg Message to check.
+     * @return {@code True} if one of the causing exception is an instance of passed in classes
+     *      and it contains the passed message, {@code false} otherwise.
+     */
+    private boolean hasCauseWithMessage(@Nullable Throwable t, Class<?> cls, String msg) {
+        if (t == null)
+            return false;
+
+        assert cls != null;
+
+        for (Throwable th = t; th != null; th = th.getCause()) {
+            if (cls.isAssignableFrom(th.getClass()) && th.getMessage() != null && th.getMessage().contains(msg))
+                return true;
+
+            for (Throwable n : th.getSuppressed()) {
+                if (hasCauseWithMessage(n, cls, msg))
+                    return true;
+            }
+
+            if (th.getCause() == th)
+                break;
+        }
+
+        return false;
+    }
+
+    /**
      * Make sure cache cannot be started with the given configuration.
      *
      * @param ccfg Cache configuration.
@@ -305,7 +377,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
             catch (Exception e) {
                 if (msg != null) {
                     assert e.getMessage() != null : "Error message is null";
-                    assert e.getMessage().contains(msg) : "Wrong error message: " + e.getMessage();
+                    assertTrue(hasCauseWithMessage(e, IgniteCheckedException.class, msg));
                 }
             }
         }

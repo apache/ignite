@@ -71,11 +71,11 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -97,12 +97,14 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_VALIDATE_CACHE_REQUESTS;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
@@ -408,8 +410,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         entryProc,
                         tx.resolveTaskName(),
                         null,
-                        keepBinary,
-                        null);  // TODO IGNITE-7371
+                        keepBinary);
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -522,8 +523,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
-                            /*keepBinary*/true,
-                            null); // TODO IGNITE-7371
+                            /*keepBinary*/true);
                     }
 
                     if (oldVal != null)
@@ -534,9 +534,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to get result value for cache entry: " + cached, e);
+
+                onError(e);
             }
             catch (GridCacheEntryRemovedException e) {
-                assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
+                // Entry was unlocked by concurrent rollback.
+                onError(tx.rollbackException());
             }
             finally {
                 cctx.database().checkpointReadUnlock();
@@ -898,8 +901,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
-        res.mvccSnapshot(tx.mvccSnapshot());
-
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
                 addDhtValues(res);
@@ -1003,7 +1004,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local()))
+        if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
             tx.state(PREPARED);
 
         if (super.onDone(res, res == null ? err : null)) {
@@ -1035,7 +1036,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      * @param req Prepare request.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     public void prepare(GridNearTxPrepareRequest req) {
         assert req != null;
 
@@ -1046,6 +1046,24 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
 
         this.req = req;
+
+        ClusterNode node = cctx.discovery().node(tx.topologyVersion(), tx.nearNodeId());
+
+        boolean validateCache = needCacheValidation(node);
+
+        if (validateCache) {
+            GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
+
+            if (topFut != null && !isEmpty(req.writes())) {
+                // All caches either read only or not. So validation of one cache context is enough.
+                GridCacheContext ctx = F.first(req.writes()).context();
+
+                Throwable err = topFut.validateCache(ctx, req.recovery(), isEmpty(req.writes()), null, null);
+
+                if (err != null)
+                    onDone(null, new IgniteCheckedException(err));
+            }
+        }
 
         boolean ser = tx.serializable() && tx.optimistic();
 
@@ -1076,6 +1094,22 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         }
 
         mapIfLocked();
+    }
+
+    /**
+     * Returns {@code true} if cache validation needed.
+     *
+     * @param node Originating node.
+     * @return {@code True} if cache should be validated, {@code false} - otherwise.
+     */
+    private boolean needCacheValidation(ClusterNode node) {
+        if (node == null) {
+            // The originating (aka near) node has left the topology
+            // and therefore the cache validation doesn't make sense.
+            return false;
+        }
+
+        return Boolean.TRUE.equals(node.attribute(ATTR_VALIDATE_CACHE_REQUESTS));
     }
 
     /**
@@ -1170,7 +1204,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
         catch (GridCacheEntryRemovedException ignore) {
-            assert false : "Got removed exception on entry with dht local candidate: " + entries;
+            // Entry was unlocked by concurrent rollback.
+            onError(tx.rollbackException());
         }
 
         return null;
@@ -1224,6 +1259,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void prepare0() {
+        boolean error = false;
+
         try {
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
@@ -1258,36 +1295,29 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            if (req.requestMvccCounter()) {
-                assert last;
-
-                assert tx.txState().mvccEnabled();
-
-                try {
-                    // Request snapshot locally only because
-                    // Mvcc Coordinator is expected to be local.
-                    MvccSnapshot snapshot = cctx.coordinators().tryRequestSnapshotLocal(tx);
-
-                    assert snapshot != null : tx.topologyVersion();
-
-                    tx.mvccSnapshot(snapshot);
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    onDone(e);
-
-                    return;
-                }
-            }
-
             onEntriesLocked();
 
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
+            TxCounters counters = tx.txCounters(true);
+
             // Assign keys to primary nodes.
             if (!F.isEmpty(req.writes())) {
-                for (IgniteTxEntry write : req.writes())
-                    map(tx.entry(write.txKey()));
+                for (IgniteTxEntry write : req.writes()) {
+                    IgniteTxEntry entry = tx.entry(write.txKey());
+
+                    assert entry != null && entry.cached() != null : entry;
+
+                    // Counter shouldn't be reserved for mvcc, local cache entries, NOOP operations and NOOP transforms.
+                    if (!entry.cached().isLocal() && entry.op() != NOOP &&
+                        !(entry.op() == TRANSFORM &&
+                            (entry.entryProcessorCalculatedValue() == null || // Possible for txs over cachestore
+                                entry.entryProcessorCalculatedValue().get1() == NOOP)))
+                        counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
+
+                    map(entry);
+                }
             }
 
             if (!F.isEmpty(req.reads())) {
@@ -1298,18 +1328,36 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (isDone())
                 return;
 
-            if (last)
+            if (last) {
+                if (!tx.txState().mvccEnabled()) {
+                    /** For MVCC counters are assigned on enlisting. */
+                    /** See usage of {@link TxCounters#incrementUpdateCounter(int, int)} ) */
+                    tx.calculatePartitionUpdateCounters();
+                }
+
+                recheckOnePhaseCommit();
+
+                if (tx.onePhaseCommit())
+                    tx.chainState(PREPARED);
+
                 sendPrepareRequests();
+            }
+        }
+        catch (Throwable t) {
+            error = true;
+
+            throw t;
         }
         finally {
-            markInitialized();
+            if (!error) // Prevent marking future as initialized on error.
+                markInitialized();
         }
     }
 
     /**
-     *
+     * Checking that one phase commit for transaction still actual.
      */
-    private void sendPrepareRequests() {
+    private void recheckOnePhaseCommit() {
         if (tx.onePhaseCommit() && !tx.nearMap().isEmpty()) {
             for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
                 if (!tx.dhtMap().containsKey(nearMapping.primary().id())) {
@@ -1319,7 +1367,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
         }
+    }
 
+    /**
+     *
+     */
+    private void sendPrepareRequests() {
         assert !tx.txState().mvccEnabled() || !tx.onePhaseCommit() || tx.mvccSnapshot() != null;
 
         int miniId = 0;
@@ -1894,8 +1947,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 drType,
                                 false)) {
                                 if (rec && !entry.isInternal())
-                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                        (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                    cacheCtx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                        null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                         false, null, null, null, false);
 
                                 if (retVal && !invoke)
@@ -1956,8 +2009,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 lockKeys.clear();
             }
 
-            onError(new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
-                "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+            onError(tx.timeoutException());
         }
 
         /** {@inheritDoc} */

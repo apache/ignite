@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 
 /**
  * Compact offsets tests for offheap binary objects.
  */
 public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstractSelfTest {
     /** Allocated unsafe pointer. */
-    private final ConcurrentHashSet<Long> ptrs = new ConcurrentHashSet<>();
+    private final GridConcurrentHashSet<Long> ptrs = new GridConcurrentHashSet<>();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

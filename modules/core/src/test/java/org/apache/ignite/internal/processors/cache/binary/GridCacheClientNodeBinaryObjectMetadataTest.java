@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
@@ -94,6 +95,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testBinaryMetadataOnClient() throws Exception {
         Ignite ignite0 = ignite(gridCount() - 1);
 

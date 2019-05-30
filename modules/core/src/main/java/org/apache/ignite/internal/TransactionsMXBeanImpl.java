@@ -46,7 +46,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /**
      * @param ctx Context.
      */
-    TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
+    public TransactionsMXBeanImpl(GridKernalContextImpl ctx) {
         this.ctx = ctx;
     }
 
@@ -72,15 +72,11 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
 
             VisorTxSortOrder sortOrder = null;
 
-            if (order != null) {
-                if ("DURATION".equals(order))
-                    sortOrder = VisorTxSortOrder.DURATION;
-                else if ("SIZE".equals(order))
-                    sortOrder = VisorTxSortOrder.SIZE;
-            }
+            if (order != null)
+                sortOrder = VisorTxSortOrder.valueOf(order.toUpperCase());
 
             VisorTxTaskArg arg = new VisorTxTaskArg(kill ? VisorTxOperation.KILL : VisorTxOperation.LIST,
-                limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder);
+                limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder, null);
 
             Map<ClusterNode, VisorTxTaskResult> res = compute.execute(new VisorTxTask(),
                 new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
@@ -133,6 +129,16 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
         catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean getTxOwnerDumpRequestsAllowed() {
+        return ctx.cache().context().tm().txOwnerDumpRequestsAllowed();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setTxOwnerDumpRequestsAllowed(boolean allowed) {
+        ctx.cache().setTxOwnerDumpRequestsAllowed(allowed);
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Node filter test.
@@ -30,10 +31,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 @GridCommonTest(group = "Kernal Self")
 public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
     /** Grid instance. */
-    private Ignite ignite;
+    private static Ignite ignite;
 
     /** Remote instance. */
-    private Ignite rmtIgnite;
+    private static Ignite rmtIgnite;
 
     /** */
     public GridNodeFilterSelfTest() {
@@ -48,9 +49,17 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
         startGrid(3);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        ignite = null;
+
+        rmtIgnite = null;
+    }
+
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSynchronousExecute() throws Exception {
         UUID nodeId = ignite.cluster().localNode().id();
 

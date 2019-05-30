@@ -39,6 +39,7 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  *
@@ -59,6 +60,7 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testSetAttribute() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
@@ -71,6 +73,7 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreaded() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 

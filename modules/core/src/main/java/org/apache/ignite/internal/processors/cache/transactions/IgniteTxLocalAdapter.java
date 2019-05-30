@@ -57,10 +57,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -68,7 +66,6 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -97,6 +94,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -157,13 +156,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected CacheWriteSynchronizationMode syncMode;
 
     /** */
-    private GridLongList mvccWaitTxs;
-
-    /** */
-    private volatile boolean qryEnlisted;
-
-    /** Whether to skip update of completed versions map during rollback caused by empty update set in MVCC TX. */
-    private boolean forceSkipCompletedVers;
+    protected volatile boolean qryEnlisted;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -223,10 +216,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         minVer = xidVer;
 
         txState = implicitSingle ? new IgniteTxImplicitSingleStateImpl() : new IgniteTxStateImpl();
-    }
-
-    public GridLongList mvccWaitTransactions() {
-        return mvccWaitTxs;
     }
 
     /**
@@ -443,7 +432,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         try {
             cctx.tm().prepareTx(this, entries);
 
-            calculatePartitionUpdateCounters();
+            if (txState().mvccEnabled())
+                calculatePartitionUpdateCounters();
         }
         catch (IgniteCheckedException e) {
             throw e;
@@ -463,7 +453,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * pair (init, delta) values, where init - initial update counter, and delta - updates count made
      * by current transaction for a given partition.
      */
-    private void calculatePartitionUpdateCounters() {
+    public void calculatePartitionUpdateCounters() {
         TxCounters counters = txCounters(false);
 
         if (counters != null && F.isEmpty(counters.updateCounters())) {
@@ -480,9 +470,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     continue;
 
                 PartitionUpdateCountersMessage msg = new PartitionUpdateCountersMessage(cacheId, partToCntrs.size());
-                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
-                assert ctx0 != null && ctx0.mvccEnabled();
+                GridCacheContext ctx0 = cctx.cacheContext(cacheId);
 
                 GridDhtPartitionTopology top = ctx0.topology();
 
@@ -502,7 +491,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         GridDhtLocalPartition part = top.localPartition(p);
 
-                        assert part != null && part.state() == GridDhtPartitionState.OWNING;
+                        // LOST state is possible if tx is started over LOST partition.
+                        assert part != null && (part.state() == OWNING || part.state() == LOST):
+                            part == null ?
+                                "map=" + top.partitionMap(false) + ", lost=" + top.lostPartitions() :
+                                "part=" + part.toString();
 
                         msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
@@ -576,8 +569,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             cctx.tm().addCommittedTx(this);
 
         if (!empty) {
-            assert mvccWaitTxs == null;
-
             batchStoreCommit(writeEntries());
 
             WALPointer ptr = null;
@@ -590,6 +581,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 cctx.tm().txContext(this);
 
                 AffinityTopologyVersion topVer = topologyVersion();
+
+                TxCounters txCounters = txCounters(false);
 
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
@@ -750,16 +743,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         CU.subjectId(this, cctx),
                                         resolveTaskName(),
                                         dhtVer,
-                                        null,
-                                        mvccSnapshot());
+                                        null);
 
-                                    if (updRes.success()) {
+                                    if (updRes.success())
                                         txEntry.updateCounter(updRes.updateCounter());
-
-                                        GridLongList waitTxs = updRes.mvccWaitTransactions();
-
-                                        updateWaitTxs(waitTxs);
-                                    }
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();
@@ -790,8 +777,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer0,
-                                                null,
-                                                mvccSnapshot())
+                                                null)
                                         );
                                     }
                                 }
@@ -813,16 +799,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         CU.subjectId(this, cctx),
                                         resolveTaskName(),
                                         dhtVer,
-                                        null,
-                                        mvccSnapshot());
+                                        null);
 
-                                    if (updRes.success()) {
+                                    if (updRes.success())
                                         txEntry.updateCounter(updRes.updateCounter());
-
-                                        GridLongList waitTxs = updRes.mvccWaitTransactions();
-
-                                        updateWaitTxs(waitTxs);
-                                    }
 
                                     if (updRes.loggedPointer() != null)
                                         ptr = updRes.loggedPointer();
@@ -848,8 +828,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer0,
-                                                null,
-                                                mvccSnapshot())
+                                                null)
                                         );
                                     }
                                 }
@@ -921,7 +900,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topologyVersion()));
                         }
                     }
+                }
 
+                if (!txState.mvccEnabled() && txCounters != null) {
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters());
+
+                    for (IgniteTxEntry entry : commitEntries) {
+                        if (entry.cqNotifyClosure() != null)
+                            entry.cqNotifyClosure().applyx();
+                    }
                 }
 
                 // Apply cache sizes only for primary nodes. Update counters were applied on prepare state.
@@ -978,18 +965,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 assert !needsCompletedVersions || committedVers != null;
                 assert !needsCompletedVersions || rolledbackVers != null;
             }
-        }
-    }
-
-    /**
-     * @param waitTxs Tx ids to wait for.
-     */
-    private void updateWaitTxs(@Nullable GridLongList waitTxs) {
-        if (waitTxs != null) {
-            if (this.mvccWaitTxs == null)
-                this.mvccWaitTxs = waitTxs;
-            else
-                this.mvccWaitTxs.addAll(waitTxs);
         }
     }
 
@@ -1112,7 +1087,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            cctx.tm().rollbackTx(this, clearThreadMap, forceSkipCompletedVers);
+            if (!txState.mvccEnabled()) {
+                TxCounters txCounters = txCounters(false);
+
+                if (txCounters != null)
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCounters.updateCounters(), true, true);
+            }
+
+            cctx.tm().rollbackTx(this, clearThreadMap, skipCompletedVersions());
 
             cctx.mvccCaching().onTxFinished(this, false);
 
@@ -1130,14 +1112,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 }
             }
         }
-    }
-
-    /**
-     * Forces transaction to skip update of completed versions map during rollback caused by empty update set
-     * in MVCC TX.
-     */
-    public void forceSkipCompletedVersions() {
-        forceSkipCompletedVers = true;
     }
 
     /**
@@ -1177,7 +1151,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param computeInvoke If {@code true} computes return value for invoke operation.
      * @throws IgniteCheckedException If error.
      */
-    @SuppressWarnings("unchecked")
     protected final void postLockWrite(
         GridCacheContext cacheCtx,
         Iterable<KeyCacheObject> keys,
@@ -1237,8 +1210,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     null,
                                     resolveTaskName(),
                                     null,
-                                    txEntry.keepBinary(),
-                                    null);  // TODO IGNITE-7371
+                                    txEntry.keepBinary());
                             }
                         }
                         else {
@@ -1694,19 +1666,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
-     * @param ver Mvcc version.
+     * Marks that there are entries, enlisted by query.
      */
-    public void markQueryEnlisted(MvccSnapshot ver) {
+    public void markQueryEnlisted() {
+        assert mvccSnapshot != null && txState.mvccEnabled();
+
         if (!qryEnlisted) {
-            assert ver != null || mvccSnapshot != null;
-
-            if (mvccSnapshot == null)
-                mvccSnapshot = ver;
-
-            if(dht())
-                cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
-
             qryEnlisted = true;
+
+            if (!cctx.localNode().isClient())
+                cctx.coordinators().registerLocalTransaction(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter());
         }
     }
 

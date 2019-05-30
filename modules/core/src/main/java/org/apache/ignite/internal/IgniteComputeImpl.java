@@ -453,7 +453,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T, R> R execute(String taskName, @Nullable T arg) {
         try {
             return (R)saveOrGet(executeAsync0(taskName, arg));
@@ -475,7 +474,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param arg Argument.
      * @return Internal future.
      */
-    @SuppressWarnings("unchecked")
     private <T, R> IgniteInternalFuture<R> executeAsync0(String taskName, @Nullable T arg) {
         A.notNull(taskName, "taskName");
 
@@ -515,7 +513,6 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * @param arg Argument.
      * @return Internal future.
      */
-    @SuppressWarnings("unchecked")
     private <T, R> IgniteInternalFuture<R> executeAsync0(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         A.notNull(taskCls, "taskCls");
 

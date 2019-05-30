@@ -38,6 +38,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
@@ -61,6 +62,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testImmediateCancellation() throws Exception {
         checkCancellation(0L);
     }
@@ -68,6 +70,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCancellation() throws Exception {
         checkCancellation(2000L);
     }

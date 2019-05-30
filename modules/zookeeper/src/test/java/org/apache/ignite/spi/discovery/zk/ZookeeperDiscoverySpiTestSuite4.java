@@ -17,41 +17,37 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Regular Ignite tests executed with {@link ZookeeperDiscoverySpi}.
  */
-public class ZookeeperDiscoverySpiTestSuite4 extends ZookeeperDiscoverySpiAbstractTestSuite {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    ZookeeperDiscoverySuitePreprocessorTest.class,
+    IgniteCachePutRetryAtomicSelfTest.class,
+    IgniteCachePutRetryTransactionalSelfTest.class,
+    ClusterNodeMetricsUpdateTest.class,
+    GridCacheAtomicMultiNodeFullApiSelfTest.class,
+    GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class,
+    IgniteCacheReplicatedQuerySelfTest.class,
+    DistributedMetaStorageTest.class,
+    DistributedMetaStoragePersistentTest.class
+})
+public class ZookeeperDiscoverySpiTestSuite4 {
     /** */
-    private static TestingCluster testingCluster;
-
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
-
-        initSuite();
-
-        TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
-
-        suite.addTestSuite(ZookeeperDiscoverySuitePreprocessorTest.class);
-        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-        suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
-        suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(IgniteCacheReplicatedQuerySelfTest.class);
-
-        return suite;
+    @BeforeClass
+    public static void init() throws Exception {
+        ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }
 }

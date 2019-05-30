@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test of triggering of failure handler.
@@ -37,6 +38,7 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailureHandlerTriggeredOnExchangeWorkerTermination() throws Exception {
         try {
             CountDownLatch latch = new CountDownLatch(1);

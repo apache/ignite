@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -46,7 +47,6 @@ import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -65,11 +65,11 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -109,6 +110,7 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -177,6 +179,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Store manager. */
     private CacheStoreManager storeMgr;
 
+    /** Compression manager. */
+    private CacheCompressionManager compressMgr;
+
     /** Replication manager. */
     private GridCacheDrManager drMgr;
 
@@ -241,7 +246,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private volatile AffinityTopologyVersion locStartTopVer;
 
     /** Dynamic cache deployment ID. */
-    private IgniteUuid dynamicDeploymentId;
+    private volatile IgniteUuid dynamicDeploymentId;
 
     /** Updates allowed flag. */
     private boolean updatesAllowed;
@@ -251,9 +256,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** */
     private boolean deferredDel;
-
-    /** */
-    private boolean customAffMapper;
 
     /** Whether {@link EventType#EVT_CACHE_REBALANCE_STARTED} was sent (used only for REPLICATED cache). */
     private volatile boolean rebalanceStartedEvtSent;
@@ -275,6 +277,10 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Recovery mode flag. */
     private volatile boolean recoveryMode;
+
+    /** */
+    private final boolean disableTriggeringCacheInterceptorOnConflict =
+        Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT, "false"));
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -312,8 +318,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheGroupContext grp,
         CacheType cacheType,
         AffinityTopologyVersion locStartTopVer,
+        IgniteUuid deploymentId,
         boolean affNode,
         boolean updatesAllowed,
+        boolean statisticsEnabled,
         boolean recoveryMode,
 
         /*
@@ -321,6 +329,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
 
+        CacheCompressionManager compressMgr,
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
         CacheEvictionManager evictMgr,
@@ -338,6 +347,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert cacheCfg != null;
         assert locStartTopVer != null : cacheCfg.getName();
 
+        assert compressMgr != null;
         assert grp != null;
         assert evtMgr != null;
         assert storeMgr != null;
@@ -364,6 +374,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * Managers in starting order!
          * ===========================
          */
+        this.compressMgr = add(compressMgr);
         this.evtMgr = add(evtMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
@@ -399,7 +410,10 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         readFromBackup = cacheCfg.isReadFromBackup();
 
+        this.dynamicDeploymentId = deploymentId;
         this.recoveryMode = recoveryMode;
+
+        statisticsEnabled(statisticsEnabled);
 
         assert kernalContext().recoveryMode() == recoveryMode;
 
@@ -414,10 +428,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Called when cache was restored during recovery and node has joined to topology.
      *
      * @param topVer Cache topology join version.
-     * @param statisticsEnabled Flag indicates is statistics enabled or not for that cache.
-     *                          Value may be changed after node joined to topology.
+     * @param clusterWideDesc Cluster-wide cache descriptor received during exchange.
      */
-    public void finishRecovery(AffinityTopologyVersion topVer, boolean statisticsEnabled) {
+    public void finishRecovery(AffinityTopologyVersion topVer, DynamicCacheDescriptor clusterWideDesc) {
         assert recoveryMode : this;
 
         recoveryMode = false;
@@ -426,9 +439,10 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         locMacs = localNode().attribute(ATTR_MACS);
 
-        this.statisticsEnabled = statisticsEnabled;
-
         assert locMacs != null;
+
+        this.statisticsEnabled = clusterWideDesc.cacheConfiguration().isStatisticsEnabled();
+        this.dynamicDeploymentId = clusterWideDesc.deploymentId();
     }
 
     /**
@@ -450,20 +464,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheGroupContext group() {
         return grp;
-    }
-
-    /**
-     * @return {@code True} if custom {@link AffinityKeyMapper} is configured for cache.
-     */
-    public boolean customAffinityMapper() {
-        return customAffMapper;
-    }
-
-    /**
-     * @param dynamicDeploymentId Dynamic deployment ID.
-     */
-    void dynamicDeploymentId(IgniteUuid dynamicDeploymentId) {
-        this.dynamicDeploymentId = dynamicDeploymentId;
     }
 
     /**
@@ -821,7 +821,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (CU.isSystemCache(name()))
             return;
 
-        ctx.security().authorize(name(), op, null);
+        ctx.security().authorize(name(), op);
     }
 
     /**
@@ -864,6 +864,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean transactionalSnapshot() {
         return cacheCfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
+    }
+
+    /**
+     * @return {@code True} if cache interceptor should be skipped in case of conflicts.
+     */
+    public boolean disableTriggeringCacheInterceptorOnConflict() {
+        return disableTriggeringCacheInterceptorOnConflict;
     }
 
     /**
@@ -1223,10 +1230,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Default affinity key mapper.
+     * @return Compression manager.
      */
-    public AffinityKeyMapper defaultAffMapper() {
-        return cacheObjCtx.defaultAffMapper();
+    public CacheCompressionManager compress() {
+        return compressMgr;
     }
 
     /**
@@ -1236,8 +1243,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void cacheObjectContext(CacheObjectContext cacheObjCtx) {
         this.cacheObjCtx = cacheObjCtx;
-
-        customAffMapper = cacheCfg.getAffinityMapper().getClass() != cacheObjCtx.defaultAffMapper().getClass();
     }
 
     /**
@@ -1247,21 +1252,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     @SuppressWarnings({"unchecked"})
     public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
         return p == null ? CU.<K, V>empty() : new IgnitePredicate[] {p};
-    }
-
-    /**
-     * Same as {@link GridFunc#isAll(Object, IgnitePredicate[])}, but safely unwraps exceptions.
-     *
-     * @param e Element.
-     * @param p Predicates.
-     * @return {@code True} if predicates passed.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <K1, V1> boolean isAll(
-        GridCacheEntryEx e,
-        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
-    ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(keepBinary()), p);
     }
 
     /**
@@ -1912,7 +1902,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy flag.
      * @param ver GridCacheVersion.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
@@ -1938,7 +1927,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param cpy Copy flag.
      * @param needVer Need version flag.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         EntryGetResult getRes,
@@ -1966,7 +1954,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param ttl Entry TTL.
      * @param needVer Need version flag.
      */
-    @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
         KeyCacheObject key,
         CacheObject val,
@@ -2014,7 +2001,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param needVer Need version flag.
      * @return EntryGetResult or value.
      */
-    @SuppressWarnings("unchecked")
     private <V1> V1 createValue(final GridCacheVersion ver,
         final long expireTime,
         final long ttl,
@@ -2155,7 +2141,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if it is possible to directly read offheap instead of using {@link GridCacheEntryEx#innerGet}.
      */
     public boolean readNoEntry(@Nullable IgniteCacheExpiryPolicy expiryPlc, boolean readers) {
-        return !config().isOnheapCacheEnabled() && !readers && expiryPlc == null;
+        return mvccEnabled() || (!config().isOnheapCacheEnabled() && !readers && expiryPlc == null);
     }
 
     /**
@@ -2241,24 +2227,37 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @param partId Partition ID.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
-    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
+    @Nullable public ClusterNode selectAffinityNodeBalanced(
+        List<ClusterNode> affNodes,
+        Set<ClusterNode> invalidNodes,
+        int partId,
+        boolean canRemap
+    ) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
+                // Find next available node if we can not wait next topology version.
                 for (ClusterNode node : affNodes) {
-                    if (ctx.discovery().alive(node))
+                    if (ctx.discovery().alive(node) && !invalidNodes.contains(node))
                         return node;
                 }
 
                 return null;
             }
-            else
-                return affNodes.get(0);
+            else {
+                ClusterNode first = affNodes.get(0);
+
+                return !invalidNodes.contains(first) ? first : null;
+            }
         }
 
-        if (!readFromBackup)
-            return affNodes.get(0);
+        if (!readFromBackup){
+            ClusterNode first = affNodes.get(0);
+
+            return !invalidNodes.contains(first) ? first : null;
+        }
 
         assert locMacs != null;
 
@@ -2267,7 +2266,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if (canRemap || discovery().alive(node)) {
+            if ((canRemap || discovery().alive(node)) && !invalidNodes.contains(node)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
@@ -2284,15 +2283,15 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Prepare affinity field for builder (if possible).
      *
-     * @param buider Builder.
+     * @param builder Builder.
      */
-    public void prepareAffinityField(BinaryObjectBuilder buider) {
+    public void prepareAffinityField(BinaryObjectBuilder builder) {
         assert binaryMarshaller();
-        assert buider instanceof BinaryObjectBuilderImpl;
+        assert builder instanceof BinaryObjectBuilderImpl;
 
-        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)buider;
+        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
 
-        if (!customAffinityMapper()) {
+        if (!cacheObjCtx.customAffinityMapper()) {
             CacheDefaultBinaryAffinityKeyMapper mapper =
                 (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
 
@@ -2321,6 +2320,15 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (isNear())
             near().dht().context().statisticsEnabled = statisticsEnabled;
+    }
+
+    /**
+     * @param tx Transaction.
+     * @return {@code True} if it is need to notify continuous query listeners.
+     */
+    public boolean hasContinuousQueryListeners(@Nullable IgniteInternalTx tx) {
+        return grp.sharedGroup() ? grp.hasContinuousQueryCaches() :
+            contQryMgr.notifyContinuousQueries(tx) && !F.isEmpty(contQryMgr.updateListeners(false, false));
     }
 
     /** {@inheritDoc} */

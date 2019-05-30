@@ -484,7 +484,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) {
         V v = get(cacheName, key);
 
@@ -673,7 +672,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("ConstantConditions")
         @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 

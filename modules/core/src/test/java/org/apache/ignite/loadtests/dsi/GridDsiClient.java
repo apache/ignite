@@ -162,7 +162,7 @@ public class GridDsiClient implements Callable {
      */
     private static void displayReqCount() {
         new Thread(new Runnable() {
-            @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
+            @SuppressWarnings({"BusyWait"})
             @Override public void run() {
                 int interval = 30;
 

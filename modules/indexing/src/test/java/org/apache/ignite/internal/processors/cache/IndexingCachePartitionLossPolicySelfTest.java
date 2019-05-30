@@ -37,12 +37,12 @@ public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartiti
     }
 
     /** {@inheritDoc} */
-    protected void checkQueryPasses(Ignite node, boolean loc, int... parts) {
+    @Override protected void checkQueryPasses(Ignite node, boolean loc, int... parts) {
         executeQuery(node, loc, parts);
     }
 
     /** {@inheritDoc} */
-    protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
+    @Override protected void checkQueryFails(Ignite node, boolean loc, int... parts) {
         // TODO: Local queries ignore partition loss, see https://issues.apache.org/jira/browse/IGNITE-7039.
         if (loc)
             return;
@@ -69,7 +69,7 @@ public class IndexingCachePartitionLossPolicySelfTest extends IgniteCachePartiti
      * @param loc Local flag.
      */
     private static void executeQuery(Ignite node, boolean loc, int... parts) {
-        IgniteCache cache = node.cache(CACHE_NAME);
+        IgniteCache cache = node.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Integer");
 

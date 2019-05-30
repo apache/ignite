@@ -338,7 +338,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.txSize(),
                                     req.subjectId(),
                                     req.taskNameHash(),
-                                    !req.skipStore() && req.storeUsed());
+                                    !req.skipStore() && req.storeUsed(),
+                                    req.txLabel());
 
                                 tx = ctx.tm().onCreated(null, tx);
 
@@ -725,7 +726,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxQueryEnlistResponse res = new GridNearTxQueryEnlistResponse(req.cacheId(),
@@ -1081,7 +1083,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
 
             try {
-                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
+                if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req.keys())) {
                     if (log.isDebugEnabled()) {
                         log.debug("Client topology version mismatch, need remap lock request [" +
                             "reqTopVer=" + req.topologyVersion() +
@@ -1120,7 +1122,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.txSize(),
                             null,
                             req.subjectId(),
-                            req.taskNameHash());
+                            req.taskNameHash(),
+                            req.txLabel(),
+                            null);
 
                         if (req.syncCommit())
                             tx.syncMode(FULL_SYNC);
@@ -1434,15 +1438,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
                                         null,
-                                        req.keepBinary(),
-                                        null); // TODO IGNITE-7371
+                                        req.keepBinary());
                                 }
 
-                                assert e.lockedBy(mappedVer) || ctx.mvcc().isRemoved(e.context(), mappedVer) :
+                                assert e.lockedBy(mappedVer) ||
+                                    ctx.mvcc().isRemoved(e.context(), mappedVer) ||
+                                    tx != null && tx.isRollbackOnly():
                                     "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
                                         ", entry=" + e +
                                         ", mappedVer=" + mappedVer + ", ver=" + ver +
-                                        ", tx=" + tx + ", req=" + req + ']';
+                                        ", tx=" + CU.txString(tx) + ", req=" + req + ']';
 
                                 boolean filterPassed = false;
 
@@ -1644,7 +1649,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     "(added to cancelled locks set): " + req);
                         }
 
-                        entry.touch(ctx.affinity().affinityTopologyVersion());
+                        entry.touch();
 
                         break;
                     }
@@ -1830,7 +1835,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (created && entry.markObsolete(dhtVer))
                         removeEntry(entry);
 
-                    entry.touch(topVer);
+                    entry.touch();
 
                     break;
                 }
@@ -1956,24 +1961,26 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
-        catch (IgniteCheckedException | IgniteException ex) {
+        catch (Throwable e) {
             GridNearTxQueryResultsEnlistResponse res = new GridNearTxQueryResultsEnlistResponse(req.cacheId(),
                 req.futureId(),
                 req.miniId(),
                 req.version(),
-                ex);
+                e);
 
             try {
                 ctx.io().send(nearNode, res, ctx.ioPolicy());
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send near enlist response [" +
-                    "txId=" + req.version() +
-                    ", node=" + nodeId +
-                    ", res=" + res + ']', e);
+            catch (IgniteCheckedException ioEx) {
+                U.error(log, "Failed to send near enlist response " +
+                    "[txId=" + req.version() + ", node=" + nodeId + ", res=" + res + ']', ioEx);
             }
+
+            if (e instanceof Error)
+                throw (Error) e;
 
             return;
         }
@@ -2019,7 +2026,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.threadId(),
                 req.txTimeout(),
                 req.subjectId(),
-                req.taskNameHash());
+                req.taskNameHash(),
+                req.mvccSnapshot());
         }
         catch (IgniteCheckedException | IgniteException ex) {
             GridNearTxEnlistResponse res = new GridNearTxEnlistResponse(req.cacheId(),
@@ -2054,7 +2062,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             req.rows(),
             req.operation(),
             req.filter(),
-            req.needRes());
+            req.needRes(),
+            req.keepBinary());
 
         fut.listen(NearTxResultHandler.instance());
 
@@ -2073,6 +2082,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param timeout Timeout.
      * @param txSubjectId Transaction subject id.
      * @param txTaskNameHash Transaction task name hash.
+     * @param snapshot Mvcc snapsht.
      * @return Transaction.
      */
     public GridDhtTxLocal initTxTopologyVersion(UUID nodeId,
@@ -2085,7 +2095,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long nearThreadId,
         long timeout,
         UUID txSubjectId,
-        int txTaskNameHash) throws IgniteException, IgniteCheckedException {
+        int txTaskNameHash,
+        MvccSnapshot snapshot) throws IgniteException, IgniteCheckedException {
 
         assert ctx.affinityNode();
 
@@ -2120,7 +2131,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 GridDhtTopologyFuture topFut = top.topologyVersionFuture();
 
-                if (!topFut.isDone() || !topFut.topologyVersion().equals(topVer)) {
+                boolean done = topFut.isDone();
+
+                if (!done || !(topFut.topologyVersion().compareTo(topVer) >= 0
+                    && ctx.shared().exchange().lastAffinityChangedTopologyVersion(topFut.initialVersion()).compareTo(topVer) <= 0)) {
                     // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
                     top.readUnlock();
 
@@ -2151,7 +2165,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     -1,
                     null,
                     txSubjectId,
-                    txTaskNameHash);
+                    txTaskNameHash,
+                    null,
+                    null);
 
                 // if (req.syncCommit())
                 tx.syncMode(FULL_SYNC);
@@ -2175,6 +2191,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     throw new IgniteCheckedException(msg);
                 }
 
+                tx.mvccSnapshot(snapshot);
                 tx.topologyVersion(topVer);
             }
             finally {
@@ -2225,26 +2242,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
     /**
      * @param primary Primary node.
-     * @param req Request.
-     * @param e Error.
-     */
-    private void onError(UUID primary, GridDhtTxQueryEnlistRequest req, Throwable e) {
-        GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(ctx.cacheId(),
-            req.dhtFutureId(),
-            req.batchId(),
-            e);
-
-        try {
-            ctx.io().send(primary, res, ctx.ioPolicy());
-        }
-        catch (IgniteCheckedException ioEx) {
-            U.error(log, "Failed to send DHT enlist reply to primary node [node: " + primary + ", req=" + req +
-                ']', ioEx);
-        }
-    }
-
-    /**
-     * @param primary Primary node.
      * @param req Message.
      * @param first Flag if this is a first request in current operation.
      */
@@ -2278,7 +2275,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     -1,
                     req0.subjectId(),
                     req0.taskNameHash(),
-                    false);
+                    false,
+                    null);
 
                 tx.mvccSnapshot(new MvccSnapshotWithoutTxs(req0.coordinatorVersion(), req0.counter(),
                     MVCC_OP_COUNTER_NA, req0.cleanupVersion()));
@@ -2314,8 +2312,22 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req + ']', ioEx);
             }
         }
-        catch (IgniteCheckedException e) {
-            onError(primary, req, e);
+        catch (Throwable e) {
+            GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(ctx.cacheId(),
+                req.dhtFutureId(),
+                req.batchId(),
+                e);
+
+            try {
+                ctx.io().send(primary, res, ctx.ioPolicy());
+            }
+            catch (IgniteCheckedException ioEx) {
+                U.error(log, "Failed to send DHT enlist reply to primary node " +
+                    "[node: " + primary + ", req=" + req + ']', ioEx);
+            }
+
+            if (e instanceof Error)
+                throw (Error) e;
         }
     }
 

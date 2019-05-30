@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobStatus;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopJobTrackerSelfTestState.combineExecCnt;
@@ -99,6 +100,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSimpleTaskSubmit() throws Exception {
         try {
             UUID globalId = UUID.randomUUID();
@@ -145,6 +147,7 @@ public class HadoopJobTrackerSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskWithCombinerPerMap() throws Exception {
         try {
             UUID globalId = UUID.randomUUID();

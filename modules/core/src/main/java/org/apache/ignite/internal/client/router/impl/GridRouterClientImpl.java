@@ -219,4 +219,9 @@ public class GridRouterClientImpl implements GridClient {
     @Override public void close() {
         clientImpl.close();
     }
+
+    /** {@inheritDoc} */
+    @Override public void throwLastError() throws GridClientException {
+        clientImpl.throwLastError();
+    }
 }

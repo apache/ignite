@@ -21,7 +21,6 @@ import org.apache.ignite.ml.math.primitives.MathTestConstants;
 import org.apache.ignite.ml.math.primitives.matrix.storage.DenseMatrixStorage;
 import org.junit.Test;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -32,12 +31,6 @@ public class MatrixArrayStorageTest extends MatrixBaseStorageTest<DenseMatrixSto
     /** {@inheritDoc} */
     @Override public void setUp() {
         storage = new DenseMatrixStorage(MathTestConstants.STORAGE_SIZE, MathTestConstants.STORAGE_SIZE);
-    }
-
-    /** */
-    @Test
-    public void isSequentialAccess() throws Exception {
-        assertFalse(MathTestConstants.UNEXPECTED_VAL, storage.isSequentialAccess());
     }
 
     /** */

@@ -47,7 +47,7 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
 
         super.beforeTestsStarted();
 
-        clientGrid.active(true);
+        clientGrid().cluster().active(true);
     }
 
     /** {@inheritDoc} */

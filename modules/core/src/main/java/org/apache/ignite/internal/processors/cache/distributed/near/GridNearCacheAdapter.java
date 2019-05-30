@@ -64,7 +64,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Common logic for near caches.
+ * Common logic for near caches (smaller local cache that stores most recently or most frequently accessed data).
  */
 public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAdapter<K, V> {
     /** */
@@ -444,7 +444,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 F.iterator0(dhtSet, false, new P1<Cache.Entry<K, V>>() {
                     @Override public boolean apply(Cache.Entry<K, V> e) {
                         try {
-                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE, null) == null;
+                            return GridNearCacheAdapter.super.localPeek(e.getKey(), NEAR_PEEK_MODE) == null;
                         }
                         catch (IgniteCheckedException ex) {
                             throw new IgniteException(ex);

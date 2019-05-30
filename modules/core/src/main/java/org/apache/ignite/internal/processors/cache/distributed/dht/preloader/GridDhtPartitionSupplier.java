@@ -29,7 +29,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -52,6 +54,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
@@ -73,7 +77,11 @@ class GridDhtPartitionSupplier {
     /** Supply context map. T3: nodeId, topicId, topVer. */
     private final Map<T3<UUID, Integer, AffinityTopologyVersion>, SupplyContext> scMap = new HashMap<>();
 
-    /** Override for rebalance throttle. */
+    /**
+     * Override for rebalance throttle.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceThrottle()} instead.
+     */
+    @Deprecated
     private long rebalanceThrottleOverride =
         IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_REBALANCE_THROTTLE_OVERRIDE, 0);
 
@@ -170,7 +178,7 @@ class GridDhtPartitionSupplier {
      * For each demand message method lookups (or creates new) supply context and starts to iterate entries across requested partitions.
      * Each entry in iterator is placed to prepared supply message.
      *
-     * If supply message size in bytes becomes greater than {@link CacheConfiguration#getRebalanceBatchSize()}
+     * If supply message size in bytes becomes greater than {@link IgniteConfiguration#getRebalanceBatchSize()}
      * method sends this message to demand node and saves partial state of iterated entries to supply context,
      * then restores the context again after new demand message with the same context id is arrived.
      *
@@ -178,7 +186,6 @@ class GridDhtPartitionSupplier {
      * @param nodeId Id of the node which sent the demand message.
      * @param demandMsg Demand message.
      */
-    @SuppressWarnings("unchecked")
     public void handleDemandMessage(int topicId, UUID nodeId, GridDhtPartitionDemandMessage demandMsg) {
         assert demandMsg != null;
         assert nodeId != null;
@@ -251,7 +258,7 @@ class GridDhtPartitionSupplier {
 
             assert !(sctx != null && !demandMsg.partitions().isEmpty());
 
-            long maxBatchesCnt = grp.config().getRebalanceBatchesPrefetchCount();
+            long maxBatchesCnt = grp.preloader().batchesPrefetchCount();
 
             if (sctx == null) {
                 if (log.isDebugEnabled())
@@ -263,10 +270,10 @@ class GridDhtPartitionSupplier {
                 maxBatchesCnt = 1;
 
             GridDhtPartitionSupplyMessage supplyMsg = new GridDhtPartitionSupplyMessage(
-                    demandMsg.rebalanceId(),
-                    grp.groupId(),
-                    demandMsg.topologyVersion(),
-                    grp.deploymentEnabled()
+                demandMsg.rebalanceId(),
+                grp.groupId(),
+                demandMsg.topologyVersion(),
+                grp.deploymentEnabled()
             );
 
             Set<Integer> remainingParts;
@@ -311,12 +318,21 @@ class GridDhtPartitionSupplier {
                 remainingParts = sctx.remainingParts;
             }
 
-            final int msgMaxSize = grp.config().getRebalanceBatchSize();
+            final int msgMaxSize = grp.preloader().batchSize();
 
             long batchesCnt = 0;
 
+            CacheDataRow prevRow = null;
+
             while (iter.hasNext()) {
-                if (supplyMsg.messageSize() >= msgMaxSize) {
+                CacheDataRow row = iter.peek();
+
+                // Prevent mvcc entry history splitting into separate batches.
+                boolean canFlushHistory = !grp.mvccEnabled() ||
+                    prevRow != null && ((grp.sharedGroup() && row.cacheId() != prevRow.cacheId()) ||
+                        !row.key().equals(prevRow.key()));
+
+                if (canFlushHistory && supplyMsg.messageSize() >= msgMaxSize) {
                     if (++batchesCnt >= maxBatchesCnt) {
                         saveSupplyContext(contextId,
                             iter,
@@ -339,7 +355,9 @@ class GridDhtPartitionSupplier {
                     }
                 }
 
-                CacheDataRow row = iter.next();
+                row = iter.next();
+
+                prevRow = row;
 
                 int part = row.partition();
 
@@ -353,6 +371,9 @@ class GridDhtPartitionSupplier {
 
                     remainingParts.remove(part);
 
+                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_MISSED))
+                        grp.addRebalanceMissEvent(part);
+
                     if (log.isDebugEnabled())
                         log.debug("Requested partition is marked as missing ["
                             + supplyRoutineInfo(topicId, nodeId, demandMsg) + ", p=" + part + "]");
@@ -363,38 +384,10 @@ class GridDhtPartitionSupplier {
                 if (!remainingParts.contains(part))
                     continue;
 
-                GridCacheEntryInfo info = grp.mvccEnabled() ?
-                    new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
+                GridCacheEntryInfo info = extractEntryInfo(row);
 
-                info.key(row.key());
-                info.cacheId(row.cacheId());
-
-                if (grp.mvccEnabled()) {
-                    byte txState = row.mvccTxState() != TxState.NA ? row.mvccTxState() :
-                        MvccUtils.state(grp, row.mvccCoordinatorVersion(), row.mvccCounter(),
-                        row.mvccOperationCounter());
-
-                    if (txState != TxState.COMMITTED)
-                        continue;
-
-                    ((MvccVersionAware)info).mvccVersion(row);
-                    ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
-
-                    byte newTxState = row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
-                        MvccUtils.state(grp, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                        row.newMvccOperationCounter());
-
-                    if (newTxState != TxState.ABORTED) {
-                        ((MvccUpdateVersionAware)info).newMvccVersion(row);
-
-                        if (newTxState == TxState.COMMITTED)
-                            ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
-                    }
-                }
-
-                info.value(row.value());
-                info.version(row.version());
-                info.expireTime(row.expireTime());
+                if (info == null)
+                    continue;
 
                 if (preloadPred == null || preloadPred.apply(info))
                     supplyMsg.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
@@ -408,6 +401,9 @@ class GridDhtPartitionSupplier {
                     supplyMsg.last(part, loc.updateCounter());
 
                     remainingParts.remove(part);
+
+                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_SUPPLIED))
+                        grp.addRebalanceSupplyEvent(part);
                 }
             }
 
@@ -425,11 +421,17 @@ class GridDhtPartitionSupplier {
                     supplyMsg.last(p, loc.updateCounter());
 
                     remainingIter.remove();
+
+                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_SUPPLIED))
+                        grp.addRebalanceSupplyEvent(p);
                 }
                 else if (iter.isPartitionMissing(p)) {
                     supplyMsg.missed(p);
 
                     remainingIter.remove();
+
+                    if (grp.eventRecordable(EVT_CACHE_REBALANCE_PART_MISSED))
+                        grp.addRebalanceMissEvent(p);
                 }
             }
 
@@ -447,6 +449,15 @@ class GridDhtPartitionSupplier {
                 log.info("Finished supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]");
         }
         catch (Throwable t) {
+            if (iter != null && !iter.isClosed()) {
+                try {
+                    iter.close();
+                }
+                catch (IgniteCheckedException e) {
+                    t.addSuppressed(e);
+                }
+            }
+
             if (grp.shared().kernalContext().isStopping())
                 return;
 
@@ -493,7 +504,49 @@ class GridDhtPartitionSupplier {
                 U.error(log, "Failed to send supply error message ["
                     + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]", t1);
             }
+
+            grp.shared().kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR,
+                new IgniteCheckedException("Failed to continue supplying ["
+                    + supplyRoutineInfo(topicId, nodeId, demandMsg) + "]", t)
+            ));
         }
+    }
+
+    /**
+     * Extracts entry info from row.
+     *
+     * @param row Cache data row.
+     * @return Entry info.
+     */
+    private GridCacheEntryInfo extractEntryInfo(CacheDataRow row) {
+        GridCacheEntryInfo info = grp.mvccEnabled() ?
+            new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
+
+        info.key(row.key());
+        info.cacheId(row.cacheId());
+
+        if (grp.mvccEnabled()) {
+            assert row.mvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
+
+            // Rows from rebalance iterator have actual states already.
+            if (row.mvccTxState() != TxState.COMMITTED)
+                return null;
+
+            ((MvccVersionAware)info).mvccVersion(row);
+            ((GridCacheMvccEntryInfo)info).mvccTxState(TxState.COMMITTED);
+
+            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA &&
+                row.newMvccTxState() == TxState.COMMITTED) {
+                ((MvccUpdateVersionAware)info).newMvccVersion(row);
+                ((GridCacheMvccEntryInfo)info).newMvccTxState(TxState.COMMITTED);
+            }
+        }
+
+        info.value(row.value());
+        info.version(row.version());
+        info.expireTime(row.expireTime());
+
+        return info;
     }
 
     /**
@@ -522,8 +575,8 @@ class GridDhtPartitionSupplier {
             // Throttle preloading.
             if (rebalanceThrottleOverride > 0)
                 U.sleep(rebalanceThrottleOverride);
-            else if (grp.config().getRebalanceThrottle() > 0)
-                U.sleep(grp.config().getRebalanceThrottle());
+            else if (grp.preloader().throttle() > 0)
+                U.sleep(grp.preloader().throttle());
 
             return true;
         }

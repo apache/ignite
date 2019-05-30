@@ -37,6 +37,7 @@ import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 /**
  * Test continuous mapper with siblings.
@@ -49,6 +50,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobSiblings() throws Exception {
         try {
             Ignite ignite = startGrid(0);
@@ -64,6 +66,7 @@ public class GridContinuousJobSiblingsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testContinuousJobSiblingsLocalNode() throws Exception {
         try {
             Ignite ignite = startGrid(0);

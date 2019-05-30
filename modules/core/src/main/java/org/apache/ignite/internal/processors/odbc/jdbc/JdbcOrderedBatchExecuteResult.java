@@ -73,6 +73,6 @@ public class JdbcOrderedBatchExecuteResult extends JdbcBatchExecuteResult {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcOrderedBatchExecuteResult.class, this);
+        return S.toString(JdbcOrderedBatchExecuteResult.class, this, super.toString());
     }
 }

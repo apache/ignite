@@ -43,10 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.WRITE;
+import org.junit.Test;
 
 /**
  *
@@ -104,6 +101,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testErrorOnFlushByTimeout() throws Exception {
         flushByTimeout = true;
         flushingErrorTest();
@@ -114,6 +112,7 @@ public class IgniteWalFlushFailoverTest extends GridCommonAbstractTest {
      *
      * @throws Exception In case of fail
      */
+    @Test
     public void testErrorOnDirectFlush() throws Exception {
         flushByTimeout = false;
         flushingErrorTest();

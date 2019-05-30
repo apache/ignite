@@ -17,13 +17,15 @@
 
 package org.apache.ignite.testsuites;
 
-import junit.framework.TestSuite;
 import org.apache.ignite.gridify.BasicAopSelfTest;
 import org.apache.ignite.gridify.GridifySetToXXXNonSpringAopSelfTest;
 import org.apache.ignite.gridify.GridifySetToXXXSpringAopSelfTest;
 import org.apache.ignite.gridify.NonSpringAopSelfTest;
 import org.apache.ignite.gridify.SpringAopSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.BeforeClass;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 import org.test.gridify.ExternalNonSpringAopSelfTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -31,26 +33,22 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 /**
  * AOP test suite.
  */
-public class IgniteAopSelfTestSuite extends TestSuite {
-    /**
-     * @return AOP test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite AOP Test Suite");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    // Test configuration.
+    BasicAopSelfTest.class,
 
-        // Test configuration.
-        suite.addTestSuite(BasicAopSelfTest.class);
-
-        suite.addTestSuite(SpringAopSelfTest.class);
-        suite.addTestSuite(NonSpringAopSelfTest.class);
-        suite.addTestSuite(GridifySetToXXXSpringAopSelfTest.class);
-        suite.addTestSuite(GridifySetToXXXNonSpringAopSelfTest.class);
-        suite.addTestSuite(ExternalNonSpringAopSelfTest.class);
-
+    SpringAopSelfTest.class,
+    NonSpringAopSelfTest.class,
+    GridifySetToXXXSpringAopSelfTest.class,
+    GridifySetToXXXNonSpringAopSelfTest.class,
+    ExternalNonSpringAopSelfTest.class,
+})
+public class IgniteAopSelfTestSuite {
+    /** */
+    @BeforeClass
+    public static void init() {
         // Examples
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP, GridTestUtils.getNextMulticastGroup(IgniteAopSelfTestSuite.class));
-
-        return suite;
     }
 }

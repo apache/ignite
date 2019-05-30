@@ -29,7 +29,7 @@ public interface Loss extends Serializable {
      * @param sampleSize Sample size.
      * @param lb Label.
      * @param mdlAnswer Model answer.
-     * @return error value.
+     * @return Error value.
      */
     public double error(long sampleSize, double lb, double mdlAnswer);
 
@@ -39,7 +39,7 @@ public interface Loss extends Serializable {
      * @param sampleSize Sample size.
      * @param lb Label.
      * @param mdlAnswer Model answer.
-     * @return error value.
+     * @return Error value.
      */
     public double gradient(long sampleSize, double lb, double mdlAnswer);
 }

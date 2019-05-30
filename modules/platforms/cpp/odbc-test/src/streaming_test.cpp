@@ -25,10 +25,6 @@
 #include <vector>
 #include <string>
 
-#ifndef _MSC_VER
-#   define BOOST_TEST_DYN_LINK
-#endif
-
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -38,16 +34,12 @@
 #include "test_type.h"
 #include "test_utils.h"
 #include "odbc_test_suite.h"
-#include "ignite/odbc/socket_client.h"
-#include <boost/thread/v2/thread.hpp>
 
 using namespace ignite;
 using namespace ignite::common;
 using namespace ignite_test;
 
 using namespace boost::unit_test;
-
-using ignite::impl::binary::BinaryUtils;
 
 /**
  * Test setup fixture.

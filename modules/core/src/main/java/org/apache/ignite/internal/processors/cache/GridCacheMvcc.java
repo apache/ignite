@@ -975,8 +975,9 @@ public final class GridCacheMvcc {
      * as system invalidate and marks these candidates as owned and used.
      *
      * @param ver Version to salvage.
+     * @param near {@code True} If salvage near cache candidate.
      */
-    public void salvageRemote(GridCacheVersion ver) {
+    public void salvageRemote(GridCacheVersion ver, boolean near) {
         assert ver != null;
 
         GridCacheMvccCandidate cand = candidate(rmts, ver);
@@ -995,7 +996,7 @@ public final class GridCacheMvcc {
                 // Only Near and DHT remote candidates should be released.
                 assert !rmt.nearLocal();
 
-                IgniteInternalTx tx = cctx.tm().tx(rmt.version());
+                IgniteInternalTx tx = near ? cctx.tm().nearTx(rmt.version()) : cctx.tm().tx(rmt.version());
 
                 if (tx != null) {
                     tx.systemInvalidate(true);
@@ -1400,7 +1401,7 @@ public final class GridCacheMvcc {
 
         for (GridCacheMvccCandidate c : col) {
             // Don't include reentries.
-            if ((!c.reentry() || (reentries && c.reentry())) && !U.containsObjectArray(excludeVers, c.version()))
+            if ((reentries || !c.reentry()) && !U.containsObjectArray(excludeVers, c.version()))
                 cands.add(c);
         }
 

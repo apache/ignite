@@ -17,17 +17,25 @@
 
 package org.apache.ignite.ml.optimization.updatecalculators;
 
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 
 /**
  * Parameters for {@link SimpleGDUpdateCalculator}.
  */
 public class SimpleGDParameterUpdate implements Serializable {
+    /** Method used to sum updates inside of one of parallel trainings. */
+    public static final IgniteFunction<List<SimpleGDParameterUpdate>, SimpleGDParameterUpdate> AVG = SimpleGDParameterUpdate::avg;
+
+    /** Method used to get total update of all parallel trainings. */
+    public static final IgniteFunction<List<SimpleGDParameterUpdate>, SimpleGDParameterUpdate> SUM_LOCAL = SimpleGDParameterUpdate::sumLocal;
+
     /** */
     private static final long serialVersionUID = -8732955283436005621L;
 
@@ -67,7 +75,7 @@ public class SimpleGDParameterUpdate implements Serializable {
      * @param updates Updates.
      * @return Sum of SimpleGDParameterUpdate.
      */
-    public static SimpleGDParameterUpdate sumLocal(List<SimpleGDParameterUpdate> updates) {
+    private static SimpleGDParameterUpdate sumLocal(List<SimpleGDParameterUpdate> updates) {
         Vector accumulatedGrad = updates.
             stream().
             filter(Objects::nonNull).
@@ -84,7 +92,7 @@ public class SimpleGDParameterUpdate implements Serializable {
      * @param updates Updates.
      * @return Avg of SimpleGDParameterUpdate.
      */
-    public static SimpleGDParameterUpdate avg(List<SimpleGDParameterUpdate> updates) {
+    private static SimpleGDParameterUpdate avg(List<SimpleGDParameterUpdate> updates) {
         SimpleGDParameterUpdate sum = sumLocal(updates);
         return sum != null ? new SimpleGDParameterUpdate(sum.gradient().
             divide(updates.stream().filter(Objects::nonNull).collect(Collectors.toList()).size())) : null;

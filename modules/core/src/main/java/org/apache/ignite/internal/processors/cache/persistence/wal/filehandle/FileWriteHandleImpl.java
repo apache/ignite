@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetric
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -148,6 +147,9 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
     /** WAL writer worker. */
     private final FileHandleManagerImpl.WALWriter walWriter;
+
+    /** Switch segment record offset. */
+    private int switchSegmentRecordOffset;
 
     /**
      * @param cctx Context.
@@ -490,8 +492,13 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
                         WALPointer segRecPtr = addRecord(segmentRecord);
 
-                        if (segRecPtr != null)
-                            fsync((FileWALPointer)segRecPtr);
+                        if (segRecPtr != null) {
+                            FileWALPointer filePtr = (FileWALPointer)segRecPtr;
+
+                            fsync(filePtr);
+
+                            switchSegmentRecordOffset = filePtr.fileOffset() + switchSegmentRecSize;
+                        }
                     }
 
                     if (mmap) {
@@ -597,5 +604,10 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         catch (IOException e) {
             return "{Failed to read channel position: " + e.getMessage() + '}';
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getSwitchSegmentRecordOffset() {
+        return switchSegmentRecordOffset;
     }
 }

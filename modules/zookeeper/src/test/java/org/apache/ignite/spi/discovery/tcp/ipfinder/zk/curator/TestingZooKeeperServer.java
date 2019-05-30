@@ -79,7 +79,7 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable 
     }
 
     /** {@inheritDoc} */
-    public QuorumPeer getQuorumPeer() {
+    @Override public QuorumPeer getQuorumPeer() {
         return main.getQuorumPeer();
     }
 
@@ -153,7 +153,7 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable 
             return;
 
         new Thread(new Runnable() {
-            public void run() {
+            @Override public void run() {
                 try {
                     QuorumPeerConfig config = configBuilder.buildConfig(thisInstanceIndex);
                     main.runFromConfig(config);

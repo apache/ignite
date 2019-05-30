@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -35,13 +34,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -136,7 +132,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean onNodeLeft(UUID nodeId) {
         for (IgniteInternalFuture<?> fut : futures())
             if (isMini(fut)) {
@@ -246,9 +241,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             if (commit && e == null)
                 e = this.tx.commitError();
 
-            Throwable finishErr = mvccFinish(e != null ? e : err);
+            Throwable finishErr = e != null ? e : err;
 
             if (super.onDone(tx, finishErr)) {
+                cctx.tm().mvccFinish(this.tx);
+
                 if (finishErr == null)
                     finishErr = this.tx.commitError();
 
@@ -289,7 +286,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     public void finish(boolean commit) {
         boolean sync;
 
-        assert !tx.queryEnlisted() || tx.mvccSnapshot() != null;
+        assert !tx.txState().mvccEnabled() || tx.mvccSnapshot() != null;
 
         if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
             sync = finish(commit, dhtMap, nearMap);
@@ -298,22 +295,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         else
             // No backup or near nodes to send commit message to (just complete then).
             sync = false;
-
-        GridLongList waitTxs = tx.mvccWaitTransactions();
-
-        if (waitTxs != null) {
-            MvccSnapshot snapshot = tx.mvccSnapshot();
-
-            assert snapshot != null;
-
-            MvccCoordinator crd = cctx.coordinators().currentCoordinator();
-
-            if (crd != null && crd.coordinatorVersion() == snapshot.coordinatorVersion()) {
-                add((IgniteInternalFuture)cctx.coordinators().waitTxsFuture(crd.nodeId(), waitTxs));
-
-                sync = true;
-            }
-        }
 
         markInitialized();
 
@@ -454,11 +435,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             add(fut); // Append new future.
 
-            Collection<Long> updCntrs = new ArrayList<>(dhtMapping.entries().size());
-
-            for (IgniteTxEntry e : dhtMapping.entries())
-                updCntrs.add(e.updateCounter());
-
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
@@ -482,7 +458,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.subjectId(),
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
-                updCntrs,
+                null,
                 false,
                 false,
                 mvccSnapshot,
@@ -596,25 +572,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         return res;
     }
 
-    /**
-     * Finishes MVCC transaction on the local node.
-     */
-    private Throwable mvccFinish(Throwable commitError) {
-        try {
-            cctx.tm().mvccFinish(tx, commit && commitError == null);
-        }
-        catch (IgniteCheckedException ex) {
-            if (commitError == null)
-                tx.commitError(commitError = ex);
-            else
-                commitError.addSuppressed(ex);
-        }
-
-        return commitError;
-    }
-
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
         if (!isDone()) {
             for (IgniteInternalFuture fut : futures()) {
@@ -657,7 +615,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
     /** {@inheritDoc} */
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
-            @SuppressWarnings("unchecked")
             @Override public String apply(IgniteInternalFuture<?> f) {
                 if (f.getClass() == MiniFuture.class) {
                     return "[node=" + ((MiniFuture)f).node().id() +

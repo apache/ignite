@@ -21,8 +21,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,7 +38,10 @@ public class TxCounters {
     private final Map<Integer, Map<Integer, AtomicLong>> updCntrsAcc = new HashMap<>();
 
     /** Final update counters for cache partitions in the end of transaction */
-    private Collection<PartitionUpdateCountersMessage> updCntrs;
+    private volatile Map<Integer, PartitionUpdateCountersMessage> updCntrs;
+
+    /** Counter tracking number of entries locked by tx. */
+    private final AtomicInteger lockCntr = new AtomicInteger();
 
     /**
      * Accumulates size change for cache partition.
@@ -64,14 +69,17 @@ public class TxCounters {
      * @param updCntrs Final update counters.
      */
     public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
-        this.updCntrs = updCntrs;
+        this.updCntrs = U.newHashMap(updCntrs.size());
+
+        for (PartitionUpdateCountersMessage cntr : updCntrs)
+            this.updCntrs.put(cntr.cacheId(), cntr);
     }
 
     /**
      * @return Final update counters.
      */
     @Nullable public Collection<PartitionUpdateCountersMessage> updateCounters() {
-        return updCntrs;
+        return updCntrs == null ? null : updCntrs.values();
     }
 
     /**
@@ -126,5 +134,34 @@ public class TxCounters {
         }
 
         return acc;
+    }
+
+    /**
+     * Increments lock counter.
+     */
+    public void incrementLockCounter() {
+        lockCntr.incrementAndGet();
+    }
+
+    /**
+     * @return Current value of lock counter.
+     */
+    public int lockCounter() {
+        return lockCntr.get();
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param partId Partition id.
+     *
+     * @return Counter or {@code null} if cache partition has not updates.
+     */
+    public Long generateNextCounter(int cacheId, int partId) {
+        PartitionUpdateCountersMessage msg = updCntrs.get(cacheId);
+
+        if (msg == null)
+            return null;
+
+        return msg.nextCounter(partId);
     }
 }

@@ -166,7 +166,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /**
      * @param evt Discovery event.
      */
-    @SuppressWarnings( {"unchecked"})
     public void onDiscoveryEvent(DiscoveryEvent evt) {
         topCntr.incrementAndGet();
 
@@ -192,7 +191,6 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     /**
      * @param res Response.
      */
-    @SuppressWarnings( {"unchecked"})
     public void onResult(GridDhtForceKeysResponse res) {
         for (IgniteInternalFuture<Object> f : futures())
             if (isMini(f)) {
@@ -237,6 +235,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         boolean ret = false;
 
         if (mappings != null) {
+            assert !cctx.mvccEnabled(); // Should not happen when MVCC enabled.
+
             ClusterNode loc = cctx.localNode();
 
             int curTopVer = topCntr.get();
@@ -302,8 +302,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      */
     private Map<ClusterNode, Set<KeyCacheObject>> map(KeyCacheObject key,
         @Nullable Map<ClusterNode, Set<KeyCacheObject>> mappings,
-        Collection<ClusterNode> exc)
-    {
+        Collection<ClusterNode> exc) {
         ClusterNode loc = cctx.localNode();
 
         GridCacheEntryEx e = cctx.dht().peekEx(key);
@@ -407,8 +406,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     }
 
     /**
-     * Mini-future for get operations. Mini-futures are only waiting on a single
-     * node as opposed to multiple nodes.
+     * Mini-future for get operations. Mini-futures are only waiting on a single node as opposed to multiple nodes.
      */
     private class MiniFuture extends GridFutureAdapter<Object> {
         /** Mini-future ID. */
@@ -552,8 +550,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             false
                         )) {
                             if (rec && !entry.isInternal())
-                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
+                                cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
+                                    null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                     false, null, null, null, false);
                         }
                     }

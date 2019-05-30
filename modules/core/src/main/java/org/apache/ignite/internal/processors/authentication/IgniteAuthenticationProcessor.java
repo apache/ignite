@@ -61,7 +61,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -383,16 +382,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         if (!ctx.clientNode()) {
             users = new ConcurrentHashMap<>();
 
-            Map<String, User> readUsers = (Map<String, User>)metastorage.readForPredicate(
-                (IgnitePredicate<String>)key -> key != null && key.startsWith(STORE_USER_PREFIX));
+            metastorage.iterate(STORE_USER_PREFIX, (key, val) -> {
+                User u = (User)val;
 
-            for (User u : readUsers.values())
                 users.put(u.name(), u);
+            }, true);
         }
         else
             users = null;
@@ -1309,7 +1307,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             if (ctx.clientNode())
                 return;
@@ -1320,10 +1317,11 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 sharedCtx.database().checkpointReadLock();
 
             try {
-                Map<String, User> existUsrs = (Map<String, User>)metastorage.readForPredicate(
-                    (IgnitePredicate<String>)key -> key != null && key.startsWith(STORE_USER_PREFIX));
+                Set<String> existUsrsKeys = new HashSet<>();
 
-                for (String key : existUsrs.keySet())
+                metastorage.iterate(STORE_USER_PREFIX, (key, val) -> existUsrsKeys.add(key), false);
+
+                for (String key : existUsrsKeys)
                     metastorage.remove(key);
 
                 for (User u : newUsrs)

@@ -24,12 +24,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.examples.ml.util.MLSandboxDatasets;
-import org.apache.ignite.examples.ml.util.SandboxMLCache;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.util.MLSandboxDatasets;
+import org.apache.ignite.ml.util.SandboxMLCache;
 
 /**
  * Run KMeans clustering algorithm ({@link KMeansTrainer}) over distributed dataset.
@@ -54,41 +56,45 @@ public class KMeansClusterizationExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
-                .fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
+            IgniteCache<Integer, Vector> dataCache = null;
+            try {
+                dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-            KMeansTrainer trainer = new KMeansTrainer()
-                .withSeed(7867L);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
-            KMeansModel mdl = trainer.fit(
-                ignite,
-                dataCache,
-                (k, v) -> v.copyOfRange(1, v.size()),
-                (k, v) -> v.get(0)
-            );
+                KMeansTrainer trainer = new KMeansTrainer();
 
-            System.out.println(">>> KMeans centroids");
-            Tracer.showAscii(mdl.getCenters()[0]);
-            Tracer.showAscii(mdl.getCenters()[1]);
-            System.out.println(">>>");
+                KMeansModel mdl = trainer.fit(
+                    ignite,
+                    dataCache,
+                    vectorizer
+                );
 
-            System.out.println(">>> --------------------------------------------");
-            System.out.println(">>> | Predicted cluster\t| Erased class label\t|");
-            System.out.println(">>> --------------------------------------------");
+                System.out.println(">>> KMeans centroids");
+                Tracer.showAscii(mdl.getCenters()[0]);
+                Tracer.showAscii(mdl.getCenters()[1]);
+                System.out.println(">>>");
 
-            try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
-                for (Cache.Entry<Integer, Vector> observation : observations) {
-                    Vector val = observation.getValue();
-                    Vector inputs = val.copyOfRange(1, val.size());
-                    double groundTruth = val.get(0);
+                System.out.println(">>> --------------------------------------------");
+                System.out.println(">>> | Predicted cluster\t| Erased class label\t|");
+                System.out.println(">>> --------------------------------------------");
 
-                    double prediction = mdl.apply(inputs);
+                try (QueryCursor<Cache.Entry<Integer, Vector>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer, Vector> observation : observations) {
+                        Vector val = observation.getValue();
+                        Vector inputs = val.copyOfRange(1, val.size());
+                        double groundTruth = val.get(0);
 
-                    System.out.printf(">>> | %.4f\t\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                        double prediction = mdl.predict(inputs);
+
+                        System.out.printf(">>> | %.4f\t\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                    }
+
+                    System.out.println(">>> ---------------------------------");
+                    System.out.println(">>> KMeans clustering algorithm over cached dataset usage example completed.");
                 }
-
-                System.out.println(">>> ---------------------------------");
-                System.out.println(">>> KMeans clustering algorithm over cached dataset usage example completed.");
+            } finally {
+                dataCache.destroy();
             }
         }
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.junit.Test;
 
 /**
  * The GirdGetOrStartSelfTest tests get or start semantics. See IGNITE-2941
@@ -37,6 +38,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
     /**
      * Tests default Ignite instance
      */
+    @Test
     public void testDefaultIgniteInstanceGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration(null);
         try(Ignite ignite = Ignition.getOrStart(cfg)) {
@@ -54,6 +56,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
     /**
      * Tests named Ignite instance
      */
+    @Test
     public void testNamedIgniteInstanceGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration("test");
         try(Ignite ignite = Ignition.getOrStart(cfg)) {

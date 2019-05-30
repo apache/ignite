@@ -1,0 +1,138 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+    id 'java'
+}
+
+group 'org.apache.ignite'
+version '1.0'
+
+sourceCompatibility = 11
+targetCompatibility = 11
+
+ext {
+    ignVer = '2.8.0-SNAPSHOT'
+    // ignVer = '2.7.0'
+    moduleName = 'ignite_modules_test'
+}
+
+compileJava {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        options.compilerArgs = [
+            '--module-path', classpath.asPath,
+        ];
+        classpath = files();
+    }
+}
+
+compileTestJava {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        options.compilerArgs = [
+            '--module-path', classpath.asPath,
+            '--add-modules', 'junit',
+            '--add-reads', "$moduleName=junit",
+            '--patch-module', "$moduleName=" + files(sourceSets.test.java.srcDirs).asPath,
+        ]
+        classpath = files()
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    compile group: 'org.apache.ignite', name: 'ignite-core', version: ignVer
+    //todo https://issues.apache.org/jira/browse/IGNITE-11464 - Fix indexing modularity:
+    compile(group: 'org.apache.ignite', name: 'ignite-indexing', version: ignVer) {
+        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
+    }
+
+    /*
+    compile (group: 'org.apache.ignite', name: 'ignite-direct-io', version: ignVer) {
+        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts
+    }
+    */
+
+    // module reads package org.apache.ignite.internal.processors.compress from both ignite.compress and ignite.core
+    // compile group: 'org.apache.ignite', name: 'ignite-compress', version: ignVer
+    /* compile (group: 'org.apache.ignite', name: 'ignite-spring', version: ignVer) {
+        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
+    }*/
+    compile group: 'org.apache.ignite', name: 'ignite-ml', version: ignVer
+
+    compile group: 'org.apache.ignite', name: 'ignite-log4j', version: ignVer
+    compile group: 'org.apache.ignite', name: 'ignite-log4j2', version: ignVer
+    compile group: 'org.apache.ignite', name: 'ignite-slf4j', version: ignVer
+
+    compile(group: 'org.apache.ignite', name: 'ignite-rest-http', version: ignVer) {
+        //todo https://issues.apache.org/jira/browse/IGNITE-11469
+        exclude group: 'org.apache.tomcat'
+        // to remove "javax.servlet.http, javax.servlet.descriptor, javax.servlet.annotation, javax.servlet" package conflicts.
+
+        exclude group: "log4j", module: "log4j"
+        exclude group: "org.slf4j", module: "slf4j-log4j12"
+    }
+
+    // todo https://issues.apache.org/jira/browse/IGNITE-11485
+    // compile group: 'org.apache.ignite', name: 'ignite-hibernate_5.3', version: ignVer
+
+
+    // todo https://issues.apache.org/jira/browse/IGNITE-11486
+    compile (group: 'org.apache.ignite', name: 'ignite-zookeeper', version: ignVer) {
+        exclude group: "org.slf4j", module: "slf4j-log4j12"
+        exclude group: "log4j", module: "log4j"
+    }
+
+    compile group: "org.slf4j", name: "slf4j-api", version: "1.7.25"
+    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "2.11.2"
+
+    /*
+    compile (group: 'org.apache.ignite', name: 'ignite-spring-data_2.0', version: ignVer) {
+        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
+    }
+    */
+
+    // compile group: 'org.apache.ignite', name: 'ignite-compress', version: ignVer
+
+    compile (group: 'org.apache.ignite', name: 'ignite-cassandra-store', version: ignVer) {
+        exclude group: 'org.apache.lucene'  // to remove "lucene-sandbox and analyzers-commons" package conflicts.
+
+        exclude group: 'org.apache.ignite', module: 'ignite-spring'
+    }
+}
+
+test {
+    // set JVM arguments for the test JVM(s)
+    jvmArgs("--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+        "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
+        "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+        "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+        "--add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED",
+        "--illegal-access=permit");
+}
+
+tasks.withType(Test) {
+    scanForTestClasses = false
+    include "**/*Test.class" // whatever Ant pattern matches your test class files
+}

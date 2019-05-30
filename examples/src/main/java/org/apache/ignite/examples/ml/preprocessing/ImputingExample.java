@@ -17,18 +17,20 @@
 
 package org.apache.ignite.examples.ml.preprocessing;
 
+import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.examples.ml.util.DatasetHelper;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 
 /**
@@ -39,8 +41,8 @@ import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
  * <p>
  * After that it defines preprocessors that extract features from an upstream data and impute missing values.</p>
  * <p>
- * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output
- * various statistical metrics of the data.</p>
+ * Finally, it creates the dataset based on the processed data and uses Dataset API to find and output various
+ * statistical metrics of the data.</p>
  * <p>
  * You can change the test data used in this example and re-run it to explore this functionality further.</p>
  */
@@ -50,43 +52,45 @@ public class ImputingExample {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Imputing example started.");
 
-            IgniteCache<Integer, Person> persons = createCache(ignite);
+            IgniteCache<Integer, Vector> data = null;
+            try {
+                data = createCache(ignite);
 
-            // Defines first preprocessor that extracts features from an upstream data.
-            IgniteBiFunction<Integer, Person, Vector> featureExtractor = (k, v) -> VectorUtils.of(
-                v.getAge(),
-                v.getSalary()
-            );
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>(1, 2);
 
-            // Defines second preprocessor that imputing features.
-            IgniteBiFunction<Integer, Person, Vector> preprocessor = new ImputerTrainer<Integer, Person>()
-                .fit(ignite, persons, featureExtractor);
+                // Defines second preprocessor that imputing features.
+                Preprocessor<Integer, Vector> preprocessor = new ImputerTrainer<Integer, Vector>()
+                    .fit(ignite, data, vectorizer);
 
-            // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
-                new DatasetHelper(dataset).describe();
+                // Creates a cache based simple dataset containing features and providing standard dataset API.
+                try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, data, preprocessor)) {
+                    new DatasetHelper(dataset).describe();
+                }
+
+                System.out.println(">>> Imputing example completed.");
+            } finally {
+                data.destroy();
             }
-
-            System.out.println(">>> Imputing example completed.");
         }
     }
 
     /** */
-    private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
-        CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+    private static IgniteCache<Integer, Vector> createCache(Ignite ignite) {
+        CacheConfiguration<Integer, Vector> cacheConfiguration = new CacheConfiguration<>();
 
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
 
-        IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+        IgniteCache<Integer, Vector> persons = ignite.createCache(cacheConfiguration);
 
-        persons.put(1, new Person("Mike", 10, 1));
-        persons.put(2, new Person("John", 20, 2));
-        persons.put(3, new Person("George", 15, 1));
-        persons.put(4, new Person("Piter", 25, Double.NaN));
-        persons.put(5, new Person("Karl", Double.NaN, 1));
-        persons.put(6, new Person("Gustaw", 20, 2));
-        persons.put(7, new Person("Alex", 20, 2));
+        persons.put(1, new DenseVector(new Serializable[]{"Mike", 10, 1}));
+        persons.put(1, new DenseVector(new Serializable[]{"John", 20, 2}));
+        persons.put(1, new DenseVector(new Serializable[]{"George", 15, 1}));
+        persons.put(1, new DenseVector(new Serializable[]{"Piter", 25, Double.NaN}));
+        persons.put(1, new DenseVector(new Serializable[]{"Karl", Double.NaN, 1}));
+        persons.put(1, new DenseVector(new Serializable[]{"Gustaw", 20, 2}));
+        persons.put(1, new DenseVector(new Serializable[]{"Alex", 20, 2}));
+
         return persons;
     }
 }
