@@ -350,11 +350,10 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
         [Test]
         [TestCase("2015-01-01T00:00:00.0000000Z", 2)]
-        [TestCase("2016-02-02T00:00:00.0000000Z", 0)]
+        [TestCase("2016-02-02T00:00:00.0000000Z", 2)]
         [TestCase("2017-03-03T00:00:00.0000000Z", 0)]
         public void CachePut_DateTimeKey_RequestIsRoutedToPrimaryNode(string keyString, int gridIdx)
         {
-            // TODO: DateTime can be written in two modes, as Java and as .NET, add tests for both
             var key = DateTime.Parse(keyString, CultureInfo.InvariantCulture).ToUniversalTime();
 
             var cache = Client.GetCache<object, object>(_cache.Name);

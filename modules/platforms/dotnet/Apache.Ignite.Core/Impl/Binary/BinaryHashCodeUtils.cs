@@ -110,15 +110,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return GetGuidHashCode(TypeCaster<Guid>.Cast(val));
             }
 
-            if (type == typeof(DateTime))
-            {
-                long milliseconds;
-                int unused;
-                BinaryUtils.ToJavaDate(TypeCaster<DateTime>.Cast(val), out milliseconds, out unused);
-
-                return GetLongHashCode(milliseconds);
-            }
-
+            // DateTime, when used as key, is always written as BinaryObject.
             return GetComplexTypeHashCode(val, marsh, affinityKeyFieldIds);
         }
 
