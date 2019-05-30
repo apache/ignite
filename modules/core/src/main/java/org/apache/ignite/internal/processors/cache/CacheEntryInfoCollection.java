@@ -128,4 +128,23 @@ public class CacheEntryInfoCollection implements Message {
     @Override public byte fieldsCount() {
         return 1;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        StringBuilder b = new StringBuilder();
+        b.append("[");
+
+        for (int i = 0; i < infos().size(); i++) {
+            GridCacheEntryInfo info = infos().get(i);
+
+            Object k = info.key().value(null, false);
+
+            b.append("[key=").append(k == null ? "null" : k).append(", ver=").
+                append(info.version()).append(", val=").append(info.value()).append(']');
+        }
+
+        b.append(']');
+
+        return b.toString();
+    }
 }

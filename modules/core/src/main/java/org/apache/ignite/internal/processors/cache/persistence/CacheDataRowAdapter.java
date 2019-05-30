@@ -233,7 +233,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         IoStatisticsHolder statHolder,
         boolean readCacheId,
         RowData rowData,
-        IncompleteObject<?> incomplete,
+        @Nullable IncompleteObject<?> incomplete,
         boolean skipVer
     ) throws IgniteCheckedException {
         assert link != 0 : "link";

@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Map;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -46,6 +48,10 @@ public class PartitionUpdateCountersMessage implements Message {
     /** */
     @GridDirectTransient
     private int size;
+
+    /** Used for assigning counters to cache entries during tx finish. */
+    @GridDirectTransient
+    private Map<Integer, Long> counters;
 
     /** */
     public PartitionUpdateCountersMessage() {
@@ -142,6 +148,24 @@ public class PartitionUpdateCountersMessage implements Message {
         GridUnsafe.putInt(data, off, part); off += 4;
         GridUnsafe.putLong(data, off, init); off += 8;
         GridUnsafe.putLong(data, off, updatesCnt);
+    }
+
+    /**
+     * Calculate next counter for partition.
+     *
+     * @param partId Partition id.
+     *
+     * @return Next counter for partition.
+     */
+    public Long nextCounter(int partId) {
+        if (counters == null) {
+            counters = U.newHashMap(size);
+
+            for (int i = 0; i < size; i++)
+                counters.put(partition(i), initialCounter(i));
+        }
+
+        return counters.computeIfPresent(partId, (key, cntr) -> cntr + 1);
     }
 
     /**
