@@ -276,7 +276,7 @@ public class FilePageStore implements PageStore {
                 if (fileIO != null) // Ensure the file is closed even if not initialized yet.
                     fileIO.close();
 
-                if (delete)
+                if (delete && cfgFile.exists())
                     Files.delete(cfgFile.toPath());
 
                 return;
