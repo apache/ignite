@@ -257,6 +257,30 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testReadOnlyModeForgottenAfterClusterRestart() throws Exception {
+        IgniteEx grid = startGrids(2);
+
+        grid.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        grid.cluster().readOnly(true);
+
+        checkClusterInReadOnlyMode(true, grid);
+
+        stopAllGrids();
+
+        grid = startGrids(2);
+
+        awaitPartitionMapExchange();
+
+        assertTrue("Cluster must be activate", grid.cluster().active());
+
+        checkClusterInReadOnlyMode(false, grid);
+    }
+
+    /** */
     private void checkClusterInReadOnlyMode(boolean readOnly, IgniteEx node) {
         assertEquals("Unexpected read-only mode", readOnly, node.cluster().readOnly());
 

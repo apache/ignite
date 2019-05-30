@@ -325,10 +325,12 @@ public abstract class GridClientConnection {
         throws GridClientClosedException, GridClientConnectionResetException;
 
     /**
-     * Get current read-only mode status. If future contains {@code True} - read-only mode enabled, if {@code False} -
+     * Get current read-only mode status. If future contains {@code true} - read-only mode enabled, if {@code false} -
      * read-only mode disabled.
      *
      * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
     public abstract GridClientFuture<Boolean> readOnlyState(UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;
@@ -338,6 +340,8 @@ public abstract class GridClientConnection {
      *
      * @param readOnly Read-only mode enabled flag.
      * @param destNodeId Destination node id.
+     * @throws GridClientConnectionResetException In case of error.
+     * @throws GridClientClosedException If client was manually closed before request was sent over network.
      */
     public abstract GridClientFuture<?> changeReadOnlyState(boolean readOnly, UUID destNodeId)
         throws GridClientClosedException, GridClientConnectionResetException;

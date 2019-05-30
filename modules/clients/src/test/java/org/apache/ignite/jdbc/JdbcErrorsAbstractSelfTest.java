@@ -744,7 +744,11 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             "Failed to parse query. Syntax error in SQL statement \"ALTER TABLE TEST DROP COLUMN [*]");
     }
 
-    /** */
+    /**
+     * Checks execution DML request on read-only cluster error code and message.
+     *
+     * @throws Exception If failed.
+     */
     @Test
     public void testUpdatesRejectedInReadOnlyMode() throws Exception {
         try (Connection conn = getConnection()) {

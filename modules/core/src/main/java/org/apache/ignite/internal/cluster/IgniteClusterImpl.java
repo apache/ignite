@@ -334,11 +334,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public void readOnly(boolean readOnly) throws IgniteException {
-        checkReadOnlyModeSupports();
-
         guard();
 
         try {
+            verifyReadOnlyModeSupport();
+
             ctx.state().changeGlobalState(readOnly).get();
         }
         catch (IgniteCheckedException e) {
@@ -350,7 +350,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** */
-    private void checkReadOnlyModeSupports() {
+    private void verifyReadOnlyModeSupport() {
         if (!allNodesSupports(ctx.discovery().discoCache().serverNodes(), CLUSTER_READ_ONLY_MODE))
             throw new IgniteException("Not all nodes in cluster supports cluster read-only mode!");
     }

@@ -212,7 +212,7 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
             assertEquals(i, grid(0).cache("T").get(i));
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-11795")
     @Test
     @Override public void testStreamedInsertFailsOnReadOnlyMode() throws Exception {
