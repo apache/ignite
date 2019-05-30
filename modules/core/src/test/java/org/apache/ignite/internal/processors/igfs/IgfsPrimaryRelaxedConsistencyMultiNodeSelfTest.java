@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -30,10 +31,9 @@ public class IgfsPrimaryRelaxedConsistencyMultiNodeSelfTest extends IgfsPrimaryR
         return 4;
     }
 
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8823")
     @Test
     @Override public void testCreateConsistencyMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8823");
-
         super.testCreateConsistencyMultithreaded();
     }
 }

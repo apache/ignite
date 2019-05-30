@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -116,10 +117,9 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1386")
     @Test
     public void testIgfsClientServerInteractionsUponServerKilling() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1386");
-
         Collection<Integer> shmemIdsBeforeInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs before starting server-client interactions: " + shmemIdsBeforeInteractions);

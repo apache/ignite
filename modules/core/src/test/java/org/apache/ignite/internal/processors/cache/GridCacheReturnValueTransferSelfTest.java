@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -79,11 +80,10 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      * TODO IGNITE-581 enable when fixed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-581")
     @Test
     public void testTransformTransactionalNoBackups() throws Exception {
         // Test works too long and fails.
-        fail("https://issues.apache.org/jira/browse/IGNITE-581");
-
         checkTransform(TRANSACTIONAL, 0);
     }
 
@@ -91,11 +91,10 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      * TODO IGNITE-581 enable when fixed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-581")
     @Test
     public void testTransformTransactionalOneBackup() throws Exception {
         // Test works too long and fails.
-        fail("https://issues.apache.org/jira/browse/IGNITE-581");
-
         checkTransform(TRANSACTIONAL, 1);
     }
 

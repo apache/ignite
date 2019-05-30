@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -80,10 +81,9 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-819")
     @Test
     public void testGettingRemovedKey() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-819");
-
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.put(0, 0);

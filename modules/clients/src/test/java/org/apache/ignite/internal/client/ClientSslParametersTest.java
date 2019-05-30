@@ -144,7 +144,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         };
 
         startGrid();
-        
+
         checkSuccessfulClientStart(
             new String[] {
                 "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
@@ -164,7 +164,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         };
 
         startGrid();
-        
+
         checkClientStartFailure(
             new String[] {
                 "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
@@ -180,14 +180,12 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10245")
     public void testNonExistentCipherSuite() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10245");
-
         cipherSuites = new String[] {
             "TLS_RSA_WITH_AES_128_GCM_SHA256"
         };
 
         startGrid();
-        
+
         checkClientStartFailure(
             new String[] {
                 "TLC_FAKE_CIPHER",
@@ -225,8 +223,6 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-10245")
     public void testNonExistentProtocol() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10245");
-
         protocols = new String[] {
             "SSLv3"
         };

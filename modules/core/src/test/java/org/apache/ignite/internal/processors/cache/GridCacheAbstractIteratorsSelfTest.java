@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,11 +49,9 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
      */
     protected abstract int entryCount();
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
-    public void testCacheIterator() throws Exception {
+    public void testCacheIterator() {
         int cnt = 0;
 
         for (Cache.Entry<String, Integer> entry : jcache()) {
@@ -99,9 +97,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         }, 3, "iterator-thread");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @Test
     public void testEntrySetIterator() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());

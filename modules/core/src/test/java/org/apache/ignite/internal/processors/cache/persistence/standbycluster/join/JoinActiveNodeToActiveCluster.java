@@ -17,12 +17,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.join;
 
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -240,10 +241,9 @@ public class JoinActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
     }
 
     /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
     @Test
     @Override public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5518");
-
         joinClientStaticCacheConfigurationInClusterTemplate().execute();
     }
 
@@ -256,10 +256,9 @@ public class JoinActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
     @Test
     @Override public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5518");
-
         joinClientStaticCacheConfigurationDifferentOnBothTemplate().execute();
     }
 

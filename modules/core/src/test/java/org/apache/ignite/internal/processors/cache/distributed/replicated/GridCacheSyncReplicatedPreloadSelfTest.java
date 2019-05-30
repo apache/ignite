@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -80,8 +81,7 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"TooBroadScope"})
     @Test
     public void testNodeRestart() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10082");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10082", MvccFeatureChecker.forcedMvcc());
 
         int keyCnt = 1000;
         int retries = 20;

@@ -24,6 +24,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -51,10 +52,9 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
     /**
      *
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-6629")
     @Test
     public void testDeployService() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-6629");
-
         Ignite ig1P = primary(0);
 
         Ignite ig1B = backUp(0);

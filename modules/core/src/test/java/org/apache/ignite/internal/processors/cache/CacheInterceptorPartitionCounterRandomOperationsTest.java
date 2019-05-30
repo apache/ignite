@@ -53,6 +53,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -409,8 +410,8 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
      */
     protected void doTestPartitionCounterOperation(CacheConfiguration<Object, Object> ccfg)
         throws Exception {
-        if (ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT)
-            fail("https://issues.apache.org/jira/browse/IGNITE-9323");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9323",
+            ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT);
 
         ignite(0).createCache(ccfg);
 

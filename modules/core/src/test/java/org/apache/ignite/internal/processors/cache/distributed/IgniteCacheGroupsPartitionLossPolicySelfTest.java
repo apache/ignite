@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -135,10 +136,9 @@ public class IgniteCacheGroupsPartitionLossPolicySelfTest extends GridCommonAbst
     /**
      * @throws Exception if failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5078")
     @Test
     public void testIgnore() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5078");
-
         prepareTopology();
 
         String cacheName = ThreadLocalRandom.current().nextBoolean() ? CACHE_1 : CACHE_2;

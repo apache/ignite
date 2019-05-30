@@ -29,7 +29,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLTimeoutException;
 import java.sql.SQLPermission;
 import java.sql.SQLTimeoutException;
 import java.sql.SQLWarning;
@@ -43,9 +42,9 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -780,7 +779,6 @@ public class JdbcThinConnection implements Connection {
      * @return Server response.
      * @throws SQLException On any error.
      */
-    @SuppressWarnings("unchecked")
     <R extends JdbcResult> R sendRequest(JdbcRequest req, JdbcThinStatement stmt) throws SQLException {
         ensureConnected();
 
