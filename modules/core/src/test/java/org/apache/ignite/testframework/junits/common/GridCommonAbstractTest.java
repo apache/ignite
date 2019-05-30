@@ -2279,7 +2279,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         @Nullable GridDhtLocalPartition locPart =
             internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId);
 
-        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
+        return locPart == null || locPart.state() != OWNING ? null : locPart.dataStore().partUpdateCounter();
     }
 
     /**
