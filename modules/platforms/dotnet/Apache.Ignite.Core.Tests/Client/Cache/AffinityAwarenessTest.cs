@@ -318,7 +318,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");
 
             // Verify against real Affinity.
-            Assert.Equals(gridIdx, GetPrimaryNodeIdx(key));
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
