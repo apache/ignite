@@ -347,8 +347,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
 
-    /** TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11799 */
-    private Map<Integer, Set<Integer>> clearingPartitions;
+    /** Partitions scheduled for historical reblanace for this topology version. */
+    private Map<Integer, Set<Integer>> histPartitions;
 
     /**
      * @param cctx Cache context.
@@ -1412,7 +1412,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionEnd();
         }
 
-        clearingPartitions = new HashMap();
+        histPartitions = new HashMap();
 
         timeBag.finishGlobalStage("WAL history reservation");
 
@@ -4954,21 +4954,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * If partition is clearing or already cleared we need full rebalance even if supplier is exists.
-     * (it still could be used for other demanders)
-     *
      * @param grp Group.
      * @param part Partition.
      */
-    public boolean isClearingPartition(CacheGroupContext grp, int part) {
+    public boolean isHistoryPartition(CacheGroupContext grp, int part) {
         if (!grp.persistenceEnabled())
             return false;
 
         synchronized (mux) {
-            if (clearingPartitions == null)
+            if (histPartitions  == null)
                 return false;
 
-            Set<Integer> parts = clearingPartitions.get(grp.groupId());
+            Set<Integer> parts = histPartitions.get(grp.groupId());
 
             return parts != null && parts.contains(part);
         }
@@ -4978,12 +4975,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param grp Group.
      * @param part Partition.
      */
-    public void addClearingPartition(CacheGroupContext grp, int part) {
+    public void addHistoryPartition(CacheGroupContext grp, int part) {
         if (!grp.persistenceEnabled())
             return;
 
         synchronized (mux) {
-            clearingPartitions.computeIfAbsent(grp.groupId(), k -> new HashSet()).add(part);
+            histPartitions.computeIfAbsent(grp.groupId(), k -> new HashSet()).add(part);
         }
     }
 

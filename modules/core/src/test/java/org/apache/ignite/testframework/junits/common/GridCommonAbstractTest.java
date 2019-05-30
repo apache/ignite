@@ -135,6 +135,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -704,7 +705,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     !affNodes.get(0).equals(dht.context().affinity().primaryByPartition(p, readyVer));
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
-                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING) ||
+                                    (waitEvicts && loc != null && loc.state() != OWNING) ||
                                     notPrimary) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
@@ -794,7 +795,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                             ", locNode=" + g.cluster().localNode() + ']');
                                     }
 
-                                    if (entry.getValue() != GridDhtPartitionState.OWNING) {
+                                    if (entry.getValue() != OWNING) {
                                         LT.warn(log(),
                                             "Waiting for correct partition state part=" + entry.getKey()
                                                 + ", should be OWNING [state=" + entry.getValue() + "], node=" +
@@ -2292,7 +2293,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         @Nullable GridDhtLocalPartition locPart =
             internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
 
-        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
+        return locPart == null || locPart.state() != OWNING ? null : locPart.dataStore().partUpdateCounter();
     }
 
     /**
@@ -2306,7 +2307,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         @Nullable GridDhtLocalPartition locPart =
             internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId);
 
-        return locPart == null ? null : locPart.dataStore().partUpdateCounter();
+        return locPart == null || locPart.state() != OWNING ? null : locPart.dataStore().partUpdateCounter();
     }
 
     /**
@@ -2339,7 +2340,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             log.info("node=" + ignite.name() + ", cntr=" + cntr);
 
             if (cntr0 != null) {
-                assertEquals("Expecting same counters", cntr0, cntr);
+                assertEquals("Expecting same counters [partId=" + partId + ']', cntr0, cntr);
 
                 if (withReserveCntr)
                     assertEquals("Expecting same reservation counters", cntr0.reserved(), cntr.reserved());

@@ -496,14 +496,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         for (int p = 0; p < partitions; p++) {
             if (node2part != null && node2part.valid()) {
                 if (localNode(p, aff)) {
-                    // This will make sure that all non-existing partitions
-                    // will be created in MOVING state.
-                    boolean existing = locParts.get(p) != null;
-
                     GridDhtLocalPartition locPart = getOrCreatePartition(p);
-
-                    if (existing && locPart.state() == MOVING && !locPart.isEmpty())
-                        exchFut.addClearingPartition(grp, p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
                 }
@@ -782,10 +775,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                             "[grp=" + grp.cacheOrGroupName() + ", p=" + p + ", owners = " + owners + ']');
                                 }
 
-                                // If clearing is not yet started for non empty partition - start it.
-                                // Important: avoid calling clearAsync multiple times in the same rebalance session
-                                // or bad things may happen depending on timing.
-                                if (!locPart.isClearing() && !locPart.isEmpty())
+                                // It's important to clear non empty moving partitions before full rebalancing.
+                                // Consider the scenario:
+                                // Node1 has keys k1 and k2 in the same partition.
+                                // Node2 started rebalancing from Node1.
+                                // Node2 received k1, k2 and failed before moving partition to OWNING state.
+                                // Node1 removes k2 but update has not been delivered to Node1 because of failure.
+                                // After new full rebalance Node1 will only send k1 to Node2 causing lost removal.
+                                // NOTE: avoid calling clearAsync for partition twice per topology version.
+                                // TODO FIXME clearing is not always needed see IGNITE-11799
+                                if (grp.persistenceEnabled() && !exchFut.isHistoryPartition(grp, locPart.id()) &&
+                                    !locPart.isClearing() && !locPart.isEmpty())
                                     locPart.clearAsync();
                             }
                             else
@@ -2311,8 +2311,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * Prevents ongoing renting if required.
      *
      * @param p Partition id.
-     * @param clear If {@code true} partition have to be cleared before rebalance.
-     *              Required in case of full state transfer to handle removals on supplier.
+     * @param clear If {@code true} partition have to be cleared before rebalance (full rebalance or rebalance restart
+     * after cancellation).
      * @param exchFut Future related to partition state change.
      */
     private GridDhtLocalPartition rebalancePartition(int p, boolean clear, GridDhtPartitionsExchangeFuture exchFut) {
@@ -2334,11 +2334,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (part.state() != MOVING)
             part.moving();
 
-        if (clear) {
-            exchFut.addClearingPartition(grp, part.id());
-
+        if (clear)
             part.clearAsync();
-        }
+        else
+            exchFut.addHistoryPartition(grp, part.id());
 
         assert part.state() == MOVING : part;
 
