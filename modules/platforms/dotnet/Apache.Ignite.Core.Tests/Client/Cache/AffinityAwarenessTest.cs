@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Text.RegularExpressions;
@@ -339,6 +340,21 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void CachePut_GuidKey_RequestIsRoutedToPrimaryNode(string keyString, int gridIdx)
         {
             var key = Guid.Parse(keyString);
+
+            var cache = Client.GetCache<object, object>(_cache.Name);
+            TestOperation(() => cache.Put(key, key), gridIdx, "Put");
+
+            // Verify against real Affinity.
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
+        }
+
+        [Test]
+        [TestCase("2015-01-01T00:00:00.0000000Z", 2)]
+        [TestCase("2016-02-02T00:00:00.0000000Z", 0)]
+        [TestCase("2017-03-03T00:00:00.0000000Z", 0)]
+        public void CachePut_DateTimeKey_RequestIsRoutedToPrimaryNode(string keyString, int gridIdx)
+        {
+            var key = DateTime.Parse(keyString, CultureInfo.InvariantCulture).ToUniversalTime();
 
             var cache = Client.GetCache<object, object>(_cache.Name);
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");
