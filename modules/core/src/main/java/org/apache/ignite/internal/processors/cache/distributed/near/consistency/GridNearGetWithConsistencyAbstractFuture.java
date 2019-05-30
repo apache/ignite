@@ -136,7 +136,7 @@ public abstract class GridNearGetWithConsistencyAbstractFuture extends GridFutur
                 return;
 
             if (fut.error() != null) {
-                onDone(error());
+                onDone(fut.error());
 
                 return;
             }
