@@ -405,6 +405,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** {@inheritDoc} */
         @Override protected void beforeTestsStarted() throws Exception {
+            //IMPL NOTE default config doesn't stop nodes.
             testsCfg = new VariationsTestsConfig(
                 new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(),
                     new int[] {0}), "Dummy config", true, null, 1, false);
@@ -422,7 +423,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
 
         /** */
-        @Ignore("https://issues.apache.org/jira/browse/IGNITE-11708")
         @Test
         public void test1() {
             processStage("test1", 2, 3);
@@ -430,7 +430,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
 
         /** */
-        @Ignore("https://issues.apache.org/jira/browse/IGNITE-11708")
         @Test
         public void test2() {
             processStage("test2", 2, 3);

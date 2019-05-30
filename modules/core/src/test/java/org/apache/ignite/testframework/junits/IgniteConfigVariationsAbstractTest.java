@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Before;
@@ -58,7 +59,11 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
-    /** Dummy initial stub to just let people launch test classes not from suite. */
+    /**
+     * Dummy initial stub to just let people launch test classes not from suite.
+     * Real configurations are assigned dynamically through reflection in
+     * {@link ConfigVariationsTestSuiteBuilder#makeTestClass(String, VariationsTestsConfig)} method.
+     */
     protected VariationsTestsConfig testsCfg = dummyCfg();
 
     /** */
