@@ -1623,14 +1623,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @return Name of data tree.
          */
         private String dataTreeName() {
-            return treeName(partId);
+            return grp.cacheOrGroupName() + "-" + treeName(partId);
         }
 
         /**
          * @return Name of pending entires tree.
          */
         private String pendingEntriesTreeName() {
-            return "PendingEntries-" + partId;
+            return grp.cacheOrGroupName() + "-" +"PendingEntries-" + partId;
         }
 
         /**

@@ -1247,7 +1247,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         CacheDataRowStore rowStore = new CacheDataRowStore(grp, grp.freeList(), p);
 
-        String dataTreeName = treeName(p);
+        String dataTreeName = grp.cacheOrGroupName() + "-" + treeName(p);
 
         PageLockListener lsnr = ctx.diagnostic().pageLockTracker().createPageLockTracker(dataTreeName);
 
