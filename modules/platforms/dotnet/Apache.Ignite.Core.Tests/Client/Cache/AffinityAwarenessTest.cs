@@ -319,8 +319,27 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase((double) 255.5, 1)]
         [TestCase('1', 2)]
         [TestCase('2', 1)]
+        [TestCase(true, 1)]
+        [TestCase(false, 1)]
         public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)
         {
+            var cache = Client.GetCache<object, object>(_cache.Name);
+            TestOperation(() => cache.Put(key, key), gridIdx, "Put");
+
+            // Verify against real Affinity.
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
+        }
+
+        [Test]
+        [TestCase("00000000-0000-0000-0000-000000000000", 0)]
+        [TestCase("0cb85a41-bd0d-405b-8f34-f515e8aabc39", 0)]
+        [TestCase("b4addd17-218c-4054-a5fa-03c88f5ee71c", 0)]
+        [TestCase("2611e3d2-618d-43b9-a318-2f5039f82568", 1)]
+        [TestCase("1dd8bfae-29b8-4949-aa99-7c9bfabe2566", 2)]
+        public void CachePut_GuidKey_RequestIsRoutedToPrimaryNode(string keyString, int gridIdx)
+        {
+            var key = Guid.Parse(keyString);
+
             var cache = Client.GetCache<object, object>(_cache.Name);
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");
 
