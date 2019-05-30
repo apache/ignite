@@ -839,7 +839,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     cctx.kernalContext().cache().jcache(cctx.name()),
                                     cctx, entry);
 
-                                if (hnd.filter(next))
+                                if (!hnd.filter(next))
                                     next = null;
                             }
                         }

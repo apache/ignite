@@ -940,7 +940,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /**
      * @param evt Query event.
-     * @return {@code True} if event passed filter otherwise {@code true}.
+     * @return {@code True} if event passed filter otherwise {@code false}.
      */
     public boolean filter(CacheContinuousQueryEvent evt) {
         CacheContinuousQueryEntry entry = evt.entry();
