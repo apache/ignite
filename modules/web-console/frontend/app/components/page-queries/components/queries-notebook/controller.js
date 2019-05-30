@@ -1426,10 +1426,16 @@ export class NotebookCtrl {
             }
         };
 
-        const addLimit = (query, limitSize) =>
-            `SELECT * FROM (
-            ${query} 
+        const addLimit = (query, limitSize) => {
+            let qry = query.trim();
+
+            if (qry.endsWith(';'))
+                qry = qry.substring(0, qry.length - 1);
+
+            return `SELECT * FROM (
+                ${qry} 
             ) LIMIT ${limitSize}`;
+        };
 
         $scope.nonCollocatedJoinsAvailable = (paragraph) => {
             const cache = _.find($scope.caches, {name: paragraph.cacheName});
