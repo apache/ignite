@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable RedundantCast
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
     using System;
@@ -35,6 +36,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     /// </summary>
     public class AffinityAwarenessTest : ClientTestBase
     {
+        /** */
+        private const string NodeIndexAttr = "test-node-idx";
+
         /** */
         private readonly List<ListLogger> _loggers = new List<ListLogger>();
 
@@ -103,23 +107,24 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        [TestCase(1, 1)]
+        [TestCase(1, 0)]
         [TestCase(2, 0)]
         [TestCase(3, 0)]
         [TestCase(4, 0)]
         [TestCase(5, 0)]
-        [TestCase(6, 1)]
+        [TestCase(6, 0)]
         public void CacheGet_UserDefinedKeyType_RequestIsRoutedToPrimaryNode(int key, int gridIdx)
         {
             var cache = Client.GetOrCreateCache<TestKey, int>("c_custom_key");
             cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => new TestKey(x, x.ToString()), x => x));
             cache.Get(new TestKey(1, "1")); // Warm up;
 
-            var res = cache.Get(new TestKey(key, key.ToString()));
+            var testKey = new TestKey(key, key.ToString());
+            var res = cache.Get(testKey);
 
             Assert.AreEqual(key, res);
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
-            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(testKey));
         }
 
         [Test]
@@ -326,6 +331,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var cfg = base.GetIgniteConfiguration();
 
+            var index = _loggers.Count;
+            cfg.UserAttributes = new Dictionary<string, object> {{NodeIndexAttr, index}};
+
             var logger = new ListLogger();
             cfg.Logger = logger;
             _loggers.Add(logger);
@@ -414,7 +422,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         {
             var idx = 0;
 
-            foreach (var ignite in Ignition.GetAll())
+            // GetAll is not ordered - sort the same way as _loggers.
+            var ignites = Ignition.GetAll()
+                .OrderBy(n => n.GetCluster().GetLocalNode().GetAttribute<int>(NodeIndexAttr));
+
+            foreach (var ignite in ignites)
             {
                 var aff = ignite.GetAffinity(_cache.Name);
                 var localNode = ignite.GetCluster().GetLocalNode();
