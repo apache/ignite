@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.LockLog;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.LockStack;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.store.HeapLongStore;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.store.OffHeapLongStore;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.store.HeapPageMetaInfoStore;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.store.OffHeapPageMetaInfoStore;
 
 import static java.lang.String.valueOf;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CAPACITY;
@@ -100,13 +100,13 @@ public final class LockTrackerFactory {
     ) {
         switch (type) {
             case HEAP_STACK:
-                return new LockStack(name, new HeapLongStore(size, memCalc), memCalc);
+                return new LockStack(name, new HeapPageMetaInfoStore(size, memCalc), memCalc);
             case HEAP_LOG:
-                return new LockLog(name, new HeapLongStore(size, memCalc), memCalc);
+                return new LockLog(name, new HeapPageMetaInfoStore(size, memCalc), memCalc);
             case OFF_HEAP_STACK:
-                return new LockStack(name, new OffHeapLongStore(size, memCalc), memCalc);
+                return new LockStack(name, new OffHeapPageMetaInfoStore(size, memCalc), memCalc);
             case OFF_HEAP_LOG:
-                return new LockLog(name, new OffHeapLongStore(size, memCalc), memCalc);
+                return new LockLog(name, new OffHeapPageMetaInfoStore(size, memCalc), memCalc);
 
             default:
                 throw new IllegalArgumentException(valueOf(type));

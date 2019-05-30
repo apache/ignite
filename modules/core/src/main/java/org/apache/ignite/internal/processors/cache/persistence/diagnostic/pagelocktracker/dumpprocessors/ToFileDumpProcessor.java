@@ -35,7 +35,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
  */
 public class ToFileDumpProcessor {
     /** Date format. */
-    public static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss.SSS");
+    public static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss_SSS");
 
     /** File name prefix. */
     public static final String PREFIX_NAME = "page_lock_dump_";

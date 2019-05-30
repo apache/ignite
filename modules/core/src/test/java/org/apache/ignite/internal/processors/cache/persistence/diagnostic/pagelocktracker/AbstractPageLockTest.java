@@ -55,8 +55,4 @@ public abstract class AbstractPageLockTest {
         assertEquals(nextOp, lockLog.nextOp);
         assertEquals(nextOpPageId, lockLog.nextOpPageId);
     }
-
-    protected boolean isEmptyArray(long[] arr) {
-        return stream(arr).filter(value -> value != 0).count() == 0;
-    }
 }

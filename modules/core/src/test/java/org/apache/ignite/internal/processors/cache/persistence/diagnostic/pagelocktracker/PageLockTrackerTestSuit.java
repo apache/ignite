@@ -30,6 +30,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    PageLockTrackerManagerTest.class,
     SharedPageLockTrackerTest.class,
     ToFileDumpProcessorTest.class,
     HeapArrayLockLogTest.class,

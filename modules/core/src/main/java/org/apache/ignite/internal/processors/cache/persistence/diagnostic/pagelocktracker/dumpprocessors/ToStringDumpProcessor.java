@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.DumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.ThreadPageLocksDumpLock;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.ThreadPageLocksDumpLock.ThreadState;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot;
@@ -232,7 +233,7 @@ public class ToStringDumpProcessor {
         /** {@inheritDoc} */
         @Override public void processDump(PageLockStackSnapshot snapshot) {
             int headIdx = snapshot.headIdx;
-            long[] pageIdLocksStack = snapshot.pageIdLocksStack;
+            PageMetaInfoStore pageIdLocksStack = snapshot.pageIdLocksStack;
             long nextOpPageId = snapshot.nextOpPageId;
 
             Map<Long, LockState> holdedLocks = new LinkedHashMap<>();
@@ -244,10 +245,10 @@ public class ToStringDumpProcessor {
                     " structureId=" + strucutreIdMapFunc.apply(snapshot.nextOpStructureId) +
                     " " + pageIdToString(nextOpPageId) + U.nl());
 
-            for (int i = headIdx - 2; i >= 0; i -= 2) {
-                long pageId = pageIdLocksStack[i];
+            for (int itemIdx = headIdx - 1; itemIdx >= 0; itemIdx--) {
+                long pageId = pageIdLocksStack.getPageId(itemIdx);
 
-                if (pageId == 0 && i == 0)
+                if (pageId == 0 && itemIdx == 0)
                     break;
 
                 int op;
@@ -258,9 +259,9 @@ public class ToStringDumpProcessor {
                     continue;
                 }
                 else {
-                    long meta = pageIdLocksStack[i + 1];
-                    op = (int)((meta >> 32) & LOCK_OP_MASK);
-                    int structureId = (int)(meta);
+                    op = pageIdLocksStack.getOperation(itemIdx) & LOCK_OP_MASK;
+
+                    int structureId = pageIdLocksStack.getStructureId(itemIdx);
 
                     stackStr.a("\t" + operationToString(op) +
                         " structureId=" + strucutreIdMapFunc.apply(structureId) +

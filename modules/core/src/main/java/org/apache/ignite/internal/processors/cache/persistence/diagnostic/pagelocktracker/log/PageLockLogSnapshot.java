@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.DumpProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.LOCK_IDX_MASK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.LOCK_OP_MASK;
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.OP_OFFSET;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor.toStringDump;
 
 /**
@@ -36,6 +41,8 @@ public class PageLockLogSnapshot implements PageLockDump {
     public final int headIdx;
     /** List of log entries. */
     public final List<LogEntry> locklog;
+    /** */
+    public final PageMetaInfoStore log;
     /** Next operation. */
     public final int nextOp;
     /** Next data structure. */
@@ -50,7 +57,7 @@ public class PageLockLogSnapshot implements PageLockDump {
         String name,
         long time,
         int headIdx,
-        List<LogEntry> locklog,
+        PageMetaInfoStore log,
         int nextOp,
         int nextOpStructureId,
         long nextOpPageId
@@ -58,10 +65,40 @@ public class PageLockLogSnapshot implements PageLockDump {
         this.name = name;
         this.time = time;
         this.headIdx = headIdx;
-        this.locklog = locklog;
+        this.log = log;
+        this.locklog = toList(log);
         this.nextOp = nextOp;
         this.nextOpStructureId = nextOpStructureId;
         this.nextOpPageId = nextOpPageId;
+    }
+
+    /**
+     * Convert log to list {@link PageLockLogSnapshot.LogEntry}.
+     *
+     * @return List of {@link PageLockLogSnapshot.LogEntry}.
+     */
+    private List<PageLockLogSnapshot.LogEntry> toList(PageMetaInfoStore pages) {
+        List<PageLockLogSnapshot.LogEntry> lockLog = new ArrayList<>(pages.capacity());
+
+        for (int itemIdx = 0; itemIdx < headIdx; itemIdx ++) {
+            int metaOnLock = pages.getOperation(itemIdx);
+
+            assert metaOnLock != 0;
+
+            int holdedLocks = (int)(metaOnLock & LOCK_IDX_MASK) >> OP_OFFSET;
+
+            assert holdedLocks >= 0;
+
+            int op = metaOnLock & LOCK_OP_MASK;
+
+            int structureId = pages.getStructureId(itemIdx);
+
+            long pageId = pages.getPageId(itemIdx);
+
+            lockLog.add(new PageLockLogSnapshot.LogEntry(pageId, structureId, op, holdedLocks));
+        }
+
+        return lockLog;
     }
 
     /**

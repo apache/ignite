@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.DumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
 
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToStringDumpProcessor.toStringDump;
 
@@ -33,7 +34,7 @@ public class PageLockStackSnapshot implements PageLockDump {
     /** */
     public final int headIdx;
     /** */
-    public final long[] pageIdLocksStack;
+    public final PageMetaInfoStore pageIdLocksStack;
     /** */
     public final int nextOp;
     /** */
@@ -48,7 +49,7 @@ public class PageLockStackSnapshot implements PageLockDump {
         String name,
         long time,
         int headIdx,
-        long[] pageIdLocksStack,
+        PageMetaInfoStore pageIdLocksStack,
         int nextOp,
         int nextOpStructureId,
         long nextOpPageId

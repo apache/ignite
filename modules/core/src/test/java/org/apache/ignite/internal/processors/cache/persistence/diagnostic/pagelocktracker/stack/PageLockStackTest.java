@@ -55,7 +55,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(Arrays.toString(dump.pageIdLocksStack), isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(String.valueOf(dump.pageIdLocksStack), dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(pageId, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -63,8 +63,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -73,7 +73,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -97,7 +97,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(pageId1, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -105,8 +105,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -114,8 +114,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(pageId2, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -123,9 +123,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(4, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(2, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -133,9 +133,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -144,7 +144,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -171,7 +171,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(pageId1, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -179,8 +179,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -188,8 +188,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(pageId2, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -197,9 +197,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(4, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(2, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -207,9 +207,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(4, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(2, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(pageId3, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -217,10 +217,10 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(6, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
-        Assert.assertEquals(pageId3, dump.pageIdLocksStack[4]);
+        Assert.assertEquals(3, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
+        Assert.assertEquals(pageId3, dump.pageIdLocksStack.getPageId(2));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -228,10 +228,10 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(4, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[4]);
+        Assert.assertEquals(2, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(2));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -239,10 +239,10 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[2]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[4]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(1));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(2));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -251,7 +251,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -278,7 +278,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(pageId1, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -286,8 +286,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -295,8 +295,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(pageId2, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -304,9 +304,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(4, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(2, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -314,9 +314,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -324,8 +324,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(pageId3, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -333,9 +333,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(4, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId3, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(2, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId3, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -343,9 +343,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -354,7 +354,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -381,7 +381,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(pageId1, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -389,8 +389,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -398,8 +398,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(pageId2, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -407,9 +407,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(4, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(2, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -417,9 +417,9 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(4, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
+        Assert.assertEquals(2, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
         Assert.assertEquals(pageId3, dump.nextOpPageId);
         Assert.assertEquals(BEFORE_READ_LOCK, dump.nextOp);
 
@@ -427,10 +427,10 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(6, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
-        Assert.assertEquals(pageId3, dump.pageIdLocksStack[4]);
+        Assert.assertEquals(3, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
+        Assert.assertEquals(pageId3, dump.pageIdLocksStack.getPageId(2));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -438,10 +438,10 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(6, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[2]);
-        Assert.assertEquals(pageId3, dump.pageIdLocksStack[4]);
+        Assert.assertEquals(3, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(1));
+        Assert.assertEquals(pageId3, dump.pageIdLocksStack.getPageId(2));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -449,10 +449,10 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         dump = lockStack.dump();
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[2]);
-        Assert.assertEquals(0, dump.pageIdLocksStack[4]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(1));
+        Assert.assertEquals(0, dump.pageIdLocksStack.getPageId(2));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -461,7 +461,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         dump = lockStack.dump();
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -489,7 +489,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         Assert.assertTrue(msg, msg.contains("Stack is empty"));
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -521,8 +521,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         Assert.assertTrue(msg, msg.contains("Can not find pageId in stack"));
 
-        Assert.assertEquals(2, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
+        Assert.assertEquals(1, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -562,10 +562,10 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         Assert.assertTrue(msg, msg.contains("Can not find pageId in stack"));
 
-        Assert.assertEquals(6, dump.headIdx);
-        Assert.assertEquals(pageId1, dump.pageIdLocksStack[0]);
-        Assert.assertEquals(pageId2, dump.pageIdLocksStack[2]);
-        Assert.assertEquals(pageId3, dump.pageIdLocksStack[4]);
+        Assert.assertEquals(3, dump.headIdx);
+        Assert.assertEquals(pageId1, dump.pageIdLocksStack.getPageId(0));
+        Assert.assertEquals(pageId2, dump.pageIdLocksStack.getPageId(1));
+        Assert.assertEquals(pageId3, dump.pageIdLocksStack.getPageId(2));
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -592,8 +592,8 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         Assert.assertTrue(lockStack.isInvalid());
         Assert.assertTrue(lockStack.invalidContext().msg.contains("Stack overflow"));
 
-        Assert.assertEquals(LockTrackerFactory.DEFAULT_CAPACITY, dump.headIdx / 2);
-        Assert.assertTrue(!isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertEquals(LockTrackerFactory.DEFAULT_CAPACITY, dump.headIdx);
+        Assert.assertFalse(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -623,7 +623,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         System.out.println(lockStack.invalidContext());
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -635,7 +635,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         Assert.assertTrue(msg, msg.contains("Stack is empty"));
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -647,7 +647,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         Assert.assertTrue(msg, msg.contains("Stack is empty"));
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
 
@@ -659,7 +659,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         Assert.assertTrue(msg, msg.contains("Stack is empty"));
 
         Assert.assertEquals(0, dump.headIdx);
-        Assert.assertTrue(isEmptyArray(dump.pageIdLocksStack));
+        Assert.assertTrue(dump.pageIdLocksStack.isEmpty());
         Assert.assertEquals(0, dump.nextOpPageId);
         Assert.assertEquals(0, dump.nextOp);
     }
@@ -724,9 +724,12 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
             Assert.assertNotNull(dump.name);
 
             if (dump.headIdx > 0) {
-                for (int j = 0; j < dump.headIdx; j += 2) {
-                    Assert.assertTrue(String.valueOf(dump.headIdx), dump.pageIdLocksStack[j] != 0);
-                    Assert.assertTrue(String.valueOf(dump.headIdx), dump.pageIdLocksStack[j + 1] != 0);
+                for (int itemIdx = 0; itemIdx < dump.headIdx; itemIdx++) {
+                    Assert.assertTrue(String.valueOf(dump.headIdx), dump.pageIdLocksStack.getPageId(itemIdx) != 0);
+                    Assert.assertTrue(dump.pageIdLocksStack.getOperation(itemIdx) != 0);
+                    Assert.assertTrue(dump.pageIdLocksStack.getStructureId(itemIdx) != 0);
+                    Assert.assertTrue(dump.pageIdLocksStack.getPageAddrHeader(itemIdx) != 0);
+                    Assert.assertTrue(dump.pageIdLocksStack.getPageAddr(itemIdx) != 0);
                 }
             }
 

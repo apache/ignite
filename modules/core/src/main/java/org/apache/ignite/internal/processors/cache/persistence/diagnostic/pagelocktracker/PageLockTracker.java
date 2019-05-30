@@ -56,7 +56,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /** */
     protected final String name;
     /** */
-    protected final LongStore longStore;
+    protected final PageMetaInfoStore pages;
     /** Counter for track lock/unlock operations. */
     protected int holdedLockCnt;
     /** */
@@ -77,9 +77,9 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /**
      *
      */
-    protected PageLockTracker(String name, LongStore longStore, MemoryCalculator memCalc) {
+    protected PageLockTracker(String name, PageMetaInfoStore pages, MemoryCalculator memCalc) {
         this.name = name;
-        this.longStore = longStore;
+        this.pages = pages;
 
         memCalc.onHeapAllocated(OVERHEAD_SIZE);
     }
@@ -212,7 +212,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
 
     /** */
     protected void free(){
-        longStore.free();
+        pages.free();
     }
 
     /** */
@@ -263,21 +263,6 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
             // Busy wait.
         }
     }
-
-    /**
-     * Build long from two int.
-     *
-     * @param structureId Structure id.
-     * @param flags Flags.
-     */
-    protected long meta(int structureId, int flags) {
-        long major = ((long)flags) << 32;
-
-        long minor = structureId & 0xFFFFFFFFL;
-
-        return major | minor;
-    }
-
 
     /**
      * @return Number of locks operations.

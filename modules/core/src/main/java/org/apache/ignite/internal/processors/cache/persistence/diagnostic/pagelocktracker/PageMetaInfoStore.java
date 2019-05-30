@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 /**
  *
  */
-public interface LongStore {
+public interface PageMetaInfoStore {
     /**
      *
      */
@@ -27,15 +27,41 @@ public interface LongStore {
     /**
      *
      */
-    long getByIndex(int idx);
+    boolean isEmpty();
     /**
      *
      */
-    void setByIndex(int idx, long val);
+    void add(int itemIdx, int op, int structureId, long pageId, long pageAddrHeader, long pageAddr);
+
     /**
      *
      */
-    long[] copy();
+    void remove(int itemIdx);
+
+    /**
+     *
+     */
+    int getOperation(int itemIdx);
+    /**
+     *
+     */
+    int getStructureId(int itemIdx);
+    /**
+     *
+     */
+    long getPageId(int itemIdx);
+    /**
+     *
+     */
+    long getPageAddrHeader(int itemIdx);
+    /**
+     *
+     */
+    long getPageAddr(int itemIdx);
+    /**
+     *
+     */
+    PageMetaInfoStore copy();
     /**
      *
      */
