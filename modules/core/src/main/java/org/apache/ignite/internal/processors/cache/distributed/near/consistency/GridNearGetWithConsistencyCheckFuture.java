@@ -97,16 +97,16 @@ public class GridNearGetWithConsistencyCheckFuture extends GridNearGetWithConsis
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values()) {
             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.result().entrySet()) {
                 KeyCacheObject key = entry.getKey();
-                EntryGetResult candidae = entry.getValue();
+                EntryGetResult candidate = entry.getValue();
                 EntryGetResult old = map.get(key);
 
-                if (old != null && old.version().compareTo(candidae.version()) != 0) {
+                if (old != null && old.version().compareTo(candidate.version()) != 0) {
                     onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
 
                     return;
                 }
 
-                map.put(key, candidae);
+                map.put(key, candidate);
             }
         }
 

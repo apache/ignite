@@ -190,7 +190,7 @@ public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTes
         throws Exception {
         IgniteCache<Integer, Integer> cache = initiator.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < ThreadLocalRandom.current().nextInt(1, 10); i++) {
             Map<Integer, InconsistentMapping> results = new HashMap<>();
 
             for (int j = 0; j < cnt; j++) {
