@@ -65,7 +65,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
                         .setPersistenceEnabled(true)
-                        .setMaxSize(100L * 1024 * 1024))
+                        .setMaxSize(300L * 1024 * 1024))
         );
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(CACHE_NAME)
@@ -128,7 +128,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
     public void testPartitionClearingNotBlockExchange() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "1");
 
-        IgniteEx ig = (IgniteEx) startGrids(3);
+        IgniteEx ig = startGrids(3);
         ig.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
@@ -223,11 +223,11 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
      */
     @Test
     public void testCorrectRebalancingCurrentlyRentingPartitions() throws Exception {
-        IgniteEx ignite = (IgniteEx) startGrids(3);
+        IgniteEx ignite = startGrids(3);
         ignite.cluster().active(true);
 
         // High number of keys triggers long partition eviction.
-        final int keysCnt = SF.applyLB(500_000, 10_000);
+        final int keysCnt = SF.applyLB(300_000, 10_000);
 
         try (IgniteDataStreamer<Integer, Integer> ds = ignite.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
