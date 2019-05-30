@@ -139,7 +139,13 @@ public class GridNearGetWithConsistencyCheckFuture extends GridNearGetWithConsis
                             needVer);
                     }
 
-                    return F.firstValue(map);
+                    if (skipVals) {
+                        Boolean val = map.isEmpty() ? false : (Boolean)F.firstValue(map);
+
+                        return (V)(val);
+                    }
+                    else
+                        return F.firstValue(map);
                 }
                 catch (IgniteCheckedException e) {
                     throw new GridClosureException(e);
