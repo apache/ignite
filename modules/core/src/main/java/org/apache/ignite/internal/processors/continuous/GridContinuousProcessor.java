@@ -680,7 +680,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 try {
                     hnd.p2pUnmarshal(srcNodeId, ctx);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException | IgniteException e) {
                     U.error(log, "Failed to unmarshal continuous routine handler, ignore routine [" +
                         "routineId=" + routineId +
                         ", srcNodeId=" + srcNodeId + ']', e);
