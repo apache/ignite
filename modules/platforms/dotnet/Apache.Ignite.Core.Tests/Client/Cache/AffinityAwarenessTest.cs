@@ -314,9 +314,11 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase('2', 1)]
         public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)
         {
-            // TODO: Verify actual primary node with Affinity API
             var cache = Client.GetCache<object, object>(_cache.Name);
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");
+
+            // Verify against real Affinity.
+            Assert.Equals(gridIdx, GetPrimaryNodeIdx(key));
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
@@ -405,6 +407,26 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private void InitTestData()
         {
             _cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => x));
+        }
+
+        private int GetPrimaryNodeIdx<T>(T key)
+        {
+            var idx = 0;
+
+            foreach (var ignite in Ignition.GetAll())
+            {
+                var aff = ignite.GetAffinity(_cache.Name);
+                var localNode = ignite.GetCluster().GetLocalNode();
+
+                if (aff.IsPrimary(localNode, key))
+                {
+                    return idx;
+                }
+
+                idx++;
+            }
+
+            throw new InvalidOperationException("Can't determine primary node");
         }
     }
 }
