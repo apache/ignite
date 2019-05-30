@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
@@ -477,6 +478,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Long JVM pause detector.
      */
     public LongJVMPauseDetector longJvmPauseDetector();
+
+    /**
+     * Gets diagnostic processor.
+     *
+     * @return Diagnostic processor.
+     */
+    public DiagnosticProcessor diagnostic();
 
     /**
      * Checks whether this node is invalid due to a critical error or not.
