@@ -35,6 +35,13 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             Debug.Assert(partitionCount > 0);
 
+            var mask = (partitionCount & (partitionCount - 1)) == 0 ? partitionCount - 1 : -1;
+
+            if (mask >= 0)
+            {
+                return (keyHash ^ (keyHash >> 16)) & mask;
+            }
+
             var part = Math.Abs(keyHash % partitionCount);
 
             return part > 0 ? part : 0;
