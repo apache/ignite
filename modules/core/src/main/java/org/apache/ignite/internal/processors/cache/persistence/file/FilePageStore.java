@@ -272,8 +272,15 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            if (!inited)
+            if (!inited) {
+                if (fileIO != null) // Ensure the file is closed even if not initialized yet.
+                    fileIO.close();
+
+                if (delete)
+                    Files.delete(cfgFile.toPath());
+
                 return;
+            }
 
             fileIO.force();
 
