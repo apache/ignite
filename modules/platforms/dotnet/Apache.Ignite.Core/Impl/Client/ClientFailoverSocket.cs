@@ -135,7 +135,6 @@ namespace Apache.Ignite.Core.Impl.Client
             TKey key,
             Func<ClientStatusCode, string, T> errorFunc = null)
         {
-            // TODO: Async GetAffinitySocket? How do we handle races?
             var socket = GetAffinitySocket(cacheId, key) ?? GetSocket();
 
             return socket.DoOutInOpAsync(opId, writeAction, readFunc, errorFunc);
