@@ -25,7 +25,6 @@ import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityB
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionStandardHashSelfTest;
 import org.apache.ignite.internal.IgniteReflectionFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheComparatorTest;
@@ -144,7 +143,6 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(IgniteCachePartitionedBackupNodeFailureRecoveryTest.class);
 
         // Other non-tx tests.
-        ignoredTests.add(RendezvousAffinityFunctionSelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionExcludeNeighborsSelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionStandardHashSelfTest.class);

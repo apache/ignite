@@ -1790,7 +1790,7 @@ public final class GridTestUtils {
             if (cond.apply())
                 return true;
 
-            U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
+            U.sleep(Math.max(1, Math.min(timeout / 10, DFLT_BUSYWAIT_SLEEP_INTERVAL)));
 
             curTime = U.currentTimeMillis();
         }

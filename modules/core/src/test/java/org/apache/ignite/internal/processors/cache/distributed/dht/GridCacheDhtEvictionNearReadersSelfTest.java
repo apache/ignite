@@ -229,14 +229,15 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         assert nearOther.peekEx(key) == null;
         assert dhtOther.peekEx(key) == null;
 
-        IgniteFuture<Event> futOther =
-            waitForLocalEvent(grid(other).events(), nodeEvent(other.id()), EVT_CACHE_ENTRY_EVICTED);
+        // Entry which has readers will not be evicted.
+        //IgniteFuture<Event> futOther =
+        //    waitForLocalEvent(grid(other).events(), nodeEvent(other.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<Event> futBackup =
-            waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
+        //IgniteFuture<Event> futBackup =
+        //    waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<Event> futPrimary =
-            waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
+        //IgniteFuture<Event> futPrimary =
+        //    waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Get value on other node, it should be loaded to near cache.
         assertEquals(val, nearOther.get(key, true, false));
@@ -255,17 +256,17 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         // It will trigger dht eviction and eviction on backup node.
         grid(primary).cache(DEFAULT_CACHE_NAME).localEvict(Collections.<Object>singleton(key));
 
-        futOther.get(3000);
-        futBackup.get(3000);
-        futPrimary.get(3000);
+        //futOther.get(3000);
+        //futBackup.get(3000);
+        //futPrimary.get(3000);
 
-        assertNull(localPeek(dhtPrimary, key));
-        assertNull(localPeek(nearPrimary, key));
+        assertNotNull(localPeek(dhtPrimary, key));
+        assertNotNull(localPeek(nearPrimary, key));
 
-        assertNull(localPeek(dhtBackup, key));
-        assertNull(localPeek(nearBackup, key));
+        assertNotNull(localPeek(dhtBackup, key));
+        assertNotNull(localPeek(nearBackup, key));
 
         assertNull(localPeek(dhtOther, key));
-        assertNull(localPeek(nearOther, key));
+        assertNotNull(localPeek(nearOther, key));
     }
 }
