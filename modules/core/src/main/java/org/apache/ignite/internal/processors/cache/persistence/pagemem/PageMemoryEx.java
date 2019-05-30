@@ -158,4 +158,15 @@ public interface PageMemoryEx extends PageMemory {
      * @return Future that will be completed when all pages are cleared.
      */
     public IgniteInternalFuture<Void> clearAsync(LoadedPagesMap.KeyPredicate pred, boolean cleanDirty);
+
+    /**
+     * @param act Action.
+     * TODO description
+     */
+    public IgniteInternalFuture<Void> forEachAsync(LoadedPagesMap.CellConsumer act);
+
+    /**
+     * Starts page memory prewarming process.
+     */
+    public void startPrewarming();
 }

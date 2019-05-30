@@ -250,7 +250,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, pageSize,
             pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED,
-            mock(CheckpointWriteProgressSupplier.class));
+            mock(CheckpointWriteProgressSupplier.class), null);
 
         memory.start();
         return memory;

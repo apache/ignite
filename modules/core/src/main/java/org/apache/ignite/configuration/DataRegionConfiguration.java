@@ -133,6 +133,9 @@ public final class DataRegionConfiguration implements Serializable {
     /** Temporary buffer size for checkpoints in bytes. */
     private long checkpointPageBufSize;
 
+    /** Prewarming configuration. */
+    private PrewarmingConfiguration prewarmCfg;
+
     /**
      * If {@code true}, memory for {@code DataRegion} will be allocated only on the creation of the first cache
      * belonged to this {@code DataRegion}.
@@ -349,6 +352,28 @@ public final class DataRegionConfiguration implements Serializable {
      */
     public DataRegionConfiguration setPersistenceEnabled(boolean persistenceEnabled) {
         this.persistenceEnabled = persistenceEnabled;
+
+        return this;
+    }
+
+    /**
+     * If set, IDs of pages loaded in memory will be saved on node stop,
+     * and on the next start of node pages will be loaded in memory again.
+     *
+     * @return Prewarming configuration.
+     */
+    public PrewarmingConfiguration getPrewarmingConfiguration() {
+        return prewarmCfg;
+    }
+
+    /**
+     * Sets prewarming configuration.
+     *
+     * @param prewarmCfg Prewarming configuration.
+     * @return {@code this} for chaining.
+     */
+    public DataRegionConfiguration setPrewarmingConfiguration(PrewarmingConfiguration prewarmCfg) {
+        this.prewarmCfg = prewarmCfg;
 
         return this;
     }

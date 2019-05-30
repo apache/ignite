@@ -82,6 +82,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.PrewarmingConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -141,6 +142,8 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPrewarming;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryPrewarmingImpl;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
@@ -1155,6 +1158,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         else
             changeTracker = null;
 
+        PageMemoryPrewarming prewarming = null;
+
+        PrewarmingConfiguration prewarmCfg = plcCfg.getPrewarmingConfiguration();
+
+        if (prewarmCfg != null) {
+            prewarming = new PageMemoryPrewarmingImpl(
+                plcCfg.getName(),
+                prewarmCfg,
+                memMetrics,
+                cctx);
+        }
+
         PageMemoryImpl pageMem = new PageMemoryImpl(
             wrapMetricsMemoryProvider(memProvider, memMetrics),
             calculateFragmentSizes(
@@ -1182,10 +1197,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this,
             memMetrics,
             resolveThrottlingPolicy(),
-            this
-        );
+            this,
+            prewarming);
 
         memMetrics.pageMemory(pageMem);
+
+        if (prewarming != null)
+            prewarming.pageMemory(pageMem);
 
         return pageMem;
     }
@@ -2066,6 +2084,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         finally {
             checkpointReadUnlock();
+        }
+
+        for (DataRegion dataRegion : dataRegionMap.values()) {
+            PageMemory pageMem = dataRegion.pageMemory();
+
+            if (pageMem instanceof PageMemoryEx)
+                ((PageMemoryEx)pageMem).startPrewarming();
         }
     }
 

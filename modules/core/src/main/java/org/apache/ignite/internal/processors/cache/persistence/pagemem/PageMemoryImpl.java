@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -284,6 +285,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Memory metrics to track dirty pages count and page replace rate. */
     private DataRegionMetricsImpl memMetrics;
 
+    /** Prewarming. */
+    @Nullable private final PageMemoryPrewarming prewarming;
+
     /**
      * {@code False} if memory was not started or already stopped and is not supposed for any usage.
      */
@@ -300,6 +304,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param memMetrics Memory metrics to track dirty pages count and page replace rate.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
      * @param cpProgressProvider checkpoint progress, base for throttling. Null disables throttling.
+     * @param prewarming Prewarming implementation.
      */
     public PageMemoryImpl(
         DirectMemoryProvider directMemoryProvider,
@@ -311,8 +316,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
-        @NotNull CheckpointWriteProgressSupplier cpProgressProvider
-    ) {
+        @NotNull CheckpointWriteProgressSupplier cpProgressProvider,
+        @Nullable PageMemoryPrewarming prewarming) {
         assert ctx != null;
         assert pageSize > 0;
 
@@ -330,6 +335,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
+
+        this.prewarming = prewarming;
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
@@ -411,6 +418,12 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void startPrewarming() {
+        if (prewarming != null)
+            prewarming.start();
+    }
+
     /**
      * Resolves instance of {@link PagesWriteThrottlePolicy} according to chosen throttle policy.
      */
@@ -433,6 +446,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 log.debug("Stopping page memory.");
 
             U.shutdownNow(getClass(), asyncRunner, log);
+
+            if (prewarming != null)
+                prewarming.stop();
 
             if (segments != null) {
                 for (Segment seg : segments)
@@ -1393,25 +1409,93 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
     }
 
+    /**
+     * @param act Action.
+     */
+    private IgniteInternalFuture<Void> forEachSegmentAsync(Consumer<Segment> act) {
+        CountDownFuture completeFut = new CountDownFuture(segments.length);
+
+        for (Segment seg : segments) {
+            Runnable segTask = () -> {
+                try {
+                    act.accept(seg);
+
+                    completeFut.onDone();
+                }
+                catch (Throwable e) {
+                    completeFut.onDone(e);
+                }
+            };
+
+            try {
+                asyncRunner.execute(segTask);
+            }
+            catch (RejectedExecutionException ignore) {
+                segTask.run();
+            }
+        }
+
+        return completeFut;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> clearAsync(
         LoadedPagesMap.KeyPredicate pred,
         boolean cleanDirty
     ) {
-        CountDownFuture completeFut = new CountDownFuture(segments.length);
+        return forEachSegmentAsync(seg -> clearSegment(seg, pred, cleanDirty));
+    }
 
-        for (Segment seg : segments) {
-            Runnable clear = new ClearSegmentRunnable(seg, pred, cleanDirty, completeFut, pageSize());
+    /**
+     * @param seg Segment.
+     * @param clearPred Clear predicate for (cache group ID, page ID).
+     * @param rmvDirty Remove dirty.
+     */
+    private void clearSegment(Segment seg, LoadedPagesMap.KeyPredicate clearPred, boolean rmvDirty) {
+        int cap = seg.loadedPages.capacity();
+
+        int chunkSize = 1000;
+        GridLongList ptrs = new GridLongList(chunkSize);
+
+        for (int base = 0; base < cap; ) {
+            int boundary = Math.min(cap, base + chunkSize);
+
+            seg.writeLock().lock();
 
             try {
-                asyncRunner.execute(clear);
-            }
-            catch (RejectedExecutionException ignore) {
-                clear.run();
-            }
-        }
+                GridLongList list = seg.loadedPages.removeIf(base, boundary, clearPred);
 
-        return completeFut;
+                ptrs.addAll(list);
+
+                base = boundary;
+            }
+            finally {
+                seg.writeLock().unlock();
+            }
+
+            for (int i = 0; i < ptrs.size(); i++) {
+                long relPtr = ptrs.get(i);
+
+                long absPtr = seg.pool.absolute(relPtr);
+
+                FullPageId fullId = PageHeader.fullPageId(absPtr);
+
+                if (rmvDirty)
+                    seg.dirtyPages.remove(fullId);
+
+                GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+
+                seg.pool.releaseFreePage(relPtr);
+            }
+
+            ptrs.clear();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Void> forEachAsync(LoadedPagesMap.CellConsumer act) {
+        return forEachSegmentAsync(seg -> seg.loadedPages.forEach(
+            (grpId, pageId, val) -> act.accept(grpId, pageId, PageHeader.readTimestamp(seg.absolute(val)))));
     }
 
     /** {@inheritDoc} */
@@ -1794,7 +1878,17 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
+     */
+    public int segmentIndex(int grpId, long pageId) {
+        return segmentIndex(grpId, pageId, segments.length);
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @param segments Segments count.
      * @return Segment index.
      */
     public static int segmentIndex(int grpId, long pageId, int segments) {
@@ -2273,6 +2367,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (!pageReplacementWarned) {
                 pageReplacementWarned = true;
 
+                if (prewarming != null)
+                    prewarming.onPageReplacementStarted();
+
                 U.warn(log, "Page replacements started, pages will be rotated with disk, " +
                     "this will affect storage performance (consider increasing DataRegionConfiguration#setMaxSize).");
             }
@@ -2404,7 +2501,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 loadedPages.remove(
                     fullPageId.groupId(),
-                    PageIdUtils.effectivePageId(fullPageId.pageId())
+                    fullPageId.effectivePageId()
                 );
 
                 return relRmvAddr;
@@ -2477,7 +2574,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (preparePageRemoval(fullPageId, absEvictAddr, saveDirtyPage)) {
                     loadedPages.remove(
                         fullPageId.groupId(),
-                        PageIdUtils.effectivePageId(fullPageId.pageId())
+                        fullPageId.effectivePageId()
                     );
 
                     return addr;
@@ -2837,95 +2934,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             pageId(absPtr, fullPageId.pageId());
 
             pageGroupId(absPtr, fullPageId.groupId());
-        }
-    }
-
-    /**
-     *
-     */
-    private static class ClearSegmentRunnable implements Runnable {
-        /** */
-        private Segment seg;
-
-        /** Clear element filter for (cache group ID, page ID). */
-        LoadedPagesMap.KeyPredicate clearPred;
-
-        /** */
-        private CountDownFuture doneFut;
-
-        /** */
-        private int pageSize;
-
-        /** */
-        private boolean rmvDirty;
-
-        /**
-         * @param seg Segment.
-         * @param clearPred Clear predicate for (cache group ID, page ID).
-         * @param doneFut Completion future.
-         */
-        private ClearSegmentRunnable(
-            Segment seg,
-            LoadedPagesMap.KeyPredicate clearPred,
-            boolean rmvDirty,
-            CountDownFuture doneFut,
-            int pageSize
-        ) {
-            this.seg = seg;
-            this.clearPred = clearPred;
-            this.rmvDirty = rmvDirty;
-            this.doneFut = doneFut;
-            this.pageSize = pageSize;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            int cap = seg.loadedPages.capacity();
-
-            int chunkSize = 1000;
-            GridLongList ptrs = new GridLongList(chunkSize);
-
-            try {
-                for (int base = 0; base < cap; ) {
-                    int boundary = Math.min(cap, base + chunkSize);
-
-                    seg.writeLock().lock();
-
-                    try {
-                        GridLongList list = seg.loadedPages.removeIf(base, boundary, clearPred);
-
-                        ptrs.addAll(list);
-
-                        base = boundary;
-                    }
-                    finally {
-                        seg.writeLock().unlock();
-                    }
-
-                    for (int i = 0; i < ptrs.size(); i++) {
-                        long relPtr = ptrs.get(i);
-
-                        long absPtr = seg.pool.absolute(relPtr);
-
-                        if (rmvDirty) {
-                            FullPageId fullId = PageHeader.fullPageId(absPtr);
-
-                            seg.dirtyPages.remove(fullId);
-                        }
-
-                        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize, (byte)0);
-
-                        seg.pool.releaseFreePage(relPtr);
-                    }
-
-                    ptrs.clear();
-                }
-
-                doneFut.onDone((Void)null);
-            }
-            catch (Throwable e) {
-                doneFut.onDone(e);
-            }
         }
     }
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.function.BiConsumer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -539,7 +538,7 @@ public class FullPageIdTable implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public void forEach(BiConsumer<FullPageId, Long> act) {
+    @Override public void forEach(CellConsumer act) {
         for (int i = 0; i < capacity; i++) {
             if (isValuePresentAt(i)) {
                 long base = entryBase(i);
@@ -548,7 +547,7 @@ public class FullPageIdTable implements LoadedPagesMap {
                 long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
                 long val = GridUnsafe.getLong(base + VALUE_OFFSET);
 
-                act.accept(new FullPageId(pageId, cacheId), val);
+                act.accept(cacheId, pageId, val);
             }
         }
     }

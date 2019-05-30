@@ -119,11 +119,20 @@ public interface LoadedPagesMap {
      *
      * @param act Visitor/action to be applied to each not empty cell.
      */
-    public void forEach(BiConsumer<FullPageId, Long> act);
+    default void forEach(BiConsumer<FullPageId, Long> act) {
+        forEach((grpId, pageId, val) -> act.accept(new FullPageId(pageId, grpId), val));
+    }
 
     /**
-     * Interface describing a predicate for Key (cache group ID, page ID). Usage of this predicate prevents odd object
-     * creation.
+     * Scans all the elements in this table.
+     *
+     * @param act Visitor/action to be applied to each not empty cell.
+     */
+    public void forEach(CellConsumer act);
+
+    /**
+     * Interface describing a predicate for Key (cache group ID, page ID).
+     * Usage of this predicate prevents odd object creation.
      */
     @FunctionalInterface public interface KeyPredicate {
         /**
@@ -133,5 +142,18 @@ public interface LoadedPagesMap {
          * @param pageId Page ID.
          */
         boolean test(int grpId, long pageId);
+    }
+
+    /**
+     * Interface describing a consumer for pair of key (cache group ID, page ID) and value.
+     * Usage of this predicate prevents odd object creation.
+     */
+    @FunctionalInterface public interface CellConsumer {
+        /**
+         * @param grpId Cache group ID.
+         * @param pageId Page ID.
+         * @param val Value.
+         */
+        void accept(int grpId, long pageId, long val);
     }
 }

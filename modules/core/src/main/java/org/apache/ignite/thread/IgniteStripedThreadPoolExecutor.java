@@ -57,6 +57,13 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
     }
 
     /**
+     * @return Concurrency level.
+     */
+    public int concurrencyLevel() {
+        return execs.length;
+    }
+
+    /**
      * Executes the given command at some time in the future. The command with the same {@code index}
      * will be executed in the same thread.
      *
