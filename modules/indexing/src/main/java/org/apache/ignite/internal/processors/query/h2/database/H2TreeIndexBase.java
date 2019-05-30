@@ -119,11 +119,6 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000; // TODO
-    }
-
     /**
      * @param inlineIdxs Inline index helpers.
      * @param cfgInlineSize Inline size from cache config.

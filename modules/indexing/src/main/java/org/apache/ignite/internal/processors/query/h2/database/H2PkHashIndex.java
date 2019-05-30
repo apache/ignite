@@ -184,11 +184,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000; // TODO
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
         return false;
     }
@@ -196,6 +191,37 @@ public class H2PkHashIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor findFirstOrLast(Session ses, boolean b) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
+        CacheDataRowStore.setSkipVersion(true);
+
+        try {
+            Collection<GridCursor<? extends CacheDataRow>> cursors = new ArrayList<>();
+
+            for (IgniteCacheOffheapManager.CacheDataStore store : cctx.offheap().cacheDataStores()) {
+                int part = store.partId();
+
+                if (partsFilter == null || partsFilter.applyPartition(part))
+                    cursors.add(store.cursor(cctx.cacheId()));
+            }
+
+            Cursor pkHashCursor = new H2PkHashIndexCursor(cursors.iterator());
+
+            long res = 0;
+
+            while (pkHashCursor.next())
+                res++;
+
+            return res;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            CacheDataRowStore.setSkipVersion(false);
+        }
     }
 
     /**

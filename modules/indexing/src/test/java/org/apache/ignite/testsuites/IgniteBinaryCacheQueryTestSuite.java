@@ -215,6 +215,8 @@ import org.apache.ignite.internal.processors.query.h2.H2ResultSetIteratorNullify
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
 import org.apache.ignite.internal.processors.query.h2.QueryDataPageScanTest;
+import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsSurvivesNodeRestartTest;
+import org.apache.ignite.internal.processors.query.h2.RowCountTableStatisticsUsageTest;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPoolSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.BaseH2CompareQueryTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
@@ -568,6 +570,10 @@ import org.junit.runners.Suite;
     KillQueryFromNeighbourTest.class,
     KillQueryFromClientTest.class,
     KillQueryOnClientDisconnectTest.class,
+
+    // Table statistics.
+    RowCountTableStatisticsUsageTest.class,
+    RowCountTableStatisticsSurvivesNodeRestartTest.class
 
 })
 public class IgniteBinaryCacheQueryTestSuite {

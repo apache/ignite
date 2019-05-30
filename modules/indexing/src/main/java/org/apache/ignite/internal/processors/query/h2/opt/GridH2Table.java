@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.query.QueryRetryException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -40,12 +41,16 @@ import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.IndexRebuildPartialClosure;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.command.dml.Insert;
 import org.h2.engine.DbObject;
@@ -89,6 +94,12 @@ public class GridH2Table extends TableBase {
 
     /** True representation */
     private static final int TRUE = 1;
+
+    /**
+     * Row count statistics update threshold. Stats will be updated when the actual
+     * table size change exceeds this threshold. Should be the number in interval (0,1).
+     */
+    private static final double STATS_UPDATE_THRESHOLD = 0.1; // 10%.
 
     /** Cache context info. */
     private final GridCacheContextInfo cacheInfo;
@@ -148,6 +159,9 @@ public class GridH2Table extends TableBase {
     /** Table version. The version is changed when exclusive lock is acquired (DDL operation is started). */
     private final AtomicLong ver = new AtomicLong();
 
+    /** Table statistics. */
+    private volatile TableStatistics tblStats;
+
     /**
      * Creates table.
      *
@@ -206,6 +220,16 @@ public class GridH2Table extends TableBase {
         sysIdxsCnt = idxs.size();
 
         lock = new ReentrantReadWriteLock();
+
+        if (cacheInfo.affinityNode()) {
+            long totalTblSize = rowCount(false);
+
+            size.add(totalTblSize);
+        }
+
+        // Init stats with the dummy values. This prevents us from scanning index with backup filter when
+        // topology may not be initialized yet.
+        tblStats = new TableStatistics(0, 0);
     }
 
     /**
@@ -1075,7 +1099,79 @@ public class GridH2Table extends TableBase {
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return size.longValue();
+        if (!localQuery())
+            return 10_000; // Fallback to the previous behaviour.
+
+        refreshStatsIfNeeded();
+
+        return tblStats.primaryRowCount();
+    }
+
+    /**
+     * @return {@code True} if the current query is a local query.
+     */
+    private boolean localQuery() {
+        QueryContext qctx = rowDescriptor().indexing().queryContextRegistry().getThreadLocal();
+
+        assert qctx != null;
+
+        return qctx.local();
+    }
+
+    /**
+     * Refreshes table stats if they are outdated.
+     */
+    private void refreshStatsIfNeeded() {
+        TableStatistics stats = tblStats;
+
+        long statsTotalRowCnt = stats.totalRowCount();
+        long curTotalRowCnt = size.sum();
+
+        // Update stats if total table size changed significantly since the last stats update.
+        if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt)) {
+            long primaryRowCnt = rowCount(true);
+
+            tblStats = new TableStatistics(curTotalRowCnt, primaryRowCnt);
+        }
+    }
+
+    /**
+     * @param statsRowCnt Row count from statistics.
+     * @param actualRowCnt Actual row count.
+     * @return {@code True} if actual table size has changed more than the threshold since last stats update.
+     */
+    private static boolean needRefreshStats(long statsRowCnt, long actualRowCnt) {
+        double delta = U.safeAbs(statsRowCnt - actualRowCnt);
+
+        double relativeChange = delta / (statsRowCnt + 1); // Add 1 to avoid division by zero.
+
+        // Return true if an actual table size has changed more than the threshold since the last stats update.
+        return relativeChange > STATS_UPDATE_THRESHOLD;
+    }
+
+    /**
+     * Retrieves partitions rows count for all segments.
+     *
+     * @param primaryOnly If {@code true}, only primary rows will be counted.
+     * @return Rows count.
+     */
+    private long rowCount(boolean primaryOnly) {
+        IndexingQueryCacheFilter partsFilter = primaryOnly ? backupFilter() : null;
+
+        return ((GridH2IndexBase)getUniqueIndex()).totalRowCount(partsFilter);
+    }
+
+    /**
+     * @return Backup filter for the current topology.
+     */
+    @Nullable private IndexingQueryCacheFilter backupFilter() {
+        IgniteH2Indexing indexing = rowDescriptor().indexing();
+
+        AffinityTopologyVersion topVer = indexing.readyTopologyVersion();
+
+        IndexingQueryFilter filter = indexing.backupFilter(topVer, null);
+
+        return filter.forCache(cacheName());
     }
 
     /** {@inheritDoc} */

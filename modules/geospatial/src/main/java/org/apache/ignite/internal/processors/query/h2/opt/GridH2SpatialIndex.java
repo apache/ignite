@@ -419,6 +419,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
+        return rowCnt;
+    }
+
+    /** {@inheritDoc} */
     @Override public Cursor findByGeometry(TableFilter filter, SearchRow first, SearchRow last,
         SearchRow intersection) {
         Lock l = lock.readLock();

@@ -584,6 +584,24 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
+        try {
+            H2TreeFilterClosure filter = partsFilter == null ? null :
+                new H2TreeFilterClosure(partsFilter, null, cctx, log);
+
+            long cnt = 0;
+
+            for (int seg = 0; seg < segmentsCount(); seg++)
+                cnt += segments[seg].size(filter);
+
+            return cnt;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
         QueryContext qctx = qryCtxRegistry.getThreadLocal();
 
