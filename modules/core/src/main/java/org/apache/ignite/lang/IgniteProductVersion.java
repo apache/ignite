@@ -20,11 +20,11 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -258,7 +258,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        String revTsStr = new SimpleDateFormat("yyyyMMdd").format(new Date(revTs * 1000));
+        String revTsStr = IgniteVersionUtils.BUILD_TSTAMP_DATE_FORMATTER.format(new Date(revTs * 1000));
 
         String hash = U.byteArray2HexString(revHash).toLowerCase();
 
