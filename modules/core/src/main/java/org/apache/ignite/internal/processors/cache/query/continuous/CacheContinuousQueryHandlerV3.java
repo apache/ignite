@@ -184,8 +184,8 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
         if (b) {
             rmtTransFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
 
-            if (p2pUnmarshalFut == null)
-                p2pUnmarshalFut = new GridFutureAdapter();
+            if (p2pUnmarshalFut.isDone())
+                p2pUnmarshalFut = new GridFutureAdapter<>();
         } else
             rmtTransFactory = (Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>)in.readObject();
     }

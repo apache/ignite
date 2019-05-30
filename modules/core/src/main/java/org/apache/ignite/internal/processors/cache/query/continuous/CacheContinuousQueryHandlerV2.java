@@ -173,8 +173,8 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
         if (b) {
             rmtFilterFactoryDep = (CacheContinuousQueryDeployableObject)in.readObject();
 
-            if (p2pUnmarshalFut == null)
-                p2pUnmarshalFut = new GridFutureAdapter();
+            if (p2pUnmarshalFut.isDone())
+                p2pUnmarshalFut = new GridFutureAdapter<>();
         } else
             rmtFilterFactory = (Factory)in.readObject();
 

@@ -55,8 +55,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -117,7 +118,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private Object topic;
 
     /** P2P unmarshalling future. */
-    protected transient GridFutureAdapter<Void> p2pUnmarshalFut;
+    protected transient IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+
+    /** Initialization future. */
+    protected transient IgniteInternalFuture<Void> initFut;
 
     /** Local listener. */
     private transient CacheEntryUpdatedListener<K, V> locLsnr;
@@ -330,8 +334,18 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         initLocalListener(locLsnr, ctx);
 
-        if (p2pUnmarshalFut == null) // Otherwise initialization will happen after unmarshalling is finished.
-            initRemoteFilter(getEventFilter(), ctx);
+        if (initFut == null) {
+            initFut = p2pUnmarshalFut.chain((fut) -> {
+                try {
+                    initRemoteFilter(getEventFilter0(), ctx);
+                }
+                catch (IgniteCheckedException e) {
+                    throw F.wrap(e);
+                }
+
+                return null;
+            });
+        }
 
         entryBufs = new ConcurrentHashMap<>();
 
@@ -607,12 +621,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         RegisterStatus regStatus = mgr.registerListener(routineId, lsnr, internal);
 
-        if (regStatus == RegisterStatus.REGISTERED) {
-            if (p2pUnmarshalFut == null)
-                sendQueryExecutedEvent();
-            else
-                p2pUnmarshalFut.listen(res -> sendQueryExecutedEvent());
-        }
+        if (regStatus == RegisterStatus.REGISTERED)
+            initFut.listen(res -> sendQueryExecutedEvent());
 
         return regStatus;
     }
@@ -704,8 +714,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @throws IgniteCheckedException If P2P unmarshalling failed.
      */
     public CacheEntryEventFilter getEventFilter() throws IgniteCheckedException {
-        if (p2pUnmarshalFut != null)
-            p2pUnmarshalFut.get();
+        initFut.get();
 
         return getEventFilter0();
     }
@@ -1241,18 +1250,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (rmtFilterDep != null)
             rmtFilter = p2pUnmarshal(rmtFilterDep, nodeId, ctx);
 
-        if (p2pUnmarshalFut != null) {
-            try {
-                initRemoteFilter(getEventFilter0(), ctx);
-
-                p2pUnmarshalFut.onDone();
-            }
-            catch (IgniteCheckedException e) {
-                p2pUnmarshalFut.onDone(e);
-
-                throw e;
-            }
-        }
+        if (!p2pUnmarshalFut.isDone())
+            ((GridFutureAdapter)p2pUnmarshalFut).onDone();
     }
 
     /**
@@ -1277,7 +1276,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 return depObj.unmarshal(nodeId, ctx);
             }
             catch (IgniteCheckedException e) {
-                p2pUnmarshalFut.onDone(e);
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
 
                 throw e;
             }
@@ -1395,7 +1394,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (b) {
             rmtFilterDep = (CacheContinuousQueryDeployableObject)in.readObject();
 
-            p2pUnmarshalFut = new GridFutureAdapter();
+            p2pUnmarshalFut = new GridFutureAdapter<>();
         }
         else
             rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
