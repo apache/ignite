@@ -119,6 +119,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             Assert.AreEqual(key, res);
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex());
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
         }
 
         [Test]
@@ -304,7 +305,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase((long) 2, 0)]
         [TestCase((ulong) 1, 1)]
         [TestCase((ulong) 2, 0)]
-        [TestCase((float) 1.3, 1)]
+        [TestCase((float) 1.3, 0)]
         [TestCase((float) 1.4, 2)]
         [TestCase((double) 51.3, 1)]
         [TestCase((double) 415.5, 0)]
