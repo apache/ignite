@@ -726,7 +726,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*skip values*/true,
             false);
 
-        boolean readRepair = opCtx != null && opCtx.readRepair();
+        boolean readRepair = true /* TODO replace with "opCtx != null && opCtx.readRepair()" */;
 
         if (readRepair)
             return getWithRepairAsync(
@@ -761,7 +761,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             /*task name*/null,
             /*deserialize binary*/false,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair(),
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */,
             /*skip values*/true,
             /*need ver*/false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
             @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
@@ -1410,7 +1410,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             /*deserialize cache objects*/true,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair(),
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */,
             /*skip values*/false,
             /*need ver*/false).get().get(key);
     }
@@ -1429,7 +1429,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             true,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair(),
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */,
             /*skip vals*/false,
             /*can remap*/false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
             @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
@@ -1456,7 +1456,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             !(opCtx != null && opCtx.isKeepBinary()),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair(),
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */,
             /*skip values*/false,
             /*need ver*/false);
     }
@@ -1542,7 +1542,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             key,
             !keepBinary,
             false,
-            opCtx != null && opCtx.readRepair());
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */);
 
         if (ctx.config().getInterceptor() != null)
             fut = fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
@@ -1578,7 +1578,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 key0,
                 !keepBinary,
                 true,
-                opCtx != null && opCtx.readRepair());
+                true /* TODO replace with "opCtx != null && opCtx.readRepair()" */);
 
         final boolean intercept = ctx.config().getInterceptor() != null;
 
@@ -1627,7 +1627,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             !ctx.keepBinary(),
             false,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair());
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */);
 
         if (ctx.config().getInterceptor() != null)
             map = interceptGet(keys, map);
@@ -1654,7 +1654,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             !ctx.keepBinary(),
             true,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair());
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */);
 
         Collection<CacheEntry<K, V>> res = new HashSet<>();
 
@@ -1690,7 +1690,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             !(opCtx != null && opCtx.isKeepBinary()),
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair(),
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */,
             /*skip vals*/false,
             /*need ver*/false);
 
@@ -1729,7 +1729,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 taskName,
                 !(opCtx != null && opCtx.isKeepBinary()),
                 opCtx != null && opCtx.recovery(),
-                opCtx != null && opCtx.readRepair(),
+                true /* TODO replace with "opCtx != null && opCtx.readRepair()" */,
                 /*skip vals*/false,
                 /*need ver*/true));
 
@@ -1873,7 +1873,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             taskName,
             deserializeBinary,
             opCtx != null && opCtx.recovery(),
-            opCtx != null && opCtx.readRepair(),
+            true /* TODO replace with "opCtx != null && opCtx.readRepair()" */,
             skipVals,
             needVer).chain(
             new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
