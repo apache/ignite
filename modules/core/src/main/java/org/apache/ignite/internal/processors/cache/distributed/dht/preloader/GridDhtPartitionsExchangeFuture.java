@@ -979,11 +979,20 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 top.beforeExchange(this, true, false);
             }
 
-            timeBag.finishGlobalStage("Local affinity recalculation");
+            finalizePartitionCounters();
+
+            for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
+                if (!grpCtx.isLocal())
+                    grpCtx.topology().applyUpdateCounters();
+            }
+
+            timeBag.finishGlobalStage("Apply update counters");
 
             initDone();
 
             onDone(initialVersion());
+
+            timeBag.finishGlobalStage("Local affinity recalculation");
         } finally {
             leaveBusy();
         }
