@@ -38,6 +38,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 
@@ -178,7 +179,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         boolean reserved = false;
 
         if (part != null && part.state() != EVICTED)
-            reserved = (part.state() == OWNING || part.state() == RENTING) && part.reserve();
+            reserved = (part.state() == OWNING || part.state() == RENTING || part.state() == MOVING) && part.reserve();
 
         if (!reserved)
             return;
