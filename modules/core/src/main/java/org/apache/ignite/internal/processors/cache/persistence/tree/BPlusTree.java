@@ -25,8 +25,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
@@ -947,20 +947,25 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             releasePage(metaPageId, metaPage);
         }
 
-        long firstPage = acquirePage(firstPageId);
-
         try {
-            long pageAddr = readLock(firstPageId, firstPage); // We always merge pages backwards, the first page is never removed.
+            long firstPage = acquirePage(firstPageId);
 
             try {
-                cursor.init(pageAddr, io(pageAddr), 0);
+                long pageAddr = readLock(firstPageId, firstPage); // We always merge pages backwards, the first page is never removed.
+
+                try {
+                    cursor.init(pageAddr, io(pageAddr), 0);
+                }
+                finally {
+                    readUnlock(firstPageId, firstPage, pageAddr);
+                }
             }
             finally {
-                readUnlock(firstPageId, firstPage, pageAddr);
+                releasePage(firstPageId, firstPage);
             }
         }
-        finally {
-            releasePage(firstPageId, firstPage);
+        catch (RuntimeException | AssertionError e) {
+            throw new BPlusTreeRuntimeException(e, grpId, metaPageId, firstPageId);
         }
 
         return cursor;
@@ -983,11 +988,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public final GridCursor<T> find(L lower, L upper, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
+        ForwardCursor cursor = new ForwardCursor(lower, upper, x);
+
         try {
             if (lower == null)
                 return findLowerUnbounded(upper, x);
-
-            ForwardCursor cursor = new ForwardCursor(lower, upper, x);
 
             cursor.find();
 
@@ -997,7 +1002,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+            long[] pageIds = pages(
+                lower == null || cursor == null || cursor.getCursor == null,
+                () -> new long[]{cursor.getCursor.pageId}
+            );
+
+            throw corruptedTreeException(
+                formatMsg("Runtime failure on bounds: [lower=%s, upper=%s]", lower, upper),
+                e, grpId, pageIds
+            );
         }
         finally {
             checkDestroyed();
@@ -1007,6 +1020,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** {@inheritDoc} */
     @Override public T findFirst() throws IgniteCheckedException {
         checkDestroyed();
+
+        long curPageId = 0L;
+        long nextPageId = 0L;
 
         try {
             long firstPageId;
@@ -1046,7 +1062,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on first row lookup", e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on first row lookup", e);
+            throw corruptedTreeException("Runtime failure on first row lookup", e, grpId, curPageId, nextPageId);
         }
         finally {
             checkDestroyed();
@@ -1058,8 +1074,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     @Override public T findLast() throws IgniteCheckedException {
         checkDestroyed();
 
+        Get g = null;
+
         try {
-            GetOne g = new GetOne(null, null, true);
+            g = new GetOne(null, null, true);
             doFind(g);
 
             return (T)g.row;
@@ -1068,7 +1086,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on last row lookup", e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new IgniteException("Runtime failure on last row lookup", e);
+            Get g0 = g;
+
+            long[] pageIds = pages(g == null, () -> new long[]{g0.pageId});
+
+            throw corruptedTreeException("Runtime failure on last row lookup", e, grpId, pageIds);
         }
         finally {
             checkDestroyed();
@@ -1085,9 +1107,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public final <R> R findOne(L row, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
-        try {
-            GetOne g = new GetOne(row, x, false);
+        GetOne g = new GetOne(row, x, false);
 
+        try {
             doFind(g);
 
             return (R)g.row;
@@ -1096,7 +1118,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on lookup row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on lookup row: " + row, e);
+            throw corruptedTreeException(formatMsg("Runtime failure on lookup row: %s", row), e, grpId, g.pageId);
         }
         finally {
             checkDestroyed();
@@ -1657,7 +1679,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on search row: " + row, e);
+            throw corruptedTreeException(formatMsg("Runtime failure on search row: %s", row), e, grpId, x.pageId);
         }
         finally {
             x.releaseAll();
@@ -1814,7 +1836,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on search row: " + row, e);
+            throw corruptedTreeException(formatMsg("Runtime failure on search row: %s", row), e, grpId, r.pageId);
         }
         finally {
             r.releaseAll();
@@ -2130,7 +2152,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw new CorruptedTreeException("Runtime failure on row: " + row, e);
+            throw corruptedTreeException(formatMsg("Runtime failure on row: %s", row), e, grpId, p.pageId);
         }
         finally {
             checkDestroyed();
@@ -4562,6 +4584,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private final Object x;
 
+        /** Cached value for retrieving diagnosting info in case of failure. */
+        public GetCursor getCursor;
+
         /**
          * @param lowerBound Lower bound.
          * @param upperBound Upper bound.
@@ -4755,7 +4780,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private void find() throws IgniteCheckedException {
             assert lowerBound != null;
 
-            doFind(new GetCursor(lowerBound, lowerShift, this));
+            doFind(getCursor = new GetCursor(lowerBound, lowerShift, this));
         }
 
         /**
@@ -4807,6 +4832,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     finally {
                         readUnlock(pageId, page, pageAddr);
                     }
+                }
+                catch (RuntimeException | AssertionError e) {
+                    throw corruptedTreeException("Runtime failure on cursor iteration", e, grpId, pageId);
                 }
                 finally {
                     releasePage(pageId, page);
@@ -4991,5 +5019,51 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     protected int getLockRetries() {
         return LOCK_RETRIES;
+    }
+
+    /**
+     * PageIds converter with empty check.
+     *
+     * @param empty Flag for empty array result.
+     * @param pages Pages supplier.
+     * @return Array of page ids.
+     */
+    private long[] pages(boolean empty, Supplier<long[]> pages) {
+        return empty ? GridLongList.EMPTY_ARRAY : pages.get();
+    }
+
+    /**
+     * Construct the exception and invoke failure processor.
+     *
+     * @param msg Message.
+     * @param cause Cause.
+     * @param grpId Group id.
+     * @param pageIds Pages ids.
+     * @return New CorruptedTreeException instance.
+     */
+    private CorruptedTreeException corruptedTreeException(String msg, Throwable cause, int grpId, long... pageIds) {
+        CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpId, pageIds);
+
+        if (failureProcessor != null)
+            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+        return e;
+    }
+
+    /**
+     * Creates a formatted message even if "toString" of optioanl parameters failed.
+     *
+     * @param msg Detailed error message.
+     * @param rows Optional parameters.
+     * @return New instance of {@link CorruptedTreeException}.
+     */
+    private String formatMsg(String msg, Object... rows) {
+        try {
+            return String.format(msg, rows);
+        }
+        catch (Throwable ignored) {
+            // Failed to create string representation of optional parameters.
+            return msg + " <failed to create rows string representation>";
+        }
     }
 }
