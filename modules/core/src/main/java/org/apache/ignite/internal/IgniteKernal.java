@@ -136,6 +136,7 @@ import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
@@ -910,6 +911,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 hnd,
                 longJVMPauseDetector
             );
+
+            startProcessor(new DiagnosticProcessor(ctx));
 
             mBeansMgr = new IgniteMBeansManager(this);
 

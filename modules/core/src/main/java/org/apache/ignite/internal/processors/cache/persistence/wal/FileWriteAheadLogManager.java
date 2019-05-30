@@ -482,6 +482,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     * @return Info about of WAL paths.
+     */
+    public SegmentRouter getSegmentRouter() {
+        return segmentRouter;
+    }
+
+    /**
      *
      */
     private void startArchiverAndCompressor() {

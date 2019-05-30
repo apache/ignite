@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -75,6 +77,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.Index;
+import org.h2.message.DbException;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -673,10 +676,15 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     if (!cursor.next())
                         break;
                 }
-                catch (IllegalStateException e) {
-                    throw new IgniteCheckedException("Key is present in SQL index, but is missing in corresponding " +
-                        "data page. Previous successfully read key: " +
-                        CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, true, true), e);
+                catch (DbException e) {
+                    if (X.hasCause(e, CorruptedTreeException.class))
+                        throw new IgniteCheckedException("Key is present in SQL index, but is missing in corresponding " +
+                            "data page. Previous successfully read key: " +
+                            CacheObjectUtils.unwrapBinaryIfNeeded(ctx.cacheObjectContext(), previousKey, true, true),
+                            X.cause(e, CorruptedTreeException.class)
+                        );
+
+                    throw e;
                 }
 
                 GridH2Row h2Row = (GridH2Row)cursor.get();

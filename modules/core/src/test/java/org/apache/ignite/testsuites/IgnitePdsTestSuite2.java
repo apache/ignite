@@ -73,7 +73,9 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteStandaloneWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteWithoutArchiverWalIteratorInvalidCrcTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.FilteredWalIteratorTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneWalRecordsIteratorTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScannerTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
@@ -216,6 +218,10 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, IgniteNodeStoppedDuringDisableWALTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, StandaloneWalRecordsIteratorTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, FilteredWalIteratorTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, WalScannerTest.class, ignoredTests);
 
         //GridTestUtils.addTestIfNeeded(suite, IgniteWalRecoverySeveralRestartsTest.class, ignoredTests);
 
