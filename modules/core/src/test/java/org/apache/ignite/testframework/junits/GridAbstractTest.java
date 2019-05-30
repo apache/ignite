@@ -1770,7 +1770,8 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             afterTest();
         }
         finally {
-            serializedObj.clear();
+            if (!keepSerializedObjects())
+                serializedObj.clear();
 
             Exception err = null;
 
