@@ -191,6 +191,13 @@ export default class Caches {
             {value: 'CacheHibernateBlobStoreFactory', label: 'Hibernate BLOB store factory'},
             {value: null, label: 'Not set'}
         ],
+        values_2_7: [
+            {value: 'HiveCacheJdbcPojoStoreFactory', label: 'GridGain Hive JDBC POJO store factory'},
+            {value: 'CacheJdbcPojoStoreFactory', label: 'JDBC POJO store factory'},
+            {value: 'CacheJdbcBlobStoreFactory', label: 'JDBC BLOB store factory'},
+            {value: 'CacheHibernateBlobStoreFactory', label: 'Hibernate BLOB store factory'},
+            {value: null, label: 'Not set'}
+        ],
         storeDisabledValueOff: (cache, value) => {
             return cache && cache.cacheStoreFactory.kind ? true : !value;
         },

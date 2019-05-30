@@ -242,7 +242,8 @@ export default function service(ErrorPopover) {
         {value: 'SQLServer', label: 'Microsoft SQL Server'},
         {value: 'MySQL', label: 'MySQL'},
         {value: 'PostgreSQL', label: 'PostgreSQL'},
-        {value: 'H2', label: 'H2 database'}
+        {value: 'H2', label: 'H2 database'},
+        {value: 'Hive', label: 'Apache Hive'}
     ];
 
     function domainForStoreConfigured(domain) {

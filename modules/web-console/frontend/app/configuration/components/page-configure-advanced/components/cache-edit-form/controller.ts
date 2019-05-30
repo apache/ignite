@@ -56,6 +56,10 @@ export default class CacheEditFormController {
 
             if (this.available(['1.0.0', '2.0.0']))
                 this.$scope.affinityFunction.splice(1, 0, {value: 'Fair', label: 'Fair'});
+
+            if (!this.IgniteVersion.currentSbj.getValue().hiveVersion
+                && _.get(this.clonedCache, 'cacheStoreFactory.kind') === 'HiveCacheJdbcPojoStoreFactory')
+                this.clonedCache.cacheStoreFactory.kind = null;
         };
 
         rebuildDropdowns();

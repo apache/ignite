@@ -404,7 +404,8 @@ mixin form-field__dialect({ label, model, name, required, tip, genericDialectNam
                 {value: "SQLServer", label: "Microsoft SQL Server"},\
                 {value: "MySQL", label: "MySQL"},\
                 {value: "PostgreSQL", label: "PostgreSQL"},\
-                {value: "H2", label: "H2 database"}\
+                {value: "H2", label: "H2 database"},\
+                {value: "Hive", label: "Apache Hive"}\
         ]',
         tip: `${ tip }
             <ul>
@@ -415,5 +416,6 @@ mixin form-field__dialect({ label, model, name, required, tip, genericDialectNam
                 <li>MySQL</li>
                 <li>PostgreSQL</li>
                 <li>H2 database</li>
+                <li>Apache Hive</li>
             </ul>`
     })

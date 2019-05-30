@@ -243,13 +243,29 @@ module.exports.factory = function() {
         cacheStoreFactory: {
             kind: {
                 type: String,
-                enum: ['CacheJdbcPojoStoreFactory', 'CacheJdbcBlobStoreFactory', 'CacheHibernateBlobStoreFactory']
+                enum: ['HiveCacheJdbcPojoStoreFactory', 'CacheJdbcPojoStoreFactory', 'CacheJdbcBlobStoreFactory', 'CacheHibernateBlobStoreFactory']
+            },
+            HiveCacheJdbcPojoStoreFactory: {
+                dataSourceBean: String,
+                dialect: {
+                    type: String,
+                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2', 'Hive']
+                },
+                implementationVersion: String,
+                batchSize: Number,
+                maximumPoolSize: Number,
+                maximumWriteAttempts: Number,
+                parallelLoadCacheMinimumThreshold: Number,
+                hasher: String,
+                transformer: String,
+                sqlEscapeAll: Boolean,
+                streamerEnabled: {type: Boolean, default: true}
             },
             CacheJdbcPojoStoreFactory: {
                 dataSourceBean: String,
                 dialect: {
                     type: String,
-                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
+                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2', 'Hive']
                 },
                 implementationVersion: String,
                 batchSize: Number,
@@ -267,7 +283,7 @@ module.exports.factory = function() {
                 dataSourceBean: String,
                 dialect: {
                     type: String,
-                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
+                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2', 'Hive']
                 },
                 initSchema: Boolean,
                 createTableQuery: String,
@@ -589,7 +605,7 @@ module.exports.factory = function() {
                 dataSourceBean: String,
                 dialect: {
                     type: String,
-                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
+                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2', 'Hive']
                 }
             },
             SharedFs: {
@@ -951,7 +967,7 @@ module.exports.factory = function() {
                 dataSourceBean: String,
                 dialect: {
                     type: String,
-                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
+                    enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2', 'Hive']
                 },
                 user: String,
                 checkpointTableName: String,
