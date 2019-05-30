@@ -363,6 +363,34 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
         }
 
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        public void CachePut_IntPtrKeyKey_RequestIsRoutedToPrimaryNode(int keyInt, int gridIdx)
+        {
+            var key = new IntPtr(keyInt);
+
+            var cache = Client.GetCache<object, object>(_cache.Name);
+            TestOperation(() => cache.Put(key, key), gridIdx, "Put");
+
+            // Verify against real Affinity.
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
+        }
+
+        [Test]
+        [TestCase(1, 1)]
+        [TestCase(2, 0)]
+        public void CachePut_UIntPtrKeyKey_RequestIsRoutedToPrimaryNode(int keyInt, int gridIdx)
+        {
+            var key = new UIntPtr((uint) keyInt);
+
+            var cache = Client.GetCache<object, object>(_cache.Name);
+            TestOperation(() => cache.Put(key, key), gridIdx, "Put");
+
+            // Verify against real Affinity.
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
+        }
+
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
             var cfg = base.GetIgniteConfiguration();
