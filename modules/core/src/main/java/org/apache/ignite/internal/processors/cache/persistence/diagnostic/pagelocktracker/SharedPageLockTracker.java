@@ -39,12 +39,9 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DEFAULT_CAPACITY;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.DEFAULT_TYPE;
 
-//TODO Calculate overhad and capacity for all structures.
 //TODO Fast local get thread local.
-//TODO Test deadlock
 //TODO Dynamic enable/disable tracing.
 //TODO Collect page content to dump. AG
-
 /**
  *
  */
