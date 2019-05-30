@@ -68,6 +68,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return _marsh; }
         }
 
+        /// <summary>
+        /// Invoked when binary object writing finishes.
+        /// </summary>
         internal event Action<BinaryObjectHeader, object> OnObjectWritten;
 
         /// <summary>
