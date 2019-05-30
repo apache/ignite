@@ -1165,12 +1165,12 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         final Random rnd = new Random();
 
-        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : 100;
+        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : CONSUME_CNT / 2;
 
         IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < consumeCnt && !stop.get(); i++) {
-                    int idx = 0;
+                    int idx = rnd.nextInt(GRID_CNT);
 
                     try {
                         IgniteEvents evts = grid(idx).events();
@@ -1196,7 +1196,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 16, "consume-starter");
+        }, 8, "consume-starter");
 
         starterFut.listen(fut -> stop.set(true));
 
@@ -1225,7 +1225,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 8, "consume-stopper");
+        }, 4, "consume-stopper");
 
         IgniteInternalFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1241,7 +1241,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> jobRunnerFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
-                    int idx = 0;
+                    int idx = rnd.nextInt(GRID_CNT);
 
                     try {
                         grid(idx).compute().runAsync(F.noop()).get(3000);
