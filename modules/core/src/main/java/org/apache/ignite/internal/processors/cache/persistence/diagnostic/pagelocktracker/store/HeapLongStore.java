@@ -60,7 +60,7 @@ public class HeapLongStore implements LongStore {
 
     /** {@inheritDoc} */
     @Override public void free() {
-        memoryCalc.onOffHeapFree(arr.length * 8 + OVERHEAD_SIZE);
+        memoryCalc.onHeapFree(arr.length * 8 + OVERHEAD_SIZE);
 
         arr = null;
     }
