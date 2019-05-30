@@ -134,7 +134,7 @@ export default class IgniteConfigurationGenerator {
         this.clusterTransactions(cluster.transactionConfiguration, available, cfg);
         this.clusterUserAttributes(cluster, cfg);
 
-        this.clusterCaches(cluster, cluster.caches, cluster.igfss, available, client, cfg);
+        this.clusterCaches(cluster, cluster.caches, cluster.igfss, available, targetVer, client, cfg);
 
         if (!client)
             this.clusterIgfss(cluster.igfss, available, cfg);
@@ -151,15 +151,18 @@ export default class IgniteConfigurationGenerator {
 
         switch (dialect) {
             case 'Generic':
+            case 'Hive':
                 dsBean = new Bean('com.mchange.v2.c3p0.ComboPooledDataSource', id, {})
                     .property('jdbcUrl', `${id}.jdbc.url`, 'jdbc:your_database');
 
                 break;
+
             case 'Oracle':
                 dsBean = new Bean('oracle.jdbc.pool.OracleDataSource', id, {})
                     .property('URL', `${id}.jdbc.url`, 'jdbc:oracle:thin:@[host]:[port]:[database]');
 
                 break;
+
             case 'DB2':
                 dsBean = new Bean('com.ibm.db2.jcc.DB2DataSource', id, {})
                     .property('serverName', `${id}.jdbc.server_name`, 'YOUR_DATABASE_SERVER_NAME')
@@ -168,11 +171,13 @@ export default class IgniteConfigurationGenerator {
                     .propertyInt('driverType', `${id}.jdbc.driver_type`, 'YOUR_JDBC_DRIVER_TYPE');
 
                 break;
+
             case 'SQLServer':
                 dsBean = new Bean('com.microsoft.sqlserver.jdbc.SQLServerDataSource', id, {})
                     .property('URL', `${id}.jdbc.url`, 'jdbc:sqlserver://[host]:[port][;databaseName=database]');
 
                 break;
+
             case 'MySQL':
                 const dep = storeDeps
                     ? _.find(storeDeps, (d) => d.name === dialect)
@@ -184,11 +189,13 @@ export default class IgniteConfigurationGenerator {
                     .property('URL', `${id}.jdbc.url`, 'jdbc:mysql://[host]:[port]/[database]');
 
                 break;
+
             case 'PostgreSQL':
                 dsBean = new Bean('org.postgresql.ds.PGPoolingDataSource', id, {})
                     .property('url', `${id}.jdbc.url`, 'jdbc:postgresql://[host]:[port]/[database]');
 
                 break;
+
             case 'H2':
                 dsBean = new Bean('org.h2.jdbcx.JdbcDataSource', id, {})
                     .property('URL', `${id}.jdbc.url`, 'jdbc:h2:tcp://[host]/[database]');
@@ -448,7 +455,7 @@ export default class IgniteConfigurationGenerator {
         });
     }
 
-    static clusterCaches(cluster, caches, igfss, available, client, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterCaches(cluster, caches, igfss, available, targetVer, client, cfg = this.igniteConfigurationBean(cluster)) {
         const usedDataSourceVersions = [];
 
         if (cluster.discovery.kind === 'Jdbc')
@@ -466,7 +473,7 @@ export default class IgniteConfigurationGenerator {
 
         const useDeps = _.uniqWith(ArtifactVersionChecker.latestVersions(usedDataSourceVersions), _.isEqual);
 
-        const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache, available, useDeps));
+        const ccfgs = _.map(caches, (cache) => this.cacheConfiguration(cache, available, targetVer, useDeps));
 
         if (!client) {
             _.forEach(igfss, (igfs) => {
@@ -2505,8 +2512,49 @@ export default class IgniteConfigurationGenerator {
         return ccfg;
     }
 
+    static _baseJdbcPojoStoreFactory(storeFactory, bean, cacheName, domains, available, deps) {
+        const jdbcId = bean.valueOf('dataSourceBean');
+
+        bean.dataSource(jdbcId, 'dataSourceBean', this.dataSourceBean(jdbcId, storeFactory.dialect, available, deps, storeFactory.implementationVersion))
+            .beanProperty('dialect', new EmptyBean(this.dialectClsName(storeFactory.dialect)));
+
+        bean.intProperty('batchSize')
+            .intProperty('maximumPoolSize')
+            .intProperty('maximumWriteAttempts')
+            .intProperty('parallelLoadCacheMinimumThreshold')
+            .emptyBeanProperty('hasher')
+            .emptyBeanProperty('transformer')
+            .boolProperty('sqlEscapeAll');
+
+        const setType = (typeBean, propName) => {
+            if (javaTypes.nonBuiltInClass(typeBean.valueOf(propName)))
+                typeBean.stringProperty(propName);
+            else
+                typeBean.classProperty(propName);
+        };
+
+        const types = _.reduce(domains, (acc, domain) => {
+            if (isNil(domain.databaseTable))
+                return acc;
+
+            const typeBean = this.domainJdbcTypeBean(_.merge({}, domain, {cacheName}))
+                .stringProperty('cacheName');
+
+            setType(typeBean, 'keyType');
+            setType(typeBean, 'valueType');
+
+            this.domainStore(domain, typeBean);
+
+            acc.push(typeBean);
+
+            return acc;
+        }, []);
+
+        bean.varArgProperty('types', 'types', types, 'org.apache.ignite.cache.store.jdbc.JdbcType');
+    }
+
     // Generate cache store group.
-    static cacheStore(cache, domains, available, deps, ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheStore(cache, domains, available, targetVer, deps, ccfg = this.cacheConfigurationBean(cache)) {
         const kind = _.get(cache, 'cacheStoreFactory.kind');
 
         if (kind && cache.cacheStoreFactory[kind]) {
@@ -2515,48 +2563,22 @@ export default class IgniteConfigurationGenerator {
             const storeFactory = cache.cacheStoreFactory[kind];
 
             switch (kind) {
+                case 'HiveCacheJdbcPojoStoreFactory':
+                    if (targetVer.hiveVersion) {
+                        bean = new Bean('org.gridgain.cachestore.HiveCacheJdbcPojoStoreFactory', 'cacheStoreFactory',
+                            storeFactory, cacheDflts.cacheStoreFactory.HiveCacheJdbcPojoStoreFactory);
+
+                        this._baseJdbcPojoStoreFactory(storeFactory, bean, cache.name, domains, available, deps);
+
+                        bean.boolProperty('streamerEnabled');
+                    }
+
+                    break;
                 case 'CacheJdbcPojoStoreFactory':
                     bean = new Bean('org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory', 'cacheStoreFactory',
                         storeFactory, cacheDflts.cacheStoreFactory.CacheJdbcPojoStoreFactory);
 
-                    const jdbcId = bean.valueOf('dataSourceBean');
-
-                    bean.dataSource(jdbcId, 'dataSourceBean', this.dataSourceBean(jdbcId, storeFactory.dialect, available, deps, storeFactory.implementationVersion))
-                        .beanProperty('dialect', new EmptyBean(this.dialectClsName(storeFactory.dialect)));
-
-                    bean.intProperty('batchSize')
-                        .intProperty('maximumPoolSize')
-                        .intProperty('maximumWriteAttempts')
-                        .intProperty('parallelLoadCacheMinimumThreshold')
-                        .emptyBeanProperty('hasher')
-                        .emptyBeanProperty('transformer')
-                        .boolProperty('sqlEscapeAll');
-
-                    const setType = (typeBean, propName) => {
-                        if (javaTypes.nonBuiltInClass(typeBean.valueOf(propName)))
-                            typeBean.stringProperty(propName);
-                        else
-                            typeBean.classProperty(propName);
-                    };
-
-                    const types = _.reduce(domains, (acc, domain) => {
-                        if (isNil(domain.databaseTable))
-                            return acc;
-
-                        const typeBean = this.domainJdbcTypeBean(_.merge({}, domain, {cacheName: cache.name}))
-                            .stringProperty('cacheName');
-
-                        setType(typeBean, 'keyType');
-                        setType(typeBean, 'valueType');
-
-                        this.domainStore(domain, typeBean);
-
-                        acc.push(typeBean);
-
-                        return acc;
-                    }, []);
-
-                    bean.varArgProperty('types', 'types', types, 'org.apache.ignite.cache.store.jdbc.JdbcType');
+                    this._baseJdbcPojoStoreFactory(storeFactory, bean, cache.name, domains, available, deps);
 
                     break;
                 case 'CacheJdbcBlobStoreFactory':
@@ -2777,12 +2799,12 @@ export default class IgniteConfigurationGenerator {
         ccfg.collectionProperty('qryEntities', 'queryEntities', qryEntities, 'org.apache.ignite.cache.QueryEntity');
     }
 
-    static cacheConfiguration(cache, available, deps = [], ccfg = this.cacheConfigurationBean(cache)) {
+    static cacheConfiguration(cache, available, targetVer, deps = [], ccfg = this.cacheConfigurationBean(cache)) {
         this.cacheGeneral(cache, available, ccfg);
         this.cacheAffinity(cache, available, ccfg);
         this.cacheMemory(cache, available, ccfg);
         this.cacheQuery(cache, cache.domains, available, ccfg);
-        this.cacheStore(cache, cache.domains, available, deps, ccfg);
+        this.cacheStore(cache, cache.domains, available, targetVer, deps, ccfg);
         this.cacheKeyConfiguration(cache.keyConfiguration, available, ccfg);
 
         const igfs = _.get(cache, 'nodeFilter.IGFS.instance');

@@ -5,5 +5,6 @@
   "SQLServer": "org.apache.ignite.cache.store.jdbc.dialect.SQLServerDialect",
   "MySQL": "org.apache.ignite.cache.store.jdbc.dialect.MySQLDialect",
   "PostgreSQL": "org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect",
-  "H2": "org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"
+  "H2": "org.apache.ignite.cache.store.jdbc.dialect.H2Dialect",
+  "Hive": "org.apache.ignite.cache.store.jdbc.dialect.BasicJdbcDialect"
 }

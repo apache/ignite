@@ -40,6 +40,13 @@ const DFLT_CACHE = {
     storeKeepBinary: false,
     loadPreviousValue: false,
     cacheStoreFactory: {
+        HiveCacheJdbcPojoStoreFactory: {
+            batchSize: 512,
+            maximumWriteAttempts: 2,
+            parallelLoadCacheMinimumThreshold: 512,
+            sqlEscapeAll: false,
+            streamerEnabled: true
+        },
         CacheJdbcPojoStoreFactory: {
             batchSize: 512,
             maximumWriteAttempts: 2,

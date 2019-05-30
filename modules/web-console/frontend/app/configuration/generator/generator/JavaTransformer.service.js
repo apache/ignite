@@ -23,7 +23,11 @@ import StringBuilder from './StringBuilder';
 import VersionService from 'app/services/Version.service';
 
 const versionService = new VersionService();
-const STORE_FACTORY = ['org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory'];
+
+const STORE_FACTORY = [
+    'org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory',
+    'org.gridgain.cachestore.HiveCacheJdbcPojoStoreFactory'
+];
 
 // Descriptors for generation of demo data.
 const PREDEFINED_QUERIES = [

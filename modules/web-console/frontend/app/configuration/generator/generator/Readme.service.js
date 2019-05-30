@@ -32,7 +32,7 @@ export default class IgniteReadmeGenerator {
      * @returns {string} Generated content.
      */
     generateJDBC(sb = new StringBuilder()) {
-        sb.append('Proprietary JDBC drivers for databases like Oracle, IBM DB2, Microsoft SQL Server are not available on Maven Central repository.');
+        sb.append('Proprietary JDBC drivers for databases like Oracle, IBM DB2 Server are not available on Maven Central repository.');
         sb.append('Drivers should be downloaded manually and copied to this folder.');
 
         return sb.asString();
@@ -69,7 +69,7 @@ export default class IgniteReadmeGenerator {
 
         sb.emptyLine();
 
-        sb.append('Note, in case of using proprietary JDBC drivers (Oracle, IBM DB2, Microsoft SQL Server)');
+        sb.append('Note, in case of using proprietary JDBC drivers (Oracle, IBM DB2)');
         sb.append('you should download them manually and copy into ./jdbc-drivers folder.');
 
         return sb.asString();
