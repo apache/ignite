@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Gets the caches.
         /// </summary>
-        public List<KeyValuePair<int, Dictionary<int, int>>> Caches
+        public ICollection<KeyValuePair<int, Dictionary<int, int>>> Caches
         {
             get { return _caches; }
         }
