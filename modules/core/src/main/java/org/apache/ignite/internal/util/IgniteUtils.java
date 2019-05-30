@@ -63,6 +63,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -4265,6 +4266,32 @@ public abstract class IgniteUtils {
             catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Quietly closes given {@link Socket} ignoring possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Socket sock) {
+        if (sock == null)
+            return;
+
+        try {
+            // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        try {
+            sock.close();
+        }
+        catch (Exception ignored) {
+            // No-op.
         }
     }
 

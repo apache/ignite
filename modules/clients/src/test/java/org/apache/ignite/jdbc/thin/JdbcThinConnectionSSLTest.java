@@ -342,7 +342,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Failed to SSL connect to server");
+            }, SQLException.class, "connect to");
         }
         finally {
             stopAllGrids();
@@ -363,7 +363,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Connection c = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                        "&sslProtocol=TLSv1.3" +
+                        "&sslProtocol=TLSv1.13" +
                         "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
@@ -371,7 +371,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "TLSv1.3 is not a valid SSL protocol");
+            }, SQLException.class, "TLSv1.13 is not a valid SSL protocol");
         }
         finally {
             stopAllGrids();
@@ -421,7 +421,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Connection c = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
-                        "&sslClientCertificateKeyStoreType=PKCS12" +
+                        "&sslClientCertificateKeyStoreType=INVALID_TYPE" +
                         "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                         "&sslClientCertificateKeyStorePassword=123456" +
                         "&sslTrustCertificateKeyStoreUrl=" + TRUST_KEY_STORE_PATH +
@@ -429,7 +429,7 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Could not open client key store");
+            }, SQLException.class, "Could not create client KeyStore");
         }
         finally {
             stopAllGrids();
