@@ -52,14 +52,14 @@ export default class IgniteMavenGenerator {
         return _.isArray(version) ? _.find(version, (v) => versionService.since(igniteVer, v.range)).version : version;
     }
 
-    pickDependency(acc, key, dfltVer, igniteVer, storedVer) {
+    pickDependency(acc, key, artifactGrp, dfltVer, igniteVer, storedVer) {
         const deps = POM_DEPENDENCIES[key];
 
         if (_.isNil(deps))
             return;
 
         _.forEach(_.castArray(deps), ({groupId, artifactId, version, jar, link}) => {
-            this.addDependency(acc, groupId || 'org.apache.ignite', artifactId, storedVer || this._extractVersion(igniteVer, version) || dfltVer, jar, link);
+            this.addDependency(acc, groupId || artifactGrp, artifactId, storedVer || this._extractVersion(igniteVer, version) || dfltVer, jar, link);
         });
     }
 
@@ -77,8 +77,8 @@ export default class IgniteMavenGenerator {
         sb.endBlock('</resource>');
     }
 
-    artifactSection(sb, cluster, targetVer) {
-        this.addProperty(sb, 'groupId', 'org.apache.ignite');
+    artifactSection(sb, artifactGrp, cluster, targetVer) {
+        this.addProperty(sb, 'groupId', artifactGrp);
         this.addProperty(sb, 'artifactId', this.escapeId(cluster.name) + '-project');
         this.addProperty(sb, 'version', targetVer.ignite);
     }
@@ -155,31 +155,32 @@ export default class IgniteMavenGenerator {
     /**
      * Add dependency for specified store factory if not exist.
      *
+     * @param artifactGrp Artifact group ID.
      * @param deps Already added dependencies.
      * @param storeFactory Store factory to add dependency.
      * @param igniteVer Ignite version.
      */
-    storeFactoryDependency(deps, storeFactory, igniteVer) {
+    storeFactoryDependency(artifactGrp, deps, storeFactory, igniteVer) {
         if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource'))
-            this.pickDependency(deps, storeFactory.dialect, null, igniteVer, storeFactory.implementationVersion);
+            this.pickDependency(deps, storeFactory.dialect, artifactGrp, null, igniteVer, storeFactory.implementationVersion);
     }
 
-    collectDependencies(cluster, targetVer) {
+    collectDependencies(artifactGrp, cluster, targetVer) {
         const igniteVer = targetVer.ignite;
 
         const deps = [];
         const storeDeps = [];
 
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-core', igniteVer);
+        this.addDependency(deps, artifactGrp, 'ignite-core', igniteVer);
 
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-spring', igniteVer);
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-indexing', igniteVer);
-        this.addDependency(deps, 'org.apache.ignite', 'ignite-rest-http', igniteVer);
+        this.addDependency(deps, artifactGrp, 'ignite-spring', igniteVer);
+        this.addDependency(deps, artifactGrp, 'ignite-indexing', igniteVer);
+        this.addDependency(deps, artifactGrp, 'ignite-rest-http', igniteVer);
 
         if (_.get(cluster, 'deploymentSpi.kind') === 'URI')
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-urideploy', igniteVer);
+            this.addDependency(deps, artifactGrp, 'ignite-urideploy', igniteVer);
 
-        this.pickDependency(deps, cluster.discovery.kind, igniteVer);
+        this.pickDependency(deps, cluster.discovery.kind, artifactGrp, igniteVer);
 
         const caches = cluster.caches;
 
@@ -187,38 +188,38 @@ export default class IgniteMavenGenerator {
 
         _.forEach(caches, (cache) => {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind)
-                this.storeFactoryDependency(storeDeps, cache.cacheStoreFactory[cache.cacheStoreFactory.kind], igniteVer);
+                this.storeFactoryDependency(artifactGrp, storeDeps, cache.cacheStoreFactory[cache.cacheStoreFactory.kind], igniteVer);
 
             if (_.get(cache, 'nodeFilter.kind') === 'Exclude')
-                this.addDependency(deps, 'org.apache.ignite', 'ignite-extdata-p2p', igniteVer);
+                this.addDependency(deps, artifactGrp, 'ignite-extdata-p2p', igniteVer);
 
             if (cache.diskPageCompression && versionService.since(igniteVer, '2.8.0'))
-                this.addDependency(deps, 'org.apache.ignite', 'ignite-compress', igniteVer);
+                this.addDependency(deps, artifactGrp, 'ignite-compress', igniteVer);
         });
 
         if (cluster.discovery.kind === 'Jdbc') {
             const store = cluster.discovery.Jdbc;
 
             if (store.dataSourceBean && store.dialect)
-                this.storeFactoryDependency(storeDeps, cluster.discovery.Jdbc, igniteVer);
+                this.storeFactoryDependency(artifactGrp, storeDeps, cluster.discovery.Jdbc, igniteVer);
         }
 
         _.forEach(cluster.checkpointSpi, (spi) => {
             if (spi.kind === 'S3')
-                this.pickDependency(deps, spi.kind, igniteVer);
+                this.pickDependency(deps, spi.kind, artifactGrp, igniteVer);
             else if (spi.kind === 'JDBC')
-                this.storeFactoryDependency(storeDeps, spi.JDBC, igniteVer);
+                this.storeFactoryDependency(artifactGrp, storeDeps, spi.JDBC, igniteVer);
         });
 
         if (_.get(cluster, 'hadoopConfiguration.mapReducePlanner.kind') === 'Weighted' ||
             _.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled))
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', igniteVer);
+            this.addDependency(deps, artifactGrp, 'ignite-hadoop', igniteVer);
 
         if (_.find(caches, blobStoreFactory))
-            this.addDependency(deps, 'org.apache.ignite', 'ignite-hibernate', igniteVer);
+            this.addDependency(deps, artifactGrp, 'ignite-hibernate', igniteVer);
 
         if (cluster.logger && cluster.logger.kind)
-            this.pickDependency(deps, cluster.logger.kind, igniteVer);
+            this.pickDependency(deps, cluster.logger.kind, artifactGrp, igniteVer);
 
         return _.uniqWith(deps.concat(ArtifactVersionChecker.latestVersions(storeDeps)), _.isEqual);
     }
@@ -232,6 +233,10 @@ export default class IgniteMavenGenerator {
      */
     generate(cluster, targetVer) {
         const sb = new StringBuilder();
+
+        const artifactGrp = versionService.since(targetVer.ignite, '8.7.3')
+            ? 'org.gridgain'
+            : 'org.apache.ignite';
 
         sb.append('<?xml version="1.0" encoding="UTF-8"?>');
 
@@ -247,17 +252,17 @@ export default class IgniteMavenGenerator {
 
         sb.emptyLine();
 
-        this.artifactSection(sb, cluster, targetVer);
+        this.artifactSection(sb, artifactGrp, cluster, targetVer);
 
         sb.emptyLine();
 
-        const deps = this.collectDependencies(cluster, targetVer);
+        const deps = this.collectDependencies(artifactGrp, cluster, targetVer);
 
         this.dependenciesSection(sb, deps);
 
         sb.emptyLine();
 
-        this.buildSection(sb, ['org.apache.ignite']);
+        this.buildSection(sb, [artifactGrp]);
 
         sb.endBlock('</project>');
 
