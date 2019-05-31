@@ -698,7 +698,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     else if (customMsg instanceof ChangeGlobalStateFinishMessage) {
                         ctx.state().onStateFinishMessage((ChangeGlobalStateFinishMessage)customMsg);
 
-                        updateTopologySnapshot();
+                        Snapshot snapshot = topSnap.get();
+
+                        // Topology version does not change, but need create DiscoCache with new state.
+                        DiscoCache discoCache = snapshot.discoCache.copy(snapshot.topVer, ctx.state().clusterState());
+
+                        topSnap.set(new Snapshot(snapshot.topVer, discoCache));
 
                         incMinorTopVer = false;
                     }
@@ -782,7 +787,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (locJoinEvt || !node.isClient() && !node.isDaemon()) {
                     if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
-                        boolean discoCacheUpdated = ctx.state().autoAdjustInMemoryClusterState(
+                        boolean discoCacheRecalculationRequired = ctx.state().autoAdjustInMemoryClusterState(
                             node.id(),
                             topSnapshot,
                             discoCache,
@@ -790,10 +795,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             minorTopVer
                         );
 
-                        if (discoCacheUpdated) {
-                            discoCache = discoCache();
+                        if (discoCacheRecalculationRequired) {
+                            discoCache = createDiscoCache(
+                                nextTopVer,
+                                ctx.state().clusterState(),
+                                locNode,
+                                topSnapshot
+                            );
 
                             discoCacheHist.put(nextTopVer, discoCache);
+
+                            topSnap.set(new Snapshot(nextTopVer, discoCache));
                         }
                     }
                 }
@@ -1032,18 +1044,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
-    }
-
-    /**
-     * Update {@link #topSnap} with the latest cluster state.
-     */
-    public void updateTopologySnapshot() {
-        Snapshot snapshot = topSnap.get();
-
-        // Topology version does not change, but need create DiscoCache with new state.
-        DiscoCache discoCache = snapshot.discoCache.copy(snapshot.topVer, ctx.state().clusterState());
-
-        topSnap.set(new Snapshot(snapshot.topVer, discoCache));
     }
 
     /**
