@@ -87,12 +87,12 @@ public class LockStack extends PageLockTracker<PageLockStackSnapshot> {
             return;
         }
 
-        int curIdx = holdedLockCnt << OP_OFFSET & LOCK_IDX_MASK;
+        int curIdx = heldLockCnt << OP_OFFSET & LOCK_IDX_MASK;
 
         pages.add(headIdx, curIdx | op, structureId, pageId, pageAddrHeader, pageAddr);
 
         headIdx++;
-        holdedLockCnt++;
+        heldLockCnt++;
     }
 
     /**
@@ -119,7 +119,7 @@ public class LockStack extends PageLockTracker<PageLockStackSnapshot> {
                 //Reset head to the first not empty element.
                 do {
                     headIdx--;
-                    holdedLockCnt--;
+                    heldLockCnt--;
                 }
                 while (headIdx > 0 && pages.getPageId(headIdx - 1) == 0);
             }
@@ -155,7 +155,7 @@ public class LockStack extends PageLockTracker<PageLockStackSnapshot> {
                 pages.remove(0);
 
                 headIdx = 0;
-                holdedLockCnt = 0;
+                heldLockCnt = 0;
             }
             else
                 invalid("Can not find pageId in stack, headIdx=" + headIdx + " "

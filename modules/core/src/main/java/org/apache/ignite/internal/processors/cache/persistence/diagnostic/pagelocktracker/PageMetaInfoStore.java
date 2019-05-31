@@ -22,7 +22,7 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
  */
 public interface PageMetaInfoStore {
     /**
-     * @return Cpapacity.
+     * @return Capacity.
      */
     int capacity();
 
@@ -68,13 +68,13 @@ public interface PageMetaInfoStore {
 
     /**
      * @param itemIdx Index of page in store.
-     * @return Page header addres.
+     * @return Page header address.
      */
     long getPageAddrHeader(int itemIdx);
 
     /**
      * @param itemIdx Index of page in store.
-     * @return Page addres.
+     * @return Page address.
      */
     long getPageAddr(int itemIdx);
 
@@ -84,7 +84,7 @@ public interface PageMetaInfoStore {
     PageMetaInfoStore copy();
 
     /**
-     * Free resouce.
+     * Free resource.
      */
     void free();
 }

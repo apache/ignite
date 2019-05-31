@@ -32,7 +32,7 @@ public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
      * Constructor.
      *
      * @param name Page lock log name.
-     * @param pageMetaInfoStore Capacity.
+     * @param pageMetaInfoStore Object storing page meta info.
      */
     public LockLog(String name, PageMetaInfoStore pageMetaInfoStore, MemoryCalculator memCalc) {
         super(name, pageMetaInfoStore, memCalc);
@@ -40,7 +40,7 @@ public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
 
     /** {@inheritDoc} */
     @Override public void onWriteLock0(int structureId, long pageId, long page, long pageAddr) {
-        log(WRITE_LOCK, structureId, pageId,page,pageAddr);
+        log(WRITE_LOCK, structureId, pageId, page, pageAddr);
     }
 
     /** {@inheritDoc} */
@@ -55,7 +55,7 @@ public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
 
     /** {@inheritDoc} */
     @Override public void onReadUnlock0(int structureId, long pageId, long page, long pageAddr) {
-        log(READ_UNLOCK, structureId, pageId, page,pageAddr);
+        log(READ_UNLOCK, structureId, pageId, page, pageAddr);
     }
 
     /**
@@ -86,12 +86,12 @@ public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
         }
 
         if (READ_LOCK == op || WRITE_LOCK == op)
-            holdedLockCnt++;
+            heldLockCnt++;
 
         if (READ_UNLOCK == op || WRITE_UNLOCK == op)
-            holdedLockCnt--;
+            heldLockCnt--;
 
-        int curIdx = holdedLockCnt << OP_OFFSET & LOCK_IDX_MASK;
+        int curIdx = heldLockCnt << OP_OFFSET & LOCK_IDX_MASK;
 
         pages.add(headIdx, curIdx | op, structureId, pageId, pageAddrHeader, pageAddr);
 
@@ -100,7 +100,7 @@ public class LockLog extends PageLockTracker<PageLockLogSnapshot> {
 
         headIdx++;
 
-        if (holdedLockCnt == 0)
+        if (heldLockCnt == 0)
             reset();
 
         if (op != BEFORE_READ_LOCK && op != BEFORE_WRITE_LOCK &&

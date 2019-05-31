@@ -85,9 +85,9 @@ public class PageLockLogSnapshot implements PageLockDump {
 
             assert metaOnLock != 0;
 
-            int holdedLocks = (int)(metaOnLock & LOCK_IDX_MASK) >> OP_OFFSET;
+            int heldLocks = (int)(metaOnLock & LOCK_IDX_MASK) >> OP_OFFSET;
 
-            assert holdedLocks >= 0;
+            assert heldLocks >= 0;
 
             int op = metaOnLock & LOCK_OP_MASK;
 
@@ -95,7 +95,7 @@ public class PageLockLogSnapshot implements PageLockDump {
 
             long pageId = pages.getPageId(itemIdx);
 
-            lockLog.add(new PageLockLogSnapshot.LogEntry(pageId, structureId, op, holdedLocks));
+            lockLog.add(new PageLockLogSnapshot.LogEntry(pageId, structureId, op, heldLocks));
         }
 
         return lockLog;

@@ -405,7 +405,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                     }
 
                     if (name.equals(thInWaitName)) {
-                        if (state.holdedLockCnt == 0)
+                        if (state.heldLockCnt == 0)
                             error.set(new Exception("Thread should hold lock." + state));
 
                         if (state.thread.getState() != Thread.State.WAITING)
@@ -415,7 +415,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                     }
 
                     if (name.equals(thInRunnableName)) {
-                        if (state.holdedLockCnt == 0)
+                        if (state.heldLockCnt == 0)
                             error.set(new Exception("Thread should hold lock." + state));
 
                         if (state.thread.getState() != Thread.State.RUNNABLE)

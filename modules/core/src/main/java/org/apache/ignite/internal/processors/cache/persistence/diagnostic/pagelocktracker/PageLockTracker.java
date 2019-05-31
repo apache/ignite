@@ -58,7 +58,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /** */
     protected final PageMetaInfoStore pages;
     /** Counter for track lock/unlock operations. */
-    protected int holdedLockCnt;
+    protected int heldLockCnt;
     /** */
     protected int nextOp;
     /** */
@@ -277,11 +277,11 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     /**
      *
      */
-    public int holdedLocksNumber() {
+    public int heldLocksNumber() {
         // Read  volatile for thread safety.
         boolean locked = this.locked;
 
-        return holdedLockCnt;
+        return heldLockCnt;
     }
 
     /** */

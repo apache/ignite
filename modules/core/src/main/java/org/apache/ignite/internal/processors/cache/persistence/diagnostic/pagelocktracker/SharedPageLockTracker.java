@@ -310,7 +310,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
             e -> {
                 PageLockTracker<? extends PageLockDump> lt = e.getValue();
 
-                return new State(lt.operationsCounter(), lt.holdedLocksNumber(), threadIdToThreadRef.get(e.getKey()));
+                return new State(lt.operationsCounter(), lt.heldLocksNumber(), threadIdToThreadRef.get(e.getKey()));
             }
         ));
     }
@@ -329,7 +329,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
             if (state == null)
                 return;
 
-            boolean threadHoldedLocks = state.holdedLockCnt != 0;
+            boolean threadHoldedLocks = state.heldLockCnt != 0;
 
             // If thread holds a lock and does not change state it may be hanged.
             if (prevState.equals(state) && threadHoldedLocks)
@@ -380,7 +380,7 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
         /**
          *
          */
-        final long holdedLockCnt;
+        final long heldLockCnt;
         /**
          *
          */
@@ -389,9 +389,9 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
         /**
          *
          */
-        private State(long threadOpCnt, long holdedLockCnt, Thread thread) {
+        private State(long threadOpCnt, long heldLockCnt, Thread thread) {
             this.threadOpCnt = threadOpCnt;
-            this.holdedLockCnt = holdedLockCnt;
+            this.heldLockCnt = heldLockCnt;
             this.thread = thread;
         }
 
@@ -403,13 +403,13 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
                 return false;
             State state = (State)o;
             return threadOpCnt == state.threadOpCnt &&
-                holdedLockCnt == state.holdedLockCnt &&
+                heldLockCnt == state.heldLockCnt &&
                 Objects.equals(thread, state.thread);
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return Objects.hash(threadOpCnt, holdedLockCnt, thread);
+            return Objects.hash(threadOpCnt, heldLockCnt, thread);
         }
     }
 
