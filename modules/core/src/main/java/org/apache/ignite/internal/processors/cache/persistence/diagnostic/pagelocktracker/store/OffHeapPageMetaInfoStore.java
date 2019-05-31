@@ -31,11 +31,27 @@ public class OffHeapPageMetaInfoStore implements PageMetaInfoStore {
     /**
      *
      */
-    private static final int STEP = 4;
+    private static final long OVERHEAD_SIZE = 16 + 4 + 4 + 8 + 8;
     /**
      *
      */
-    private static final long OVERHEAD_SIZE = 16 + 4 + 4 + 8 + 8;
+    private static final int PAGE_ID_OFFSET = 0;
+    /**
+     *
+     */
+    private static final int PAGE_HEADER_ADDRESS_OFFSET = 8;
+    /**
+     *
+     */
+    private static final int PAGE_ADDRESS_OFFSET = 16;
+    /**
+     *
+     */
+    private static final int PAGE_META_OFFSET = 24;
+    /**
+     *
+     */
+    private static final int STEP = 4;
     /**
      *
      */
@@ -96,47 +112,47 @@ public class OffHeapPageMetaInfoStore implements PageMetaInfoStore {
 
     /** {@inheritDoc} */
     @Override public void add(int itemIdx, int op, int structureId, long pageId, long pageAddrHeader, long pageAddr) {
-        GridUnsafe.putLong(offset(itemIdx), pageId);
-        GridUnsafe.putLong(offset(itemIdx) + 8, pageAddrHeader);
-        GridUnsafe.putLong(offset(itemIdx) + 16, pageAddr);
-        GridUnsafe.putLong(offset(itemIdx) + 24, join(structureId, op));
+        GridUnsafe.putLong(offset(itemIdx) + PAGE_ID_OFFSET, pageId);
+        GridUnsafe.putLong(offset(itemIdx) + PAGE_HEADER_ADDRESS_OFFSET, pageAddrHeader);
+        GridUnsafe.putLong(offset(itemIdx) + PAGE_ADDRESS_OFFSET, pageAddr);
+        GridUnsafe.putLong(offset(itemIdx) + PAGE_META_OFFSET, join(structureId, op));
     }
 
     /** {@inheritDoc} */
     @Override public void remove(int itemIdx) {
-        GridUnsafe.putLong(offset(itemIdx), 0);
-        GridUnsafe.putLong(offset(itemIdx) + 8, 0);
-        GridUnsafe.putLong(offset(itemIdx) + 16, 0);
-        GridUnsafe.putLong(offset(itemIdx) + 24, 0);
+        GridUnsafe.putLong(offset(itemIdx) + PAGE_ID_OFFSET, 0);
+        GridUnsafe.putLong(offset(itemIdx) + PAGE_HEADER_ADDRESS_OFFSET, 0);
+        GridUnsafe.putLong(offset(itemIdx) + PAGE_ADDRESS_OFFSET, 0);
+        GridUnsafe.putLong(offset(itemIdx) + PAGE_META_OFFSET, 0);
     }
 
     /** {@inheritDoc} */
     @Override public int getOperation(int itemIdx) {
-        long structureIdAndOp = GridUnsafe.getLong(offset(itemIdx) + 24);
+        long structureIdAndOp = GridUnsafe.getLong(offset(itemIdx) + PAGE_META_OFFSET);
 
         return (int)((structureIdAndOp >> 32) & LOCK_OP_MASK);
     }
 
     /** {@inheritDoc} */
     @Override public int getStructureId(int itemIdx) {
-        long structureIdAndOp = GridUnsafe.getLong(offset(itemIdx) + 24);
+        long structureIdAndOp = GridUnsafe.getLong(offset(itemIdx) + PAGE_META_OFFSET);
 
         return (int)(structureIdAndOp);
     }
 
     /** {@inheritDoc} */
     @Override public long getPageId(int itemIdx) {
-        return GridUnsafe.getLong(offset(itemIdx));
+        return GridUnsafe.getLong(offset(itemIdx) + PAGE_ID_OFFSET);
     }
 
     /** {@inheritDoc} */
     @Override public long getPageAddrHeader(int itemIdx) {
-        return GridUnsafe.getLong(offset(itemIdx) + 8);
+        return GridUnsafe.getLong(offset(itemIdx) + PAGE_HEADER_ADDRESS_OFFSET);
     }
 
     /** {@inheritDoc} */
     @Override public long getPageAddr(int itemIdx) {
-        return GridUnsafe.getLong(offset(itemIdx) + 16);
+        return GridUnsafe.getLong(offset(itemIdx) + PAGE_ADDRESS_OFFSET);
     }
 
     /**

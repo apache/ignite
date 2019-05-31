@@ -30,7 +30,23 @@ public class HeapPageMetaInfoStore implements PageMetaInfoStore {
     /**
      *
      */
-    private static final int OVERHEAD_SIZE = 8 + 16 + 8 + 8;
+    private static final int OVERHEAD_SIZE = 8 + 16 + 8 + 8 + 4;
+    /**
+     *
+     */
+    private static final int PAGE_ID_OFFSET = 0;
+    /**
+     *
+     */
+    private static final int PAGE_HEADER_ADDRESS_OFFSET = 1;
+    /**
+     *
+     */
+    private static final int PAGE_ADDRESS_OFFSET = 2;
+    /**
+     *
+     */
+    private static final int PAGE_META_OFFSET = 3;
     /**
      *
      */
@@ -77,18 +93,18 @@ public class HeapPageMetaInfoStore implements PageMetaInfoStore {
 
     /** {@inheritDoc} */
     @Override public void add(int itemIdx, int op, int structureId, long pageId, long pageAddrHeader, long pageAddr) {
-        arr[STEP * itemIdx] = pageId;
-        arr[STEP * itemIdx + 1] = pageAddrHeader;
-        arr[STEP * itemIdx + 2] = pageAddr;
-        arr[STEP * itemIdx + 3] = meta(structureId, op);
+        arr[STEP * itemIdx + PAGE_ID_OFFSET] = pageId;
+        arr[STEP * itemIdx + PAGE_HEADER_ADDRESS_OFFSET] = pageAddrHeader;
+        arr[STEP * itemIdx + PAGE_ADDRESS_OFFSET] = pageAddr;
+        arr[STEP * itemIdx + PAGE_META_OFFSET] = meta(structureId, op);
     }
 
     /** {@inheritDoc} */
     @Override public void remove(int itemIdx) {
-        arr[STEP * itemIdx] = 0;
-        arr[STEP * itemIdx + 1] = 0;
-        arr[STEP * itemIdx + 2] = 0;
-        arr[STEP * itemIdx + 3] = 0;
+        arr[STEP * itemIdx + PAGE_ID_OFFSET] = 0;
+        arr[STEP * itemIdx + PAGE_HEADER_ADDRESS_OFFSET] = 0;
+        arr[STEP * itemIdx + PAGE_ADDRESS_OFFSET] = 0;
+        arr[STEP * itemIdx + PAGE_META_OFFSET] = 0;
     }
 
     /** {@inheritDoc} */
