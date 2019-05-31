@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePar
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxSingleThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMvccTxTimeoutSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNestedTxTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxConcurrentGetTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxReadTest;
@@ -205,14 +206,15 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCacheDhtPreloadMessageCountTest.class);
         ignoredTests.add(GridCacheLocalBasicStoreMultithreadedSelfTest.class);
         ignoredTests.add(GridCacheLocalTxReadTest.class);
+        ignoredTests.add(NearCacheMultithreadedUpdateTest.class);
         ignoredTests.add(GridCachePartitionedEvictionSelfTest.class);
         ignoredTests.add(GridCachePartitionedNearDisabledMetricsSelfTest.class);
+        ignoredTests.add(GridCachePartitionedNestedTxTest.class);
         ignoredTests.add(GridCachePartitionedTxConcurrentGetTest.class);
         ignoredTests.add(GridCachePartitionedTxReadTest.class);
         ignoredTests.add(IgniteCrossCacheTxNearEnabledSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyColocatedSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyNearSelfTest.class);
-        ignoredTests.add(NearCacheMultithreadedUpdateTest.class);
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite2.suite(ignoredTests));
 
