@@ -555,15 +555,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             int written = 0;
 
-            while (iter.hasNext() || written != COMPLETE) {
+            while (iter.hasNext() || row.link() == 0) {
                 written = writeWholePages(row, statHolder);
 
                 if (written == COMPLETE) {
-                    if (iter.hasNext()) {
+                    if (iter.hasNext())
                         row = iter.next();
-
-                        written = 0;
-                    }
 
                     continue;
                 }
