@@ -16,7 +16,7 @@
         {"groupId": "com.mchange", "artifactId": "mchange-commons-java", "version": "0.2.11"}
     ],
     "Hive": [
-        {"groupId": "org.apache.hive", "artifactId": "hive-jdbc", "version": "3.1.1"},
+        {"groupId": "org.apache.hive", "artifactId": "hive-jdbc", "version": "3.1.1", "exclude": [{ "groupId": "org.eclipse.jetty", "artifactId": "*" }]},
         {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.2"},
         {"groupId": "com.mchange", "artifactId": "mchange-commons-java", "version": "0.2.11"}
     ],
