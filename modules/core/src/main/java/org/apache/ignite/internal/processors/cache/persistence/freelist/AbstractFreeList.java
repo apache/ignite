@@ -547,14 +547,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public void insertDataRows(Iterator<T> iter, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        assert iter.hasNext();
+        if (!iter.hasNext())
+            return;
 
         try {
             T row = iter.next();
 
             int written = 0;
 
-            while (written != COMPLETE || row.link() == 0) {
+            while (written != COMPLETE || iter.hasNext()) {
                 long pageId = takeReusedPage(row, statHolder);
 
                 AbstractDataPageIO initIo = null;
