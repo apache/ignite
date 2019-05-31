@@ -28,13 +28,12 @@ import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTes
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheNames;
 
 /**
- *
+ * Checks that new joining node accept enabled read-only mode.
  */
 public class ClusterReadOnlyModeNodeJoinTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(cacheConfigurations());
+        return super.getConfiguration(igniteInstanceName).setCacheConfiguration(cacheConfigurations());
     }
 
     /** {@inheritDoc} */
@@ -68,7 +67,7 @@ public class ClusterReadOnlyModeNodeJoinTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        for(int i=0; i<2; i++)
+        for (int i = 0; i < 2; i++)
             assertTrue(grid(i).configuration().getIgniteInstanceName(), grid(i).cluster().readOnly());
 
         assertCachesReadOnlyMode(true, cacheNames());

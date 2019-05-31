@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cluster.ClusterReadOnlyModeCheckedException;
 import org.apache.ignite.internal.processors.service.GridServiceAssignmentsKey;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -42,6 +43,15 @@ import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTes
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheNames;
 
 /**
+ * Checks main functionality of cluster read-only mode. In this mode cluster will be available only for read operations,
+ * all data modification operations in user caches will be rejected with {@link ClusterReadOnlyModeCheckedException}
+ *
+ * 1) Read-only mode could be enabled on active cluster only.
+ * 2) Read-only mode doesn't store on PDS (i.e. after cluster restart enabled read-only mode will be forgotten)
+ * 3) Updates to ignite-sys-cache will be available with enabled read-only mode.
+ * 4) Updates to distributed metastorage will be available with enabled read-only mode.
+ * 5) Read-only mode can't be enabled inside transaction.
+ * 6) Lock can't be get with enabled read-only mode.
  *
  */
 public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
@@ -188,9 +198,9 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
                 clusterReadOnlyLatch.countDown();
             }
             catch (InterruptedException e) {
-                log.error("Thread interruped", e);
+                log.error("Thread interrupted", e);
 
-                fail("Thread interruped!");
+                fail("Thread interrupted!");
             }
         });
 
@@ -206,7 +216,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             tx.commit();
         }
         catch (Exception e) {
-            log.error("TX Failed!", e);
+            log.error("TX Failed", e);
 
             tx.rollback();
         }

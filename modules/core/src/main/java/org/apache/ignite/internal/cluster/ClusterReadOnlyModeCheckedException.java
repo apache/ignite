@@ -75,8 +75,4 @@ public class ClusterReadOnlyModeCheckedException extends IgniteCheckedException 
     public ClusterReadOnlyModeCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
-
-    @Override public String toString() {
-        return super.toString();
-    }
 }

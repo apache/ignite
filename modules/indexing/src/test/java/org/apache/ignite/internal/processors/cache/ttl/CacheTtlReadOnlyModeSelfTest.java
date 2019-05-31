@@ -37,10 +37,10 @@ import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTes
 import static org.apache.ignite.internal.processors.cache.ClusterReadOnlyModeTestUtils.cacheConfigurations;
 
 /**
- *
+ * Checks that enabled read-only mode doesn't affect data expiration.
  */
 public class CacheTtlReadOnlyModeSelfTest extends GridCommonAbstractTest {
-    /** */
+    /** Expiration timeout in seconds. */
     private static final int EXPIRATION_TIMEOUT = 10;
 
     /** Cache configurations. */
