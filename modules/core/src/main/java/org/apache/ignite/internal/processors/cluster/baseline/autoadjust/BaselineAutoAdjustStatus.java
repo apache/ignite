@@ -16,6 +16,8 @@
 
 package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Statistic of baseline auto-adjust.
  */
@@ -67,6 +69,11 @@ public class BaselineAutoAdjustStatus {
      */
     public TaskState getTaskState() {
         return taskState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BaselineAutoAdjustStatus.class, this);
     }
 
     /**
