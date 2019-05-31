@@ -32,11 +32,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -118,7 +118,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
     }
 
     /** */
-    @IgniteIgnore(value = "https://issues.apache.org/jira/browse/IGNITE-9806", forceFailure = false)
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9806")
     @Test
     public void testCommitErrorOnColocatedNode2PC() throws Exception {
         nodesCnt = 3;
