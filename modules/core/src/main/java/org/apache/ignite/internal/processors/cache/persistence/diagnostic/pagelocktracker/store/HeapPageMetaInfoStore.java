@@ -30,7 +30,7 @@ public class HeapPageMetaInfoStore implements PageMetaInfoStore {
     /**
      *
      */
-    private static final int OVERHEAD_SIZE = 8 + 16 + 8 + 8 + 4;
+    private static final int OVERHEAD_SIZE = 8 + 16 + 8 + 8;
     /**
      *
      */
