@@ -222,7 +222,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             part.release();
 
             if (cctx.group().metrics0() != null)
-                cctx.group().metrics0().decIndexBuildCountPartitionsLeft();
+                cctx.group().metrics0().decrementIndexBuildCountPartitionsLeft();
         }
     }
 

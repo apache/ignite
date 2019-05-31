@@ -128,6 +128,12 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
         return cfg;
     }
 
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();

@@ -46,7 +46,7 @@ public class CacheGroupMetricsImpl implements CacheGroupMetrics {
      * Commit the complete index building for partition.
      * @return Decrement number of partitions need processed for finished indexes create or rebuilding.
      */
-    public long decIndexBuildCountPartitionsLeft() {
+    public long decrementIndexBuildCountPartitionsLeft() {
         return indexBuildCountPartitionsLeft.decrementAndGet();
     }
 }
