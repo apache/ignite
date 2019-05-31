@@ -49,6 +49,10 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        // We need longer failure detection timeout for PDS enabled mode or checkpoint write lock can block tx
+        // checkpoint read lock for too long causing FH triggering.
+        cfg.setFailureDetectionTimeout(30_000);
+
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         DataRegionConfiguration dfltPlcCfg = new DataRegionConfiguration();
