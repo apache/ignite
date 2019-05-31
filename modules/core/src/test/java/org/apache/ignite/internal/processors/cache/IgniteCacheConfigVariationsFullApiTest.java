@@ -1312,6 +1312,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testInvokeSequentialOptimisticNoStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -1324,6 +1325,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testInvokeSequentialPessimisticNoStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -1336,6 +1338,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testInvokeSequentialOptimisticWithStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -1348,6 +1351,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testInvokeSequentialPessimisticWithStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -1960,6 +1964,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testNullInTx() throws Exception {
         if (!txShouldBeUsed())
@@ -3695,6 +3700,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testLoadAll() throws Exception {
         if (!storeEnabled())
@@ -3783,6 +3789,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testClear() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
@@ -4229,6 +4236,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testPeekExpired() throws Exception {
         final IgniteCache<String, Integer> c = jcache();
@@ -4575,6 +4583,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
