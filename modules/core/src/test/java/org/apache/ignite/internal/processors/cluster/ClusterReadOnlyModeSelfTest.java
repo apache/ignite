@@ -81,6 +81,33 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testDistributedMetastorageAvailableForUpdatesOnReadOnlyCluster() throws Exception {
+        IgniteEx node = startGrids(SERVER_NODES_COUNT);
+
+        node.cluster().active(true);
+
+        assertFalse(node.cluster().readOnly());
+
+        String key = "1";
+        String val = "val1";
+
+        node.context().distributedMetastorage().write(key, val);
+
+        node.cluster().readOnly(true);
+
+        assertTrue(node.cluster().readOnly());
+
+        assertEquals(val, node.context().distributedMetastorage().read(key));
+        assertEquals(val, grid(1).context().distributedMetastorage().read(key));
+
+        grid(1).context().distributedMetastorage().remove(key);
+
+        assertNull(node.context().distributedMetastorage().read(key));
+        assertNull(grid(1).context().distributedMetastorage().read(key));
+    }
+
+    /** */
+    @Test
     public void testChangeReadOnlyModeOnInactiveClusterFails() throws Exception {
         startGrid(0);
 
@@ -218,7 +245,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testIgniteUtilityCacheAvaliableForUpdatesOnReadOnlyCluster() throws Exception {
+    public void testIgniteUtilityCacheAvailableForUpdatesOnReadOnlyCluster() throws Exception {
         IgniteEx grid = startGrid(0);
 
         grid.cluster().active(true);
