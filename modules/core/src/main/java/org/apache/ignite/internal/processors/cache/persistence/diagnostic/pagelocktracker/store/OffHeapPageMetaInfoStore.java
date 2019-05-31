@@ -51,7 +51,7 @@ public class OffHeapPageMetaInfoStore implements PageMetaInfoStore {
     /**
      *
      */
-    private static final int STEP = 4;
+    private static final int ITEM_SIZE = 4;
     /**
      *
      */
@@ -74,7 +74,7 @@ public class OffHeapPageMetaInfoStore implements PageMetaInfoStore {
      */
     public OffHeapPageMetaInfoStore(int capacity, @Nullable MemoryCalculator memCalc) {
         this.capacity = capacity;
-        this.size = this.capacity * (8 * STEP);
+        this.size = this.capacity * (8 * ITEM_SIZE);
         this.ptr = allocate(size);
         this.memCalc = memCalc;
 
@@ -159,9 +159,9 @@ public class OffHeapPageMetaInfoStore implements PageMetaInfoStore {
      *
      */
     private long offset(long itemIdx) {
-        long offset = ptr + itemIdx * 8 * STEP;
+        long offset = ptr + itemIdx * 8 * ITEM_SIZE;
 
-        assert offset >= ptr && offset <= ((ptr + size) - 8 * STEP) :"offset=" + (offset - ptr) + ", size=" + size;
+        assert offset >= ptr && offset <= ((ptr + size) - 8 * ITEM_SIZE) :"offset=" + (offset - ptr) + ", size=" + size;
 
         return offset;
     }

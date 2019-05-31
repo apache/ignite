@@ -21,8 +21,6 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.LOCK_OP_MASK;
-
 /**
  *
  */
@@ -50,7 +48,7 @@ public class HeapPageMetaInfoStore implements PageMetaInfoStore {
     /**
      *
      */
-    private static final int STEP = 4;
+    private static final int ITEM_SIZE = 4;
     /**
      *
      */
@@ -64,7 +62,7 @@ public class HeapPageMetaInfoStore implements PageMetaInfoStore {
      *
      */
     public HeapPageMetaInfoStore(int capacity, @Nullable MemoryCalculator memoryCalc) {
-        this.arr = new long[capacity * STEP];
+        this.arr = new long[capacity * ITEM_SIZE];
         this.memoryCalc = memoryCalc;
 
         if (memoryCalc != null)
@@ -78,7 +76,7 @@ public class HeapPageMetaInfoStore implements PageMetaInfoStore {
 
     /** {@inheritDoc} */
     @Override public int capacity() {
-        return arr.length / STEP;
+        return arr.length / ITEM_SIZE;
     }
 
     /** {@inheritDoc} */
@@ -93,47 +91,47 @@ public class HeapPageMetaInfoStore implements PageMetaInfoStore {
 
     /** {@inheritDoc} */
     @Override public void add(int itemIdx, int op, int structureId, long pageId, long pageAddrHeader, long pageAddr) {
-        arr[STEP * itemIdx + PAGE_ID_OFFSET] = pageId;
-        arr[STEP * itemIdx + PAGE_HEADER_ADDRESS_OFFSET] = pageAddrHeader;
-        arr[STEP * itemIdx + PAGE_ADDRESS_OFFSET] = pageAddr;
-        arr[STEP * itemIdx + PAGE_META_OFFSET] = meta(structureId, op);
+        arr[ITEM_SIZE * itemIdx + PAGE_ID_OFFSET] = pageId;
+        arr[ITEM_SIZE * itemIdx + PAGE_HEADER_ADDRESS_OFFSET] = pageAddrHeader;
+        arr[ITEM_SIZE * itemIdx + PAGE_ADDRESS_OFFSET] = pageAddr;
+        arr[ITEM_SIZE * itemIdx + PAGE_META_OFFSET] = meta(structureId, op);
     }
 
     /** {@inheritDoc} */
     @Override public void remove(int itemIdx) {
-        arr[STEP * itemIdx + PAGE_ID_OFFSET] = 0;
-        arr[STEP * itemIdx + PAGE_HEADER_ADDRESS_OFFSET] = 0;
-        arr[STEP * itemIdx + PAGE_ADDRESS_OFFSET] = 0;
-        arr[STEP * itemIdx + PAGE_META_OFFSET] = 0;
+        arr[ITEM_SIZE * itemIdx + PAGE_ID_OFFSET] = 0;
+        arr[ITEM_SIZE * itemIdx + PAGE_HEADER_ADDRESS_OFFSET] = 0;
+        arr[ITEM_SIZE * itemIdx + PAGE_ADDRESS_OFFSET] = 0;
+        arr[ITEM_SIZE * itemIdx + PAGE_META_OFFSET] = 0;
     }
 
     /** {@inheritDoc} */
     @Override public int getOperation(int itemIdx) {
-        long structureIdAndOp = arr[STEP * itemIdx + 3];
+        long structureIdAndOp = arr[ITEM_SIZE * itemIdx + PAGE_META_OFFSET];
 
         return (int)((structureIdAndOp >> 32));
     }
 
     /** {@inheritDoc} */
     @Override public int getStructureId(int itemIdx) {
-        long structureIdAndOp = arr[STEP * itemIdx + 3];
+        long structureIdAndOp = arr[ITEM_SIZE * itemIdx + PAGE_META_OFFSET];
 
         return (int)(structureIdAndOp);
     }
 
     /** {@inheritDoc} */
     @Override public long getPageId(int itemIdx) {
-        return arr[STEP * itemIdx];
+        return arr[ITEM_SIZE * itemIdx];
     }
 
     /** {@inheritDoc} */
     @Override public long getPageAddrHeader(int itemIdx) {
-        return arr[STEP * itemIdx + 1];
+        return arr[ITEM_SIZE * itemIdx + PAGE_HEADER_ADDRESS_OFFSET];
     }
 
     /** {@inheritDoc} */
     @Override public long getPageAddr(int itemIdx) {
-        return arr[STEP * itemIdx + 2];
+        return arr[ITEM_SIZE * itemIdx + PAGE_ADDRESS_OFFSET];
     }
 
     /** {@inheritDoc} */
