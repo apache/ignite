@@ -78,13 +78,17 @@ public abstract class AbstractOptimizationTestBenchmark {
     protected void benchmark() throws Exception {
         beforeBenchmark();
 
-        beforeTest();
+        Map<TestResultParameterInfo, Comparable> withoutOptimization = null;
 
-        enableOptimization(false);
+        if (canDisableOptimization()) {
+            beforeTest();
 
-        Map<TestResultParameterInfo, Comparable> withoutOptimization = testGrid();
+            enableOptimization(false);
 
-        afterTest();
+            withoutOptimization = testGrid();
+
+            afterTest();
+        }
 
         beforeTest();
 
@@ -94,11 +98,13 @@ public abstract class AbstractOptimizationTestBenchmark {
 
         afterTest();
 
-        log.info("Before optimization: ");
+        if (canDisableOptimization()) {
+            log.info("Before optimization: ");
 
-        withoutOptimization.forEach((k, v) -> {
-            log.info(k.name + ": " + v);
-        });
+            withoutOptimization.forEach((k, v) -> {
+                log.info(k.name + ": " + v);
+            });
+        }
 
         log.info("After optimization: ");
 
@@ -106,27 +112,29 @@ public abstract class AbstractOptimizationTestBenchmark {
             log.info(k.name + ": " + v);
         });
 
-        withoutOptimization.forEach((k, deoptimized) -> {
-            Comparable optimized = withOptimization.get(k);
+        if (canDisableOptimization()) {
+            withoutOptimization.forEach((k, deoptimized) -> {
+                Comparable optimized = withOptimization.get(k);
 
-            int comparison = optimized.compareTo(deoptimized);
+                int comparison = optimized.compareTo(deoptimized);
 
-            Integer ratio = null;
+                Integer ratio = null;
 
-            if (optimized instanceof Number && deoptimized instanceof Number) {
-                Number o = (Number)optimized;
-                Number d = (Number)deoptimized;
+                if (optimized instanceof Number && deoptimized instanceof Number) {
+                    Number o = (Number)optimized;
+                    Number d = (Number)deoptimized;
 
-                ratio = 100 - new Double(o.doubleValue() / d.doubleValue() * 100).intValue();
-            }
+                    ratio = 100 - new Double(o.doubleValue() / d.doubleValue() * 100).intValue();
+                }
 
-            if ((comparison > 0 && k.greaterIsBetter) || (comparison < 0 && !k.greaterIsBetter))
-                log.info(k.name + " got better after optimization" +
-                    (ratio == null ? "." : String.format(": changed by %d percent", ratio)));
-            else
-                log.warning(k.name + " got worse after optimization" +
-                    (ratio == null ? "." : String.format(": changed by %d percent", ratio)));
-        });
+                if ((comparison > 0 && k.greaterIsBetter) || (comparison < 0 && !k.greaterIsBetter))
+                    log.info(k.name + " got better after optimization" +
+                        (ratio == null ? "." : String.format(": changed by %d percent", ratio)));
+                else
+                    log.warning(k.name + " got worse after optimization" +
+                        (ratio == null ? "." : String.format(": changed by %d percent", ratio)));
+            });
+        }
 
         afterBenchmark();
     }
@@ -137,6 +145,14 @@ public abstract class AbstractOptimizationTestBenchmark {
      * @param enable whether enable.
      */
     protected abstract void enableOptimization(boolean enable);
+
+    /**
+     * Shows if it is possible to disable optimization via {@link #enableOptimization} to make
+     * some performance comparison.
+     *
+     * @return true if it's possible to disable optimization, false otherwise.
+     */
+    protected abstract boolean canDisableOptimization();
 
     /**
      * Test grid.

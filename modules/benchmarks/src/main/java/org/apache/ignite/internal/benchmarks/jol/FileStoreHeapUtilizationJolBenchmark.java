@@ -33,8 +33,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.benchmarks.AbstractOptimizationTestBenchmark;
 import org.openjdk.jol.info.GraphLayout;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_FILE_STORE_HEAP_OPTIMIZATION;
-
 /**
  *
  */
@@ -81,7 +79,12 @@ public class FileStoreHeapUtilizationJolBenchmark extends AbstractOptimizationTe
 
     /** {@inheritDoc} */
     @Override protected void enableOptimization(boolean enable) {
-        System.setProperty(IGNITE_ENABLE_FILE_STORE_HEAP_OPTIMIZATION, String.valueOf(enable));
+        /* No-op */
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean canDisableOptimization() {
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -49,24 +49,19 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     /** Memory configuration. */
     private final DataStorageConfiguration memCfg;
 
-    /** */
-    private final boolean igniteEnableFileStoreHeapOptimization;
-
     /**
      * @param fileIOFactory File IO factory.
      * @param fileIOFactoryStoreV1 File IO factory for V1 page store and for version checking.
      * @param memCfg Memory configuration.
-     * @param igniteEnableFileStoreHeapOptimization
      */
     public FileVersionCheckingFactory(
         FileIOFactory fileIOFactory,
         FileIOFactory fileIOFactoryStoreV1,
-        DataStorageConfiguration memCfg,
-        boolean igniteEnableFileStoreHeapOptimization) {
+        DataStorageConfiguration memCfg
+    ) {
         this.fileIOFactory = fileIOFactory;
         this.fileIOFactoryStoreV1 = fileIOFactoryStoreV1;
         this.memCfg = memCfg;
-        this.igniteEnableFileStoreHeapOptimization = igniteEnableFileStoreHeapOptimization;
     }
     /** {@inheritDoc} */
     @Override public PageStore createPageStore(
@@ -130,14 +125,13 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         IgniteOutClosure<File> fileProvider,
         int ver,
         AllocatedPageTracker allocatedTracker) {
-        IgniteOutClosure<File> innerFileProvider = igniteEnableFileStoreHeapOptimization ? fileProvider : null;
 
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, file, innerFileProvider, fileIOFactoryStoreV1, memCfg, allocatedTracker);
+                return new FilePageStore(type, file, fileProvider, fileIOFactoryStoreV1, memCfg, allocatedTracker);
 
             case FilePageStoreV2.VERSION:
-                return new FilePageStoreV2(type, file, innerFileProvider, fileIOFactory, memCfg, allocatedTracker);
+                return new FilePageStoreV2(type, file, fileProvider, fileIOFactory, memCfg, allocatedTracker);
 
             default:
                 throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + file.getAbsolutePath() + "]");

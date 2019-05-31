@@ -94,7 +94,6 @@ import static java.lang.String.format;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Objects.requireNonNull;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_FILE_STORE_HEAP_OPTIMIZATION;
 
 /**
  * File page store manager.
@@ -182,10 +181,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private final GridStripedReadWriteLock initDirLock =
         new GridStripedReadWriteLock(Math.max(Runtime.getRuntime().availableProcessors(), 8));
-
-    /** */
-    private final boolean igniteEnableFileStoreHeapOptimization =
-        IgniteSystemProperties.getBoolean(IGNITE_ENABLE_FILE_STORE_HEAP_OPTIMIZATION, false);
 
     /**
      * @param ctx Kernal context.
@@ -494,12 +489,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException {
-        if (igniteEnableFileStoreHeapOptimization) {
-            PageStore store = getStore(grpId, partId);
+        PageStore store = getStore(grpId, partId);
 
-            if (store instanceof FilePageStore)
-                ((FilePageStore)store).dereferenceFile();
-        }
+        if (store instanceof FilePageStore)
+            ((FilePageStore)store).dereferenceFile();
     }
 
     /** {@inheritDoc} */
@@ -707,8 +700,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
                 pageStoreFileIoFactory,
                 pageStoreV1FileIoFactory,
-                igniteCfg.getDataStorageConfiguration(),
-                igniteEnableFileStoreHeapOptimization
+                igniteCfg.getDataStorageConfiguration()
             );
 
             if (encrypted) {
