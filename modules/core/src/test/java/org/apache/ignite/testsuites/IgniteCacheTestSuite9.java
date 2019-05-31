@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutu
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
+import org.apache.ignite.internal.processors.cache.distributed.FailBackupOnAtomicOperationTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
@@ -63,6 +64,8 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         suite.addTestSuite(CleanupRestoredCachesSlowTest.class);
 
         suite.addTestSuite(GridLongRunningInitNewCrdFutureDiagnosticsTest.class);
+
+        suite.addTestSuite(FailBackupOnAtomicOperationTest.class);
 
         return suite;
     }
