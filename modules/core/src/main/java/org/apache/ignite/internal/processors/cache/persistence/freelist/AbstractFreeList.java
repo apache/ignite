@@ -582,9 +582,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                         // Fill the page up to the end.
                         do {
+                            // Current page isn't empty and the data row is large - write large parts on separate pages.
                             if (freeSpace != 0 && row.size() >= MIN_SIZE_FOR_DATA_PAGE)
                                 written = writeWholePages(row, statHolder);
 
+                            // Use the current page if it's empty or the row is small (also for the tail of a large row).
                             if (written != COMPLETE) {
                                 written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this,
                                     writeRowNoPut, initIo, wal, null, row, written, statHolder);
@@ -593,6 +595,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                             }
 
                             freeSpace = io.getFreeSpace(pageAddr);
+
+                            assert freeSpace == 0 || written == COMPLETE;
 
                             if (written != COMPLETE || !iter.hasNext())
                                 break;
