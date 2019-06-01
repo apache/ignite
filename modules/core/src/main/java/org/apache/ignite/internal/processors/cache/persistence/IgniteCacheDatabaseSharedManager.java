@@ -1200,7 +1200,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         File workDir = igniteHomeStr == null ? new File(path) : U.resolveWorkDirectory(igniteHomeStr, path, false);
 
-
         return new File(workDir, consId);
     }
 

@@ -176,8 +176,6 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
         stopGrid(0);
     }
 
-
-
     /**
      * @param useStreamer Use streamer.
      * @param concurrency Concurrency.

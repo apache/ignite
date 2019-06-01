@@ -818,7 +818,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (long i = 0; i < 50; i++)
             cache.put(i, new EnumObject(i, i % 2 == 0 ? EnumType.TYPE_A : EnumType.TYPE_B));
 
-
         assertEnumQry("type = ?", EnumType.TYPE_A, EnumType.TYPE_A, cache, 25);
         assertEnumQry("type > ?", EnumType.TYPE_A, EnumType.TYPE_B, cache, 25);
         assertEnumQry("type < ?", EnumType.TYPE_B, EnumType.TYPE_A, cache, 25);
@@ -977,7 +976,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 }
             }
         }
-
 
         QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
             cache.query(new SqlQuery<Integer, ObjectValue>(ObjectValue.class, "intVal >= ? order by intVal").
