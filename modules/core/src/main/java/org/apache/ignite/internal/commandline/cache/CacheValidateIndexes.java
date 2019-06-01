@@ -121,7 +121,6 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             return checkThrough;
         }
 
-
         /**
          * @return Node id.
          */

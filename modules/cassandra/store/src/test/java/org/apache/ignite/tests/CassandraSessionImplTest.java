@@ -17,25 +17,6 @@
 
 package org.apache.ignite.tests;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
-import org.apache.ignite.cache.store.cassandra.session.BatchExecutionAssistant;
-import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
-import org.apache.ignite.cache.store.cassandra.session.WrappedPreparedStatement;
-import org.junit.Test;
-
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ColumnDefinitions;
@@ -48,13 +29,32 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
+import org.apache.ignite.cache.store.cassandra.session.BatchExecutionAssistant;
+import org.apache.ignite.cache.store.cassandra.session.CassandraSessionImpl;
+import org.apache.ignite.cache.store.cassandra.session.WrappedPreparedStatement;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CassandraSessionImplTest {
 
     private PreparedStatement preparedStatement1 = mockPreparedStatement();
+
     private PreparedStatement preparedStatement2 = mockPreparedStatement();
 
     private MyBoundStatement1 boundStatement1 = new MyBoundStatement1(preparedStatement1);
+
     private MyBoundStatement2 boundStatement2 = new MyBoundStatement2(preparedStatement2);
 
     @SuppressWarnings("unchecked")

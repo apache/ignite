@@ -76,6 +76,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
         return cfg;
     }
+
     /**
      * Tests that failover don't pick local node if it has been excluded from topology.
      *

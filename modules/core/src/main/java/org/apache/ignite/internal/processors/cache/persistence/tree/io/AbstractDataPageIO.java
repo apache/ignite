@@ -418,7 +418,6 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
             if (i > directCnt && itemId(getItem(pageAddr, i - 1)) >= itemId)
                 valid = false;
 
-
             b.a(itemId).a('^').a(directIdx);
         }
 

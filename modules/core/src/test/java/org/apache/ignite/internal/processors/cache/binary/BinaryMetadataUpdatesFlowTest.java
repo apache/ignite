@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.ArrayList;
@@ -237,7 +238,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         validateCache(deafClient);
         validateCache(regClient);
     }
-
 
     /**
      * Validates that all updates are readable on the specified node.

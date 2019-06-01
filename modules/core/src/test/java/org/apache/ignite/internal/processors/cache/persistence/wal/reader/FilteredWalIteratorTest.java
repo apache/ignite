@@ -57,12 +57,16 @@ import static org.mockito.Mockito.when;
 public class FilteredWalIteratorTest {
     /** Count of different records sequence per filter. */
     private static final int ITERATORS_COUNT_PER_FILTER = 20;
+
     /** Count of records on one iterator. */
     private static final int RECORDS_COUNT_IN_ITERATOR = 30;
+
     /** **/
     private static Random random = new Random();
+
     /** **/
     private static FileWALPointer ZERO_POINTER = new FileWALPointer(0, 0, 0);
+
     /** **/
     private static IgniteBiTuple<WALPointer, WALRecord> TEST_RECORD = new IgniteBiTuple<>(
         ZERO_POINTER, new MetastoreDataRecord("key", new byte[0])
@@ -70,8 +74,10 @@ public class FilteredWalIteratorTest {
 
     /** Customized iterator for test. */
     private WALIterator mockedIter;
+
     /** Iterator filter for test. */
     private Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter;
+
     /** Expected result for iterator and filter. */
     private List<IgniteBiTuple<WALPointer, WALRecord>> expRes;
 

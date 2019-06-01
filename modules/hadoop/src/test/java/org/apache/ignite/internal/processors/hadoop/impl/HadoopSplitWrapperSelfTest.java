@@ -69,6 +69,4 @@ public class HadoopSplitWrapperSelfTest extends HadoopAbstractSelfTest {
             }
         }, AssertionError.class, null);
     }
-
-
 }

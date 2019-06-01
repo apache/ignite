@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
@@ -69,7 +70,6 @@ public class CacheGroupLocalConfigurationSelfTest extends GridCommonAbstractTest
 
             cfg.setCacheConfiguration(ccfg);
         }
-
 
         return cfg;
     }
