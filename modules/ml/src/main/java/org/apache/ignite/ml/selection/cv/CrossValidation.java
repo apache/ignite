@@ -321,7 +321,6 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
         return scores;
     }
 
-
     /**
      * Computes cross-validated metrics with a passed parameter grid.
      *
@@ -352,7 +351,6 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
 
         paramSets.forEach(paramSet -> {
             Map<String, Double> paramMap = new HashMap<>();
-
 
             for (int paramIdx = 0; paramIdx < paramSet.length; paramIdx++) {
                 String paramName = paramGrid.getParamNameByIndex(paramIdx);
@@ -400,7 +398,6 @@ public class CrossValidation<M extends IgniteModel<Vector, L>, L, K, V> {
                 new SHA256UniformMapper<>(),
                 amountOfFolds
             );
-
 
             cvRes.addScores(locScores, paramMap);
 

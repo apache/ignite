@@ -98,7 +98,6 @@ public class Step_7_Split_train_test {
                         minMaxScalerPreprocessor
                     );
 
-
                 DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(5, 0);
 
                 // Train decision tree model.

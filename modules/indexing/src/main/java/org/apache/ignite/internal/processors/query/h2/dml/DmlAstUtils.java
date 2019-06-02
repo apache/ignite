@@ -311,7 +311,6 @@ public final class DmlAstUtils {
         return isEqualityCondition(op, false);
     }
 
-
     /**
      * Generate SQL SELECT based on UPDATE's WHERE, LIMIT, etc.
      *

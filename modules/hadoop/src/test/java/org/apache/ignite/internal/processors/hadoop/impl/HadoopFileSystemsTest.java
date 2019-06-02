@@ -61,7 +61,6 @@ public class HadoopFileSystemsTest extends HadoopAbstractSelfTest {
         return 1;
     }
 
-
     /**
      * Test the file system with specified URI for the multi-thread working directory support.
      *

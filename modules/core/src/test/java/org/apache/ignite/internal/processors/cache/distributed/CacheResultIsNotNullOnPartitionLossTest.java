@@ -140,6 +140,7 @@ public class CacheResultIsNotNullOnPartitionLossTest extends GridCommonAbstractT
     public void testCacheResultIsNotNullOnServer() throws Exception {
         testCacheResultIsNotNull0(grid(SERVERS - 2));
     }
+
     /**
      * @throws Exception If failed.
      */

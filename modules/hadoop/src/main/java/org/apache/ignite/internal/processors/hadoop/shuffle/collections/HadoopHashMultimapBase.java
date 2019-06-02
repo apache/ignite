@@ -90,6 +90,7 @@ public abstract class HadoopHashMultimapBase extends HadoopMultimapBase {
     protected long value(long meta) {
         return mem.readLong(meta + 16);
     }
+
     /**
      * @param meta Meta pointer.
      * @param val Value pointer.

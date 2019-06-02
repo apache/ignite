@@ -23,6 +23,7 @@ package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 public class BaselineAutoAdjustStatus {
     /** Timeout of task of baseline adjust. */
     private final long timeUntilAutoAdjust;
+
     /** State of baseline adjust task. */
     private final TaskState taskState;
 
