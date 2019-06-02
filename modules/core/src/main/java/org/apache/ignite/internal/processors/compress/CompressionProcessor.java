@@ -51,7 +51,7 @@ public class CompressionProcessor extends GridProcessorAdapter {
     public static final int ZSTD_DEFAULT_LEVEL = 3;
 
     /** */
-    public static final byte UNCOMPRESSED_PAGE = 0;
+    protected static final byte UNCOMPRESSED_PAGE = 0;
 
     /** */
     protected static final byte COMPACTED_PAGE = 1;
