@@ -54,6 +54,7 @@ import org.jetbrains.annotations.NotNull;
  */
 class ProgressWatchdog {
     public static final int CHECK_PERIOD_MSEC = 1000;
+
     /** Progress counter, Overall records processed. */
     private final LongAdder overallRecordsProcessed = new LongAdder();
 

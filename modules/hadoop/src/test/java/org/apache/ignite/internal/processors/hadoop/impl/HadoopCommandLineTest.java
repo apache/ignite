@@ -281,7 +281,6 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         return filteredJvmArgs.toString();
     }
 
-
     /**
      * Waits for process exit and prints the its output.
      *

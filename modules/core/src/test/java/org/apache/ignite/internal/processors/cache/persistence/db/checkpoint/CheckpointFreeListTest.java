@@ -72,8 +72,10 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Cache name. */
     private static final String CACHE_NAME = "cacheOne";
+
     /** Cache size */
     public static final int CACHE_SIZE = 30000;
 

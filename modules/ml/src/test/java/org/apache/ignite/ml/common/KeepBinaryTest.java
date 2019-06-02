@@ -39,8 +39,10 @@ import java.util.UUID;
 public class KeepBinaryTest extends GridCommonAbstractTest {
     /** Number of nodes in grid. */
     private static final int NODE_COUNT = 2;
+
     /** Number of samples. */
     public static final int NUMBER_OF_SAMPLES = 1000;
+
     /** Half of samples. */
     public static final int HALF = NUMBER_OF_SAMPLES / 2;
 

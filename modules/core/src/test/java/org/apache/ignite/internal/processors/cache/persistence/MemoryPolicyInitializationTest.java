@@ -250,7 +250,6 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
         );
     }
 
-
     /**
      *
      */

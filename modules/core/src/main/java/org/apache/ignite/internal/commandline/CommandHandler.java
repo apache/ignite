@@ -337,7 +337,6 @@ public class CommandHandler {
         return IN.nextLine();
     }
 
-
     /**
      * Requests interactive user confirmation if forthcoming operation is dangerous.
      *

@@ -60,6 +60,7 @@ public class PageHistoryDiagnoster {
     /** Kernal context. */
     @GridToStringExclude
     protected final GridKernalContext ctx;
+
     /** Diagnostic logger. */
     @GridToStringExclude
     protected final IgniteLogger log;
@@ -307,8 +308,10 @@ public class PageHistoryDiagnoster {
     public static class DiagnosticPageBuilder {
         /** Pages for searching in WAL. */
         List<T2<Integer, Long>> pageIds = new ArrayList<>();
+
         /** Action after which should be executed after WAL scanning . */
         Set<DiagnosticProcessor.DiagnosticAction> actions = EnumSet.noneOf(DiagnosticProcessor.DiagnosticAction.class);
+
         /** Folder for dump diagnostic info. */
         File dumpFolder;
 

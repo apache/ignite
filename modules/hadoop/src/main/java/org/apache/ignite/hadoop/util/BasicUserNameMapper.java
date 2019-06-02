@@ -34,7 +34,7 @@ public class BasicUserNameMapper implements UserNameMapper {
     private Map<String, String> mappings;
 
     /** Whether to use default user name. */
-    private boolean useDfltUsrName;;
+    private boolean useDfltUsrName;
 
     /** Default user name. */
     private String dfltUsrName;
