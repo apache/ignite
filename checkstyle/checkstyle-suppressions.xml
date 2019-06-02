@@ -21,7 +21,8 @@
     "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
-    <suppress checks="EmptyLineSeparator" files="[\\/]BCrypt\.java" />
-
-    <suppress checks="EmptyLineSeparator" files="[\\/]ConcurrentLinkedDeque8\.java" />
+    <suppress checks="EmptyLineSeparator" files="BCrypt\.java|
+        ConcurrentLinkedDeque8\.java|
+        XGBoostModelLexer\.java|
+        XGBoostModelParser\.java"/>
 </suppressions>
