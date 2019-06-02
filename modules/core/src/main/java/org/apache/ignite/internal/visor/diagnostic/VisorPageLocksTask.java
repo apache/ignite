@@ -25,20 +25,19 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 @GridInternal
-public class VisorPageLocksTrackerTask extends VisorOneNodeTask<VisorPageLocksTrackerArgs, VisorPageLocksTrackerResult> {
+public class VisorPageLocksTask extends VisorOneNodeTask<VisorPageLocksTrackerArgs, VisorPageLocksResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorPageLocksTrackerArgs, VisorPageLocksTrackerResult> job(
-        VisorPageLocksTrackerArgs arg) {
+    @Override protected VisorJob<VisorPageLocksTrackerArgs, VisorPageLocksResult> job(VisorPageLocksTrackerArgs arg) {
         return new VisorPageLocksTrackerJob(arg, debug);
     }
 
     /**
      *
      */
-    private static class VisorPageLocksTrackerJob extends VisorJob<VisorPageLocksTrackerArgs, VisorPageLocksTrackerResult> {
+    private static class VisorPageLocksTrackerJob extends VisorJob<VisorPageLocksTrackerArgs, VisorPageLocksResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -51,7 +50,7 @@ public class VisorPageLocksTrackerTask extends VisorOneNodeTask<VisorPageLocksTr
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorPageLocksTrackerResult run(VisorPageLocksTrackerArgs arg) {
+        @Override protected VisorPageLocksResult run(VisorPageLocksTrackerArgs arg) {
             PageLockTrackerManager lockTrackerMgr = ignite.context().cache().context().diagnostic().pageLockTracker();
 
             String op = arg.operation();
@@ -65,7 +64,7 @@ public class VisorPageLocksTrackerTask extends VisorOneNodeTask<VisorPageLocksTr
                     result = "Page locks dump was printed to console on nodeId=" +
                         ignite.localNode().id() + ", consistentId=" + ignite.localNode().consistentId();
                 }
-                else if ("file".equals(arg.type())) {
+                else {
                     String filePath = arg.filePath() != null ?
                         lockTrackerMgr.dumpLocksToFile(arg.filePath()) :
                         lockTrackerMgr.dumpLocksToFile();
@@ -78,7 +77,7 @@ public class VisorPageLocksTrackerTask extends VisorOneNodeTask<VisorPageLocksTr
             else
                 result = "Unsupported operation: " + op + ", " + nodeInfo(ignite.localNode());
 
-            return new VisorPageLocksTrackerResult(result);
+            return new VisorPageLocksResult(result);
         }
 
         /**

@@ -17,28 +17,38 @@
 
 package org.apache.ignite.internal.commandline.diagnostic;
 
+import java.io.File;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.TaskExecutor;
+import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksResult;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerArgs;
-import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerResult;
-import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerTask;
+import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTask;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
-import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.PAGE_LOCKS_TRACKER;
+import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.PAGE_LOCKS;
 
 /**
  *
  */
-public class PageLocksTrackerCommand implements Command<PageLocksTrackerCommand.Args> {
-    /** */
+public class PageLocksCommand implements Command<PageLocksCommand.Args> {
+    /**
+     *
+     */
+    public static final String COMMAND = "dump";
+
+    /**
+     *
+     */
     private Args args;
 
-    /** */
+    /**
+     *
+     */
     private CommandLogger logger;
 
     /** {@inheritDoc} */
@@ -47,12 +57,12 @@ public class PageLocksTrackerCommand implements Command<PageLocksTrackerCommand.
 
         VisorPageLocksTrackerArgs taskArg = new VisorPageLocksTrackerArgs(args.op, args.type, args.filePath);
 
-        VisorPageLocksTrackerResult res;
+        VisorPageLocksResult res;
 
         try (GridClient client = Command.startClient(clientCfg)) {
             res = TaskExecutor.executeTask(
                 client,
-                VisorPageLocksTrackerTask.class,
+                VisorPageLocksTask.class,
                 taskArg,
                 clientCfg
             );
@@ -73,21 +83,20 @@ public class PageLocksTrackerCommand implements Command<PageLocksTrackerCommand.
         if (argIter.hasNextSubArg()) {
             String cmd = argIter.nextArg("").toLowerCase();
 
-            if ("dump".equals(cmd)) {
-                String type = "file";
+            if (COMMAND.equals(cmd)) {
+                String type = null;
                 String filePath = null;
 
                 if (argIter.hasNextSubArg()) {
-                    type = argIter.nextArg("").toLowerCase();
+                    String nextArg = argIter.nextArg("").toLowerCase();
 
-                    if (!("log".equals(type) || "file".equals(type)))
-                        throw new IllegalArgumentException("Unsupported dump operation type:" + type);
+                    if ("log".equals(nextArg))
+                        type = nextArg;
+                    else if (new File(nextArg).isDirectory())
+                        filePath = nextArg;
                 }
 
-                if (argIter.hasNextSubArg())
-                    filePath = argIter.nextArg("").toLowerCase();
-
-                args = new Args("dump", type, filePath);
+                args = new Args(COMMAND, type, filePath);
             }
         }
     }
@@ -96,30 +105,36 @@ public class PageLocksTrackerCommand implements Command<PageLocksTrackerCommand.
     @Override public void printUsage(CommandLogger logger) {
         logger.log("View pages locks state information in a node");
         logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump", "// Save dump to file generated in IGNITE_HOME directory."));
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND, "// Save page locks dump to file generated in IGNITE_HOME directory."));
         logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump log","// Pring dump to console on node"));
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND + " log", "// Pring page locks dump to console on node"));
         logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump file","// Save dump to file generated in IGNITE_HOME directory."));
-        logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS_TRACKER, "dump file {path}","// Save dump to specific path."));
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND + " {path}", "// Save page locks dump to specific path."));
         logger.nl();
     }
 
     /**
      * @param res Result.
      */
-    private void printResult(VisorPageLocksTrackerResult res) {
+    private void printResult(VisorPageLocksResult res) {
         logger.log(res.result());
     }
 
-    /** */
+    /**
+     *
+     */
     public static class Args {
-        /** */
+        /**
+         *
+         */
         private final String op;
-        /** */
+        /**
+         *
+         */
         private final String type;
-        /** */
+        /**
+         *
+         */
         private final String filePath;
 
         /**

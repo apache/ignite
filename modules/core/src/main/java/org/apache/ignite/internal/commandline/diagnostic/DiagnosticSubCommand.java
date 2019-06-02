@@ -27,7 +27,7 @@ public enum DiagnosticSubCommand {
     HELP("help", null),
 
     /** */
-    PAGE_LOCKS_TRACKER("pageLocksTracker", new PageLocksTrackerCommand());
+    PAGE_LOCKS("pageLocks", new PageLocksCommand());
 
     /** Diagnostic command name. */
     private final String name;

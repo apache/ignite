@@ -78,7 +78,7 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
             case HELP:
                 break;
 
-            case PAGE_LOCKS_TRACKER:
+            case PAGE_LOCKS:
                 cmd.subcommand().parseArguments(argIter);
 
                 break;

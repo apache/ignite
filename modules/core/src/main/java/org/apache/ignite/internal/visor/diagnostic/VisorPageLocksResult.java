@@ -25,7 +25,7 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 /**
  *
  */
-public class VisorPageLocksTrackerResult extends IgniteDataTransferObject {
+public class VisorPageLocksResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,14 +35,14 @@ public class VisorPageLocksTrackerResult extends IgniteDataTransferObject {
     /**
      *
      */
-    public VisorPageLocksTrackerResult() {
+    public VisorPageLocksResult() {
         //No-op.
     }
 
     /**
      * @param payload Result payload as string.
      */
-    public VisorPageLocksTrackerResult(String payload) {
+    public VisorPageLocksResult(String payload) {
         this.payload = payload;
     }
 
