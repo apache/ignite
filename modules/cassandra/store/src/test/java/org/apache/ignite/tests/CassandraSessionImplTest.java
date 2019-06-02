@@ -52,11 +52,9 @@ import com.datastax.driver.core.exceptions.InvalidQueryException;
 public class CassandraSessionImplTest {
 
     private PreparedStatement preparedStatement1 = mockPreparedStatement();
-
     private PreparedStatement preparedStatement2 = mockPreparedStatement();
 
     private MyBoundStatement1 boundStatement1 = new MyBoundStatement1(preparedStatement1);
-
     private MyBoundStatement2 boundStatement2 = new MyBoundStatement2(preparedStatement2);
 
     @SuppressWarnings("unchecked")
