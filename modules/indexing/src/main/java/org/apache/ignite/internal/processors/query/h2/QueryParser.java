@@ -649,7 +649,6 @@ public class QueryParser {
             streamTbl = DmlAstUtils.gridTableForElement(insert.into()).dataTable();
         }
 
-
         // Create update plan.
         UpdatePlan plan;
 

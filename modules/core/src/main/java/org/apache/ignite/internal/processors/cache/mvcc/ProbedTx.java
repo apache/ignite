@@ -34,12 +34,16 @@ public class ProbedTx implements Message {
 
     /** */
     private UUID nodeId;
+
     /** */
     private GridCacheVersion xidVer;
+
     /** */
     private GridCacheVersion nearXidVer;
+
     /** */
     private long startTime;
+
     /** */
     private int lockCntr;
 

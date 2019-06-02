@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.preprocessing.maxabsscaling;
 
-
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 

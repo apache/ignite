@@ -187,7 +187,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
             msg = concurrency == PESSIMISTIC ? "Failed to lock keys (all partition nodes left the grid)" :
                 "Failed to map keys to nodes (partition is not mapped to any node";
 
-
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() {
                 IgniteCache cache2 = client.cache(CACHE2);
