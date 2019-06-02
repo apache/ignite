@@ -20,7 +20,11 @@ package org.apache.ignite.internal.visor.diagnostic;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collections;
+import java.util.Set;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -35,15 +39,18 @@ public class VisorPageLocksTrackerArgs extends IgniteDataTransferObject {
     private String type;
     /** */
     private String filePath;
+    /** */
+    @Nullable private Set<String> consistentIds;
 
     public VisorPageLocksTrackerArgs() {
 
     }
 
-    public VisorPageLocksTrackerArgs(String op, String type, String filePath) {
+    public VisorPageLocksTrackerArgs(String op, String type, String filePath, Set<String> consistentIds) {
         this.op = op;
         this.type = type;
         this.filePath = filePath;
+        this.consistentIds = consistentIds;
     }
 
     /** {@inheritDoc} */
@@ -71,6 +78,9 @@ public class VisorPageLocksTrackerArgs extends IgniteDataTransferObject {
             out.writeInt(bytes.length);
             out.write(bytes);
         }
+
+        if (consistentIds != null)
+            U.writeCollection(out, consistentIds);
     }
 
     /** {@inheritDoc} */
@@ -104,6 +114,8 @@ public class VisorPageLocksTrackerArgs extends IgniteDataTransferObject {
 
             filePath = new String(bytes);
         }
+
+        consistentIds = U.readSet(in);
     }
 
     public String operation() {
@@ -116,5 +128,9 @@ public class VisorPageLocksTrackerArgs extends IgniteDataTransferObject {
 
     public String filePath() {
         return filePath;
+    }
+
+    public Set<String> nodeIds(){
+        return Collections.unmodifiableSet(consistentIds);
     }
 }

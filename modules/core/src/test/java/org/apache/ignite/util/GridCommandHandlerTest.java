@@ -2689,18 +2689,23 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDiagnosticPageLocksTracker() throws Exception {
-        Ignite ignite = startGrid();
+        Ignite ignite = startGrids(4);
 
         ignite.cluster().active(true);
 
-        String dir = U.defaultWorkDirectory() + "/";
+        String dir = U.defaultWorkDirectory() + "/diagnostic/";
 
         assertEquals(EXIT_CODE_OK, execute("--diagnostic"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "help"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "log"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "file"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocksTracker", "dump", "file", dir));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "help"));
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "log"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir));
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "-a"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "log", "--all"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir, "-a"));
     }
 
     /**

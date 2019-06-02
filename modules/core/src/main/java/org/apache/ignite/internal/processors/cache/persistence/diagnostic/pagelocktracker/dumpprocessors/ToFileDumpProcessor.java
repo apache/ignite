@@ -46,6 +46,9 @@ public class ToFileDumpProcessor {
      */
     public static String toFileDump(PageLockDump pageLockDump, File dir) throws IgniteCheckedException {
         try {
+           if (!dir.exists())
+               dir.mkdirs();
+
             File file = new File(dir, PREFIX_NAME + DATE_FMT.format(new Date(pageLockDump.time())));
 
             return saveToFile(ToStringDumpProcessor.toStringDump(pageLockDump), file);

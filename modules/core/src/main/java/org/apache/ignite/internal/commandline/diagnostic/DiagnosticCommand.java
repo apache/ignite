@@ -24,16 +24,22 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
+import static org.apache.ignite.internal.commandline.CommandLogger.join;
 import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.HELP;
+import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.PAGE_LOCKS;
 
 /**
  *
  */
 public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
-    /** */
+    /**
+     *
+     */
     private DiagnosticSubCommand subcommand;
 
-    /** */
+    /**
+     *
+     */
     private CommandLogger logger;
 
     /** {@inheritDoc} */
@@ -96,12 +102,14 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         logger.logWithIndent("View diagnostic information in a cluster. For more details type:");
-        logger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, DIAGNOSTIC, HELP), 2);
+        logger.logWithIndent(join(" ", UTILITY_NAME, DIAGNOSTIC, HELP), 2);
         logger.nl();
     }
 
-    /** */
+    /**
+     *
+     */
     private void printDiagnosticHelp() {
-        logger.log("TODO print diagnostic help");
+        logger.log(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
     }
 }

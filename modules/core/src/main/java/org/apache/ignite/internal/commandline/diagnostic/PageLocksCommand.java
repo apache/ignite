@@ -18,15 +18,20 @@
 package org.apache.ignite.internal.commandline.diagnostic;
 
 import java.io.File;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.TaskExecutor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksResult;
-import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerArgs;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTask;
+import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerArgs;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
@@ -51,13 +56,37 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
      */
     private CommandLogger logger;
 
+    /**
+     *
+     */
+    private boolean help;
+
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
         this.logger = logger;
 
-        VisorPageLocksTrackerArgs taskArg = new VisorPageLocksTrackerArgs(args.op, args.type, args.filePath);
+        if (help) {
+            help = false;
 
-        VisorPageLocksResult res;
+            printUsage(logger);
+
+            return null;
+        }
+
+        Set<String> nodeIds = args.nodeIds;
+
+        try (GridClient client = Command.startClient(clientCfg)) {
+            if (args.allNodes) {
+                client.compute().nodes().forEach(n -> {
+                    nodeIds.add(String.valueOf(n.consistentId()));
+                    nodeIds.add(n.nodeId().toString());
+                });
+            }
+        }
+
+        VisorPageLocksTrackerArgs taskArg = new VisorPageLocksTrackerArgs(args.op, args.type, args.filePath, nodeIds);
+
+        Map<ClusterNode, VisorPageLocksResult> res;
 
         try (GridClient client = Command.startClient(clientCfg)) {
             res = TaskExecutor.executeTask(
@@ -86,6 +115,9 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
             if (COMMAND.equals(cmd)) {
                 String type = null;
                 String filePath = null;
+                boolean allNodes = false;
+
+                Set<String> nodeIds = new TreeSet<>();
 
                 if (argIter.hasNextSubArg()) {
                     String nextArg = argIter.nextArg("").toLowerCase();
@@ -94,20 +126,44 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
                         type = nextArg;
                     else if (new File(nextArg).isDirectory())
                         filePath = nextArg;
+
+                    if (argIter.hasNextArg()) {
+                        nextArg = argIter.nextArg("").toLowerCase();
+
+                        if ("-a".equals(nextArg) || "--all".equals(nextArg))
+                            allNodes = true;
+                        else {
+                            do {
+                                nodeIds.add(nextArg);
+                            }
+                            while (argIter.hasNextArg());
+                        }
+                    }
                 }
 
-                args = new Args(COMMAND, type, filePath);
+                args = new Args(COMMAND, type, filePath, allNodes, nodeIds);
             }
+            else
+                help = true;
         }
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
-        logger.log("View pages locks state information in a node");
+        logger.log("View pages locks state information on the node or nodes.");
+        logger.log("Use -a or --all for dump locks on all nodes in cluster in the end of command line.");
         logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND, "// Save page locks dump to file generated in IGNITE_HOME directory."));
+            "Example:\n" + UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND, " -a or --all"));
+
+        logger.log("You can specify set of node via list ids in the end of command line.");
         logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND + " log", "// Pring page locks dump to console on node"));
+            "Example:\n" + UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND, " {UUID} {UUID} {UUID} ... " +
+                "or {ConsistentId} {ConsistentId} {ConsistentId}... " +
+                "or {UUID} {ConsistentId} {UUID}..."));
+        logger.log(CommandLogger.join(" ",
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND, "// Save page locks dump to file generated in IGNITE_HOME/work directory."));
+        logger.log(CommandLogger.join(" ",
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND + " log", "// Pring page locks dump to console on the node or nodes."));
         logger.log(CommandLogger.join(" ",
             UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND + " {path}", "// Save page locks dump to specific path."));
         logger.nl();
@@ -116,8 +172,10 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
     /**
      * @param res Result.
      */
-    private void printResult(VisorPageLocksResult res) {
-        logger.log(res.result());
+    private void printResult(Map<ClusterNode, VisorPageLocksResult> res) {
+        res.forEach((n, res0) -> {
+            logger.log(n.id() + " (" + n.consistentId() + ") " + res0.result());
+        });
     }
 
     /**
@@ -136,16 +194,27 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
          *
          */
         private final String filePath;
+        /**
+         *
+         */
+        private final boolean allNodes;
+        /**
+         *
+         */
+        private final Set<String> nodeIds;
 
         /**
          * @param op Operation.
          * @param type Type.
          * @param filePath File path.
+         * @param nodeIds Node ids.
          */
-        public Args(String op, String type, String filePath) {
+        public Args(String op, String type, String filePath, boolean allNodes, Set<String> nodeIds) {
             this.op = op;
             this.type = type;
             this.filePath = filePath;
+            this.allNodes = allNodes;
+            this.nodeIds = nodeIds;
         }
     }
 }
