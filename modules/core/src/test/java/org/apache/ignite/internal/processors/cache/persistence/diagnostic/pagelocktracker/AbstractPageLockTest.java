@@ -23,7 +23,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static java.util.Arrays.stream;
 import static org.junit.Assert.assertEquals;
 
 /** */

@@ -28,7 +28,6 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.TaskExecutor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksResult;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTask;
 import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerArgs;

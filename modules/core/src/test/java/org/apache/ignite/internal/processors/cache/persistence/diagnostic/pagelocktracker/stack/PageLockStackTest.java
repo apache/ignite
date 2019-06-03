@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
