@@ -155,7 +155,9 @@ public class ToStringDumpProcessor {
                 else
                     first = false;
 
-                sb.a(pageId).a("(r=" + lockState.readlock + "|w=" + lockState.writelock + ")");
+                sb.a(pageId)
+                    .a("[" + hexLong(pageId) + "]")
+                    .a("(r=" + lockState.readlock + "|w=" + lockState.writelock + ")");
             }
 
             sb.a("]");
