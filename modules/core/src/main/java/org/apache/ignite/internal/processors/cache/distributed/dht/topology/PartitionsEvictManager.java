@@ -390,9 +390,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** */
         private final GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
 
-        /** */
-        private final AffinityTopologyVersion startVer;
-
         /**
          * @param part Partition.
          * @param grpEvictionCtx Eviction context.
@@ -405,7 +402,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         ) {
             this.part = part;
             this.grpEvictionCtx = grpEvictionCtx;
-            this.startVer = startVer;
 
             size = part.fullSize();
         }
@@ -419,7 +415,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             }
 
             try {
-                boolean success = part.tryClear(grpEvictionCtx, startVer);
+                boolean success = part.tryClear(grpEvictionCtx);
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())

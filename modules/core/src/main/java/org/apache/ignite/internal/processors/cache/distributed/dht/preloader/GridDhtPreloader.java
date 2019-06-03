@@ -250,17 +250,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == OWNING || part.state() == LOST)
                     continue;
 
-                // If partition is currently rented prevent destroy and start clearing process.
-                if (part.state() == RENTING) {
-                    if (part.reserve()) {
-                        part.moving();
-
-                        part.clearAsync();
-
-                        part.release();
-                    }
-                }
-
                 // If partition was destroyed recreate it.
                 if (part.state() == EVICTED) {
                     part.awaitDestroy();
