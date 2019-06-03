@@ -40,6 +40,7 @@ import static org.junit.Assert.assertTrue;
 public abstract class PageLockLogTest extends AbstractPageLockTest {
     /** */
     protected static final int STRUCTURE_ID = 123;
+
     /** */
     protected abstract LockLog createLogStackTracer(String name);
 

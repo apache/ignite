@@ -80,7 +80,6 @@ public class PageLockTrackerManagerTest {
             long offHeapOverhead1 = mgr.getOffHeapOverhead();
             long totalOverhead1 = mgr.getTotalOverhead();
 
-
             Assert.assertTrue(heapOverhead1 > 0);
             Assert.assertTrue(offHeapOverhead1 >= 0);
             Assert.assertTrue(heapOverhead1 > heapOverhead0);
