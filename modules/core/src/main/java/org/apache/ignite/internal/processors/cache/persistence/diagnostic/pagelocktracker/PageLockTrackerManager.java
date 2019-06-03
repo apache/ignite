@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 
 import java.io.File;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -51,10 +52,22 @@ public class PageLockTrackerManager {
     /** */
     private Set<State> threads;
 
+    /** */
+    private final String managerNameId;
+
+
     /**
      * Default constructor.
      */
     public PageLockTrackerManager(IgniteLogger log) {
+        this(log, "mgr_" + UUID.randomUUID().toString());
+    }
+
+    /**
+     * Default constructor.
+     */
+    public PageLockTrackerManager(IgniteLogger log, String managerNameId) {
+        this.managerNameId = managerNameId;
         this.mxBean = new PageLockTrackerMXBeanImpl(this, memoryCalculator);
         this.sharedPageLockTracker = new SharedPageLockTracker(this::onHangThreads, memoryCalculator);
         this.log = log;
@@ -98,7 +111,7 @@ public class PageLockTrackerManager {
 
             try {
                 // Write dump to file.
-                ToFileDumpProcessor.toFileDump(dump, new File(U.defaultWorkDirectory()));
+                ToFileDumpProcessor.toFileDump(dump, new File(U.defaultWorkDirectory()), managerNameId);
             }
             catch (IgniteCheckedException e) {
                 log.warning("Faile to save locks dump file.", e);
@@ -141,7 +154,7 @@ public class PageLockTrackerManager {
         ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
 
         try {
-            return ToFileDumpProcessor.toFileDump(dump, new File(U.defaultWorkDirectory()));
+            return ToFileDumpProcessor.toFileDump(dump, new File(U.defaultWorkDirectory()), managerNameId);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -158,7 +171,7 @@ public class PageLockTrackerManager {
         ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
 
         try {
-            return ToFileDumpProcessor.toFileDump(dump, new File(path));
+            return ToFileDumpProcessor.toFileDump(dump, new File(path), managerNameId);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

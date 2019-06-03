@@ -44,12 +44,12 @@ public class ToFileDumpProcessor {
      * @param pageLockDump Dump.
      * @param dir Directory to save.
      */
-    public static String toFileDump(PageLockDump pageLockDump, File dir) throws IgniteCheckedException {
+    public static String toFileDump(PageLockDump pageLockDump, File dir, String name) throws IgniteCheckedException {
         try {
            if (!dir.exists())
                dir.mkdirs();
 
-            File file = new File(dir, PREFIX_NAME + DATE_FMT.format(new Date(pageLockDump.time())));
+            File file = new File(dir, PREFIX_NAME + name + "_" + DATE_FMT.format(new Date(pageLockDump.time())));
 
             return saveToFile(ToStringDumpProcessor.toStringDump(pageLockDump), file);
         }

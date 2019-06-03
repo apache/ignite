@@ -75,7 +75,7 @@ public class ToFileDumpProcessorTest {
 
         String expDumpStr = ToStringDumpProcessor.toStringDump(pageLockDump);
 
-        String filePath = ToFileDumpProcessor.toFileDump(pageLockDump, file = new File(igHome));
+        String filePath = ToFileDumpProcessor.toFileDump(pageLockDump, file = new File(igHome), "test");
 
         System.out.println("Dump saved:" + filePath);
 

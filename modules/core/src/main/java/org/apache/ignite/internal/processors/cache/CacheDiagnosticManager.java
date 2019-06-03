@@ -38,7 +38,9 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        pageLockTrackerManager = new PageLockTrackerManager(log);
+        String name = cctx.kernalContext().config().getDiscoverySpi().consistentId().toString();
+
+        pageLockTrackerManager = new PageLockTrackerManager(log, name);
 
         registerMetricsMBean(
             cctx.gridConfig(),

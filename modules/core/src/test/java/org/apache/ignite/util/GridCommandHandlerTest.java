@@ -2691,6 +2691,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testDiagnosticPageLocksTracker() throws Exception {
         Ignite ignite = startGrids(4);
 
+        Collection<ClusterNode> nodes = ignite.cluster().nodes();
+
+        List<ClusterNode> nodes0 = new ArrayList<>(nodes);
+
+        ClusterNode node0 = nodes0.get(0);
+        ClusterNode node1 = nodes0.get(1);
+        ClusterNode node2 = nodes0.get(2);
+        ClusterNode node3 = nodes0.get(3);
+
         ignite.cluster().active(true);
 
         String dir = U.defaultWorkDirectory() + "/diagnostic/";
@@ -2700,12 +2709,22 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "help"));
 
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "log"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log"));
         assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir));
 
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "-a"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "log", "--all"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir, "-a"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--all"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log", "--all"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir, "--all"));
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--nodes",
+            node0.id().toString(), node2.id().toString()));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--nodes",
+            node0.consistentId().toString(), node2.consistentId().toString()));
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log", "--nodes",
+            node1.id().toString(), node3.id().toString()));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir, "--nodes",
+            node1.consistentId().toString(), node3.consistentId().toString()));
     }
 
     /**

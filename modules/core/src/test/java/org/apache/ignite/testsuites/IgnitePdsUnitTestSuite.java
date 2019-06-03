@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerTestSuit;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTableTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgnitePageMemReplaceDelayedWriteUnitTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgniteThrottlingUnitTest;

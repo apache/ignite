@@ -43,7 +43,11 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
     /**
      *
      */
-    public static final String COMMAND = "dump";
+    public static final String DUMP = "dump";
+    /**
+     *
+     */
+    public static final String DUMP_LOG = "dump_log";
 
     /**
      *
@@ -111,36 +115,31 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
         if (argIter.hasNextSubArg()) {
             String cmd = argIter.nextArg("").toLowerCase();
 
-            if (COMMAND.equals(cmd)) {
-                String type = null;
-                String filePath = null;
+            if (DUMP.equals(cmd) || DUMP_LOG.equals(cmd)) {
                 boolean allNodes = false;
+                String filePath = null;
 
                 Set<String> nodeIds = new TreeSet<>();
 
-                if (argIter.hasNextSubArg()) {
+                while (argIter.hasNextArg()){
                     String nextArg = argIter.nextArg("").toLowerCase();
 
-                    if ("log".equals(nextArg))
-                        type = nextArg;
-                    else if (new File(nextArg).isDirectory())
-                        filePath = nextArg;
+                    if ("--all".equals(nextArg))
+                        allNodes = true;
+                    else if ("--nodes".equals(nextArg)) {
+                        while (argIter.hasNextArg()){
+                            nextArg = argIter.nextArg("").toLowerCase();
 
-                    if (argIter.hasNextArg()) {
-                        nextArg = argIter.nextArg("").toLowerCase();
-
-                        if ("-a".equals(nextArg) || "--all".equals(nextArg))
-                            allNodes = true;
-                        else {
-                            do {
-                                nodeIds.add(nextArg);
-                            }
-                            while (argIter.hasNextArg());
+                            nodeIds.add(nextArg);
                         }
+                    }
+                    else {
+                        if (new File(nextArg).isDirectory())
+                            filePath = nextArg;
                     }
                 }
 
-                args = new Args(COMMAND, type, filePath, allNodes, nodeIds);
+                args = new Args(DUMP, cmd, filePath, allNodes, nodeIds);
             }
             else
                 help = true;
@@ -150,21 +149,14 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         logger.log("View pages locks state information on the node or nodes.");
-        logger.log("Use -a or --all for dump locks on all nodes in cluster in the end of command line.");
         logger.log(CommandLogger.join(" ",
-            "Example:\n" + UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND, " -a or --all"));
-
-        logger.log("You can specify set of node via list ids in the end of command line.");
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, DUMP,
+            "[--path path_to_directory] [--all|--nodes nodeId1,nodeId2,..|--nodes consistentId1,consistentId2,..]",
+            "// Save page locks dump to file generated in IGNITE_HOME/work directory."));
         logger.log(CommandLogger.join(" ",
-            "Example:\n" + UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND, " {UUID} {UUID} {UUID} ... " +
-                "or {ConsistentId} {ConsistentId} {ConsistentId}... " +
-                "or {UUID} {ConsistentId} {UUID}..."));
-        logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND, "// Save page locks dump to file generated in IGNITE_HOME/work directory."));
-        logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND + " log", "// Pring page locks dump to console on the node or nodes."));
-        logger.log(CommandLogger.join(" ",
-            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, COMMAND + " {path}", "// Save page locks dump to specific path."));
+            UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, DUMP_LOG,
+            "[--all|--nodes nodeId1,nodeId2,..|--nodes consistentId1,consistentId2,..]",
+            "// Pring page locks dump to console on the node or nodes."));
         logger.nl();
     }
 
