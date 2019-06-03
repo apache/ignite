@@ -38,7 +38,6 @@ public class VisorFindAndDeleteGarbageInPersistenceJobResult extends IgniteDataT
     @GridToStringInclude
     private Map<Integer, Map<Integer, Long>> result;
 
-
     /**
      * @param result Results with founded garbage (GroupId -> (CacheId, Count of keys)).
      */

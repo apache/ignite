@@ -2441,7 +2441,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             MarshallerExclusions.clearCache();
             BinaryEnumCache.clear();
 
-
             gw.writeLock();
 
             try {

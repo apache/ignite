@@ -2242,7 +2242,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         this.consistentId = consistentId;
     }
 
-
     /** @return Topology version. */
     public long topologyVersion() {
         return topSnap.get().topVer.topologyVersion();

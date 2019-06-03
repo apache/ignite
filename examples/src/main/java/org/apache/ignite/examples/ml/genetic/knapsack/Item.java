@@ -25,8 +25,10 @@ import java.io.Serializable;
 public class Item implements Serializable {
     /** Weight of item in lbs. */
     private double weight;
+
     /** Value of item. */
     private double val;
+
     /** Name of item. */
     private String name;
 

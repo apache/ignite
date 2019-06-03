@@ -716,7 +716,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
     }
 
-
     @Test
     public void testMD5Calculation() throws Exception {
         String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
@@ -1208,12 +1207,18 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     private @interface Ann2 {}
 
     private static class A1 implements I3, I5 {}
+
     private static class A2 extends A1 {}
+
     private static class A3 implements I5 {}
 
     @Ann1 private interface I1 {}
+
     private interface I2 extends I1 {}
+
     private interface I3 extends I2 {}
+
     @Ann2 private interface I4 {}
+
     private interface I5 extends I4 {}
 }

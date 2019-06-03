@@ -1398,7 +1398,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (lsnr != null)
                         lsnr.apply(fileIO);
 
-
                     hnd = fileHandleManager.nextHandle(fileIO, serializer);
 
                     if (interrupted)

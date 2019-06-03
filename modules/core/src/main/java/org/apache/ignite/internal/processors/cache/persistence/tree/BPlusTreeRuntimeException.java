@@ -28,8 +28,10 @@ import org.apache.ignite.internal.util.typedef.T2;
 public class BPlusTreeRuntimeException extends RuntimeException {
     /** */
     private static final long serialVersionUID = 0L;
+
     /** Group id common for all potentially corrupted pages. */
     private final int grpId;
+
     /** Ids of potentially corrupted pages. */
     private final long[] pageIds;
 

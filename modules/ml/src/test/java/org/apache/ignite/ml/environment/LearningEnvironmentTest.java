@@ -106,7 +106,6 @@ public class LearningEnvironmentTest {
                 return false;
             }
 
-
             /** {@inheritDoc} */
              @Override protected <K, V> IgniteModel<Object, Vector> updateModel(IgniteModel<Object, Vector> mdl,
                 DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
@@ -119,7 +118,6 @@ public class LearningEnvironmentTest {
         Vector exp = VectorUtils.zeroes(partitions);
         for (int i = 0; i < partitions; i++)
             exp.set(i, i * iterations);
-
 
         Vector res = mdl.predict(null);
         assertEquals(exp, res);

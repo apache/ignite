@@ -42,6 +42,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
+
     /** */
     private static final double[][] binarizedDatathresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 

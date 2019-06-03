@@ -1949,7 +1949,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
-
     /**
      * @param row Lookup row.
      * @param needOld {@code True} if need return removed row.
@@ -2610,7 +2609,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
-
     /**
      * @param c Get.
      * @throws IgniteCheckedException If failed.
@@ -3224,9 +3222,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * Get the last item in the tree which matches the passed filter.
      */
     private final class GetLast extends Get {
+        /** */
         private final TreeRowClosure<L, T> c;
+
+        /** */
         private boolean retry = true;
+
+        /** */
         private long lastPageId;
+
+        /** */
         private T row0;
 
         /**

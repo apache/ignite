@@ -26,7 +26,6 @@ public class UnknownClassLabelException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
-
     /**
      * @param incorrectVal Incorrect value.
      * @param positiveClsLb Positive class label.

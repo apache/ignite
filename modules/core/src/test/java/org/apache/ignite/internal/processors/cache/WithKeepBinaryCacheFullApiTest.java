@@ -207,7 +207,6 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                     }
                 });
 
-
                 for (final Object key : keys) {
                     runInAllTxModes(new TestRunnable() {
                         @Override public void run() throws Exception {

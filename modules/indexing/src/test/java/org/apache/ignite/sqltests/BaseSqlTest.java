@@ -106,10 +106,12 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     /** Node name of first server. */
     public final String SRV1_NAME = "server1";
 
+    /** */
     public static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "DEPIDNOIDX", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
     /** Flag that forces to do explain query in log before performing actual query. */
     public static boolean explain = false;
+
     /** Department table name. */
     protected String DEP_TAB = "Department";
 
@@ -278,9 +280,9 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
      * Result of sql query. Contains metadata and all values in memory.
      */
     static class Result {
-
         /** Names of columns. */
         private List<String> colNames;
+
         /** Table */
         private List<List<?>> vals;
 

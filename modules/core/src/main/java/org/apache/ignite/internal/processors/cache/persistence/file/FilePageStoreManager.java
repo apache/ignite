@@ -674,7 +674,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (dirExisted && !idxFile.exists())
                 grpsWithoutIdx.add(grpId);
 
-
             FileIOFactory pageStoreFileIoFactory = this.pageStoreFileIoFactory;
             FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
