@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metrics;
 import java.util.function.IntSupplier;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation based on primitive supplier.
@@ -35,7 +36,7 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric, Gauge {
      * @param description Description.
      * @param value Supplier.
      */
-    public IntMetricImpl(String name, String description, IntSupplier value) {
+    public IntMetricImpl(String name, @Nullable String description, IntSupplier value) {
         super(name, description);
 
         this.value = value;

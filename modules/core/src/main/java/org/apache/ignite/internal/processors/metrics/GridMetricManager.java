@@ -145,7 +145,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
                 MetricExporterPushSpi pushSpi = (MetricExporterPushSpi)spi;
 
-                long timeout = pushSpi.timeout();
+                long timeout = pushSpi.getTimeout();
 
                 ScheduledFuture<?> fut = pushSpiExecutor.scheduleWithFixedDelay(() -> {
                     try {

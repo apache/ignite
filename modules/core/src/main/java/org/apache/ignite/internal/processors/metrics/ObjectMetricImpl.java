@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metrics;
 import java.util.function.Supplier;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation based on primitive supplier.
@@ -41,7 +42,7 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
      * @param value Supplier.
      * @param type Type.
      */
-    public ObjectMetricImpl(String name, String description, Supplier<T> value, Class<T> type) {
+    public ObjectMetricImpl(String name, @Nullable String description, Supplier<T> value, Class<T> type) {
         super(name, description);
 
         this.value = value;

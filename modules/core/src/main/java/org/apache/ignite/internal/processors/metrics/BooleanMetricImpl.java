@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metrics;
 import java.util.function.BooleanSupplier;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation based on primitive supplier.
@@ -35,7 +36,7 @@ public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric, 
      * @param description Description.
      * @param value Supplier.
      */
-    public BooleanMetricImpl(String name, String description, BooleanSupplier value) {
+    public BooleanMetricImpl(String name, @Nullable String description, BooleanSupplier value) {
         super(name, description);
 
         this.value = value;

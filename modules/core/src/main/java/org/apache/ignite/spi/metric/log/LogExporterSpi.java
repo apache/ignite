@@ -76,7 +76,7 @@ public class LogExporterSpi extends IgniteSpiAdapter implements MetricExporterPu
     }
 
     /** {@inheritDoc} */
-    @Override public long timeout() {
+    @Override public long getTimeout() {
         return timeout;
     }
 

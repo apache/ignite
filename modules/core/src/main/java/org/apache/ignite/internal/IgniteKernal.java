@@ -4391,7 +4391,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert prefix != null;
 
         ctx.metric().registry().withPrefix(prefix).getMetrics().forEach(Metric::reset);
-
     }
 
     /** {@inheritDoc} */

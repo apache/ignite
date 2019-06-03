@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Accumulates approximate hit rate statistics.
@@ -44,7 +45,7 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
      * @param rateTimeInterval Rate time interval.
      * @param size Counters array size.
      */
-    public HitRateCounter(String name, String description, long rateTimeInterval, int size) {
+    public HitRateCounter(String name, @Nullable String description, long rateTimeInterval, int size) {
         super(name, description);
 
         cntr = new HitRateCounterImpl(rateTimeInterval, size);
@@ -218,5 +219,4 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
             return (byte)(taggedLong >> TAG_OFFSET);
         }
     }
-
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metrics;
 import java.util.function.DoubleSupplier;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation based on primitive supplier.
@@ -35,7 +36,7 @@ public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric, Ga
      * @param description Description.
      * @param value Supplier.
      */
-    public DoubleMetricImpl(String name, String description, DoubleSupplier value) {
+    public DoubleMetricImpl(String name, @Nullable String description, DoubleSupplier value) {
         super(name, description);
 
         this.value = value;

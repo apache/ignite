@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric.gauge;
 
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.BooleanMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Gauge that holds boolean primitive.
@@ -33,7 +34,7 @@ public class BooleanGauge extends AbstractMetric implements BooleanMetric, Gauge
      * @param name Name.
      * @param description Description.
      */
-    public BooleanGauge(String name, String description) {
+    public BooleanGauge(String name, @Nullable String description) {
         super(name, description);
     }
 

@@ -40,6 +40,7 @@ import org.apache.ignite.spi.metric.gauge.HistogramGauge;
 import org.apache.ignite.spi.metric.gauge.IntGauge;
 import org.apache.ignite.spi.metric.gauge.LongGauge;
 import org.apache.ignite.spi.metric.gauge.ObjectGauge;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
 
@@ -88,81 +89,82 @@ public class MetricRegistryImpl implements MetricRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public void register(String name, BooleanSupplier supplier, String description) {
+    @Override public void register(String name, BooleanSupplier supplier, @Nullable String description) {
         addMetric(name, new BooleanMetricImpl(name, description, supplier));
     }
 
     /** {@inheritDoc} */
-    @Override public void register(String name, DoubleSupplier supplier, String description) {
+    @Override public void register(String name, DoubleSupplier supplier, @Nullable String description) {
         addMetric(name, new DoubleMetricImpl(name, description, supplier));
     }
 
     /** {@inheritDoc} */
-    @Override public void register(String name, IntSupplier supplier, String description) {
+    @Override public void register(String name, IntSupplier supplier, @Nullable String description) {
         addMetric(name, new IntMetricImpl(name, description, supplier));
     }
 
     /** {@inheritDoc} */
-    @Override public void register(String name, LongSupplier supplier, String description) {
+    @Override public void register(String name, LongSupplier supplier, @Nullable String description) {
         addMetric(name, new LongMetricImpl(name, description, supplier));
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, String description) {
+    @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description) {
         addMetric(name, new ObjectMetricImpl<>(name, description, supplier, type));
     }
 
     /** {@inheritDoc} */
-    @Override public DoubleCounter doubleCounter(String name, String description) {
+    @Override public DoubleCounter doubleCounter(String name, @Nullable String description) {
         return addMetric(name, new DoubleCounter(name, description));
     }
 
     /** {@inheritDoc} */
-    @Override public IntCounter intCounter(String name, String description) {
+    @Override public IntCounter intCounter(String name, @Nullable String description) {
         return addMetric(name, new IntCounter(name, description));
     }
 
     /** {@inheritDoc} */
-    @Override public LongCounter counter(String name, String description) {
+    @Override public LongCounter counter(String name, @Nullable String description) {
         return addMetric(name, new LongCounter(name, description));
     }
 
-    @Override public LongCounter counter(String name, LongConsumer updateDelegate, String description) {
+    @Override public LongCounter counter(String name, LongConsumer updateDelegate, @Nullable String description) {
         return addMetric(name, new LongCounter.LongCounterWithDelegate(name, updateDelegate, description));
     }
 
     /** {@inheritDoc} */
-    @Override public org.apache.ignite.spi.metric.counter.HitRateCounter hitRateCounter(String name, String description, long rateTimeInterval, int size) {
+    @Override public org.apache.ignite.spi.metric.counter.HitRateCounter hitRateCounter(String name,
+        @Nullable String description, long rateTimeInterval, int size) {
         return addMetric(name, new HitRateCounter(name, description, rateTimeInterval, size));
     }
 
     /** {@inheritDoc} */
-    @Override public BooleanGauge booleanGauge(String name, String description) {
+    @Override public BooleanGauge booleanGauge(String name, @Nullable String description) {
         return addMetric(name, new BooleanGauge(name, description));
     }
 
     /** {@inheritDoc} */
-    @Override public DoubleGauge doubleGauge(String name, String description) {
+    @Override public DoubleGauge doubleGauge(String name, @Nullable String description) {
         return addMetric(name, new DoubleGauge(name, description));
     }
 
     /** {@inheritDoc} */
-    @Override public IntGauge intGauge(String name, String description) {
+    @Override public IntGauge intGauge(String name, @Nullable String description) {
         return addMetric(name, new IntGauge(name, description));
     }
 
     /** {@inheritDoc} */
-    @Override public LongGauge gauge(String name, String description) {
+    @Override public LongGauge gauge(String name, @Nullable String description) {
         return addMetric(name, new LongGauge(name, description));
     }
 
     /** {@inheritDoc} */
-    @Override public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, String description) {
+    @Override public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, @Nullable String description) {
         return addMetric(name, new ObjectGauge<>(name, description, type));
     }
 
     /** {@inheritDoc} */
-    @Override public HistogramGauge histogram(String name, long[] bounds, String description) {
+    @Override public HistogramGauge histogram(String name, long[] bounds, @Nullable String description) {
         return addMetric(name, new HistogramGauge(name, description, bounds));
     }
 

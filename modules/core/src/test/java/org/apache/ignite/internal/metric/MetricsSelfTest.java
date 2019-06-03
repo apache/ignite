@@ -143,7 +143,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testRegister() throws Exception {
-        LongCounter l = new LongCounter(metricName(prefix, "rtest"), "test");
+        LongCounter l = new LongCounter(testMetricName("rtest"), "test");
 
         mreg.register(l);
 
@@ -345,11 +345,11 @@ public class MetricsSelfTest {
         mreg.counter("test5", "");
 
         Set<String> names = new HashSet<>(asList(
-            metricName(prefix, "test1"),
-            metricName(prefix, "test2"),
-            metricName(prefix, "test3"),
-            metricName(prefix, "test4"),
-            metricName(prefix, "test5")));
+            testMetricName("test1"),
+            testMetricName("test2"),
+            testMetricName("test3"),
+            testMetricName("test4"),
+            testMetricName("test5")));
 
         Set<String> res = mreg.getMetrics().stream()
             .map(Metric::getName)
@@ -372,18 +372,18 @@ public class MetricsSelfTest {
 
         mreg.addMetricCreationListener(m -> res.add(m.getName()));
 
-        mreg.counter("test1", "");
-        mreg.counter("test2", "");
-        mreg.counter("test3", "");
-        mreg.counter("test4", "");
-        mreg.counter("test5", "");
+        mreg.counter("test1", null);
+        mreg.counter("test2", null);
+        mreg.counter("test3", null);
+        mreg.counter("test4", null);
+        mreg.counter("test5", null);
 
         Set<String> names = new HashSet<>(asList(
-            metricName(prefix, "test1"),
-            metricName(prefix, "test2"),
-            metricName(prefix, "test3"),
-            metricName(prefix, "test4"),
-            metricName(prefix, "test5")));
+            testMetricName("test1"),
+            testMetricName("test2"),
+            testMetricName("test3"),
+            testMetricName("test4"),
+            testMetricName("test5")));
 
         assertEquals(names, res);
     }
@@ -401,5 +401,13 @@ public class MetricsSelfTest {
 
         for (IgniteInternalFuture fut : futs)
             fut.get();
+    }
+
+    /** */
+    private String testMetricName(String name) {
+        if (prefix.isEmpty())
+            return name;
+
+        return metricName(prefix, name);
     }
 }

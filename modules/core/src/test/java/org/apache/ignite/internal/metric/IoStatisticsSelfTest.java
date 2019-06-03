@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metrics.MetricNameUtils;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.counter.LongCounter;
@@ -46,6 +45,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL
 import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
+import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
 
 /**
  * Tests for IO statistic manager.
@@ -97,7 +97,12 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
      * @param subName Subname of statistics.
      */
     private void checkEmptyStat(MetricRegistry mset, String name, String subName, IoStatisticsType type) {
-        MetricRegistry cacheIoStatHolder = mset.withPrefix(name, subName);
+        MetricRegistry cacheIoStatHolder;
+
+        if (subName == null)
+            cacheIoStatHolder = mset.withPrefix(name);
+        else
+            cacheIoStatHolder = mset.withPrefix(name, subName);
 
         assertNotNull(cacheIoStatHolder);
 
@@ -159,7 +164,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         else
             Assert.assertEquals(0, physicalReadsCnt);
 
-        Long logicalReads = logicalReads(mreg, HASH_INDEX, MetricNameUtils.metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
+        Long logicalReads = logicalReads(mreg, HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
         Assert.assertNotNull(logicalReads);
 
@@ -235,7 +240,9 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
      * @return Number of physical reads since last reset statistics.
      */
     public Long physicalReads(MetricRegistry mreg, IoStatisticsType statType, String name, String subName) {
-        MetricRegistry mset = mreg.withPrefix(statType.monitoringGroup(), MetricNameUtils.metricName(name, subName));
+        String fullName = subName == null ? name : metricName(name, subName);
+
+        MetricRegistry mset = mreg.withPrefix(statType.monitoringGroup(), fullName);
 
         if (mset == null)
             return null;

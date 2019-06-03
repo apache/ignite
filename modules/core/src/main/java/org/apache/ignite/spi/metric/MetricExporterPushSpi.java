@@ -42,7 +42,7 @@ public interface MetricExporterPushSpi extends MetricExporterSpi {
     /**
      * @return Timeout in milliseconds after {@link #export()} method should be called.
      */
-    public long timeout();
+    public long getTimeout();
 
     /**
      * Callback to do the export of metrics info.

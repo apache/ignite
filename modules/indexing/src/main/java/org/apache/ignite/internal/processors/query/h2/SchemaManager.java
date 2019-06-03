@@ -137,8 +137,7 @@ public class SchemaManager {
      * @param schema Schema to create view in.
      * @param view System view.
      */
-    public void createSysteView(String schema, SqlSystemView view) {
-        assert schema.equals(QueryUtils.SCHEMA_MONITORING);
+    public void createSystemView(String schema, SqlSystemView view) {
 
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
@@ -167,28 +166,8 @@ public class SchemaManager {
      * Create system views.
      */
     private void createSystemViews() throws IgniteCheckedException {
-        boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
-
-        if (disabled) {
-            log.info("SQL system views will not be created because they are disabled (see " +
-                    IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
-
-            return;
-        }
-
-        try {
-            synchronized (schemaMux) {
-                createSchema(QueryUtils.SCHEMA_SYS, true);
-            }
-
-            try (Connection c = connMgr.connectionNoCache(QueryUtils.SCHEMA_SYS)) {
-                for (SqlSystemView view : systemViews(ctx))
-                    SqlSystemTableEngine.registerView(c, view);
-            }
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to register system view.", e);
-        }
+        for (SqlSystemView view : systemViews(ctx))
+            createSystemView(QueryUtils.SCHEMA_SYS, view);
     }
 
     /**

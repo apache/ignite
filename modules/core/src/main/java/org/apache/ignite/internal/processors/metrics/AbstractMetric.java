@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metrics;
 
 import org.apache.ignite.spi.metric.Metric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class for {@code Metric} implementations.
@@ -31,7 +32,7 @@ public abstract class AbstractMetric implements Metric {
     /**
      * Description.
      */
-    private final String description;
+    @Nullable private final String description;
 
     /**
      * @param name Name.
@@ -48,7 +49,7 @@ public abstract class AbstractMetric implements Metric {
     }
 
     /** {@inheritDoc} */
-    @Override public String getDescription() {
+    @Override @Nullable public String getDescription() {
         return description;
     }
 }

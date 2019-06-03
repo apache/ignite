@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric.gauge;
 
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation based on primitive.
@@ -33,7 +34,7 @@ public class LongGauge extends AbstractMetric implements LongMetric, Gauge {
      * @param name Name.
      * @param description Description.
      */
-    public LongGauge(String name, String description) {
+    public LongGauge(String name, @Nullable String description) {
         super(name, description);
     }
 

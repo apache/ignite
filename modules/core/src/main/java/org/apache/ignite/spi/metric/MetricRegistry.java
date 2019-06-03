@@ -95,7 +95,7 @@ public interface MetricRegistry {
      * @param supplier Supplier.
      * @param description Description.
      */
-    public void register(String name, BooleanSupplier supplier, String description);
+    public void register(String name, BooleanSupplier supplier, @Nullable String description);
 
     /**
      * Register {@link BooleanMetric} that value will be queried from specified supplier.
@@ -104,7 +104,7 @@ public interface MetricRegistry {
      * @param supplier Supplier.
      * @param description Description.
      */
-    public void register(String name, DoubleSupplier supplier, String description);
+    public void register(String name, DoubleSupplier supplier, @Nullable String description);
 
     /**
      * Register {@link IntMetric} that value will be queried from specified supplier.
@@ -113,7 +113,7 @@ public interface MetricRegistry {
      * @param supplier Supplier.
      * @param description Description.
      */
-    public void register(String name, IntSupplier supplier, String description);
+    public void register(String name, IntSupplier supplier, @Nullable String description);
 
     /**
      * Register {@link LongMetric} that value will be queried from specified supplier.
@@ -122,7 +122,7 @@ public interface MetricRegistry {
      * @param supplier Supplier.
      * @param description Description.
      */
-    public void register(String name, LongSupplier supplier, String description);
+    public void register(String name, LongSupplier supplier, @Nullable String description);
 
     /**
      * Register {@code ObjectMetric} that value will be queried from specified supplier.
@@ -132,7 +132,7 @@ public interface MetricRegistry {
      * @param type Type.
      * @param description Description.
      */
-    public <T> void register(String name, Supplier<T> supplier, Class<T> type, String description);
+    public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description);
 
     /**
      * Creates and register named counter.
@@ -142,7 +142,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Counter.
      */
-    public DoubleCounter doubleCounter(String name, String description);
+    public DoubleCounter doubleCounter(String name, @Nullable String description);
 
     /**
      * Creates and register named counter.
@@ -152,7 +152,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Counter.
      */
-    public IntCounter intCounter(String name, String description);
+    public IntCounter intCounter(String name, @Nullable String description);
 
     /**
      * Creates and register named counter.
@@ -162,7 +162,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Counter.
      */
-    public LongCounter counter(String name, String description);
+    public LongCounter counter(String name, @Nullable String description);
 
     /**
      * Creates and register named counter.
@@ -174,7 +174,7 @@ public interface MetricRegistry {
      * @return Counter.
      * @see #counter(String)
      */
-    public LongCounter counter(String name, LongConsumer updateDelegate, String description);
+    public LongCounter counter(String name, LongConsumer updateDelegate, @Nullable String description);
 
     /**
      * Creates and register hit rate counter.
@@ -187,7 +187,7 @@ public interface MetricRegistry {
      * @return Counter.
      * @see HitRateCounter
      */
-    public HitRateCounter hitRateCounter(String name, String description, long rateTimeInterval, int size);
+    public HitRateCounter hitRateCounter(String name, @Nullable String description, long rateTimeInterval, int size);
 
     /**
      * Creates and register named gauge.
@@ -197,7 +197,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Gauge.
      */
-    public BooleanGauge booleanGauge(String name, String description);
+    public BooleanGauge booleanGauge(String name, @Nullable String description);
 
     /**
      * Creates and register named gauge.
@@ -207,7 +207,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Gauge.
      */
-    public DoubleGauge doubleGauge(String name, String description);
+    public DoubleGauge doubleGauge(String name, @Nullable String description);
 
     /**
      * Creates and register named gauge.
@@ -217,7 +217,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Gauge.
      */
-    public IntGauge intGauge(String name, String description);
+    public IntGauge intGauge(String name, @Nullable String description);
 
     /**
      * Creates and register named gauge.
@@ -227,7 +227,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Gauge.
      */
-    public LongGauge gauge(String name, String description);
+    public LongGauge gauge(String name, @Nullable String description);
 
     /**
      * Creates and register named gauge.
@@ -238,7 +238,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Gauge.
      */
-    public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, String description);
+    public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, @Nullable String description);
 
     /**
      * Creates and registre named histogram gauge.
@@ -248,5 +248,5 @@ public interface MetricRegistry {
      * @param description Description.
      * @return HistogramGauge.
      */
-    public HistogramGauge histogram(String name, long[] bounds, String description);
+    public HistogramGauge histogram(String name, long[] bounds, @Nullable String description);
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.spi.metric.counter;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.IntMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Int counter.
@@ -38,7 +39,7 @@ public class IntCounter extends AbstractMetric implements IntMetric, Counter {
      * @param name Name.
      * @param description Description.
      */
-    public IntCounter(String name, String description) {
+    public IntCounter(String name, @Nullable String description) {
         super(name, description);
     }
 

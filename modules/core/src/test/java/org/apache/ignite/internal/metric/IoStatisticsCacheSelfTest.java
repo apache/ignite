@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metrics.MetricNameUtils;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricRegistry;
@@ -44,6 +43,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_
 import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
+import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
 
 /**
  * Tests for cache IO statistics for inmemory mode.
@@ -239,7 +239,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         assertEquals(dataPageReads, logicalReadsCache);
 
-        long logicalReadsIdx = logicalReads(mreg, HASH_INDEX, MetricNameUtils.metricName(cacheName, HASH_PK_IDX_NAME));
+        long logicalReadsIdx = logicalReads(mreg, HASH_INDEX, metricName(cacheName, HASH_PK_IDX_NAME));
 
         assertEquals(idxPageReadsCnt, logicalReadsIdx);
 

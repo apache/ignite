@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric.gauge;
 
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Double gauge.
@@ -33,7 +34,7 @@ public class DoubleGauge extends AbstractMetric implements DoubleMetric, Gauge {
      * @param name Name.
      * @param description Description.
      */
-    public DoubleGauge(String name, String description) {
+    public DoubleGauge(String name, @Nullable String description) {
         super(name, description);
     }
 

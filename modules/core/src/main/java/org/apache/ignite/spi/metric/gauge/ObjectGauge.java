@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric.gauge;
 
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of {@link ObjectMetric}.
@@ -39,7 +40,7 @@ public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T>, G
      * @param description Description.
      * @param type Type.
      */
-    public ObjectGauge(String name, String description, Class<T> type) {
+    public ObjectGauge(String name, @Nullable String description, Class<T> type) {
         super(name, description);
 
         this.type = type;

@@ -30,6 +30,7 @@ import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.ReflectionException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.metrics.MetricNameUtils.MetricName;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -38,7 +39,7 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ObjectMetric;
 
-import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.parse;
 
 /**
  * MBean for exporting values of metric set.
@@ -64,11 +65,17 @@ public class MetricSetMBean implements DynamicMBean {
         this.msetName = msetName;
 
         mreg.addMetricCreationListener(m -> {
-            if (m.getName().startsWith(msetName))
-                mset.put(m.getName(), m);
+            if (m.getName().startsWith(msetName)) {
+                MetricName parsed = parse(m.getName());
+
+                if (!parsed.msetName().equals(msetName))
+                    return;
+
+                mset.put(parsed.mname(), m);
+            }
         });
 
-        mset.put(first.getName(), first);
+        mset.put(parse(first.getName()).mname(), first);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +84,7 @@ public class MetricSetMBean implements DynamicMBean {
         if (attribute.equals("MBeanInfo"))
             return getMBeanInfo();
 
-        Metric metric = mset.get(metricName(msetName, attribute));
+        Metric metric = mset.get(attribute);
 
         if (metric == null)
             return null;

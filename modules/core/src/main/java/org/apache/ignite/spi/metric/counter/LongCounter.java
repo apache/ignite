@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongConsumer;
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Long counter implementation.
@@ -41,7 +42,7 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
      * @param name Name.
      * @param description Description.
      */
-    public LongCounter(String name, String description) {
+    public LongCounter(String name, @Nullable String description) {
         super(name, description);
     }
 
@@ -105,7 +106,7 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
          * @param delegate Update delegate.
          * @param description Description.
          */
-        public LongCounterWithDelegate(String name, LongConsumer delegate, String description) {
+        public LongCounterWithDelegate(String name, LongConsumer delegate, @Nullable String description) {
             super(name, description);
 
             this.delegate = delegate;

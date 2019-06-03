@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metrics;
 import java.util.function.LongSupplier;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation based on primitive supplier.
@@ -35,7 +36,7 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric, Gauge 
      * @param description Description.
      * @param value Supplier.
      */
-    public LongMetricImpl(String name, String description, LongSupplier value) {
+    public LongMetricImpl(String name, @Nullable String description, LongSupplier value) {
         super(name, description);
 
         this.value = value;

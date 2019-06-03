@@ -207,7 +207,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridMetricManager metricProc;
+    private GridMetricManager metricMgr;
 
     /** */
     @GridToStringInclude
@@ -616,7 +616,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridJobMetricsProcessor)
             jobMetricsProc = (GridJobMetricsProcessor)comp;
         else if (comp instanceof GridMetricManager)
-            metricProc = (GridMetricManager)comp;
+            metricMgr = (GridMetricManager)comp;
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
         else if (comp instanceof GridClusterStateProcessor)
@@ -770,7 +770,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public GridMetricManager metric() {
-        return metricProc;
+        return metricMgr;
     }
 
     /** {@inheritDoc} */

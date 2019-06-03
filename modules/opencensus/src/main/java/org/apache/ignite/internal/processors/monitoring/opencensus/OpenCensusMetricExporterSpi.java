@@ -310,7 +310,7 @@ public class OpenCensusMetricExporterSpi extends IgniteSpiAdapter implements Met
     }
 
     /** {@inheritDoc} */
-    @Override public long timeout() {
+    @Override public long getTimeout() {
         return timeout;
     }
 

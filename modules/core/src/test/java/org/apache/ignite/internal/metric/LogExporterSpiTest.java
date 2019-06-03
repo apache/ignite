@@ -98,15 +98,18 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
         });
 
         Set<String> expectedMetrics = new GridConcurrentHashSet<>(asList(
-            "other.preifx.test = 42",
-            "other.preifx.test2 = 43",
-            "other.preifx2.test3 = 44"
+            "other.prefix.test = 42",
+            "other.prefix.test2 = 43",
+            "other.prefix2.test3 = 44"
         ));
 
         log.registerListener(s -> {
             for (String metric : expectedMetrics) {
+                if (s.startsWith("other"))
+                    System.out.println("!");
+
                 if (s.contains(metric))
-                    expectedAttributes.remove(metric);
+                    expectedMetrics.remove(metric);
             }
         });
 

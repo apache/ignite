@@ -58,10 +58,10 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition nameCond = conditionForColumn("CACHE_GROUP_NAME", first, last);
 
-        MetricRegistry mset = ctx.metric().registry().withPrefix(CACHE_GROUP.monitoringGroup());
-
         if (nameCond.isEquality()) {
             String cacheGrpName = nameCond.valueForEquality().getString();
+
+            MetricRegistry mset = ctx.metric().registry().withPrefix(CACHE_GROUP.monitoringGroup(), cacheGrpName);
 
             IntMetric grpId = (IntMetric)mset.findMetric("grpId");
             ObjectMetric<String> grpName = (ObjectMetric<String>)mset.findMetric("name");
@@ -73,19 +73,22 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
                 return singleton(toRow(ses,
                     grpId.value(),
                     grpName.value(),
-                    mset.withPrefix(cacheGrpName))
+                    mset)
                 ).iterator();
             }
         }
         else {
             Collection<CacheGroupContext> grpCtxs = ctx.cache().cacheGroups();
 
+            MetricRegistry mset = ctx.metric().registry().withPrefix(CACHE_GROUP.monitoringGroup());
+
             return iterator(grpCtxs,
                 grpCtx -> toRow(ses,
                     grpCtx.groupId(),
                     grpCtx.cacheOrGroupName(),
                     mset.withPrefix(grpCtx.cacheOrGroupName())),
-                true);
+                true,
+                grpCtx -> !grpCtx.systemCache());
         }
 
         return emptyIterator();
@@ -96,7 +99,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
         IntMetric grpIdMetric = (IntMetric)mset.findMetric("grpId");
 
         if (grpIdMetric == null)
-            return createRow(ses, grpId, grpName, null, null);
+            return createRow(ses, grpId, grpName, 0, 0);
 
         return createRow(
             ses,

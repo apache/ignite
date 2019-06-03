@@ -18,9 +18,9 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.time.OffsetDateTime;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.counter.LongCounter;
 
@@ -78,14 +78,14 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
         MetricRegistry mset = mreg.withPrefix(type.monitoringGroup(), cacheName, idxName);
 
-        mset.objectGauge("startTime", OffsetDateTime.class, "").value(OffsetDateTime.now());
-        mset.objectGauge("name", String.class, "").value(cacheName);
-        mset.objectGauge("indexName", String.class, "").value(idxName);
+        mset.gauge("startTime", null).value(U.currentTimeMillis());
+        mset.objectGauge("name", String.class, null).value(cacheName);
+        mset.objectGauge("indexName", String.class, null).value(idxName);
 
-        logicalReadLeafCtr = mset.counter(LOGICAL_READS_LEAF, "");
-        logicalReadInnerCtr = mset.counter(LOGICAL_READS_INNER, "");
-        physicalReadLeafCtr = mset.counter(PHYSICAL_READS_LEAF, "");
-        physicalReadInnerCtr = mset.counter(PHYSICAL_READS_INNER, "");
+        logicalReadLeafCtr = mset.counter(LOGICAL_READS_LEAF, null);
+        logicalReadInnerCtr = mset.counter(LOGICAL_READS_INNER, null);
+        physicalReadLeafCtr = mset.counter(PHYSICAL_READS_LEAF, null);
+        physicalReadInnerCtr = mset.counter(PHYSICAL_READS_INNER, null);
     }
 
     /** {@inheritDoc} */

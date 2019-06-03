@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric.gauge;
 
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.IntMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Int gauge.
@@ -33,7 +34,7 @@ public class IntGauge extends AbstractMetric implements IntMetric, Gauge {
      * @param name Name.
      * @param description Description.
      */
-    public IntGauge(String name, String description) {
+    public IntGauge(String name, @Nullable String description) {
         super(name, description);
     }
 

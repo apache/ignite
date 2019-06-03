@@ -397,7 +397,7 @@ public class IgniteConfiguration {
     /** Encryption SPI. */
     private EncryptionSpi encryptionSpi;
 
-    /** Monitoring SPI. */
+    /** Metric exporter SPI. */
     private MetricExporterSpi[] metricExporterSpi;
 
     /** Cache configurations. */

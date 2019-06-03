@@ -47,6 +47,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
 import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
+import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -180,7 +181,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
             sortedIdxNames.size());
 
         for (String idxName : sortedIdxNames) {
-            Long logicalReads = logicalReads(mreg, SORTED_INDEX, MetricNameUtils.metricName(DEFAULT_CACHE_NAME, idxName));
+            Long logicalReads = logicalReads(mreg, SORTED_INDEX, metricName(DEFAULT_CACHE_NAME, idxName));
 
             Assert.assertNotNull(idxName, logicalReads);
 

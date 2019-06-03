@@ -88,7 +88,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         assertTrue(res.containsAll(EXPECTED_ATTRIBUTES));
 
         for (String metricName : res)
-            assertNotNull(dataRegionMBean.getAttribute(metricName));
+            assertNotNull(metricName, dataRegionMBean.getAttribute(metricName));
     }
 
     /** */

@@ -2415,7 +2415,7 @@ public class IgnitionEx {
             if (cfg.getEncryptionSpi() == null)
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
 
-            if (cfg.getMetricExporterSpi() == null || cfg.getMetricExporterSpi().length == 0)
+            if (F.isEmpty(cfg.getMetricExporterSpi()))
                 cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         }
 

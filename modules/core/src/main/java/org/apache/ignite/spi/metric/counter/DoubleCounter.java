@@ -20,6 +20,7 @@ package org.apache.ignite.spi.metric.counter;
 import java.util.concurrent.atomic.DoubleAccumulator;
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Double counter.
@@ -34,7 +35,7 @@ public class DoubleCounter extends AbstractMetric implements DoubleMetric, Count
      * @param name Name.
      * @param description Description.
      */
-    public DoubleCounter(String name, String description) {
+    public DoubleCounter(String name, @Nullable String description) {
         super(name, description);
 
         this.value = new DoubleAccumulator(Double::sum, 0d);

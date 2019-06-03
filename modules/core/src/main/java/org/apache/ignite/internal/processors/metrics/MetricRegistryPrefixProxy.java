@@ -102,81 +102,82 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public void register(String name, BooleanSupplier supplier, String description) {
+    @Override public void register(String name, BooleanSupplier supplier, @Nullable String description) {
         reg.register(fullName(name), supplier, description);
     }
 
     /** {@inheritDoc} */
-    @Override public void register(String name, DoubleSupplier supplier, String description) {
+    @Override public void register(String name, DoubleSupplier supplier, @Nullable String description) {
         reg.register(fullName(name), supplier, description);
     }
 
     /** {@inheritDoc} */
-    @Override public void register(String name, IntSupplier supplier, String description) {
+    @Override public void register(String name, IntSupplier supplier, @Nullable String description) {
         reg.register(fullName(name), supplier, description);
     }
 
     /** {@inheritDoc} */
-    @Override public void register(String name, LongSupplier supplier, String description) {
+    @Override public void register(String name, LongSupplier supplier, @Nullable String description) {
         reg.register(fullName(name), supplier, description);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, String description) {
+    @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description) {
         reg.register(fullName(name), supplier, type, description);
     }
 
     /** {@inheritDoc} */
-    @Override public DoubleCounter doubleCounter(String name, String description) {
+    @Override public DoubleCounter doubleCounter(String name, @Nullable String description) {
         return reg.doubleCounter(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public IntCounter intCounter(String name, String description) {
+    @Override public IntCounter intCounter(String name, @Nullable String description) {
         return reg.intCounter(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public LongCounter counter(String name, String description) {
+    @Override public LongCounter counter(String name, @Nullable String description) {
         return reg.counter(fullName(name), description);
     }
 
-    @Override public LongCounter counter(String name, LongConsumer updateDelegate, String description) {
+    @Override public LongCounter counter(String name, LongConsumer updateDelegate, @Nullable String description) {
         return reg.counter(fullName(name), updateDelegate, description);
     }
 
     /** {@inheritDoc} */
-    @Override public HitRateCounter hitRateCounter(String name, String description, long rateTimeInterval, int size) {
+    @Override public HitRateCounter hitRateCounter(String name, @Nullable String description,
+        long rateTimeInterval, int size) {
         return reg.hitRateCounter(fullName(name), description, rateTimeInterval, size);
     }
 
     /** {@inheritDoc} */
-    @Override public BooleanGauge booleanGauge(String name, String description) {
+    @Override public BooleanGauge booleanGauge(String name, @Nullable String description) {
         return reg.booleanGauge(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public DoubleGauge doubleGauge(String name, String description) {
+    @Override public DoubleGauge doubleGauge(String name, @Nullable String description) {
         return reg.doubleGauge(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public IntGauge intGauge(String name, String description) {
+    @Override public IntGauge intGauge(String name, @Nullable String description) {
         return reg.intGauge(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public LongGauge gauge(String name, String description) {
+    @Override public LongGauge gauge(String name, @Nullable String description) {
         return reg.gauge(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, String description) {
+    @Override public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, @Nullable String description) {
         return reg.objectGauge(fullName(name), type, description);
     }
 
     /** {@inheritDoc} */
-    @Override public HistogramGauge histogram(String name, long[] bounds, String description) {
+    @Override public HistogramGauge histogram(String name, long[] bounds, @Nullable String description) {
         return reg.histogram(fullName(name), bounds, description);
     }
 

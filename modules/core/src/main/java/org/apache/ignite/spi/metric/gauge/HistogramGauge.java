@@ -20,6 +20,7 @@ package org.apache.ignite.spi.metric.gauge;
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Histogram gauge that will calculate counts of measurements that gets into each bounds interval.
@@ -37,7 +38,7 @@ public class HistogramGauge extends AbstractMetric implements ObjectMetric<long[
      * @param description Description.
      * @param bounds Bounds.
      */
-    public HistogramGauge(String name, String description, long[] bounds) {
+    public HistogramGauge(String name, @Nullable String description, long[] bounds) {
         super(name, description);
 
         holder = new HistogramHolder(bounds);

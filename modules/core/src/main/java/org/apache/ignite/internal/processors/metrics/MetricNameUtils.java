@@ -27,10 +27,16 @@ import org.apache.ignite.spi.metric.MetricRegistry;
  */
 public class MetricNameUtils {
     /**
+     * Metric name part separator.
+     */
+    public static final String SEPARATOR = ".";
+
+    /**
      * Example - metric name - "io.statistics.PRIMARY_KEY_IDX.pagesCount".
      * root = io - JMX tree root.
      * subName = statistics.PRIMARY_KEY_IDX - bean name.
      * msetName = io.statistics.PRIMARY_KEY_IDX - prefix to search metrics for a bean.
+     * mname = pagesCount - metric name.
      *
      * @param name Metric name.
      * @return Parsed names parts.
@@ -42,8 +48,9 @@ public class MetricNameUtils {
         String grp = name.substring(0, firstDot);
         String beanName = name.substring(firstDot + 1, lastDot);
         String msetName = name.substring(0, lastDot);
+        String mname = name.substring(lastDot + 1);
 
-        return new MetricName(grp, beanName, msetName);
+        return new MetricName(grp, beanName, msetName, mname);
     }
 
     /**
@@ -53,19 +60,27 @@ public class MetricNameUtils {
      * @return Metric name.
      */
     public static String metricName(String...names) {
-        StringBuilder path = new StringBuilder();
+        assert names != null;
+        assert ensureAllNamesNotEmpty(names);
 
-        for (int i = 0; i < names.length; i++) {
-            if (names[i] == null)
-                continue;
+        if (names.length == 1)
+            return names[0];
 
-            if (i > 0 && path.length() > 0)
-                path.append('.');
+        return String.join(SEPARATOR, names);
 
-            path.append(names[i]);
-        }
+    }
 
-        return path.toString();
+    /**
+     * Asserts all arguments are not empty.
+     *
+     * @param names Names.
+     * @return True.
+     */
+    private static boolean ensureAllNamesNotEmpty(String... names) {
+        for (String prefix : names)
+            assert prefix != null && !prefix.isEmpty();
+
+        return true;
     }
 
     /**
@@ -75,6 +90,7 @@ public class MetricNameUtils {
      * root = io - JMX tree root.
      * subName = statistics.PRIMARY_KEY_IDX - bean name.
      * msetName = io.statistics.PRIMARY_KEY_IDX - prefix to search metrics for a bean.
+     * mname = pagesCount - metric name.
      */
     public static class MetricName {
         /**
@@ -92,11 +108,17 @@ public class MetricNameUtils {
          */
         private String msetName;
 
+        /**
+         * Metric name.
+         */
+        private String mname;
+
         /** */
-        MetricName(String root, String subName, String msetName) {
+        MetricName(String root, String subName, String msetName, String mname) {
             this.root = root;
             this.subName = subName;
             this.msetName = msetName;
+            this.mname = mname;
         }
 
         /**
@@ -118,6 +140,13 @@ public class MetricNameUtils {
          */
         public String msetName() {
             return msetName;
+        }
+
+        /**
+         * @return Metric name.
+         */
+        public String mname() {
+            return mname;
         }
     }
 }

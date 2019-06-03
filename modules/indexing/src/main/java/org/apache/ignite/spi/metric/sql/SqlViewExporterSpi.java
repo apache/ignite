@@ -107,7 +107,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
             SchemaManager mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-            mgr.createSysteView(QueryUtils.SCHEMA_MONITORING, view);
+            mgr.createSystemView(QueryUtils.SCHEMA_MONITORING, view);
 
 
             if (log.isDebugEnabled())

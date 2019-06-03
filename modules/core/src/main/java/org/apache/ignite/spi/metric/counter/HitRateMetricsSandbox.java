@@ -40,7 +40,7 @@ class HitRateMetricsSandbox extends JFrame {
     private final JLabel rateLb = new JLabel("0.0");
 
     /** */
-    private final org.apache.ignite.spi.metric.counter.HitRateCounter metrics = new HitRateCounter("metric", "description", 5_000, 20);
+    private final HitRateCounter metrics = new HitRateCounter("metric", "description", 5_000, 20);
 
     /**
      * Default constructor.

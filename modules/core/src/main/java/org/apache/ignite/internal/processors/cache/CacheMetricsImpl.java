@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
+import org.apache.ignite.internal.processors.metrics.MetricNameUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,6 +35,7 @@ import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.counter.HitRateCounter;
 import org.apache.ignite.spi.metric.counter.LongCounter;
 import org.apache.ignite.spi.metric.gauge.LongGauge;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Adapter for cache metrics.
@@ -171,6 +173,15 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param cctx Cache context.
      */
     public CacheMetricsImpl(GridCacheContext<?, ?> cctx) {
+        this(cctx, null);
+    }
+
+    /**
+     * Creates cache metrics;
+     *
+     * @param cctx Cache context.
+     */
+    public CacheMetricsImpl(GridCacheContext<?, ?> cctx, @Nullable String suffix) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -183,8 +194,14 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry()
-            .withPrefix("cache", cctx.name());
+        String prefix;
+
+        if (suffix == null)
+            prefix = MetricNameUtils.metricName("cache", cctx.name());
+        else
+            prefix = MetricNameUtils.metricName("cache", cctx.name(), suffix);
+
+        MetricRegistry mreg = cctx.kernalContext().metric().registry().withPrefix(prefix);
 
         reads = mreg.counter("CacheGets",
             "The total number of gets to the cache.");
@@ -192,7 +209,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         entryProcessorPuts = mreg.counter("EntryProcessorPuts",
             "The total number of cache invocations, caused update.");
 
-        entryProcessorRemovals = mreg.counter("", "");
+        entryProcessorRemovals = mreg.counter("EntryProcessorRemovals",
+            "The total number of cache invocations, caused removals.");
 
         entryProcessorReadOnlyInvocations = mreg.counter("EntryProcessorReadOnlyInvocations",
             "The total number of cache invocations, caused no updates.");

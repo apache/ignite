@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.processors.metrics.GridMetricManager;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 /**
@@ -46,7 +47,7 @@ import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
  * {@link DataRegionConfiguration#setMetricsEnabled(boolean)} configuration property or
  * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
  *
- * @deprecated Use {@link GridMonitoringManager} instead.
+ * @deprecated Use {@link GridMetricManager} instead.
  */
 @Deprecated
 public interface DataRegionMetrics {
