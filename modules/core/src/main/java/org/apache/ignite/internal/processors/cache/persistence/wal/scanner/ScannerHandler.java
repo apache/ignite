@@ -66,4 +66,22 @@ public interface ScannerHandler {
             }
         };
     }
+
+    /**
+     * Make string from given wal record.
+     *
+     * @param walRecord Source WAL record.
+     * @return Representation of WAL record.
+     */
+    public static String toStringRecord(WALRecord walRecord) {
+        String walRecordStr;
+
+        try {
+            walRecordStr = walRecord != null ? walRecord.toString() : "Record is null";
+        }
+        catch (RuntimeException e) {
+            walRecordStr = "Record : " + walRecord.type() + " - Unable to convert to string representation.";
+        }
+        return walRecordStr;
+    }
 }

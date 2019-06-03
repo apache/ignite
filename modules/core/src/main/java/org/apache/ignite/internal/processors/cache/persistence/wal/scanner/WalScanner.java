@@ -45,21 +45,45 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.reader
  * Scanning WAL by specific condition.
  */
 public class WalScanner {
-    /** Parameters for iterator. */
-    private final IteratorParametersBuilder parametersBuilder;
-    /** Wal iterator factory. */
-    private final IgniteWalIteratorFactory iteratorFactory;
+    /** Low level WAL iterator. */
+    private final IgniteThrowableSupplier<WALIterator> walIteratorSupplier;
 
     /**
+     * @param preconfiguredIter Preconfgured iterator.
      * @param parametersBuilder Parameters for iterator.
      * @param factory Factory of iterator.
      */
     WalScanner(
+        WALIterator preconfiguredIter,
         IteratorParametersBuilder parametersBuilder,
         IgniteWalIteratorFactory factory
     ) {
-        this.parametersBuilder = parametersBuilder;
-        iteratorFactory = factory == null ? new IgniteWalIteratorFactory() : factory;
+        if (preconfiguredIter != null)
+            walIteratorSupplier = () -> preconfiguredIter;
+        else
+            walIteratorSupplier = () -> standaloneWalIterator(
+                factory == null ? new IgniteWalIteratorFactory() : factory,
+                parametersBuilder
+            );
+    }
+
+    /**
+     * @param iteratorFactory Factory of iterator.
+     * @param parametersBuilder Parameters for iterator.
+     * @return Standalone WAL iterator created by given parameters.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static WALIterator standaloneWalIterator(
+        IgniteWalIteratorFactory iteratorFactory,
+        IteratorParametersBuilder parametersBuilder
+    ) throws IgniteCheckedException {
+        return iteratorFactory.iterator(
+            parametersBuilder.copy().addFilter((type, pointer) ->
+                // PHYSICAL need fo page shanpshot or delta record.
+                // MIXED need for partiton meta state update.
+                type.purpose() == PHYSICAL || type.purpose() == MIXED
+            )
+        );
     }
 
     /**
@@ -85,26 +109,17 @@ public class WalScanner {
             .or(pageOwner(groupAndPageIds0))
             .or(partitionMetaStateUpdate(groupAndParts));
 
-        return new ScanTerminateStep(() -> iterator(filter,
-            parametersBuilder.copy().addFilter((type, pointer) ->
-                // PHYSICAL need fo page shanpshot or delta record.
-                // MIXED need for partiton meta state update.
-                type.purpose() == PHYSICAL || type.purpose() == MIXED
-            )
-        ));
+        return new ScanTerminateStep(() -> new FilteredWalIterator(walIteratorSupplier.get(), filter));
     }
 
     /**
-     * @param filter Record filter.
-     * @param parametersBuilder Iterator parameters for customization.
-     * @return Instance of {@link FilteredWalIterator}.
-     * @throws IgniteCheckedException If initialization of iterator will be failed.
+     * Factory method of {@link WalScanner}.
+     *
+     * @param walIterator Preconfigured WAL iterator.
+     * @return Instance of {@link WalScanner}.
      */
-    @NotNull private FilteredWalIterator iterator(
-        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter,
-        IteratorParametersBuilder parametersBuilder
-    ) throws IgniteCheckedException {
-        return new FilteredWalIterator(iteratorFactory.iterator(parametersBuilder), filter);
+    public static WalScanner buildWalScanner(WALIterator walIterator) {
+        return new WalScanner(walIterator, null, null);
     }
 
     /**
@@ -114,7 +129,7 @@ public class WalScanner {
      * @return Instance of {@link WalScanner}.
      */
     public static WalScanner buildWalScanner(IteratorParametersBuilder parametersBuilder) {
-        return new WalScanner(parametersBuilder, null);
+        return buildWalScanner(parametersBuilder, null);
     }
 
     /**
@@ -128,7 +143,7 @@ public class WalScanner {
         IteratorParametersBuilder parametersBuilder,
         IgniteWalIteratorFactory factory
     ) {
-        return new WalScanner(parametersBuilder, factory);
+        return new WalScanner(null, parametersBuilder, factory);
     }
 
     /**
