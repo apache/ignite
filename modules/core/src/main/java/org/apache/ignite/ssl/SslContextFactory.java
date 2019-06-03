@@ -58,7 +58,7 @@ public class SslContextFactory implements Factory<SSLContext> {
     public static final String DFLT_STORE_TYPE = "JKS";
 
     /** Default SSL protocol. */
-    public static final String DFLT_SSL_PROTOCOL = "TLS";
+    public static final String DFLT_SSL_PROTOCOL = "TLSv1.2";
 
     /** Default key manager algorithm. */
     public static final String DFLT_KEY_ALGORITHM = "SunX509";
