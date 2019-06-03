@@ -22,6 +22,7 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandler.toStringRecord;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.DEFAULT_WAL_RECORD_PREFIX;
 
 /**
@@ -47,7 +48,10 @@ class PrintToLogHandler implements ScannerHandler {
     @Override public void handle(IgniteBiTuple<WALPointer, WALRecord> record) {
         ensureNotFinished();
 
-        resultString.append(DEFAULT_WAL_RECORD_PREFIX).append(record.get2()).append("\n");
+        resultString
+            .append(DEFAULT_WAL_RECORD_PREFIX)
+            .append(toStringRecord(record.get2()))
+            .append(System.lineSeparator());
     }
 
     /** {@inheritDoc} */
