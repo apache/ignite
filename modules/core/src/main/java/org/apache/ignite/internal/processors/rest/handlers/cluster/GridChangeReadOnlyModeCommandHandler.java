@@ -34,6 +34,9 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_DISABLE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_READ_ONLY_ENABLE;
 
+/**
+ *
+ */
 public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandlerAdapter {
     /** Commands. */
     private static final Collection<GridRestCommand> COMMANDS =
@@ -67,6 +70,13 @@ public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandler
                     break;
 
                 default:
+                    if (log.isInfoEnabled()) {
+                        if (req.readOnly())
+                            log.info("Received enable read-only mode request from client node with ID: " + req.clientId());
+                        else
+                            log.info("Received disable read-only mode request from client node with ID: " + req.clientId());
+                    }
+
                     ctx.grid().cluster().readOnly(req.readOnly());
 
                     res.setResponse(req.command().key() + " done");

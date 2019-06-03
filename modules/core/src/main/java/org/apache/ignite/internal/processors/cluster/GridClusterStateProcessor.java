@@ -539,7 +539,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 log,
                 "Received " + prettyStr(msg.activate(), msg.readOnly(), readOnlyChanged(state, msg.readOnly())) +
                     " request with BaselineTopology" +
-                    (msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + "]")
+                    (msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + "]") +
+                    " initiator node ID: " + msg.initiatorNodeId()
             );
         }
 
