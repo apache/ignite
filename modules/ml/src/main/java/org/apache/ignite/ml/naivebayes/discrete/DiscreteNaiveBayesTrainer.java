@@ -94,7 +94,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
                     long[][] valuesInBucket;
 
-                    int size = features.size();// - featureIdsToSkip.size();
+                    int size = features.size();
                     if (!res.valuesInBucketPerLbl.containsKey(lb)) {
                         valuesInBucket = new long[size][];
                         int index = 0;
