@@ -7,6 +7,7 @@ package org.h2.expression.aggregate;
 
 import org.h2.engine.Constants;
 import org.h2.engine.Database;
+import org.h2.engine.Session;
 import org.h2.util.IntIntHashMap;
 import org.h2.value.Value;
 import org.h2.value.ValueInt;
@@ -32,7 +33,7 @@ class AggregateDataSelectivity extends AggregateData {
     }
 
     @Override
-    void add(Database database, Value v) {
+    void add(Session ses, Value v) {
         count++;
         if (distinctHashes == null) {
             distinctHashes = new IntIntHashMap();

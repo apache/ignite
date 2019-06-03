@@ -539,8 +539,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     ThreadLocalObjectPool<H2ConnectionWrapper>.Reusable conn = connMgr.detachThreadConnection();
 
+                    Connection conn0 = null;
+
                     try {
-                        Connection conn0 = conn.object().connection(qryDesc.schemaName());
+                        conn0 = conn.object().connection(qryDesc.schemaName());
 
                         H2Utils.setupConnection(conn0, qctx,
                             qryDesc.distributedJoins(), qryDesc.enforceJoinOrder(), qryParams.lazy());
@@ -565,10 +567,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                             new H2QueryInfo(H2QueryInfo.QueryType.LOCAL, stmt, qry)
                         );
 
-                        return new H2FieldsIterator(rs, mvccTracker, qctx, conn);
+                        return new H2FieldsIterator(rs, mvccTracker, conn);
                     }
                     catch (IgniteCheckedException | RuntimeException | Error e) {
-                        U.closeQuiet(qctx.queryMemoryManager());
+                        if (conn0 != null)
+                            H2Utils.resetSession(conn0);
 
                         conn.recycle();
 
@@ -894,6 +897,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return rs;
         }
         catch (Throwable e) {
+            H2Utils.resetSession(conn);
+
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
                 qryInfo.printLogMessage(log, "Long running query is finished with error: "
                     + e.getMessage());

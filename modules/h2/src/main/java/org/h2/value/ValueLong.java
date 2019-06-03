@@ -204,6 +204,14 @@ public class ValueLong extends Value {
         return (ValueLong) Value.cache(new ValueLong(i));
     }
 
+    /** {@inheritDoc} */
+    @Override public int getMemory() {
+        if (value >= 0 && value < STATIC_SIZE)
+            return 0;
+
+        return super.getMemory();
+    }
+
     @Override
     public boolean equals(Object other) {
         return other instanceof ValueLong && value == ((ValueLong) other).value;

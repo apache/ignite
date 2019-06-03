@@ -6,6 +6,7 @@
 package org.h2.expression.aggregate;
 
 import org.h2.engine.Database;
+import org.h2.engine.Session;
 import org.h2.message.DbException;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -35,7 +36,7 @@ class AggregateDataDefault extends AggregateData {
     }
 
     @Override
-    void add(Database database, Value v) {
+    void add(Session ses, Value v) {
         if (v == ValueNull.INSTANCE) {
             return;
         }
@@ -58,12 +59,12 @@ class AggregateDataDefault extends AggregateData {
             }
             break;
         case MIN:
-            if (value == null || database.compare(v, value) < 0) {
+            if (value == null || ses.getDatabase().compare(v, value) < 0) {
                 value = v;
             }
             break;
         case MAX:
-            if (value == null || database.compare(v, value) > 0) {
+            if (value == null || ses.getDatabase().compare(v, value) > 0) {
                 value = v;
             }
             break;

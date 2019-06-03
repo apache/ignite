@@ -12,9 +12,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-
+import org.h2.engine.Constants;
 import org.h2.engine.Session;
 import org.h2.expression.Expression;
+import org.h2.expression.aggregate.AggregateData;
 import org.h2.expression.analysis.DataAnalysisOperation;
 import org.h2.expression.analysis.PartitionData;
 import org.h2.value.Value;
@@ -72,6 +73,11 @@ public abstract class SelectGroups {
         @Override
         public void reset() {
             super.reset();
+            if (groupByData != null) {
+                for (Object[] aggrs : groupByData.values())
+                    cleanupAggregates(aggrs);
+            }
+
             groupByData = new TreeMap<>(session.getDatabase().getCompareMode());
             currentGroupsKey = null;
             cursor = null;
@@ -95,6 +101,8 @@ public abstract class SelectGroups {
             if (values == null) {
                 values = createRow();
                 groupByData.put(currentGroupsKey, values);
+
+                onUpdate(currentGroupsKey, null, values);
             }
             currentGroupByExprData = values;
             currentGroupRowId++;
@@ -106,7 +114,9 @@ public abstract class SelectGroups {
             if (currentGroupsKey != null) {
                 // since we changed the size of the array, update the object in
                 // the groups map
-                groupByData.put(currentGroupsKey, currentGroupByExprData);
+                Object[] old = groupByData.put(currentGroupsKey, currentGroupByExprData);
+
+                onUpdate(currentGroupsKey, old, currentGroupByExprData);
             }
         }
 
@@ -119,14 +129,18 @@ public abstract class SelectGroups {
             cursor = groupByData.entrySet().iterator();
         }
 
+        /** Current cursor entry. */
+        Map.Entry<ValueRow, Object[]> curEntry;
+
         @Override
         public ValueRow next() {
             if (cursor.hasNext()) {
-                Map.Entry<ValueRow, Object[]> entry = cursor.next();
-                currentGroupByExprData = entry.getValue();
+                curEntry = cursor.next();
+                currentGroupByExprData = curEntry.getValue();
                 currentGroupRowId++;
-                return entry.getKey();
+                return curEntry.getKey();
             }
+            curEntry = null;
             return null;
         }
 
@@ -135,11 +149,16 @@ public abstract class SelectGroups {
             cursor.remove();
             currentGroupByExprData = null;
             currentGroupRowId--;
+
+            onUpdate(curEntry.getKey(), curEntry.getValue(), null);
+            
+            curEntry = null;
         }
 
         @Override
         public void resetLazy() {
             super.resetLazy();
+            assert groupByData == null || !groupByData.containsKey(currentGroupsKey);
             currentGroupsKey = null;
         }
     }
@@ -160,6 +179,11 @@ public abstract class SelectGroups {
         @Override
         public void reset() {
             super.reset();
+            if (rows != null) {
+                for (Object[] r : rows)
+                    cleanupAggregates(r);
+            }
+
             rows = new ArrayList<>();
             cursor = null;
         }
@@ -170,11 +194,15 @@ public abstract class SelectGroups {
             rows.add(values);
             currentGroupByExprData = values;
             currentGroupRowId++;
+
+            onUpdate(null, null, currentGroupByExprData);
         }
 
         @Override
         void updateCurrentGroupExprData() {
-            rows.set(rows.size() - 1, currentGroupByExprData);
+            Object[] old = rows.set(rows.size() - 1, currentGroupByExprData);
+
+            onUpdate(null, old, currentGroupByExprData);
         }
 
         @Override
@@ -231,6 +259,13 @@ public abstract class SelectGroups {
     int currentGroupRowId;
 
     /**
+     * Memory allocated in bytes.
+     *
+     * Note: Poison value '-1' means memory tracking is disabled.
+     */
+    long allocMem;
+
+    /**
      * Creates new instance of grouped data.
      *
      * @param session
@@ -244,13 +279,16 @@ public abstract class SelectGroups {
      * @return new instance of the grouped data.
      */
     public static SelectGroups getInstance(Session session, ArrayList<Expression> expressions, boolean isGroupQuery,
-            int[] groupIndex) {
+        int[] groupIndex) {
         return isGroupQuery ? new Grouped(session, expressions, groupIndex) : new Plain(session, expressions);
     }
 
     SelectGroups(Session session, ArrayList<Expression> expressions) {
         this.session = session;
         this.expressions = expressions;
+
+        if (session.queryMemoryTracker() == null)
+            allocMem = -1;
     }
 
     /**
@@ -377,6 +415,12 @@ public abstract class SelectGroups {
         windowData.clear();
         windowPartitionData.clear();
         currentGroupRowId = 0;
+
+        if (trackable()) {
+            session.queryMemoryTracker().free(allocMem);
+
+            allocMem = 0;
+        }
     }
 
     /**
@@ -417,9 +461,24 @@ public abstract class SelectGroups {
     }
 
     /**
+     * @param aggrs Aggregates to cleanup.
+     */
+    void cleanupAggregates(Object[] aggrs) {
+        if (aggrs == null || !trackable())
+            return;
+
+        for (Object agg : aggrs) {
+            if (agg instanceof AggregateData)
+                ((AggregateData)agg).cleanup(session);
+        }
+    }
+
+    /**
      * Moves group data to the next group in lazy mode.
      */
     public void nextLazyGroup() {
+        cleanupAggregates(currentGroupByExprData);
+
         currentGroupByExprData = new Object[Math.max(exprToIndexInGroupByData.size(), expressions.size())];
     }
 
@@ -438,5 +497,48 @@ public abstract class SelectGroups {
      */
     public ArrayList<Expression> expressions() {
         return expressions;
+    }
+
+    /**
+     * Group result update callback.
+     *
+     * @param groupKey Row key.
+     * @param old Old row.
+     * @param row New row.
+     */
+    protected void onUpdate(ValueRow groupKey, Object[] old, Object[] row) {
+        if (!trackable())
+            return;
+
+        assert old != null || row != null;
+
+        long size;
+
+        if (row != null && old != null)
+            size = (row.length - old.length) * Constants.MEMORY_OBJECT;
+        else if (old == null) {
+            size = groupKey != null ? groupKey.getMemory() : 0;
+            size += Constants.MEMORY_ARRAY + row.length * Constants.MEMORY_OBJECT;
+        }
+        else {
+            size = groupKey != null ? -groupKey.getMemory() : 0;
+            size -= Constants.MEMORY_ARRAY + old.length * Constants.MEMORY_OBJECT;
+        }
+
+        allocMem += size;
+
+        if (size > 0)
+            session.queryMemoryTracker().allocate(size);
+        else
+            session.queryMemoryTracker().free(size);
+    }
+
+    /**
+     * @return {@code True} if memory tracker available, {@code False} otherwise.
+     */
+    boolean trackable() {
+        assert allocMem == -1 || session.queryMemoryTracker() != null;
+
+        return allocMem != -1;
     }
 }

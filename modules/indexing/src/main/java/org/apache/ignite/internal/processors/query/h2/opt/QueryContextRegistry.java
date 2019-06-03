@@ -138,7 +138,7 @@ public class QueryContextRegistry {
         if (ctx == null)
             return false;
 
-        U.closeQuiet(ctx.queryMemoryManager());
+        U.closeQuiet(ctx.queryMemoryTracker());
 
         ctx.clearContext(nodeStop);
 

@@ -1182,7 +1182,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
 
     /**
-     * Defines factory class for H2 {@link org.h2.result.LocalResult}.
+     * Defines factory class for H2 LocalResult (see org.h2.result.LocalResult).
      */
     public static final String IGNITE_H2_LOCAL_RESULT_FACTORY = "IGNITE_H2_LOCAL_RESULT_FACTORY";
 

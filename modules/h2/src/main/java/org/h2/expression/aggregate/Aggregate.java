@@ -231,7 +231,7 @@ public class Aggregate extends AbstractAggregate {
         default:
             // Use argument as is
         }
-        data.add(session.getDatabase(), v);
+        data.add(session, v);
     }
 
     @Override
@@ -387,7 +387,7 @@ public class Aggregate extends AbstractAggregate {
                 Database db = session.getDatabase();
                 int dataType = type.getValueType();
                 for (Value v : c) {
-                    d.add(db, v);
+                    d.add(session, v);
                 }
                 return d.getValue(db, dataType);
             }
@@ -468,7 +468,7 @@ public class Aggregate extends AbstractAggregate {
                 throw DbException.getUnsupportedException("aggregateType=" + aggregateType);
             }
         }
-        collectingData.add(session.getDatabase(), arg);
+        collectingData.add(session, arg);
         Value[] array = collectingData.getArray();
         Comparator<Value> sort = orderBySort.getRowValueComparator();
         Arrays.sort(array, sort);

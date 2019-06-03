@@ -25,6 +25,8 @@ public abstract class ValueCollectionBase extends Value {
 
     private int hash;
 
+    private int memory;
+
     ValueCollectionBase(Value[] values) {
         this.values = values;
     }
@@ -123,9 +125,11 @@ public abstract class ValueCollectionBase extends Value {
 
     @Override
     public int getMemory() {
-        int memory = 72;
-        for (Value v : values) {
-            memory += v.getMemory() + Constants.MEMORY_POINTER;
+        if (memory == 0) {
+            memory = 72;
+            for (Value v : values) {
+                memory += v.getMemory() + Constants.MEMORY_POINTER;
+            }
         }
         return memory;
     }

@@ -279,6 +279,8 @@ class MapQueryResult {
         if (res != null)
             res.close();
 
+        ses.setQueryContext(null);
+
         if (detachedConn != null)
             detachedConn.recycle();
 

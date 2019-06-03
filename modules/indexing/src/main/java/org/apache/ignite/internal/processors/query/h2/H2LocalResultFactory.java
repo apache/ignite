@@ -16,7 +16,6 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.h2.engine.Session;
 import org.h2.expression.Expression;
 import org.h2.result.H2BaseLocalResult;
@@ -29,15 +28,12 @@ import org.h2.result.LocalResultFactory;
 public class H2LocalResultFactory extends LocalResultFactory {
     /** {@inheritDoc} */
     @Override public LocalResult create(Session ses, Expression[] expressions, int visibleColCnt) {
-        Object qCtx = ses.getQueryContext();
-        if (qCtx != null) {
-            QueryMemoryTracker memoryTracker = ((QueryContext)qCtx).queryMemoryManager();
+        H2MemoryTracker memoryTracker = ses.queryMemoryTracker();
 
-            if (memoryTracker != null)
-                return new H2ManagedLocalResult(ses, memoryTracker, expressions, visibleColCnt);
-        }
+        if (memoryTracker != null)
+            return new H2ManagedLocalResult(ses, memoryTracker, expressions, visibleColCnt);
 
-       return new H2BaseLocalResult(ses, expressions, visibleColCnt);
+        return new H2BaseLocalResult(ses, expressions, visibleColCnt);
     }
 
     /** {@inheritDoc} */

@@ -183,7 +183,7 @@ class MapQueryResults {
         if (lazy)
             releaseQueryContext();
 
-        U.closeQuiet(qctx.queryMemoryManager());
+        U.closeQuiet(qctx.queryMemoryTracker());
     }
 
     /**

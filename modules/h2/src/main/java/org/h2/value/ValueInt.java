@@ -63,6 +63,14 @@ public class ValueInt extends Value {
         return v;
     }
 
+    /** {@inheritDoc} */
+    @Override public int getMemory() {
+        if (value >= 0 && value < STATIC_SIZE)
+            return 0;
+
+        return super.getMemory();
+    }
+
     @Override
     public Value add(Value v) {
         ValueInt other = (ValueInt) v;

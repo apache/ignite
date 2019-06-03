@@ -25,9 +25,9 @@ public class H2BaseLocalResult implements LocalResult {
     private int visibleColumnCount;
     private Expression[] expressions;
     private int rowId, rowCount;
-    private ArrayList<Value[]> rows;
+    protected ArrayList<Value[]> rows;
     private SortOrder sort;
-    private TreeMap<Value, Value[]> distinctRows;
+    protected TreeMap<Value, Value[]> distinctRows;
     private Value[] currentRow;
     private int offset;
     private int limit = -1;

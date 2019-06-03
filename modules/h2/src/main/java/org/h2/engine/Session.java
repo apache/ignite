@@ -16,6 +16,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.processors.query.h2.H2MemoryTracker;
+import org.apache.ignite.internal.processors.query.h2.H2QueryContext;
 import org.h2.api.ErrorCode;
 import org.h2.command.Command;
 import org.h2.command.CommandInterface;
@@ -35,7 +37,6 @@ import org.h2.mvstore.db.MVTable;
 import org.h2.mvstore.db.MVTableEngine;
 import org.h2.mvstore.tx.Transaction;
 import org.h2.mvstore.tx.TransactionStore;
-import org.h2.value.VersionedValue;
 import org.h2.result.ResultInterface;
 import org.h2.result.Row;
 import org.h2.result.SortOrder;
@@ -58,6 +59,7 @@ import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
 import org.h2.value.ValueString;
 import org.h2.value.ValueTimestampTimeZone;
+import org.h2.value.VersionedValue;
 
 /**
  * A session represents an embedded database connection. When using the server
@@ -138,7 +140,7 @@ public class Session extends SessionWithState implements TransactionStore.Rollba
     private boolean forceJoinOrder;
     private boolean lazyQueryExecution;
     private ColumnNamerConfiguration columnNamerConfiguration;
-    private Object qryContext;
+    private H2QueryContext qryContext;
     /**
      * Tables marked for ANALYZE after the current transaction is committed.
      * Prevents us calling ANALYZE repeatedly in large transactions.
@@ -207,12 +209,25 @@ public class Session extends SessionWithState implements TransactionStore.Rollba
         return joinBatchEnabled;
     }
 
-    public Object getQueryContext() {
+    /**
+     * @return Query context.
+     */
+    public H2QueryContext getQueryContext() {
         return qryContext;
     }
 
-    public void setQueryContext(Object qryContext) {
+    /**
+     * @param qryContext Query context.
+     */
+    public void setQueryContext(H2QueryContext qryContext) {
         this.qryContext = qryContext;
+    }
+
+    /**
+     * @return Query memory tracker if it is available or 'null' otherwise.
+     */
+    public H2MemoryTracker queryMemoryTracker() {
+        return qryContext != null ? qryContext.queryMemoryTracker() : null;
     }
 
     /**

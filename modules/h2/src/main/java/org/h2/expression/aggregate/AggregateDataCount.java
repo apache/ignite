@@ -6,6 +6,7 @@
 package org.h2.expression.aggregate;
 
 import org.h2.engine.Database;
+import org.h2.engine.Session;
 import org.h2.value.Value;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
@@ -24,7 +25,7 @@ class AggregateDataCount extends AggregateData {
     }
 
     @Override
-    void add(Database database, Value v) {
+    void add(Session ses, Value v) {
         if (all || v != ValueNull.INSTANCE) {
             count++;
         }

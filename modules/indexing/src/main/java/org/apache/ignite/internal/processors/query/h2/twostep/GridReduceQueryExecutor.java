@@ -60,11 +60,11 @@ import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2FieldsIterator;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.h2.ReduceH2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.ThreadLocalObjectPool;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedUpdateRun;
-import org.apache.ignite.internal.processors.query.h2.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSortColumn;
@@ -659,8 +659,14 @@ public class GridReduceQueryExecutor {
                         qryCtxRegistry.setThreadLocal(qctx);
 
                         try {
-                            if (qry.explain())
-                                return explainPlan(r.connection(), qry, params);
+                            if (qry.explain()) {
+                                try {
+                                    return explainPlan(r.connection(), qry, params);
+                                }
+                                finally {
+                                    H2Utils.resetSession(r.connection());
+                                }
+                            }
 
                             GridCacheSqlQuery rdc = qry.reduceQuery();
 
@@ -680,7 +686,7 @@ public class GridReduceQueryExecutor {
                                 qryInfo
                                 );
 
-                            resIter = new H2FieldsIterator(res, mvccTracker, qctx, detachedConn);
+                            resIter = new H2FieldsIterator(res, mvccTracker, detachedConn);
 
                             // don't recycle at final block
                             detachedConn = null;
@@ -689,7 +695,7 @@ public class GridReduceQueryExecutor {
                         }
                         finally {
                             if (detachedConn != null)
-                                U.closeQuiet(qctx.queryMemoryManager());
+                                H2Utils.resetSession(detachedConn.object().connection());
 
                             qryCtxRegistry.clearThreadLocal();
                         }
