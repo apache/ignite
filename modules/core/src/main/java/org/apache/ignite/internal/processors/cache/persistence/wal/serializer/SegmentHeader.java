@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class SegmentHeader {
     /** Serializer version. */
     private int serializerVersion;
+
     /** Compacted flag. */
     private boolean isCompacted;
 

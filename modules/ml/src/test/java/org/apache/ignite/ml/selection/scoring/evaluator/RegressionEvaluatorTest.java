@@ -105,7 +105,6 @@ public class RegressionEvaluatorTest extends TrainerTest {
 
         KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
-
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.5);
 

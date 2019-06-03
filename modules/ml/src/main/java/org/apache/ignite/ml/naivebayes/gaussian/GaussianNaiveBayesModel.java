@@ -31,14 +31,19 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<GaussianNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
+
     /** Means of features for all classes. kth row contains means for labels[k] class. */
     private final double[][] means;
+
     /** Variances of features for all classes. kth row contains variances for labels[k] class */
     private final double[][] variances;
+
     /** Prior probabilities of each class */
     private final double[] classProbabilities;
+
     /** Labels. */
     private final double[] labels;
+
     /** Feature ids which should be skipped. By defaut all features are processed. */
     private final Collection<Integer> featureIdsToSkip;
     /** Feature sum, squared sum and count per label. */

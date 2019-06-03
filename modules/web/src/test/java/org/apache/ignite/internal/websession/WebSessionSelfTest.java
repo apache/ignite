@@ -1150,6 +1150,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 res.getWriter().flush();
             }
         }
+
         /** {@inheritDoc} */
         @Override protected void doPost(HttpServletRequest req, HttpServletResponse res)
                 throws ServletException, IOException {

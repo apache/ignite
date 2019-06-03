@@ -34,21 +34,26 @@ import java.util.Collection;
 public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
+
     /**
      * Probabilities of features for all classes for each label. {@code labels[c][f][b]} contains a probability for
      * class {@code c} for feature {@code f} for bucket {@code b}.
      */
     private final double[][][] probabilities;
+
     /** Prior probabilities of each class */
     private final double[] clsProbabilities;
+
     /** Labels. */
     private final double[] labels;
+
     /**
      * The bucket thresholds to convert a features to discrete values. {@code bucketThresholds[f][b]} contains the right
      * border for feature {@code f} for bucket {@code b}. Everything which is above the last thresdold goes to the next
      * bucket.
      */
     private final double[][] bucketThresholds;
+
     /** Feature ids which should be skipped. By defaut all features are processed. */
     private final Collection<Integer> featureIdsToSkip;
     /** Amount values in each buckek for each feature per label. */
@@ -61,6 +66,7 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @param bucketThresholds The threshold to convert a feature to a binary value.
      * @param featureIdsToSkip Feature ids which should be skip.
      * @param sumsHolder Amount values which are abouve the threshold per label.
+     * @param labels Labels.
      */
     public DiscreteNaiveBayesModel(double[][][] probabilities, double[] clsProbabilities, double[] labels,
         double[][] bucketThresholds, Collection<Integer> featureIdsToSkip, DiscreteNaiveBayesSumsHolder sumsHolder) {

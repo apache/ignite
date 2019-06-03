@@ -393,7 +393,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                 .setSchema("cacheWithPrecision")
                 .setArgs(2, "DEF"), true);
 
-
         QueryCursorImpl<List<?>> cursor = (QueryCursorImpl<List<?>>)qryProc.querySqlFields(
             new SqlFieldsQuery("SELECT _KEY, strField FROM TestType")
                 .setSchema("cacheWithPrecision"), true);

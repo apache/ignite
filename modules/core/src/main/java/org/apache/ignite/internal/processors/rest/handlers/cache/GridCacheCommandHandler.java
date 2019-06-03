@@ -883,16 +883,22 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static class FlaggedCacheOperationCallable implements Callable<GridRestResponse>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
+
         /** */
         private final Set<GridClientCacheFlag> cacheFlags;
+
         /** */
         private final CacheProjectionCommand op;
+
         /** */
         private final Object key;
+
         /** Client ID. */
         private UUID clientId;
+
         /** */
         @IgniteInstanceResource
         private Ignite g;
@@ -941,14 +947,19 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static class CacheOperationCallable implements Callable<GridRestResponse>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** */
         private final String cacheName;
+
         /** */
         private final CacheCommand op;
+
         /** */
         private final Object key;
+
         /** Client ID. */
         private UUID clientId;
+
         /** */
         @IgniteInstanceResource
         private Ignite g;

@@ -97,7 +97,6 @@ public class LinearRegressionSGDTrainerTest extends TrainerTest {
             new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-
         LinearRegressionModel updatedOnSameDS = trainer.withSeed(0).update(
             originalMdl,
             data,
