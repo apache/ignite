@@ -405,18 +405,24 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** {@inheritDoc} */
         @Override protected void beforeTestsStarted() throws Exception {
-            //IMPL NOTE default config doesn't stop nodes.
+            // IMPL NOTE default config doesn't stop nodes.
             testsCfg = new VariationsTestsConfig(
                 new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(),
-                    new int[] {0}), "Dummy config", true, null, 1, false);
+                    new int[] {0}), "Dummy config", true, null, 1,
+                false);
 
-            processStage("beforeTestsStarted", 0,  1);
+            processStage("beforeTestsStarted", 0, 1);
 
             super.beforeTestsStarted();
         }
 
         /** {@inheritDoc} */
         @Override protected void beforeTest() throws Exception {
+            testsCfg = new VariationsTestsConfig(
+                new ConfigVariationsFactory(null, new int[] {0}, ConfigVariations.cacheBasicSet(),
+                    new int[] {0}), "Dummy config", true, null, 1,
+                false);
+
             processStage("beforeTest", 1, 2);
 
             super.beforeTest();
