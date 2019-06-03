@@ -764,7 +764,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
                 try (Statement statement = conn.createStatement()) {
                     statement.executeUpdate("INSERT INTO TEST_READ_ONLY VALUES (1, 2)");
                 }
-            }, "55W08", "Failed to execute DML statement. Cluster in read-only mode");
+            }, "90097", "Failed to execute DML statement. Cluster in read-only mode");
         }
         finally {
             G.allGrids().get(0).cluster().readOnly(false);

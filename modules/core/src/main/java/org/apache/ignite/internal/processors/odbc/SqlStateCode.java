@@ -75,8 +75,11 @@ public final class SqlStateCode {
     /** Internal error. */
     public static final String INTERNAL_ERROR = "50000";  // Generic value for custom "50" class.
 
-    /** Read only mode enabled on cluster. {@link IgniteCluster#readOnly()}  */
-    public static final String CLUSTER_READ_ONLY_MODE_ENABLED = "55W08";
+    /**
+     * Read only mode enabled on cluster. {@link IgniteCluster#readOnly()}.
+     * Value is equal to {@code org.h2.api.ErrorCode#DATABASE_IS_READ_ONLY} code.
+     */
+    public static final String CLUSTER_READ_ONLY_MODE_ENABLED = "90097";
 
     /** Query canceled. */
     public static final String QUERY_CANCELLED = "57014";
