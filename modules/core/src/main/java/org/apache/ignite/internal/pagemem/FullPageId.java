@@ -40,10 +40,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * <p>
  * <h3>Page ID rotation</h3>
  * There are scenarios when we reference one page (B) from within another page (A) by page ID. It is also
- * possible that this first page (B) is de-allocated and allocated again for a different purpose. In this
- * case we should have a mechanism to determine that page (B) cannot be used after reading it's ID in page (A).
+ * possible that this first page (B) is concurrently reused for a different purpose. In this
+ * case we should have a mechanism to determine that the reference from page (A) to page (B) is no longer valid.
  * This is ensured by page ID rotation - together with page's (B) ID we should write some value that is incremented
- * each time a page is de-allocated (page ID rotation). This ID should be verified after page read and a page
+ * each time a page is reused (page ID rotation). This ID should be verified after page read and a page
  * should be discarded if full ID is different.
  * <p>
  * Effective page ID is page ID with zeroed bits used for page ID rotation.
