@@ -356,7 +356,6 @@ public class IgniteSqlSegmentedIndexSelfTest extends AbstractIndexingCommonTest 
         @QuerySqlField
         String name;
 
-
         /**
          * @param name Name.
          */

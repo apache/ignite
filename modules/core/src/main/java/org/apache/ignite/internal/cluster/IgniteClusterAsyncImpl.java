@@ -351,6 +351,7 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     @Override public boolean enableWal(String cacheName) throws IgniteException {
         return cluster.enableWal(cacheName);
     }
+
     /** {@inheritDoc} */
     @Override public boolean disableWal(String cacheName) throws IgniteException {
         return cluster.disableWal(cacheName);

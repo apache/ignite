@@ -36,22 +36,31 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 public class FsyncFileHandleManagerImpl implements FileHandleManager {
     /** Context. */
     protected final GridCacheSharedContext cctx;
+
     /** Logger. */
     protected final IgniteLogger log;
+
     /** */
     private final WALMode mode;
+
     /** Persistence metrics tracker. */
     private final DataStorageMetricsImpl metrics;
+
     /** Last WAL pointer. */
     private final Supplier<WALPointer> lastWALPtr;
+
     /** */
     protected final RecordSerializer serializer;
+
     /** Current handle supplier. */
     private final Supplier<FileWriteHandle> currentHandleSupplier;
+
     /** WAL segment size in bytes. This is maximum value, actual segments may be shorter. */
     private final long maxWalSegmentSize;
+
     /** Fsync delay. */
     private final long fsyncDelay;
+
     /** Thread local byte buffer size. */
     private final int tlbSize;
 

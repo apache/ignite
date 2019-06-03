@@ -185,7 +185,6 @@ public class JdbcThinAffinityAwarenessTransactionsSelfTest extends JdbcThinAbstr
         stmt.execute("COMMIT");
     }
 
-
     /**
      * Utility method that:
      *   1. warms up an affinity cache;

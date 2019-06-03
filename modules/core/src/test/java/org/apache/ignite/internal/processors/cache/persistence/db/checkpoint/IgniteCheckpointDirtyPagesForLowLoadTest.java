@@ -45,8 +45,10 @@ import org.junit.Test;
 public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstractTest {
     /** Caches in group. */
     private static final int CACHES_IN_GRP = 1;
+
     /** Groups. */
     private static final int GROUPS = 1;
+
     /** Parts. */
     private static final int PARTS = 1024;
 

@@ -77,7 +77,6 @@ public class AlgorithmSpecificDatasetExample {
 
                 Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(1);
 
-
                 IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
 
                 //NOTE: This class is part of Developer API and all lambdas should be loaded on server manually.

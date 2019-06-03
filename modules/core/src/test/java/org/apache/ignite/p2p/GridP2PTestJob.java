@@ -44,7 +44,6 @@ public class GridP2PTestJob extends ComputeJobAdapter {
     @IgniteInstanceResource
     private Ignite ignite;
 
-
     /**
      * @param arg is argument of GridP2PTestJob.
      */

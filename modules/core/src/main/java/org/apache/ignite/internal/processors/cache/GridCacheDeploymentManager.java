@@ -453,7 +453,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     if (depInfo.removeParticipant(id))
                         deps.remove(ldrId, depInfo);
 
-
                     allParticipants.remove(id);
                 }
             }

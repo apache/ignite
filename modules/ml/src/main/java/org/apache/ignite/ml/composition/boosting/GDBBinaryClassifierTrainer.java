@@ -41,6 +41,7 @@ import org.apache.ignite.ml.tree.boosting.GDBBinaryClassifierOnTreesTrainer;
 public abstract class GDBBinaryClassifierTrainer extends GDBTrainer {
     /** External representation of first class. */
     private double externalFirstCls; //internal 0.0
+
     /** External representation of second class. */
     private double externalSecondCls; //internal 1.0
 
