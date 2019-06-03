@@ -16,8 +16,6 @@
 
 package org.apache.ignite.internal;
 
-import javax.cache.CacheException;
-import javax.management.JMException;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -49,6 +47,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import javax.management.JMException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.DataStorageMetrics;
@@ -2645,6 +2645,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (cfg.getRebalanceThreadPoolSize() < 1)
                 throw new IgniteCheckedException("Rebalance thread pool size minimal allowed value is 1. " +
                     "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
+
+            if (cfg.getRebalanceBatchesPrefetchCount() < 1)
+                throw new IgniteCheckedException("Rebalance batches prefetch count minimal allowed value is 1. " +
+                    "Change IgniteConfiguration.rebalanceBatchesPrefetchCount property before next start.");
+
+            if (cfg.getRebalanceBatchSize() <= 0)
+                throw new IgniteCheckedException("Rebalance batch size must be greater than zero. " +
+                    "Change IgniteConfiguration.rebalanceBatchSize property before next start.");
+
+            if (cfg.getRebalanceThrottle() < 0)
+                throw new IgniteCheckedException("Rebalance throttle can't have negative value. " +
+                    "Change IgniteConfiguration.rebalanceThrottle property before next start.");
+
+            if (cfg.getRebalanceTimeout() < 0)
+                throw new IgniteCheckedException("Rebalance message timeout can't have negative value. " +
+                    "Change IgniteConfiguration.rebalanceTimeout property before next start.");
 
             for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
                 if (ccfg.getRebalanceBatchesPrefetchCount() < 1)
