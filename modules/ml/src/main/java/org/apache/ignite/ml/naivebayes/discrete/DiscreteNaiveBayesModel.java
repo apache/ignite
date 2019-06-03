@@ -56,6 +56,7 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** Feature ids which should be skipped. By defaut all features are processed. */
     private final Collection<Integer> featureIdsToSkip;
+
     /** Amount values in each buckek for each feature per label. */
     private final DiscreteNaiveBayesSumsHolder sumsHolder;
 
