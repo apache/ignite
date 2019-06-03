@@ -26,12 +26,13 @@ final class Data {
     private Data() {
     }
 
-    /** The first label */
+    /** The first label. */
     static final double LABEL_1 = 1.;
 
-    /** The second label */
+    /** The second label. */
     static final double LABEL_2 = 2.;
 
+    /** Labels. */
     static final double[] labels = {LABEL_1, LABEL_2};
 
     /** */
