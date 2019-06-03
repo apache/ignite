@@ -206,7 +206,7 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
                 try (ResultSet rs = selectStmt.executeQuery("select count(*) from PUBLIC.Person")) {
                     assertTrue(rs.next());
 
-                    assertEquals("Insert should be failed!", 0, rs.getLong(1));
+                    assertEquals("Insert should be failed", 0, rs.getLong(1));
                 }
             }
 

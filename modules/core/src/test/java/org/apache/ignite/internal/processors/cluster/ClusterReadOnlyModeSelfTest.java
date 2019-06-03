@@ -129,7 +129,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
                 return null;
             },
             IgniteException.class,
-            "Cluster not active!"
+            "Cluster not active"
         );
     }
 
@@ -200,7 +200,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
             catch (InterruptedException e) {
                 log.error("Thread interrupted", e);
 
-                fail("Thread interrupted!");
+                fail("Thread interrupted");
             }
         });
 
@@ -280,7 +280,7 @@ public class ClusterReadOnlyModeSelfTest extends GridCommonAbstractTest {
 
         IgniteEx client = grid("client");
 
-        assertTrue("Should be client!", client.configuration().isClientMode());
+        assertTrue("Should be client", client.configuration().isClientMode());
 
         checkClusterInReadOnlyMode(false, client);
 

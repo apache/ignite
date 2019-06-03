@@ -499,9 +499,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ctx.cache().context().readOnlyMode(globalState.readOnly());
 
                 if (globalState.readOnly())
-                    log.info("Read-only mode is enabled!");
+                    log.info("Read-only mode is enabled");
                 else
-                    log.info("Read-only mode is disabled!");
+                    log.info("Read-only mode is disabled");
             }
 
             TransitionOnJoinWaitFuture joinFut = this.joinFut;
@@ -869,7 +869,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> changeGlobalState(boolean readOnly) {
         if (!publicApiActiveState(false))
-            return new GridFinishedFuture<>(new IgniteException("Cluster not active!"));
+            return new GridFinishedFuture<>(new IgniteException("Cluster not active"));
 
         DiscoveryDataClusterState state = globalState;
 
