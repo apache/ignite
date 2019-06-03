@@ -527,8 +527,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Cannot have more than " + CacheConfiguration.MAX_PARTITIONS_COUNT +
                 " partitions [cacheName=" + cc.getName() + ", partitions=" + cc.getAffinity().partitions() + ']');
 
-        if (cc.getRebalanceMode() != CacheRebalanceMode.NONE)
+        if (cc.getRebalanceMode() != CacheRebalanceMode.NONE) {
             assertParameter(cc.getRebalanceBatchSize() > 0, "rebalanceBatchSize > 0");
+            assertParameter(cc.getRebalanceTimeout() >= 0, "rebalanceTimeout >= 0");
+            assertParameter(cc.getRebalanceThrottle() >= 0, "rebalanceThrottle >= 0");
+            assertParameter(cc.getRebalanceBatchesPrefetchCount() > 0, "rebalanceBatchesPrefetchCount > 0");
+        }
 
         if (cc.getCacheMode() == PARTITIONED || cc.getCacheMode() == REPLICATED) {
             if (cc.getAtomicityMode() == ATOMIC && cc.getWriteSynchronizationMode() == FULL_ASYNC)

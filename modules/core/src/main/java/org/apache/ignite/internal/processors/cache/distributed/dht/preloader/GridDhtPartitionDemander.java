@@ -509,7 +509,7 @@ public class GridDhtPartitionDemander {
 
                     demandMsg.topic(rebalanceTopics.get(stripe));
                     demandMsg.rebalanceId(fut.rebalanceId);
-                    demandMsg.timeout(cfg.getRebalanceTimeout());
+                    demandMsg.timeout(grp.preloader().timeout());
 
                     final int topicId = stripe;
 
@@ -837,7 +837,7 @@ public class GridDhtPartitionDemander {
                 supplyMsg.topologyVersion(),
                 grp.groupId());
 
-            d.timeout(grp.config().getRebalanceTimeout());
+            d.timeout(grp.preloader().timeout());
 
             d.topic(rebalanceTopics.get(topicId));
 
@@ -845,7 +845,7 @@ public class GridDhtPartitionDemander {
                 // Send demand message.
                 try {
                     ctx.io().sendOrderedMessage(node, rebalanceTopics.get(topicId),
-                        d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.config().getRebalanceTimeout());
+                        d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.preloader().timeout());
 
                     if (log.isDebugEnabled())
                         log.debug("Send next demand message [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
@@ -1360,14 +1360,14 @@ public class GridDhtPartitionDemander {
                 this.topologyVersion(),
                 grp.groupId());
 
-            d.timeout(grp.config().getRebalanceTimeout());
+            d.timeout(grp.preloader().timeout());
 
             try {
                 for (int idx = 0; idx < ctx.gridConfig().getRebalanceThreadPoolSize(); idx++) {
                     d.topic(GridCachePartitionExchangeManager.rebalanceTopic(idx));
 
                     ctx.io().sendOrderedMessage(node, GridCachePartitionExchangeManager.rebalanceTopic(idx),
-                        d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.config().getRebalanceTimeout());
+                        d.convertIfNeeded(node.version()), grp.ioPolicy(), grp.preloader().timeout());
                 }
             }
             catch (IgniteCheckedException ignored) {
