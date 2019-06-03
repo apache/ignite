@@ -70,12 +70,10 @@ public class GridChangeReadOnlyModeCommandHandler extends GridRestCommandHandler
                     break;
 
                 default:
-                    if (log.isInfoEnabled()) {
-                        if (req.readOnly())
-                            log.info("Received enable read-only mode request from client node with ID: " + req.clientId());
-                        else
-                            log.info("Received disable read-only mode request from client node with ID: " + req.clientId());
-                    }
+                    if (req.readOnly())
+                        U.log(log, "Received enable read-only mode request from client node with ID: " + req.clientId());
+                    else
+                        U.log(log, "Received disable read-only mode request from client node with ID: " + req.clientId());
 
                     ctx.grid().cluster().readOnly(req.readOnly());
 

@@ -534,15 +534,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         DiscoveryDataClusterState state = globalState;
 
-        if (log.isInfoEnabled()) {
-           U.log(
-                log,
-                "Received " + prettyStr(msg.activate(), msg.readOnly(), readOnlyChanged(state, msg.readOnly())) +
-                    " request with BaselineTopology" +
-                    (msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + "]") +
-                    " initiator node ID: " + msg.initiatorNodeId()
-            );
-        }
+        U.log(
+            log,
+            "Received " + prettyStr(msg.activate(), msg.readOnly(), readOnlyChanged(state, msg.readOnly())) +
+                " request with BaselineTopology" +
+                (msg.baselineTopology() == null ? ": null" : "[id=" + msg.baselineTopology().id() + "]") +
+                " initiator node ID: " + msg.initiatorNodeId()
+        );
 
         if (msg.baselineTopology() != null)
             compatibilityMode = false;
@@ -1094,13 +1092,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         IgniteInternalFuture<?> resFut = wrapStateChangeFuture(startedFut, msg);
 
         try {
-            if (log.isInfoEnabled()) {
-                U.log(
-                    log,
-                    "Sending " + prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
-                        " request with BaselineTopology " + blt
-                );
-            }
+            U.log(
+                log,
+                "Sending " + prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
+                    " request with BaselineTopology " + blt
+            );
 
             ctx.discovery().sendCustomEvent(msg);
 
@@ -1259,13 +1255,14 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     ) {
         AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
-        if (log.isInfoEnabled()) {
-            log.info("Sending " + prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
+        U.log(
+            log,
+            "Sending " + prettyStr(activate, readOnly, readOnlyChanged(globalState, readOnly)) +
                 " request from node [id=" + ctx.localNodeId() +
                 ", topVer=" + topVer +
                 ", client=" + ctx.clientNode() +
-                ", daemon=" + ctx.isDaemon() + "]");
-        }
+                ", daemon=" + ctx.isDaemon() + "]"
+        );
 
         IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
 
