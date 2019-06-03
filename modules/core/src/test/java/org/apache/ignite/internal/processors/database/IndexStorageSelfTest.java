@@ -107,6 +107,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
                         null,
                         mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX),
                         true,
+                        null,
                         null
                     );
 
