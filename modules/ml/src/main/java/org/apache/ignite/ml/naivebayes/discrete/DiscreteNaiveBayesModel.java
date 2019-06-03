@@ -66,7 +66,6 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @param bucketThresholds The threshold to convert a feature to a binary value.
      * @param featureIdsToSkip Feature ids which should be skip.
      * @param sumsHolder Amount values which are abouve the threshold per label.
-     * @param labels Labels.
      */
     public DiscreteNaiveBayesModel(double[][][] probabilities, double[] clsProbabilities, double[] labels,
         double[][] bucketThresholds, Collection<Integer> featureIdsToSkip, DiscreteNaiveBayesSumsHolder sumsHolder) {

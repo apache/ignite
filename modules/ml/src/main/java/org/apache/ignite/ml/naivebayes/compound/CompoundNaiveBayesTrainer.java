@@ -36,7 +36,11 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
 
     /** Prior probabilities of each class */
     private double[] clsProbabilities;
+
+    /** */
     private GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
+
+    /** */
     private DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
 
     /** {@inheritDoc} */

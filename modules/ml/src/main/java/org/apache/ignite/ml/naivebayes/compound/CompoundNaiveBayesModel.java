@@ -32,12 +32,16 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<CompoundNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -5045925321135798960L;
+
     /** Prior probabilities of each class. */
     private double[] priorProbabilities;
+
     /** Labels. */
     private double[] labels;
+
     /** Gaussian Bayes model. */
     private GaussianNaiveBayesModel gaussianModel;
+
     /** Discrete Bayes model. */
     private DiscreteNaiveBayesModel discreteModel;
 
