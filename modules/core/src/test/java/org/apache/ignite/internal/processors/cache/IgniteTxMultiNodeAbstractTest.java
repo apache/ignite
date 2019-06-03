@@ -51,7 +51,6 @@ import org.junit.Test;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
-
 /**
  * Checks basic multi-node transactional operations.
  */

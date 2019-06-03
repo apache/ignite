@@ -890,6 +890,7 @@ public final class IgniteSystemProperties {
      * Default is {@code false}.
      */
     public static final String IGNITE_DISABLE_ONHEAP_CACHE = "IGNITE_DISABLE_ONHEAP_CACHE";
+
     /**
      * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
      * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.

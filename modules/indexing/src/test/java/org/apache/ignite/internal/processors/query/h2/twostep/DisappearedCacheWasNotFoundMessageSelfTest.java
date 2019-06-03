@@ -46,10 +46,13 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.JoinSqlTest
 public class DisappearedCacheWasNotFoundMessageSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;
+
     /** */
     private static final String ORG = "org";
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Person> personCache;
+
     /** */
     private IgniteCache<String, JoinSqlTestHelper.Organization> orgCache;
 

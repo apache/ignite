@@ -54,6 +54,7 @@ import static org.junit.Assume.assumeTrue;
 public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_NAME = "TEST_NAME";
+
     /** */
     private static int autoAdjustTimeout = 5000;
 

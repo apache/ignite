@@ -2632,7 +2632,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
         }, 4, "find");
 
-
         asyncRunFut = new GridCompoundFuture<>();
 
         asyncRunFut.add((IgniteInternalFuture)fut);

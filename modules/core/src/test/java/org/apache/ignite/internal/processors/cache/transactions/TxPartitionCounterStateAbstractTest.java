@@ -570,6 +570,7 @@ public abstract class TxPartitionCounterStateAbstractTest extends GridCommonAbst
     protected class TxCallbackAdapter implements TxCallback {
         /** */
         private Map<Integer, IgniteUuid> txMap = new ConcurrentHashMap<>();
+
         /** */
         private Map<IgniteUuid, Integer> revTxMap = new ConcurrentHashMap<>();
 

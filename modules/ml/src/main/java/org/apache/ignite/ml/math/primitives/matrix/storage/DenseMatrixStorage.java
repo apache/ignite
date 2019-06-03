@@ -33,12 +33,16 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 public class DenseMatrixStorage implements MatrixStorage {
     /** Backing data array. */
     private double[] data;
+
     /** Amount of rows in the matrix. */
     private int rows;
+
     /** Amount of columns in the matrix. */
     private int cols;
+
     /** Mode specifying if this matrix is row-major or column-major. */
     private int stoMode;
+
     /** Index mapper */
     private IgniteIntIntToIntBiFunction idxMapper;
 

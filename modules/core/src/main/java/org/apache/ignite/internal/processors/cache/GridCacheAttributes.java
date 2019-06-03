@@ -50,7 +50,6 @@ public class GridCacheAttributes implements Serializable {
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment enrichment;
 
-
     /**
      * @param cfg Cache configuration.
      *

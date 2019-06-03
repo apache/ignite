@@ -724,7 +724,6 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
                         }
                     };
 
-
                 QueryCursor qry = null;
                 MutableCacheEntryListenerConfiguration<QueryTestKey, QueryTestValue> lsnrCfg = null;
 

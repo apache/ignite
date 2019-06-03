@@ -2597,6 +2597,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
         /** */
         private final ClusterNode node;
+
         /** */
         private final MvccCoordinator mvccCrd;
 
