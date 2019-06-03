@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.GridRestProtocolAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -223,14 +225,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             return  false;
         }
-        catch (SocketException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to bind HTTP server to configured port.");
-
-            stopJetty();
-
-            return false;
-        }
         catch (MultiException e) {
             if (log.isDebugEnabled())
                 log.debug("Caught multi exception: " + e);
@@ -247,7 +241,15 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             return false;
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
+            if (X.hasCause(e, BindException.class)) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to bind HTTP server to configured port.");
+
+                stopJetty();
+
+                return false;
+            } else
+                throw new IgniteCheckedException("Failed to start Jetty HTTP server.", e);
         }
     }
 
