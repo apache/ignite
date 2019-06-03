@@ -17,57 +17,59 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
+import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.counter.HitRateCounter;
+import org.apache.ignite.spi.metric.counter.LongCounter;
+import org.apache.ignite.spi.metric.gauge.LongGauge;
 
 /**
  *
  */
 public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
-    private volatile HitRateMetrics walLoggingRate;
+    private final HitRateCounter walLoggingRate;
 
     /** */
-    private volatile HitRateMetrics walWritingRate;
+    private final HitRateCounter walWritingRate;
 
     /** */
-    private volatile HitRateMetrics walFsyncTimeDuration;
+    private final HitRateCounter walFsyncTimeDuration;
 
     /** */
-    private volatile HitRateMetrics walFsyncTimeNum;
+    private final HitRateCounter walFsyncTimeNum;
 
     /** */
-    private volatile HitRateMetrics walBuffPollSpinsNum;
+    private final HitRateCounter walBuffPollSpinsNum;
 
     /** */
-    private volatile long lastCpLockWaitDuration;
+    private final LongGauge lastCpLockWaitDuration;
 
     /** */
-    private volatile long lastCpMarkDuration;
+    private final LongGauge lastCpMarkDuration;
 
     /** */
-    private volatile long lastCpPagesWriteDuration;
+    private final LongGauge lastCpPagesWriteDuration;
 
     /** */
-    private volatile long lastCpDuration;
+    private final LongGauge lastCpDuration;
 
     /** */
-    private volatile long lastCpFsyncDuration;
+    private final LongGauge lastCpFsyncDuration;
 
     /** */
-    private volatile long lastCpTotalPages;
+    private final LongGauge lastCpTotalPages;
 
     /** */
-    private volatile long lastCpDataPages;
+    private final LongGauge lastCpDataPages;
 
     /** */
-    private volatile long lastCpCowPages;
+    private final LongGauge lastCpCowPages;
 
     /** */
     private volatile long rateTimeInterval;
@@ -85,26 +87,28 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private volatile IgniteOutClosure<Long> walSizeProvider;
 
     /** */
-    private volatile long lastWalSegmentRollOverTime;
+    private final LongGauge lastWalSegmentRollOverTime;
 
     /** */
-    private final AtomicLong totalCheckpointTime = new AtomicLong();
+    private final LongCounter totalCheckpointTime;
 
     /** */
     private volatile Collection<DataRegionMetrics> regionMetrics;
 
     /** */
-    private volatile long storageSize;
+    private final LongGauge storageSize;
 
     /** */
-    private volatile long sparseStorageSize;
+    private final LongGauge sparseStorageSize;
 
     /**
+     * @param mreg Metrics registry.
      * @param metricsEnabled Metrics enabled flag.
      * @param rateTimeInterval Rate time interval.
      * @param subInts Number of sub-intervals.
      */
     public DataStorageMetricsImpl(
+        MetricRegistry mreg,
         boolean metricsEnabled,
         long rateTimeInterval,
         int subInts
@@ -113,7 +117,80 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         this.rateTimeInterval = rateTimeInterval;
         this.subInts = subInts;
 
-        resetRates();
+        MetricRegistry mset = mreg.withPrefix("io.datastorage");
+
+        walLoggingRate = mset.hitRateCounter("WalLoggingRate",
+            "Average number of WAL records per second written during the last time interval.",
+            rateTimeInterval,
+            subInts);
+
+        walWritingRate = mset.hitRateCounter(
+            "WalWritingRate",
+            "Average number of bytes per second written during the last time interval.",
+            rateTimeInterval,
+            subInts);
+
+        walFsyncTimeDuration = mset.hitRateCounter(
+            "WalFsyncTimeDuration",
+            "Total duration of fsync",
+            rateTimeInterval,
+            subInts);
+
+        walFsyncTimeNum = mset.hitRateCounter(
+            "WalFsyncTimeNum",
+            "Total count of fsync",
+            rateTimeInterval,
+            subInts);
+
+        walBuffPollSpinsNum = mset.hitRateCounter(
+            "WalBuffPollSpinsRate",
+            "WAL buffer poll spins number over the last time interval.",
+            rateTimeInterval,
+            subInts);
+
+        lastCpLockWaitDuration = mset.gauge("LastCheckpointLockWaitDuration",
+            "Duration of the checkpoint lock wait in milliseconds.");
+
+        lastCpMarkDuration = mset.gauge("LastCheckpointMarkDuration",
+            "Duration of the checkpoint lock wait in milliseconds.");
+
+        lastCpPagesWriteDuration = mset.gauge("LastCheckpointPagesWriteDuration",
+            "Duration of the checkpoint pages write in milliseconds.");
+
+        lastCpDuration = mset.gauge("LastCheckpointDuration",
+            "Duration of the last checkpoint in milliseconds.");
+
+        lastCpFsyncDuration = mset.gauge("LastCheckpointFsyncDuration",
+            "Duration of the sync phase of the last checkpoint in milliseconds.");
+
+        lastCpTotalPages = mset.gauge("LastCheckpointTotalPagesNumber",
+            "Total number of pages written during the last checkpoint.");
+
+        lastCpDataPages = mset.gauge("LastCheckpointDataPagesNumber",
+            "Total number of data pages written during the last checkpoint.");
+
+        lastCpCowPages = mset.gauge("LastCheckpointCopiedOnWritePagesNumber",
+            "Number of pages copied to a temporary checkpoint buffer during the last checkpoint.");
+
+        lastWalSegmentRollOverTime = mset.gauge("WalLastRollOverTime",
+            "Time of the last WAL segment rollover.");
+
+        totalCheckpointTime = mset.counter("CheckpointTotalTime",
+            "Total duration of checkpoint");
+
+        storageSize = mset.gauge("StorageSize",
+            "Storage space allocated, in bytes.");
+
+        sparseStorageSize = mset.gauge("SparseStorageSize",
+            "Storage space allocated adjusted for possible sparsity, in bytes.");
+
+        mset.register("WalArchiveSegments",
+            this::getWalArchiveSegments,
+            "Current number of WAL segments in the WAL archive.");
+
+        mset.register("WalTotalSize",
+            this::getWalTotalSize,
+            "Total size in bytes for storage wal files.");
     }
 
     /** {@inheritDoc} */
@@ -121,7 +198,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return ((float)walLoggingRate.getRate() * 1000) / rateTimeInterval;
+        return ((float)walLoggingRate.value() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -129,7 +206,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return ((float)walWritingRate.getRate() * 1000) / rateTimeInterval;
+        return ((float)walWritingRate.value() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -145,12 +222,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        long numRate = walFsyncTimeNum.getRate();
+        long numRate = walFsyncTimeNum.value();
 
         if (numRate == 0)
             return 0;
 
-        return (float)walFsyncTimeDuration.getRate() / numRate;
+        return (float)walFsyncTimeDuration.value() / numRate;
     }
 
     /** {@inheritDoc} */
@@ -158,7 +235,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return walBuffPollSpinsNum.getRate();
+        return walBuffPollSpinsNum.value();
     }
 
 
@@ -167,7 +244,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpDuration;
+        return lastCpDuration.value();
     }
 
     /** {@inheritDoc} */
@@ -175,7 +252,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpLockWaitDuration;
+        return lastCpLockWaitDuration.value();
     }
 
     /** {@inheritDoc} */
@@ -183,7 +260,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpMarkDuration;
+        return lastCpMarkDuration.value();
     }
 
     /** {@inheritDoc} */
@@ -191,7 +268,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpPagesWriteDuration;
+        return lastCpPagesWriteDuration.value();
     }
 
     /** {@inheritDoc} */
@@ -199,7 +276,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpFsyncDuration;
+        return lastCpFsyncDuration.value();
     }
 
     /** {@inheritDoc} */
@@ -207,7 +284,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpTotalPages;
+        return lastCpTotalPages.value();
     }
 
     /** {@inheritDoc} */
@@ -215,7 +292,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpDataPages;
+        return lastCpDataPages.value();
     }
 
     /** {@inheritDoc} */
@@ -223,7 +300,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastCpCowPages;
+        return lastCpCowPages.value();
     }
 
     /** {@inheritDoc} */
@@ -265,7 +342,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        return lastWalSegmentRollOverTime;
+        return lastWalSegmentRollOverTime.value();
     }
 
     /** {@inheritDoc} */
@@ -474,7 +551,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
      *
      */
     public void onWallRollOver() {
-        this.lastWalSegmentRollOverTime = U.currentTimeMillis();
+        this.lastWalSegmentRollOverTime.value(U.currentTimeMillis());
     }
 
     /**
@@ -493,12 +570,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getStorageSize() {
-        return storageSize;
+        return storageSize.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getSparseStorageSize() {
-        return sparseStorageSize;
+        return sparseStorageSize.value();
     }
 
     /**
@@ -524,18 +601,18 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long sparseStorageSize
     ) {
         if (metricsEnabled) {
-            lastCpLockWaitDuration = lockWaitDuration;
-            lastCpMarkDuration = markDuration;
-            lastCpPagesWriteDuration = pagesWriteDuration;
-            lastCpFsyncDuration = fsyncDuration;
-            lastCpDuration = duration;
-            lastCpTotalPages = totalPages;
-            lastCpDataPages = dataPages;
-            lastCpCowPages = cowPages;
-            this.storageSize = storageSize;
-            this.sparseStorageSize = sparseStorageSize;
+            lastCpLockWaitDuration.value(lockWaitDuration);
+            lastCpMarkDuration.value(markDuration);
+            lastCpPagesWriteDuration.value(pagesWriteDuration);
+            lastCpFsyncDuration.value(fsyncDuration);
+            lastCpDuration.value(duration);
+            lastCpTotalPages.value(totalPages);
+            lastCpDataPages.value(dataPages);
+            lastCpCowPages.value(cowPages);
+            this.storageSize.value(storageSize);
+            this.sparseStorageSize.value(sparseStorageSize);
 
-            totalCheckpointTime.addAndGet(duration);
+            totalCheckpointTime.add(duration);
         }
     }
 
@@ -543,14 +620,14 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
      *
      */
     public void onWalRecordLogged() {
-        walLoggingRate.onHit();
+        walLoggingRate.increment();
     }
 
     /**
      * @param size Size written.
      */
     public void onWalBytesWritten(int size) {
-        walWritingRate.onHits(size);
+        walWritingRate.add(size);
     }
 
     /**
@@ -559,26 +636,26 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     public void onFsync(long nanoTime) {
         long microseconds = nanoTime / 1_000;
 
-        walFsyncTimeDuration.onHits(microseconds);
-        walFsyncTimeNum.onHit();
+        walFsyncTimeDuration.add(microseconds);
+        walFsyncTimeNum.increment();
     }
 
     /**
      * @param num Number.
      */
     public void onBuffPollSpin(int num) {
-        walBuffPollSpinsNum.onHits(num);
+        walBuffPollSpinsNum.add(num);
     }
 
     /**
      *
      */
     private void resetRates() {
-        walLoggingRate = new HitRateMetrics((int)rateTimeInterval, subInts);
-        walWritingRate = new HitRateMetrics((int)rateTimeInterval, subInts);
-        walBuffPollSpinsNum = new HitRateMetrics((int)rateTimeInterval, subInts);
+        walLoggingRate.reset(rateTimeInterval, subInts);
+        walWritingRate.reset(rateTimeInterval, subInts);
+        walBuffPollSpinsNum.reset(rateTimeInterval, subInts);
 
-        walFsyncTimeDuration = new HitRateMetrics((int)rateTimeInterval, subInts);
-        walFsyncTimeNum = new HitRateMetrics((int)rateTimeInterval, subInts);
+        walFsyncTimeDuration.reset(rateTimeInterval, subInts);
+        walFsyncTimeNum.reset(rateTimeInterval, subInts);
     }
 }

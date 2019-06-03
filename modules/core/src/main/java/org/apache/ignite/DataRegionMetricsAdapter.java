@@ -21,7 +21,10 @@ import java.util.Collection;
 
 /**
  * Converter class from {@link DataRegionMetrics} to legacy {@link MemoryMetrics}.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public class DataRegionMetricsAdapter implements MemoryMetrics {
     /** Delegate. */
     private final DataRegionMetrics delegate;

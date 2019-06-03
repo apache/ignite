@@ -24,7 +24,10 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;

@@ -24,7 +24,10 @@ import org.apache.ignite.cache.CacheMetrics;
 
 /**
  * This interface defines JMX view on {@link IgniteCache}.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to cache descriptor.")
 public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, CacheMetrics {
     /** {@inheritDoc} */

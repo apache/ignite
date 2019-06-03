@@ -22,8 +22,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 
 /**
  * An MX bean allowing to monitor and tune persistence metrics.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public interface DataStorageMetricsMXBean extends DataStorageMetrics {
+
     /** {@inheritDoc} */
     @MXBeanDescription("Average number of WAL records per second written during the last time interval.")
     @Override float getWalLoggingRate();

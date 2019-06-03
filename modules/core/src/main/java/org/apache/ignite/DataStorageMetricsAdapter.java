@@ -18,7 +18,10 @@ package org.apache.ignite;
 
 /**
  * Converter class from {@link DataStorageMetrics} to legacy {@link PersistenceMetrics}.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public class DataStorageMetricsAdapter implements PersistenceMetrics {
     /** Delegate. */
     private final DataStorageMetrics delegate;

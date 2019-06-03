@@ -18,19 +18,25 @@
 
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderCache;
-import org.apache.ignite.internal.stat.IoStatisticsHolderKey;
-import org.apache.ignite.internal.stat.IoStatisticsType;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.value.Value;
+
+import static java.util.Collections.emptyIterator;
+import static java.util.Collections.singleton;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL_READS;
+import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
+import static org.apache.ignite.internal.util.lang.GridFunc.iterator;
 
 /**
  * System view of cache group IO statistics.
@@ -52,45 +58,53 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         SqlSystemViewColumnCondition nameCond = conditionForColumn("CACHE_GROUP_NAME", first, last);
 
-        Map<IoStatisticsHolderKey, IoStatisticsHolder> stats = ctx.ioStats().statistics(IoStatisticsType.CACHE_GROUP);
-
-        List<Row> rows = new ArrayList<>();
+        MetricRegistry mset = ctx.metric().registry().withPrefix(CACHE_GROUP.monitoringGroup());
 
         if (nameCond.isEquality()) {
             String cacheGrpName = nameCond.valueForEquality().getString();
 
-            IoStatisticsHolderCache statHolder = (IoStatisticsHolderCache)stats
-                .get(new IoStatisticsHolderKey(cacheGrpName));
+            IntMetric grpId = (IntMetric)mset.findMetric("grpId");
+            ObjectMetric<String> grpName = (ObjectMetric<String>)mset.findMetric("name");
 
-            if (statHolder != null) {
-                rows.add(
-                    createRow(
-                        ses,
-                        statHolder.cacheGroupId(),
-                        cacheGrpName,
-                        statHolder.physicalReads(),
-                        statHolder.logicalReads()
-                    )
-                );
+            if (grpId == null)
+                emptyIterator();
+
+            if (mset != null) {
+                return singleton(toRow(ses,
+                    grpId.value(),
+                    grpName.value(),
+                    mset.withPrefix(cacheGrpName))
+                ).iterator();
             }
         }
         else {
-            for (Map.Entry<IoStatisticsHolderKey, IoStatisticsHolder> entry : stats.entrySet()) {
-                IoStatisticsHolderCache statHolder = (IoStatisticsHolderCache)entry.getValue();
+            Collection<CacheGroupContext> grpCtxs = ctx.cache().cacheGroups();
 
-                rows.add(
-                    createRow(
-                        ses,
-                        statHolder.cacheGroupId(),
-                        entry.getKey().name(),
-                        statHolder.physicalReads(),
-                        statHolder.logicalReads()
-                    )
-                );
-            }
+            return iterator(grpCtxs,
+                grpCtx -> toRow(ses,
+                    grpCtx.groupId(),
+                    grpCtx.cacheOrGroupName(),
+                    mset.withPrefix(grpCtx.cacheOrGroupName())),
+                true);
         }
 
-        return rows.iterator();
+        return emptyIterator();
+    }
+
+    /** */
+    private Row toRow(Session ses, int grpId, String grpName, MetricRegistry mset) {
+        IntMetric grpIdMetric = (IntMetric)mset.findMetric("grpId");
+
+        if (grpIdMetric == null)
+            return createRow(ses, grpId, grpName, null, null);
+
+        return createRow(
+            ses,
+            grpId,
+            grpName,
+            ((LongMetric)mset.findMetric(PHYSICAL_READS)).value(),
+            ((LongMetric)mset.findMetric(LOGICAL_READS)).value()
+        );
     }
 
     /** {@inheritDoc} */
@@ -100,6 +114,6 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
 
     /** {@inheritDoc} */
     @Override public long getRowCount() {
-        return ctx.ioStats().statistics(IoStatisticsType.CACHE_GROUP).size();
+        return ctx.cache().cacheGroups().size();
     }
 }

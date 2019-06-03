@@ -1,0 +1,204 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.metrics;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongConsumer;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
+import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.counter.DoubleCounter;
+import org.apache.ignite.spi.metric.counter.HitRateCounter;
+import org.apache.ignite.spi.metric.counter.IntCounter;
+import org.apache.ignite.spi.metric.counter.LongCounter;
+import org.apache.ignite.spi.metric.gauge.BooleanGauge;
+import org.apache.ignite.spi.metric.gauge.DoubleGauge;
+import org.apache.ignite.spi.metric.gauge.HistogramGauge;
+import org.apache.ignite.spi.metric.gauge.IntGauge;
+import org.apache.ignite.spi.metric.gauge.LongGauge;
+import org.apache.ignite.spi.metric.gauge.ObjectGauge;
+
+import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
+
+/**
+ * Simple implementation.
+ */
+public class MetricRegistryImpl implements MetricRegistry {
+    /**
+     * Registered metrics.
+     */
+    private ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
+
+    /**
+     * Metric set creation listeners.
+     */
+    private final List<Consumer<Metric>> metricCreationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** {@inheritDoc} */
+    @Override public MetricRegistry withPrefix(String prefix) {
+        return new MetricRegistryPrefixProxy(prefix, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public MetricRegistry withPrefix(String... prefixes) {
+        return withPrefix(metricName(prefixes));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Metric> getMetrics() {
+        return metrics.values();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetricCreationListener(Consumer<Metric> lsnr) {
+        metricCreationLsnrs.add(lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Metric findMetric(String name) {
+        return metrics.get(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(Metric metric) {
+        addMetric(metric.getName(), metric);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(String name, BooleanSupplier supplier, String description) {
+        addMetric(name, new BooleanMetricImpl(name, description, supplier));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(String name, DoubleSupplier supplier, String description) {
+        addMetric(name, new DoubleMetricImpl(name, description, supplier));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(String name, IntSupplier supplier, String description) {
+        addMetric(name, new IntMetricImpl(name, description, supplier));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void register(String name, LongSupplier supplier, String description) {
+        addMetric(name, new LongMetricImpl(name, description, supplier));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, String description) {
+        addMetric(name, new ObjectMetricImpl<>(name, description, supplier, type));
+    }
+
+    /** {@inheritDoc} */
+    @Override public DoubleCounter doubleCounter(String name, String description) {
+        return addMetric(name, new DoubleCounter(name, description));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IntCounter intCounter(String name, String description) {
+        return addMetric(name, new IntCounter(name, description));
+    }
+
+    /** {@inheritDoc} */
+    @Override public LongCounter counter(String name, String description) {
+        return addMetric(name, new LongCounter(name, description));
+    }
+
+    @Override public LongCounter counter(String name, LongConsumer updateDelegate, String description) {
+        return addMetric(name, new LongCounter.LongCounterWithDelegate(name, updateDelegate, description));
+    }
+
+    /** {@inheritDoc} */
+    @Override public org.apache.ignite.spi.metric.counter.HitRateCounter hitRateCounter(String name, String description, long rateTimeInterval, int size) {
+        return addMetric(name, new HitRateCounter(name, description, rateTimeInterval, size));
+    }
+
+    /** {@inheritDoc} */
+    @Override public BooleanGauge booleanGauge(String name, String description) {
+        return addMetric(name, new BooleanGauge(name, description));
+    }
+
+    /** {@inheritDoc} */
+    @Override public DoubleGauge doubleGauge(String name, String description) {
+        return addMetric(name, new DoubleGauge(name, description));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IntGauge intGauge(String name, String description) {
+        return addMetric(name, new IntGauge(name, description));
+    }
+
+    /** {@inheritDoc} */
+    @Override public LongGauge gauge(String name, String description) {
+        return addMetric(name, new LongGauge(name, description));
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, String description) {
+        return addMetric(name, new ObjectGauge<>(name, description, type));
+    }
+
+    /** {@inheritDoc} */
+    @Override public HistogramGauge histogram(String name, long[] bounds, String description) {
+        return addMetric(name, new HistogramGauge(name, description, bounds));
+    }
+
+    /**
+     * Adds metrics if not exists already.
+     *
+     * @param name Name.
+     * @param metric Metric
+     * @param <T> Type of metric.
+     * @return Registered metric.
+     */
+    private <T extends Metric> T addMetric(String name, T metric) {
+        T old = (T)metrics.putIfAbsent(name, metric);
+
+        if (old == null) {
+            notifyListeners(metric, metricCreationLsnrs);
+
+            return metric;
+        }
+
+        return old;
+    }
+
+    /**
+     * @param t Consumed object.
+     * @param lsnrs Listeners.
+     * @param <T> Type of consumed object.
+     */
+    private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
+        for (Consumer<T> lsnr : lsnrs) {
+            try {
+                lsnr.accept(t);
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}

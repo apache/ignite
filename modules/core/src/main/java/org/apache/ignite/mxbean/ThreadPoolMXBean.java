@@ -19,8 +19,11 @@ package org.apache.ignite.mxbean;
 
 /**
  * MBean that provides access to information about executor service.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
 @MXBeanDescription("MBean that provides access to information about executor service.")
+@Deprecated
 public interface ThreadPoolMXBean {
     /**
      * Returns the approximate number of threads that are actively executing tasks.

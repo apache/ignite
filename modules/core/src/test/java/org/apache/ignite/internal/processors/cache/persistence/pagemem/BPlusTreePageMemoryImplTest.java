@@ -30,10 +30,12 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointWritePr
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
+import org.apache.ignite.internal.processors.metrics.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.mockito.Mockito;
 
@@ -55,12 +57,14 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setEncryptionSpi(new NoopEncryptionSpi());
+        cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
 
         GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
 
         cctx.add(new IgnitePluginProcessor(cctx, cfg, Collections.emptyList()));
         cctx.add(new GridInternalSubscriptionProcessor(cctx));
         cctx.add(new GridEncryptionManager(cctx));
+        cctx.add(new GridMetricManager(cctx));
 
         GridCacheSharedContext<Object, Object> sharedCtx = new GridCacheSharedContext<>(
             cctx,

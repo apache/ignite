@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -34,10 +35,18 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.stat.IoStatisticsManager;
-import org.apache.ignite.internal.stat.IoStatisticsType;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.metric.IoStatisticsType;
+import org.apache.ignite.internal.processors.metrics.MetricNameUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.MetricRegistry;
 import org.junit.Assert;
+import org.junit.Test;
+
+import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
+import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
+import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -109,6 +118,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception In case of failure.
      */
+    @Test
     public void testNoIndexes() throws Exception {
         indexes = Collections.emptyList();
 
@@ -128,6 +138,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception In case of failure.
      */
+    @Test
     public void testAllIndexes() throws Exception {
         indexes = Arrays.asList(
             new QueryIndex("keyStr"),
@@ -152,31 +163,31 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    private void checkStat() {
-        IoStatisticsManager ioStat = grid().context().ioStats();
+    private void checkStat() throws Exception {
+        MetricRegistry mreg = grid().context().metric().registry();
 
-        Set<String> hashIndexes = ioStat.deriveStatisticNames(IoStatisticsType.HASH_INDEX);
+        Set<String> hashIndexes = deriveStatisticNames(grid(), IoStatisticsType.HASH_INDEX);
 
         Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
 
-        Set<String> sortedIndexCaches = ioStat.deriveStatisticNames(IoStatisticsType.SORTED_INDEX);
+        Set<String> sortedIndexCaches = deriveStatisticNames(grid(), SORTED_INDEX);
 
         Assert.assertEquals(1, sortedIndexCaches.size());
 
-        Set<String> sortedIdxNames = ioStat.deriveStatisticSubNames(IoStatisticsType.SORTED_INDEX,
-            sortedIndexCaches.toArray()[0].toString());
+        Set<String> sortedIdxNames = deriveStatisticSubNames(grid(), SORTED_INDEX);
 
-        Assert.assertEquals(sortedIndexCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES, sortedIdxNames.size());
+        Assert.assertEquals(sortedIndexCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES,
+            sortedIdxNames.size());
 
         for (String idxName : sortedIdxNames) {
-            Long logicalReads = ioStat.logicalReads(IoStatisticsType.SORTED_INDEX, DEFAULT_CACHE_NAME, idxName);
+            Long logicalReads = logicalReads(mreg, SORTED_INDEX, MetricNameUtils.metricName(DEFAULT_CACHE_NAME, idxName));
 
             Assert.assertNotNull(idxName, logicalReads);
 
             Assert.assertTrue(logicalReads > 0);
         }
 
-        ioStat.reset();
+        resetAllIoMetrics(grid());
     }
 
     /** */
@@ -337,6 +348,59 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
             assertTrue(i >= RANGE_START && i < RANGE_END);
         }
+    }
+
+    /**
+     * Extract all tracked subNames for given statistics type .
+     *
+     * @param statType Type of statistics which tracked names need to extract.
+     * @return Set of present names for given statType
+     */
+    public Set<String> deriveStatisticSubNames(IgniteEx ignite, IoStatisticsType statType) {
+        assert statType != null;
+
+        MetricRegistry mset =
+            ignite.context().metric().registry().withPrefix(statType.monitoringGroup());
+
+        return mset.getMetrics().stream().map(m -> {
+                switch (statType) {
+                    case CACHE_GROUP:
+                        if (m.getName().endsWith("grpId"))
+                            return m.getAsString();
+
+                        return "";
+
+                    case HASH_INDEX:
+                    case SORTED_INDEX:
+                        if (m.getName().endsWith("indexName"))
+                            return m.getAsString();
+
+                        return "";
+
+                    default:
+                        return "";
+                }
+            })
+            .collect(Collectors.toSet());
+    }
+
+    /**
+     * Extract all tracked names for given statistics type.
+     *
+     * @param ignite Node instance.
+     * @param statType Type of statistics which tracked names need to extract.
+     * @return Set of present names for given statType
+     */
+    public Set<String> deriveStatisticNames(IgniteEx ignite, IoStatisticsType statType) {
+        assert statType != null;
+
+        MetricRegistry msets =
+            ignite.context().metric().registry().withPrefix(statType.monitoringGroup());
+
+        return msets.getMetrics().stream()
+            .filter(m -> m.getName().endsWith("name"))
+            .map(Metric::getAsString)
+            .collect(Collectors.toSet());
     }
 
     /**

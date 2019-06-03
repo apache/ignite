@@ -21,7 +21,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 
 /**
  * This interface defines a JMX view on {@link DataRegionMetrics}.
+ *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to DataRegionMetrics of a local Apache Ignite node.")
 public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     /** {@inheritDoc} */

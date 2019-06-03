@@ -20,8 +20,9 @@ import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * @deprecated Use {@link GridMonitoringManager} instead.
  */
+@Deprecated
 public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** */
     private float walLoggingRate;
