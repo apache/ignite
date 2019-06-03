@@ -547,27 +547,47 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public void insertDataRows(Iterator<T> iter, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        try {
-            T row = null;
+        if (!iter.hasNext())
+            return;
 
-            int written = COMPLETE;
+        try {
+            T row = iter.next();
+
+            int written = 0;
 
             while (iter.hasNext() || written != COMPLETE) {
-                if (written == COMPLETE)
-                    row = iter.next();
+                long pageId = 0L;
 
-                if ((written = writeWholePages(row, statHolder)) == COMPLETE)
-                    continue;
+                int remaining = row.size() - written;
 
-                long pageId = takeReusedPage(row, statHolder);
+                if (remaining > 0 && remaining < MIN_SIZE_FOR_DATA_PAGE) {
+                    // Search for the most free page with enough space.
+                    for (int b = bucket(remaining, false) + 1; b < REUSE_BUCKET; b++) {
+                        pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
+
+                        if (pageId != 0L)
+                            break;
+                    }
+                }
+
+                if (pageId == 0L) { // Handle reuse bucket.
+                    if (reuseList == this)
+                        pageId = takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder);
+                    else
+                        pageId = reuseList.takeRecycledPage();
+                }
 
                 AbstractDataPageIO initIo = null;
 
-                if (pageId == 0) {
+                if (pageId == 0L) {
                     pageId = allocateDataPage(row.partition());
 
                     initIo = row.ioVersions().latest();
                 }
+                else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
+                    pageId = initReusedPage(row, pageId, statHolder);
+                else // Page is taken from free space bucket. For in-memory mode partition must be changed.
+                    pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
                 // Acquire and lock page.
                 long page = acquirePage(pageId, statHolder);
@@ -582,33 +602,29 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     boolean dirty = false;
 
                     try {
+                        int freeSpace;
+
                         // Fill the page up to the end.
-                        while (iter.hasNext() || written != COMPLETE) {
-                            if (written == COMPLETE) {
-                                row = iter.next();
+                        do {
+                            written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this,
+                                writeRowNoPut, initIo, wal, null, row, written, statHolder);
 
-                                written = 0;
+                            dirty = true;
 
-                                if (io.getFreeSpace(pageAddr) < (row.size() % MIN_SIZE_FOR_DATA_PAGE))
-                                    break;
-                            }
+                            initIo = null;
 
-                            if (written == 0)
-                                written = writeWholePages(row, statHolder);
+                            freeSpace = io.getFreeSpace(pageAddr);
 
-                            if (written != COMPLETE) {
-                                written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this,
-                                    writeRowNoPut, initIo, wal, null, row, written, statHolder);
+                            assert freeSpace == 0 || written == COMPLETE;
 
-                                initIo = null;
+                            if (written != COMPLETE || !iter.hasNext())
+                                break;
 
-                                dirty = true;
-                            }
+                            row = iter.next();
 
-                            assert written == COMPLETE;
+                            written = 0;
                         }
-
-                        int freeSpace = io.getFreeSpace(pageAddr);
+                        while (freeSpace > 0 && (freeSpace >= row.size() || row.size() > MIN_SIZE_FOR_DATA_PAGE));
 
                         // Put page into the free list if needed.
                         if (freeSpace > MIN_PAGE_FREE_SPACE) {
@@ -633,66 +649,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e);
         }
-    }
-
-    /**
-     * Write fragments of the row, which occupy the whole memory page.
-     *
-     * @param row Row to process.
-     * @param statHolder Statistics holder to track IO operations.
-     * @return Number of bytes written, {@link #COMPLETE} if the row was fully written.
-     * @throws IgniteCheckedException If failed.
-     */
-    private int writeWholePages(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        if (row.size() < MIN_SIZE_FOR_DATA_PAGE)
-            return 0;
-
-        assert row.link() == 0 : row.link();
-
-        int written = 0;
-
-        do {
-            long pageId = takeReusedPage(row, statHolder);
-
-            AbstractDataPageIO initIo = null;
-
-            if (pageId == 0) {
-                pageId = allocateDataPage(row.partition());
-
-                initIo = row.ioVersions().latest();
-            }
-
-            written = write(pageId, writeRowNoPut, initIo, row, written, FAIL_I, statHolder);
-
-            assert written != FAIL_I; // We can't fail here.
-
-            memMetrics.incrementLargeEntriesPages();
-        }
-        while (row.size() - written >= MIN_SIZE_FOR_DATA_PAGE);
-
-        return written;
-    }
-
-    /**
-     * Get a page from reuse bucket of the free list.
-     *
-     * @param row Row.
-     * @param statHolder Statistics holder to track IO operations.
-     * @return Page ID or {@code 0} if none available.
-     * @throws IgniteCheckedException If failed.
-     */
-    private long takeReusedPage(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        long pageId = reuseList == this ?
-            takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder) : reuseList.takeRecycledPage();
-
-        if (pageId != 0L) {
-            if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
-                pageId = initReusedPage(row, pageId, statHolder);
-            else
-                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
-        }
-
-        return pageId;
     }
 
     /**
