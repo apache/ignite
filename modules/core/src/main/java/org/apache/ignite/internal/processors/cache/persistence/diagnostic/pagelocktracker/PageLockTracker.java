@@ -22,8 +22,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLoc
 import org.apache.ignite.lang.IgniteFuture;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.util.IgniteUtils.hexInt;
 import static org.apache.ignite.internal.util.IgniteUtils.hexLong;
 
@@ -347,7 +347,7 @@ public abstract class PageLockTracker<T extends PageLockDump> implements PageLoc
     public static String pageIdToString(long pageId) {
         return "pageId=" + pageId
             + " [pageIdHex=" + hexLong(pageId)
-            + ", partId=" + pageId(pageId) + ", pageIdx=" + pageIndex(pageId)
+            + ", partId=" + partId(pageId) + ", pageIdx=" + pageIndex(pageId)
             + ", flags=" + hexInt(flag(pageId)) + "]";
     }
 }

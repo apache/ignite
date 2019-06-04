@@ -35,8 +35,8 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.BEFORE_READ_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.BEFORE_WRITE_LOCK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.LOCK_OP_MASK;
@@ -131,7 +131,7 @@ public class ToStringDumpProcessor {
             return operationToString(op) + " pageId=" + pageId
                 + ", structureId=" + strucutreIdMapFunc.apply(structureId)
                 + " [pageIdHex=" + hexLong(pageId)
-                + ", partId=" + pageId(pageId) + ", pageIdx=" + pageIndex(pageId)
+                + ", partId=" + partId(pageId) + ", pageIdx=" + pageIndex(pageId)
                 + ", flags=" + hexInt(flag(pageId)) + "]";
         }
 
@@ -216,7 +216,7 @@ public class ToStringDumpProcessor {
                 logLocksStr.a("-> " + operationToString(nextOp) + " nextOpPageId=" + nextOpPageId +
                     ", nextOpStructureId=" + strucutreIdMapFunc.apply(nextOpStructureId)
                     + " [pageIdHex=" + hexLong(nextOpPageId)
-                    + ", partId=" + pageId(nextOpPageId) + ", pageIdx=" + pageIndex(nextOpPageId)
+                    + ", partId=" + partId(nextOpPageId) + ", pageIdx=" + pageIndex(nextOpPageId)
                     + ", flags=" + hexInt(flag(nextOpPageId)) + "]" + U.nl());
             }
 
