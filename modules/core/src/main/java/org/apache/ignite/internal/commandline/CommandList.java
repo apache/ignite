@@ -96,4 +96,11 @@ public enum CommandList {
     @Override public String toString() { 
         return text; 
     }
+
+    /**
+     * @return command name
+     */
+    public String toCommandName() {
+        return text.substring(2).toUpperCase();
+    }
 }
