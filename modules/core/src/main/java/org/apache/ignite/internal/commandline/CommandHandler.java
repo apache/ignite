@@ -16,11 +16,16 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
@@ -33,6 +38,9 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnectionRes
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLoggerFileHandler;
+import org.apache.ignite.logger.java.JavaLoggerFormatter;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -52,8 +60,37 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
  * Class that execute several commands passed via command line.
  */
 public class CommandHandler {
-    /** Logger. */
-    private final CommandLogger logger = new CommandLogger();
+    /** Command logger. */
+    private final CommandLogger commandLogger= new CommandLogger();
+
+    /** JULs logger. */
+    private final Logger logger = setupJavaLogger();
+
+    private Logger setupJavaLogger() {
+        Logger result;
+
+        result = Logger.getLogger(getClass().getName());
+        result.setLevel(Level.INFO);
+
+        // Adding logging to file.
+        try {
+            String namePattern = "control-utility-%g.log";
+            String absPathPattern;
+            absPathPattern = new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()), namePattern).getAbsolutePath();
+            FileHandler fileHandler = new FileHandler(absPathPattern, 1024 * 1024 * 1024, 5);
+            fileHandler.setFormatter(new JavaLoggerFormatter());
+            result.addHandler(fileHandler);
+        }
+        catch (Exception e) {
+            System.out.println("Failed to configure logging to file");
+        }
+
+        // Adding logging to console.
+        StreamHandler streamHandler = new StreamHandler(System.out, new JavaLoggerFormatter());
+        result.addHandler(streamHandler);
+
+        return result;
+    }
 
     /** */
     static final String CMD_HELP = "--help";
@@ -116,11 +153,13 @@ public class CommandHandler {
      * @return Exit code.
      */
     public int execute(List<String> rawArgs) {
-        logger.log("Control utility [ver. " + ACK_VER_STR + "]");
-        logger.log(COPYRIGHT);
-        logger.log("User: " + System.getProperty("user.name"));
-        logger.log("Time: " + LocalDateTime.now());
-        logger.log(DELIM);
+        logger.info("Control utility [ver. " + ACK_VER_STR + "]");
+        logger.info(COPYRIGHT);
+        logger.info("User: " + System.getProperty("user.name"));
+        logger.info("Time: " + LocalDateTime.now());
+        logger.info(DELIM);
+
+        String commandName = "";
 
         try {
             if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
@@ -129,12 +168,13 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            ConnectionAndSslParameters args = new CommonArgParser(logger).parseAndValidate(rawArgs.iterator());
+            ConnectionAndSslParameters args = new CommonArgParser(commandLogger).parseAndValidate(rawArgs.iterator());
 
             Command command = args.command();
+            commandName = command.name();
 
             if (!args.autoConfirmation() && !confirm(command.confirmationPrompt())) {
-                logger.log("Operation cancelled.");
+                logger.info("Operation cancelled.");
 
                 return EXIT_CODE_OK;
             }
@@ -151,11 +191,13 @@ public class CommandHandler {
                 tryConnectAgain = false;
 
                 try {
+                    logger.info("Command [" + commandName + "] started");
+                    logger.info("Arguments: " + String.join(" ", rawArgs));
                     lastOperationRes = command.execute(clientCfg, logger);
                 }
                 catch (Throwable e) {
                     if (tryConnectMaxCount > 0 && isAuthError(e)) {
-                        logger.log(suppliedAuth ?
+                        logger.info(suppliedAuth ?
                             "Authentication error, please try again." :
                             "This cluster requires authentication.");
 
@@ -181,27 +223,32 @@ public class CommandHandler {
                 }
             }
 
+            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_OK);
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
-            logger.error("Check arguments.", e);
+            logger.severe("Check arguments. " + CommandLogger.errorMessage(e));
+            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
             return EXIT_CODE_INVALID_ARGUMENTS;
         }
         catch (Throwable e) {
             if (isAuthError(e)) {
-                logger.error("Authentication error.", e);
+                logger.severe("Authentication error. " + CommandLogger.errorMessage(e));
+                logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
 
                 return ERR_AUTHENTICATION_FAILED;
             }
 
             if (isConnectionError(e)) {
-                logger.error("Connection to cluster failed.", e);
+                logger.severe("Connection to cluster failed. " + CommandLogger.errorMessage(e));
+                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
                 return EXIT_CODE_CONNECTION_FAILED;
             }
 
-            logger.error("", e);
+            logger.severe(CommandLogger.errorMessage(e));
+            logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
 
             return EXIT_CODE_UNEXPECTED_ERROR;
         }
@@ -396,7 +443,7 @@ public class CommandHandler {
         else {
             Scanner scanner = new Scanner(System.in);
 
-            logger.log(msg);
+            commandLogger.log(msg);
 
             return scanner.nextLine();
         }
@@ -421,40 +468,40 @@ public class CommandHandler {
 
     /** */
     private void printHelp() {
-        logger.log("Control.sh is used to execute admin commands on cluster or get common cluster info. " +
+        commandLogger.log("Control.sh is used to execute admin commands on cluster or get common cluster info. " +
             "The command has the following syntax:");
-        logger.nl();
+        commandLogger.nl();
 
-        logger.logWithIndent(CommandLogger.join(" ", CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())),
+        commandLogger.logWithIndent(CommandLogger.join(" ", CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())),
             optional("command"), "<command_parameters>"));
-        logger.nl();
-        logger.nl();
+        commandLogger.nl();
+        commandLogger.nl();
 
-        logger.log("This utility can do the following commands:");
+        commandLogger.log("This utility can do the following commands:");
 
-        Arrays.stream(CommandList.values()).forEach(c -> c.command().printUsage(logger));
+        Arrays.stream(CommandList.values()).forEach(c -> c.command().printUsage());
 
-        logger.log("By default commands affecting the cluster require interactive confirmation.");
-        logger.log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
-        logger.nl();
+        commandLogger.log("By default commands affecting the cluster require interactive confirmation.");
+        commandLogger.log("Use " + CMD_AUTO_CONFIRMATION + " option to disable it.");
+        commandLogger.nl();
 
-        logger.log("Default values:");
-        logger.logWithIndent("HOST_OR_IP=" + DFLT_HOST, 2);
-        logger.logWithIndent("PORT=" + DFLT_PORT, 2);
-        logger.logWithIndent("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2);
-        logger.logWithIndent("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2);
-        logger.logWithIndent("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2);
-        logger.logWithIndent("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2);
-        logger.logWithIndent("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2);
-        logger.logWithIndent("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2);
+        commandLogger.log("Default values:");
+        commandLogger.logWithIndent("HOST_OR_IP=" + DFLT_HOST, 2);
+        commandLogger.logWithIndent("PORT=" + DFLT_PORT, 2);
+        commandLogger.logWithIndent("PING_INTERVAL=" + DFLT_PING_INTERVAL, 2);
+        commandLogger.logWithIndent("PING_TIMEOUT=" + DFLT_PING_TIMEOUT, 2);
+        commandLogger.logWithIndent("SSL_PROTOCOL=" + SslContextFactory.DFLT_SSL_PROTOCOL, 2);
+        commandLogger.logWithIndent("SSL_KEY_ALGORITHM=" + SslContextFactory.DFLT_KEY_ALGORITHM, 2);
+        commandLogger.logWithIndent("KEYSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2);
+        commandLogger.logWithIndent("TRUSTSTORE_TYPE=" + SslContextFactory.DFLT_STORE_TYPE, 2);
 
-        logger.nl();
+        commandLogger.nl();
 
-        logger.log("Exit codes:");
-        logger.logWithIndent(EXIT_CODE_OK + " - successful execution.", 2);
-        logger.logWithIndent(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2);
-        logger.logWithIndent(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2);
-        logger.logWithIndent(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2);
-        logger.logWithIndent(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2);
+        commandLogger.log("Exit codes:");
+        commandLogger.logWithIndent(EXIT_CODE_OK + " - successful execution.", 2);
+        commandLogger.logWithIndent(EXIT_CODE_INVALID_ARGUMENTS + " - invalid arguments.", 2);
+        commandLogger.logWithIndent(EXIT_CODE_CONNECTION_FAILED + " - connection failed.", 2);
+        commandLogger.logWithIndent(ERR_AUTHENTICATION_FAILED + " - authentication failed.", 2);
+        commandLogger.logWithIndent(EXIT_CODE_UNEXPECTED_ERROR + " - unexpected error.", 2);
     }
 }

@@ -1148,8 +1148,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
-        assertTrue(testOut.toString(), testOut.toString().contains("Node not found for consistent ID:"));
-        assertFalse(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName() + "1"));
+        String testOutStr = testOut.toString();
+
+        // Ignite instase 1 can be logged only in arguments list.
+        boolean isInstanse1Found = Arrays.stream(testOutStr.split("\n"))
+                                        .filter(s -> s.contains("Arguments:"))
+                                        .noneMatch(s -> s.contains(getTestIgniteInstanceName() + "1"));
+
+        assertTrue(testOutStr, testOutStr.contains("Node not found for consistent ID:"));
+        assertFalse(testOutStr, isInstanse1Found);
     }
 
     /**
@@ -2432,20 +2439,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         out = testOut.toString();
 
-        // Find last row
-        int lastRowIndex = out.lastIndexOf('\n');
+        List<String> outLines = Arrays.stream(out.split("\n"))
+                                .map(String::trim)
+                                .collect(Collectors.toList());
 
-        assertTrue(lastRowIndex > 0);
+        int firstIndex = outLines.indexOf("[next group: id=1544803905, name=default]");
+        int lastIndex  = outLines.lastIndexOf("[next group: id=1544803905, name=default]");
 
-        // Last row is empty, but the previous line contains data
-        lastRowIndex = out.lastIndexOf('\n', lastRowIndex - 1);
+        String dataLine = outLines.get(firstIndex + 1);
+        String userArrtDataLine = outLines.get(lastIndex + 1);
 
-        assertTrue(lastRowIndex > 0);
+        long commaNum = dataLine.chars().filter(i -> i == ',').count();
+        long userArrtCommaNum = userArrtDataLine.chars().filter(i -> i == ',').count();
 
-        String lastRow = out.substring(lastRowIndex);
-
-        // Since 3 user attributes have been added, the total number of columns in response should be 12 (separators 11)
-        assertEquals(11, lastRow.split(",").length);
+        // Check that number of columns increased by 3
+        assertEquals(3, userArrtCommaNum - commaNum);
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
@@ -94,11 +95,30 @@ public class CommandLogger {
     }
 
     /**
+     * Generates readable error message from exception
+     * @param e Exctption
+     * @return error message
+     */
+    public static String errorMessage(Throwable e) {
+        String msg = e.getMessage();
+
+        if (F.isEmpty(msg))
+            msg = e.getClass().getName();
+        else if (msg.startsWith("Failed to handle request")) {
+            int p = msg.indexOf("err=");
+
+            msg = msg.substring(p + 4, msg.length() - 1);
+        }
+
+        return msg;
+    }
+
+    /**
      * Output specified string to console.
      *
      * @param s String to output.
      */
-    public void log(String s) {
+    public static void log(String s) {
         System.out.println(s);
     }
 
@@ -108,7 +128,7 @@ public class CommandLogger {
      *
      * @param s String to output.
      */
-    public void logWithIndent(Object s) {
+    public static void logWithIndent(Object s) {
         log(indent(s));
     }
 
@@ -118,7 +138,7 @@ public class CommandLogger {
      *
      * @param s String to output.
      */
-    public void logWithIndent(Object s, int indentCnt) {
+    public static void logWithIndent(Object s, int indentCnt) {
         log(indent(s), indentCnt);
     }
 
@@ -170,14 +190,14 @@ public class CommandLogger {
      * @param format A format string as described in Format string syntax.
      * @param args Arguments referenced by the format specifiers in the format string.
      */
-    public void log(String format, Object... args) {
+    public static void log(String format, Object... args) {
         System.out.printf(format, args);
     }
 
     /**
      * Output empty line.
      */
-    public void nl() {
+    public static void nl() {
         System.out.println();
     }
 
@@ -192,18 +212,7 @@ public class CommandLogger {
         if (!F.isEmpty(s))
             log(s);
 
-        String msg = e.getMessage();
-
-        if (F.isEmpty(msg))
-            msg = e.getClass().getName();
-
-        if (msg.startsWith("Failed to handle request")) {
-            int p = msg.indexOf("err=");
-
-            msg = msg.substring(p + 4, msg.length() - 1);
-        }
-
-        log("Error: " + msg);
+        log("Error: " + errorMessage(e));
     }
 
 
@@ -218,6 +227,24 @@ public class CommandLogger {
                 logWithIndent("Exception message:");
                 logWithIndent(e.getValue().getMessage(), 2);
                 nl();
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public static boolean printErrors(Map<UUID, Exception> exceptions, String s, Logger logger) {
+        if (!F.isEmpty(exceptions)) {
+            logger.info(s);
+
+            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
+                logger.info(INDENT + "Node ID: " + e.getKey());
+
+                logger.info(INDENT + "Exception message:");
+                logger.info(INDENT + INDENT + e.getValue().getMessage());
+                logger.info("");
             }
 
             return true;
