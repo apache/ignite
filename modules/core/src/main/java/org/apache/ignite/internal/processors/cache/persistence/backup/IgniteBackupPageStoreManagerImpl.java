@@ -180,7 +180,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     @Override public IgniteInternalFuture<Boolean> localBackup(
         String name,
         Map<Integer, Set<Integer>> parts,
-        BackupInClosure backupClsr
+        PageStoreInClosure closure
     ) {
         if (!(cctx.database() instanceof GridCacheDatabaseSharedManager))
             return new GridFinishedFuture<>();
@@ -298,8 +298,8 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
 
                 final long partSize = backupCtx.partAllocatedPages.get(grpPartId) * pageSize + store.headerSize();
 
-                backupClsr.accept(grpPartId,
-                    BackupInClosure.PageStoreType.MAIN,
+                closure.accept(grpPartId,
+                    PageStoreType.MAIN,
                     resolvePartitionFileCfg(grpCfg, grpPartId.getPartitionId()),
                     0,
                     partSize);
@@ -315,8 +315,8 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
                 final int deltaOffset = offsets.get(grpPartId);
                 final long deltaSize = backupStores.get(grpPartId).writtenPagesCount() * pageSize;
 
-                backupClsr.accept(grpPartId,
-                    BackupInClosure.PageStoreType.TEMP,
+                closure.accept(grpPartId,
+                    PageStoreType.TEMP,
                     resolvePartitionDeltaFileCfg(grpCfg, grpPartId.getPartitionId()),
                     deltaOffset,
                     deltaSize);

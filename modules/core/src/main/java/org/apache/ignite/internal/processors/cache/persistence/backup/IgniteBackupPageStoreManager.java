@@ -30,13 +30,13 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
     /**
      * @param name The unique backup name.
      * @param parts Collection of pairs group and appropratate cache partition to be backuped.
-     * @param backupClsr Partition backup handling closure.
+     * @param closure Partition backup handling closure.
      * @return Future will be finished when backup ends.
      */
     public IgniteInternalFuture<Boolean> localBackup(
         String name,
         Map<Integer, Set<Integer>> parts,
-        BackupInClosure backupClsr
+        PageStoreInClosure closure
     );
 
     /**

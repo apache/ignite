@@ -271,7 +271,7 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
             .localBackup(
                 "testbackup",
                 grpsBackup,
-                new BackupInClosure() {
+                new PageStoreInClosure() {
                     /** Last seen handled partition id file. */
                     private File lastSavedPartId;
 
