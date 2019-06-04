@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
@@ -52,10 +53,10 @@ public interface Command<T> {
      * @param desc Command description.
      * @param args Arguments.
      */
-    public static void usage(CommandLogger logger, String desc, CommandList cmd, String... args) {
-        logger.logWithIndent(desc);
-        logger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)), 2);
-        logger.nl();
+    public static void usage(String desc, CommandList cmd, String... args) {
+        CommandLogger.logWithIndent(desc);
+        CommandLogger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)), 2);
+        CommandLogger.nl();
     }
 
     /**
@@ -66,7 +67,7 @@ public interface Command<T> {
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception;
+    public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception;
 
     /**
      * @return Message text to show user for. If null it means that confirmantion is not needed.
@@ -92,7 +93,11 @@ public interface Command<T> {
     /**
      * Print info for user about command (parameters, use cases and so on).
      *
-     * @param logger Would be used as output.
      */
-    public void printUsage(CommandLogger logger);
+    public void printUsage();
+
+    /**
+     * @return command name.
+     */
+    String name();
 }
