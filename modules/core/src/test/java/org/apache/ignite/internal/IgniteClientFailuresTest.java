@@ -18,6 +18,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -35,7 +36,7 @@ import org.junit.Test;
  */
 public class IgniteClientFailuresTest extends GridCommonAbstractTest {
     /** */
-    private boolean clientMode;
+    private static final String EXCHANGE_WORKER_BLOCKED_MSG = "threadName=exchange-worker, blockedFor=";
 
     /** */
     private GridStringLogger inMemoryLog;
@@ -44,12 +45,14 @@ public class IgniteClientFailuresTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(clientMode);
-
-        if (!clientMode) {
+        if (igniteInstanceName.contains("client"))
+            cfg.setClientMode(true);
+        else {
             cfg.setClientFailureDetectionTimeout(10_000);
 
             cfg.setSystemWorkerBlockedTimeout(5_000);
+
+            cfg.setNetworkTimeout(5_000);
 
             cfg.setGridLogger(inMemoryLog);
         }
@@ -77,13 +80,15 @@ public class IgniteClientFailuresTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoMessagesFromFailureProcessor() throws Exception {
-        inMemoryLog = new GridStringLogger(false, new GridTestLog4jLogger());
+        GridStringLogger strLog = new GridStringLogger(false, new GridTestLog4jLogger());
 
-        inMemoryLog.logLength(1024 * 1024);
+        strLog.logLength(1024 * 1024);
+
+        inMemoryLog = strLog;
 
         IgniteEx srv = startGrid(0);
 
-        clientMode = true;
+        inMemoryLog = null;
 
         IgniteEx client00 = startGrid("client00");
 
@@ -99,7 +104,7 @@ public class IgniteClientFailuresTest extends GridCommonAbstractTest {
 
         assertTrue(waitRes);
 
-        assertFalse(inMemoryLog.toString().contains("name=tcp-comm-worker"));
+        assertFalse(strLog.toString().contains("name=tcp-comm-worker"));
     }
 
     /**
@@ -112,11 +117,7 @@ public class IgniteClientFailuresTest extends GridCommonAbstractTest {
     public void testFailedClientLeavesTopologyAfterTimeout() throws Exception {
         IgniteEx srv0 = startGrid(0);
 
-        clientMode = true;
-
         IgniteEx client00 = startGrid("client00");
-
-        Thread.sleep(5_000);
 
         client00.getOrCreateCache(new CacheConfiguration<>("cache0"));
 
@@ -136,6 +137,50 @@ public class IgniteClientFailuresTest extends GridCommonAbstractTest {
         checkCacheOperations(client01.cache("cache0"));
 
         assertTrue(waitRes);
+    }
+
+    /**
+     * Test verifies that when some sys thread (on server node) tries to re-establish connection to failed client
+     * and exchange-worker gets blocked waiting for it (e.g. to send partitions full map)
+     * it is not treated as {@link FailureType#SYSTEM_WORKER_BLOCKED}
+     * because this waiting is finite and part of normal operations.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExchangeWorkerIsNotTreatedAsBlockedWhenClientNodeFails() throws Exception {
+        GridStringLogger strLog = new GridStringLogger(false, new GridTestLog4jLogger());
+
+        strLog.logLength(1024 * 1024);
+
+        inMemoryLog = strLog;
+
+        IgniteEx srv0 = startGrid(0);
+
+        inMemoryLog = null;
+
+        IgniteEx client00 = startGrid("client00");
+
+        client00.getOrCreateCache(new CacheConfiguration<>("cache0"));
+
+        startGrid(1);
+
+        breakClient(client00);
+
+        final IgniteClusterEx cl = srv0.cluster();
+
+        assertEquals(3, cl.topology(cl.topologyVersion()).size());
+
+        startGrid("client01");
+
+        boolean waitRes = GridTestUtils.waitForCondition(() -> (cl.topology(cl.topologyVersion()).size() == 3),
+            20_000);
+
+        assertTrue(waitRes);
+
+        String logRes = strLog.toString();
+
+        assertFalse(logRes.contains(EXCHANGE_WORKER_BLOCKED_MSG));
     }
 
     /** */
