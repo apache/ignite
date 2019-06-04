@@ -31,8 +31,6 @@ public interface TempPageStore extends AutoCloseable {
     public void read(ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
-     * Write a page to store.
-     *
      * @param pageId Page ID.
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If page writing failed (IO error occurred).

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -31,13 +31,13 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
      * @param name The unique backup name.
      * @param parts Collection of pairs group and appropratate cache partition to be backuped.
      * @param closure Partition backup handling closure.
-     * @return Future will be finished when backup ends.
+     * @throws IgniteCheckedException If fails.
      */
-    public IgniteInternalFuture<Boolean> localBackup(
+    public void localBackup(
         String name,
         Map<Integer, Set<Integer>> parts,
         PageStoreInClosure closure
-    );
+    ) throws IgniteCheckedException;
 
     /**
      * @param pairId Cache group, partition identifiers pair.
