@@ -168,7 +168,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     private GridCacheWriteBehindStore store;
 
     /**
-     * Creates cache metrics;
+     * Creates cache metrics.
      *
      * @param cctx Cache context.
      */
@@ -177,9 +177,10 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /**
-     * Creates cache metrics;
+     * Creates cache metrics.
      *
      * @param cctx Cache context.
+     * @param suffix Suffix for the metric set name.
      */
     public CacheMetricsImpl(GridCacheContext<?, ?> cctx, @Nullable String suffix) {
         assert cctx != null;

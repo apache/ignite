@@ -28,7 +28,7 @@ public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T>, G
     /**
      * Value.
      */
-    private volatile T value;
+    private volatile T val;
 
     /**
      * Type.
@@ -48,7 +48,7 @@ public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T>, G
 
     /** {@inheritDoc} */
     @Override public T value() {
-        return value;
+        return val;
     }
 
     /** {@inheritDoc} */
@@ -59,9 +59,9 @@ public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T>, G
     /**
      * Sets value.
      *
-     * @param x Value.
+     * @param val Value.
      */
-    public void value(T value) {
-        this.value = value;
+    public void value(T val) {
+        this.val = val;
     }
 }

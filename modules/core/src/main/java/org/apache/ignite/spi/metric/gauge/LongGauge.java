@@ -28,32 +28,32 @@ public class LongGauge extends AbstractMetric implements LongMetric, Gauge {
     /**
      * Value.
      */
-    private volatile long value;
+    private volatile long val;
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      */
-    public LongGauge(String name, @Nullable String description) {
-        super(name, description);
+    public LongGauge(String name, @Nullable String descr) {
+        super(name, descr);
     }
 
     /** {@inheritDoc} */
     @Override public long value() {
-        return value;
+        return val;
     }
 
     /**
      * Sets value.
      *
-     * @param x Value.
+     * @param val Value.
      */
-    public void value(long value) {
-        this.value = value;
+    public void value(long val) {
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = 0;
+        val = 0;
     }
 }

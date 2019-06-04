@@ -77,9 +77,9 @@ public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
 
         return F.iterator(metrics,
             m -> createRow(ses,
-                m.getName().substring(msetName.length() + 1),
+                m.name().substring(msetName.length() + 1),
                 m.getAsString(),
-                m.getDescription()),
+                m.description()),
             true);
     }
 }

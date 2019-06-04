@@ -29,21 +29,21 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric, Gauge {
     /**
      * Value supplier.
      */
-    private final IntSupplier value;
+    private final IntSupplier val;
 
     /**
      * @param name Name.
-     * @param description Description.
-     * @param value Supplier.
+     * @param descr Description.
+     * @param val Supplier.
      */
-    public IntMetricImpl(String name, @Nullable String description, IntSupplier value) {
-        super(name, description);
+    public IntMetricImpl(String name, @Nullable String descr, IntSupplier val) {
+        super(name, descr);
 
-        this.value = value;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public int value() {
-        return value.getAsInt();
+        return val.getAsInt();
     }
 }

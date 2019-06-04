@@ -72,6 +72,7 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         String cacheName,
         String idxName,
         MetricRegistry mreg) {
+        assert cacheName != null && idxName != null;
 
         this.cacheName = cacheName;
         this.idxName = idxName;

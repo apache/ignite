@@ -25,7 +25,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
-import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
@@ -103,7 +102,7 @@ public class MetricRegistryImpl implements MetricRegistry {
 
     /** {@inheritDoc} */
     @Override public void register(Metric metric) {
-        addMetric(metric.getName(), metric);
+        addMetric(metric.name(), metric);
     }
 
     /** {@inheritDoc} */
@@ -144,10 +143,6 @@ public class MetricRegistryImpl implements MetricRegistry {
     /** {@inheritDoc} */
     @Override public LongCounter counter(String name, @Nullable String description) {
         return addMetric(name, new LongCounter(name, description));
-    }
-
-    @Override public LongCounter counter(String name, LongConsumer updateDelegate, @Nullable String description) {
-        return addMetric(name, new LongCounter.LongCounterWithDelegate(name, updateDelegate, description));
     }
 
     /** {@inheritDoc} */

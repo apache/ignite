@@ -25,12 +25,12 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Accumulates approximate hit rate statistics.
- * Calculates number of hits in last {@link #rateTimeInterval} milliseconds.
- * Algorithm is based on circular array of {@link #size} hit counters, each is responsible for last corresponding time
- * interval of {@link #rateTimeInterval}/{@link #size} milliseconds. Resulting number of hits is sum of all counters.
+ * Calculates number of hits in last {@code rateTimeInterval} milliseconds.
+ * Algorithm is based on circular array of {@code size} hit counters, each is responsible for last corresponding time
+ * interval of {@code rateTimeInterval}/{@code size} milliseconds. Resulting number of hits is sum of all counters.
  *
  * <p>Implementation is nonblocking and protected from hits loss.
- * Maximum relative error is 1/{@link #size}.
+ * Maximum relative error is 1/{@code size}.
  * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
 public class HitRateCounter extends AbstractMetric implements LongMetric, Counter {
@@ -87,7 +87,6 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
         return cntr.value();
     }
 
-
     /**
      * Actual counter.
      *
@@ -104,13 +103,13 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
         private volatile long rateTimeInterval;
 
         /** Counters array size. */
-        private volatile int size;
+        private final int size;
 
         /** Tagged counters. */
-        private volatile AtomicLongArray taggedCounters;
+        private final AtomicLongArray taggedCounters;
 
         /** Last hit times. */
-        private volatile AtomicLongArray lastHitTimes;
+        private final AtomicLongArray lastHitTimes;
 
         /**
          * @param rateTimeInterval Rate time interval.
@@ -130,6 +129,11 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
             lastHitTimes = new AtomicLongArray(size);
         }
 
+        /**
+         * Adds hits to the counter.
+         *
+         * @param hits Number of hits.
+         */
         public void add(long hits) {
             long curTs = U.currentTimeMillis();
 

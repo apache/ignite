@@ -24,32 +24,28 @@ import org.jetbrains.annotations.Nullable;
  * Base class for {@code Metric} implementations.
  */
 public abstract class AbstractMetric implements Metric {
-    /**
-     * Name.
-     */
+    /** Name. */
     private final String name;
 
-    /**
-     * Description.
-     */
-    @Nullable private final String description;
+    /** Description. */
+    @Nullable private final String descr;
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      */
-    public AbstractMetric(String name, String description) {
+    public AbstractMetric(String name, String descr) {
         this.name = name;
-        this.description = description;
+        this.descr = descr;
     }
 
     /** {@inheritDoc} */
-    @Override public String getName() {
+    @Override public String name() {
         return name;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public String getDescription() {
-        return description;
+    @Override @Nullable public String description() {
+        return descr;
     }
 }

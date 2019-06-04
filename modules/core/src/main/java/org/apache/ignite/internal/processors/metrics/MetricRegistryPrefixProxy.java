@@ -22,7 +22,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
-import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -62,6 +61,8 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
      * @param reg Underlying imlementaion.
      */
     public MetricRegistryPrefixProxy(String prefix, MetricRegistry reg) {
+        assert prefix != null && !prefix.isEmpty();
+
         this.prefix = prefix;
         this.reg = reg;
     }
@@ -80,13 +81,13 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
     @Override public Collection<Metric> getMetrics() {
         String p = this.prefix + ".";
 
-        return F.view(reg.getMetrics(), m -> m.getName().startsWith(p));
+        return F.view(reg.getMetrics(), m -> m.name().startsWith(p));
     }
 
     /** {@inheritDoc} */
     @Override public void addMetricCreationListener(Consumer<Metric> lsnr) {
         reg.addMetricCreationListener(m -> {
-            if (m.getName().startsWith(prefix))
+            if (m.name().startsWith(prefix))
                 lsnr.accept(m);
         });
     }
@@ -139,10 +140,6 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
     /** {@inheritDoc} */
     @Override public LongCounter counter(String name, @Nullable String description) {
         return reg.counter(fullName(name), description);
-    }
-
-    @Override public LongCounter counter(String name, LongConsumer updateDelegate, @Nullable String description) {
-        return reg.counter(fullName(name), updateDelegate, description);
     }
 
     /** {@inheritDoc} */

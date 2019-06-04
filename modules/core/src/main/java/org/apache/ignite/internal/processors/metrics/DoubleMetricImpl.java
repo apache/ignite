@@ -29,23 +29,23 @@ public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric, Ga
     /**
      * Value supplier.
      */
-    private final DoubleSupplier value;
+    private final DoubleSupplier val;
 
     /**
      * @param name Name.
-     * @param description Description.
-     * @param value Supplier.
+     * @param descr Description.
+     * @param val Supplier.
      */
-    public DoubleMetricImpl(String name, @Nullable String description, DoubleSupplier value) {
-        super(name, description);
+    public DoubleMetricImpl(String name, @Nullable String descr, DoubleSupplier val) {
+        super(name, descr);
 
-        this.value = value;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public double value() {
         try {
-            return value.getAsDouble();
+            return val.getAsDouble();
         }
         catch (Exception e) {
             e.printStackTrace();

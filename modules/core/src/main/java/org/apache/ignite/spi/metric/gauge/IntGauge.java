@@ -28,32 +28,32 @@ public class IntGauge extends AbstractMetric implements IntMetric, Gauge {
     /**
      * Value.
      */
-    private volatile int value;
+    private volatile int val;
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      */
-    public IntGauge(String name, @Nullable String description) {
-        super(name, description);
+    public IntGauge(String name, @Nullable String descr) {
+        super(name, descr);
     }
 
     /** {@inheritDoc} */
     @Override public int value() {
-        return value;
+        return val;
     }
 
     /**
      * Sets value.
      *
-     * @param x Value.
+     * @param val Value.
      */
-    public void value(int value) {
-        this.value = value;
+    public void value(int val) {
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = 0;
+        val = 0;
     }
 }

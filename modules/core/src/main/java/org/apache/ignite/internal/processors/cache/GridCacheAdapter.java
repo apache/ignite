@@ -340,9 +340,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         log = ctx.logger(getClass());
         txLockMsgLog = ctx.shared().txLockMessageLogger();
 
-        String suffix = this instanceof GridNearCacheAdapter ? "near" : null;
-
-        metrics = new CacheMetricsImpl(ctx, suffix);
+        metrics = new CacheMetricsImpl(ctx, isNear() ? "near" : null);
 
         locMxBean = new CacheLocalMetricsMXBeanImpl(this);
         clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);

@@ -29,23 +29,23 @@ public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric, 
     /**
      * Value supplier.
      */
-    private final BooleanSupplier value;
+    private final BooleanSupplier val;
 
     /**
      * @param name Name.
-     * @param description Description.
-     * @param value Supplier.
+     * @param descr Description.
+     * @param val Supplier.
      */
-    public BooleanMetricImpl(String name, @Nullable String description, BooleanSupplier value) {
-        super(name, description);
+    public BooleanMetricImpl(String name, @Nullable String descr, BooleanSupplier val) {
+        super(name, descr);
 
-        this.value = value;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public boolean value() {
         try {
-            return value.getAsBoolean();
+            return val.getAsBoolean();
         }
         catch (Exception e) {
             e.printStackTrace();

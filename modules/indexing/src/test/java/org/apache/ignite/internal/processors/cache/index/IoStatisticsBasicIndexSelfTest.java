@@ -365,14 +365,14 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         return mset.getMetrics().stream().map(m -> {
                 switch (statType) {
                     case CACHE_GROUP:
-                        if (m.getName().endsWith("grpId"))
+                        if (m.name().endsWith("grpId"))
                             return m.getAsString();
 
                         return "";
 
                     case HASH_INDEX:
                     case SORTED_INDEX:
-                        if (m.getName().endsWith("indexName"))
+                        if (m.name().endsWith("indexName"))
                             return m.getAsString();
 
                         return "";
@@ -398,7 +398,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
             ignite.context().metric().registry().withPrefix(statType.metricGroupName());
 
         return msets.getMetrics().stream()
-            .filter(m -> m.getName().endsWith("name"))
+            .filter(m -> m.name().endsWith("name"))
             .map(Metric::getAsString)
             .collect(Collectors.toSet());
     }

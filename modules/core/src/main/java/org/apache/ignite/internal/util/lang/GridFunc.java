@@ -3119,4 +3119,20 @@ public class GridFunc {
 
         return rdc == null ? null : rdc.reduce();
     }
+
+    /**
+     * @param arr Array to check
+     * @return {@code True} if array sorted, false otherwise.
+     */
+    public static boolean isSorted(long[] arr) {
+        if (isEmpty(arr) || arr.length == 1)
+            return true;
+
+        for(int i=1; i<arr.length; i++) {
+            if (arr[i-1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
 }

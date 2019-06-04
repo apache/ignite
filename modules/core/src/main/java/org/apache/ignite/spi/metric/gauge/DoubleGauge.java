@@ -28,28 +28,28 @@ public class DoubleGauge extends AbstractMetric implements DoubleMetric, Gauge {
     /**
      * Value.
      */
-    private volatile double value;
+    private volatile double val;
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      */
-    public DoubleGauge(String name, @Nullable String description) {
-        super(name, description);
+    public DoubleGauge(String name, @Nullable String descr) {
+        super(name, descr);
     }
 
     /**
      * Sets value.
      *
-     * @param x Value.
+     * @param val Value.
      */
-    public void value(double x) {
-        value = x;
+    public void value(double val) {
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public double value() {
-        return value;
+        return val;
     }
 
     /** {@inheritDoc} */

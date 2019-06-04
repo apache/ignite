@@ -52,7 +52,7 @@ public class LogExporterSpi extends IgniteSpiAdapter implements MetricExporterPu
             if (filter != null && !filter.test(m))
                 return;
 
-            log.info(m.getName() + " = " + m.getAsString());
+            log.info(m.name() + " = " + m.getAsString());
         });
     }
 

@@ -65,8 +65,8 @@ public class MetricSetMBean implements DynamicMBean {
         this.msetName = msetName;
 
         mreg.addMetricCreationListener(m -> {
-            if (m.getName().startsWith(msetName)) {
-                MetricName parsed = parse(m.getName());
+            if (m.name().startsWith(msetName)) {
+                MetricName parsed = parse(m.name());
 
                 if (!parsed.msetName().equals(msetName))
                     return;
@@ -75,7 +75,7 @@ public class MetricSetMBean implements DynamicMBean {
             }
         });
 
-        mset.put(parse(first.getName()).mname(), first);
+        mset.put(parse(first.name()).mname(), first);
     }
 
     /** {@inheritDoc} */
@@ -114,9 +114,9 @@ public class MetricSetMBean implements DynamicMBean {
             Metric metric = iter.next();
 
             attributes[i] = new MBeanAttributeInfo(
-                metric.getName().substring(msetName.length() + 1),
+                metric.name().substring(msetName.length() + 1),
                 metricClass(metric),
-                metric.getName(),
+                metric.name(),
                 true,
                 false,
                 false);

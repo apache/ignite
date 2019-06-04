@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric.gauge;
 
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.Nullable;
 
@@ -86,9 +87,8 @@ public class HistogramGauge extends AbstractMetric implements ObjectMetric<long[
 
         long[] res = new long[h.measurements.length()];
 
-        for (int i = 0; i < h.measurements.length(); i++) {
+        for (int i = 0; i < h.measurements.length(); i++)
             res[i] = h.measurements.get(i);
-        }
 
         return res;
     }
@@ -105,14 +105,19 @@ public class HistogramGauge extends AbstractMetric implements ObjectMetric<long[
         /**
          * Count of measurement for each bound.
          */
-        public AtomicLongArray measurements;
+        public final AtomicLongArray measurements;
 
         /**
          * Bounds of measurements.
          */
-        public long[] bounds;
+        public final long[] bounds;
 
+        /**
+         * @param bounds Bounds of measurements.
+         */
         public HistogramHolder(long[] bounds) {
+            assert !F.isEmpty(bounds) && F.isSorted(bounds);
+
             this.bounds = bounds;
 
             this.measurements = new AtomicLongArray(bounds.length + 1);

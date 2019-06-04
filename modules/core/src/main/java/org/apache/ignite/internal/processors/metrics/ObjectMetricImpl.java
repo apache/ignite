@@ -29,7 +29,7 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
     /**
      * Value supplier.
      */
-    private final Supplier<T> value;
+    private final Supplier<T> val;
 
     /**
      * Type.
@@ -38,21 +38,21 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      * @param value Supplier.
      * @param type Type.
      */
-    public ObjectMetricImpl(String name, @Nullable String description, Supplier<T> value, Class<T> type) {
-        super(name, description);
+    public ObjectMetricImpl(String name, @Nullable String descr, Supplier<T> val, Class<T> type) {
+        super(name, descr);
 
-        this.value = value;
+        this.val = val;
         this.type = type;
     }
 
     /** {@inheritDoc} */
     @Override public T value() {
         try {
-            return value.get();
+            return val.get();
         }
         catch (Exception e) {
             e.printStackTrace();

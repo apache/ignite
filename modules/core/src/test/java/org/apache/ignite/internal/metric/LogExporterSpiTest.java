@@ -42,7 +42,7 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
     private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
 
     /** */
-    private static IgniteEx ignite;
+    private IgniteEx ignite;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -58,7 +58,7 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
 
         logSpi.setTimeout(EXPORT_TIMEOUT);
 
-        logSpi.setExportFilter(m -> !m.getName().startsWith(FILTERED_PREFIX));
+        logSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(logSpi);
 
@@ -94,7 +94,7 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
 
         log.registerListener(s -> {
             if(s.contains(FILTERED_PREFIX))
-                fail("Filtererd prefix shouldn't export.");
+                fail("Filtered prefix shouldn't export.");
         });
 
         Set<String> expectedMetrics = new GridConcurrentHashSet<>(asList(
@@ -105,9 +105,6 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
 
         log.registerListener(s -> {
             for (String metric : expectedMetrics) {
-                if (s.startsWith("other"))
-                    System.out.println("!");
-
                 if (s.contains(metric))
                     expectedMetrics.remove(metric);
             }

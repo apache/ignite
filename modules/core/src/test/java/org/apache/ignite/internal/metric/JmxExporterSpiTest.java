@@ -42,7 +42,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /** */
 public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
-    private static IgniteEx ignite;
+    private IgniteEx ignite;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -55,7 +55,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         JmxExporterSpi jmxSpi = new JmxExporterSpi();
 
-        jmxSpi.setExportFilter(m -> !m.getName().startsWith(FILTERED_PREFIX));
+        jmxSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
 

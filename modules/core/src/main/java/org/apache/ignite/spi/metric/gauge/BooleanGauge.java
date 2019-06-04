@@ -28,32 +28,32 @@ public class BooleanGauge extends AbstractMetric implements BooleanMetric, Gauge
     /**
      * Value.
      */
-    private volatile boolean value;
+    private volatile boolean val;
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      */
-    public BooleanGauge(String name, @Nullable String description) {
-        super(name, description);
+    public BooleanGauge(String name, @Nullable String descr) {
+        super(name, descr);
     }
 
     /**
      * Sets value.
      *
-     * @param x Value.
+     * @param val Value.
      */
-    public void value(boolean x) {
-        value = x;
+    public void value(boolean val) {
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value = false;
+        val = false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean value() {
-        return value;
+        return val;
     }
 }

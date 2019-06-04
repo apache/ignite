@@ -29,16 +29,16 @@ public class DoubleCounter extends AbstractMetric implements DoubleMetric, Count
     /**
      * Value.
      */
-    private final DoubleAccumulator value;
+    private final DoubleAccumulator val;
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      */
-    public DoubleCounter(String name, @Nullable String description) {
-        super(name, description);
+    public DoubleCounter(String name, @Nullable String descr) {
+        super(name, descr);
 
-        this.value = new DoubleAccumulator(Double::sum, 0d);
+        this.val = new DoubleAccumulator(Double::sum, 0d);
     }
 
     /**
@@ -47,16 +47,16 @@ public class DoubleCounter extends AbstractMetric implements DoubleMetric, Count
      * @param x Value to be added.
      */
     public void add(double x) {
-        value.accumulate(x);
+        val.accumulate(x);
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        value.reset();
+        val.reset();
     }
 
     /** {@inheritDoc} */
     @Override public double value() {
-        return value.doubleValue();
+        return val.doubleValue();
     }
 }

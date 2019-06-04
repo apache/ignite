@@ -152,11 +152,11 @@ public class OpenCensusMetricExporterSpi extends IgniteSpiAdapter implements Met
 
     /** */
     private static Function<Metric, Measure> CREATE_LONG = m ->
-        MeasureLong.create(m.getName(), m.getDescription(), "");
+        MeasureLong.create(m.name(), m.description(), "");
 
     /** */
     private static Function<Metric, Measure> CREATE_DOUBLE = m ->
-        MeasureDouble.create(m.getName(), m.getDescription(), "");
+        MeasureDouble.create(m.name(), m.description(), "");
 
     /** {@inheritDoc} */
     @Override public void export() {
@@ -189,12 +189,12 @@ public class OpenCensusMetricExporterSpi extends IgniteSpiAdapter implements Met
 
                     if (val < 0) {
                         if (log.isDebugEnabled())
-                            log.debug("OpenCensus doesn't support negative values. Skip record of " + metric.getName());
+                            log.debug("OpenCensus doesn't support negative values. Skip record of " + metric.name());
 
                         continue;
                     }
 
-                    MeasureLong msr = (MeasureLong)measures.computeIfAbsent(metric.getName(),
+                    MeasureLong msr = (MeasureLong)measures.computeIfAbsent(metric.name(),
                         k -> createMeasure(metric, CREATE_LONG));
 
                     mmap.put(msr, val);
@@ -204,18 +204,18 @@ public class OpenCensusMetricExporterSpi extends IgniteSpiAdapter implements Met
 
                     if (val < 0) {
                         if (log.isDebugEnabled())
-                            log.debug("OpenCensus doesn't support negative values. Skip record of " + metric.getName());
+                            log.debug("OpenCensus doesn't support negative values. Skip record of " + metric.name());
 
                         continue;
                     }
 
-                    MeasureDouble msr = (MeasureDouble)measures.computeIfAbsent(metric.getName(),
+                    MeasureDouble msr = (MeasureDouble)measures.computeIfAbsent(metric.name(),
                         k -> createMeasure(metric, CREATE_DOUBLE));
 
                     mmap.put(msr, val);
                 }
                 else if (log.isDebugEnabled()) {
-                    log.debug(metric.getName() +
+                    log.debug(metric.name() +
                         "[" + metric.getClass() + "] not supported by Opencensus exporter");
                 }
             }

@@ -22,7 +22,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
-import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.spi.metric.counter.DoubleCounter;
@@ -51,7 +50,7 @@ public interface MetricRegistry {
     /**
      * Prefixes combined using dot notation {@code ["io", "stat"] -> "io.stat"}
      *
-     * @param prefix prefixes for all metrics.
+     * @param prefixes prefixes for all metrics.
      * @return Proxy implementation that will search and create only metrics with specified prefixes.
      */
     public MetricRegistry withPrefix(String... prefixes);
@@ -163,18 +162,6 @@ public interface MetricRegistry {
      * @return Counter.
      */
     public LongCounter counter(String name, @Nullable String description);
-
-    /**
-     * Creates and register named counter.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @param updateDelegate Delegate. Will be called each time created counter value changed.
-     * @return Counter.
-     * @see #counter(String)
-     */
-    public LongCounter counter(String name, LongConsumer updateDelegate, @Nullable String description);
 
     /**
      * Creates and register hit rate counter.

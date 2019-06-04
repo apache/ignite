@@ -28,19 +28,19 @@ import org.jetbrains.annotations.Nullable;
 public class IntCounter extends AbstractMetric implements IntMetric, Counter {
     /** Field updater. */
     private static AtomicIntegerFieldUpdater<IntCounter> updater =
-        AtomicIntegerFieldUpdater.newUpdater(IntCounter.class, "value");
+        AtomicIntegerFieldUpdater.newUpdater(IntCounter.class, "val");
 
     /**
      * Value.
      */
-    private volatile int value;
+    private volatile int val;
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      */
-    public IntCounter(String name, @Nullable String description) {
-        super(name, description);
+    public IntCounter(String name, @Nullable String descr) {
+        super(name, descr);
     }
 
     /**
@@ -59,6 +59,6 @@ public class IntCounter extends AbstractMetric implements IntMetric, Counter {
 
     /** {@inheritDoc} */
     @Override public int value() {
-        return value;
+        return val;
     }
 }

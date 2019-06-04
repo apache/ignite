@@ -54,6 +54,8 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
      * @param mreg Metric registry.
      */
     public IoStatisticsHolderCache(String cacheName, int grpId, MetricRegistry mreg) {
+        assert cacheName != null;
+
         this.cacheName = cacheName;
         this.grpId = grpId;
 

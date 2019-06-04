@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.metric.counter;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.function.LongConsumer;
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
@@ -36,14 +35,14 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
     /**
      * Field value.
      */
-    private volatile long value;
+    private volatile long val;
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param descr Description.
      */
-    public LongCounter(String name, @Nullable String description) {
-        super(name, description);
+    public LongCounter(String name, @Nullable String descr) {
+        super(name, descr);
     }
 
     /**
@@ -76,7 +75,7 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
 
     /** {@inheritDoc} */
     @Override public long value() {
-        return value;
+        return val;
     }
 
     /**
@@ -90,33 +89,5 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
      */
     public boolean compareAndSet(long expect, long update) {
         return updater.compareAndSet(this, expect, update);
-    }
-
-    /**
-     * Long counter that delegate each update to provided {@link #delegate}.
-     */
-    public static class LongCounterWithDelegate extends LongCounter {
-        /**
-         * Update delegate.
-         */
-        private LongConsumer delegate;
-
-        /**
-         * @param name Name.
-         * @param delegate Update delegate.
-         * @param description Description.
-         */
-        public LongCounterWithDelegate(String name, LongConsumer delegate, @Nullable String description) {
-            super(name, description);
-
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void add(long x) {
-            super.add(x);
-
-            delegate.accept(x);
-        }
     }
 }

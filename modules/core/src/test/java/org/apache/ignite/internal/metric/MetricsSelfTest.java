@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metrics.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -88,24 +87,6 @@ public class MetricsSelfTest {
         run(l::increment, 100);
 
         assertEquals(100*100, l.value());
-
-        l.reset();
-
-        assertEquals(0, l.value());
-    }
-
-    /** */
-    @Test
-    public void testDelegateLongCounter() throws Exception {
-        AtomicLong v = new AtomicLong();
-
-        LongCounter l = mreg.counter("dltest", v::addAndGet, "test");
-
-        run(l::increment, 100);
-
-        assertEquals(100*100, l.value());
-
-        assertEquals(100*100, v.get());
 
         l.reset();
 
@@ -352,7 +333,7 @@ public class MetricsSelfTest {
             testMetricName("test5")));
 
         Set<String> res = mreg.getMetrics().stream()
-            .map(Metric::getName)
+            .map(Metric::name)
             .collect(toSet());
 
         assertEquals(names, res);
@@ -370,7 +351,7 @@ public class MetricsSelfTest {
 
         Set<String> res = new HashSet<>();
 
-        mreg.addMetricCreationListener(m -> res.add(m.getName()));
+        mreg.addMetricCreationListener(m -> res.add(m.name()));
 
         mreg.counter("test1", null);
         mreg.counter("test2", null);

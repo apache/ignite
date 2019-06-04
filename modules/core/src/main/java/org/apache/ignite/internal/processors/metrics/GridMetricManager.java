@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metrics;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.MetricExporterPushSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.MetricRegistry;
@@ -125,14 +127,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         startSpi();
 
-        int cnt = 0;
-
-        for (MetricExporterSpi spi : getSpis()) {
-            if (!(spi instanceof MetricExporterPushSpi))
-                continue;
-
-            cnt++;
-        }
+        int cnt = (int)Arrays.stream(getSpis()).filter(spi -> spi instanceof MetricExporterPushSpi).count();
 
         if (cnt > 0) {
             pushSpiExecutor = Executors.newScheduledThreadPool(cnt);

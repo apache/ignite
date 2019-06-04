@@ -29,23 +29,23 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric, Gauge 
     /**
      * Value supplier.
      */
-    private final LongSupplier value;
+    private final LongSupplier val;
 
     /**
      * @param name Name.
-     * @param description Description.
-     * @param value Supplier.
+     * @param descr Description.
+     * @param val Supplier.
      */
-    public LongMetricImpl(String name, @Nullable String description, LongSupplier value) {
-        super(name, description);
+    public LongMetricImpl(String name, @Nullable String descr, LongSupplier val) {
+        super(name, descr);
 
-        this.value = value;
+        this.val = val;
     }
 
     /** {@inheritDoc} */
     @Override public long value() {
         try {
-            return value.getAsLong();
+            return val.getAsLong();
         }
         catch (Exception e) {
             e.printStackTrace();

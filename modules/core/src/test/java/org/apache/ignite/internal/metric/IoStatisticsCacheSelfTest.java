@@ -258,7 +258,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
             ignite.context().metric().registry().withPrefix(statType.metricGroupName());
 
         return msets.getMetrics().stream()
-            .filter(m -> m.getName().endsWith("name"))
+            .filter(m -> m.name().endsWith("name"))
             .map(Metric::getAsString)
             .collect(Collectors.toSet());
     }

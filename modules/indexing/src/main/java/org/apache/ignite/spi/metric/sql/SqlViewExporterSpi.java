@@ -77,7 +77,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
             if (filter != null && !filter.test(m))
                 return;
 
-            MetricName n = parse(m.getName());
+            MetricName n = parse(m.name());
 
             if (metricSets.contains(n.msetName()))
                 return;

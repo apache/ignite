@@ -26,12 +26,12 @@ public interface Metric {
     /**
      * @return Name of the metric.
      */
-    public String getName();
+    public String name();
 
     /**
      * @return Description of the metric.
      */
-    public String getDescription();
+    public String description();
 
     /**
      * @return String representation of metric value.
