@@ -72,6 +72,9 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
             if (metricSets.contains(n.msetName()))
                 return;
 
+            if (log.isDebugEnabled())
+                log.debug("Found new metric set [name=" + n.msetName() + "]");
+
             metricSets.add(n.msetName());
 
             try {

@@ -109,20 +109,20 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         if (type == CACHE_GROUP) {
             assertEquals(5, mset.getMetrics().size());
 
-            assertEquals(0, ((LongCounter)cacheIoStatHolder.findMetric(LOGICAL_READS)).longValue());
+            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(LOGICAL_READS)).longValue());
 
-            assertEquals(0, ((LongCounter)cacheIoStatHolder.findMetric(PHYSICAL_READS)).longValue());
+            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(PHYSICAL_READS)).longValue());
         }
         else {
             assertEquals(7, mset.getMetrics().size());
 
-            assertEquals(0, ((LongCounter)cacheIoStatHolder.findMetric(LOGICAL_READS_LEAF)).longValue());
+            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(LOGICAL_READS_LEAF)).longValue());
 
-            assertEquals(0, ((LongCounter)cacheIoStatHolder.findMetric(LOGICAL_READS_INNER)).longValue());
+            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(LOGICAL_READS_INNER)).longValue());
 
-            assertEquals(0, ((LongCounter)cacheIoStatHolder.findMetric(PHYSICAL_READS_LEAF)).longValue());
+            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(PHYSICAL_READS_LEAF)).longValue());
 
-            assertEquals(0, ((LongCounter)cacheIoStatHolder.findMetric(PHYSICAL_READS_INNER)).longValue());
+            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(PHYSICAL_READS_INNER)).longValue());
         }
     }
 
@@ -231,7 +231,6 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         return ignite;
     }
-
 
     /**
      * @param statType Type of statistics which need to take.
