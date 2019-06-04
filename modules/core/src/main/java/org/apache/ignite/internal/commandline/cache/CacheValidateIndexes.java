@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
@@ -61,7 +63,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY
  */
 public class CacheValidateIndexes implements Command<CacheValidateIndexes.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
+    @Override public void printUsage() {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Verify counters and hash sums of primary and backup partitions for the specified " +
             "caches/cache groups on an idle cluster and print out the differences, if any. " +
@@ -76,7 +78,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         map.put(CHECK_FIRST + " N", "validate only the first N keys");
         map.put(CHECK_THROUGH + " K", "validate every Kth key");
 
-        usageCache(logger, VALIDATE_INDEXES, description, map,
+        usageCache(VALIDATE_INDEXES, description, map,
             optional(CACHES), OP_NODE_ID, optional(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
     }
 
@@ -145,7 +147,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
             args.caches(),
             args.nodeId() != null ? Collections.singleton(args.nodeId()) : null,
@@ -157,7 +159,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
                 client, "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask", taskArg, null, clientCfg);
 
-            boolean errors = logger.printErrors(taskRes.exceptions(), "Index validation failed on nodes:");
+            boolean errors = CommandLogger.printErrors(taskRes.exceptions(), "Index validation failed on nodes:", logger);
 
             for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
                 if (!nodeEntry.getValue().hasIssues())
@@ -165,13 +167,13 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
 
                 errors = true;
 
-                logger.log("Index issues found on node " + nodeEntry.getKey() + ":");
+                logger.info("Index issues found on node " + nodeEntry.getKey() + ":");
 
                 Collection<IndexIntegrityCheckIssue> integrityCheckFailures = nodeEntry.getValue().integrityCheckFailures();
 
                 if (!integrityCheckFailures.isEmpty()) {
                     for (IndexIntegrityCheckIssue is : integrityCheckFailures)
-                        logger.logWithIndent(is);
+                        logger.info(INDENT + is);
                 }
 
                 Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
@@ -180,10 +182,10 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
                     ValidateIndexesPartitionResult res = e.getValue();
 
                     if (!res.issues().isEmpty()) {
-                        logger.logWithIndent(CommandLogger.join(" ", e.getKey(), e.getValue()));
+                        logger.info(INDENT + CommandLogger.join(" ", e.getKey(), e.getValue()));
 
                         for (IndexValidationIssue is : res.issues())
-                            logger.logWithIndent(is, 2);
+                            logger.info(INDENT + INDENT + is);
                     }
                 }
 
@@ -193,20 +195,20 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
                     ValidateIndexesPartitionResult res = e.getValue();
 
                     if (!res.issues().isEmpty()) {
-                        logger.logWithIndent(CommandLogger.join(" ", "SQL Index", e.getKey(), e.getValue()));
+                        logger.info(INDENT + CommandLogger.join(" ", "SQL Index", e.getKey(), e.getValue()));
 
                         for (IndexValidationIssue is : res.issues())
-                            logger.logWithIndent(is, 2);
+                            logger.info(INDENT + INDENT + is);
                     }
                 }
             }
 
             if (!errors)
-                logger.log("no issues found.");
+                logger.severe("no issues found.");
             else
-                logger.log("issues found (listed above).");
+                logger.severe("issues found (listed above).");
 
-            logger.nl();
+            logger.info("");
 
             return taskRes;
         }
@@ -273,5 +275,10 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         }
 
         args = new Arguments(caches, nodeId, checkFirst, checkThrough);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return VALIDATE_INDEXES.text().toUpperCase();
     }
 }
