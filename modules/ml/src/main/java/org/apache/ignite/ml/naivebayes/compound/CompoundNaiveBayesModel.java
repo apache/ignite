@@ -19,6 +19,7 @@ package org.apache.ignite.ml.naivebayes.compound;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
@@ -48,13 +49,13 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     private GaussianNaiveBayesModel gaussianModel;
 
     /** */
-    private Collection<Integer> gaussianFeatureIdsToSkip;
+    private Collection<Integer> gaussianFeatureIdsToSkip = Collections.emptyList();
 
     /** Discrete Bayes model. */
     private DiscreteNaiveBayesModel discreteModel;
 
     /** */
-    Collection<Integer> discreteFeatureIdsToSkip;
+    Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<CompoundNaiveBayesModel, P> exporter, P path) {
