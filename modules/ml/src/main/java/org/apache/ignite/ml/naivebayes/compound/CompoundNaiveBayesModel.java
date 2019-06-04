@@ -18,12 +18,17 @@
 package org.apache.ignite.ml.naivebayes.compound;
 
 import java.io.Serializable;
+import java.util.Collection;
+
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
+
+import static java.util.Arrays.asList;
 
 /**
  * A compound Naive Bayes model which uses a composition of{@code GaussianNaiveBayesModel} and {@code
@@ -41,6 +46,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /** Gaussian Bayes model. */
     private GaussianNaiveBayesModel gaussianModel;
+
+    /** */
+    private Collection<Integer> gaussianFeatureIdsToSkip;
 
     /** Discrete Bayes model. */
     private DiscreteNaiveBayesModel discreteModel;
@@ -62,7 +70,8 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         }
 
         if (gaussianModel != null) {
-            probapilityPowers = sum(probapilityPowers, gaussianModel.probabilityPowers(vector));
+            Vector gaussVector = skipFeatures(vector, gaussianFeatureIdsToSkip);
+            probapilityPowers = sum(probapilityPowers, gaussianModel.probabilityPowers(gaussVector));
         }
 
         int maxLabelIndex = 0;
@@ -118,5 +127,25 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
             result[i] = arr1[i] + arr2[i];
         }
         return result;
+    }
+
+    private static Vector skipFeatures(Vector vector, Collection<Integer> featureIdsToSkip) {
+        final int size = vector.size();
+        int newSize = size - featureIdsToSkip.size();
+
+        double[] newFeaturesValues = new double[newSize];
+        int index = 0;
+        for (int j = 0; j < newSize; j++) {
+            if(featureIdsToSkip.contains(j)) continue;
+
+            newFeaturesValues[index] = vector.get(j);
+            ++index;
+        }
+        return VectorUtils.of(newFeaturesValues);
+    }
+
+    public CompoundNaiveBayesModel withGaussianFeatureIdsToSkip(Collection<Integer> gaussianFeatureIdsToSkip) {
+         this.gaussianFeatureIdsToSkip = gaussianFeatureIdsToSkip;
+         return this;
     }
 }

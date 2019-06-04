@@ -19,12 +19,21 @@ package org.apache.ignite.ml.naivebayes.compound;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesTrainer;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Collection;
+import java.util.HashSet;
+
+import static java.util.Arrays.asList;
 
 /**
  * Trainer for the compound Naive Bayes classifier model. It uses a model composition of {@code
@@ -68,11 +77,16 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             .wirhPriorProbabilities(clsProbabilities);
 
         if (gaussianNaiveBayesTrainer != null) {
+            final Collection<Integer> featureIdsToSkip = new HashSet<>(gaussianNaiveBayesTrainer.getFeatureIdsToSkip());
+
+            extractor = extractor.map(skipFeatures(featureIdsToSkip));
+            gaussianNaiveBayesTrainer.setFeatureIdsToSkip(asList());
             GaussianNaiveBayesModel model = (mdl == null)
                 ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor)
                 : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor);
 
             compoundModel.withGaussianModel(model)
+                    .withGaussianFeatureIdsToSkip(featureIdsToSkip)
                 .withLabels(model.getLabels())
                 .wirhPriorProbabilities(clsProbabilities);
         }
@@ -88,6 +102,24 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         }
 
         return compoundModel;
+    }
+
+    @NotNull
+    private static IgniteFunction<LabeledVector<Object>, LabeledVector<Object>> skipFeatures(Collection<Integer> featureIdsToSkip) {
+        return featureValues -> {
+            final int size = featureValues.features().size();
+            int newSize = size - featureIdsToSkip.size();
+
+            double[] newFeaturesValues = new double[newSize];
+            int index = 0;
+            for (int j = 0; j < size; j++) {
+                if(featureIdsToSkip.contains(j)) continue;
+
+                newFeaturesValues[index] = featureValues.get(j);
+                ++index;
+            }
+            return new LabeledVector<>(VectorUtils.of(newFeaturesValues), featureValues.label());
+        };
     }
 
     /** */
