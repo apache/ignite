@@ -29,10 +29,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lifecycle.LifecycleAware;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -45,7 +48,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
 /**
  *
  */
-public class SharedPageLockTracker implements PageLockListener, DumpSupported<ThreadPageLocksDumpLock> {
+public class SharedPageLockTracker implements LifecycleAware, PageLockListener, DumpSupported<ThreadPageLocksDumpLock> {
     /**
      *
      */
@@ -159,15 +162,6 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
         }
 
         return tracker;
-    }
-
-    /**
-     *
-     */
-    void onStart() {
-        timeOutWorker.setDaemon(true);
-
-        timeOutWorker.start();
     }
 
     /**
@@ -339,6 +333,27 @@ public class SharedPageLockTracker implements PageLockListener, DumpSupported<Th
         prevThreadsState = currentThreadsOperationState;
 
         return hangsThreads;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        timeOutWorker.setDaemon(true);
+
+        timeOutWorker.start();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        timeOutWorker.interrupt();
+
+        try {
+            timeOutWorker.join();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException(e);
+        }
     }
 
     /**

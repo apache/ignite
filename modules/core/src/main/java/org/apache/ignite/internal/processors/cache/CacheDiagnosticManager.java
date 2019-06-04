@@ -42,6 +42,8 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
 
         pageLockTrackerManager = new PageLockTrackerManager(log, name);
 
+        pageLockTrackerManager.start();
+
         registerMetricsMBean(
             cctx.gridConfig(),
             MBEAN_GROUP,
@@ -56,6 +58,8 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
         super.stop0(cancel);
 
         unregisterMetricsMBean(cctx.gridConfig(), MBEAN_GROUP, PageLockTrackerMXBean.MBEAN_NAME);
+
+        pageLockTrackerManager.stop();
     }
 
     /**

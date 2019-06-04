@@ -329,7 +329,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
             }
         });
 
-        sharedPageLockTracker.onStart();
+        sharedPageLockTracker.start();
 
         ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
 
@@ -480,7 +480,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
         thInAwaitWithoutLocks.setName(thInAwaitWithoutLocksName);
 
-        sharedPageLockTracker.onStart();
+        sharedPageLockTracker.start();
 
         thInWait.start();
         thInRunnable.start();
