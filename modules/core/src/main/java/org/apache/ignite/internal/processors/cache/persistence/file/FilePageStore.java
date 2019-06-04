@@ -33,7 +33,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
+import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -81,7 +81,7 @@ public class FilePageStore implements PageStore {
     private final AllocatedPageTracker allocatedTracker;
 
     /** */
-    private final PageStoreWriteHandler storeHandler;
+    private final PageStoreListener lsnr;
 
     /** */
     protected final int pageSize;
@@ -110,9 +110,9 @@ public class FilePageStore implements PageStore {
         FileIOFactory factory,
         DataStorageConfiguration cfg,
         AllocatedPageTracker allocatedTracker,
-        PageStoreWriteHandler storeHandler
+        PageStoreListener lsnr
     ) {
-        assert storeHandler != null;
+        assert lsnr != null;
 
         this.type = type;
         this.cfgFile = file;
@@ -121,7 +121,7 @@ public class FilePageStore implements PageStore {
         this.allocated = new AtomicLong();
         this.pageSize = dbCfg.getPageSize();
         this.allocatedTracker = allocatedTracker;
-        this.storeHandler = storeHandler;
+        this.lsnr = lsnr;
     }
 
     /** {@inheritDoc} */
@@ -626,7 +626,7 @@ public class FilePageStore implements PageStore {
 
                     assert pageBuf.position() == 0 : pageBuf.position();
 
-                    storeHandler.onPageWrite(this, pageId);
+                    lsnr.onPageWrite(this, pageId);
 
                     fileIO.writeFully(pageBuf, off);
 

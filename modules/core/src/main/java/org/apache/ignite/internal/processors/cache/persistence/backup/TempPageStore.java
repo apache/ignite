@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * Backup store of pages for particular cache partition file.
  */
-public interface TemporaryStore extends AutoCloseable {
+public interface TempPageStore extends AutoCloseable {
     /**
      * @param pageBuf Page buffer to read into.
      * @throws IgniteCheckedException If failed (IO error occurred).

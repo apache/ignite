@@ -62,7 +62,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
+import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -713,7 +713,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 PageMemory.FLAG_IDX,
                 idxFile,
                 allocatedTracker,
-                PageStoreWriteHandler.NO_OP);
+                PageStoreListener.NO_OP);
 
             PageStore[] partStores = new PageStore[partitions];
 
@@ -724,7 +724,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                         getPartitionFile(cacheWorkDir, partId),
                         allocatedTracker,
                         cctx.storeBackup() == null ?
-                            PageStoreWriteHandler.NO_OP : new FileBackupHandler(grpId, partId, cctx.storeBackup())
+                            PageStoreListener.NO_OP : new BackupPageStoreListener(grpId, partId, cctx.storeBackup())
                     );
 
                     partStores[partId] = partStore;
@@ -1466,7 +1466,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** */
-    private static class FileBackupHandler implements PageStoreWriteHandler {
+    private static class BackupPageStoreListener implements PageStoreListener {
         /** */
         private final GroupPartitionId key;
 
@@ -1474,7 +1474,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         private final IgniteBackupPageStoreManager storeBackup;
 
         /** */
-        public FileBackupHandler(int grpId, int partId, IgniteBackupPageStoreManager storeBackup) {
+        public BackupPageStoreListener(int grpId, int partId, IgniteBackupPageStoreManager storeBackup) {
             assert storeBackup != null;
 
             key = new GroupPartitionId(grpId, partId);
@@ -1483,7 +1483,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         /** {@inheritDoc} */
         @Override public void onPageWrite(PageStore store, long pageId) {
-            storeBackup.handleWritePageStore(key, store, pageId);
+            storeBackup.beforePageWritten(key, store, pageId);
         }
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
@@ -34,7 +33,7 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
      * @param backupClsr Partition backup handling closure.
      * @return Future will be finished when backup ends.
      */
-    public IgniteInternalFuture<Boolean> backup(
+    public IgniteInternalFuture<Boolean> localBackup(
         String name,
         Map<Integer, Set<Integer>> parts,
         BackupInClosure backupClsr
@@ -45,5 +44,5 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
      * @param store Store to handle operatwion at.
      * @param pageId Tracked page id.
      */
-    public void handleWritePageStore(GroupPartitionId pairId, PageStore store, long pageId);
+    public void beforePageWritten(GroupPartitionId pairId, PageStore store, long pageId);
 }

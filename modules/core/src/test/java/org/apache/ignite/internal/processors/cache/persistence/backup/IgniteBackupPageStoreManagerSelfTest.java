@@ -51,7 +51,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
-import org.apache.ignite.internal.pagemem.store.PageStoreWriteHandler;
+import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -269,14 +268,14 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
             IntStream.range(0, CACHE_PARTS_COUNT).boxed().collect(Collectors.toSet()));
 
         cctx1.storeBackup()
-            .backup(
+            .localBackup(
                 "testbackup",
                 grpsBackup,
                 new BackupInClosure() {
                     /** Last seen handled partition id file. */
                     private File lastSavedPartId;
 
-                    @Override public void accept(
+                    @Override public boolean accept(
                         GroupPartitionId grpPartId,
                         PageStoreType type,
                         File file,
@@ -299,7 +298,7 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
                             case TEMP:
                                 // Nothing to handle
                                 if (!file.exists())
-                                    return;
+                                    return true;
 
                                 // Will perform a copy delta file page by page simultaneously with merge pages operation.
                                 try (SeekableByteChannel src = Files.newByteChannel(file.toPath())) {
@@ -310,7 +309,7 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
                                     PageStore pageStore = pageStoreFactory.createPageStore(FLAG_DATA,
                                         lastSavedPartId,
                                         AllocatedPageTracker.NO_OP,
-                                        PageStoreWriteHandler.NO_OP);
+                                        PageStoreListener.NO_OP);
 
                                     pageStore.init();
 
@@ -356,6 +355,8 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
                                 default:
                                     throw new IgniteException("Type is unknown: " + type);
                         }
+
+                        return true;
                     }
                 });
 

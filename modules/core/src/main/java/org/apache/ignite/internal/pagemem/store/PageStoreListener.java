@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.pagemem.store;
 
 /** */
-public interface PageStoreWriteHandler {
+public interface PageStoreListener {
     /** Default handler. */
-    public PageStoreWriteHandler NO_OP = (store, pageId) -> {};
+    public PageStoreListener NO_OP = (store, pageId) -> {};
 
     /**
      * @param store Page store to performe at.

@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class FileTemporaryStore implements TemporaryStore {
+public class FileTempPageStore implements TempPageStore {
     /** */
     private final File file;
 
@@ -64,7 +64,7 @@ public class FileTemporaryStore implements TemporaryStore {
      * @param file File to store.
      * @param factory Facotry.
      */
-    public FileTemporaryStore(File file, FileIOFactory factory, int pageSize) {
+    public FileTempPageStore(File file, FileIOFactory factory, int pageSize) {
         this.file = file;
         this.factory = factory;
         this.pageSize = pageSize;

@@ -34,9 +34,10 @@ public interface BackupInClosure {
      * @param file A representation of partiton file.
      * @param offset Start point offset.
      * @param size Partiton size in bytes to handle.
+     * @return {@code true} if storage has been successfully accepted.
      * @throws IgniteCheckedException If fails.
      */
-    public void accept(
+    public boolean accept(
         GroupPartitionId grpPartId,
         PageStoreType type,
         File file,

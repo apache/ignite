@@ -76,7 +76,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     /** */
     public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [name=%s]";
 
-    /** Factory to working with {@link TemporaryStore} as file storage. */
+    /** Factory to working with {@link TempPageStore} as file storage. */
     private final FileIOFactory ioFactory;
 
     /** Tracking partition files over all running snapshot processes. */
@@ -86,7 +86,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     private final ConcurrentMap<GroupPartitionId, IgniteCheckedException> pageTrackErrors = new ConcurrentHashMap<>();
 
     /** Collection of backup stores indexed by [grpId, partId] key. */
-    private final Map<GroupPartitionId, TemporaryStore> backupStores = new ConcurrentHashMap<>();
+    private final Map<GroupPartitionId, TempPageStore> backupStores = new ConcurrentHashMap<>();
 
     /** */
     private int pageSize;
@@ -168,7 +168,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        for (TemporaryStore store : backupStores.values())
+        for (TempPageStore store : backupStores.values())
             U.closeQuiet(store);
 
         backupStores.clear();
@@ -177,7 +177,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> backup(
+    @Override public IgniteInternalFuture<Boolean> localBackup(
         String name,
         Map<Integer, Set<Integer>> parts,
         BackupInClosure backupClsr
@@ -350,7 +350,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void handleWritePageStore(GroupPartitionId pairId, PageStore store, long pageId) {
+    @Override public void beforePageWritten(GroupPartitionId pairId, PageStore store, long pageId) {
         AtomicInteger trackCnt = trackMap.get(pairId);
 
         if (trackCnt == null || trackCnt.get() <= 0)
@@ -372,7 +372,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
             if (isNewPage(tmpPageBuff))
                 return;
 
-            TemporaryStore tempStore = backupStores.get(pairId);
+            TempPageStore tempStore = backupStores.get(pairId);
 
             assert tempStore != null;
 
@@ -431,7 +431,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
             U.ensureDirectory(tempGroupDir, "temporary directory for grpId: " + grpPartId.getGroupId(), null);
 
             backupStores.putIfAbsent(grpPartId,
-                new FileTemporaryStore(getPartionDeltaFile(tempGroupDir,
+                new FileTempPageStore(getPartionDeltaFile(tempGroupDir,
                     grpPartId.getPartitionId()),
                     ioFactory,
                     pageSize));
