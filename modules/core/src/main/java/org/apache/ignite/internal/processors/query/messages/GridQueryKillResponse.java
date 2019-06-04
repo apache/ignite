@@ -40,7 +40,6 @@ public class GridQueryKillResponse implements Message {
     /** Error text. */
     private String errMsg;
 
-
     /**
      * Default constructor.
      */

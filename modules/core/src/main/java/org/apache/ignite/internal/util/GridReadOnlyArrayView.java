@@ -34,7 +34,6 @@ public class GridReadOnlyArrayView<T> extends AbstractCollection<T> {
     /** Array index view ends with (exclusive). */
     private final int to;
 
-
     /**
      * @param arr Array.
      * @param from Array index view starts from (inclusive).

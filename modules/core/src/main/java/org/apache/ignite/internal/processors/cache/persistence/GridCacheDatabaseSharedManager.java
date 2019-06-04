@@ -4462,8 +4462,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private class DbCheckpointContextImpl implements DbCheckpointListener.Context {
             /** Current checkpoint progress. */
             private final CheckpointProgress curr;
+
             /** Partition map. */
             private final PartitionAllocationMap map;
+
             /** Pending tasks from executor. */
             private GridCompoundFuture pendingTaskFuture;
 
@@ -4497,6 +4499,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return asyncRunner == null ? null : cmd -> {
                     try {
                         GridFutureAdapter<?> res = new GridFutureAdapter<>();
+
+                        res.listen(fut -> updateHeartbeat());
 
                         asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
 

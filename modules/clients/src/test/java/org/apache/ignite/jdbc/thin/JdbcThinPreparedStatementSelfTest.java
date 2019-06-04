@@ -953,7 +953,6 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
             },
             SQLException.class, "Parameter type is unsupported");
 
-
         GridTestUtils.assertThrows(log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {

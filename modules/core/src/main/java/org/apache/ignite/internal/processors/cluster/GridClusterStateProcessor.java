@@ -1407,7 +1407,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param discoCache Discovery cache from the discovery manager.
      * @param topVer Topology version.
      * @param minorTopVer Minor topology version.
-     * @return {@code true} if baseline was changed.
+     * @return {@code true} if baseline was changed and discovery cache recalculation is required.
      */
     public boolean autoAdjustInMemoryClusterState(
         UUID nodeId,
@@ -1463,8 +1463,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 onStateFinishMessage(finishMsg);
 
                 globalState.localBaselineAutoAdjustment(true);
-
-                ctx.discovery().updateTopologySnapshot();
 
                 return true;
             }

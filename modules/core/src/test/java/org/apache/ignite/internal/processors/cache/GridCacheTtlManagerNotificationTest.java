@@ -142,7 +142,6 @@ public class GridCacheTtlManagerNotificationTest extends GridCommonAbstractTest 
                 }
             }, EventType.EVT_CACHE_OBJECT_EXPIRED);
 
-
             int smallDuration = 2000;
 
             int threadCnt = 10;

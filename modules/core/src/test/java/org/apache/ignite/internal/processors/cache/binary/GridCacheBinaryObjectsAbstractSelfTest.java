@@ -595,7 +595,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             cache.put(0, arr);
         }
 
-
         for (int i = 0; i < ENTRY_CNT; i++) {
             TestObject[] obj = cache.get(i);
 

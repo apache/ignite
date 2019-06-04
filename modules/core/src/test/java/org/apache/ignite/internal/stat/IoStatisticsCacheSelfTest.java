@@ -102,7 +102,6 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
             .setName(CACHE2_IN_GROUP_NAME)
             .setGroupName(CACHE_GROUP_NAME);
 
-
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()

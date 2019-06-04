@@ -3087,6 +3087,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         private class MvccUpdateRowWithPreloadInfoClosure extends MvccDataRow implements OffheapInvokeClosure {
             /** */
             private CacheDataRow oldRow;
+
             /** */
             private IgniteTree.OperationType op;
 

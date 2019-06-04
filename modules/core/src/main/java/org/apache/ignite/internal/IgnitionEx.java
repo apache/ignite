@@ -587,7 +587,6 @@ public class IgnitionEx {
         }
     }
 
-
     /**
      * Starts grid with given configuration. Note that this method will throw and exception if grid with the name
      * provided in given configuration is already started.

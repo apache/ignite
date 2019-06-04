@@ -1345,7 +1345,6 @@ public class IgniteConfiguration {
         return this;
     }
 
-
     /**
      * Returns {@code true} if peer class loading is enabled, {@code false}
      * otherwise. Default value is {@code false} specified by {@link #DFLT_P2P_ENABLED}.

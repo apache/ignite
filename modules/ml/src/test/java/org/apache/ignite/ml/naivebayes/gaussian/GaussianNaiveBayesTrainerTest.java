@@ -35,15 +35,19 @@ import org.junit.Test;
 public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
+
     /** */
     private static final double LABEL_1 = 1.;
+
     /** */
     private static final double LABEL_2 = 2.;
 
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
+
     /** */
     private static final Map<Integer, double[]> singleLabeldata1 = new HashMap<>();
+
     /** */
     private static final Map<Integer, double[]> singleLabeldata2 = new HashMap<>();
 

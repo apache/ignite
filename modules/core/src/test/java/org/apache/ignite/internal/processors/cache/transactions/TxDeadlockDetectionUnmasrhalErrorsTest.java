@@ -198,8 +198,6 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
         }
     }
 
-
-
     /**
      * @param ignite Ignite.
      * @param name Name.
@@ -214,6 +212,4 @@ public class TxDeadlockDetectionUnmasrhalErrorsTest extends GridCommonAbstractTe
 
         return ignite.getOrCreateCache(ccfg);
     }
-
-
 }
