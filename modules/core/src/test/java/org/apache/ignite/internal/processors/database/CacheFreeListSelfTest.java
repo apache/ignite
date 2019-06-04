@@ -282,10 +282,8 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
                         TestDataRow row = new TestDataRow(keySize, valSize);
 
-                        if (batched) {
-                            assert row.link() == 0;
+                        if (batched)
                             rows.add(row);
-                        }
                         else {
                             list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
@@ -297,7 +295,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
                         }
 
                         if (rows.size() == BATCH_SIZE) {
-                            list.insertDataRows(rows.iterator(), IoStatisticsHolderNoOp.INSTANCE);
+                            list.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
 
                             for (TestDataRow row0 : rows) {
                                 assertTrue(row0.link() != 0L);
