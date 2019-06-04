@@ -168,7 +168,6 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         cfg.setCommunicationSpi(commSpi);
 
-
         return cfg;
     }
 

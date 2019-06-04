@@ -80,7 +80,6 @@ public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
 
         ctx.dr().resetMetrics();
 
-
         super.start();
     }
 

@@ -329,7 +329,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             throw oom;
         }
 
-
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
 
         // Assign page ID according to flags and partition ID.

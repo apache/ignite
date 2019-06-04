@@ -83,7 +83,6 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
             disco.setIpFinder(ipFinder);
 
-
             if (failureDetectionTimeout != -1)
                 cfg.setFailureDetectionTimeout(failureDetectionTimeout);
 

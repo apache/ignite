@@ -503,6 +503,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     * @return Info about of WAL paths.
+     */
+    public SegmentRouter getSegmentRouter() {
+        return segmentRouter;
+    }
+
+    /**
      *
      */
     private void startArchiverAndCompressor() {
@@ -1390,7 +1397,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     IgniteInClosure<FileIO> lsnr = createWalFileListener;
                     if (lsnr != null)
                         lsnr.apply(fileIO);
-
 
                     hnd = fileHandleManager.nextHandle(fileIO, serializer);
 

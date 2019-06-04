@@ -63,6 +63,7 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
     /** Upstream keep binary. */
     private final boolean upstreamKeepBinary;
+
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
      * predicate that passes all upstream entries to dataset.

@@ -229,7 +229,6 @@ public class CommandHandlerParsingTest {
         return res;
     }
 
-
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
 

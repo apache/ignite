@@ -896,7 +896,6 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
             this.cnt = cnt;
 
-
             // For partitioned caches we allow extra event for reads.
             if (expCnt < cnt && (!partitioned || evtType != EVT_CACHE_OBJECT_READ || expCnt + 1 < cnt))
                 onDone(new IgniteCheckedException("Wrong event count [evtName=" + U.gridEventName(evtType) + ", evtType=" +

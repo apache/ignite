@@ -46,13 +46,17 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class PartitionCountersNeighborcastFuture extends GridCacheCompoundIdentityFuture<Void> {
     /** */
     private final IgniteUuid futId = IgniteUuid.randomUuid();
+
     /** */
     @GridToStringExclude
     private boolean trackable = true;
+
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
+
     /** */
     private final IgniteInternalTx tx;
+
     /** */
     private final IgniteLogger log;
 
