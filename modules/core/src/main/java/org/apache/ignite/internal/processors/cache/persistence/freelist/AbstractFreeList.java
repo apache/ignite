@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
@@ -135,7 +136,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final PageHandler<T, Integer> writeRow = new WriteRowHandler(true);
 
     /** Write handler which doesn't put memory page into the free list after an update. */
-    private final PageHandler<T, Integer> writeRowNoPut = new WriteRowHandler(false);
+    private final PageHandler<T, Integer> writeRowKeepPage = new WriteRowHandler(false);
 
     /**
      *
@@ -546,11 +547,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /** {@inheritDoc} */
-    @Override public void insertDataRows(Iterator<T> iter, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        if (!iter.hasNext())
+    @Override public void insertDataRows(Collection<T> rows,
+        IoStatisticsHolder statHolder) throws IgniteCheckedException {
+        if (rows.isEmpty())
             return;
 
         try {
+            Iterator<T> iter = rows.iterator();
+
             T row = iter.next();
 
             int written = 0;
@@ -596,7 +600,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                     assert pageAddr != 0;
 
-                    AbstractDataPageIO io = initIo != null ? initIo : PageIO.getPageIO(pageAddr);
+                    AbstractDataPageIO io = initIo == null ? PageIO.getPageIO(pageAddr) : initIo;
 
                     boolean dirty = false;
 
@@ -604,9 +608,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         int freeSpace;
 
                         // Fill the page up to the end.
-                        do {
+                        while (true) {
                             written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this,
-                                writeRowNoPut, initIo, wal, null, row, written, statHolder);
+                                writeRowKeepPage, initIo, wal, null, row, written, statHolder);
 
                             dirty = true;
 
@@ -614,14 +618,21 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                             freeSpace = io.getFreeSpace(pageAddr);
 
+                            assert freeSpace == 0 || written == COMPLETE;
+
                             if (written != COMPLETE || !iter.hasNext())
                                 break;
 
                             row = iter.next();
 
                             written = 0;
+
+                            int alignedSize = row.size() > MIN_SIZE_FOR_DATA_PAGE ?
+                                row.size() % MIN_SIZE_FOR_DATA_PAGE : row.size();
+
+                            if (freeSpace < alignedSize || alignedSize == 0)
+                                break;
                         }
-                        while (freeSpace != 0 && freeSpace >= row.size() % MIN_SIZE_FOR_DATA_PAGE);
 
                         // Put page into the free list if needed.
                         if (freeSpace > MIN_PAGE_FREE_SPACE) {
@@ -633,7 +644,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
                     }
                     finally {
-                        assert writeRowNoPut.releaseAfterWrite(grpId, pageId, page, pageAddr, row, 0);
+                        // Should always unlock data page after write.
+                        assert writeRowKeepPage.releaseAfterWrite(grpId, pageId, page, pageAddr, row, 0);
 
                         writeUnlock(pageId, page, pageAddr, dirty);
                     }
