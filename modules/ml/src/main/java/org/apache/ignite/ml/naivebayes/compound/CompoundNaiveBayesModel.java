@@ -53,6 +53,9 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** Discrete Bayes model. */
     private DiscreteNaiveBayesModel discreteModel;
 
+    /** */
+    Collection<Integer> discreteFeatureIdsToSkip;
+
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<CompoundNaiveBayesModel, P> exporter, P path) {
         exporter.save(this, path);
@@ -66,12 +69,11 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         }
 
         if (discreteModel != null) {
-            probapilityPowers = sum(probapilityPowers, discreteModel.probabilityPowers(vector));
+            probapilityPowers = sum(probapilityPowers, discreteModel.probabilityPowers(skipFeatures(vector, discreteFeatureIdsToSkip)));
         }
 
         if (gaussianModel != null) {
-            Vector gaussVector = skipFeatures(vector, gaussianFeatureIdsToSkip);
-            probapilityPowers = sum(probapilityPowers, gaussianModel.probabilityPowers(gaussVector));
+            probapilityPowers = sum(probapilityPowers, gaussianModel.probabilityPowers(skipFeatures(vector, gaussianFeatureIdsToSkip)));
         }
 
         int maxLabelIndex = 0;
@@ -147,5 +149,10 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     public CompoundNaiveBayesModel withGaussianFeatureIdsToSkip(Collection<Integer> gaussianFeatureIdsToSkip) {
          this.gaussianFeatureIdsToSkip = gaussianFeatureIdsToSkip;
          return this;
+    }
+
+    public CompoundNaiveBayesModel withDiscreteFeatureIdsToSkip(Collection<Integer> discreteFeatureIdsToSkip) {
+        this.discreteFeatureIdsToSkip = discreteFeatureIdsToSkip;
+        return this;
     }
 }
