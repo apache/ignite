@@ -28,6 +28,7 @@ import java.util.function.IntSupplier;
 import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.counter.DoubleCounter;
@@ -54,9 +55,26 @@ public class MetricRegistryImpl implements MetricRegistry {
     private ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
 
     /**
+     * Logger.
+     */
+    @Nullable private IgniteLogger log;
+
+    /**
      * Metric set creation listeners.
      */
     private final List<Consumer<Metric>> metricCreationLsnrs = new CopyOnWriteArrayList<>();
+
+    /** */
+    public MetricRegistryImpl() {
+        // No-op.
+    }
+
+    /**
+     * @param log Logger.
+     */
+    public MetricRegistryImpl(IgniteLogger log) {
+        this.log = log;
+    }
 
     /** {@inheritDoc} */
     @Override public MetricRegistry withPrefix(String prefix) {
@@ -199,7 +217,7 @@ public class MetricRegistryImpl implements MetricRegistry {
                 lsnr.accept(t);
             }
             catch (Exception e) {
-                e.printStackTrace();
+                log.warning("Metric listener error", e);
             }
         }
     }

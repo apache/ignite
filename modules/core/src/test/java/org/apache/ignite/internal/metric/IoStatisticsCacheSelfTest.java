@@ -255,7 +255,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
         assert statType != null;
 
         MetricRegistry msets =
-            ignite.context().metric().registry().withPrefix(statType.monitoringGroup());
+            ignite.context().metric().registry().withPrefix(statType.metricGroupName());
 
         return msets.getMetrics().stream()
             .filter(m -> m.getName().endsWith("name"))
@@ -299,7 +299,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * @return Logical reads count.
      */
     public static long logicalReads(MetricRegistry mreg, IoStatisticsType type, String id) {
-        MetricRegistry mset = mreg.withPrefix(type.monitoringGroup(), id);
+        MetricRegistry mset = mreg.withPrefix(type.metricGroupName(), id);
 
         if (type == CACHE_GROUP) {
             return ((LongMetric)mset.findMetric(LOGICAL_READS)).value();

@@ -76,7 +76,7 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         this.cacheName = cacheName;
         this.idxName = idxName;
 
-        MetricRegistry mset = mreg.withPrefix(type.monitoringGroup(), cacheName, idxName);
+        MetricRegistry mset = mreg.withPrefix(type.metricGroupName(), cacheName, idxName);
 
         mset.gauge("startTime", null).value(U.currentTimeMillis());
         mset.objectGauge("name", String.class, null).value(cacheName);

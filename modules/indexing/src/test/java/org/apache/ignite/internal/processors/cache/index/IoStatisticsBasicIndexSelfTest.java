@@ -37,7 +37,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsType;
-import org.apache.ignite.internal.processors.metrics.MetricNameUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricRegistry;
@@ -361,7 +360,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         assert statType != null;
 
         MetricRegistry mset =
-            ignite.context().metric().registry().withPrefix(statType.monitoringGroup());
+            ignite.context().metric().registry().withPrefix(statType.metricGroupName());
 
         return mset.getMetrics().stream().map(m -> {
                 switch (statType) {
@@ -396,7 +395,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         assert statType != null;
 
         MetricRegistry msets =
-            ignite.context().metric().registry().withPrefix(statType.monitoringGroup());
+            ignite.context().metric().registry().withPrefix(statType.metricGroupName());
 
         return msets.getMetrics().stream()
             .filter(m -> m.getName().endsWith("name"))

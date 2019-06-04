@@ -77,14 +77,14 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      */
     @Test
     public void testIndexBasic() throws Exception {
-        resetMetric(ignite, HASH_INDEX.monitoringGroup());
+        resetMetric(ignite, HASH_INDEX.metricGroupName());
 
         int cnt = 100;
 
         populateCache(cnt);
 
         MetricRegistry mreg = ignite.context().metric().registry()
-            .withPrefix(HASH_INDEX.monitoringGroup(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
+            .withPrefix(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
 
         long idxLeafLogicalCnt = ((LongMetric)mreg.findMetric(LOGICAL_READS_LEAF)).value();
 
@@ -116,12 +116,12 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         clearCache(cnt);
 
-        resetMetric(ignite, CACHE_GROUP.monitoringGroup());
+        resetMetric(ignite, CACHE_GROUP.metricGroupName());
 
         populateCache(cnt);
 
         MetricRegistry mreg = ignite.context().metric().registry()
-            .withPrefix(CACHE_GROUP.monitoringGroup(), DEFAULT_CACHE_NAME);
+            .withPrefix(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME);
 
         long cacheLogicalReadsCnt = ((LongMetric)mreg.findMetric(LOGICAL_READS)).value();
 
@@ -155,7 +155,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      */
     public static void resetAllIoMetrics(IgniteEx ignite) throws MalformedObjectNameException {
         for (IoStatisticsType type : IoStatisticsType.values())
-            resetMetric(ignite, type.monitoringGroup());
+            resetMetric(ignite, type.metricGroupName());
     }
 
     /**

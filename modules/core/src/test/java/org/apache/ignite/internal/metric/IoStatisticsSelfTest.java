@@ -80,12 +80,12 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         MetricRegistry mreg = ign.context().metric().registry();
 
-        checkEmptyStat(mreg.withPrefix(CACHE_GROUP.monitoringGroup()),
+        checkEmptyStat(mreg.withPrefix(CACHE_GROUP.metricGroupName()),
             DEFAULT_CACHE_NAME,
             null,
             CACHE_GROUP);
 
-        checkEmptyStat(mreg.withPrefix(HASH_INDEX.monitoringGroup()),
+        checkEmptyStat(mreg.withPrefix(HASH_INDEX.metricGroupName()),
             DEFAULT_CACHE_NAME,
             HASH_PK_IDX_NAME,
             HASH_INDEX);
@@ -242,7 +242,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     public Long physicalReads(MetricRegistry mreg, IoStatisticsType statType, String name, String subName) {
         String fullName = subName == null ? name : metricName(name, subName);
 
-        MetricRegistry mset = mreg.withPrefix(statType.monitoringGroup(), fullName);
+        MetricRegistry mset = mreg.withPrefix(statType.metricGroupName(), fullName);
 
         if (mset == null)
             return null;

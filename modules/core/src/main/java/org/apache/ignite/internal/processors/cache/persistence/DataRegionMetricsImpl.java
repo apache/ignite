@@ -95,9 +95,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
 
-    /**
-     * For test purposes only.
-     */
+    /** For test purposes only. */
     private static final DataRegionMetricsProvider NO_OP_METRICS = new DataRegionMetricsProvider() {
         /** {@inheritDoc} */
         @Override public long partiallyFilledPagesFreeSpace() {
@@ -120,6 +118,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /**
      * @param memPlcCfg DataRegionConfiguration.
      * @param mreg Metric registry.
+     * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
         MetricRegistry mreg,

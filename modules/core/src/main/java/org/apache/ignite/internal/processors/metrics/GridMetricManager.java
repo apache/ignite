@@ -115,7 +115,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public GridMetricManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getMetricExporterSpi());
 
-        mreg = new MetricRegistryImpl();
+        mreg = new MetricRegistryImpl(ctx.log(MetricRegistryImpl.class));
     }
 
     /** {@inheritDoc} */

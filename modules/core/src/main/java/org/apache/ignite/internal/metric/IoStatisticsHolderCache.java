@@ -18,8 +18,6 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,7 +57,7 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         this.cacheName = cacheName;
         this.grpId = grpId;
 
-        MetricRegistry mset = mreg.withPrefix(CACHE_GROUP.monitoringGroup(), cacheName);
+        MetricRegistry mset = mreg.withPrefix(CACHE_GROUP.metricGroupName(), cacheName);
 
         mset.gauge("startTime", null).value(U.currentTimeMillis());
         mset.objectGauge("name", String.class, null).value(cacheName);
