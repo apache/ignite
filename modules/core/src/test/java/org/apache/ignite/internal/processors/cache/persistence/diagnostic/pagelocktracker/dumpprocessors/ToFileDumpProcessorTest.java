@@ -60,7 +60,7 @@ public class ToFileDumpProcessorTest extends TestCase {
 
     /** */
     @Test
-    public void toFileDump() throws Exception {
+    public void testToFileDump() throws Exception {
         String igHome = U.defaultWorkDirectory();
 
         System.out.println("IGNITE_HOME:" + igHome);
