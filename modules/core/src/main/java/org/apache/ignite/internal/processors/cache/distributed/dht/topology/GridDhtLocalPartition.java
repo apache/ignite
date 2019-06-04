@@ -26,7 +26,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -137,10 +136,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Create time. */
     @GridToStringExclude
     private final long createTime = U.currentTimeMillis();
-
-    /** Lock. */
-    @GridToStringExclude
-    private final ReentrantLock lock = new ReentrantLock();
 
     /** */
     @GridToStringExclude
@@ -379,9 +374,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         // Make sure to remove exactly this entry.
         removeEntry(entry);
-
-        // Attempt to evict.
-        tryContinueClearing();
     }
 
     /**
@@ -449,21 +441,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Locks partition.
-     */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
-    public void lock() {
-        lock.lock();
-    }
-
-    /**
-     * Unlocks partition.
-     */
-    public void unlock() {
-        lock.unlock();
-    }
-
-    /**
      * Reserves a partition so it won't be cleared or evicted.
      *
      * @return {@code True} if reserved.
@@ -518,14 +495,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             // Decrement reservations.
             if (this.state.compareAndSet(state, newState)) {
-                // If no more reservations try to continue delayed renting or clearing process.
-                if (reservations == 0) {
-                    if (delayedRenting)
-                        rent(true);
-                    else
-                        tryContinueClearing();
-                }
+                // If no more reservations try to continue delayed renting.
+                if (reservations == 0 && delayedRenting)
+                    rent(true);
 
+                // Partition could be only reserved in OWNING state so no further actions
+                // are required.
                 break;
             }
         }
@@ -747,7 +722,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         clear = true;
 
-        clearAsync0(false);
+        IgniteInternalFuture<Boolean> rebFut = grp.preloader().rebalanceFuture();
+
+        // Make sure current rebalance future finishes before clearing
+        // to avoid clearing currently rebalancing partition.
+        if (state0 == MOVING && !rebFut.isDone())
+            rebFut.listen(fut -> clearAsync0(false));
+        else
+            clearAsync0(false);
     }
 
     /**
@@ -908,23 +890,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * At the end of clearing method completes {@code clearFuture}.
      *
      * @param evictionCtx Eviction context.
-     * @param startVer Topology version when clearing is started.
      *
      * @return {@code false} if clearing is not started due to existing reservations.
      * @throws NodeStoppingException If node is stopping.
      */
-    public boolean tryClear(EvictionContext evictionCtx, AffinityTopologyVersion startVer) throws NodeStoppingException {
+    public boolean tryClear(EvictionContext evictionCtx) throws NodeStoppingException {
         if (clearFuture.isDone())
             return true;
-
-        // Stop clearing if outdated topology version.
-        AffinityTopologyVersion topVer = group().affinity().lastVersion();
-
-        if (!startVer.equals(AffinityTopologyVersion.NONE) && topVer.compareTo(startVer) > 0 && state() == MOVING) {
-            clearFuture.onDone();
-
-            return true;
-        }
 
         long state = this.state.get();
 
@@ -973,7 +945,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Tries to continue delayed partition clearing.
      */
     public void onUnlock() {
-        tryContinueClearing();
+        // No-op.
     }
 
     /**
@@ -1460,6 +1432,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public GridLongList finalizeUpdateCounters() {
         return store.finalizeUpdateCounters();
+    }
+
+    /**
+     * @param last {@code True} is last batch for partition.
+     */
+    public void beforeApplyBatch(boolean last) {
+        // No-op.
     }
 
     /**

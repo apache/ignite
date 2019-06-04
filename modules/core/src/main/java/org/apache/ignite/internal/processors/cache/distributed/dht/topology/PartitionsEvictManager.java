@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -125,7 +124,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             if (!grpEvictionCtx.partIds.add(part.id()))
                 return;
 
-            bucket = evictionQueue.offer(new PartitionEvictionTask(part, grpEvictionCtx, grp.affinity().lastVersion()));
+            bucket = evictionQueue.offer(new PartitionEvictionTask(part, grpEvictionCtx));
         }
 
         grpEvictionCtx.totalTasks.incrementAndGet();
@@ -390,22 +389,16 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /** */
         private final GridFutureAdapter<?> finishFut = new GridFutureAdapter<>();
 
-        /** */
-        private final AffinityTopologyVersion startVer;
-
         /**
          * @param part Partition.
          * @param grpEvictionCtx Eviction context.
-         * @param startVer Topology version when clearing was started.
          */
         private PartitionEvictionTask(
             GridDhtLocalPartition part,
-            GroupEvictionContext grpEvictionCtx,
-            AffinityTopologyVersion startVer
+            GroupEvictionContext grpEvictionCtx
         ) {
             this.part = part;
             this.grpEvictionCtx = grpEvictionCtx;
-            this.startVer = startVer;
 
             size = part.fullSize();
         }
@@ -419,7 +412,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             }
 
             try {
-                boolean success = part.tryClear(grpEvictionCtx, startVer);
+                boolean success = part.tryClear(grpEvictionCtx);
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
