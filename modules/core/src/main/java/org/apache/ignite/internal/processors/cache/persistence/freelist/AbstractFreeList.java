@@ -504,7 +504,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 long pageId = 0L;
 
                 if (remaining < MIN_SIZE_FOR_DATA_PAGE) {
-                    for (int b = bucket(remaining, false) + 1; b < BUCKETS - 1; b++) {
+                    for (int b = bucket(remaining, false) + 1; b < REUSE_BUCKET; b++) {
                         pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
                         if (pageId != 0L)
@@ -555,13 +555,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             int written = 0;
 
-            while (iter.hasNext() || written != COMPLETE) {
-                long pageId = 0L;
-
+            do {
                 int remaining = row.size() - written;
 
+                long pageId = 0L;
+
                 if (remaining > 0 && remaining < MIN_SIZE_FOR_DATA_PAGE) {
-                    // Search for the most free page with enough space.
                     for (int b = bucket(remaining, false) + 1; b < REUSE_BUCKET; b++) {
                         pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
@@ -615,8 +614,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                             freeSpace = io.getFreeSpace(pageAddr);
 
-                            assert freeSpace == 0 || written == COMPLETE;
-
                             if (written != COMPLETE || !iter.hasNext())
                                 break;
 
@@ -624,7 +621,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                             written = 0;
                         }
-                        while (freeSpace > 0 && (freeSpace >= row.size() || row.size() > MIN_SIZE_FOR_DATA_PAGE));
+                        while (freeSpace != 0 && freeSpace >= row.size() % MIN_SIZE_FOR_DATA_PAGE);
 
                         // Put page into the free list if needed.
                         if (freeSpace > MIN_PAGE_FREE_SPACE) {
@@ -644,7 +641,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 finally {
                     releasePage(pageId, page);
                 }
-            }
+            } while (written != COMPLETE || iter.hasNext());
         }
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e);
@@ -652,6 +649,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
+     * @param row Row.
      * @param reusedPageId Reused page id.
      * @param statHolder Statistics holder to track IO operations.
      * @return Prepared page id.
