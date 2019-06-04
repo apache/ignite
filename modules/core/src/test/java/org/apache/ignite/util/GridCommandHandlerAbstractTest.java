@@ -23,7 +23,10 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -183,7 +186,13 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
 
-        return hnd.execute(args);
+        int exitCode = hnd.execute(args);
+
+        // Flush all Logger handlers to make log data available to test.
+        Logger logger = U.field(hnd, "logger");
+        Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
+
+        return exitCode;
     }
 
     /**
