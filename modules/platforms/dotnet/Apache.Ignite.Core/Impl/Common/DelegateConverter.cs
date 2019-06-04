@@ -50,6 +50,7 @@ namespace Apache.Ignite.Core.Impl.Common
             var targetParam = Expression.Parameter(typeof(object));
             var targetParamConverted = Expression.Convert(targetParam, targetType);
 
+            Debug.Assert(method != null, "method != null");
             var callExpr = Expression.Call(targetParamConverted, method);
             var convertResultExpr = Expression.Convert(callExpr, typeof(object));
 
