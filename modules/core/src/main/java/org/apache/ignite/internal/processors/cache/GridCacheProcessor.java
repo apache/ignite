@@ -113,7 +113,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycle
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.backup.GridBackupPageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManagerImpl;
 import org.apache.ignite.internal.processors.cache.persistence.backup.IgniteBackupPageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
@@ -3408,7 +3408,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             storeBackupMgr = ctx.plugins().createComponent(IgniteBackupPageStoreManager.class);
 
             if (storeBackupMgr == null)
-                storeBackupMgr = new GridBackupPageStoreManager(ctx);
+                storeBackupMgr = new IgniteBackupPageStoreManagerImpl(ctx);
         }
         else {
             if (CU.isPersistenceEnabled(ctx.config()) && ctx.clientNode()) {

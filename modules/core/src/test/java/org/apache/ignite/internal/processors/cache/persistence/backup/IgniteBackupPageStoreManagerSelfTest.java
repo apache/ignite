@@ -270,89 +270,94 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
 
         cctx1.storeBackup()
             .backup(
-                1,
+                "testbackup",
                 grpsBackup,
-                new BackupProcessSupplier() {
+                new BackupInClosure() {
                     /** Last seen handled partition id file. */
                     private File lastSavedPartId;
 
-                    @Override public void supplyPartition(
+                    @Override public void accept(
                         GroupPartitionId grpPartId,
-                        File file,
-                        long size
-                    ) throws IgniteCheckedException {
-                        try {
-                            slowCopy.await();
-
-                            lastSavedPartId = copy(file, 0, size, mergeCacheDir);
-                        }
-                        catch (InterruptedException e) {
-                            throw new IgniteCheckedException(e);
-                        }
-                    }
-
-                    @Override public void supplyDelta(
-                        GroupPartitionId grpPartId,
+                        PageStoreType type,
                         File file,
                         long offset,
                         long size
                     ) throws IgniteCheckedException {
-                        // Nothing to handle
-                        if (!file.exists())
-                            return;
+                        switch (type) {
+                            case MAIN:
+                                try {
+                                    slowCopy.await();
 
-                        // Will perform a copy delta file page by page simultaneously with merge pages operation.
-                        try (SeekableByteChannel src = Files.newByteChannel(file.toPath())) {
-                            src.position(offset);
+                                    lastSavedPartId = copy(file, 0, size, mergeCacheDir);
+                                }
+                                catch (InterruptedException e) {
+                                    throw new IgniteCheckedException(e);
+                                }
 
-                            pageBuff.clear();
+                                break;
 
-                            PageStore pageStore = pageStoreFactory.createPageStore(FLAG_DATA,
-                                lastSavedPartId,
-                                AllocatedPageTracker.NO_OP,
-                                PageStoreWriteHandler.NO_OP);
+                            case TEMP:
+                                // Nothing to handle
+                                if (!file.exists())
+                                    return;
 
-                            pageStore.init();
+                                // Will perform a copy delta file page by page simultaneously with merge pages operation.
+                                try (SeekableByteChannel src = Files.newByteChannel(file.toPath())) {
+                                    src.position(offset);
 
-                            long readed;
-                            long position = offset;
+                                    pageBuff.clear();
 
-                            while ((readed = src.read(pageBuff)) > 0 && position < size) {
-                                position += readed;
+                                    PageStore pageStore = pageStoreFactory.createPageStore(FLAG_DATA,
+                                        lastSavedPartId,
+                                        AllocatedPageTracker.NO_OP,
+                                        PageStoreWriteHandler.NO_OP);
 
-                                pageBuff.flip();
+                                    pageStore.init();
 
-                                long pageId = PageIO.getPageId(pageBuff);
-                                long pageOffset = pageStore.pageOffset(pageId);
-                                int crc32 = FastCrc.calcCrc(new CRC32(), pageBuff, pageBuff.limit());
-                                int crc = PageIO.getCrc(pageBuff);
+                                    long readed;
+                                    long position = offset;
 
-                                if (log.isDebugEnabled())
-                                    log.debug("handle partition delta [pageId=" + pageId +
-                                        ", pageOffset=" + pageOffset +
-                                        ", partSize=" + pageStore.size() +
-                                        ", skipped=" + (pageOffset >= pageStore.size()) +
-                                        ", position=" + position +
-                                        ", size=" + size +
-                                        ", crcBuff=" + crc32 +
-                                        ", crcPage=" + crc +
-                                        ", part=" + file.getName() + ']');
+                                    while ((readed = src.read(pageBuff)) > 0 && position < size) {
+                                        position += readed;
 
-                                pageBuff.rewind();
+                                        pageBuff.flip();
 
-                                // Other pages are not related to handled partition file and must be ignored.
-                                if (pageOffset < pageStore.size())
-                                    pageStore.write(pageId, pageBuff, 0, false);
+                                        long pageId = PageIO.getPageId(pageBuff);
+                                        long pageOffset = pageStore.pageOffset(pageId);
+                                        int crc32 = FastCrc.calcCrc(new CRC32(), pageBuff, pageBuff.limit());
+                                        int crc = PageIO.getCrc(pageBuff);
 
-                                pageBuff.clear();
-                            }
-                        }
-                        catch (IOException e) {
-                            throw new IgniteCheckedException(e);
+                                        if (log.isDebugEnabled())
+                                            log.debug("handle partition delta [pageId=" + pageId +
+                                                ", pageOffset=" + pageOffset +
+                                                ", partSize=" + pageStore.size() +
+                                                ", skipped=" + (pageOffset >= pageStore.size()) +
+                                                ", position=" + position +
+                                                ", size=" + size +
+                                                ", crcBuff=" + crc32 +
+                                                ", crcPage=" + crc +
+                                                ", part=" + file.getName() + ']');
+
+                                        pageBuff.rewind();
+
+                                        // Other pages are not related to handled partition file and must be ignored.
+                                        if (pageOffset < pageStore.size())
+                                            pageStore.write(pageId, pageBuff, 0, false);
+
+                                        pageBuff.clear();
+                                    }
+                                }
+                                catch (IOException e) {
+                                    throw new IgniteCheckedException(e);
+                                }
+
+                                break;
+
+                                default:
+                                    throw new IgniteException("Type is unknown: " + type);
                         }
                     }
-                },
-                new GridFinishedFuture<>());
+                });
 
         partsCRCSnapshots.add(calculateCRC32Partitions(mergeCacheDir));
 

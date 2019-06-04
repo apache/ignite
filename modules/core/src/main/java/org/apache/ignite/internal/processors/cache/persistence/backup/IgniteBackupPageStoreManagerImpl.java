@@ -51,6 +51,8 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.PagesAl
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperationAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -63,7 +65,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 
 /** */
-public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
+public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdapter
     implements IgniteBackupPageStoreManager {
     /** */
     public static final String DELTA_SUFFIX = ".delta";
@@ -72,7 +74,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
 
     /** */
-    public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [id=%s]";
+    public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [name=%s]";
 
     /** Factory to working with {@link TemporaryStore} as file storage. */
     private final FileIOFactory ioFactory;
@@ -102,7 +104,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     private ThreadLocal<byte[]> threadTempArr;
 
     /** */
-    public GridBackupPageStoreManager(GridKernalContext ctx) throws IgniteCheckedException {
+    public IgniteBackupPageStoreManagerImpl(GridKernalContext ctx) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
 
         ioFactory = new RandomAccessFileIOFactory();
@@ -175,24 +177,21 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void backup(
-        long idx,
-        Map<Integer, Set<Integer>> grpsBackup,
-        BackupProcessSupplier task,
-        IgniteInternalFuture<Boolean> fut
-    ) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<Boolean> backup(
+        String name,
+        Map<Integer, Set<Integer>> parts,
+        BackupInClosure backupClsr
+    ) {
         if (!(cctx.database() instanceof GridCacheDatabaseSharedManager))
-            return;
+            return new GridFinishedFuture<>();
 
+        final GridFutureAdapter<Boolean> doneFut = new GridFutureAdapter<>();
         final NavigableSet<GroupPartitionId> grpPartIdSet = new TreeSet<>();
 
-        for (Map.Entry<Integer, Set<Integer>> backupEntry : grpsBackup.entrySet()) {
+        for (Map.Entry<Integer, Set<Integer>> backupEntry : parts.entrySet()) {
             for (Integer partId : backupEntry.getValue())
                 grpPartIdSet.add(new GroupPartitionId(backupEntry.getKey(), partId));
         }
-
-        // Init stores if not created yet.
-        initTemporaryStores(grpPartIdSet);
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
@@ -237,7 +236,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
                         allocationMap.prepareForSnapshot();
 
-                        backupCtx.idx = idx;
+                        backupCtx.name = name;
 
                         for (GroupPartitionId key : grpPartIdSet) {
                             PagesAllocationRange allocRange = allocationMap.get(key);
@@ -259,18 +258,18 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
         };
 
         try {
-            if (fut.isCancelled())
-                return;
+            // Init stores if not created yet.
+            initTemporaryStores(grpPartIdSet);
 
             dbMgr.addCheckpointListener(dbLsnr);
 
             CheckpointFuture cpFut = dbMgr.wakeupForCheckpointOperation(
                 new SnapshotOperationAdapter() {
                     @Override public Set<Integer> cacheGroupIds() {
-                        return new HashSet<>(grpsBackup.keySet());
+                        return new HashSet<>(parts.keySet());
                     }
                 },
-                String.format(BACKUP_CP_REASON, idx)
+                String.format(BACKUP_CP_REASON, name)
             );
 
             A.notNull(cpFut, "Checkpoint thread is not running.");
@@ -281,7 +280,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
             cpFut.finishFuture().get();
 
-            U.log(log, "Start backup operation [grps=" + grpsBackup + ']');
+            U.log(log, "Start backup operation [grps=" + parts + ']');
 
             // Use sync mode to execute provided task over partitons and corresponding deltas.
             for (GroupPartitionId grpPartId : grpPartIdSet) {
@@ -299,11 +298,10 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
 
                 final long partSize = backupCtx.partAllocatedPages.get(grpPartId) * pageSize + store.headerSize();
 
-                if (fut.isCancelled())
-                    return;
-
-                task.supplyPartition(grpPartId,
+                backupClsr.accept(grpPartId,
+                    BackupInClosure.PageStoreType.MAIN,
                     resolvePartitionFileCfg(grpCfg, grpPartId.getPartitionId()),
+                    0,
                     partSize);
 
                 // Stop page delta tracking for particular pair id.
@@ -317,10 +315,8 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 final int deltaOffset = offsets.get(grpPartId);
                 final long deltaSize = backupStores.get(grpPartId).writtenPagesCount() * pageSize;
 
-                if (fut.isCancelled())
-                    return;
-
-                task.supplyDelta(grpPartId,
+                backupClsr.accept(grpPartId,
+                    BackupInClosure.PageStoreType.TEMP,
                     resolvePartitionDeltaFileCfg(grpCfg, grpPartId.getPartitionId()),
                     deltaOffset,
                     deltaSize);
@@ -331,6 +327,8 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                 if (log.isDebugEnabled())
                     log.debug("Partition delta handled successfully [pairId" + grpPartId + ']');
             }
+
+            doneFut.onDone(true);
         }
         catch (Exception e) {
             U.error(log, "The backup process finished with an error", e);
@@ -342,13 +340,13 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
                     U.closeQuiet(backupStores.get(key));
             }
 
-            fut.cancel();
-
-            throw new IgniteCheckedException(e);
+            doneFut.onDone(e);
         }
         finally {
             dbMgr.removeCheckpointListener(dbLsnr);
         }
+
+        return doneFut;
     }
 
     /** {@inheritDoc} */
@@ -417,8 +415,11 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
         return sum == 0;
     }
 
-    /** {@inheritDoc} */
-    @Override public void initTemporaryStores(Set<GroupPartitionId> grpPartIdSet) throws IgniteCheckedException {
+    /**
+     * @param grpPartIdSet Collection of pairs cache group and partition ids.
+     * @throws IgniteCheckedException If fails.
+     */
+    public void initTemporaryStores(Set<GroupPartitionId> grpPartIdSet) throws IgniteCheckedException {
         U.log(log, "Resolve temporary directories: " + grpPartIdSet);
 
         for (GroupPartitionId grpPartId : grpPartIdSet) {
@@ -451,7 +452,7 @@ public class GridBackupPageStoreManager extends GridCacheSharedManagerAdapter
         private final AtomicBoolean tracked = new AtomicBoolean();
 
         /** Unique identifier of backup process. */
-        private long idx;
+        private String name;
 
         /**
          * The length of partition file sizes up to each cache partiton file.

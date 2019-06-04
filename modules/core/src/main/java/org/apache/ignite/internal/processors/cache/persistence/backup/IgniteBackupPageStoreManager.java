@@ -29,20 +29,16 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 /** */
 public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
     /**
-     * Take backup of specified cache group partition files and syncronously wait to its completion.
-     *
-     * @param idx Unique process identifier.
-     * @param grpsBackup Backing up cache groups and corresponding partitions.
-     * @param hndlr Handler for processing partitions and corresponding partition deltas.
-     * @param fut A future of process flow control.
-     * @throws IgniteCheckedException If fails.
+     * @param name The unique backup name.
+     * @param parts Collection of pairs group and appropratate cache partition to be backuped.
+     * @param backupClsr Partition backup handling closure.
+     * @return Future will be finished when backup ends.
      */
-    public void backup(
-        long idx,
-        Map<Integer, Set<Integer>> grpsBackup,
-        BackupProcessSupplier hndlr,
-        IgniteInternalFuture<Boolean> fut
-    ) throws IgniteCheckedException;
+    public IgniteInternalFuture<Boolean> backup(
+        String name,
+        Map<Integer, Set<Integer>> parts,
+        BackupInClosure backupClsr
+    );
 
     /**
      * @param pairId Cache group, partition identifiers pair.
@@ -50,10 +46,4 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
      * @param pageId Tracked page id.
      */
     public void handleWritePageStore(GroupPartitionId pairId, PageStore store, long pageId);
-
-    /**
-     * @param grpPartIdSet Collection of pairs cache group and partition ids.
-     * @throws IgniteCheckedException If fails.
-     */
-    public void initTemporaryStores(Set<GroupPartitionId> grpPartIdSet) throws IgniteCheckedException;
 }
