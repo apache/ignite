@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.Arrays;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.TouchedExpiryPolicy;
 import org.apache.ignite.IgniteCache;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -49,7 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Tests for partitioned cache automatic eviction.
  */
-@WithSystemProperty(key="IGNITE_UNWIND_THROTTLING_TIMEOUT", value="1")
+@WithSystemProperty(key="IGNITE_UNWIND_THROTTLING_TIMEOUT", value="5")
 public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 2;
@@ -179,11 +179,10 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         Affinity<String> aff = dht0.affinity();
 
-        TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 19));
-
+        TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 37));
 
         for (int kv = 0; kv < KEY_CNT; kv++) {
-            Thread.sleep(10);
+            Thread.sleep(40);
 
             String key = String.valueOf(kv);
 
@@ -206,8 +205,13 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         boolean[] seen = {false, false, false, false};
 
-        assertTrue(GridTestUtils.waitForCondition(() -> {
+        long started = System.currentTimeMillis();
+
+        for (int i = 0; i < 1000; i++) {
             long dht0Keys = 0, dht1Keys = 0;
+
+            seen[2] |= dht0.size() == EVICT_CACHE_SIZE;
+            seen[3] |= dht1.size() == EVICT_CACHE_SIZE;
 
             info("Printing keys in dht0...");
 
@@ -223,11 +227,12 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
             seen[0] |= dht0Keys == EVICT_CACHE_SIZE;
             seen[1] |= dht1Keys == EVICT_CACHE_SIZE;
-            seen[2] |= dht0.size() == EVICT_CACHE_SIZE;
-            seen[3] |= dht1.size() == EVICT_CACHE_SIZE;
 
-            return seen[0] && seen[1] && seen[2] && seen[3];
-        }, 30));
+            if (seen[0] && seen[1] && seen[2] && seen[3] || System.currentTimeMillis() - started > 100)
+                break;
+        }
+
+        assertTrue(Arrays.toString(seen), seen[0] && seen[1] && seen[2] && seen[3]);
 
         assertEquals(0, near(jcache(0)).nearSize());
         assertEquals(0, near(jcache(1)).nearSize());
