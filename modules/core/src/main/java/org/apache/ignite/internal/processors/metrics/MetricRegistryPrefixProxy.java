@@ -30,6 +30,7 @@ import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.counter.DoubleCounter;
 import org.apache.ignite.spi.metric.counter.HitRateCounter;
 import org.apache.ignite.spi.metric.counter.IntCounter;
+import org.apache.ignite.spi.metric.counter.LongAdderCounter;
 import org.apache.ignite.spi.metric.counter.LongCounter;
 import org.apache.ignite.spi.metric.gauge.BooleanGauge;
 import org.apache.ignite.spi.metric.gauge.DoubleGauge;
@@ -43,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
 
 /**
- *
+ * Proxy registry that adds {@code prefix} to all metric names on each method call.
  */
 public class MetricRegistryPrefixProxy implements MetricRegistry {
     /**
@@ -140,6 +141,11 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
     /** {@inheritDoc} */
     @Override public LongCounter counter(String name, @Nullable String description) {
         return reg.counter(fullName(name), description);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LongAdderCounter longAdderCounter(String name, @Nullable String description) {
+        return reg.longAdderCounter(fullName(name), description);
     }
 
     /** {@inheritDoc} */

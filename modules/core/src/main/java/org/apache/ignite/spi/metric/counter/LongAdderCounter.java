@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.metric.counter;
 
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.processors.metrics.AbstractMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
@@ -25,23 +25,18 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Long counter implementation.
  */
-public class LongCounter extends AbstractMetric implements LongMetric, Counter {
-    /**
-     * Field updater.
-     */
-    private static AtomicLongFieldUpdater<LongCounter> updater =
-        AtomicLongFieldUpdater.newUpdater(LongCounter.class, "val");
+public class LongAdderCounter extends AbstractMetric implements LongMetric, Counter {
 
     /**
      * Field value.
      */
-    private volatile long val;
+    private volatile LongAdder val = new LongAdder();
 
     /**
      * @param name Name.
      * @param descr Description.
      */
-    public LongCounter(String name, @Nullable String descr) {
+    public LongAdderCounter(String name, @Nullable String descr) {
         super(name, descr);
     }
 
@@ -51,7 +46,7 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
      * @param x Value to be added.
      */
     public void add(long x) {
-        updater.getAndAdd(this, x);
+        val.add(x);
     }
 
     /**
@@ -70,24 +65,11 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        updater.set(this, 0);
+        val = new LongAdder();
     }
 
     /** {@inheritDoc} */
     @Override public long value() {
-        return val;
-    }
-
-    /**
-     * Atomically sets the value to the given updated value
-     * if the current value {@code ==} the expected value.
-     *
-     * @param expect The expected value.
-     * @param update The new value.
-     * @return {@code true} if successful. False return indicates that
-     * the actual value was not equal to the expected value.
-     */
-    public boolean compareAndSet(long expect, long update) {
-        return updater.compareAndSet(this, expect, update);
+        return val.longValue();
     }
 }

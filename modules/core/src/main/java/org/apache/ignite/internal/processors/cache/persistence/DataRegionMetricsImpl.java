@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.metrics.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.counter.HitRateCounter;
+import org.apache.ignite.spi.metric.counter.LongAdderCounter;
 import org.apache.ignite.spi.metric.counter.LongCounter;
 
 /**
@@ -37,7 +38,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     private final DataRegionMetricsProvider dataRegionMetricsProvider;
 
     /** */
-    private final LongCounter totalAllocatedPages;
+    private final LongAdderCounter totalAllocatedPages;
 
     /** */
     private final ConcurrentMap<Integer, GroupAllocationTracker> grpAllocationTrackers = new ConcurrentHashMap<>();
@@ -45,19 +46,19 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
      */
-    private final LongCounter largeEntriesPages;
+    private final LongAdderCounter largeEntriesPages;
 
     /** Counter for number of dirty pages. */
-    private final LongCounter dirtyPages;
+    private final LongAdderCounter dirtyPages;
 
     /** */
-    private final LongCounter readPages;
+    private final LongAdderCounter readPages;
 
     /** */
-    private final LongCounter writtenPages;
+    private final LongAdderCounter writtenPages;
 
     /** */
-    private final LongCounter replacedPages;
+    private final LongAdderCounter replacedPages;
 
     /** */
     private final LongCounter offHeapSize;
@@ -136,7 +137,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         MetricRegistry mset = mreg.withPrefix("io.dataregion", memPlcCfg.getName());
 
-        totalAllocatedPages = mset.counter("TotalAllocatedPages",
+        totalAllocatedPages = mset.longAdderCounter("TotalAllocatedPages",
             "Total number of allocated pages.");
 
         allocRate = mset.hitRateCounter("AllocationRate",
@@ -159,19 +160,19 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             60_000,
             5);
 
-        largeEntriesPages = mset.counter("LargeEntriesPagesCount",
+        largeEntriesPages = mset.longAdderCounter("LargeEntriesPagesCount",
             "Count of pages that fully ocupied by large entries that go beyond page size");
 
-        dirtyPages = mset.counter("DirtyPages",
+        dirtyPages = mset.longAdderCounter("DirtyPages",
             "Number of pages in memory not yet synchronized with persistent storage.");
 
-        readPages = mset.counter("PagesRead",
+        readPages = mset.longAdderCounter("PagesRead",
             "Number of pages read from last restart.");
 
-        writtenPages = mset.counter("PagesWritten",
+        writtenPages = mset.longAdderCounter("PagesWritten",
             "Number of pages written from last restart.");
 
-        replacedPages = mset.counter("PagesReplaced",
+        replacedPages = mset.longAdderCounter("PagesReplaced",
             "Number of pages replaced from last restart.");
 
         offHeapSize = mset.counter("OffHeapSize",
@@ -495,13 +496,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     public void updateEvictionRate() {
         if (metricsEnabled)
             evictRate.increment();
-    }
-
-    /**
-     * @param intervalNum Interval number.
-     */
-    private long subInt(int intervalNum) {
-        return (rateTimeInterval * intervalNum) / subInts;
     }
 
     /**

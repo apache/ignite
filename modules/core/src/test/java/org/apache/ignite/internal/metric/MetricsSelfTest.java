@@ -33,6 +33,7 @@ import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.counter.DoubleCounter;
 import org.apache.ignite.spi.metric.counter.IntCounter;
+import org.apache.ignite.spi.metric.counter.LongAdderCounter;
 import org.apache.ignite.spi.metric.counter.LongCounter;
 import org.apache.ignite.spi.metric.gauge.BooleanGauge;
 import org.apache.ignite.spi.metric.gauge.DoubleGauge;
@@ -83,6 +84,20 @@ public class MetricsSelfTest {
     @Test
     public void testLongCounter() throws Exception {
         LongCounter l = mreg.counter("ltest", "test");
+
+        run(l::increment, 100);
+
+        assertEquals(100*100, l.value());
+
+        l.reset();
+
+        assertEquals(0, l.value());
+    }
+
+    /** */
+    @Test
+    public void testLongAdderCounter() throws Exception {
+        LongAdderCounter l = mreg.longAdderCounter("latest", "test");
 
         run(l::increment, 100);
 

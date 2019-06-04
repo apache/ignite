@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.counter.LongCounter;
+import org.apache.ignite.spi.metric.counter.LongAdderCounter;
 
 /**
  * Index statistics holder to gather statistics related to concrete index.
@@ -44,16 +44,16 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     public static final String PHYSICAL_READS_INNER = "PHYSICAL_READS_INNER";
 
     /** */
-    private final LongCounter logicalReadLeafCtr;
+    private final LongAdderCounter logicalReadLeafCtr;
 
     /** */
-    private final LongCounter logicalReadInnerCtr;
+    private final LongAdderCounter logicalReadInnerCtr;
 
     /** */
-    private final LongCounter physicalReadLeafCtr;
+    private final LongAdderCounter physicalReadLeafCtr;
 
     /** */
-    private final LongCounter physicalReadInnerCtr;
+    private final LongAdderCounter physicalReadInnerCtr;
 
     /** */
     private final String cacheName;
@@ -83,10 +83,10 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         mset.objectGauge("name", String.class, null).value(cacheName);
         mset.objectGauge("indexName", String.class, null).value(idxName);
 
-        logicalReadLeafCtr = mset.counter(LOGICAL_READS_LEAF, null);
-        logicalReadInnerCtr = mset.counter(LOGICAL_READS_INNER, null);
-        physicalReadLeafCtr = mset.counter(PHYSICAL_READS_LEAF, null);
-        physicalReadInnerCtr = mset.counter(PHYSICAL_READS_INNER, null);
+        logicalReadLeafCtr = mset.longAdderCounter(LOGICAL_READS_LEAF, null);
+        logicalReadInnerCtr = mset.longAdderCounter(LOGICAL_READS_INNER, null);
+        physicalReadLeafCtr = mset.longAdderCounter(PHYSICAL_READS_LEAF, null);
+        physicalReadInnerCtr = mset.longAdderCounter(PHYSICAL_READS_INNER, null);
     }
 
     /** {@inheritDoc} */

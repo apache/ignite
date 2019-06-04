@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.counter.LongCounter;
+import org.apache.ignite.spi.metric.counter.LongAdderCounter;
 
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 
@@ -37,10 +37,10 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     public static final String LOGICAL_READS = "LOGICAL_READS";
 
     /** */
-    private final LongCounter logicalReadCtr;
+    private final LongAdderCounter logicalReadCtr;
 
     /** */
-    private final LongCounter physicalReadCtr;
+    private final LongAdderCounter physicalReadCtr;
 
     /** */
     private final String cacheName;
@@ -65,8 +65,8 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         mset.objectGauge("name", String.class, null).value(cacheName);
         mset.intGauge("grpId", null).value(grpId);
 
-        this.logicalReadCtr = mset.counter(LOGICAL_READS, null);
-        this.physicalReadCtr = mset.counter(PHYSICAL_READS, null);
+        this.logicalReadCtr = mset.longAdderCounter(LOGICAL_READS, null);
+        this.physicalReadCtr = mset.longAdderCounter(PHYSICAL_READS, null);
     }
 
     /** {@inheritDoc} */
