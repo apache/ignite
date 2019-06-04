@@ -172,6 +172,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     private static final IgniteProductVersion EXCHANGE_PROTOCOL_2_SINCE = IgniteProductVersion.fromString("2.1.4");
 
+    /** */
+    private static final String EXCHANGE_WORKER_THREAD_NAME = "exchange-worker";
+
     /** Atomic reference for pending partition resend timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
@@ -684,7 +687,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         else if (reconnect)
             reconnectExchangeFut.onDone();
 
-        new IgniteThread(cctx.igniteInstanceName(), "exchange-worker", exchWorker).start();
+        new IgniteThread(cctx.igniteInstanceName(), exchWorker.name(), exchWorker).start();
 
         if (reconnect) {
             if (fut != null) {
@@ -2674,7 +2677,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * Constructor.
          */
         private ExchangeWorker() {
-            super(cctx.igniteInstanceName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log,
+            super(cctx.igniteInstanceName(), EXCHANGE_WORKER_THREAD_NAME, GridCachePartitionExchangeManager.this.log,
                 cctx.kernalContext().workersRegistry());
         }
 
