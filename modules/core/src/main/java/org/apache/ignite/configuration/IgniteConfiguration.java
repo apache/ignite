@@ -2349,7 +2349,7 @@ public class IgniteConfiguration {
     /**
      * Gets fully configured monitoring SPI implementations.
      *
-     * @return Monitoring SPI implementations.
+     * @return Metric exporter SPI implementations.
      */
     public MetricExporterSpi[] getMetricExporterSpi() {
         return metricExporterSpi;
