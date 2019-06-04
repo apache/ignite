@@ -1483,7 +1483,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         /** {@inheritDoc} */
         @Override public void onPageWrite(PageStore store, long pageId) {
-            storeBackup.beforePageWritten(key, store, pageId);
+            storeBackup.beforeStoreWrite(key, store, pageId);
         }
     }
 }

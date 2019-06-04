@@ -44,5 +44,5 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
      * @param store Store to handle operatwion at.
      * @param pageId Tracked page id.
      */
-    public void beforePageWritten(GroupPartitionId pairId, PageStore store, long pageId);
+    public void beforeStoreWrite(GroupPartitionId pairId, PageStore store, long pageId);
 }

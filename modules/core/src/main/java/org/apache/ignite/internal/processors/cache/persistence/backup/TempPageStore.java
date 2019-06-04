@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Backup store of pages for particular cache partition file.
  */
-public interface TempPageStore extends AutoCloseable {
+public interface TempPageStore extends Closeable {
     /**
      * @param pageBuf Page buffer to read into.
      * @throws IgniteCheckedException If failed (IO error occurred).

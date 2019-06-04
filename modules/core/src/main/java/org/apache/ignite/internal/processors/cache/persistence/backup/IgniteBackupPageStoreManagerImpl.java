@@ -201,7 +201,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
             // Init stores if not created yet.
             initTemporaryStores(grpPartIdSet);
 
-            dbMgr.addCheckpointListener(dbLsnr = new BackupCheckpointHandler(bctx, grpPartIdSet));
+            dbMgr.addCheckpointListener(dbLsnr = new BackupCheckpointListener(bctx, grpPartIdSet));
 
             CheckpointFuture cpFut = dbMgr.wakeupForCheckpointOperation(
                 new SnapshotOperationAdapter() {
@@ -286,7 +286,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void beforePageWritten(GroupPartitionId pairId, PageStore store, long pageId) {
+    @Override public void beforeStoreWrite(GroupPartitionId pairId, PageStore store, long pageId) {
         AtomicInteger trackCnt = trackMap.get(pairId);
 
         if (trackCnt == null || trackCnt.get() <= 0)
@@ -382,7 +382,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     /**
      *
      */
-    private class BackupCheckpointHandler implements DbCheckpointListener {
+    private class BackupCheckpointListener implements DbCheckpointListener {
         /** */
         private final BackupContext ctx;
 
@@ -393,7 +393,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
          * @param ctx Backup context handler associate with.
          * @param parts Colleciton of partitions to handle.
          */
-        public BackupCheckpointHandler(
+        public BackupCheckpointListener(
             BackupContext ctx,
             Collection<GroupPartitionId> parts) {
             this.ctx = ctx;

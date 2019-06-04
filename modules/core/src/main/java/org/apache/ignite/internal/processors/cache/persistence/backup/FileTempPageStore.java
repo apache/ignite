@@ -210,7 +210,7 @@ public class FileTempPageStore implements TempPageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() throws IOException {
         lock.writeLock().lock();
 
         try {
