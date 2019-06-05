@@ -1718,7 +1718,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 assert !cctx.mvccEnabled();
 
-                int cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+                int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
                 IoStatisticsHolder statHolder = grp.statisticsHolderData();
 
@@ -1737,11 +1737,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 }
 
                 rowStore().addRows(rows, statHolder);
-
-                if (grp.sharedGroup() && !cctx.group().storeCacheIdInDataPage()) {
-                    for (CacheDataRow row : rows)
-                        ((DataRow)row).cacheId(cctx.cacheId());
-                }
             }
             finally {
                 busyLock.leaveBusy();
