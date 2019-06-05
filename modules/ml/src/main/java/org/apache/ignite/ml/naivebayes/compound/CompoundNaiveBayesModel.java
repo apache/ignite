@@ -46,14 +46,14 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** Gaussian Bayes model. */
     private GaussianNaiveBayesModel gaussianModel;
 
-    /** */
+    /** Feature ids which should be skipped in Gaussian model.  */
     private Collection<Integer> gaussianFeatureIdsToSkip = Collections.emptyList();
 
     /** Discrete Bayes model. */
     private DiscreteNaiveBayesModel discreteModel;
 
-    /** */
-    Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
+    /** Feature ids which should be skipped in Discrete model.  */
+    private Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<CompoundNaiveBayesModel, P> exporter, P path) {
@@ -118,6 +118,18 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return this;
     }
 
+    /** */
+    public CompoundNaiveBayesModel withGaussianFeatureIdsToSkip(Collection<Integer> gaussianFeatureIdsToSkip) {
+        this.gaussianFeatureIdsToSkip = gaussianFeatureIdsToSkip;
+        return this;
+    }
+
+    /** */
+    public CompoundNaiveBayesModel withDiscreteFeatureIdsToSkip(Collection<Integer> discreteFeatureIdsToSkip) {
+        this.discreteFeatureIdsToSkip = discreteFeatureIdsToSkip;
+        return this;
+    }
+
     /** Returns index by index sum of two arrays. */
     private static double[] sum(double[] arr1, double[] arr2) {
         assert arr1.length == arr2.length;
@@ -130,28 +142,18 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         return result;
     }
 
+    /** Returns a new (shorter) vector without features provided in {@param featureIdsToSkip}. */
     private static Vector skipFeatures(Vector vector, Collection<Integer> featureIdsToSkip) {
-        final int size = vector.size();
-        int newSize = size - featureIdsToSkip.size();
-
+        int newSize = vector.size() - featureIdsToSkip.size();
         double[] newFeaturesValues = new double[newSize];
+
         int index = 0;
-        for (int j = 0; j < newSize; j++) {
+        for (int j = 0; j < vector.size(); j++) {
             if(featureIdsToSkip.contains(j)) continue;
 
             newFeaturesValues[index] = vector.get(j);
             ++index;
         }
         return VectorUtils.of(newFeaturesValues);
-    }
-
-    public CompoundNaiveBayesModel withGaussianFeatureIdsToSkip(Collection<Integer> gaussianFeatureIdsToSkip) {
-         this.gaussianFeatureIdsToSkip = gaussianFeatureIdsToSkip;
-         return this;
-    }
-
-    public CompoundNaiveBayesModel withDiscreteFeatureIdsToSkip(Collection<Integer> discreteFeatureIdsToSkip) {
-        this.discreteFeatureIdsToSkip = discreteFeatureIdsToSkip;
-        return this;
     }
 }

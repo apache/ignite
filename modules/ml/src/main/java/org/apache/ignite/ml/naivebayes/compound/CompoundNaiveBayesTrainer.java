@@ -54,7 +54,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     private DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
 
     /** */
-    Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
+    private Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
     /** {@inheritDoc} */
     @Override public <K, V> CompoundNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -105,23 +105,6 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         return compoundModel;
     }
 
-    private static IgniteFunction<LabeledVector<Object>, LabeledVector<Object>> skipFeatures(Collection<Integer> featureIdsToSkip) {
-        return featureValues -> {
-            final int size = featureValues.features().size();
-            int newSize = size - featureIdsToSkip.size();
-
-            double[] newFeaturesValues = new double[newSize];
-            int index = 0;
-            for (int j = 0; j < size; j++) {
-                if(featureIdsToSkip.contains(j)) continue;
-
-                newFeaturesValues[index] = featureValues.get(j);
-                ++index;
-            }
-            return new LabeledVector<>(VectorUtils.of(newFeaturesValues), featureValues.label());
-        };
-    }
-
     /** */
     public CompoundNaiveBayesTrainer setClsProbabilities(double[] clsProbabilities) {
         this.clsProbabilities = clsProbabilities.clone();
@@ -140,13 +123,33 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         return this;
     }
 
+    /** */
     public CompoundNaiveBayesTrainer withGaussianFeatureIdsToSkip(Collection<Integer> gaussianFeatureIdsToSkip) {
         this.gaussianFeatureIdsToSkip = gaussianFeatureIdsToSkip;
         return this;
     }
 
+    /** */
     public CompoundNaiveBayesTrainer withDiscreteFeatureIdsToSkip(Collection<Integer> discreteFeatureIdsToSkip) {
         this.discreteFeatureIdsToSkip = discreteFeatureIdsToSkip;
         return this;
+    }
+
+    /** Removes features provided in {@param featureIdsToSkip} from a vector. */
+    private static IgniteFunction<LabeledVector<Object>, LabeledVector<Object>> skipFeatures(Collection<Integer> featureIdsToSkip) {
+        return featureValues -> {
+            final int size = featureValues.features().size();
+            int newSize = size - featureIdsToSkip.size();
+
+            double[] newFeaturesValues = new double[newSize];
+            int index = 0;
+            for (int j = 0; j < size; j++) {
+                if(featureIdsToSkip.contains(j)) continue;
+
+                newFeaturesValues[index] = featureValues.get(j);
+                ++index;
+            }
+            return new LabeledVector<>(VectorUtils.of(newFeaturesValues), featureValues.label());
+        };
     }
 }
