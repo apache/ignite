@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -55,11 +54,6 @@ public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<WALPo
 
         // Initiate iterator by first record.
         next = nextFilteredRecord();
-    }
-
-    /** {@inheritDoc} **/
-    public Optional<WALPointer> lastRead() {
-        return Optional.ofNullable(next == null ? null : next.get1());
     }
 
     /**
