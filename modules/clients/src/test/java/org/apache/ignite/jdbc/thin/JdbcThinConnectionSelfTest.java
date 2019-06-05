@@ -281,8 +281,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSqlHints() throws Exception {
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertHints(conn, false, false, false, false, false, false, affinityAwareness);
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+            assertHints(conn, false, false, false, false, false,
+                false, affinityAwareness);
         }
 
         try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&distributedJoins=true")) {
