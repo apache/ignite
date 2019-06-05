@@ -97,7 +97,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
                 : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor.map(skipFeatures(discreteFeatureIdsToSkip)));
 
             compoundModel.withDiscreteModel(model)
-                    .withDiscreteFeatureIdsToSkip(discreteFeatureIdsToSkip)
+                .withDiscreteFeatureIdsToSkip(discreteFeatureIdsToSkip)
                 .withLabels(model.getLabels())
                 .wirhPriorProbabilities(clsProbabilities);
         }
@@ -105,7 +105,6 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         return compoundModel;
     }
 
-    @NotNull
     private static IgniteFunction<LabeledVector<Object>, LabeledVector<Object>> skipFeatures(Collection<Integer> featureIdsToSkip) {
         return featureValues -> {
             final int size = featureValues.features().size();
