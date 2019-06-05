@@ -21,9 +21,9 @@ namespace Apache.Ignite.Core.Metric
 
     /// <summary>
     /// MetricExporter SPI.
-    /// <para />
+    /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
-    public class IMetricExporterSpi
+    public interface IMetricExporterSpi
     {
         // No-op.
     }
