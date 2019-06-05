@@ -170,7 +170,17 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         IgniteLogger log,
         IoStatisticsHolder stats
     ) throws IgniteCheckedException {
-        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
+        super(
+            name,
+            grpId,
+            pageMem,
+            wal,
+            globalRmvId,
+            metaPageId,
+            reuseList,
+            failureProcessor,
+            null
+        );
 
         this.cctx = cctx;
         this.table = table;

@@ -58,11 +58,12 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictio
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -118,10 +119,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected DataRegion dfltDataRegion;
 
     /** */
-    protected Map<String, CacheFreeListImpl> freeListMap;
+    protected Map<String, CacheFreeList> freeListMap;
 
     /** */
-    private CacheFreeListImpl dfltFreeList;
+    private CacheFreeList dfltFreeList;
 
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
@@ -244,18 +245,25 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (DataRegion memPlc : dataRegionMap.values()) {
             DataRegionConfiguration memPlcCfg = memPlc.config();
 
-            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
+            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl)memMetricsMap.get(memPlcCfg.getName());
 
             boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
 
-            CacheFreeListImpl freeList = new CacheFreeListImpl(0,
-                    cctx.igniteInstanceName(),
-                    memMetrics,
-                    memPlc,
-                    null,
-                    persistenceEnabled ? cctx.wal() : null,
-                    0L,
-                    true);
+            String freeListName = memPlcCfg.getName() + "##FreeList";
+
+            PageLockListener lsnr = cctx.diagnostic().pageLockTracker().createPageLockTracker(freeListName);
+
+            CacheFreeList freeList = new CacheFreeList(
+                0,
+                freeListName,
+                memMetrics,
+                memPlc,
+                null,
+                persistenceEnabled ? cctx.wal() : null,
+                0L,
+                true,
+                lsnr
+            );
 
             freeListMap.put(memPlcCfg.getName(), freeList);
         }
@@ -383,11 +391,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         final String dataRegName = dataRegCfg.getName();
 
         return new IgniteOutClosure<Long>() {
-            private CacheFreeListImpl freeList;
+            private CacheFreeList freeList;
 
             @Override public Long apply() {
                 if (freeList == null) {
-                    CacheFreeListImpl freeList0 = freeListMap.get(dataRegName);
+                    CacheFreeList freeList0 = freeListMap.get(dataRegName);
 
                     if (freeList0 == null)
                         return 0L;
@@ -410,9 +418,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         final String dataRegName = dataRegCfg.getName();
 
         return new DataRegionMetricsProvider() {
-            private CacheFreeListImpl freeList;
+            private CacheFreeList freeList;
 
-            private CacheFreeListImpl getFreeList() {
+            private CacheFreeList getFreeList() {
                 if (freeList == null)
                     freeList = freeListMap.get(dataRegName);
 
@@ -420,13 +428,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             }
 
             @Override public long partiallyFilledPagesFreeSpace() {
-                CacheFreeListImpl freeList0 = getFreeList();
+                CacheFreeList freeList0 = getFreeList();
 
                 return freeList0 == null ? 0L : freeList0.freeSpace();
             }
 
             @Override public long emptyDataPages() {
-                CacheFreeListImpl freeList0 = getFreeList();
+                CacheFreeList freeList0 = getFreeList();
 
                 return freeList0 == null ? 0L : freeList0.emptyDataPages();
             }
@@ -700,7 +708,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void dumpStatistics(IgniteLogger log) {
         if (freeListMap != null) {
-            for (CacheFreeListImpl freeList : freeListMap.values())
+            for (CacheFreeList freeList : freeListMap.values())
                 freeList.dumpStatistics(log);
         }
     }
@@ -993,12 +1001,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         int sysPageSize = pageMem.systemPageSize();
 
-        CacheFreeListImpl freeListImpl = freeListMap.get(plcCfg.getName());
+        CacheFreeList freeList = freeListMap.get(plcCfg.getName());
 
         for (;;) {
             long allocatedPagesCnt = pageMem.loadedPages();
 
-            int emptyDataPagesCnt = freeListImpl.emptyDataPages();
+            int emptyDataPagesCnt = freeList.emptyDataPages();
 
             boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * plcCfg.getEvictionThreshold()) &&
                 emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();

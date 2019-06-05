@@ -588,11 +588,6 @@ public interface IgniteCacheOffheapManager {
         int partId();
 
         /**
-         * @return Store name.
-         */
-        String name();
-
-        /**
          * @param size Size to init.
          * @param updCntr Update counter to init.
          * @param cacheSizes Cache sizes if store belongs to group containing multiple caches.

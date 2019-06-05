@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 
 /**
  * High-level commands.
@@ -41,7 +42,10 @@ public enum CommandList {
     CACHE("--cache", new CacheCommands()),
 
     /** */
-    WAL("--wal", new WalCommands());
+    WAL("--wal", new WalCommands()),
+
+    /** */
+    DIAGNOSTIC("--diagnostic", new DiagnosticCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();
@@ -89,8 +93,8 @@ public enum CommandList {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() { 
-        return text; 
+    @Override public String toString() {
+        return text;
     }
 
     /**

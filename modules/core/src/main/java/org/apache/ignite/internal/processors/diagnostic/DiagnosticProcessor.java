@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -41,6 +42,9 @@ import static org.apache.ignite.internal.util.IgniteStopwatch.logTime;
  * Processor which contained helper methods for different diagnostic cases.
  */
 public class DiagnosticProcessor extends GridProcessorAdapter {
+    /** Value of the system property that enables page locks dumping on failure. */
+    private static final boolean IGNITE_DUMP_PAGE_LOCK_ON_FAILURE =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DUMP_PAGE_LOCK_ON_FAILURE, true);
     /** Time formatter for dump file name. */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
     /** Folder name for store diagnostic info. **/
@@ -93,6 +97,10 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
      * @param failureCtx Failure context.
      */
     public void onFailure(Ignite ignite, FailureContext failureCtx) {
+        // Dump data structures page locks.
+        if (IGNITE_DUMP_PAGE_LOCK_ON_FAILURE)
+            ctx.cache().context().diagnostic().pageLockTracker().dumpLocksToLog();
+
         // If we have some corruption in data structure,
         // we should scan WAL and print to log and save to file all pages related to corruption for
         // future investigation.
