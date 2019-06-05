@@ -39,6 +39,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -373,15 +374,19 @@ public class VisorQueryUtils {
 
                 String cacheName = arg.getCacheName();
 
-                if (!F.isEmpty(cacheName))
+                GridCacheContext cctx = null;
+
+                if (!F.isEmpty(cacheName)) {
                     qry.setSchema(cacheName);
+                    cctx = ignite.context().cache().cache(cacheName).context();
+                }
 
                 long start = U.currentTimeMillis();
 
                 List<FieldsQueryCursor<List<?>>> qryCursors = ignite
                     .context()
                     .query()
-                    .querySqlFields(null, qry, null, true, false, cancel);
+                    .querySqlFields(cctx, qry, null, true, false, cancel);
 
                 // In case of multiple statements leave opened only last cursor.
                 for (int i = 0; i < qryCursors.size() - 1; i++)
