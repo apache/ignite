@@ -78,6 +78,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     @Override public String getTestIgniteInstanceName() {
         return "testGrid";
     }
+
     /** {@inheritDoc} */
     @Override protected boolean isSafeTopology() {
         return false;
