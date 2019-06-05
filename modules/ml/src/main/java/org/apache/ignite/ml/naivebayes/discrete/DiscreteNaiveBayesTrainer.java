@@ -145,6 +145,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 long[][] sum = sumsHolder.valuesInBucketPerLbl.get(label);
 
                 for (int i = 0; i < featureCnt; i++) {
+
                     int bucketsCnt = sum[i].length;
                     probabilities[lbl][i] = new double[bucketsCnt];
 
