@@ -19,7 +19,6 @@ package org.apache.ignite.ml.naivebayes.gaussian;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -30,8 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-
-import static java.util.Collections.emptyList;
 
 /**
  * Trainer for the naive Bayes classification model. The trainer calculates prior probabilities from the input dataset.
@@ -47,7 +44,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     /** {@inheritDoc} */
     @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
-        Preprocessor<K, V> extractor) {
+                                                        Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -63,7 +60,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
     /** {@inheritDoc} */
     @Override protected <K, V> GaussianNaiveBayesModel updateModel(GaussianNaiveBayesModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
+                                                                   DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
         assert datasetBuilder != null;
 
         try (Dataset<EmptyContext, GaussianNaiveBayesSumsHolder> dataset = datasetBuilder.build(
