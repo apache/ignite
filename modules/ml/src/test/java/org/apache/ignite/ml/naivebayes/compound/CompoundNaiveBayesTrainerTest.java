@@ -74,6 +74,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
                 {.25, .75},
                 {.5, .5},
                 {.5, .5},
+                {.5, .5},
                 {.5, .5}
             },
             {
@@ -81,6 +82,7 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
                 {.25, .75},
                 {.75, .25},
                 {.25, .75},
+                {.5, .5}
             }
         };
 
