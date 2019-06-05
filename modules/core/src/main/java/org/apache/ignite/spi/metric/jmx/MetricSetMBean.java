@@ -30,7 +30,7 @@ import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.ReflectionException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.metrics.MetricNameUtils.MetricName;
+import org.apache.ignite.internal.processors.metric.MetricNameUtils.MetricName;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -39,7 +39,7 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ObjectMetric;
 
-import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.parse;
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse;
 
 /**
  * MBean for exporting values of metric set.
@@ -56,8 +56,8 @@ public class MetricSetMBean implements DynamicMBean {
     private Map<String, Metric> mset = new HashMap<>();
 
     /**
-     * @param msetName Metric set name.
-     * @param mreg Metric registry.
+     * @param msetName Metrics set name.
+     * @param mreg Metrics registry.
      * @param first First set entry.
      * @param m
      */
@@ -137,13 +137,13 @@ public class MetricSetMBean implements DynamicMBean {
      */
     private String metricClass(Metric metric) {
         if (metric instanceof BooleanMetric)
-            return "java.lang.Boolean";
+            return Boolean.class.getName();
         else if (metric instanceof DoubleMetric)
-            return "java.lang.Double";
+            return Double.class.getName();
         else if (metric instanceof IntMetric)
-            return "java.lang.Int";
+            return Integer.class.getName();
         else if (metric instanceof LongMetric)
-            return "java.lang.Long";
+            return Long.class.getName();
         else if (metric instanceof ObjectMetric)
             return ((ObjectMetric)metric).type().getName();
 

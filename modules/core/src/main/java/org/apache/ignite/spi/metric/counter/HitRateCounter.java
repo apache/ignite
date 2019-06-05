@@ -17,7 +17,7 @@
 package org.apache.ignite.spi.metric.counter;
 
 import java.util.concurrent.atomic.AtomicLongArray;
-import org.apache.ignite.internal.processors.metrics.AbstractMetric;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -116,9 +116,9 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
          * @param size Number of counters.
          */
         public HitRateCounterImpl(long rateTimeInterval, int size) {
-            A.ensure(rateTimeInterval > 0, "should be positive");
+            A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
 
-            A.ensure(size > 1, "minimum is 2");
+            A.ensure(size > 1, "Minimum value for size is 2");
 
             this.rateTimeInterval = rateTimeInterval;
 

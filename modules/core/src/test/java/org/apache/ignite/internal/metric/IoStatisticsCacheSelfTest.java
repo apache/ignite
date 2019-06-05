@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_
 import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
-import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
 
 /**
  * Tests for cache IO statistics for inmemory mode.

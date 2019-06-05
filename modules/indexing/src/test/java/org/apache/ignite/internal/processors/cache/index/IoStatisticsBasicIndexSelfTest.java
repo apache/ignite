@@ -46,7 +46,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
 import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
-import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
 
 /**
  * A set of basic tests for caches with indexes.

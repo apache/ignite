@@ -17,7 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
-import org.apache.ignite.internal.processors.metrics.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * MBean that provides access to information about executor service.

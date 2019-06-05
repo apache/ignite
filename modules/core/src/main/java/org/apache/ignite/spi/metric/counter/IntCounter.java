@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.metric.counter;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import org.apache.ignite.internal.processors.metrics.AbstractMetric;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,12 +27,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IntCounter extends AbstractMetric implements IntMetric, Counter {
     /** Field updater. */
-    private static AtomicIntegerFieldUpdater<IntCounter> updater =
+    private static final AtomicIntegerFieldUpdater<IntCounter> updater =
         AtomicIntegerFieldUpdater.newUpdater(IntCounter.class, "val");
 
-    /**
-     * Value.
-     */
+    /** Value. */
     private volatile int val;
 
     /**

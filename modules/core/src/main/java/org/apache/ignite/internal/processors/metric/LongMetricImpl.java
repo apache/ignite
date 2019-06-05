@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metrics;
+package org.apache.ignite.internal.processors.metric;
 
 import java.util.function.LongSupplier;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -26,9 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Implementation based on primitive supplier.
  */
 public class LongMetricImpl extends AbstractMetric implements LongMetric, Gauge {
-    /**
-     * Value supplier.
-     */
+    /** Value supplier. */
     private final LongSupplier val;
 
     /**

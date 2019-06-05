@@ -15,43 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.gauge;
+package org.apache.ignite.internal.processors.metric;
 
-import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.spi.metric.IntMetric;
+import java.util.function.DoubleSupplier;
+import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.gauge.Gauge;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Int gauge.
+ * Implementation based on primitive supplier.
  */
-public class IntGauge extends AbstractMetric implements IntMetric, Gauge {
-    /** Value. */
-    private volatile int val;
+public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric, Gauge {
+    /** Value supplier. */
+    private final DoubleSupplier val;
 
     /**
      * @param name Name.
      * @param descr Description.
+     * @param val Supplier.
      */
-    public IntGauge(String name, @Nullable String descr) {
+    public DoubleMetricImpl(String name, @Nullable String descr, DoubleSupplier val) {
         super(name, descr);
-    }
 
-    /** {@inheritDoc} */
-    @Override public int value() {
-        return val;
-    }
-
-    /**
-     * Sets value.
-     *
-     * @param val Value.
-     */
-    public void value(int val) {
         this.val = val;
     }
 
     /** {@inheritDoc} */
-    @Override public void reset() {
-        val = 0;
+    @Override public double value() {
+        try {
+            return val.getAsDouble();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            return 0;
+        }
     }
 }

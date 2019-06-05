@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metrics;
+package org.apache.ignite.internal.processors.metric;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.counter.DoubleCounter;
@@ -41,39 +38,30 @@ import org.apache.ignite.spi.metric.gauge.HistogramGauge;
 import org.apache.ignite.spi.metric.gauge.IntGauge;
 import org.apache.ignite.spi.metric.gauge.LongGauge;
 import org.apache.ignite.spi.metric.gauge.ObjectGauge;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
 
 /**
- * Simple implementation.
+ * Proxy registry that adds {@code prefix} to all metric names on each method call.
  */
-public class MetricRegistryImpl implements MetricRegistry {
-    /**
-     * Registered metrics.
-     */
-    private ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
+public class MetricRegistryPrefixProxy implements MetricRegistry {
+    /** Prefix for underlying registry. */
+    private String prefix;
+
+    /** Underlying implementation. */
+    private MetricRegistry reg;
 
     /**
-     * Logger.
+     * @param prefix Metrics prefix.
+     * @param reg Underlying imlementaion.
      */
-    @Nullable private IgniteLogger log;
+    public MetricRegistryPrefixProxy(String prefix, MetricRegistry reg) {
+        assert prefix != null && !prefix.isEmpty();
 
-    /**
-     * Metric set creation listeners.
-     */
-    private final List<Consumer<Metric>> metricCreationLsnrs = new CopyOnWriteArrayList<>();
-
-    /** */
-    public MetricRegistryImpl() {
-        // No-op.
-    }
-
-    /**
-     * @param log Logger.
-     */
-    public MetricRegistryImpl(IgniteLogger log) {
-        this.log = log;
+        this.prefix = prefix;
+        this.reg = reg;
     }
 
     /** {@inheritDoc} */
@@ -88,138 +76,115 @@ public class MetricRegistryImpl implements MetricRegistry {
 
     /** {@inheritDoc} */
     @Override public Collection<Metric> getMetrics() {
-        return metrics.values();
+        String p = this.prefix + '.';
+
+        return F.view(reg.getMetrics(), m -> m.name().startsWith(p));
     }
 
     /** {@inheritDoc} */
     @Override public void addMetricCreationListener(Consumer<Metric> lsnr) {
-        metricCreationLsnrs.add(lsnr);
+        reg.addMetricCreationListener(m -> {
+            if (m.name().startsWith(prefix))
+                lsnr.accept(m);
+        });
     }
 
     /** {@inheritDoc} */
-    @Override public Metric findMetric(String name) {
-        return metrics.get(name);
+    @Override public @Nullable Metric findMetric(String name) {
+        return reg.findMetric(fullName(name));
     }
 
     /** {@inheritDoc} */
     @Override public void register(Metric metric) {
-        addMetric(metric.name(), metric);
+        reg.register(metric);
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, BooleanSupplier supplier, @Nullable String description) {
-        addMetric(name, new BooleanMetricImpl(name, description, supplier));
+        reg.register(fullName(name), supplier, description);
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, DoubleSupplier supplier, @Nullable String description) {
-        addMetric(name, new DoubleMetricImpl(name, description, supplier));
+        reg.register(fullName(name), supplier, description);
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, IntSupplier supplier, @Nullable String description) {
-        addMetric(name, new IntMetricImpl(name, description, supplier));
+        reg.register(fullName(name), supplier, description);
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, LongSupplier supplier, @Nullable String description) {
-        addMetric(name, new LongMetricImpl(name, description, supplier));
+        reg.register(fullName(name), supplier, description);
     }
 
     /** {@inheritDoc} */
     @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description) {
-        addMetric(name, new ObjectMetricImpl<>(name, description, supplier, type));
+        reg.register(fullName(name), supplier, type, description);
     }
 
     /** {@inheritDoc} */
     @Override public DoubleCounter doubleCounter(String name, @Nullable String description) {
-        return addMetric(name, new DoubleCounter(name, description));
+        return reg.doubleCounter(fullName(name), description);
     }
 
     /** {@inheritDoc} */
     @Override public IntCounter intCounter(String name, @Nullable String description) {
-        return addMetric(name, new IntCounter(name, description));
+        return reg.intCounter(fullName(name), description);
     }
 
     /** {@inheritDoc} */
     @Override public LongCounter counter(String name, @Nullable String description) {
-        return addMetric(name, new LongCounter(name, description));
+        return reg.counter(fullName(name), description);
     }
 
     /** {@inheritDoc} */
     @Override public LongAdderCounter longAdderCounter(String name, @Nullable String description) {
-        return addMetric(name, new LongAdderCounter(name, description));
+        return reg.longAdderCounter(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public org.apache.ignite.spi.metric.counter.HitRateCounter hitRateCounter(String name,
-        @Nullable String description, long rateTimeInterval, int size) {
-        return addMetric(name, new HitRateCounter(name, description, rateTimeInterval, size));
+    @Override public HitRateCounter hitRateCounter(String name, @Nullable String description,
+        long rateTimeInterval, int size) {
+        return reg.hitRateCounter(fullName(name), description, rateTimeInterval, size);
     }
 
     /** {@inheritDoc} */
     @Override public BooleanGauge booleanGauge(String name, @Nullable String description) {
-        return addMetric(name, new BooleanGauge(name, description));
+        return reg.booleanGauge(fullName(name), description);
     }
 
     /** {@inheritDoc} */
     @Override public DoubleGauge doubleGauge(String name, @Nullable String description) {
-        return addMetric(name, new DoubleGauge(name, description));
+        return reg.doubleGauge(fullName(name), description);
     }
 
     /** {@inheritDoc} */
     @Override public IntGauge intGauge(String name, @Nullable String description) {
-        return addMetric(name, new IntGauge(name, description));
+        return reg.intGauge(fullName(name), description);
     }
 
     /** {@inheritDoc} */
     @Override public LongGauge gauge(String name, @Nullable String description) {
-        return addMetric(name, new LongGauge(name, description));
+        return reg.gauge(fullName(name), description);
     }
 
     /** {@inheritDoc} */
     @Override public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, @Nullable String description) {
-        return addMetric(name, new ObjectGauge<>(name, description, type));
+        return reg.objectGauge(fullName(name), type, description);
     }
 
     /** {@inheritDoc} */
     @Override public HistogramGauge histogram(String name, long[] bounds, @Nullable String description) {
-        return addMetric(name, new HistogramGauge(name, description, bounds));
+        return reg.histogram(fullName(name), bounds, description);
     }
 
     /**
-     * Adds metrics if not exists already.
-     *
-     * @param name Name.
-     * @param metric Metric
-     * @param <T> Type of metric.
-     * @return Registered metric.
+     * @param name Metric name.
+     * @return Full name with prefix.
      */
-    private <T extends Metric> T addMetric(String name, T metric) {
-        T old = (T)metrics.putIfAbsent(name, metric);
-
-        if (old == null) {
-            notifyListeners(metric, metricCreationLsnrs);
-
-            return metric;
-        }
-
-        return old;
-    }
-
-    /**
-     * @param t Consumed object.
-     * @param lsnrs Listeners.
-     * @param <T> Type of consumed object.
-     */
-    private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
-        for (Consumer<T> lsnr : lsnrs) {
-            try {
-                lsnr.accept(t);
-            }
-            catch (Exception e) {
-                log.warning("Metric listener error", e);
-            }
-        }
+    @NotNull private String fullName(String name) {
+        return metricName(prefix, name);
     }
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metrics;
+package org.apache.ignite.internal.processors.metric;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.StripedExecutor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.MetricExporterPushSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.MetricRegistry;
@@ -91,24 +90,16 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** */
     public static final String THRD_FACTORY_DESC = "Class name of thread factory used to create new threads.";
 
-    /**
-     * Group for a thread pools.
-     */
+    /** Group for a thread pools. */
     public static final String THREAD_POOLS = "threadPools";
 
-    /**
-     * Push spi executor.
-     */
+    /** Push spi executor. */
     private ScheduledExecutorService pushSpiExecutor;
 
-    /**
-     * Future for scheduled push spi export.
-     */
+    /** Future for scheduled push spi export. */
     private List<ScheduledFuture<?>> pushFuts;
 
-    /**
-     * Monitoring registry.
-     */
+    /** Monitoring registry. */
     private MetricRegistry mreg;
 
     /**
@@ -140,7 +131,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
                 MetricExporterPushSpi pushSpi = (MetricExporterPushSpi)spi;
 
-                long timeout = pushSpi.getTimeout();
+                long timeout = pushSpi.getPeriod();
 
                 ScheduledFuture<?> fut = pushSpiExecutor.scheduleWithFixedDelay(() -> {
                     try {
@@ -240,7 +231,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
             monitorExecutor("GridRestExecutor", restExecSvc);
 
         if (stripedExecSvc != null) {
-            // striped executor uses a custom adapter
+            // Striped executor uses a custom adapter.
             monitorStrippedPool(stripedExecSvc);
         }
 

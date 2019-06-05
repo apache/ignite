@@ -40,9 +40,12 @@ import org.apache.ignite.spi.metric.log.LogExporterSpi;
  */
 public interface MetricExporterPushSpi extends MetricExporterSpi {
     /**
-     * @return Timeout in milliseconds after {@link #export()} method should be called.
+     * @return Period in milliseconds after {@link #export()} method should be called.
      */
-    public long getTimeout();
+    public long getPeriod();
+
+    /** Sets period in milliseconds after {@link #export()} method should be called. */
+    public void setPeriod(long period);
 
     /**
      * Callback to do the export of metrics info.

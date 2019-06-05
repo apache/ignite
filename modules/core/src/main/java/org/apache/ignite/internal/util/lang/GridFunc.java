@@ -3121,15 +3121,15 @@ public class GridFunc {
     }
 
     /**
-     * @param arr Array to check
-     * @return {@code True} if array sorted, false otherwise.
+     * @param arr Array to check.
+     * @return {@code True} if array sorted, {@code false} otherwise.
      */
     public static boolean isSorted(long[] arr) {
         if (isEmpty(arr) || arr.length == 1)
             return true;
 
-        for(int i=1; i<arr.length; i++) {
-            if (arr[i-1] > arr[i])
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i - 1] > arr[i])
                 return false;
         }
 

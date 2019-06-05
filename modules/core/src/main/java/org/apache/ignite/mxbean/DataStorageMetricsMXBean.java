@@ -19,7 +19,7 @@ package org.apache.ignite.mxbean;
 
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.processors.metrics.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * An MX bean allowing to monitor and tune persistence metrics.

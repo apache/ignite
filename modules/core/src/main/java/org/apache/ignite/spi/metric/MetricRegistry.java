@@ -38,8 +38,9 @@ import org.apache.ignite.spi.metric.gauge.ObjectGauge;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Groups of the metrics.
- * Logically groups metrics representing state of some system entity.
+ * Metrics registry.
+ * Provide methods to register required metrics, counters, gauges for Ignite internals.
+ * Provide the way to obtain all registered metrics for exporters.
  */
 public interface MetricRegistry {
     /**

@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.counter.LongCounter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -45,7 +44,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.PHYSICAL
 import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
-import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
 
 /**
  * Tests for IO statistic manager.

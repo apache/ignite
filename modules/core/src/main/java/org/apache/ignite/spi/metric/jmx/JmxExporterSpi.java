@@ -26,7 +26,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.metrics.MetricNameUtils.MetricName;
+import org.apache.ignite.internal.processors.metric.MetricNameUtils.MetricName;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -35,30 +35,22 @@ import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.parse;
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse;
 
 /**
  * This SPI implementation exports metrics as JMX beans.
  */
 public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
-    /**
-     * Monitoring registry.
-     */
+    /** Monitoring registry. */
     private MetricRegistry mreg;
 
-    /**
-     * Set of already registered as MBean prefixes.
-     */
+    /** Set of already registered as MBean prefixes. */
     private Set<String> metricSets = new HashSet<>();
 
-    /**
-     * Metric filter.
-     */
+    /** Metric filter. */
     private @Nullable Predicate<Metric> filter;
 
-    /**
-     * Registered beans.
-     */
+    /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
 
     /** {@inheritDoc} */
@@ -73,7 +65,7 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
                 return;
 
             if (log.isDebugEnabled())
-                log.debug("Found new metric set [name=" + n.msetName() + "]");
+                log.debug("Found new metric set [name=" + n.msetName() + ']');
 
             metricSets.add(n.msetName());
 

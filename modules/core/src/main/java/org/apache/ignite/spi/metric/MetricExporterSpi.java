@@ -41,7 +41,7 @@ import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
  */
 public interface MetricExporterSpi extends IgniteSpi {
     /**
-     * Sets metric registry that SPI should export.
+     * Sets metrics registry that SPI should export.
      * This method called before {@link #spiStart(String)}.
      *
      * Registry should be empty in the time this method called.

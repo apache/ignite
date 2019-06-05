@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.metric.log;
 
 import java.util.function.Predicate;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.Metric;
@@ -46,6 +47,13 @@ public class LogExporterSpi extends IgniteSpiAdapter implements MetricExporterPu
 
     /** {@inheritDoc} */
     @Override public void export() {
+        if (!log.isInfoEnabled()) {
+            LT.warn(log, "LogExporterSpi configured but INFO level is disabled. " +
+                "Metrics will not be export to the log! Please, check logger settings.");
+
+            return;
+        }
+
         log.info("Metrics:");
 
         mreg.getMetrics().forEach(m -> {
@@ -66,17 +74,13 @@ public class LogExporterSpi extends IgniteSpiAdapter implements MetricExporterPu
         // No-op.
     }
 
-    /**
-     * Sets timeout of this exporter.
-     *
-     * @param timeout Timeout.
-     */
-    public void setTimeout(long timeout) {
+    /** {@inheritDoc} */
+    @Override public void setPeriod(long timeout) {
         this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
-    @Override public long getTimeout() {
+    @Override public long getPeriod() {
         return timeout;
     }
 

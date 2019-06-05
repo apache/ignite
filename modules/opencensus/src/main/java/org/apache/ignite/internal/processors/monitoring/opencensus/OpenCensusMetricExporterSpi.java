@@ -300,17 +300,13 @@ public class OpenCensusMetricExporterSpi extends IgniteSpiAdapter implements Met
         this.filter = filter;
     }
 
-    /**
-     * Sets timeout of this exporter.
-     *
-     * @param timeout Timeout.
-     */
-    public void setTimeout(long timeout) {
+    /** {@inheritDoc} */
+    @Override public void setPeriod(long timeout) {
         this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
-    @Override public long getTimeout() {
+    @Override public long getPeriod() {
         return timeout;
     }
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.metric.gauge;
 
-import org.apache.ignite.internal.processors.metrics.AbstractMetric;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,14 +25,10 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link ObjectMetric}.
  */
 public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T>, Gauge {
-    /**
-     * Value.
-     */
+    /** Value. */
     private volatile T val;
 
-    /**
-     * Type.
-     */
+    /** Type. */
     private final Class<T> type;
 
     /**

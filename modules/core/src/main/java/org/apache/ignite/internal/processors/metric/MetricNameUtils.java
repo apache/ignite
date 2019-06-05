@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metrics;
+package org.apache.ignite.internal.processors.metric;
 
 import org.apache.ignite.spi.metric.MetricRegistry;
 
@@ -26,9 +26,7 @@ import org.apache.ignite.spi.metric.MetricRegistry;
  * @see MetricRegistry
  */
 public class MetricNameUtils {
-    /**
-     * Metric name part separator.
-     */
+    /** Metric name part separator. */
     public static final String SEPARATOR = ".";
 
     /**
@@ -59,7 +57,7 @@ public class MetricNameUtils {
      * @param names Metric name parts.
      * @return Metric name.
      */
-    public static String metricName(String...names) {
+    public static String metricName(String... names) {
         assert names != null;
         assert ensureAllNamesNotEmpty(names);
 
@@ -77,8 +75,8 @@ public class MetricNameUtils {
      * @return True.
      */
     private static boolean ensureAllNamesNotEmpty(String... names) {
-        for (String prefix : names)
-            assert prefix != null && !prefix.isEmpty();
+        for (int i=0; i<names.length; i++)
+            assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
 
         return true;
     }
@@ -93,24 +91,16 @@ public class MetricNameUtils {
      * mname = pagesCount - metric name.
      */
     public static class MetricName {
-        /**
-         * JMX group name.
-         */
+        /** JMX group name. */
         private String root;
 
-        /**
-         * JMX bean name.
-         */
+        /** JMX bean name. */
         private String subName;
 
-        /**
-         * Prefix to search metrics that belongs to metric set.
-         */
+        /** Prefix to search metrics that belongs to metric set. */
         private String msetName;
 
-        /**
-         * Metric name.
-         */
+        /** Metric name. */
         private String mname;
 
         /** */

@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metrics.MetricNameUtils.MetricName;
+import org.apache.ignite.internal.processors.metric.MetricNameUtils.MetricName;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
@@ -37,7 +37,7 @@ import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metrics.MetricNameUtils.parse;
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse;
 
 /**
  * This SPI implementation exports metrics as SQL views.

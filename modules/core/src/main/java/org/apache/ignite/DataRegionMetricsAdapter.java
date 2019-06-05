@@ -18,7 +18,7 @@ package org.apache.ignite;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.internal.processors.metrics.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * Converter class from {@link DataRegionMetrics} to legacy {@link MemoryMetrics}.

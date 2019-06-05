@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.metric.gauge;
 
-import org.apache.ignite.internal.processors.metrics.AbstractMetric;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,9 +25,7 @@ import org.jetbrains.annotations.Nullable;
  * Double gauge.
  */
 public class DoubleGauge extends AbstractMetric implements DoubleMetric, Gauge {
-    /**
-     * Value.
-     */
+    /** Value. */
     private volatile double val;
 
     /**

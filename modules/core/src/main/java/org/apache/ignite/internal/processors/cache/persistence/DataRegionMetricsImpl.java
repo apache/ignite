@@ -23,7 +23,7 @@ import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTracker;
-import org.apache.ignite.internal.processors.metrics.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.counter.HitRateCounter;
@@ -118,7 +118,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
-     * @param mreg Metric registry.
+     * @param mreg Metrics registry.
      * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,

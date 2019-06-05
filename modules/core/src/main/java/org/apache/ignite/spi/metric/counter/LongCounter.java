@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.metric.counter;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import org.apache.ignite.internal.processors.metrics.AbstractMetric;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,15 +26,11 @@ import org.jetbrains.annotations.Nullable;
  * Long counter implementation.
  */
 public class LongCounter extends AbstractMetric implements LongMetric, Counter {
-    /**
-     * Field updater.
-     */
-    private static AtomicLongFieldUpdater<LongCounter> updater =
+    /** Field updater. */
+    private static final AtomicLongFieldUpdater<LongCounter> updater =
         AtomicLongFieldUpdater.newUpdater(LongCounter.class, "val");
 
-    /**
-     * Field value.
-     */
+    /** Field value. */
     private volatile long val;
 
     /**
@@ -54,16 +50,12 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
         updater.getAndAdd(this, x);
     }
 
-    /**
-     * Adds 1 to the counter.
-     */
+    /** Adds 1 to the counter. */
     public void increment() {
         add(1);
     }
 
-    /**
-     * Adds -1 to the counter.
-     */
+    /** Adds -1 to the counter. */
     public void decrement() {
         add(-1);
     }

@@ -16,7 +16,7 @@
 */
 package org.apache.ignite;
 
-import org.apache.ignite.internal.processors.metrics.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * Converter class from {@link DataStorageMetrics} to legacy {@link PersistenceMetrics}.

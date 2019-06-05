@@ -15,42 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metrics;
+package org.apache.ignite.internal.processors.metric;
 
-import java.util.function.DoubleSupplier;
-import org.apache.ignite.spi.metric.DoubleMetric;
+import java.util.function.Supplier;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation based on primitive supplier.
  */
-public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric, Gauge {
-    /**
-     * Value supplier.
-     */
-    private final DoubleSupplier val;
+public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<T>, Gauge {
+    /** Value supplier. */
+    private final Supplier<T> val;
+
+    /** Type. */
+    private final Class<T> type;
 
     /**
      * @param name Name.
      * @param descr Description.
-     * @param val Supplier.
+     * @param value Supplier.
+     * @param type Type.
      */
-    public DoubleMetricImpl(String name, @Nullable String descr, DoubleSupplier val) {
+    public ObjectMetricImpl(String name, @Nullable String descr, Supplier<T> val, Class<T> type) {
         super(name, descr);
 
         this.val = val;
+        this.type = type;
     }
 
     /** {@inheritDoc} */
-    @Override public double value() {
+    @Override public T value() {
         try {
-            return val.getAsDouble();
+            return val.get();
         }
         catch (Exception e) {
             e.printStackTrace();
 
-            return 0;
+            return null;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<T> type() {
+        return type;
     }
 }

@@ -15,54 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metrics;
+package org.apache.ignite.internal.processors.metric;
 
-import java.util.function.Supplier;
-import org.apache.ignite.spi.metric.ObjectMetric;
+import java.util.function.IntSupplier;
+import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation based on primitive supplier.
  */
-public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<T>, Gauge {
-    /**
-     * Value supplier.
-     */
-    private final Supplier<T> val;
-
-    /**
-     * Type.
-     */
-    private final Class<T> type;
+public class IntMetricImpl extends AbstractMetric implements IntMetric, Gauge {
+    /** Value supplier. */
+    private final IntSupplier val;
 
     /**
      * @param name Name.
      * @param descr Description.
-     * @param value Supplier.
-     * @param type Type.
+     * @param val Supplier.
      */
-    public ObjectMetricImpl(String name, @Nullable String descr, Supplier<T> val, Class<T> type) {
+    public IntMetricImpl(String name, @Nullable String descr, IntSupplier val) {
         super(name, descr);
 
         this.val = val;
-        this.type = type;
     }
 
     /** {@inheritDoc} */
-    @Override public T value() {
-        try {
-            return val.get();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-
-            return null;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<T> type() {
-        return type;
+    @Override public int value() {
+        return val.getAsInt();
     }
 }

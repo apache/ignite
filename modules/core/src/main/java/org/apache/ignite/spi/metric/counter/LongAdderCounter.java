@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.metric.counter;
 
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.ignite.internal.processors.metrics.AbstractMetric;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,10 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Long counter implementation.
  */
 public class LongAdderCounter extends AbstractMetric implements LongMetric, Counter {
-
-    /**
-     * Field value.
-     */
+    /** Field value. */
     private volatile LongAdder val = new LongAdder();
 
     /**
@@ -49,16 +46,12 @@ public class LongAdderCounter extends AbstractMetric implements LongMetric, Coun
         val.add(x);
     }
 
-    /**
-     * Adds 1 to the counter.
-     */
+    /** Adds 1 to the counter. */
     public void increment() {
         add(1);
     }
 
-    /**
-     * Adds -1 to the counter.
-     */
+    /** Adds -1 to the counter. */
     public void decrement() {
         add(-1);
     }

@@ -15,37 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metrics;
-
-import org.apache.ignite.spi.metric.Metric;
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.processors.monitoring.opencensus;
 
 /**
- * Base class for {@code Metric} implementations.
+ *
  */
-public abstract class AbstractMetric implements Metric {
-    /** Name. */
-    private final String name;
-
-    /** Description. */
-    @Nullable private final String descr;
-
-    /**
-     * @param name Name.
-     * @param descr Description.
-     */
-    public AbstractMetric(String name, String descr) {
-        this.name = name;
-        this.descr = descr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public String description() {
-        return descr;
-    }
+public class OpenCensusMetricExporterSpiSelfTest {
 }
