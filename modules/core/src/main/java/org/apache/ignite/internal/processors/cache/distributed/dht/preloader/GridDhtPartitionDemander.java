@@ -95,7 +95,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
  * Thread pool for requesting partitions from other nodes and populating local cache.
  */
 public class GridDhtPartitionDemander {
-    /** */
+    /** The maximum number of entries that can be preloaded between checkpoints. */
     private static final int CHECKPOINT_THRESHOLD = 100;
 
     /** */
@@ -775,7 +775,7 @@ public class GridDhtPartitionDemander {
 
                     boolean last = supplyMsg.last().containsKey(p);
 
-                    boolean batched = evictionAllowsBatch(grp.dataRegion(), supplyMsg.messageSize());
+                    boolean batched = canStoreWithoutEvictions(supplyMsg.messageSize());
 
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
@@ -872,21 +872,21 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param region Memory region.
-     * @param msgSize Rebalance message size.
-     * @return {@code True} if entries could processed in batch.
+     * @param size Data size.
+     * @return {@code True} if rebalanced cache group allows writing a specified amount of data without evictions.
      */
-    private boolean evictionAllowsBatch(DataRegion region, int msgSize) {
-        DataRegionConfiguration plc = region.config();
+    private boolean canStoreWithoutEvictions(int size) {
+        DataRegionConfiguration plc = grp.dataRegion().config();
 
         if (plc.isPersistenceEnabled() || plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return true;
 
-        PageMemory pageMem = region.pageMemory();
+        PageMemory pageMem = grp.dataRegion().pageMemory();
 
         int sysPageSize = pageMem.systemPageSize();
 
-        int pagesRequired = (msgSize / sysPageSize) * 2;
+        // The number of pages is calculated taking into account memory fragmentation and possible concurrent updates.
+        int pagesRequired = (size / sysPageSize) * 2;
 
         long maxPages = plc.getMaxSize() / sysPageSize;
 
