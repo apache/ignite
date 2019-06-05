@@ -852,10 +852,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(p);
 
-            if (forUpdate && !mvccEnabled)
-                throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
-                    "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
             if (this.ctx.security().enabled()) {
                 GridSqlQueryParser parser = new GridSqlQueryParser(false);
 
@@ -868,44 +864,42 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             int opTimeout = qryTimeout;
 
-            if (mvccEnabled) {
-                if (mvccTracker == null)
-                    mvccTracker = mvccTracker(stmt, startTx);
+            if (mvccTracker == null)
+                mvccTracker = mvccTracker(stmt, startTx);
 
-                if (mvccTracker != null) {
-                    ctx.mvccSnapshot(mvccTracker.snapshot());
+            if (mvccEnabled = (mvccTracker != null)) {
+                ctx.mvccSnapshot(mvccTracker.snapshot());
 
-                    tx = checkActive(tx(this.ctx));
+                tx = checkActive(tx(this.ctx));
 
-                    opTimeout = operationTimeout(opTimeout, tx);
-                }
+                opTimeout = operationTimeout(opTimeout, tx);
+            }
+
+            if (forUpdate) {
+                if (!mvccEnabled)
+                    throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
+                        "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+                GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(p);
+
+                qry = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(stmt0, forUpdate = tx != null);
+
+                stmt = preparedStatementWithParams(conn, qry, params, true);
 
                 if (forUpdate) {
-                    if (mvccTracker == null)
-                        throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
-                            "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    GridCacheContext cctx = mvccTracker.context();
 
-                    GridSqlStatement stmt0 = new GridSqlQueryParser(false).parse(p);
-
-                    qry = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(stmt0, forUpdate = tx != null);
-
-                    stmt = preparedStatementWithParams(conn, qry, params, true);
-
-                    if (forUpdate) {
-                        GridCacheContext cctx = mvccTracker.context();
-
-                        try {
-                            if (tx.topologyVersionSnapshot() == null)
-                                new TxTopologyVersionFuture(tx, cctx).get();
-                        }
-                        catch (Exception e) {
-                            throw new IgniteSQLException("Failed to lock topology for SELECT FOR UPDATE query.", e);
-                        }
-
-                        sfuFut = new GridNearTxSelectForUpdateFuture(cctx, tx, opTimeout);
-
-                        sfuFut.initLocal();
+                    try {
+                        if (tx.topologyVersionSnapshot() == null)
+                            new TxTopologyVersionFuture(tx, cctx).get();
                     }
+                    catch (Exception e) {
+                        throw new IgniteSQLException("Failed to lock topology for SELECT FOR UPDATE query.", e);
+                    }
+
+                    sfuFut = new GridNearTxSelectForUpdateFuture(cctx, tx, opTimeout);
+
+                    sfuFut.initLocal();
                 }
             }
 
