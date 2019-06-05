@@ -46,13 +46,13 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** Gaussian Bayes model. */
     private GaussianNaiveBayesModel gaussianModel;
 
-    /** Feature ids which should be skipped in Gaussian model.  */
+    /** Feature ids which should be skipped in Gaussian model. */
     private Collection<Integer> gaussianFeatureIdsToSkip = Collections.emptyList();
 
     /** Discrete Bayes model. */
     private DiscreteNaiveBayesModel discreteModel;
 
-    /** Feature ids which should be skipped in Discrete model.  */
+    /** Feature ids which should be skipped in Discrete model. */
     private Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
     /** {@inheritDoc} */

@@ -28,7 +28,6 @@ import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesTrainer;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -41,19 +40,19 @@ import java.util.Collections;
  */
 public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<CompoundNaiveBayesModel> {
 
-    /** Prior probabilities of each class */
-    private double[] clsProbabilities;
+    /** Prior probabilities of each class. */
+    private double[] priorProbabilities;
 
-    /** */
+    /** Gaussian Naive Bayes trainer. */
     private GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
 
-    /** */
+    /** Feature ids which should be skipped in Gaussian model. */
     private Collection<Integer> gaussianFeatureIdsToSkip = Collections.emptyList();
 
-    /** */
+    /** Discrete Naive Bayes trainer. */
     private DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
 
-    /** */
+    /** Feature ids which should be skipped in Discrete model. */
     private Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
     /** {@inheritDoc} */
@@ -78,7 +77,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
         DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         CompoundNaiveBayesModel compoundModel = new CompoundNaiveBayesModel()
-            .wirhPriorProbabilities(clsProbabilities);
+            .wirhPriorProbabilities(priorProbabilities);
 
         if (gaussianNaiveBayesTrainer != null) {
             GaussianNaiveBayesModel model = (mdl == null)
@@ -88,7 +87,7 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             compoundModel.withGaussianModel(model)
                 .withGaussianFeatureIdsToSkip(gaussianFeatureIdsToSkip)
                 .withLabels(model.getLabels())
-                .wirhPriorProbabilities(clsProbabilities);
+                .wirhPriorProbabilities(priorProbabilities);
         }
 
         if (discreteNaiveBayesTrainer != null) {
@@ -99,15 +98,15 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             compoundModel.withDiscreteModel(model)
                 .withDiscreteFeatureIdsToSkip(discreteFeatureIdsToSkip)
                 .withLabels(model.getLabels())
-                .wirhPriorProbabilities(clsProbabilities);
+                .wirhPriorProbabilities(priorProbabilities);
         }
 
         return compoundModel;
     }
 
     /** */
-    public CompoundNaiveBayesTrainer setClsProbabilities(double[] clsProbabilities) {
-        this.clsProbabilities = clsProbabilities.clone();
+    public CompoundNaiveBayesTrainer setPriorProbabilities(double[] priorProbabilities) {
+        this.priorProbabilities = priorProbabilities.clone();
         return this;
     }
 

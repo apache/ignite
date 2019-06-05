@@ -61,12 +61,12 @@ public class CompoundNaiveBayesExample {
             IgniteCache<Integer, Vector> dataCache = new SandboxMLCache(ignite)
                 .fillCacheWith(MLSandboxDatasets.MIXED_DATASET);
 
-            double[] classProbabilities = new double[] {.5, .5};
+            double[] priorProbabilities = new double[] {.5, .5};
             double[][] thresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
 
             System.out.println(">>> Create new naive Bayes classification trainer object.");
             CompoundNaiveBayesTrainer trainer = new CompoundNaiveBayesTrainer()
-                .setClsProbabilities(classProbabilities)
+                .setPriorProbabilities(priorProbabilities)
                 .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer())
                 .withGaussianFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
                 .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()

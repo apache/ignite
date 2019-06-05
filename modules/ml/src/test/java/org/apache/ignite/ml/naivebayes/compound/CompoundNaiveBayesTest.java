@@ -43,7 +43,7 @@ public class CompoundNaiveBayesTest {
     @Test /** */
     public void testLearnsAndPredictCorrently() {
         CompoundNaiveBayesTrainer trainer = new CompoundNaiveBayesTrainer()
-            .setClsProbabilities(classProbabilities)
+            .setPriorProbabilities(classProbabilities)
             .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer())
             .withGaussianFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
             .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
