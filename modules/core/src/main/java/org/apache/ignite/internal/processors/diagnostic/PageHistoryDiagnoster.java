@@ -30,10 +30,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
@@ -73,7 +73,7 @@ public class PageHistoryDiagnoster {
     private final IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory();
 
     /** */
-    private volatile FileWriteAheadLogManager wal;
+    private volatile IgniteWriteAheadLogManager wal;
 
     /**
      * @param ctx Kernal context.
@@ -89,7 +89,7 @@ public class PageHistoryDiagnoster {
      * Do action on start.
      */
     public void onStart() {
-        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ctx.cache().context().wal();
+        IgniteWriteAheadLogManager wal = ctx.cache().context().wal();
 
         if (wal == null)
             return;
