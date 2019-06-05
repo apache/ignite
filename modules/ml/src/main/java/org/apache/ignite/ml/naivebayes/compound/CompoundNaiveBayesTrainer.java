@@ -105,19 +105,19 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     }
 
     /** */
-    public CompoundNaiveBayesTrainer setPriorProbabilities(double[] priorProbabilities) {
+    public CompoundNaiveBayesTrainer withPriorProbabilities(double[] priorProbabilities) {
         this.priorProbabilities = priorProbabilities.clone();
         return this;
     }
 
     /** */
-    public CompoundNaiveBayesTrainer setGaussianNaiveBayesTrainer(GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer) {
+    public CompoundNaiveBayesTrainer withGaussianNaiveBayesTrainer(GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer) {
         this.gaussianNaiveBayesTrainer = gaussianNaiveBayesTrainer;
         return this;
     }
 
     /** */
-    public CompoundNaiveBayesTrainer setDiscreteNaiveBayesTrainer(DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer) {
+    public CompoundNaiveBayesTrainer withDiscreteNaiveBayesTrainer(DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer) {
         this.discreteNaiveBayesTrainer = discreteNaiveBayesTrainer;
         return this;
     }

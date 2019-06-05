@@ -66,10 +66,10 @@ public class CompoundNaiveBayesExample {
 
             System.out.println(">>> Create new naive Bayes classification trainer object.");
             CompoundNaiveBayesTrainer trainer = new CompoundNaiveBayesTrainer()
-                .setPriorProbabilities(priorProbabilities)
-                .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer())
+                .withPriorProbabilities(priorProbabilities)
+                .withGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer())
                 .withGaussianFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
-                .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
+                .withDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
                     .setBucketThresholds(thresholds))
                 .withDiscreteFeatureIdsToSkip(asList(0, 1, 2));
             System.out.println(">>> Perform the training to get the model.");
