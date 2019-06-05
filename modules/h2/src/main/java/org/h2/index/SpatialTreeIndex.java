@@ -252,7 +252,7 @@ public class SpatialTreeIndex extends BaseIndex implements SpatialIndex {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return treeMap.sizeAsLong();
     }
 

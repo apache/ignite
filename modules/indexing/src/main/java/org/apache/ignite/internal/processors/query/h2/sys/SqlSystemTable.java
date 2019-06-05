@@ -147,7 +147,7 @@ public class SqlSystemTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
+    @Override public long getRowCountApproximation(Session ses) {
         return view.getRowCount();
     }
 

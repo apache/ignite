@@ -76,7 +76,7 @@ public class SqlSystemIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         AllColumnsForPlan allColsSet) {
-        long rowCnt = getRowCountApproximation();
+        long rowCnt = getRowCountApproximation(ses);
 
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColsSet);
 
@@ -127,8 +127,8 @@ public class SqlSystemIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return table.getRowCountApproximation();
+    @Override public long getRowCountApproximation(Session ses) {
+        return table.getRowCountApproximation(ses);
     }
 
     /** {@inheritDoc} */

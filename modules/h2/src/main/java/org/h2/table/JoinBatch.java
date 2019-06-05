@@ -15,6 +15,7 @@ import java.util.concurrent.Future;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
+import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
 import org.h2.index.IndexCursor;
@@ -495,7 +496,7 @@ public final class JoinBatch {
             if (c.isAlwaysFalse()) {
                 return false;
             }
-            return lookupBatch.addSearchRows(c.getStart(), c.getEnd());
+            return lookupBatch.addSearchRows(filter.getSession(), c.getStart(), c.getEnd());
         }
 
         List<Future<Cursor>> find() {
@@ -714,7 +715,7 @@ public final class JoinBatch {
         }
 
         @Override
-        public boolean addSearchRows(SearchRow first, SearchRow last) {
+        public boolean addSearchRows(Session ses, SearchRow first, SearchRow last) {
             assert !full;
             this.first = first;
             this.last = last;
@@ -812,7 +813,7 @@ public final class JoinBatch {
         }
 
         @Override
-        public final boolean addSearchRows(SearchRow first, SearchRow last) {
+        public final boolean addSearchRows(Session ses, SearchRow first, SearchRow last) {
             resetAfterFind();
             viewIndex.setupQueryParameters(viewIndex.getSession(), first, last, null);
             R r;

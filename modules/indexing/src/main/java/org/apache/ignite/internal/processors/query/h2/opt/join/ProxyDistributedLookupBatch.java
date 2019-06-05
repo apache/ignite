@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexLookupBatch;
 import org.h2.result.SearchRow;
@@ -46,11 +47,11 @@ public class ProxyDistributedLookupBatch implements IndexLookupBatch {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean addSearchRows(SearchRow first, SearchRow last) {
+    @Override public boolean addSearchRows(Session ses, SearchRow first, SearchRow last) {
         SearchRow firstProxy = rowDesc.prepareProxyIndexRow(first);
         SearchRow lastProxy = rowDesc.prepareProxyIndexRow(last);
 
-        return delegate.addSearchRows(firstProxy, lastProxy);
+        return delegate.addSearchRows(ses, firstProxy, lastProxy);
     }
 
     /** {@inheritDoc} */

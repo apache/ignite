@@ -344,9 +344,10 @@ public abstract class Table extends SchemaObjectBase {
     /**
      * Get the approximated row count for this table.
      *
+     * @param session Current session.
      * @return the approximated row count
      */
-    public abstract long getRowCountApproximation();
+    public abstract long getRowCountApproximation(Session session);
 
     public abstract long getDiskSpaceUsed();
 

@@ -202,8 +202,8 @@ public class GridH2MetaTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return index.getRowCountApproximation();
+    @Override public long getRowCountApproximation(Session ses) {
+        return index.getRowCountApproximation(ses);
     }
 
     /** {@inheritDoc} */
@@ -309,7 +309,7 @@ public class GridH2MetaTable extends TableBase {
         }
 
         /** {@inheritDoc} */
-        @Override public long getRowCountApproximation() {
+        @Override public long getRowCountApproximation(Session ses) {
             return getRowCount(null);
         }
 

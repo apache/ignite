@@ -187,7 +187,7 @@ public final class ReduceIndexSorted extends ReduceIndex {
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, false, allColumnsSet);
+        return getCostRangeIndex(masks, getRowCountApproximation(ses), filters, filter, sortOrder, false, allColumnsSet);
     }
 
     /** {@inheritDoc} */

@@ -271,7 +271,7 @@ public class LinkedIndex extends BaseIndex {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return rowCount;
     }
 

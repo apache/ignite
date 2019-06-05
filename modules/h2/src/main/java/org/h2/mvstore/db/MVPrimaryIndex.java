@@ -366,7 +366,7 @@ public class MVPrimaryIndex extends BaseIndex {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return getRowCountMax();
     }
 

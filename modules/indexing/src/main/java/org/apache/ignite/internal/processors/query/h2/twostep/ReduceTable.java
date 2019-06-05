@@ -165,8 +165,8 @@ public class ReduceTable extends TableBase {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return getScanIndex(null).getRowCountApproximation();
+    @Override public long getRowCountApproximation(Session ses) {
+        return getScanIndex(null).getRowCountApproximation(ses);
     }
 
     /** {@inheritDoc} */

@@ -117,7 +117,7 @@ public class ScanIndex extends BaseIndex {
     public double getCost(Session session, int[] masks,
             TableFilter[] filters, int filter, SortOrder sortOrder,
             AllColumnsForPlan allColumnsSet) {
-        return tableData.getRowCountApproximation() + Constants.COST_ROW_OFFSET;
+        return tableData.getRowCountApproximation(session) + Constants.COST_ROW_OFFSET;
     }
 
     @Override
@@ -182,7 +182,7 @@ public class ScanIndex extends BaseIndex {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return rowCount;
     }
 

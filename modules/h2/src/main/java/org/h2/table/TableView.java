@@ -566,7 +566,7 @@ public class TableView extends Table {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return ROW_COUNT_APPROXIMATION;
     }
 

@@ -290,7 +290,7 @@ public class ScriptCommand extends ScriptBase {
                 }
                 if (TableType.TABLE == tableType) {
                     if (table.canGetRowCount()) {
-                        StringBuilder builder = new StringBuilder("-- ").append(table.getRowCountApproximation())
+                        StringBuilder builder = new StringBuilder("-- ").append(table.getRowCountApproximation(session))
                                 .append(" +/- SELECT COUNT(*) FROM ");
                         table.getSQL(builder, false);
                         add(builder.toString(), false);

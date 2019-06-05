@@ -188,7 +188,7 @@ public abstract class ReduceIndex extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
+    @Override public long getRowCountApproximation(Session ses) {
         return 10_000;
     }
 

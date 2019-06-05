@@ -819,7 +819,7 @@ public class MetaTable extends Table {
                         // TABLE_CLASS
                         table.getClass().getName(),
                         // ROW_COUNT_ESTIMATE
-                        ValueLong.get(table.getRowCountApproximation())
+                        ValueLong.get(table.getRowCountApproximation(session))
                 );
             }
             break;
@@ -2369,7 +2369,7 @@ public class MetaTable extends Table {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return ROW_COUNT_APPROXIMATION;
     }
 

@@ -419,6 +419,8 @@ public class H2Utils {
      */
     public static void setupConnection(Connection conn, QueryContext qctx,
         boolean distributedJoins, boolean enforceJoinOrder) {
+        assert qctx != null;
+
         setupConnection(conn, qctx, distributedJoins, enforceJoinOrder, false);
     }
 
@@ -1006,4 +1008,21 @@ public class H2Utils {
         return keyCols.toArray(EMPTY_COLUMNS);
     }
 
+    /**
+     * @param ses H2 session.
+     * @return Query context.
+     */
+    public static QueryContext context(Session ses) {
+        assert ses != null;
+
+        return (QueryContext)ses.getQueryContext();
+    }
+
+    /**
+     * @param c Connection.
+     * @return Query context.
+     */
+    public static QueryContext context(Connection c) {
+        return (QueryContext)((Session)((JdbcConnection)c).getSession()).getQueryContext();
+    }
 }

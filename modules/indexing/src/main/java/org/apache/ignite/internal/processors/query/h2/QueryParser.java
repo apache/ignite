@@ -279,21 +279,9 @@ public class QueryParser {
         // (and therefore longer parsing) as long as there'll be more parsing at split stage.
         boolean enforceJoinOrderOnParsing = (!qry.isLocal() || qry.isEnforceJoinOrder());
 
-        H2Utils.setupConnection(c, null, /*distributedJoins*/false, enforceJoinOrderOnParsing);
+        QueryContext qctx = QueryContext.parseContext(idx.backupFilter(null, null), qry.isLocal());
 
-        QueryContext qctx = new QueryContext(
-            0,
-            idx.backupFilter(null, null),
-            null,
-            null,
-            null,
-            null,
-            qry.isLocal()
-        );
-
-        QueryContextRegistry qryCtxRegistry = idx.queryContextRegistry();
-
-        qryCtxRegistry.setThreadLocal(qctx);
+        H2Utils.setupConnection(c, qctx, /*distributedJoins*/false, enforceJoinOrderOnParsing);
 
         PreparedStatement stmt = null;
 
@@ -538,8 +526,6 @@ public class QueryParser {
             throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
         finally {
-            qryCtxRegistry.clearThreadLocal();
-
             U.close(stmt, log);
         }
     }

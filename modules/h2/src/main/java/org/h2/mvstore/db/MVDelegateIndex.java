@@ -105,7 +105,7 @@ public class MVDelegateIndex extends BaseIndex implements MVIndex {
     public double getCost(Session session, int[] masks,
             TableFilter[] filters, int filter, SortOrder sortOrder,
             AllColumnsForPlan allColumnsSet) {
-        return 10 * getCostRangeIndex(masks, mainIndex.getRowCountApproximation(),
+        return 10 * getCostRangeIndex(masks, mainIndex.getRowCountApproximation(session),
                 filters, filter, sortOrder, true, allColumnsSet);
     }
 
@@ -145,8 +145,8 @@ public class MVDelegateIndex extends BaseIndex implements MVIndex {
     }
 
     @Override
-    public long getRowCountApproximation() {
-        return mainIndex.getRowCountApproximation();
+    public long getRowCountApproximation(Session ses) {
+        return mainIndex.getRowCountApproximation(ses);
     }
 
     @Override

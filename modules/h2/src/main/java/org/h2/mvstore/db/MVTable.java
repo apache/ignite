@@ -656,8 +656,8 @@ public class MVTable extends RegularTable {
     }
 
     @Override
-    public long getRowCountApproximation() {
-        return primaryIndex.getRowCountApproximation();
+    public long getRowCountApproximation(Session ses) {
+        return primaryIndex.getRowCountApproximation(ses);
     }
 
     @Override

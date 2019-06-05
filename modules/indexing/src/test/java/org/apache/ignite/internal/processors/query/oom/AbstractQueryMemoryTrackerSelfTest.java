@@ -423,8 +423,6 @@ public abstract class AbstractQueryMemoryTrackerSelfTest extends GridCommonAbstr
 
             if (res instanceof H2ManagedLocalResult)
                 localResults.add((H2ManagedLocalResult)res);
-            else
-                assert ses.getQueryContext() == null;
 
             return res;
         }

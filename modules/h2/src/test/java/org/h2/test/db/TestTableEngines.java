@@ -930,8 +930,8 @@ public class TestTableEngines extends TestDb {
                 }
 
                 @Override
-                public long getRowCountApproximation() {
-                    return table.getRowCountApproximation();
+                public long getRowCountApproximation(Session ses) {
+                    return table.getRowCountApproximation(ses);
                 }
 
                 @Override
@@ -1055,11 +1055,11 @@ public class TestTableEngines extends TestDb {
 
             @Override
             public long getRowCount(Session session) {
-                return getRowCountApproximation();
+                return getRowCountApproximation(session);
             }
 
             @Override
-            public long getRowCountApproximation() {
+            public long getRowCountApproximation(Session ses) {
                 return row == null ? 0 : 1;
             }
 
@@ -1154,8 +1154,8 @@ public class TestTableEngines extends TestDb {
                 }
 
                 @Override
-                public long getRowCountApproximation() {
-                    return table.getRowCountApproximation();
+                public long getRowCountApproximation(Session ses) {
+                    return table.getRowCountApproximation(ses);
                 }
 
                 @Override
@@ -1478,8 +1478,8 @@ public class TestTableEngines extends TestDb {
         }
 
         @Override
-        public long getRowCountApproximation() {
-            return getScanIndex(null).getRowCountApproximation();
+        public long getRowCountApproximation(Session ses) {
+            return getScanIndex(null).getRowCountApproximation(ses);
         }
 
         @Override
@@ -1584,7 +1584,7 @@ public class TestTableEngines extends TestDb {
                 }
 
                 @Override
-                public boolean addSearchRows(SearchRow first, SearchRow last) {
+                public boolean addSearchRows(Session ses, SearchRow first, SearchRow last) {
                     assert !isBatchFull();
                     searchRows.add(first);
                     searchRows.add(last);
@@ -1760,7 +1760,7 @@ public class TestTableEngines extends TestDb {
         }
 
         @Override
-        public long getRowCountApproximation() {
+        public long getRowCountApproximation(Session ses) {
             return getRowCount(null);
         }
 

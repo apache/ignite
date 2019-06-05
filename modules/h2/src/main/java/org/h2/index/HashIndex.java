@@ -113,11 +113,11 @@ public class HashIndex extends BaseIndex {
 
     @Override
     public long getRowCount(Session session) {
-        return getRowCountApproximation();
+        return getRowCountApproximation(session);
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return rows.size() + nullRows.size();
     }
 

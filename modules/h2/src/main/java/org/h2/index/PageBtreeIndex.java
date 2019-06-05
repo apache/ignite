@@ -308,8 +308,8 @@ public class PageBtreeIndex extends PageIndex {
     }
 
     @Override
-    public long getRowCountApproximation() {
-        return tableData.getRowCountApproximation();
+    public long getRowCountApproximation(Session ses) {
+        return tableData.getRowCountApproximation(ses);
     }
 
     @Override

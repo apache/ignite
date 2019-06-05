@@ -80,6 +80,23 @@ public class QueryContext implements H2QueryContext {
     }
 
     /**
+     * @param filter Filter.
+     * @param local Local query flag.
+     * @return Context for parsing.
+     */
+    public static QueryContext parseContext(@Nullable IndexingQueryFilter filter, boolean local) {
+        return new QueryContext(
+            0,
+            filter,
+            null,
+            null,
+            null,
+            null,
+            local
+        );
+    }
+
+    /**
      * @return Mvcc snapshot.
      */
     @Nullable public MvccSnapshot mvccSnapshot() {

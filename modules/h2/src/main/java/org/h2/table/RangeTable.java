@@ -238,7 +238,7 @@ public class RangeTable extends Table {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return 100;
     }
 

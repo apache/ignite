@@ -389,7 +389,7 @@ public final class MVSecondaryIndex extends BaseIndex implements MVIndex {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         try {
             return dataMap.sizeAsLongMax();
         } catch (IllegalStateException e) {

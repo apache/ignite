@@ -211,8 +211,6 @@ class MapQueryResults {
      * Release query context.
      */
     public void releaseQueryContext() {
-        h2.queryContextRegistry().clearThreadLocal();
-
         if (qctx.distributedJoinContext() == null)
             qctx.clearContext(false);
     }

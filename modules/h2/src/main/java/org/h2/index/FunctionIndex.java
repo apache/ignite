@@ -66,7 +66,7 @@ public class FunctionIndex extends BaseIndex {
         }
         long expectedRows;
         if (functionTable.canGetRowCount()) {
-            expectedRows = functionTable.getRowCountApproximation();
+            expectedRows = functionTable.getRowCountApproximation(session);
         } else {
             expectedRows = database.getSettings().estimatedFunctionTableRows;
         }
@@ -109,8 +109,8 @@ public class FunctionIndex extends BaseIndex {
     }
 
     @Override
-    public long getRowCountApproximation() {
-        return functionTable.getRowCountApproximation();
+    public long getRowCountApproximation(Session ses) {
+        return functionTable.getRowCountApproximation(ses);
     }
 
     @Override

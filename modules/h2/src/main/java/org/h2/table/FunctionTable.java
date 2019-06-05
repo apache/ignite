@@ -236,7 +236,7 @@ public class FunctionTable extends Table {
     }
 
     @Override
-    public long getRowCountApproximation() {
+    public long getRowCountApproximation(Session ses) {
         return rowCount;
     }
 

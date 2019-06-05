@@ -105,7 +105,7 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter,
         SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
 
-        long rowCnt = getRowCountApproximation();
+        long rowCnt = getRowCountApproximation(ses);
 
         double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 

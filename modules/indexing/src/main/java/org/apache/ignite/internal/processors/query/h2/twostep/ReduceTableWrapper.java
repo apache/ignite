@@ -228,10 +228,10 @@ public class ReduceTableWrapper extends Table {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
+    @Override public long getRowCountApproximation(Session ses) {
         Table t = tbl.get();
 
-        return t == null ? 0 : t.getRowCountApproximation();
+        return t == null ? 0 : t.getRowCountApproximation(ses);
     }
 
     /** {@inheritDoc} */

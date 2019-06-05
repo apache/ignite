@@ -151,8 +151,8 @@ public class H2ScanIndex<D extends BaseIndex> extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return delegate().getRowCountApproximation();
+    @Override public long getRowCountApproximation(Session ses) {
+        return delegate().getRowCountApproximation(ses);
     }
 
     /** {@inheritDoc} */
@@ -281,9 +281,9 @@ public class H2ScanIndex<D extends BaseIndex> extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session session, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         AllColumnsForPlan allColumnsSet) {
-        long rows = getRowCountApproximation();
+        long rows = getRowCountApproximation(ses);
 
         return getCostRangeIndex(masks, rows, filters, filter, sortOrder, true, allColumnsSet);
     }
