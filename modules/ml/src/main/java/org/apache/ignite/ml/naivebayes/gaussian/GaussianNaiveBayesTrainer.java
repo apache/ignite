@@ -45,9 +45,6 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
     /** Sets equivalent probability for all classes. */
     private boolean equiprobableClasses;
 
-    /** Feature ids which should be skipped. By defaut all features are processed. */
-    private Collection<Integer> featureIdsToSkip = emptyList();
-
     /** {@inheritDoc} */
     @Override public <K, V> GaussianNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> extractor) {
@@ -101,14 +98,10 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
 
                     toMeans = res.featureSumsPerLbl.get(label);
                     sqSum = res.featureSquaredSumsPerLbl.get(label);
-                    int index = 0;
                     for (int j = 0; j < features.size(); j++) {
-                        if (featureIdsToSkip.contains(j))
-                            continue;
-                        double x = features.get(index);
-                        toMeans[index] += x;
-                        sqSum[index] += x * x;
-                        ++index;
+                        double x = features.get(j);
+                        toMeans[j] += x;
+                        sqSum[j] += x * x;
                     }
                 }
                 return res;
@@ -144,13 +137,9 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 double[] sum = sumsHolder.featureSumsPerLbl.get(label);
                 double[] sqSum = sumsHolder.featureSquaredSumsPerLbl.get(label);
 
-                int index = 0;
                 for (int i = 0; i < featureCount; i++) {
-                    if (featureIdsToSkip.contains(i))
-                        continue;
-                    means[lbl][index] = sum[index] / count;
-                    variances[lbl][i] = (sqSum[index] - sum[index] * sum[index] / count) / count;
-                    ++index;
+                    means[lbl][i] = sum[i] / count;
+                    variances[lbl][i] = (sqSum[i] - sum[i] * sum[i] / count) / count;
                 }
 
                 if (equiprobableClasses)
@@ -167,7 +156,7 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
                 ++lbl;
             }
 
-            return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, featureIdsToSkip, sumsHolder);
+            return new GaussianNaiveBayesModel(means, variances, classProbabilities, labels, sumsHolder);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -189,22 +178,10 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
         return this;
     }
 
-    /** Sets feature ids to skip. */
-    public GaussianNaiveBayesTrainer setFeatureIdsToSkip(Collection<Integer> featureIdsToSkip) {
-        this.featureIdsToSkip = featureIdsToSkip;
-        return this;
-    }
-
-    /** */
-    public Collection<Integer> getFeatureIdsToSkip() {
-        return featureIdsToSkip;
-    }
-
     /** Sets default settings. */
     public GaussianNaiveBayesTrainer resetSettings() {
         equiprobableClasses = false;
         priorProbabilities = null;
-        featureIdsToSkip = emptyList();
         return this;
     }
 

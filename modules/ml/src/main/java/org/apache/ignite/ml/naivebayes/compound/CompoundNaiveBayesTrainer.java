@@ -32,9 +32,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-
-import static java.util.Arrays.asList;
 
 /**
  * Trainer for the compound Naive Bayes classifier model. It uses a model composition of {@code
@@ -51,7 +48,13 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     private GaussianNaiveBayesTrainer gaussianNaiveBayesTrainer;
 
     /** */
+    private Collection<Integer> gaussianFeatureIdsToSkip = Collections.emptyList();
+
+    /** */
     private DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer;
+
+    /** */
+    Collection<Integer> discreteFeatureIdsToSkip = Collections.emptyList();
 
     /** {@inheritDoc} */
     @Override public <K, V> CompoundNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
@@ -78,26 +81,23 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             .wirhPriorProbabilities(clsProbabilities);
 
         if (gaussianNaiveBayesTrainer != null) {
-            final Collection<Integer> featureIdsToSkip = new HashSet<>(gaussianNaiveBayesTrainer.getFeatureIdsToSkip());
-            gaussianNaiveBayesTrainer.setFeatureIdsToSkip(Collections.emptyList());
             GaussianNaiveBayesModel model = (mdl == null)
-                ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor.map(skipFeatures(featureIdsToSkip)))
-                : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor.map(skipFeatures(featureIdsToSkip)));
+                ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor.map(skipFeatures(gaussianFeatureIdsToSkip)))
+                : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor.map(skipFeatures(gaussianFeatureIdsToSkip)));
 
             compoundModel.withGaussianModel(model)
-                .withGaussianFeatureIdsToSkip(featureIdsToSkip)
+                .withGaussianFeatureIdsToSkip(gaussianFeatureIdsToSkip)
                 .withLabels(model.getLabels())
                 .wirhPriorProbabilities(clsProbabilities);
         }
 
         if (discreteNaiveBayesTrainer != null) {
-            final Collection<Integer> featureIdsToSkip =discreteNaiveBayesTrainer.getFeatureIdsToSkip();
             DiscreteNaiveBayesModel model = (mdl == null)
-                ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor.map(skipFeatures(featureIdsToSkip)))
-                : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor.map(skipFeatures(featureIdsToSkip)));
+                ? discreteNaiveBayesTrainer.fit(datasetBuilder, extractor.map(skipFeatures(discreteFeatureIdsToSkip)))
+                : discreteNaiveBayesTrainer.update(mdl.getDiscreteModel(), datasetBuilder, extractor.map(skipFeatures(discreteFeatureIdsToSkip)));
 
             compoundModel.withDiscreteModel(model)
-                    .withDiscreteFeatureIdsToSkip(featureIdsToSkip)
+                    .withDiscreteFeatureIdsToSkip(discreteFeatureIdsToSkip)
                 .withLabels(model.getLabels())
                 .wirhPriorProbabilities(clsProbabilities);
         }
@@ -138,6 +138,16 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
     /** */
     public CompoundNaiveBayesTrainer setDiscreteNaiveBayesTrainer(DiscreteNaiveBayesTrainer discreteNaiveBayesTrainer) {
         this.discreteNaiveBayesTrainer = discreteNaiveBayesTrainer;
+        return this;
+    }
+
+    public CompoundNaiveBayesTrainer withGaussianFeatureIdsToSkip(Collection<Integer> gaussianFeatureIdsToSkip) {
+        this.gaussianFeatureIdsToSkip = gaussianFeatureIdsToSkip;
+        return this;
+    }
+
+    public CompoundNaiveBayesTrainer withDiscreteFeatureIdsToSkip(Collection<Integer> discreteFeatureIdsToSkip) {
+        this.discreteFeatureIdsToSkip = discreteFeatureIdsToSkip;
         return this;
     }
 }

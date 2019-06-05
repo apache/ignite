@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.naivebayes.gaussian;
 
 import java.io.Serializable;
-import java.util.Collection;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
@@ -44,8 +43,6 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
     /** Labels. */
     private final double[] labels;
 
-    /** Feature ids which should be skipped. By defaut all features are processed. */
-    private final Collection<Integer> featureIdsToSkip;
     /** Feature sum, squared sum and count per label. */
     private final GaussianNaiveBayesSumsHolder sumsHolder;
 
@@ -54,17 +51,14 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @param variances Variances of features for all classes.
      * @param classProbabilities Probabilities for all classes.
      * @param labels Labels.
-     * @param featureIdsToSkip Feature ids which should be skip.
      * @param sumsHolder Feature sum, squared sum and count sum per label. This data is used for future model updating.
      */
     public GaussianNaiveBayesModel(double[][] means, double[][] variances,
-        double[] classProbabilities, double[] labels, Collection<Integer> featureIdsToSkip,
-        GaussianNaiveBayesSumsHolder sumsHolder) {
+        double[] classProbabilities, double[] labels, GaussianNaiveBayesSumsHolder sumsHolder) {
         this.means = means;
         this.variances = variances;
         this.classProbabilities = classProbabilities;
         this.labels = labels;
-        this.featureIdsToSkip = featureIdsToSkip;
         this.sumsHolder = sumsHolder;
     }
 
@@ -96,14 +90,10 @@ public class GaussianNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         double[] probapilityPowers = new double[classProbabilities.length];
 
         for (int i = 0; i < classProbabilities.length; i++) {
-            int index = 0;
             for (int j = 0; j < vector.size(); j++) {
-                if (featureIdsToSkip.contains(j))
-                    continue;
                 double x = vector.get(j);
-                double parobability = gauss(x, means[i][index], variances[i][index]);
+                double parobability = gauss(x, means[i][j], variances[i][j]);
                 probapilityPowers[i] += (parobability > 0 ? Math.log(parobability) : .0);
-                ++index;
             }
         }
         return probapilityPowers;
