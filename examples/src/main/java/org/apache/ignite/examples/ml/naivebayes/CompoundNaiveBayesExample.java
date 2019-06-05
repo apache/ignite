@@ -68,7 +68,7 @@ public class CompoundNaiveBayesExample {
             CompoundNaiveBayesTrainer trainer = new CompoundNaiveBayesTrainer()
                 .setClsProbabilities(classProbabilities)
                 .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer())
-                .withDiscreteFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
+                .withGaussianFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
                 .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
                     .setBucketThresholds(thresholds))
                 .withDiscreteFeatureIdsToSkip(asList(0, 1, 2));
