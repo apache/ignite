@@ -39,9 +39,7 @@ import org.apache.ignite.spi.metric.log.LogExporterSpi;
  * @see MetricExporterSpi
  */
 public interface MetricExporterPushSpi extends MetricExporterSpi {
-    /**
-     * @return Period in milliseconds after {@link #export()} method should be called.
-     */
+    /** @return Period in milliseconds after {@link #export()} method should be called. */
     public long getPeriod();
 
     /** Sets period in milliseconds after {@link #export()} method should be called. */
@@ -49,7 +47,7 @@ public interface MetricExporterPushSpi extends MetricExporterSpi {
 
     /**
      * Callback to do the export of metrics info.
-     * Method will be called into some Ignite managed thread each {@link #timeout()} millisecond.
+     * Method will be called into some Ignite managed thread each {@link #getPeriod()} millisecond.
      */
     public void export();
 }

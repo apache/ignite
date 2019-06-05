@@ -21,9 +21,7 @@ package org.apache.ignite.spi.metric;
  * Interface for the metrics that holds double primitive.
  */
 public interface DoubleMetric extends Metric {
-    /**
-     * @return Value of the metric.
-     */
+    /** @return Value of the metric. */
     public double value();
 
     /** {@inheritDoc} */

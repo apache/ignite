@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.metric;
 
 import java.util.function.IntSupplier;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
 import org.jetbrains.annotations.Nullable;
@@ -29,19 +31,31 @@ public class IntMetricImpl extends AbstractMetric implements IntMetric, Gauge {
     /** Value supplier. */
     private final IntSupplier val;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * @param name Name.
      * @param descr Description.
      * @param val Supplier.
+     * @param log Logger.
      */
-    public IntMetricImpl(String name, @Nullable String descr, IntSupplier val) {
+    public IntMetricImpl(String name, @Nullable String descr, IntSupplier val, IgniteLogger log) {
         super(name, descr);
 
         this.val = val;
+        this.log = log;
     }
 
     /** {@inheritDoc} */
     @Override public int value() {
-        return val.getAsInt();
+        try {
+            return val.getAsInt();
+        }
+        catch (Exception e) {
+            LT.warn(log, e, "Error on metric calculation [name=" + name() + ']', false, true);
+
+            return 0;
+        }
     }
 }

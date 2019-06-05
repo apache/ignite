@@ -21,9 +21,7 @@ package org.apache.ignite.spi.metric;
  * Interface for the metrics that holds boolean primitive.
  */
 public interface BooleanMetric extends Metric {
-    /**
-     * @return Value of the metric.
-     */
+    /** @return Value of the metric. */
     public boolean value();
 
     /** {@inheritDoc} */

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.metric;
 
 import java.util.function.Supplier;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
 import org.jetbrains.annotations.Nullable;
@@ -32,17 +34,22 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
     /** Type. */
     private final Class<T> type;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * @param name Name.
      * @param descr Description.
      * @param value Supplier.
      * @param type Type.
+     * @param log Logger.
      */
-    public ObjectMetricImpl(String name, @Nullable String descr, Supplier<T> val, Class<T> type) {
+    public ObjectMetricImpl(String name, @Nullable String descr, Supplier<T> val, Class<T> type, IgniteLogger log) {
         super(name, descr);
 
         this.val = val;
         this.type = type;
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -51,7 +58,7 @@ public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<
             return val.get();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LT.warn(log, e, "Error on metric calculation [name=" + name() + ']', false, true);
 
             return null;
         }

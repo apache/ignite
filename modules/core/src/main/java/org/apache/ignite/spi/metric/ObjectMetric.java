@@ -23,14 +23,10 @@ import org.jetbrains.annotations.Nullable;
  * Interface for the metrics that holds typed value.
  */
 public interface ObjectMetric<T> extends Metric {
-    /**
-     * @return Value ot the metric.
-     */
+    /** @return Value ot the metric. */
     public T value();
 
-    /**
-     * @return Type of metric value.
-     */
+    /** @return Type of metric value. */
     public Class<T> type();
 
     /** {@inheritDoc} */

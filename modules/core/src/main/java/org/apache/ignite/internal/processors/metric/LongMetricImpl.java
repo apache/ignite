@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.metric;
 
 import java.util.function.LongSupplier;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
 import org.jetbrains.annotations.Nullable;
@@ -29,15 +31,20 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric, Gauge 
     /** Value supplier. */
     private final LongSupplier val;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * @param name Name.
      * @param descr Description.
      * @param val Supplier.
+     * @param log Logger.
      */
-    public LongMetricImpl(String name, @Nullable String descr, LongSupplier val) {
+    public LongMetricImpl(String name, @Nullable String descr, LongSupplier val, IgniteLogger log) {
         super(name, descr);
 
         this.val = val;
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -46,7 +53,7 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric, Gauge 
             return val.getAsLong();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LT.warn(log, e, "Error on metric calculation [name=" + name() + ']', false, true);
 
             return 0;
         }

@@ -11431,5 +11431,4 @@ public abstract class IgniteUtils {
     public static boolean isFlagSet(int flags, int flag) {
         return (flags & flag) == flag;
     }
-
 }

@@ -56,7 +56,7 @@ public class LogExporterSpiTest extends AbstractExporterSpiTest {
 
         LogExporterSpi logSpi = new LogExporterSpi();
 
-        logSpi.setTimeout(EXPORT_TIMEOUT);
+        logSpi.setPeriod(EXPORT_TIMEOUT);
 
         logSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
 

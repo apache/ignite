@@ -34,9 +34,7 @@ import org.jetbrains.annotations.Nullable;
  * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
 public class HitRateCounter extends AbstractMetric implements LongMetric, Counter {
-    /**
-     * Counter instance.
-     */
+    /** Counter instance. */
     private volatile HitRateCounterImpl cntr;
 
     /**
@@ -75,9 +73,7 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
         cntr.add(x);
     }
 
-    /**
-     * Adds 1 to the counter.
-     */
+    /** Adds 1 to the counter. */
     public void increment() {
         add(1);
     }

@@ -21,9 +21,7 @@ package org.apache.ignite.spi.metric;
  * Interface for the metrics that holds int primitive.
  */
 public interface IntMetric extends Metric {
-    /**
-     * @return Value of the metric.
-     */
+    /** @return Value of the metric. */
     public int value();
 
     /** {@inheritDoc} */

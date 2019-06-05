@@ -23,24 +23,16 @@ import org.jetbrains.annotations.Nullable;
  * Base interface for all metrics.
  */
 public interface Metric {
-    /**
-     * @return Name of the metric.
-     */
+    /** @return Name of the metric. */
     public String name();
 
-    /**
-     * @return Description of the metric.
-     */
+    /** @return Description of the metric. */
     public String description();
 
-    /**
-     * @return String representation of metric value.
-     */
+    /** @return String representation of metric value. */
     @Nullable public String getAsString();
 
-    /**
-     * Resets metric state.
-     */
+    /** Resets metric state. */
     public default void reset() {
         // No-op.
     }

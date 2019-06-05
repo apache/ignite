@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.metric;
 
 import java.util.function.DoubleSupplier;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
 import org.jetbrains.annotations.Nullable;
@@ -29,15 +31,20 @@ public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric, Ga
     /** Value supplier. */
     private final DoubleSupplier val;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * @param name Name.
      * @param descr Description.
      * @param val Supplier.
+     * @param log Logger.
      */
-    public DoubleMetricImpl(String name, @Nullable String descr, DoubleSupplier val) {
+    public DoubleMetricImpl(String name, @Nullable String descr, DoubleSupplier val, IgniteLogger log) {
         super(name, descr);
 
         this.val = val;
+        this.log = log;
     }
 
     /** {@inheritDoc} */
@@ -46,7 +53,7 @@ public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric, Ga
             return val.getAsDouble();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LT.warn(log, e, "Error on metric calculation [name=" + name() + ']', false, true);
 
             return 0;
         }

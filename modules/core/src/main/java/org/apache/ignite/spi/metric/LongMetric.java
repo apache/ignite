@@ -21,9 +21,7 @@ package org.apache.ignite.spi.metric;
  * Interface for the metrics that holds long primitive.
  */
 public interface LongMetric extends Metric {
-    /**
-     * @return Value of the metric.
-     */
+    /** @return Value of the metric. */
     public long value();
 
     /** {@inheritDoc} */
@@ -31,16 +29,12 @@ public interface LongMetric extends Metric {
         return Long.toString(value());
     }
 
-    /**
-     * @return Value of the metric.
-     */
+    /** @return Value of the metric. */
     public default long longValue() {
         return value();
     }
 
-    /**
-     * @return Value of the metric.
-     */
+    /** @return Value of the metric. */
     public default long get() {
         return value();
     }
