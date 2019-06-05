@@ -1189,11 +1189,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED = "IGNITE_TX_OWNER_DUMP_REQUESTS_ALLOWED";
 
     /**
-     * Enable heap usage optimization for persistent partitions via dereferencing file descriptor.
-     */
-    public static final String IGNITE_ENABLE_FILE_STORE_HEAP_OPTIMIZATION = "IGNITE_ENABLE_FILE_STORE_HEAP_OPTIMIZATION";
-
-    /**
      * Page lock tracker type.
      * -1 - Disable lock tracking.
      *  1 - HEAP_STACK
