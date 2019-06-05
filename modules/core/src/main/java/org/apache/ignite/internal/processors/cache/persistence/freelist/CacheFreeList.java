@@ -24,13 +24,14 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * FreeList implementation for cache.
  */
-public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
+public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
     /**
      * @param cacheId Cache id.
      * @param name Name.
@@ -41,10 +42,28 @@ public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
      */
-    public CacheFreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
+    public CacheFreeList(
+        int cacheId,
+        String name,
+        DataRegionMetricsImpl regionMetrics,
+        DataRegion dataRegion,
         ReuseList reuseList,
-        IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+        IgniteWriteAheadLogManager wal,
+        long metaPageId,
+        boolean initNew,
+        PageLockListener lockLsnr
+    ) throws IgniteCheckedException {
+        super(
+            cacheId,
+            name,
+            regionMetrics,
+            dataRegion,
+            reuseList,
+            wal,
+            metaPageId,
+            initNew,
+            lockLsnr
+        );
     }
 
     /** {@inheritDoc} */
