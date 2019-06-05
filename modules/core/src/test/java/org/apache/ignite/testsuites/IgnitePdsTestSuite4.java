@@ -27,6 +27,13 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCache
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchive;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchiveWALFsync;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManagerTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessorTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.HeapArrayLockLogTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.OffHeapLockLogTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 
 /**
  *
@@ -54,6 +61,17 @@ public class IgnitePdsTestSuite4 extends TestSuite {
         suite.addTestSuite(IgnitePdsStartWIthEmptyArchiveWALFsync.class);
 
         suite.addTestSuite(CorruptedTreeFailureHandlingTest.class);
+
+        // Page lock tracker tests.
+        suite.addTestSuite(PageLockTrackerManagerTest.class);
+        suite.addTestSuite(SharedPageLockTrackerTest.class);
+        suite.addTestSuite(ToFileDumpProcessorTest.class);
+        suite.addTestSuite(SharedPageLockTrackerTest.class);
+
+        suite.addTestSuite(HeapArrayLockLogTest.class);
+        suite.addTestSuite(HeapArrayLockStackTest.class);
+        suite.addTestSuite(OffHeapLockLogTest.class);
+        suite.addTestSuite(OffHeapLockStackTest.class);
 
         return suite;
     }
