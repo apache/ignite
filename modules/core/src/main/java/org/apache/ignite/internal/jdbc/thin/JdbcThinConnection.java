@@ -211,6 +211,9 @@ public class JdbcThinConnection implements Connection {
     /** Cancelable future for connections handler task. */
     private ScheduledFuture<?> connectionsHndScheduledFut;
 
+    /** Connections handler timer. */
+    private final IgniteProductVersion baseEndpointVer;
+
     /**
      * Creates new connection.
      *
@@ -228,11 +231,17 @@ public class JdbcThinConnection implements Connection {
 
         affinityAwareness = connProps.isAffinityAwareness();
 
-        ensureConnected();
+        if (affinityAwareness) {
+            baseEndpointVer = connectInBestEffortAffinityMode(null);
 
-        if (affinityAwareness)
             connectionsHndScheduledFut = maintenanceExecutor.scheduleWithFixedDelay(new ConnectionHandlerTask(),
                 0, RECONNECTION_DELAY, TimeUnit.MILLISECONDS);
+        }
+        else {
+            connectInCommonMode();
+
+            baseEndpointVer = null;
+        }
     }
 
     /**
@@ -247,7 +256,7 @@ public class JdbcThinConnection implements Connection {
         assert ios.isEmpty();
 
         if (affinityAwareness)
-            connectInBestEffortAffinityMode();
+            connectInBestEffortAffinityMode(baseEndpointVer);
         else
             connectInCommonMode();
     }
@@ -842,8 +851,12 @@ public class JdbcThinConnection implements Connection {
      * @return Ignite server version.
      */
     IgniteProductVersion igniteVersion() {
-        // TODO: IGNITE-11321: JDBC Thin: implement nodes multi version support.
-        return cliIo(null).igniteVersion();
+        if (affinityAwareness) {
+            return ios.values().stream().map(JdbcThinTcpIo::igniteVersion).min(IgniteProductVersion::compareTo).
+                orElse(baseEndpointVer);
+        }
+        else
+            return singleIo.igniteVersion();
     }
 
     /**
@@ -1051,8 +1064,12 @@ public class JdbcThinConnection implements Connection {
 
         AffinityTopologyVersion resAffinityVer = res.affinityVersion();
 
-        if (affinityCache.version().compareTo(resAffinityVer) < 0)
-            affinityCache = new AffinityCache(resAffinityVer);
+        if (affinityCache.version().compareTo(resAffinityVer) < 0) {
+            affinityCache = new AffinityCache(
+                resAffinityVer,
+                connProps.getAffinityAwarenessPartitionDistributionsCacheSize(),
+                connProps.getAffinityAwarenessSqlCacheSize());
+        }
         else if (affinityCache.version().compareTo(resAffinityVer) > 0) {
             // Jdbc thin affinity cache is binded to the newer affinity topology version, so we should ignore retrieved
             // partition distribution. Given situation might occur in case of concurrent race and is not
@@ -1432,8 +1449,7 @@ public class JdbcThinConnection implements Connection {
      * @return True if query cancellation supported, false otherwise.
      */
     boolean isQueryCancellationSupported() {
-        // TODO: IGNITE-11321: JDBC Thin: implement nodes multi version support.
-        return cliIo(null).isQueryCancellationSupported();
+        return affinityAwareness || singleIo.isQueryCancellationSupported();
     }
 
     /**
@@ -1620,13 +1636,13 @@ public class JdbcThinConnection implements Connection {
      * Establishes a connection to ignite endpoint, trying all specified hosts and ports one by one.
      * Stops as soon as all iosArr are established.
      *
+     * @param baseEndpointVer Base endpoint version.
+     * @return last connected endpoint version.
      * @throws SQLException If failed to connect to at least one ignite endpoint,
-     * or if endpoints versions are not the same.
+     * or if endpoints versions are less than base endpoint version.
      */
-    private void connectInBestEffortAffinityMode() throws SQLException {
+    private IgniteProductVersion connectInBestEffortAffinityMode(IgniteProductVersion baseEndpointVer) throws SQLException {
         List<Exception> exceptions = null;
-
-        IgniteProductVersion prevIgniteEndpointVer = null;
 
         for (int i = 0; i < connProps.getAddresses().length; i++) {
             HostAndPortRange srv = connProps.getAddresses()[i];
@@ -1649,13 +1665,15 @@ public class JdbcThinConnection implements Connection {
                                     INTERNAL_ERROR);
                             }
 
-                            if (prevIgniteEndpointVer != null && !prevIgniteEndpointVer.equals(cliIo.igniteVersion())) {
-                                // TODO: 13.02.19 IGNITE-11321 JDBC Thin: implement nodes multi version support.
+                            IgniteProductVersion endpointVer = cliIo.igniteVersion();
+
+                            if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
                                 cliIo.close();
 
                                 throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
-                                    "Different versions of nodes are not supported in affinity awareness mode.",
+                                    connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
+                                    "the node version [" + endpointVer + "] " +
+                                    "is smaller than the base one [" + baseEndpointVer + "].",
                                     INTERNAL_ERROR);
                             }
 
@@ -1670,9 +1688,7 @@ public class JdbcThinConnection implements Connection {
                             else
                                 connCnt.incrementAndGet();
 
-                            prevIgniteEndpointVer = cliIo.igniteVersion();
-
-                            return;
+                            return cliIo.igniteVersion();
                         }
                         catch (Exception exception) {
                             if (exceptions == null)
@@ -1692,6 +1708,8 @@ public class JdbcThinConnection implements Connection {
         }
 
         handleConnectExceptions(exceptions);
+
+        return null;
     }
 
     /**
@@ -1704,8 +1722,12 @@ public class JdbcThinConnection implements Connection {
         if (affinityAwareness) {
             AffinityTopologyVersion resAffVer = res.affinityVersion();
 
-            if (resAffVer != null && (affinityCache == null || affinityCache.version().compareTo(resAffVer) < 0))
-                affinityCache = new AffinityCache(resAffVer);
+            if (resAffVer != null && (affinityCache == null || affinityCache.version().compareTo(resAffVer) < 0)) {
+                affinityCache = new AffinityCache(
+                    resAffVer,
+                    connProps.getAffinityAwarenessPartitionDistributionsCacheSize(),
+                    connProps.getAffinityAwarenessSqlCacheSize());
+            }
 
             // Partition result was requested.
             if (res.response() instanceof JdbcQueryExecuteResult && qryReq.partitionResponseRequest()) {

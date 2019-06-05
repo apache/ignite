@@ -431,4 +431,31 @@ public interface ConnectionProperties {
      * @throws SQLException On error.
      */
     public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException;
+
+    /**
+     * @return SQL cache size that is used within affinity awareness optimizations.
+     */
+    public int getAffinityAwarenessSqlCacheSize();
+
+    /**
+     * Sets SQL cache size that is used within affinity awareness optimizations.
+     *
+     * @param affinityAwarenessSqlCacheSize SQL cache size.
+     * @throws SQLException On error.
+     */
+    public void setAffinityAwarenessSqlCacheSize(int affinityAwarenessSqlCacheSize) throws SQLException;
+
+    /**
+     * @return Partition distributions cache size that is used within affinity awareness optimizations.
+     */
+    public int getAffinityAwarenessPartitionDistributionsCacheSize();
+
+    /**
+     * Sets partition distributions cache size that is used within affinity awareness optimizations.
+     *
+     * @param affinityAwarenessPartDistributionsCacheSize Partition distributions cache size.
+     * @throws SQLException On error.
+     */
+    public void setAffinityAwarenessPartitionDistributionsCacheSize(
+        int affinityAwarenessPartDistributionsCacheSize) throws SQLException;
 }

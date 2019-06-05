@@ -88,11 +88,11 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         "jdbc:ignite:thin://127.0.0.1:10800..10802" :
         "jdbc:ignite:thin://127.0.0.1";
 
-    /** URL with affinity awareness flag. */
-    private String urlWithAffinityAwarenessFlag = url + "?affinityAwareness=" + affinityAwareness;
+    /** URL with affinity awareness property. */
+    private String urlWithAffinityAwarenessProp = url + "?affinityAwareness=" + affinityAwareness;
 
-    /** URL with affinity awareness flag and semicolon as delimeter. */
-    private String urlWithAffinityAwarenessFlagSemicolon = url + ";affinityAwareness=" + affinityAwareness;
+    /** URL with affinity awareness property and semicolon as delimiter. */
+    private String urlWithAffinityAwarenessPropSemicolon = url + ";affinityAwareness=" + affinityAwareness;
 
     /** Nodes count. */
     private int nodesCnt = affinityAwareness ? 4 : 2;
@@ -170,13 +170,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSocketBuffers() throws Exception {
         final int dfltDufSize = 64 * 1024;
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&socketSendBuffer=-1",
+        assertInvalid(urlWithAffinityAwarenessProp + "&socketSendBuffer=-1",
             "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&socketReceiveBuffer=-1",
+        assertInvalid(urlWithAffinityAwarenessProp + "&socketReceiveBuffer=-1",
             "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketReceiveBuffer());
@@ -184,21 +184,21 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         }
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&socketSendBuffer=1024")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&socketSendBuffer=1024")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(1024, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketReceiveBuffer());
             }
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&socketReceiveBuffer=1024")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&socketReceiveBuffer=1024")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(1024, io.connectionProperties().getSocketReceiveBuffer());
             }
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&" +
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&" +
             "socketSendBuffer=1024&socketReceiveBuffer=2048")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(1024, io.connectionProperties().getSocketSendBuffer());
@@ -216,28 +216,28 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSocketBuffersSemicolon() throws Exception {
         final int dfltDufSize = 64 * 1024;
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";socketSendBuffer=-1",
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";socketSendBuffer=-1",
             "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";socketReceiveBuffer=-1",
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";socketReceiveBuffer=-1",
             "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";socketSendBuffer=1024")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";socketSendBuffer=1024")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(1024, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketReceiveBuffer());
             }
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";socketReceiveBuffer=1024")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";socketReceiveBuffer=1024")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(dfltDufSize, io.connectionProperties().getSocketSendBuffer());
                 assertEquals(1024, io.connectionProperties().getSocketReceiveBuffer());
             }
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";" +
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";" +
             "socketSendBuffer=1024;socketReceiveBuffer=2048")) {
             for (JdbcThinTcpIo io: ios(conn)) {
                 assertEquals(1024, io.connectionProperties().getSocketSendBuffer());
@@ -253,24 +253,120 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testUpdateBatchSize() throws Exception {
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";updateBatchSize=-1",
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";updateBatchSize=-1",
             "Property cannot be lower than 1 [name=updateBatchSize, value=-1]");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon)) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertNull(io.connectionProperties().getUpdateBatchSize());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon
             + ";updateBatchSize=1024")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertEquals(1024, (int)io.connectionProperties().getUpdateBatchSize());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag +
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp +
             "&updateBatchSize=1024")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertEquals(1024, (int)io.connectionProperties().getUpdateBatchSize());
+        }
+    }
+
+    /**
+     * Test affinity awareness Sql cache size property.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityAwarenessSqlCacheSizeProperty() throws Exception {
+        assertInvalid(urlWithAffinityAwarenessProp + "&affinityAwarenessSQLCacheSize=0",
+            "Property cannot be lower than 1 [name=affinityAwarenessSQLCacheSize, value=0]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(1_000, io.connectionProperties().getAffinityAwarenessSqlCacheSize());
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp +
+            "&affinityAwarenessSQLCacheSize=100")) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(100, io.connectionProperties().getAffinityAwarenessSqlCacheSize());
+        }
+
+
+    }
+
+    /**
+     * Test affinity awareness Sql cache size property with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityAwarenessSqlCacheSizePropertySemicolon() throws Exception {
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";affinityAwarenessSQLCacheSize=0",
+            "Property cannot be lower than 1 [name=affinityAwarenessSQLCacheSize, value=0]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon)) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(1_000, io.connectionProperties().getAffinityAwarenessSqlCacheSize());
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon +
+            ";affinityAwarenessSQLCacheSize=100")) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(100, io.connectionProperties().getAffinityAwarenessSqlCacheSize());
+        }
+
+
+    }
+
+    /**
+     * Test affinity awareness partition distributions cache size property.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityAwarenessPartitionDistributionsCacheSizeProperty() throws Exception {
+        assertInvalid(urlWithAffinityAwarenessProp + "&affinityAwarenessPartitionDistributionsCacheSize=0",
+            "Property cannot be lower than 1 [name=affinityAwarenessPartitionDistributionsCacheSize, value=0]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
+            for (JdbcThinTcpIo io : ios(conn)) {
+                assertEquals(1_000,
+                    io.connectionProperties().getAffinityAwarenessPartitionDistributionsCacheSize());
+            }
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp +
+            "&affinityAwarenessPartitionDistributionsCacheSize=100")) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(100, io.connectionProperties().getAffinityAwarenessPartitionDistributionsCacheSize());
+        }
+    }
+
+    /**
+     * Test affinity awareness partition distributions cache size property with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityAwarenessPartitionDistributionsCacheSizePropertySemicolon() throws Exception {
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";affinityAwarenessPartitionDistributionsCacheSize=0",
+            "Property cannot be lower than 1 [name=affinityAwarenessPartitionDistributionsCacheSize, value=0]");
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon)) {
+            for (JdbcThinTcpIo io : ios(conn)) {
+                assertEquals(1_000,
+                    io.connectionProperties().getAffinityAwarenessPartitionDistributionsCacheSize());
+            }
+        }
+
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon +
+            ";affinityAwarenessPartitionDistributionsCacheSize=100")) {
+            for (JdbcThinTcpIo io : ios(conn))
+                assertEquals(100, io.connectionProperties().getAffinityAwarenessPartitionDistributionsCacheSize());
         }
     }
 
@@ -281,42 +377,42 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSqlHints() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             assertHints(conn, false, false, false, false, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&distributedJoins=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&distributedJoins=true")) {
             assertHints(conn, true, false, false, false, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&enforceJoinOrder=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&enforceJoinOrder=true")) {
             assertHints(conn, false, true, false, false, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&collocated=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&collocated=true")) {
             assertHints(conn, false, false, true, false, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&replicatedOnly=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&replicatedOnly=true")) {
             assertHints(conn, false, false, false, true, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&lazy=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&lazy=true")) {
             assertHints(conn, false, false, false, false, true,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&skipReducerOnUpdate=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&skipReducerOnUpdate=true")) {
             assertHints(conn, false, false, false, false, false,
                 true, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&distributedJoins=true&" +
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&distributedJoins=true&" +
             "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
             assertHints(conn, true, true, true, true, true,
                 true, affinityAwareness);
@@ -330,37 +426,37 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSqlHintsSemicolon() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";distributedJoins=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";distributedJoins=true")) {
             assertHints(conn, true, false, false, false, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";enforceJoinOrder=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";enforceJoinOrder=true")) {
             assertHints(conn, false, true, false, false, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";collocated=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";collocated=true")) {
             assertHints(conn, false, false, true, false, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";replicatedOnly=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";replicatedOnly=true")) {
             assertHints(conn, false, false, false, true, false,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";lazy=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";lazy=true")) {
             assertHints(conn, false, false, false, false, true,
                 false, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";skipReducerOnUpdate=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";skipReducerOnUpdate=true")) {
             assertHints(conn, false, false, false, false, false,
                 true, affinityAwareness);
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";distributedJoins=true;" +
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";distributedJoins=true;" +
             "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=true;skipReducerOnUpdate=true")) {
             assertHints(conn, true, true, true, true, true,
                 true, affinityAwareness);
@@ -399,39 +495,39 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testTcpNoDelay() throws Exception {
-        assertInvalid(urlWithAffinityAwarenessFlag + "&tcpNoDelay=0",
+        assertInvalid(urlWithAffinityAwarenessProp + "&tcpNoDelay=0",
             "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&tcpNoDelay=1",
+        assertInvalid(urlWithAffinityAwarenessProp + "&tcpNoDelay=1",
             "Invalid property value. [name=tcpNoDelay, val=1, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&tcpNoDelay=false1",
+        assertInvalid(urlWithAffinityAwarenessProp + "&tcpNoDelay=false1",
             "Invalid property value. [name=tcpNoDelay, val=false1, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlag + "&tcpNoDelay=true1",
+        assertInvalid(urlWithAffinityAwarenessProp + "&tcpNoDelay=true1",
             "Invalid property value. [name=tcpNoDelay, val=true1, choices=[true, false]]");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&tcpNoDelay=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&tcpNoDelay=true")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&tcpNoDelay=True")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&tcpNoDelay=True")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&tcpNoDelay=false")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&tcpNoDelay=false")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&tcpNoDelay=False")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp + "&tcpNoDelay=False")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
@@ -444,34 +540,34 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testTcpNoDelaySemicolon() throws Exception {
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=0",
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";tcpNoDelay=0",
             "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=1",
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";tcpNoDelay=1",
             "Invalid property value. [name=tcpNoDelay, val=1, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=false1",
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";tcpNoDelay=false1",
             "Invalid property value. [name=tcpNoDelay, val=false1, choices=[true, false]]");
 
-        assertInvalid(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=true1",
+        assertInvalid(urlWithAffinityAwarenessPropSemicolon + ";tcpNoDelay=true1",
             "Invalid property value. [name=tcpNoDelay, val=true1, choices=[true, false]]");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=true")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";tcpNoDelay=true")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=True")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";tcpNoDelay=True")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertTrue(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=false")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";tcpNoDelay=false")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";tcpNoDelay=False")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";tcpNoDelay=False")) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isTcpNoDelay());
         }
@@ -484,7 +580,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testAutoCloseServerCursorProperty() throws Exception {
-        String url = urlWithAffinityAwarenessFlag + "&autoCloseServerCursor";
+        String url = urlWithAffinityAwarenessProp + "&autoCloseServerCursor";
 
         String err = "Invalid property value. [name=autoCloseServerCursor";
 
@@ -493,7 +589,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         assertInvalid(url + "=false1", err);
         assertInvalid(url + "=true1", err);
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             for (JdbcThinTcpIo io: ios(conn))
                 assertFalse(io.connectionProperties().isAutoCloseServerCursor());
         }
@@ -526,7 +622,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testAutoCloseServerCursorPropertySemicolon() throws Exception {
-        String url = urlWithAffinityAwarenessFlagSemicolon + ";autoCloseServerCursor";
+        String url = urlWithAffinityAwarenessPropSemicolon + ";autoCloseServerCursor";
 
         String err = "Invalid property value. [name=autoCloseServerCursor";
 
@@ -586,15 +682,15 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSchemaSemicolon() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";schema=public")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";schema=public")) {
             assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";schema=\"" + DEFAULT_CACHE_NAME + '"')) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";schema=\"" + DEFAULT_CACHE_NAME + '"')) {
             assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
         }
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlagSemicolon + ";schema=_not_exist_schema_")) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessPropSemicolon + ";schema=_not_exist_schema_")) {
             assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
         }
     }
@@ -643,7 +739,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testClose() throws Exception {
         final Connection conn;
 
-        try (Connection conn0 = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn0 = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             conn = conn0;
 
             assert conn != null;
@@ -668,7 +764,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateStatement() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             try (Statement stmt = conn.createStatement()) {
                 assertNotNull(stmt);
 
@@ -691,7 +787,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateStatement2() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             int [] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
@@ -745,7 +841,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateStatement3() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             int [] rsTypes = new int[]
                 {TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.TYPE_SCROLL_SENSITIVE};
 
@@ -805,7 +901,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareStatement() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // null query text
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -839,7 +935,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareStatement3() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             final String sqlText = "select * from test where param = ?";
 
             int [] rsTypes = new int[]
@@ -900,7 +996,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareStatement4() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             final String sqlText = "select * from test where param = ?";
 
             int [] rsTypes = new int[]
@@ -966,7 +1062,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareStatementAutoGeneratedKeysUnsupported() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             final String sqlText = "insert into test (val) values (?)";
 
             GridTestUtils.assertThrows(log,
@@ -1016,7 +1112,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testPrepareCallUnsupported() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             final String sqlText = "exec test()";
 
             GridTestUtils.assertThrows(log,
@@ -1057,7 +1153,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testNativeSql() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // null query text
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1089,7 +1185,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetAutoCommit() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             boolean ac0 = conn.getAutoCommit();
 
             conn.setAutoCommit(!ac0);
@@ -1114,7 +1210,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCommit() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1159,7 +1255,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testRollback() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1189,7 +1285,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testBeginFailsWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             conn.createStatement().execute("BEGIN");
 
             fail("Exception is expected");
@@ -1204,7 +1300,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCommitIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             conn.setAutoCommit(false);
             conn.createStatement().execute("COMMIT");
 
@@ -1218,7 +1314,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testRollbackIgnoredWhenMvccIsDisabled() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             conn.setAutoCommit(false);
 
             conn.createStatement().execute("ROLLBACK");
@@ -1233,7 +1329,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetMetaData() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             assertNotNull(meta);
@@ -1254,7 +1350,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetReadOnly() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             conn.close();
 
             // Exception when called on closed connection
@@ -1278,7 +1374,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetCatalog() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             assert !conn.getMetaData().supportsCatalogsInDataManipulation();
 
             assertNull(conn.getCatalog());
@@ -1310,7 +1406,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetTransactionIsolation() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // Invalid parameter value
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1361,7 +1457,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testClearGetWarnings() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             SQLWarning warn = conn.getWarnings();
 
             assertNull(warn);
@@ -1395,7 +1491,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetTypeMap() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -1451,7 +1547,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetHoldability() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // default value
             assertEquals(conn.getMetaData().getResultSetHoldability(), conn.getHoldability());
 
@@ -1505,7 +1601,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSetSavepoint() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Disallowed in auto-commit mode
@@ -1536,7 +1632,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSetSavepointName() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
@@ -1582,7 +1678,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testRollbackSavePoint() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
@@ -1628,7 +1724,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testReleaseSavepoint() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
@@ -1667,7 +1763,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateClob() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // Unsupported
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1698,7 +1794,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateBlob() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // Unsupported
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1729,7 +1825,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateNClob() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // Unsupported
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1760,7 +1856,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateSQLXML() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // Unsupported
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1793,7 +1889,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testGetSetClientInfoPair() throws Exception {
 //        fail("https://issues.apache.org/jira/browse/IGNITE-5425");
 
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             final String name = "ApplicationName";
             final String val = "SelfTest";
 
@@ -1827,7 +1923,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetClientInfoProperties() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             final String name = "ApplicationName";
             final String val = "SelfTest";
 
@@ -1866,7 +1962,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateArrayOf() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             final String typeName = "varchar";
 
             final String[] elements = new String[] {"apple", "pear"};
@@ -1907,7 +2003,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testCreateStruct() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // Invalid typename
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1944,7 +2040,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetSchema() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             assertEquals("PUBLIC", conn.getSchema());
 
             final String schema = "test";
@@ -1978,7 +2074,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testAbort() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             //Invalid executor
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -2005,7 +2101,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testGetSetNetworkTimeout() throws Exception {
-        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             // default
             assertEquals(0, conn.getNetworkTimeout());
 
@@ -2053,7 +2149,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testInvalidNestedTxMode() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&nestedTransactionsMode=invalid");
+                DriverManager.getConnection(urlWithAffinityAwarenessProp + "&nestedTransactionsMode=invalid");
 
                 return null;
             }
@@ -2091,7 +2187,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSslClientAndPlainServer()  {
         Throwable e = GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                DriverManager.getConnection(urlWithAffinityAwarenessFlag + "&sslMode=require" +
+                DriverManager.getConnection(urlWithAffinityAwarenessProp + "&sslMode=require" +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                     "&sslClientCertificateKeyStorePassword=123456" +
                     "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
@@ -2122,7 +2218,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         final AtomicInteger exCnt = new AtomicInteger(0);
 
-        try (final Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessFlag)) {
+        try (final Connection conn = DriverManager.getConnection(urlWithAffinityAwarenessProp)) {
             final IgniteInternalFuture f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {

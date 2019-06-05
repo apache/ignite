@@ -65,6 +65,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
+    /** URL with affinity awareness enabled. */
+    public static final String URL_AFFINITY_AWARENESS =
+        "jdbc:ignite:thin://127.0.0.1:10800..10801?affinityAwareness=true";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName).setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
@@ -820,8 +824,17 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     @Test
     public void testVersions() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert conn.getMetaData().getDatabaseProductVersion().equals(IgniteVersionUtils.VER.toString());
-            assert conn.getMetaData().getDriverVersion().equals(IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite database product version.",
+                conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite driver version.",
+                conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
+        }
+
+        try (Connection conn = DriverManager.getConnection(URL_AFFINITY_AWARENESS)) {
+            assertEquals("Unexpected ignite database product version.",
+                conn.getMetaData().getDatabaseProductVersion(), IgniteVersionUtils.VER.toString());
+            assertEquals("Unexpected ignite driver version.",
+                conn.getMetaData().getDriverVersion(), IgniteVersionUtils.VER.toString());
         }
     }
 

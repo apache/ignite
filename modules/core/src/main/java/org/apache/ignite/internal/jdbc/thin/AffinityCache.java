@@ -26,14 +26,6 @@ import org.apache.ignite.internal.util.GridBoundedLinkedHashMap;
  * Affinity Cache.
  */
 public final class AffinityCache {
-    /** Partition distributions cache limit. */
-    // TODO: 09.04.19 IGNITE-11705 Jdbc Thin: add ability to control affinity cache size.
-    public static final int DISTRIBUTIONS_CACHE_LIMIT = 1000;
-
-    /** SQL cache limit. */
-    // TODO: 09.04.19 IGNITE-11705 Jdbc Thin: add ability to control affinity cache size.
-    public static final int SQL_CACHE_LIMIT = 100_000;
-
     /** Affinity topology version. */
     private final AffinityTopologyVersion ver;
 
@@ -48,12 +40,13 @@ public final class AffinityCache {
      *
      * @param ver Affinity topology version.
      */
-    public AffinityCache(AffinityTopologyVersion ver) {
+    public AffinityCache(AffinityTopologyVersion ver, int affinityAwarenessPartDistributionsCacheSize,
+        int affinityAwarenessSQLCacheSize) {
         this.ver = ver;
 
-        cachePartitionsDistribution = new GridBoundedLinkedHashMap<>(DISTRIBUTIONS_CACHE_LIMIT);
+        cachePartitionsDistribution = new GridBoundedLinkedHashMap<>(affinityAwarenessPartDistributionsCacheSize);
 
-        sqlCache = new GridBoundedLinkedHashMap<>(SQL_CACHE_LIMIT);
+        sqlCache = new GridBoundedLinkedHashMap<>(affinityAwarenessSQLCacheSize);
     }
 
     /**
@@ -72,7 +65,7 @@ public final class AffinityCache {
     void addCacheDistribution(Integer cacheId, UUID[] distribution) {
         for (Map.Entry<Integer, UUID[]> entry : cachePartitionsDistribution.entrySet()) {
             if (Arrays.equals(entry.getValue(), distribution)) {
-                // put link to alrady existing distribution instead of creating new one.
+                // put link to already existing distribution instead of creating new one.
                 cachePartitionsDistribution.put(cacheId, entry.getValue());
 
                 return;
@@ -83,7 +76,7 @@ public final class AffinityCache {
     }
 
     /**
-     * Adds sql query with corresponding partion result descriptor.
+     * Adds sql query with corresponding partition result descriptor.
      *
      * @param sql Qualified sql query.
      * @param partRes Partition result descriptor.
@@ -104,7 +97,7 @@ public final class AffinityCache {
 
     /**
      * @param cacheId Cache Id.
-     * @return Cache partitoins distribution for given cache Id or null.
+     * @return Cache partition distribution for given cache Id or null.
      */
     public UUID[] cacheDistribution(int cacheId) {
         return cachePartitionsDistribution.get(cacheId);

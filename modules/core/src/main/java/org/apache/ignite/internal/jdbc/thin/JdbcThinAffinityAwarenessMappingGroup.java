@@ -37,7 +37,7 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
     /** Set of cache Ids. */
     private final Set<Integer> cacheIds = new HashSet<>();
 
-    /** Partitoins mappings. */
+    /** Partitions mappings. */
     private final Map<UUID, Set<Integer>> partitionsMappings;
 
     /**
@@ -61,7 +61,7 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
     }
 
     /**
-     * Tries to merge given partions mappings and corresponding cache id with already existing mappings.
+     * Tries to merge given partitions mappings and corresponding cache id with already existing mappings.
      *
      * @param cacheId Cache id.
      * @param partitionsMappings Partitions mappings.
@@ -81,10 +81,10 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
 
     /**
      * Reverts partitions mappings from the form 'node id -> set of partition ids' to the form 'partition id -> node
-     * id'. First form is more compact, so it's preffered in case of data transfering, second form is easier to use on
+     * id'. First form is more compact, so it's preferred in case of data transferring, second form is easier to use on
      * client side, cause we mainly retrieve data using partition is as key.
      *
-     * @param partsCnt Partitoins count.
+     * @param partsCnt Partitions count.
      * @return Reverted form of partitions mapping: partition id -> node id.
      */
     public UUID[] revertMappings(int partsCnt) {
@@ -145,7 +145,7 @@ public class JdbcThinAffinityAwarenessMappingGroup implements JdbcRawBinarylizab
      *
      * @param reader Binary object reader.
      * @param ver Protocol version.
-     * @return Desirialized instance of <code>JdbcThinAffinityAwarenessMappingGroup</code>.
+     * @return Deserialized instance of <code>JdbcThinAffinityAwarenessMappingGroup</code>.
      * @throws BinaryObjectException In case of error.
      */
     public static JdbcThinAffinityAwarenessMappingGroup readGroup(BinaryReaderExImpl reader,

@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.jdbc.thin.AffinityCache;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionResultDescriptor;
 import org.apache.ignite.internal.jdbc.thin.QualifiedSQLQuery;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.query.QueryHistoryMetrics;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
@@ -432,22 +433,22 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
      */
     @Test
     public void testAffinityAwarenessIsSkippedIfItIsSwitchedOff() throws Exception {
-        Connection conn = DriverManager.getConnection(
+        try (Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=false");
+             Statement stmt = conn.createStatement()) {
 
-        Statement stmt = conn.createStatement();
+            final String cacheName = "yac";
 
-        final String cacheName = "yac";
+            CacheConfiguration<Object, Object> cache = prepareCacheConfig(cacheName);
 
-        CacheConfiguration<Object, Object> cache = prepareCacheConfig(cacheName);
+            ignite(0).createCache(cache);
 
-        ignite(0).createCache(cache);
+            stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
 
-        stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
+            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
-
-        assertNull("Affinity cache is not null.", affinityCache);
+            assertNull("Affinity cache is not null.", affinityCache);
+        }
     }
 
     /**
@@ -457,22 +458,22 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
      */
     @Test
     public void testAffinityAwarenessIsSkippedByDefault() throws Exception {
-        Connection conn = DriverManager.getConnection(
+        try (Connection conn = DriverManager.getConnection(
             "jdbc:ignite:thin://127.0.0.1:10800..10802");
+             Statement stmt = conn.createStatement()) {
 
-        Statement stmt = conn.createStatement();
+            final String cacheName = "yacccc";
 
-        final String cacheName = "yacccc";
+            CacheConfiguration<Object, Object> cache = prepareCacheConfig(cacheName);
 
-        CacheConfiguration<Object, Object> cache = prepareCacheConfig(cacheName);
+            ignite(0).createCache(cache);
 
-        ignite(0).createCache(cache);
+            stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
 
-        stmt.executeQuery("select * from \"" + cacheName + "\".Person where _key = 1");
+            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
 
-        AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
-
-        assertNull("Affinity cache is not null.", affinityCache);
+            assertNull("Affinity cache is not null.", affinityCache);
+        }
     }
 
     /**
@@ -551,6 +552,62 @@ public class JdbcThinAffinityAwarenessSelfTest extends JdbcThinAbstractSelfTest 
         // are equal in therms of (==)
         assertTrue("Partitions distributions are not the same.",
             cachePartitionsDistribution.get(0) == cachePartitionsDistribution.get(1));
+    }
+
+    /**
+     * Check that affinityAwarenessSQLCacheSize and affinityAwarenessPartitionDistributionsCacheSize
+     * actually limit corresponding caches within affinity awareness cache.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityAwarenessLimitedCacheSize() throws Exception {
+        try (Connection conn = DriverManager.getConnection(
+            "jdbc:ignite:thin://127.0.0.1:10800..10802?affinityAwareness=true" +
+                "&affinityAwarenessSQLCacheSize=1&affinityAwarenessPartitionDistributionsCacheSize=1");
+             Statement stmt = conn.createStatement()) {
+            final String cacheName1 = UUID.randomUUID().toString().substring(0, 6);
+
+            CacheConfiguration<Object, Object> cache1 = prepareCacheConfig(cacheName1);
+
+            ignite(0).createCache(cache1);
+
+            fillCache(cacheName1);
+
+            final String cacheName2 = UUID.randomUUID().toString().substring(0, 6);
+
+            CacheConfiguration<Object, Object> cache2 = prepareCacheConfig(cacheName2);
+
+            ignite(0).createCache(cache2);
+
+            fillCache(cacheName2);
+
+            stmt.executeQuery("select * from \"" + cacheName1 + "\".Person where _key = 1");
+            stmt.executeQuery("select * from \"" + cacheName1 + "\".Person where _key = 1");
+
+            stmt.executeQuery("select * from \"" + cacheName2 + "\".Person where _key = 1");
+            stmt.executeQuery("select * from \"" + cacheName2 + "\".Person where _key = 1");
+
+            AffinityCache affinityCache = GridTestUtils.getFieldValue(conn, "affinityCache");
+
+            GridBoundedLinkedHashMap<Integer, UUID[]> partitionsDistributionCache =
+                GridTestUtils.getFieldValue(affinityCache, "cachePartitionsDistribution");
+
+            GridBoundedLinkedHashMap<QualifiedSQLQuery, JdbcThinPartitionResultDescriptor> sqlCache =
+                GridTestUtils.getFieldValue(affinityCache, "sqlCache");
+
+            assertEquals("Unexpected count of partitions distributions.", 1,
+                partitionsDistributionCache.size());
+
+            assertEquals("Unexpected count of sql queries.", 1, sqlCache.size());
+
+            assertTrue("Unexpected distribution is found.",
+                partitionsDistributionCache.containsKey(GridCacheUtils.cacheId(cacheName2)));
+
+            assertTrue("Unexpected sql query is found.",
+                sqlCache.containsKey(new QualifiedSQLQuery("PUBLIC",
+                    "select * from \"" + cacheName2 + "\".Person where _key = 1")));
+        }
     }
 
     /**
