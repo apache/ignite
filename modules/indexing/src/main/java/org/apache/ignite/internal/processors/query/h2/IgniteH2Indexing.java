@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -3204,6 +3205,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int inlineSize = getInlineSize(page, grpId, pageMemory);
 
+        String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
+
+        PageLockListener lockLsnr = ctx.cache().context().diagnostic()
+            .pageLockTracker().createPageLockTracker(grpName + "IndexTree##" + indexName);
+
         BPlusTree<GridH2SearchRow, GridH2Row> tree = new BPlusTree<GridH2SearchRow, GridH2Row>(
             indexName,
             grpId,
@@ -3214,7 +3220,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             reuseList,
             H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
             H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled),
-            ctx.failure()
+            ctx.failure(),
+            lockLsnr
         ) {
             @Override protected int compare(BPlusIO io, long pageAddr, int idx, GridH2SearchRow row) {
                 throw new AssertionError();

@@ -45,6 +45,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -245,14 +247,39 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
-            freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
-                regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
-                reuseListRoot.isAllocated());
+            CacheDiagnosticManager diagnosticMgr = cctx.diagnostic();
+
+            String freeListName = METASTORAGE_CACHE_NAME + "##FreeList";
+            String treeName = METASTORAGE_CACHE_NAME + "##Tree";
+
+            freeList = new FreeListImpl(
+                METASTORAGE_CACHE_ID,
+                freeListName,
+                regionMetrics,
+                dataRegion,
+                null,
+                wal,
+                reuseListRoot.pageId().pageId(),
+                reuseListRoot.isAllocated(),
+                diagnosticMgr.pageLockTracker().createPageLockTracker(freeListName)
+            );
 
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
-            tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), failureProcessor, partId);
+            tree = new MetastorageTree(
+                METASTORAGE_CACHE_ID,
+                treeName,
+                dataRegion.pageMemory(),
+                wal,
+                rmvId,
+                freeList,
+                rowStore,
+                treeRoot.pageId().pageId(),
+                treeRoot.isAllocated(),
+                failureProcessor,
+                partId,
+                diagnosticMgr.pageLockTracker().createPageLockTracker(treeName)
+            );
 
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);
@@ -636,10 +663,18 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     /** */
     public class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
         /** {@inheritDoc} */
-        FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
+        FreeListImpl(
+            int cacheId,
+            String name,
+            DataRegionMetricsImpl regionMetrics,
+            DataRegion dataRegion,
             ReuseList reuseList,
-            IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+            IgniteWriteAheadLogManager wal,
+            long metaPageId,
+            boolean initNew,
+            PageLockListener lsnr
+        ) throws IgniteCheckedException {
+            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew, lsnr);
         }
 
         /** {@inheritDoc} */

@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 
@@ -32,9 +33,20 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
  */
 public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
-    @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long rootId, boolean initNew)
-        throws IgniteCheckedException {
-        return new TestReuseList(cacheId, "test", pageMem, null, rootId, initNew);
+    @Override protected ReuseList createReuseList(
+        int cacheId,
+        PageMemory pageMem,
+        long rootId,
+        boolean initNew
+    ) throws IgniteCheckedException {
+        return new TestReuseList(
+            cacheId,
+            "test",
+            pageMem,
+            null,
+            rootId,
+            initNew
+        );
     }
 
     /** {@inheritDoc} */
@@ -48,19 +60,6 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
      *
      */
     private static class TestReuseList extends ReuseListImpl {
-        /** */
-        private static ThreadLocal<Set<Long>> readLocks = new ThreadLocal<Set<Long>>() {
-            @Override protected Set<Long> initialValue() {
-                return new HashSet<>();
-            }
-        };
-
-        /** */
-        private static ThreadLocal<Set<Long>> writeLocks = new ThreadLocal<Set<Long>>() {
-            @Override protected Set<Long> initialValue() {
-                return new HashSet<>();
-            }
-        };
 
         /**
          * @param cacheId    Cache ID.
@@ -79,8 +78,33 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             long metaPageId,
             boolean initNew
         ) throws IgniteCheckedException {
-            super(cacheId, name, pageMem, wal, metaPageId, initNew);
+            super(cacheId, name, pageMem, wal, metaPageId, initNew, new TestPageLockListener());
         }
+
+        /**
+         *
+         */
+        static boolean checkNoLocks() {
+            return TestPageLockListener.readLocks.get().isEmpty() && TestPageLockListener.writeLocks.get().isEmpty();
+        }
+    }
+
+    /** */
+    private static class TestPageLockListener implements PageLockListener {
+
+        /** */
+        private static ThreadLocal<Set<Long>> readLocks = new ThreadLocal<Set<Long>>() {
+            @Override protected Set<Long> initialValue() {
+                return new HashSet<>();
+            }
+        };
+
+        /** */
+        private static ThreadLocal<Set<Long>> writeLocks = new ThreadLocal<Set<Long>>() {
+            @Override protected Set<Long> initialValue() {
+                return new HashSet<>();
+            }
+        };
 
         /** {@inheritDoc} */
         @Override public void onBeforeReadLock(int cacheId, long pageId, long page) {
@@ -121,10 +145,6 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
             assertEquals(effectivePageId(pageId), effectivePageId(PageIO.getPageId(pageAddr)));
 
             assertTrue(writeLocks.get().remove(pageId));
-        }
-
-        static boolean checkNoLocks() {
-            return readLocks.get().isEmpty() && writeLocks.get().isEmpty();
         }
     }
 }

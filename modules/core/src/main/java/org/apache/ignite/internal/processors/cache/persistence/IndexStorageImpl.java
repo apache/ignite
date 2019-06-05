@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -87,7 +88,8 @@ public class IndexStorageImpl implements IndexStorage {
         final ReuseList reuseList,
         final long rootPageId,
         final boolean initNew,
-        final FailureProcessor failureProcessor
+        final FailureProcessor failureProcessor,
+        final PageLockListener lockLsnr
     ) {
         try {
             this.pageMem = pageMem;
@@ -97,8 +99,21 @@ public class IndexStorageImpl implements IndexStorage {
             this.allocSpace = allocSpace;
             this.reuseList = reuseList;
 
-            metaTree = new MetaTree(grpId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
-                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew, failureProcessor);
+            metaTree = new MetaTree(
+                grpId,
+                allocPartId,
+                allocSpace,
+                pageMem,
+                wal,
+                globalRmvId,
+                rootPageId,
+                reuseList,
+                MetaStoreInnerIO.VERSIONS,
+                MetaStoreLeafIO.VERSIONS,
+                initNew,
+                failureProcessor,
+                lockLsnr
+            );
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -237,9 +252,22 @@ public class IndexStorageImpl implements IndexStorage {
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
             final boolean initNew,
-            @Nullable FailureProcessor failureProcessor
+            @Nullable FailureProcessor failureProcessor,
+            @Nullable PageLockListener lockLsnr
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, failureProcessor);
+            super(
+                treeName("meta", "Meta"),
+                cacheId,
+                pageMem,
+                wal,
+                globalRmvId,
+                metaPageId,
+                reuseList,
+                innerIos,
+                leafIos,
+                failureProcessor,
+                lockLsnr
+            );
 
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;

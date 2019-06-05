@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,7 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -59,7 +59,7 @@ import org.junit.runners.JUnit4;
  *
  */
 @RunWith(JUnit4.class)
-public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
+public class CacheFreeListSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CPUS = Runtime.getRuntime().availableProcessors();
 
@@ -361,7 +361,17 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 
-        return new CacheFreeListImpl(1, "freelist", regionMetrics, dataRegion, null, null, metaPageId, true);
+        return new CacheFreeList(
+            1,
+            "freelist",
+            regionMetrics,
+            dataRegion,
+            null,
+            null,
+            metaPageId,
+            true,
+            null
+        );
     }
 
     /**

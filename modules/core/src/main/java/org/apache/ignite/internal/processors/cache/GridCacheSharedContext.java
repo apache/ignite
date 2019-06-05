@@ -142,6 +142,9 @@ public class GridCacheSharedContext<K, V> {
     /** Tx metrics. */
     private final TransactionMetricsAdapter txMetrics;
 
+    /** Cache diagnostic manager. */
+    private CacheDiagnosticManager diagnosticMgr;
+
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
@@ -221,7 +224,8 @@ public class GridCacheSharedContext<K, V> {
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs,
         MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr
+        DeadlockDetectionManager deadlockDetectionMgr,
+        CacheDiagnosticManager diagnosticMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -243,7 +247,8 @@ public class GridCacheSharedContext<K, V> {
             ttlMgr,
             evictMgr,
             mvccCachingMgr,
-            deadlockDetectionMgr
+            deadlockDetectionMgr,
+            diagnosticMgr
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
@@ -411,7 +416,9 @@ public class GridCacheSharedContext<K, V> {
             ttlMgr,
             evictMgr,
             mvccCachingMgr,
-            deadlockDetectionMgr);
+            deadlockDetectionMgr,
+            diagnosticMgr
+        );
 
         this.mgrs = mgrs;
 
@@ -458,7 +465,10 @@ public class GridCacheSharedContext<K, V> {
         GridCacheSharedTtlCleanupManager ttlMgr,
         PartitionsEvictManager evictMgr,
         MvccCachingManager mvccCachingMgr,
-        DeadlockDetectionManager deadlockDetectionMgr) {
+        DeadlockDetectionManager deadlockDetectionMgr,
+        CacheDiagnosticManager diagnosticMgr
+    ) {
+        this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
@@ -826,6 +836,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public MvccCachingManager mvccCaching() {
         return mvccCachingMgr;
+    }
+
+    /**
+     * @return Diagnostic manager.
+     */
+    public CacheDiagnosticManager diagnostic(){
+        return diagnosticMgr;
     }
 
     /**

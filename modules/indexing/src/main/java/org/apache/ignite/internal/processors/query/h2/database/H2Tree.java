@@ -156,7 +156,17 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         @Nullable FailureProcessor failureProcessor,
         IgniteLogger log
     ) throws IgniteCheckedException {
-        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
+        super(
+            name,
+            grpId,
+            pageMem,
+            wal,
+            globalRmvId,
+            metaPageId,
+            reuseList,
+            failureProcessor,
+            null
+        );
 
         if (!initNew) {
             // Page is ready - read inline size from it.

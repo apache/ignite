@@ -315,6 +315,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null,
             null,
             null,
+            null,
             null
         );
 

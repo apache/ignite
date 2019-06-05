@@ -71,7 +71,7 @@ import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTes
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
-import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
+import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
@@ -202,7 +202,7 @@ public class IgniteBasicTestSuite {
         suite.addTest(new JUnit4TestAdapter(BPlusTreeFakeReuseSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(BPlusTreeReuseSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(IndexStorageSelfTest.class));
-        suite.addTest(new JUnit4TestAdapter(CacheFreeListImplSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheFreeListSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(DataRegionMetricsSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(SwapPathConstructionSelfTest.class));
         suite.addTest(new JUnit4TestAdapter(BitSetIntSetTest.class));
