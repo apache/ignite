@@ -423,6 +423,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /**
+     * Method for consistency with {@link FileWriteAheadLogManager}.
+     *
+     * @return Info about of WAL paths.
+     */
+    @Override public SegmentRouter getSegmentRouter() {
+        return new SegmentRouter(walWorkDir, walArchiveDir, null, dsCfg);
+    }
+
+    /**
      *
      */
     private void startArchiverAndCompressor() {
