@@ -1190,11 +1190,11 @@ public final class IgniteSystemProperties {
 
     /**
      * Page lock tracker type.
-     *
-     * 1 - HEAP_STACK
-     * 2 - HEAP_LOG
-     * 3 - OFF_HEAP_STACK
-     * 4 - OFF_HEAP_LOG
+     * -1 - Disable lock tracking.
+     *  1 - HEAP_STACK
+     *  2 - HEAP_LOG
+     *  3 - OFF_HEAP_STACK
+     *  4 - OFF_HEAP_LOG
      *
      * Default is 2 - HEAP_LOG.
      */

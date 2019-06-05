@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -35,6 +36,40 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
  *
  */
 public class PageLockTrackerManagerTest {
+    /**
+     *
+     */
+    @Test
+    public void testDisableTracking(){
+        System.setProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE", String.valueOf(-1));
+
+        try {
+            PageLockTrackerManager mgr = new PageLockTrackerManager(new ListeningTestLogger());
+
+            PageLockListener pll = mgr.createPageLockTracker("test");
+
+            Assert.assertNotNull(pll);
+            Assert.assertSame(pll, DataStructure.NOOP_LSNR);
+
+        }finally {
+            System.clearProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE");
+        }
+
+        System.setProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE", String.valueOf(HEAP_LOG));
+
+        try {
+            PageLockTrackerManager mgr = new PageLockTrackerManager(new ListeningTestLogger());
+
+            PageLockListener pll = mgr.createPageLockTracker("test");
+
+            Assert.assertNotNull(pll);
+            Assert.assertNotSame(pll, DataStructure.NOOP_LSNR);
+
+        }finally {
+            System.clearProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE");
+        }
+    }
+
     /**
      *
      */
@@ -58,9 +93,7 @@ public class PageLockTrackerManagerTest {
         System.setProperty("IGNITE_PAGE_LOCK_TRACKER_CHECK_INTERVAL", String.valueOf(timeOutWorkerInterval));
 
         try {
-            ListeningTestLogger logger = new ListeningTestLogger();
-
-            PageLockTrackerManager mgr = new PageLockTrackerManager(logger);
+            PageLockTrackerManager mgr = new PageLockTrackerManager(new ListeningTestLogger());
 
             printOverhead(mgr);
 
@@ -153,7 +186,7 @@ public class PageLockTrackerManagerTest {
             });
 
             // Await cleanup worker interval.
-            U.sleep(timeOutWorkerInterval + 1000);
+            U.sleep(2 * timeOutWorkerInterval);
 
             printOverhead(mgr);
 

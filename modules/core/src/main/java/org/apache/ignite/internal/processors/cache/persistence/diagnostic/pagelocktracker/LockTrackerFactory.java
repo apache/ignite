@@ -61,7 +61,7 @@ public final class LockTrackerFactory {
     /**
      *
      */
-    public static volatile int DEFAULT_TYPE = getInteger(IGNITE_PAGE_LOCK_TRACKER_TYPE, 2);
+    public static volatile int DEFAULT_TYPE = getInteger(IGNITE_PAGE_LOCK_TRACKER_TYPE, HEAP_LOG);
 
     /**
      * @param name Page lock tracker name.
