@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.commandline.diagnostic;
 
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -39,10 +40,10 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     /**
      *
      */
-    private CommandLogger logger;
+    private Logger logger;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         this.logger = logger;
 
         if (subcommand == HELP) {
@@ -99,16 +100,21 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
-        logger.logWithIndent("View diagnostic information in a cluster. For more details type:");
-        logger.logWithIndent(join(" ", UTILITY_NAME, DIAGNOSTIC, HELP), 2);
-        logger.nl();
+    @Override public String name() {
+        return "Diagnostic command";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printUsage() {
+        logger.info("View diagnostic information in a cluster. For more details type:");
+        logger.info(join(" ", UTILITY_NAME, DIAGNOSTIC, HELP));
+        logger.info("\n");
     }
 
     /**
      *
      */
     private void printDiagnosticHelp() {
-        logger.log(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
+        logger.info(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
     }
 }
