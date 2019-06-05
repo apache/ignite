@@ -69,7 +69,7 @@ public class GaussianNaiveBayesTrainerTest extends TrainerTest {
     /** Trainer. */
     private GaussianNaiveBayesTrainer trainer;
 
-    /** Initialization {@code GaussianNaiveBayesTrainer}. */
+    /** Initialization {@code GaussianNaiveBayesTrainer}.*/
     @Before
     public void createTrainer() {
         trainer = new GaussianNaiveBayesTrainer();
