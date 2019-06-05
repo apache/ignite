@@ -29,8 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.naivebayes.discrete.DiscreteNaiveBayesModel;
 import org.apache.ignite.ml.naivebayes.gaussian.GaussianNaiveBayesModel;
 
-import static java.util.Arrays.asList;
-
 /**
  * A compound Naive Bayes model which uses a composition of{@code GaussianNaiveBayesModel} and {@code
  * DiscreteNaiveBayesModel}.

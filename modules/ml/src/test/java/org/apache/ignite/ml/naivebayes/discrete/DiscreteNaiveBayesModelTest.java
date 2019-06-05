@@ -22,8 +22,6 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static java.util.Collections.emptyList;
-
 /** Tests for {@code DiscreteNaiveBayesModel} */
 public class DiscreteNaiveBayesModelTest {
     /** */
@@ -38,7 +36,7 @@ public class DiscreteNaiveBayesModelTest {
 
         double[] classProbabilities = new double[] {6. / 13, 7. / 13};
         double[][] thresholds = new double[][] {{.5}, {.2, .7}, {.5}, {.5, 1.5}, {.5}};
-        DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, emptyList(), new DiscreteNaiveBayesSumsHolder());
+        DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities, new double[] {first, second}, thresholds, new DiscreteNaiveBayesSumsHolder());
         Vector observation = VectorUtils.of(2, 0, 1, 2, 0);
 
         Assert.assertEquals(second, mdl.predict(observation), 0.0001);

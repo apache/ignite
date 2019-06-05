@@ -49,10 +49,11 @@ public class CompoundNaiveBayesTrainerTest extends TrainerTest {
     public void createTrainer() {
         trainer = new CompoundNaiveBayesTrainer()
             .setClsProbabilities(classProbabilities)
-            .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer().setFeatureIdsToSkip(asList(3, 4, 5, 6, 7)))
+            .setGaussianNaiveBayesTrainer(new GaussianNaiveBayesTrainer())
+                .withGaussianFeatureIdsToSkip(asList(3, 4, 5, 6, 7))
             .setDiscreteNaiveBayesTrainer(new DiscreteNaiveBayesTrainer()
-                .setBucketThresholds(binarizedDataThresholds)
-                .setFeatureIdsToSkip(asList(0, 1, 2)));
+                .setBucketThresholds(binarizedDataThresholds))
+                .withDiscreteFeatureIdsToSkip(asList(0, 1, 2));
     }
 
     @Test /** */
