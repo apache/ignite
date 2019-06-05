@@ -28,13 +28,13 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 /** */
 public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, IgniteChangeGlobalStateSupport {
     /**
-     * @param name The unique backup name.
+     * @param backupName Unique backup identifier.
      * @param parts Collection of pairs group and appropratate cache partition to be backuped.
      * @param closure Partition backup handling closure.
      * @throws IgniteCheckedException If fails.
      */
-    public void localBackup(
-        String name,
+    public void backup(
+        String backupName,
         Map<Integer, Set<Integer>> parts,
         PageStoreInClosure closure
     ) throws IgniteCheckedException;

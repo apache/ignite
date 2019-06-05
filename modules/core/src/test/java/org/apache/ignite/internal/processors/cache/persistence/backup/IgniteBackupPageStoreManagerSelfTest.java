@@ -268,7 +268,7 @@ public class IgniteBackupPageStoreManagerSelfTest extends GridCommonAbstractTest
             IntStream.range(0, CACHE_PARTS_COUNT).boxed().collect(Collectors.toSet()));
 
         cctx1.storeBackup()
-            .localBackup(
+            .backup(
                 "testbackup",
                 grpsBackup,
                 new PageStoreInClosure() {

@@ -62,6 +62,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.backup.CacheBackupManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -181,6 +182,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Compression manager. */
     private CacheCompressionManager compressMgr;
+
+    /** Backup manager. */
+    private CacheBackupManager backupMgr;
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
@@ -330,6 +334,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          */
 
         CacheCompressionManager compressMgr,
+        CacheBackupManager backupMgr,
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
         CacheEvictionManager evictMgr,
@@ -348,6 +353,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert locStartTopVer != null : cacheCfg.getName();
 
         assert compressMgr != null;
+        assert backupMgr != null;
         assert grp != null;
         assert evtMgr != null;
         assert storeMgr != null;
@@ -375,6 +381,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
         this.compressMgr = add(compressMgr);
+        this.backupMgr = add(backupMgr);
         this.evtMgr = add(evtMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
@@ -1234,6 +1241,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheCompressionManager compress() {
         return compressMgr;
+    }
+
+    /**
+     * @return Backup manager.
+     */
+    public CacheBackupManager backup() {
+        return backupMgr;
     }
 
     /**

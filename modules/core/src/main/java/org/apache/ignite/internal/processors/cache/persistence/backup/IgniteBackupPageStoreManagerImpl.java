@@ -176,8 +176,8 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void localBackup(
-        String name,
+    @Override public void backup(
+        String backupName,
         Map<Integer, Set<Integer>> parts,
         PageStoreInClosure closure
     ) throws IgniteCheckedException {
@@ -194,7 +194,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-        final BackupContext bctx = new BackupContext(name);
+        final BackupContext bctx = new BackupContext(backupName);
         DbCheckpointListener dbLsnr = null;
 
         try {
@@ -209,7 +209,7 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
                         return new HashSet<>(parts.keySet());
                     }
                 },
-                String.format(BACKUP_CP_REASON, name)
+                String.format(BACKUP_CP_REASON, backupName)
             );
 
             A.notNull(cpFut, "Checkpoint thread is not running.");
