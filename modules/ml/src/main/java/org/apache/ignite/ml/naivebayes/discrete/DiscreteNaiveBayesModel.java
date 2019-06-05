@@ -23,9 +23,6 @@ import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
-import java.io.Serializable;
-import java.util.Collection;
-
 /**
  * Discrete naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
  * {@code p(C_k,y) =x_1*p_k1^x *...*x_i*p_ki^x_i}. Where {@code x_i} is a discrete feature, {@code p_ki} is a prior
@@ -54,9 +51,6 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      */
     private final double[][] bucketThresholds;
 
-    /** Feature ids which should be skipped. By defaut all features are processed. */
-    private final Collection<Integer> featureIdsToSkip;
-
     /** Amount values in each buckek for each feature per label. */
     private final DiscreteNaiveBayesSumsHolder sumsHolder;
 
@@ -65,16 +59,14 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
      * @param clsProbabilities Prior probabilities for classes.
      * @param labels Labels.
      * @param bucketThresholds The threshold to convert a feature to a binary value.
-     * @param featureIdsToSkip Feature ids which should be skip.
      * @param sumsHolder Amount values which are abouve the threshold per label.
      */
     public DiscreteNaiveBayesModel(double[][][] probabilities, double[] clsProbabilities, double[] labels,
-        double[][] bucketThresholds, Collection<Integer> featureIdsToSkip, DiscreteNaiveBayesSumsHolder sumsHolder) {
+        double[][] bucketThresholds, DiscreteNaiveBayesSumsHolder sumsHolder) {
         this.probabilities = probabilities;
         this.clsProbabilities = clsProbabilities;
         this.labels = labels;
         this.bucketThresholds = bucketThresholds;
-        this.featureIdsToSkip = featureIdsToSkip;
         this.sumsHolder = sumsHolder;
     }
 
@@ -110,14 +102,10 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         double[] probapilityPowers = new double[clsProbabilities.length];
 
         for (int i = 0; i < clsProbabilities.length; i++) {
-            int index = 0;
             for (int j = 0; j < probabilities[0].length; j++) {
-                if (featureIdsToSkip.contains(j))
-                    continue;
-                int x = toBucketNumber(vector.get(j), bucketThresholds[index]);
-                double p = probabilities[i][index][x];
+                int x = toBucketNumber(vector.get(j), bucketThresholds[j]);
+                double p = probabilities[i][j][x];
                 probapilityPowers[i] += (p > 0 ? Math.log(p) : .0);
-                ++index;
             }
         }
 

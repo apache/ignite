@@ -52,9 +52,6 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
     /** The threshold to convert a feature to a discrete value. */
     private double[][] bucketThresholds;
 
-    /** Feature ids which should be skipped. By defaut all features are processed. */
-    private Collection<Integer> featureIdsToSkip = emptyList();
-
     /** {@inheritDoc} */
     @Override public <K, V> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
                                                         Preprocessor<K, V> extractor) {
@@ -97,14 +94,9 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                     int size = features.size();
                     if (!res.valuesInBucketPerLbl.containsKey(lb)) {
                         valuesInBucket = new long[size][];
-                        int index = 0;
                         for (int i = 0; i < size; i++) {
-                            if (featureIdsToSkip.contains(i)) {
-                                continue;
-                            }
-                            valuesInBucket[index] = new long[bucketThresholds[index].length + 1];
-                            Arrays.fill(valuesInBucket[index], 0L);
-                            ++index;
+                            valuesInBucket[i] = new long[bucketThresholds[i].length + 1];
+                            Arrays.fill(valuesInBucket[i], 0L);
                         }
                         res.valuesInBucketPerLbl.put(lb, valuesInBucket);
                     }
@@ -116,15 +108,10 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
                     valuesInBucket = res.valuesInBucketPerLbl.get(lb);
 
-                    int index = 0;
                     for (int j = 0; j < size; j++) {
-                        if (featureIdsToSkip.contains(j)) {
-                            continue;
-                        }
                         double x = features.get(j);
-                        int bucketNum = toBucketNumber(x, bucketThresholds[index]);
-                        valuesInBucket[index][bucketNum] += 1;
-                        ++index;
+                        int bucketNum = toBucketNumber(x, bucketThresholds[j]);
+                        valuesInBucket[j][bucketNum] += 1;
                     }
                 }
                 return res;
@@ -160,16 +147,12 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 int cnt = sumsHolder.featureCountersPerLbl.get(label);
                 long[][] sum = sumsHolder.valuesInBucketPerLbl.get(label);
 
-                int index = 0;
                 for (int i = 0; i < featureCnt; i++) {
-                    if (featureIdsToSkip.contains(i))
-                        continue;
-                    int bucketsCnt = sum[index].length;
-                    probabilities[lbl][index] = new double[bucketsCnt];
+                    int bucketsCnt = sum[i].length;
+                    probabilities[lbl][i] = new double[bucketsCnt];
 
                     for (int j = 0; j < bucketsCnt; j++)
-                        probabilities[lbl][index][j] = (double)sum[index][j] / cnt;
-                    ++index;
+                        probabilities[lbl][i][j] = (double)sum[i][j] / cnt;
                 }
 
                 if (equiprobableClasses)
@@ -184,7 +167,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 labels[lbl] = label;
                 ++lbl;
             }
-            return new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, featureIdsToSkip, sumsHolder);
+            return new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, sumsHolder);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -230,22 +213,10 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
         return this;
     }
 
-    /** */
-    public Collection<Integer> getFeatureIdsToSkip() {
-        return featureIdsToSkip;
-    }
-
-    /** Sets feature ids to skip. */
-    public DiscreteNaiveBayesTrainer setFeatureIdsToSkip(Collection<Integer> featureIdsToSkip) {
-        this.featureIdsToSkip = featureIdsToSkip;
-        return this;
-    }
-
     /** Sets default settings {@code equiprobableClasses} to {@code false} and removes priorProbabilities. */
     public DiscreteNaiveBayesTrainer resetProbabilitiesSettings() {
         equiprobableClasses = false;
         priorProbabilities = null;
-        featureIdsToSkip = emptyList();
         return this;
     }
 
