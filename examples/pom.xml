@@ -173,10 +173,6 @@
         <profile>
             <id>scala</id>
 
-            <activation>
-                <property><name>scala-examples</name></property>
-            </activation>
-
             <properties>
                 <spark.folder>src/main/spark</spark.folder>
                 <spark.test.folder>src/test/spark</spark.test.folder>
