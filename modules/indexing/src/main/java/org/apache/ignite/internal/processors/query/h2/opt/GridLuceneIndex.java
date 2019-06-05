@@ -34,6 +34,7 @@ import org.apache.ignite.cache.FullTextQueryIndex;
 import org.apache.ignite.cache.LuceneConfiguration;
 import org.apache.ignite.cache.LuceneIndexAccess;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -361,7 +362,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry, IndexingQueryFilter filters) throws IgniteCheckedException {
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(TextQuery qry, IndexingQueryFilter filters) throws IgniteCheckedException {
         try {
         	indexAccess.flush();
         }
@@ -379,15 +380,16 @@ public class GridLuceneIndex implements AutoCloseable {
             MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields, getQueryAnalyzer(this.config));
 
 //            parser.setAllowLeadingWildcard(true);
-            String [] items = qry.split("\\s");
-            //qty: hello limit:100 type:blog user:xiaoming
-            int limit =  600; // Integer.MAX_VALUE;
+            String [] items = qry.getText().split("\\s");
+            //qty: hello type:blog user:xiaoming orderby:create
+            int limit =  qry.getPageSize()>0?qry.getPageSize():Integer.MAX_VALUE;
             String uid = null;
             String sort = null;
+            String tag = null;
             StringBuilder sb = new StringBuilder();
             for(String item:items){
-            	if(item.startsWith("limit:")){
-            		limit = Integer.parseInt(item.substring("limit:".length()));
+            	if(item.startsWith("tag:")){
+            		tag = item.substring("tag:".length());
             	}
             	else if(item.startsWith("sort:")){
             		sort = item.substring("sort:".length());
@@ -405,12 +407,15 @@ public class GridLuceneIndex implements AutoCloseable {
             Query filter = LongPoint.newRangeQuery(FullTextLucene.EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(), Long.MAX_VALUE);
 
             BooleanQuery.Builder query = new BooleanQuery.Builder()
-                .add(parser.parse(qry), BooleanClause.Occur.MUST)
+                .add(parser.parse(sb.toString()), BooleanClause.Occur.MUST)
                 .add(filter, BooleanClause.Occur.FILTER);
             
             if(uid!=null){
             	query.add(new TermQuery(new Term("user",uid)),BooleanClause.Occur.MUST);
-            }                
+            } 
+            if(tag!=null){
+            	query.add(new TermQuery(new Term("tag",tag)),BooleanClause.Occur.MUST);
+            }
 
             if(sort!=null){
             	String[] sorts = sort.split(",");

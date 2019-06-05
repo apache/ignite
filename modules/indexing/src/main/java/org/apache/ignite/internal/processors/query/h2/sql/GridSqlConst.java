@@ -21,6 +21,7 @@ import java.util.Collections;
 import org.h2.expression.ValueExpression;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
+import org.h2.value.ValueEnumBase;
 import org.h2.value.ValueNull;
 
 /**
@@ -56,6 +57,9 @@ public class GridSqlConst extends GridSqlElement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
+    	if(val instanceof ValueEnumBase) { //add@byron
+    		return "'"+val.getSQL()+"'";
+    	}
         return val.getSQL();
     }
 }

@@ -104,7 +104,12 @@ public class DmlUtils {
 
             if (val instanceof Time && LocalDateTimeUtils.LOCAL_TIME == expCls)
                 return LocalDateTimeUtils.valueToLocalTime(ValueTime.get((Time)val));
-
+            
+            //add@byron Object[] is same type java.sql.Array
+            if(java.sql.Array.class == expCls && currCls.isArray()) {
+            	return val;
+            }
+            //end@
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.

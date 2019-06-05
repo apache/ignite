@@ -1157,6 +1157,10 @@ public class CommandProcessor {
             case Value.UUID :
                 if (!handleUuidAsByte)
                     return UUID.class.getName();
+                
+            case Value.ENUM : //add@byron  use int storage enum             
+                    return Integer.class.getName();
+
 
             default:
                 return DataType.getTypeClassName(type);

@@ -882,7 +882,14 @@ public class InlineIndexHelper {
             PageUtils.putByte(pageAddr, off, (byte)Value.NULL);
             return 1;
         }
-        
+        //add@byron
+        if (type == Value.INT) { //use int instead enum
+        	PageUtils.putByte(pageAddr, off, (byte)type);
+            PageUtils.putInt(pageAddr, off + 1, val.getInt());
+            return size + 1;
+        }
+
+        //end
         if (val.getType() != type)
             throw new UnsupportedOperationException("value type doesn't match");
 

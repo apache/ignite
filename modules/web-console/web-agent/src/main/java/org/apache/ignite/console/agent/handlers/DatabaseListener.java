@@ -56,6 +56,13 @@ public class DatabaseListener {
 
     /** */
     private static final String BUNDLE_VERSION = "Bundle-Version";
+    
+    /**
+     *  add@byron 保存当前的关系数据库连接信息
+     */
+    public static String currentDriverCls;
+    public static String currentJdbcUrl;
+    public static Properties currentJdbcInfo;
 
     /** */
     private final File driversFolder;
@@ -218,7 +225,11 @@ public class DatabaseListener {
         if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();
 
-        return dbMetaReader.connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
+        //add@byron
+        currentDriverCls = jdbcDriverCls;
+        currentJdbcUrl = jdbcUrl;        
+        currentJdbcInfo = jdbcInfo;
+        return  dbMetaReader.connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);   
     }
 
     /**

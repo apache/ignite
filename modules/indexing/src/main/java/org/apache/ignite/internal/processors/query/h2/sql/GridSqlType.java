@@ -93,8 +93,9 @@ public final class GridSqlType {
      * @return Type.
      */
     public static GridSqlType fromColumn(Column c) {
-        if (c.getName() != null)
-            c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
+    	//remove@byron
+        //- if (c.getName() != null)
+        //-    c = new Column(null, c.getType(), c.getPrecision(), c.getScale(), c.getDisplaySize());
 
         return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getCreateSQL());
     }
@@ -103,11 +104,15 @@ public final class GridSqlType {
      * @param e Expression to take type from.
      * @return Type.
      */
-    public static GridSqlType fromExpression(Expression e) {
-        if (e.getType() == Value.UNKNOWN)
+    public static GridSqlType fromExpression(Expression c) {
+        if (c.getType() == Value.UNKNOWN)
             return UNKNOWN;
-
-        return fromColumn(new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize()));
+        //modify@byron
+        //Column col = new Column(null, e.getType(), e.getPrecision(), e.getScale(), e.getDisplaySize());
+        //col.setOriginalSQL(e.getSQL());
+        //return fromColumn(col);
+        
+        return new GridSqlType(c.getType(), c.getScale(), c.getPrecision(), c.getDisplaySize(), c.getSQL());
     }
 
     /**

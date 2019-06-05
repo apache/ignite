@@ -43,7 +43,8 @@ public class DbMetadataReader {
     private static final Logger log = Logger.getLogger(DbMetadataReader.class.getName());
 
     /** */
-    private final Map<String, Driver> drivers = new HashMap<>();
+    private final Map<String, Driver> drivers = new HashMap<>();   
+   
 
     /**
      * Get specified dialect object for selected database.

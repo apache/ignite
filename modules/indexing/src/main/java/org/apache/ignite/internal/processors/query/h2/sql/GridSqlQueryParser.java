@@ -2447,9 +2447,9 @@ public class GridSqlQueryParser {
             throw new IgniteSQLException("TIMESTAMP WITH TIMEZONE type is not supported " + errMsg,
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
-
-        if (type == Value.ENUM) {
-            throw new IgniteSQLException("ENUM type is not supported " + errMsg,
+        //modify@byron ENUM to UNKNOWN
+        if (type == Value.UNKNOWN) {
+            throw new IgniteSQLException("UNKNOWN type is not supported " + errMsg,
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
     }

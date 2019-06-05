@@ -43,6 +43,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -457,14 +458,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName,
-        String cacheName, String qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
+        String cacheName, TextQuery qry, String typeName, IndexingQueryFilter filters) throws IgniteCheckedException {
         H2TableDescriptor tbl = schemaMgr.tableForType(schemaName, cacheName, typeName);
 
         if (tbl != null && tbl.luceneIndex() != null) {
-            Long qryId = runningQueryManager().register(qry, TEXT, schemaName, true, null);
+            Long qryId = runningQueryManager().register(qry.getText(), TEXT, schemaName, true, null);
 
             try {
-                return tbl.luceneIndex().query(qry.toUpperCase(), filters);
+                return tbl.luceneIndex().query(qry, filters);
             }
             finally {
                 runningQueryManager().unregister(qryId, false);

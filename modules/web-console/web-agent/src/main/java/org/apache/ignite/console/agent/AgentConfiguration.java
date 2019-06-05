@@ -45,6 +45,9 @@ public class AgentConfiguration {
 
     /** Default Ignite node HTTP URI. */
     private static final String DFLT_NODE_URI = "http://localhost:8080";
+    
+    /** Default Flink SQL gateway node HTTP URI. */
+    private static final String DFLT_FLINK_SQL_URI = "http://localhost:1234";
 
     /** */
     @Parameter(names = {"-t", "--tokens"},
@@ -64,6 +67,9 @@ public class AgentConfiguration {
             "                        " +
             "      Default value: " + DFLT_NODE_URI)
     private List<String> nodeURIs;
+    
+    /** */
+    private String flinkSqlURI = DFLT_FLINK_SQL_URI;
 
     /** */
     @Parameter(names = {"-nl", "--node-login"},
@@ -186,6 +192,21 @@ public class AgentConfiguration {
     public void nodeURIs(List<String> nodeURIs) {
         this.nodeURIs = nodeURIs;
     }
+    
+    /**
+     * @return Node URIs.
+     */
+    public String flinkSqlURI() {
+        return this.flinkSqlURI;
+    }
+
+    /**
+     * @param nodeURIs Node URIs.
+     */
+    public void flinkSqlURI(String nodeURI) {
+        this.flinkSqlURI = nodeURI;
+    }
+
 
     /**
      * @return User name for agent to authenticate on node.
@@ -422,6 +443,11 @@ public class AgentConfiguration {
         // Intentionaly wrapped by ArrayList, for further maniulations.
         if (val != null)
             nodeURIs(new ArrayList<>(Arrays.asList(val.split(","))));
+        
+        val = props.getProperty("flink-sql-uri");
+
+        if (val != null)
+            flinkSqlURI(val);
 
         val = props.getProperty("node-login");
 
@@ -502,6 +528,13 @@ public class AgentConfiguration {
 
         if (nodeURIs == null)
             nodeURIs(Collections.singletonList(DFLT_NODE_URI));
+        
+        
+        if (flinkSqlURI == null)
+        	flinkSqlURI(cfg.flinkSqlURI());
+
+        if (flinkSqlURI == null)
+        	flinkSqlURI(DFLT_FLINK_SQL_URI);
 
         if (nodeLogin == null)
             nodeLogin(cfg.nodeLogin());

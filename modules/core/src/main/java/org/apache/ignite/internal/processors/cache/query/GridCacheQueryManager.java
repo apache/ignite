@@ -50,6 +50,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.QueryMetrics;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -610,8 +611,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             subjId,
                             taskName));
                     }
-
-                    iter = qryProc.queryText(cacheName, qry.clause(), qry.queryClassName(), filter(qry));
+                    
+                    //add@byron use TextQuery insteads text string
+                    TextQuery<K, V> tq = new TextQuery<K, V>(qry.queryClassName(),qry.clause());
+                    tq.setPageSize(qry.pageSize());
+                    tq.setLocal(qry.forceLocal());
+                    tq.setFitler(qry.scanFilter());
+                    iter = qryProc.queryText(cacheName, tq, qry.queryClassName(), filter(qry));
 
                     break;
 

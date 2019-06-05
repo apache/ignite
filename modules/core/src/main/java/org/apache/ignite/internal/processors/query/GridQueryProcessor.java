@@ -50,6 +50,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
+import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -1621,8 +1622,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ccfg.setQueryParallelism(qryParallelism);
 
         ccfg.setEncryptionEnabled(encrypted);
-        ccfg.setSqlSchema("\"" + schemaName + "\"");
-        ccfg.setSqlEscapeAll(true);
+        ccfg.setSqlSchema("\"" + schemaName + "\""); ccfg.setSqlSchema(schemaName); //modify@byron
+        ccfg.setSqlEscapeAll(true);  ccfg.setSqlEscapeAll(false); //modify@byron
         ccfg.setQueryEntities(Collections.singleton(entity));
 
         if (!QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()))
@@ -2741,7 +2742,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final String clause,
+    public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(final String cacheName, final TextQuery clause,
         final String resType, final IndexingQueryFilter filters) throws IgniteCheckedException {
         checkEnabled();
 
@@ -2751,7 +2752,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             final GridCacheContext<?, ?> cctx = ctx.cache().internalCache(cacheName).context();
 
-            return executeQuery(GridCacheQueryType.TEXT, clause, cctx,
+            return executeQuery(GridCacheQueryType.TEXT, clause.getText(), cctx,
                 new IgniteOutClosureX<GridCloseableIterator<IgniteBiTuple<K, V>>>() {
                     @Override public GridCloseableIterator<IgniteBiTuple<K, V>> applyx() throws IgniteCheckedException {
                         String typeName = typeName(cacheName, resType);

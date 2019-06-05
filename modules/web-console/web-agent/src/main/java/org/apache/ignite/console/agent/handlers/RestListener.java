@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
+import org.apache.ignite.console.agent.rest.RestForRDSExecutor;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.util.typedef.F;
@@ -36,14 +37,18 @@ public class RestListener extends AbstractListener {
 
     /** */
     private final RestExecutor restExecutor;
+    
+    /** handle request use jdbc for rds */
+    private RestForRDSExecutor rdsExecutor;
 
     /**
      * @param cfg Config.
      * @param restExecutor REST executor.
      */
-    public RestListener(AgentConfiguration cfg, RestExecutor restExecutor) {
+    public RestListener(AgentConfiguration cfg, RestExecutor restExecutor, RestForRDSExecutor rdsExec) {
         this.cfg = cfg;
         this.restExecutor = restExecutor;
+        this.rdsExecutor = rdsExec;
     }
 
     /** {@inheritDoc} */
@@ -88,7 +93,17 @@ public class RestListener extends AbstractListener {
 
                 return restExecutor.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
             }
-
+            
+            //add@byron support query on backend rds
+            //到配置的关系数据库查询数据
+            if (args.containsKey("to_rds")) {
+            	return rdsExecutor.sendRequest(params, headers);
+            }
+            //到配置的flink sql gateway数据代理查询数据
+            if (args.containsKey("to_flink")) {
+            	return rdsExecutor.sendRequestToFlink(this.cfg.flinkSqlURI(),params, headers);
+            }
+            //end
             return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
         }
         catch (Exception e) {

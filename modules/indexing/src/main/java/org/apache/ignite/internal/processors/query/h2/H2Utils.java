@@ -526,7 +526,7 @@ public class H2Utils {
      */
     @SuppressWarnings("ConstantConditions")
     public static Value wrap(CacheObjectValueContext coCtx, Object obj, int type) throws IgniteCheckedException {
-        assert obj != null;
+        assert obj != null;        
 
         if (obj instanceof CacheObject) { // Handle cache object.
             CacheObject co = (CacheObject)obj;
@@ -536,12 +536,21 @@ public class H2Utils {
 
             obj = co.value(coCtx, false);
         }
+        
+
         //add@byron
-        if(obj.getClass().isArray()){
+        if(obj.getClass().isArray() && !obj.getClass().getComponentType().isPrimitive() ){
         	type = Value.ARRAY;
         }
+        else if(obj.getClass().isEnum()){
+        	Enum<?> eObj = (Enum<?>)obj;
+        	if(type==Value.INT) 
+        		return ValueInt.get(eObj.ordinal());
+        	if(type==Value.STRING) 
+        		return ValueString.get(eObj.name());
+        }
         //end@
-
+        
         switch (type) {
             case Value.BOOLEAN:
                 return ValueBoolean.get((Boolean)obj);
@@ -647,7 +656,21 @@ public class H2Utils {
      */
     private static String dbTypeFromClass(Class<?> cls, int precision, int scale) {
         String dbType = H2DatabaseType.fromClass(cls).dBTypeAsString();
-
+        //add@byron
+        if(dbType.equals(H2DatabaseType.ENUM.dBTypeAsString())) {
+        	Object[] ecls = cls.getEnumConstants();
+        	if(ecls!=null) {
+	        	dbType+= "(";
+	        	for(int i=0;i<ecls.length;i++) {
+	        		if(i!=0)
+	            		dbType+= ",";
+	        		Enum e = (Enum)ecls[i];
+	        		dbType+= "'"+e.name()+"'";        		
+	        	}
+	        	dbType+= ")";
+        	}
+        }
+        //end@
         if (precision != -1 && dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString()))
             return dbType + "(" + precision + ")";
 
