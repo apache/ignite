@@ -50,8 +50,6 @@ public class StateCommand implements Command<Void> {
             }
             else
                 logger.log("Cluster is inactive");
-
-
         }
         catch (Throwable e) {
             logger.log("Failed to get cluster state.");
