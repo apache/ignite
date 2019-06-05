@@ -19,7 +19,6 @@ package org.apache.ignite.ml.naivebayes.discrete;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.apache.ignite.ml.dataset.Dataset;
@@ -30,8 +29,6 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-
-import static java.util.Collections.emptyList;
 
 /**
  * Trainer for the Discrete naive Bayes classification model. The trainer calculates prior probabilities from the input
