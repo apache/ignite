@@ -598,11 +598,6 @@ public interface IgniteCacheOffheapManager {
         int partId();
 
         /**
-         * @return Store name.
-         */
-        String name();
-
-        /**
          * @param cacheId Cache ID.
          * @return Size.
          */
