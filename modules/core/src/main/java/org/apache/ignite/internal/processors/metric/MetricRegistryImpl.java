@@ -102,27 +102,27 @@ public class MetricRegistryImpl implements MetricRegistry {
 
     /** {@inheritDoc} */
     @Override public void register(String name, BooleanSupplier supplier, @Nullable String description) {
-        addMetric(name, new BooleanMetricImpl(name, description, supplier, log));
+        addMetric(name, new BooleanMetricImpl(name, description, supplier));
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, DoubleSupplier supplier, @Nullable String description) {
-        addMetric(name, new DoubleMetricImpl(name, description, supplier, log));
+        addMetric(name, new DoubleMetricImpl(name, description, supplier));
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, IntSupplier supplier, @Nullable String description) {
-        addMetric(name, new IntMetricImpl(name, description, supplier, log));
+        addMetric(name, new IntMetricImpl(name, description, supplier));
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, LongSupplier supplier, @Nullable String description) {
-        addMetric(name, new LongMetricImpl(name, description, supplier, log));
+        addMetric(name, new LongMetricImpl(name, description, supplier));
     }
 
     /** {@inheritDoc} */
     @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description) {
-        addMetric(name, new ObjectMetricImpl<>(name, description, supplier, type, log));
+        addMetric(name, new ObjectMetricImpl<>(name, description, supplier, type));
     }
 
     /** {@inheritDoc} */

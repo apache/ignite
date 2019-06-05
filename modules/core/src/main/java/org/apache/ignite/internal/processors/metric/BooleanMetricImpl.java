@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.metric;
 
 import java.util.function.BooleanSupplier;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.gauge.Gauge;
 import org.jetbrains.annotations.Nullable;
@@ -31,31 +29,19 @@ public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric, 
     /** Value supplier. */
     private final BooleanSupplier val;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /**
      * @param name Name.
      * @param descr Description.
      * @param val Supplier.
-     * @param log Logger.
      */
-    public BooleanMetricImpl(String name, @Nullable String descr, BooleanSupplier val, IgniteLogger log) {
+    public BooleanMetricImpl(String name, @Nullable String descr, BooleanSupplier val) {
         super(name, descr);
 
         this.val = val;
-        this.log = log;
     }
 
     /** {@inheritDoc} */
     @Override public boolean value() {
-        try {
-            return val.getAsBoolean();
-        }
-        catch (Exception e) {
-            LT.warn(log, e, "Error on metric calculation [name=" + name() + ']', false, true);
-
-            return false;
-        }
+        return val.getAsBoolean();
     }
 }

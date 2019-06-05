@@ -32,12 +32,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class LogExporterSpiTest extends AbstractExporterSpiTest {
-    /** */
-    public static final String FILTERED_PREFIX = "filtered.metric";
-
-    /** */
-    public static final int EXPORT_TIMEOUT = 1_000;
-
     /** Test logger. */
     private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
 

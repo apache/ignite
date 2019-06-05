@@ -32,6 +32,9 @@ public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
     protected static final String FILTERED_PREFIX = "filtered.metric";
 
     /** */
+    public static final int EXPORT_TIMEOUT = 1_000;
+
+    /** */
     protected Set<String> EXPECTED_ATTRIBUTES = new HashSet<>(Arrays.asList(
         "TotalAllocatedSize",
         "LargeEntriesPagesCount",
@@ -62,7 +65,7 @@ public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
         MetricRegistry mreg = ignite.context().metric().registry();
 
         mreg.counter(metricName(FILTERED_PREFIX, "test"), "")
-            .add(-2);
+            .add(2);
 
         mreg.counter(metricName("other.prefix", "test"), "")
             .add(42);
