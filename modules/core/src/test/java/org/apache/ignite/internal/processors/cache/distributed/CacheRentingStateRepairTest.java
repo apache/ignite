@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -49,9 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /** */
     public static final int PARTS = 1024;
-
-    /** */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final String CLIENT = "client";
@@ -249,7 +245,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             int delayEvictPart = parts.get(0);
 
-            List<Integer> keys = partitionKeys(g0.cache(DEFAULT_CACHE_NAME), delayEvictPart, 2000, 0);
+            List<Integer> keys = partitionKeys(g0.cache(DEFAULT_CACHE_NAME), delayEvictPart, 2_000, 0);
 
             for (Integer key : keys)
                 g0.cache(DEFAULT_CACHE_NAME).put(key, key);

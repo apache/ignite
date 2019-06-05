@@ -232,7 +232,6 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         try (IgniteDataStreamer<Integer, Integer> ds = ignite.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
 
-            ds.allowOverwrite(true);
             for (int k = 1; k <= keysCnt; k++) {
                 ds.addData(k, k);
 
@@ -267,7 +266,5 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             Assert.assertNotNull("Value for " + k + " is null", val);
             Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }
-
-        assertPartitionsSame(idleVerify(ignite));
     }
 }

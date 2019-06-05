@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -775,6 +775,8 @@ public class GridDhtPartitionDemander {
                             assert reserved : "Failed to reserve partition [igniteInstanceName=" +
                                 ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
 
+                            part.lock();
+
                             part.beforeApplyBatch(last);
 
                             try {
@@ -796,6 +798,7 @@ public class GridDhtPartitionDemander {
                                 }
                             }
                             finally {
+                                part.unlock();
                                 part.release();
                             }
                         }
@@ -1214,9 +1217,10 @@ public class GridDhtPartitionDemander {
         /** The number of rebalance routines. */
         private final long routines;
 
-        /** Used to enforce the condition: after rebalance future cancellation no more supply messages could be applied
-         * to partition. */
-        private final StripedCompositeReadWriteLock cancelLock;
+        /** Used to order rebalance cancellation and supply message processing, they should not overlap.
+         * Otherwise partition clearing could start on still rebalancing partition resulting in eviction of
+         * partition in OWNING state. */
+        private final ReentrantReadWriteLock cancelLock;
 
         /**
          * @param grp Cache group.
@@ -1249,7 +1253,7 @@ public class GridDhtPartitionDemander {
 
             ctx = grp.shared();
 
-            cancelLock = new StripedCompositeReadWriteLock(ctx.gridConfig().getRebalanceThreadPoolSize());
+            cancelLock = new ReentrantReadWriteLock();
         }
 
         /**
