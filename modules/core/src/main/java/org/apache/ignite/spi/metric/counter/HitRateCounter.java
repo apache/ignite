@@ -96,7 +96,7 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
         private static final long NO_TAG_MASK = ~(-1L << TAG_OFFSET);
 
         /** Time interval when hits are counted to calculate rate, in milliseconds. */
-        private volatile long rateTimeInterval;
+        private final long rateTimeInterval;
 
         /** Counters array size. */
         private final int size;

@@ -17,102 +17,58 @@
 
 package org.apache.ignite.spi.metric.sql;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricNameUtils.MetricName;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
+import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewColumnCondition;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.MetricRegistry;
+import org.h2.engine.Session;
+import org.h2.result.Row;
+import org.h2.result.SearchRow;
+import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse;
 
 /**
  * This SPI implementation exports metrics as SQL views.
  */
 public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
-    /**
-     * Metric registry.
-     */
-    private MetricRegistry reg;
+    /** System view name. */
+    public static final String SYS_VIEW_NAME = "METRICS";
 
-    /**
-     * Metric filter.
-     */
+    /** Metric filter. */
     private @Nullable Predicate<Metric> filter;
 
-    /**
-     * Views waiting to be registered after indexing engine started.
-     */
-    private List<SqlSystemView> pendingViews;
+    /** Metric Registry. */
+    private MetricRegistry mreg;
 
-    /**
-     * Flag indicating that indexing engine was started.
-     */
-    private volatile boolean idxStarted;
+    /** {@inheritDoc} */
+    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
+        GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-    /**
-     * Set of already registered as SQL view prefixes.
-     */
-    private Set<String> metricSets = new HashSet<>();
+        SchemaManager mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-    /** */
-    private Object regMux = new Object();
+        mgr.createSystemView(QueryUtils.SCHEMA_MONITORING, new MetricSetLocalSystemView(ctx));
+
+        if (log.isDebugEnabled())
+            log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");
+    }
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        reg.addMetricCreationListener(m -> {
-            if (filter != null && !filter.test(m))
-                return;
-
-            MetricName n = parse(m.name());
-
-            if (metricSets.contains(n.msetName()))
-                return;
-
-            metricSets.add(n.msetName());
-
-            registerSystemView(new MetricSetLocalSystemView(n.msetName(), reg, ((IgniteEx)ignite()).context()));
-        });
-    }
-
-    /**
-     * Registers new system view.
-     * @param view View.
-     */
-    private void registerSystemView(SqlSystemView view) {
-        synchronized (regMux) {
-            if (!idxStarted) {
-                if (pendingViews == null)
-                    pendingViews = new ArrayList<>();
-
-                pendingViews.add(view);
-
-                return;
-            }
-
-            GridKernalContext ctx = ((IgniteEx)ignite()).context();
-
-            SchemaManager mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
-
-            mgr.createSystemView(QueryUtils.SCHEMA_MONITORING, view);
-
-
-            if (log.isDebugEnabled())
-                log.debug("MetricSet SQL view created. " + view.getTableName());
-        }
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -121,29 +77,49 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        synchronized (regMux) {
-            if (idxStarted)
-                return;
-
-            idxStarted = true;
-
-            if (pendingViews != null) {
-                for (SqlSystemView view : pendingViews)
-                    registerSystemView(view);
-
-                pendingViews = null;
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMetricRegistry(MetricRegistry reg) {
-        this.reg = reg;
+    @Override public void setMetricRegistry(MetricRegistry mreg) {
+        this.mreg = mreg;
     }
 
     /** {@inheritDoc} */
     @Override public void setExportFilter(Predicate<Metric> filter) {
         this.filter = filter;
+    }
+
+    /** */
+    public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
+        /**
+         * @param set Metric set.
+         * @param ctx Context.
+         */
+        public MetricSetLocalSystemView(GridKernalContext ctx) {
+            super(SYS_VIEW_NAME, "Ignite metrics",
+                ctx,
+                newColumn("NAME", Value.STRING),
+                newColumn("VALUE", Value.STRING),
+                newColumn("DESCRIPTION", Value.STRING));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
+            SqlSystemViewColumnCondition nameCond = conditionForColumn("NAME", first, last);
+
+            Collection<Metric> metrics;
+
+            if (nameCond.isEquality()) {
+                Metric metric = mreg.findMetric(nameCond.valueForEquality().getString());
+
+                metrics = metric == null ? Collections.emptySet() : Collections.singleton(metric);
+            }
+            else
+                metrics = mreg.getMetrics();
+
+            return F.iterator(metrics,
+                m -> createRow(ses,
+                    m.name(),
+                    m.getAsString(),
+                    m.description()),
+                true, m -> filter.test(m));
+        }
     }
 }

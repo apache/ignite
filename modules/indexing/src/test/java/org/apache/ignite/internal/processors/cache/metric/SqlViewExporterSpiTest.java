@@ -35,9 +35,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
-/**
- *
- */
+/** */
 public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     private static IgniteEx ignite;
@@ -80,7 +78,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     @Test
     public void testDataRegionJmxMetrics() throws Exception {
         List<List<?>> res = execute(ignite,
-            "SELECT name, value, description FROM MONITORING.METRIC_SET_IO_DATAREGION_DEFAULT");
+            "SELECT REPLACE(name, 'io.dataregion.default.'), value, description FROM MONITORING.METRICS");
 
         Set<String> names = new HashSet<>();
 
@@ -91,7 +89,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             assertNotNull(row.get(2));
         }
 
-        assertTrue(EXPECTED_ATTRIBUTES.containsAll(names));
+        for (String attr : EXPECTED_ATTRIBUTES)
+            assertTrue(attr + " should be exporterd via SQL view", names.contains(attr));
     }
 
     /** */
@@ -100,13 +99,12 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         createAdditionalMetrics(ignite);
 
         List<List<?>> res = execute(ignite,
-            "SELECT name, value, description FROM MONITORING.METRIC_SET_OTHER_PREFIX UNION " +
-            "SELECT name, value, description FROM MONITORING.METRIC_SET_OTHER_PREFIX2 ");
+            "SELECT name, value, description FROM MONITORING.METRICS WHERE name LIKE 'other.prefix%'");
 
         Set<IgniteBiTuple<String, String>> expVals = new HashSet<>(Arrays.asList(
-            t("test", "42"),
-            t("test2", "43"),
-            t("test3", "44")
+            t("other.prefix.test", "42"),
+            t("other.prefix.test2", "43"),
+            t("other.prefix2.test3", "44")
         ));
 
         Set<IgniteBiTuple<String, String>> vals = new HashSet<>();
@@ -121,7 +119,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     }
 
     /**
-     * Execute DDL statement on given node.
+     * Execute query on given node.
      *
      * @param node Node.
      * @param sql Statement.
