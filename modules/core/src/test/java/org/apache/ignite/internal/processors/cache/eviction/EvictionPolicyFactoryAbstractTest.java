@@ -649,6 +649,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
 
         return (T)((GridCacheEvictionManager)evictMgr).getEvictionPolicy();
     }
+
     /**
      * @param c1 Policy collection.
      * @param c2 Expected list.
@@ -887,7 +888,7 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     @Deprecated
     protected T createPolicy() {
         return null;
-    };
+    }
 
     /**
      * @return Policy.

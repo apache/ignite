@@ -135,8 +135,6 @@ class IntervalBasedMeasurement {
         return nanosPassed <= 0 ? 0 : opsDone * NANOS_IN_SECOND / nanosPassed;
     }
 
-
-
     /**
      * @param interval Measurement to check. {@code null} is always outdated.
      * @param curNanoTime Current time in nanoseconds.

@@ -335,12 +335,41 @@ public class BlockingSslHandler {
 
         SSLEngineResult res = unwrap0();
 
+        res = postHandshakeIfNeded(res);
+
         // prepare to be written again
         inNetBuf.compact();
 
         checkStatus(res);
 
         renegotiateIfNeeded(res);
+    }
+
+    /**
+     * Does post-handshake logic described <a href="https://tools.ietf.org/html/rfc8446#section-4.6">here</a> if nedded.
+     *
+     * @param res Response.
+     */
+    private SSLEngineResult postHandshakeIfNeded(SSLEngineResult res) throws SSLException, IgniteCheckedException {
+        while (res.getHandshakeStatus() == FINISHED && res.getStatus() == OK) {
+            if (!inNetBuf.hasRemaining()) {
+                inNetBuf.clear();
+
+                readFromNet();
+
+                inNetBuf.flip();
+            }
+
+            res = unwrap0();
+
+            handshakeStatus = res.getHandshakeStatus();
+
+            if (log.isDebugEnabled())
+                log.debug("Unrapped post-handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
+                    handshakeStatus + ']');
+        }
+
+        return res;
     }
 
     /**

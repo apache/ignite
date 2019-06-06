@@ -60,7 +60,6 @@ public enum IgniteFeatures {
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11);
 
-
     /**
      * Unique feature identifier.
      */

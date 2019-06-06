@@ -186,6 +186,9 @@ public class CacheGroupContext {
     /** */
     private volatile boolean hasAtomicCaches;
 
+    /** Store cache group metrics. */
+    private final CacheGroupMetricsImpl metrics;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -246,6 +249,8 @@ public class CacheGroupContext {
         mvccEnabled = ccfg.getAtomicityMode() == TRANSACTIONAL_SNAPSHOT;
 
         log = ctx.kernalContext().log(getClass());
+
+        metrics = new CacheGroupMetricsImpl();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
@@ -983,7 +988,6 @@ public class CacheGroupContext {
         this.contQryCaches = contQryCaches;
     }
 
-
     /**
      * Obtain the group listeners lock. Write lock should be held to register/unregister listeners. Read lock should be
      * hel for CQ listeners notification.
@@ -1290,5 +1294,12 @@ public class CacheGroupContext {
      */
     public boolean hasAtomicCaches() {
         return hasAtomicCaches;
+    }
+
+    /**
+     * @return Metrics.
+     */
+    public CacheGroupMetricsImpl metrics0() {
+        return metrics;
     }
 }
