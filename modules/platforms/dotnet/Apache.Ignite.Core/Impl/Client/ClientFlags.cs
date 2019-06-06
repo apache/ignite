@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,35 +15,17 @@
  * limitations under the License.
  */
 
-using System;
-
-#pragma warning disable 414  // Unused FuncPtr
-
-namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
+namespace Apache.Ignite.Core.Impl.Client
 {
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.InteropServices;
+    using System;
 
     /// <summary>
-    /// JNINativeMethod structure for registering Java -> .NET callbacks.
+    /// Client operation flags.
     /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]
-    internal struct NativeMethod
+    [Flags]
+    internal enum ClientFlags : short
     {
-        /// <summary>
-        /// Method name, char*.
-        /// </summary>
-        public IntPtr Name;
-
-        /// <summary>
-        /// Method signature, char*.
-        /// </summary>
-        public IntPtr Signature;
-
-        /// <summary>
-        /// Function pointer (from <see cref="Marshal.GetFunctionPointerForDelegate"/>).
-        /// </summary>
-        // ReSharper disable once NotAccessedField.Global
-        public IntPtr FuncPtr;
+        Error = 1,
+        AffinityTopologyChanged = 2
     }
 }
