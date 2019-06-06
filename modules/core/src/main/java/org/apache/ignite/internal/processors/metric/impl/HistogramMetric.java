@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.gauge;
+package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
@@ -24,11 +24,11 @@ import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Histogram gauge that will calculate counts of measurements that gets into each bounds interval.
+ * Histogram metric that will calculate counts of measurements that gets into each bounds interval.
  * Note, that {@link #value()} will return array length of {@code bounds.length + 1}.
  * Last element will contains count of measurements bigger then most right value of bounds.
  */
-public class HistogramGauge extends AbstractMetric implements ObjectMetric<long[]>, Gauge {
+public class HistogramMetric extends AbstractMetric implements ObjectMetric<long[]> {
     /** Holder of measurements. */
     private volatile HistogramHolder holder;
 
@@ -37,7 +37,7 @@ public class HistogramGauge extends AbstractMetric implements ObjectMetric<long[
      * @param description Description.
      * @param bounds Bounds.
      */
-    public HistogramGauge(String name, @Nullable String description, long[] bounds) {
+    public HistogramMetric(String name, @Nullable String description, long[] bounds) {
         super(name, description);
 
         holder = new HistogramHolder(bounds);

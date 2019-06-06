@@ -25,7 +25,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -35,7 +35,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Metric registry. */
-    protected MetricRegistry mreg;
+    protected ReadOnlyMetricRegistry mreg;
 
     /** Metric filter. */
     protected  @Nullable Predicate<Metric> filter;
@@ -94,7 +94,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(MetricRegistry mreg) {
+    @Override public void setMetricRegistry(ReadOnlyMetricRegistry mreg) {
         this.mreg = mreg;
     }
 

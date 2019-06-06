@@ -36,8 +36,8 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse;
 
@@ -61,7 +61,7 @@ public class MetricSetMBean implements DynamicMBean {
      * @param first First set entry.
      * @param m
      */
-    public MetricSetMBean(String msetName, MetricRegistry mreg, Metric first) {
+    public MetricSetMBean(String msetName, ReadOnlyMetricRegistry mreg, Metric first) {
         this.msetName = msetName;
 
         mreg.addMetricCreationListener(m -> {
@@ -123,7 +123,7 @@ public class MetricSetMBean implements DynamicMBean {
         }
 
         return new MBeanInfo(
-            MetricRegistry.class.getName(),
+            ReadOnlyMetricRegistry.class.getName(),
             msetName,
             attributes,
             null,

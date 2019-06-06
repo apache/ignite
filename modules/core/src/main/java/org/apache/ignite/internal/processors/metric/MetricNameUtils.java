@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.metric;
 
-import org.apache.ignite.spi.metric.MetricRegistry;
-
 /**
  * Utility class to build or parse metric name in dot notation.
  *

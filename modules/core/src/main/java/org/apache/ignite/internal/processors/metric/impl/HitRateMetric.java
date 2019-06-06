@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.spi.metric.counter;
+package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.AtomicLongArray;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
@@ -33,9 +33,9 @@ import org.jetbrains.annotations.Nullable;
  * Maximum relative error is 1/{@code size}.
  * 2^55 - 1 hits per interval can be accumulated without numeric overflow.
  */
-public class HitRateCounter extends AbstractMetric implements LongMetric, Counter {
-    /** Counter instance. */
-    private volatile HitRateCounterImpl cntr;
+public class HitRateMetric extends AbstractMetric implements LongMetric {
+    /** Metric instance. */
+    private volatile HitRateMetricImpl cntr;
 
     /**
      * @param name Name.
@@ -43,29 +43,29 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
      * @param rateTimeInterval Rate time interval.
      * @param size Counters array size.
      */
-    public HitRateCounter(String name, @Nullable String description, long rateTimeInterval, int size) {
+    public HitRateMetric(String name, @Nullable String description, long rateTimeInterval, int size) {
         super(name, description);
 
-        cntr = new HitRateCounterImpl(rateTimeInterval, size);
+        cntr = new HitRateMetricImpl(rateTimeInterval, size);
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        cntr = new HitRateCounterImpl(cntr.rateTimeInterval, cntr.size);
+        cntr = new HitRateMetricImpl(cntr.rateTimeInterval, cntr.size);
     }
 
     /**
-     * Resets counter with the new paramters.
+     * Resets metric with the new paramters.
      *
      * @param rateTimeInterval New rate time interval.
      * @param size New counters array size.
      */
     public void reset(long rateTimeInterval, int size) {
-        cntr = new HitRateCounterImpl(rateTimeInterval, size);
+        cntr = new HitRateMetricImpl(rateTimeInterval, size);
     }
 
     /**
-     * Adds x to the counter.
+     * Adds x to the metric.
      *
      * @param x Value to be added.
      */
@@ -73,7 +73,7 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
         cntr.add(x);
     }
 
-    /** Adds 1 to the counter. */
+    /** Adds 1 to the metric. */
     public void increment() {
         add(1);
     }
@@ -84,11 +84,11 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
     }
 
     /**
-     * Actual counter.
+     * Actual metric.
      *
      * Separated class required to
      */
-    private static class HitRateCounterImpl {
+    private static class HitRateMetricImpl {
         /** Bits that store actual hit count. */
         private static final int TAG_OFFSET = 56;
 
@@ -111,7 +111,7 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
          * @param rateTimeInterval Rate time interval.
          * @param size Number of counters.
          */
-        public HitRateCounterImpl(long rateTimeInterval, int size) {
+        public HitRateMetricImpl(long rateTimeInterval, int size) {
             A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
 
             A.ensure(size > 1, "Minimum value for size is 2");
@@ -126,7 +126,7 @@ public class HitRateCounter extends AbstractMetric implements LongMetric, Counte
         }
 
         /**
-         * Adds hits to the counter.
+         * Adds hits to the metric.
          *
          * @param hits Number of hits.
          */

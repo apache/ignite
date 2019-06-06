@@ -15,8 +15,34 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.metric.impl;
+
+import java.util.function.IntSupplier;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.jetbrains.annotations.Nullable;
+
 /**
- * <!-- Package description. -->
- * Contains gauges supported by Ignite.
+ * Implementation based on primitive supplier.
  */
-package org.apache.ignite.spi.metric.gauge;
+public class IntGauge extends AbstractMetric implements IntMetric {
+    /** Value supplier. */
+    private final IntSupplier val;
+
+    /**
+     * @param name Name.
+     * @param descr Description.
+     * @param val Supplier.
+     * @param log Logger.
+     */
+    public IntGauge(String name, @Nullable String descr, IntSupplier val) {
+        super(name, descr);
+
+        this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int value() {
+        return val.getAsInt();
+    }
+}

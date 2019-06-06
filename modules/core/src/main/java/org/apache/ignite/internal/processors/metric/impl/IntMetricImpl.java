@@ -15,43 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric;
+package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.function.Supplier;
-import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.spi.metric.gauge.Gauge;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.spi.metric.IntMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation based on primitive supplier.
+ * Int metric implementation.
  */
-public class ObjectMetricImpl<T> extends AbstractMetric implements ObjectMetric<T>, Gauge {
-    /** Value supplier. */
-    private final Supplier<T> val;
+public class IntMetricImpl extends AbstractMetric implements IntMetric {
+    /** Field updater. */
+    private static final AtomicIntegerFieldUpdater<IntMetricImpl> updater =
+        AtomicIntegerFieldUpdater.newUpdater(IntMetricImpl.class, "val");
 
-    /** Type. */
-    private final Class<T> type;
+    /** Value. */
+    private volatile int val;
 
     /**
      * @param name Name.
      * @param descr Description.
-     * @param value Supplier.
-     * @param type Type.
      */
-    public ObjectMetricImpl(String name, @Nullable String descr, Supplier<T> val, Class<T> type) {
+    public IntMetricImpl(String name, @Nullable String descr) {
         super(name, descr);
+    }
 
+    /**
+     * Adds x to the metric.
+     *
+     * @param x Value to be added.
+     */
+    public void add(int x) {
+        updater.addAndGet(this, x);
+    }
+
+    /**
+     * Sets value.
+     *
+     * @param val Value.
+     */
+    public void value(int val) {
         this.val = val;
-        this.type = type;
     }
 
     /** {@inheritDoc} */
-    @Override public T value() {
-        return val.get();
+    @Override public void reset() {
+        updater.set(this, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public Class<T> type() {
-        return type;
+    @Override public int value() {
+        return val;
     }
 }

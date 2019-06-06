@@ -15,8 +15,33 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.metric.impl;
+
+import java.util.function.DoubleSupplier;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.spi.metric.DoubleMetric;
+import org.jetbrains.annotations.Nullable;
+
 /**
- * <!-- Package description. -->
- * Contains counters supported by Ignite.
+ * Implementation based on primitive supplier.
  */
-package org.apache.ignite.spi.metric.counter;
+public class DoubleGauge extends AbstractMetric implements DoubleMetric {
+    /** Value supplier. */
+    private final DoubleSupplier val;
+
+    /**
+     * @param name Name.
+     * @param descr Description.
+     * @param val Supplier.
+     */
+    public DoubleGauge(String name, @Nullable String descr, DoubleSupplier val) {
+        super(name, descr);
+
+        this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double value() {
+        return val.getAsDouble();
+    }
+}

@@ -15,49 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.gauge;
+package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.function.BooleanSupplier;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.BooleanMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation of {@link ObjectMetric}.
+ * Implementation based on primitive supplier.
  */
-public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T>, Gauge {
-    /** Value. */
-    private volatile T val;
-
-    /** Type. */
-    private final Class<T> type;
+public class BooleanGauge extends AbstractMetric implements BooleanMetric {
+    /** Value supplier. */
+    private final BooleanSupplier val;
 
     /**
      * @param name Name.
-     * @param description Description.
-     * @param type Type.
+     * @param descr Description.
+     * @param val Supplier.
      */
-    public ObjectGauge(String name, @Nullable String description, Class<T> type) {
-        super(name, description);
+    public BooleanGauge(String name, @Nullable String descr, BooleanSupplier val) {
+        super(name, descr);
 
-        this.type = type;
-    }
-
-    /** {@inheritDoc} */
-    @Override public T value() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Class<T> type() {
-        return type;
-    }
-
-    /**
-     * Sets value.
-     *
-     * @param val Value.
-     */
-    public void value(T val) {
         this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean value() {
+        return val.getAsBoolean();
     }
 }

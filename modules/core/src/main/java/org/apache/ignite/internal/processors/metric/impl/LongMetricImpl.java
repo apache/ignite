@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.counter;
+package org.apache.ignite.internal.processors.metric.impl;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
@@ -23,12 +23,12 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Long counter implementation.
+ * Long metric implementation.
  */
-public class LongCounter extends AbstractMetric implements LongMetric, Counter {
+public class LongMetricImpl extends AbstractMetric implements LongMetric {
     /** Field updater. */
-    private static final AtomicLongFieldUpdater<LongCounter> updater =
-        AtomicLongFieldUpdater.newUpdater(LongCounter.class, "val");
+    private static final AtomicLongFieldUpdater<LongMetricImpl> updater =
+        AtomicLongFieldUpdater.newUpdater(LongMetricImpl.class, "val");
 
     /** Field value. */
     private volatile long val;
@@ -37,12 +37,12 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
      * @param name Name.
      * @param descr Description.
      */
-    public LongCounter(String name, @Nullable String descr) {
+    public LongMetricImpl(String name, @Nullable String descr) {
         super(name, descr);
     }
 
     /**
-     * Adds x to the counter.
+     * Adds x to the metric.
      *
      * @param x Value to be added.
      */
@@ -50,12 +50,12 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
         updater.getAndAdd(this, x);
     }
 
-    /** Adds 1 to the counter. */
+    /** Adds 1 to the metric. */
     public void increment() {
         add(1);
     }
 
-    /** Adds -1 to the counter. */
+    /** Adds -1 to the metric. */
     public void decrement() {
         add(-1);
     }
@@ -68,6 +68,15 @@ public class LongCounter extends AbstractMetric implements LongMetric, Counter {
     /** {@inheritDoc} */
     @Override public long value() {
         return val;
+    }
+
+    /**
+     * Sets value.
+     *
+     * @param val Value.
+     */
+    public void value(long val) {
+        this.val = val;
     }
 
     /**

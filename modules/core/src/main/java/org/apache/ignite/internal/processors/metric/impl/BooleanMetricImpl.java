@@ -15,34 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric;
+package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.function.IntSupplier;
-import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.gauge.Gauge;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.spi.metric.BooleanMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation based on primitive supplier.
+ * Metric that holds boolean primitive.
  */
-public class IntMetricImpl extends AbstractMetric implements IntMetric, Gauge {
-    /** Value supplier. */
-    private final IntSupplier val;
+public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric {
+    /** Value. */
+    private volatile boolean val;
 
     /**
      * @param name Name.
      * @param descr Description.
-     * @param val Supplier.
-     * @param log Logger.
      */
-    public IntMetricImpl(String name, @Nullable String descr, IntSupplier val) {
+    public BooleanMetricImpl(String name, @Nullable String descr) {
         super(name, descr);
+    }
 
+    /**
+     * Sets value.
+     *
+     * @param val Value.
+     */
+    public void value(boolean val) {
         this.val = val;
     }
 
     /** {@inheritDoc} */
-    @Override public int value() {
-        return val.getAsInt();
+    @Override public void reset() {
+        val = false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean value() {
+        return val;
     }
 }

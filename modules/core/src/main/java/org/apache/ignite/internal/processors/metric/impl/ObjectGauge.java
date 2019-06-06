@@ -15,43 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.gauge;
+package org.apache.ignite.internal.processors.metric.impl;
 
+import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.ObjectMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Implementation based on primitive.
+ * Implementation based on primitive supplier.
  */
-public class LongGauge extends AbstractMetric implements LongMetric, Gauge {
-    /** Value. */
-    private volatile long val;
+public class ObjectGauge<T> extends AbstractMetric implements ObjectMetric<T> {
+    /** Value supplier. */
+    private final Supplier<T> val;
+
+    /** Type. */
+    private final Class<T> type;
 
     /**
      * @param name Name.
      * @param descr Description.
+     * @param value Supplier.
+     * @param type Type.
      */
-    public LongGauge(String name, @Nullable String descr) {
+    public ObjectGauge(String name, @Nullable String descr, Supplier<T> val, Class<T> type) {
         super(name, descr);
-    }
 
-    /** {@inheritDoc} */
-    @Override public long value() {
-        return val;
-    }
-
-    /**
-     * Sets value.
-     *
-     * @param val Value.
-     */
-    public void value(long val) {
         this.val = val;
+        this.type = type;
     }
 
     /** {@inheritDoc} */
-    @Override public void reset() {
-        val = 0;
+    @Override public T value() {
+        return val.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<T> type() {
+        return type;
     }
 }

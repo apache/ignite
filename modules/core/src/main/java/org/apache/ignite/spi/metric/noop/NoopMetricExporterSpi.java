@@ -23,7 +23,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,7 +42,7 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(MetricRegistry registry) {
+    @Override public void setMetricRegistry(ReadOnlyMetricRegistry registry) {
         // No-op.
     }
 

@@ -32,7 +32,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse;
@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse
  */
 public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Monitoring registry. */
-    private MetricRegistry mreg;
+    private ReadOnlyMetricRegistry mreg;
 
     /** Set of already registered as MBean prefixes. */
     private Set<String> metricSets = new HashSet<>();
@@ -114,7 +114,7 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(MetricRegistry reg) {
+    @Override public void setMetricRegistry(ReadOnlyMetricRegistry reg) {
         this.mreg = reg;
     }
 

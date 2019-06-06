@@ -15,11 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.gauge;
+package org.apache.ignite.internal.processors.metric.impl;
+
+import java.util.function.LongSupplier;
+import org.apache.ignite.internal.processors.metric.AbstractMetric;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Marker interface for all gauges.
- * Gauge value is the last of observed values.
+ * Implementation based on primitive supplier.
  */
-public interface Gauge {
+public class LongGauge extends AbstractMetric implements LongMetric {
+    /** Value supplier. */
+    private final LongSupplier val;
+
+    /**
+     * @param name Name.
+     * @param descr Description.
+     * @param val Supplier.
+     */
+    public LongGauge(String name, @Nullable String descr, LongSupplier val) {
+        super(name, descr);
+
+        this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long value() {
+        return val.getAsLong();
+    }
 }

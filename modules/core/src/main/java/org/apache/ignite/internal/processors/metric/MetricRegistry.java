@@ -15,66 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric;
+package org.apache.ignite.internal.processors.metric;
 
-import java.util.Collection;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
-import org.apache.ignite.spi.metric.counter.DoubleCounter;
-import org.apache.ignite.spi.metric.counter.HitRateCounter;
-import org.apache.ignite.spi.metric.counter.IntCounter;
-import org.apache.ignite.spi.metric.counter.LongAdderCounter;
-import org.apache.ignite.spi.metric.counter.LongCounter;
-import org.apache.ignite.spi.metric.gauge.BooleanGauge;
-import org.apache.ignite.spi.metric.gauge.DoubleGauge;
-import org.apache.ignite.spi.metric.gauge.HistogramGauge;
-import org.apache.ignite.spi.metric.gauge.IntGauge;
-import org.apache.ignite.spi.metric.gauge.LongGauge;
-import org.apache.ignite.spi.metric.gauge.ObjectGauge;
+import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
+import org.apache.ignite.spi.metric.BooleanMetric;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Metrics registry.
- * Provide methods to register required metrics, counters, gauges for Ignite internals.
+ * Provide methods to register required metrics, gauges for Ignite internals.
  * Provide the way to obtain all registered metrics for exporters.
  */
-public interface MetricRegistry {
-    /**
-     * @param prefix prefix for all metrics.
-     * @return Proxy implementation that will search and create only metrics with specified prefix.
-     */
-    public MetricRegistry withPrefix(String prefix);
-
-    /**
-     * Prefixes combined using dot notation {@code ["io", "stat"] -> "io.stat"}
-     *
-     * @param prefixes prefixes for all metrics.
-     * @return Proxy implementation that will search and create only metrics with specified prefixes.
-     */
-    public MetricRegistry withPrefix(String... prefixes);
-
-    /**
-     * @return Metrics stored in this group.
-     */
-    public Collection<Metric> getMetrics();
-
-    /**
-     * Adds listener of metrics sets creation events.
-     *
-     * @param lsnr Listener.
-     */
-    public void addMetricCreationListener(Consumer<Metric> lsnr);
-
-    /**
-     * @param name Name of the metric
-     * @return Metric with specified name if exists. Null otherwise.
-     */
-    @Nullable public Metric findMetric(String name);
-
+public interface MetricRegistry extends ReadOnlyMetricRegistry {
     /**
      * Register existing metrics in this group with the specified name.
      *
@@ -143,57 +111,57 @@ public interface MetricRegistry {
     public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description);
 
     /**
-     * Creates and register named counter.
+     * Creates and register named metric.
      * Returned instance are thread safe.
      *
      * @param name Name.
      * @param description Description.
-     * @return Counter.
+     * @return Metric
      */
-    public DoubleCounter doubleCounter(String name, @Nullable String description);
+    public DoubleMetricImpl doubleMetric(String name, @Nullable String description);
 
     /**
-     * Creates and register named counter.
+     * Creates and register named metric.
      * Returned instance are thread safe.
      *
      * @param name Name.
      * @param description Description.
-     * @return Counter.
+     * @return Metric.
      */
-    public IntCounter intCounter(String name, @Nullable String description);
+    public IntMetricImpl intMetric(String name, @Nullable String description);
 
     /**
-     * Creates and register named counter.
+     * Creates and register named metric.
      * Returned instance are thread safe.
      *
      * @param name Name.
      * @param description Description.
-     * @return Counter.
+     * @return Metric.
      */
-    public LongCounter counter(String name, @Nullable String description);
+    public LongMetricImpl metric(String name, @Nullable String description);
 
     /**
-     * Creates and register named counter.
+     * Creates and register named metric.
      * Returned instance are thread safe.
      *
      * @param name Name.
      * @param description Description.
-     * @return Counter.
+     * @return Metric
      */
-    public LongAdderCounter longAdderCounter(String name, @Nullable String description);
+    public LongAdderMetricImpl longAdderMetric(String name, @Nullable String description);
 
     /**
-     * Creates and register hit rate counter.
+     * Creates and register hit rate metric.
      *
      * It will accumulates approximate hit rate statistics.
      * Calculates number of hits in last rateTimeInterval milliseconds.
      *
      * @param rateTimeInterval Rate time interval.
      * @param size Array size for underlying calculations.
-     * @return Counter.
-     * @see HitRateCounter
+     * @return Metric.
+     * @see HitRateMetric
      */
-    public HitRateCounter hitRateCounter(String name, @Nullable String description, long rateTimeInterval, int size);
+    public HitRateMetric hitRateMetric(String name, @Nullable String description, long rateTimeInterval, int size);
 
     /**
      * Creates and register named gauge.
@@ -203,37 +171,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Gauge.
      */
-    public BooleanGauge booleanGauge(String name, @Nullable String description);
-
-    /**
-     * Creates and register named gauge.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @return Gauge.
-     */
-    public DoubleGauge doubleGauge(String name, @Nullable String description);
-
-    /**
-     * Creates and register named gauge.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @return Gauge.
-     */
-    public IntGauge intGauge(String name, @Nullable String description);
-
-    /**
-     * Creates and register named gauge.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @return Gauge.
-     */
-    public LongGauge gauge(String name, @Nullable String description);
+    public BooleanMetricImpl booleanMetric(String name, @Nullable String description);
 
     /**
      * Creates and register named gauge.
@@ -244,7 +182,7 @@ public interface MetricRegistry {
      * @param description Description.
      * @return Gauge.
      */
-    public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, @Nullable String description);
+    public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String description);
 
     /**
      * Creates and registre named histogram gauge.
@@ -254,5 +192,5 @@ public interface MetricRegistry {
      * @param description Description.
      * @return HistogramGauge.
      */
-    public HistogramGauge histogram(String name, long[] bounds, @Nullable String description);
+    public HistogramMetric histogram(String name, long[] bounds, @Nullable String description);
 }

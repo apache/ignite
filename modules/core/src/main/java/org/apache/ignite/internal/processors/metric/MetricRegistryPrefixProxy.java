@@ -26,18 +26,14 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.counter.DoubleCounter;
-import org.apache.ignite.spi.metric.counter.HitRateCounter;
-import org.apache.ignite.spi.metric.counter.IntCounter;
-import org.apache.ignite.spi.metric.counter.LongAdderCounter;
-import org.apache.ignite.spi.metric.counter.LongCounter;
-import org.apache.ignite.spi.metric.gauge.BooleanGauge;
-import org.apache.ignite.spi.metric.gauge.DoubleGauge;
-import org.apache.ignite.spi.metric.gauge.HistogramGauge;
-import org.apache.ignite.spi.metric.gauge.IntGauge;
-import org.apache.ignite.spi.metric.gauge.LongGauge;
-import org.apache.ignite.spi.metric.gauge.ObjectGauge;
+import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -130,58 +126,43 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
     }
 
     /** {@inheritDoc} */
-    @Override public DoubleCounter doubleCounter(String name, @Nullable String description) {
-        return reg.doubleCounter(fullName(name), description);
+    @Override public DoubleMetricImpl doubleMetric(String name, @Nullable String description) {
+        return reg.doubleMetric(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public IntCounter intCounter(String name, @Nullable String description) {
-        return reg.intCounter(fullName(name), description);
+    @Override public IntMetricImpl intMetric(String name, @Nullable String description) {
+        return reg.intMetric(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public LongCounter counter(String name, @Nullable String description) {
-        return reg.counter(fullName(name), description);
+    @Override public LongMetricImpl metric(String name, @Nullable String description) {
+        return reg.metric(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public LongAdderCounter longAdderCounter(String name, @Nullable String description) {
-        return reg.longAdderCounter(fullName(name), description);
+    @Override public LongAdderMetricImpl longAdderMetric(String name, @Nullable String description) {
+        return reg.longAdderMetric(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public HitRateCounter hitRateCounter(String name, @Nullable String description,
+    @Override public HitRateMetric hitRateMetric(String name, @Nullable String description,
         long rateTimeInterval, int size) {
-        return reg.hitRateCounter(fullName(name), description, rateTimeInterval, size);
+        return reg.hitRateMetric(fullName(name), description, rateTimeInterval, size);
     }
 
     /** {@inheritDoc} */
-    @Override public BooleanGauge booleanGauge(String name, @Nullable String description) {
-        return reg.booleanGauge(fullName(name), description);
+    @Override public BooleanMetricImpl booleanMetric(String name, @Nullable String description) {
+        return reg.booleanMetric(fullName(name), description);
     }
 
     /** {@inheritDoc} */
-    @Override public DoubleGauge doubleGauge(String name, @Nullable String description) {
-        return reg.doubleGauge(fullName(name), description);
+    @Override public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String description) {
+        return reg.objectMetric(fullName(name), type, description);
     }
 
     /** {@inheritDoc} */
-    @Override public IntGauge intGauge(String name, @Nullable String description) {
-        return reg.intGauge(fullName(name), description);
-    }
-
-    /** {@inheritDoc} */
-    @Override public LongGauge gauge(String name, @Nullable String description) {
-        return reg.gauge(fullName(name), description);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> ObjectGauge<T> objectGauge(String name, Class<T> type, @Nullable String description) {
-        return reg.objectGauge(fullName(name), type, description);
-    }
-
-    /** {@inheritDoc} */
-    @Override public HistogramGauge histogram(String name, long[] bounds, @Nullable String description) {
+    @Override public HistogramMetric histogram(String name, long[] bounds, @Nullable String description) {
         return reg.histogram(fullName(name), bounds, description);
     }
 

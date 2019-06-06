@@ -23,53 +23,52 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.spi.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.counter.HitRateCounter;
-import org.apache.ignite.spi.metric.counter.LongCounter;
-import org.apache.ignite.spi.metric.gauge.LongGauge;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 
 /**
  *
  */
 public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
-    private final HitRateCounter walLoggingRate;
+    private final HitRateMetric walLoggingRate;
 
     /** */
-    private final HitRateCounter walWritingRate;
+    private final HitRateMetric walWritingRate;
 
     /** */
-    private final HitRateCounter walFsyncTimeDuration;
+    private final HitRateMetric walFsyncTimeDuration;
 
     /** */
-    private final HitRateCounter walFsyncTimeNum;
+    private final HitRateMetric walFsyncTimeNum;
 
     /** */
-    private final HitRateCounter walBuffPollSpinsNum;
+    private final HitRateMetric walBuffPollSpinsNum;
 
     /** */
-    private final LongGauge lastCpLockWaitDuration;
+    private final LongMetricImpl lastCpLockWaitDuration;
 
     /** */
-    private final LongGauge lastCpMarkDuration;
+    private final LongMetricImpl lastCpMarkDuration;
 
     /** */
-    private final LongGauge lastCpPagesWriteDuration;
+    private final LongMetricImpl lastCpPagesWriteDuration;
 
     /** */
-    private final LongGauge lastCpDuration;
+    private final LongMetricImpl lastCpDuration;
 
     /** */
-    private final LongGauge lastCpFsyncDuration;
+    private final LongMetricImpl lastCpFsyncDuration;
 
     /** */
-    private final LongGauge lastCpTotalPages;
+    private final LongMetricImpl lastCpTotalPages;
 
     /** */
-    private final LongGauge lastCpDataPages;
+    private final LongMetricImpl lastCpDataPages;
 
     /** */
-    private final LongGauge lastCpCowPages;
+    private final LongMetricImpl lastCpCowPages;
 
     /** */
     private volatile long rateTimeInterval;
@@ -87,19 +86,19 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private volatile IgniteOutClosure<Long> walSizeProvider;
 
     /** */
-    private final LongGauge lastWalSegmentRollOverTime;
+    private final LongMetricImpl lastWalSegmentRollOverTime;
 
     /** */
-    private final LongCounter totalCheckpointTime;
+    private final LongMetricImpl totalCheckpointTime;
 
     /** */
     private volatile Collection<DataRegionMetrics> regionMetrics;
 
     /** */
-    private final LongGauge storageSize;
+    private final LongMetricImpl storageSize;
 
     /** */
-    private final LongGauge sparseStorageSize;
+    private final LongMetricImpl sparseStorageSize;
 
     /**
      * @param mreg Metrics registry.
@@ -119,69 +118,69 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         MetricRegistry mset = mreg.withPrefix("io.datastorage");
 
-        walLoggingRate = mset.hitRateCounter("WalLoggingRate",
+        walLoggingRate = mset.hitRateMetric("WalLoggingRate",
             "Average number of WAL records per second written during the last time interval.",
             rateTimeInterval,
             subInts);
 
-        walWritingRate = mset.hitRateCounter(
+        walWritingRate = mset.hitRateMetric(
             "WalWritingRate",
             "Average number of bytes per second written during the last time interval.",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeDuration = mset.hitRateCounter(
+        walFsyncTimeDuration = mset.hitRateMetric(
             "WalFsyncTimeDuration",
             "Total duration of fsync",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeNum = mset.hitRateCounter(
+        walFsyncTimeNum = mset.hitRateMetric(
             "WalFsyncTimeNum",
             "Total count of fsync",
             rateTimeInterval,
             subInts);
 
-        walBuffPollSpinsNum = mset.hitRateCounter(
+        walBuffPollSpinsNum = mset.hitRateMetric(
             "WalBuffPollSpinsRate",
             "WAL buffer poll spins number over the last time interval.",
             rateTimeInterval,
             subInts);
 
-        lastCpLockWaitDuration = mset.gauge("LastCheckpointLockWaitDuration",
+        lastCpLockWaitDuration = mset.metric("LastCheckpointLockWaitDuration",
             "Duration of the checkpoint lock wait in milliseconds.");
 
-        lastCpMarkDuration = mset.gauge("LastCheckpointMarkDuration",
+        lastCpMarkDuration = mset.metric("LastCheckpointMarkDuration",
             "Duration of the checkpoint lock wait in milliseconds.");
 
-        lastCpPagesWriteDuration = mset.gauge("LastCheckpointPagesWriteDuration",
+        lastCpPagesWriteDuration = mset.metric("LastCheckpointPagesWriteDuration",
             "Duration of the checkpoint pages write in milliseconds.");
 
-        lastCpDuration = mset.gauge("LastCheckpointDuration",
+        lastCpDuration = mset.metric("LastCheckpointDuration",
             "Duration of the last checkpoint in milliseconds.");
 
-        lastCpFsyncDuration = mset.gauge("LastCheckpointFsyncDuration",
+        lastCpFsyncDuration = mset.metric("LastCheckpointFsyncDuration",
             "Duration of the sync phase of the last checkpoint in milliseconds.");
 
-        lastCpTotalPages = mset.gauge("LastCheckpointTotalPagesNumber",
+        lastCpTotalPages = mset.metric("LastCheckpointTotalPagesNumber",
             "Total number of pages written during the last checkpoint.");
 
-        lastCpDataPages = mset.gauge("LastCheckpointDataPagesNumber",
+        lastCpDataPages = mset.metric("LastCheckpointDataPagesNumber",
             "Total number of data pages written during the last checkpoint.");
 
-        lastCpCowPages = mset.gauge("LastCheckpointCopiedOnWritePagesNumber",
+        lastCpCowPages = mset.metric("LastCheckpointCopiedOnWritePagesNumber",
             "Number of pages copied to a temporary checkpoint buffer during the last checkpoint.");
 
-        lastWalSegmentRollOverTime = mset.gauge("WalLastRollOverTime",
+        lastWalSegmentRollOverTime = mset.metric("WalLastRollOverTime",
             "Time of the last WAL segment rollover.");
 
-        totalCheckpointTime = mset.counter("CheckpointTotalTime",
+        totalCheckpointTime = mset.metric("CheckpointTotalTime",
             "Total duration of checkpoint");
 
-        storageSize = mset.gauge("StorageSize",
+        storageSize = mset.metric("StorageSize",
             "Storage space allocated, in bytes.");
 
-        sparseStorageSize = mset.gauge("SparseStorageSize",
+        sparseStorageSize = mset.metric("SparseStorageSize",
             "Storage space allocated adjusted for possible sparsity, in bytes.");
 
         mset.register("WalArchiveSegments",

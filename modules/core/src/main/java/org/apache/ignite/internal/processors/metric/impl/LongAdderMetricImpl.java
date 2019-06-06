@@ -15,46 +15,54 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.metric.counter;
+package org.apache.ignite.internal.processors.metric.impl;
 
-import java.util.concurrent.atomic.DoubleAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.spi.metric.DoubleMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Double counter.
+ * Long metric implementation based on {@link LongAdder}.
  */
-public class DoubleCounter extends AbstractMetric implements DoubleMetric, Counter {
-    /** Value. */
-    private final DoubleAccumulator val;
+public class LongAdderMetricImpl extends AbstractMetric implements LongMetric {
+    /** Field value. */
+    private volatile LongAdder val = new LongAdder();
 
     /**
      * @param name Name.
      * @param descr Description.
      */
-    public DoubleCounter(String name, @Nullable String descr) {
+    public LongAdderMetricImpl(String name, @Nullable String descr) {
         super(name, descr);
-
-        this.val = new DoubleAccumulator(Double::sum, 0d);
     }
 
     /**
-     * Adds x to the counter.
+     * Adds x to the metric.
      *
      * @param x Value to be added.
      */
-    public void add(double x) {
-        val.accumulate(x);
+    public void add(long x) {
+        val.add(x);
+    }
+
+    /** Adds 1 to the metric. */
+    public void increment() {
+        add(1);
+    }
+
+    /** Adds -1 to the metric. */
+    public void decrement() {
+        add(-1);
     }
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        val.reset();
+        val = new LongAdder();
     }
 
     /** {@inheritDoc} */
-    @Override public double value() {
-        return val.doubleValue();
+    @Override public long value() {
+        return val.longValue();
     }
 }

@@ -25,10 +25,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTracker;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.counter.HitRateCounter;
-import org.apache.ignite.spi.metric.counter.LongAdderCounter;
-import org.apache.ignite.spi.metric.counter.LongCounter;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 
 /**
  *
@@ -38,7 +38,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     private final DataRegionMetricsProvider dataRegionMetricsProvider;
 
     /** */
-    private final LongAdderCounter totalAllocatedPages;
+    private final LongAdderMetricImpl totalAllocatedPages;
 
     /** */
     private final ConcurrentMap<Integer, GroupAllocationTracker> grpAllocationTrackers = new ConcurrentHashMap<>();
@@ -46,25 +46,25 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
      */
-    private final LongAdderCounter largeEntriesPages;
+    private final LongAdderMetricImpl largeEntriesPages;
 
     /** Counter for number of dirty pages. */
-    private final LongAdderCounter dirtyPages;
+    private final LongAdderMetricImpl dirtyPages;
 
     /** */
-    private final LongAdderCounter readPages;
+    private final LongAdderMetricImpl readPages;
 
     /** */
-    private final LongAdderCounter writtenPages;
+    private final LongAdderMetricImpl writtenPages;
 
     /** */
-    private final LongAdderCounter replacedPages;
+    private final LongAdderMetricImpl replacedPages;
 
     /** */
-    private final LongCounter offHeapSize;
+    private final LongMetricImpl offHeapSize;
 
     /** */
-    private final LongCounter checkpointBufferSize;
+    private final LongMetricImpl checkpointBufferSize;
 
     /** */
     private volatile boolean metricsEnabled;
@@ -76,16 +76,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     private volatile int subInts;
 
     /** Allocation rate calculator. */
-    private final HitRateCounter allocRate;
+    private final HitRateMetric allocRate;
 
     /** Eviction rate calculator. */
-    private final HitRateCounter evictRate;
+    private final HitRateMetric evictRate;
 
     /** */
-    private final HitRateCounter pageReplaceRate;
+    private final HitRateMetric pageReplaceRate;
 
     /** */
-    private final HitRateCounter pageReplaceAge;
+    private final HitRateMetric pageReplaceAge;
 
     /** */
     private final DataRegionConfiguration memPlcCfg;
@@ -137,48 +137,48 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         MetricRegistry mset = mreg.withPrefix("io.dataregion", memPlcCfg.getName());
 
-        totalAllocatedPages = mset.longAdderCounter("TotalAllocatedPages",
+        totalAllocatedPages = mset.longAdderMetric("TotalAllocatedPages",
             "Total number of allocated pages.");
 
-        allocRate = mset.hitRateCounter("AllocationRate",
+        allocRate = mset.hitRateMetric("AllocationRate",
             "Allocation rate (pages per second) averaged across rateTimeInternal.",
             60_000,
             5);
 
-        evictRate = mset.hitRateCounter("EvictionRate",
+        evictRate = mset.hitRateMetric("EvictionRate",
             "Eviction rate (pages per second).",
             60_000,
             5);
 
-        pageReplaceRate = mset.hitRateCounter("PagesReplaceRate",
+        pageReplaceRate = mset.hitRateMetric("PagesReplaceRate",
             "Rate at which pages in memory are replaced with pages from persistent storage (pages per second).",
             60_000,
             5);
 
-        pageReplaceAge = mset.hitRateCounter("PagesReplaceAge",
+        pageReplaceAge = mset.hitRateMetric("PagesReplaceAge",
             "Average age at which pages in memory are replaced with pages from persistent storage (milliseconds).",
             60_000,
             5);
 
-        largeEntriesPages = mset.longAdderCounter("LargeEntriesPagesCount",
+        largeEntriesPages = mset.longAdderMetric("LargeEntriesPagesCount",
             "Count of pages that fully ocupied by large entries that go beyond page size");
 
-        dirtyPages = mset.longAdderCounter("DirtyPages",
+        dirtyPages = mset.longAdderMetric("DirtyPages",
             "Number of pages in memory not yet synchronized with persistent storage.");
 
-        readPages = mset.longAdderCounter("PagesRead",
+        readPages = mset.longAdderMetric("PagesRead",
             "Number of pages read from last restart.");
 
-        writtenPages = mset.longAdderCounter("PagesWritten",
+        writtenPages = mset.longAdderMetric("PagesWritten",
             "Number of pages written from last restart.");
 
-        replacedPages = mset.longAdderCounter("PagesReplaced",
+        replacedPages = mset.longAdderMetric("PagesReplaced",
             "Number of pages replaced from last restart.");
 
-        offHeapSize = mset.counter("OffHeapSize",
+        offHeapSize = mset.metric("OffHeapSize",
             "Offheap size in bytes.");
 
-        checkpointBufferSize = mset.counter("CheckpointBufferSize",
+        checkpointBufferSize = mset.metric("CheckpointBufferSize",
             "Checkpoint buffer size in bytes.");
 
         mset.register("EmptyDataPages",

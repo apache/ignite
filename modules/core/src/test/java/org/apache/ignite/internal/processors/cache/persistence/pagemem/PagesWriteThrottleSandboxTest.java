@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
-import org.apache.ignite.spi.metric.counter.HitRateCounter;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -114,7 +114,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
             final AtomicBoolean run = new AtomicBoolean(true);
 
-            final HitRateCounter getRate = new HitRateCounter("getRate", "", 5000, 5);
+            final HitRateMetric getRate = new HitRateMetric("getRate", "", 5000, 5);
 
             GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -132,7 +132,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                 }
             }, 2, "read-loader");
 
-            final HitRateCounter putRate = new HitRateCounter("putRate", "", 1000, 5);
+            final HitRateMetric putRate = new HitRateMetric("putRate", "", 1000, 5);
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {

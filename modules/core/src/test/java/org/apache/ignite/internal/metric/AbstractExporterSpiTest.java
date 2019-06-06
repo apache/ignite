@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
@@ -64,16 +64,16 @@ public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
     protected void createAdditionalMetrics(IgniteEx ignite) {
         MetricRegistry mreg = ignite.context().metric().registry();
 
-        mreg.counter(metricName(FILTERED_PREFIX, "test"), "")
+        mreg.metric(metricName(FILTERED_PREFIX, "test"), "")
             .add(2);
 
-        mreg.counter(metricName("other.prefix", "test"), "")
+        mreg.metric(metricName("other.prefix", "test"), "")
             .add(42);
 
-        mreg.counter(metricName("other.prefix", "test2"), "")
+        mreg.metric(metricName("other.prefix", "test2"), "")
             .add(43);
 
-        mreg.counter(metricName("other.prefix2", "test3"), "")
+        mreg.metric(metricName("other.prefix2", "test3"), "")
             .add(44);
     }
 }

@@ -39,7 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -27,7 +27,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -225,20 +224,20 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
             }, String.class, THRD_FACTORY_DESC);
         }
         else {
-            mset.gauge("ActiveCount", ACTIVE_COUNT_DESC).value(0);
-            mset.gauge("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
-            mset.gauge("CorePoolSize", CORE_SIZE_DESC).value(0);
-            mset.gauge("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
-            mset.gauge("MaximumPoolSize", MAX_SIZE_DESC).value(0);
-            mset.gauge("PoolSize", POOL_SIZE_DESC).value(0);
-            mset.gauge("TaskCount", TASK_COUNT_DESC);
-            mset.gauge("QueueSize", QUEUE_SIZE_DESC).value(0);
-            mset.gauge("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
+            mset.metric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
+            mset.metric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
+            mset.metric("CorePoolSize", CORE_SIZE_DESC).value(0);
+            mset.metric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
+            mset.metric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
+            mset.metric("PoolSize", POOL_SIZE_DESC).value(0);
+            mset.metric("TaskCount", TASK_COUNT_DESC);
+            mset.metric("QueueSize", QUEUE_SIZE_DESC).value(0);
+            mset.metric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
             mset.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
             mset.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
-            mset.gauge("Terminating", IS_TERMINATING_DESC);
-            mset.objectGauge("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
-            mset.objectGauge("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
+            mset.metric("Terminating", IS_TERMINATING_DESC);
+            mset.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
+            mset.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
         }
     }
 

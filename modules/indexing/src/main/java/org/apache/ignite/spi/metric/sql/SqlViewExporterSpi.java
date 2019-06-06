@@ -34,7 +34,8 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
@@ -52,7 +53,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     private @Nullable Predicate<Metric> filter;
 
     /** Metric Registry. */
-    private MetricRegistry mreg;
+    private ReadOnlyMetricRegistry mreg;
 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
@@ -77,7 +78,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     }
 
     /** {@inheritDoc} */
-    @Override public void setMetricRegistry(MetricRegistry mreg) {
+    @Override public void setMetricRegistry(ReadOnlyMetricRegistry mreg) {
         this.mreg = mreg;
     }
 

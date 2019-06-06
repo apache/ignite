@@ -29,17 +29,14 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.spi.metric.counter.DoubleCounter;
-import org.apache.ignite.spi.metric.counter.IntCounter;
-import org.apache.ignite.spi.metric.counter.LongAdderCounter;
-import org.apache.ignite.spi.metric.counter.LongCounter;
-import org.apache.ignite.spi.metric.gauge.BooleanGauge;
-import org.apache.ignite.spi.metric.gauge.DoubleGauge;
-import org.apache.ignite.spi.metric.gauge.HistogramGauge;
-import org.apache.ignite.spi.metric.gauge.IntGauge;
-import org.apache.ignite.spi.metric.gauge.LongGauge;
+import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,7 +82,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testLongCounter() throws Exception {
-        LongCounter l = mreg.counter("ltest", "test");
+        LongMetricImpl l = mreg.metric("ltest", "test");
 
         run(l::increment, 100);
 
@@ -99,7 +96,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testLongAdderCounter() throws Exception {
-        LongAdderCounter l = mreg.longAdderCounter("latest", "test");
+        LongAdderMetricImpl l = mreg.longAdderMetric("latest", "test");
 
         run(l::increment, 100);
 
@@ -113,7 +110,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testDoubleCounter() throws Exception {
-        DoubleCounter l = mreg.doubleCounter("dtest", "test");
+        DoubleMetricImpl l = mreg.doubleMetric("dtest", "test");
 
         run(() -> l.add(1), 100);
 
@@ -127,7 +124,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testIntCounter() throws Exception {
-        IntCounter l = mreg.intCounter("itest", "test");
+        IntMetricImpl l = mreg.intMetric("itest", "test");
 
         run(() -> l.add(1), 100);
 
@@ -141,7 +138,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testRegister() throws Exception {
-        LongCounter l = new LongCounter(testMetricName("rtest"), "test");
+        LongMetricImpl l = new LongMetricImpl(testMetricName("rtest"), "test");
 
         mreg.register(l);
 
@@ -235,7 +232,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testBooleanGauges() throws Exception {
-        BooleanGauge bg = mreg.booleanGauge("bg", "test");
+        BooleanMetricImpl bg = mreg.booleanMetric("bg", "test");
 
         bg.value(true);
 
@@ -248,50 +245,8 @@ public class MetricsSelfTest {
 
     /** */
     @Test
-    public void testDoubleGauges() throws Exception {
-        DoubleGauge dg = mreg.doubleGauge("dg", "test");
-
-        dg.value(42);
-
-        assertEquals(dg.value(), 42, .000001);
-
-        dg.reset();
-
-        assertEquals(dg.value(), 0, .000001);
-    }
-
-    /** */
-    @Test
-    public void testIntGauges() throws Exception {
-        IntGauge ig = mreg.intGauge("ig", "test");
-
-        ig.value(42);
-
-        assertEquals(42, ig.value());
-
-        ig.reset();
-
-        assertEquals(0, ig.value());
-    }
-
-    /** */
-    @Test
-    public void testLongGauges() throws Exception {
-        LongGauge lg = mreg.gauge("lg", "test");
-
-        lg.value(42);
-
-        assertEquals(42, lg.value());
-
-        lg.reset();
-
-        assertEquals(0, lg.value());
-    }
-
-    /** */
-    @Test
     public void testHistogram() throws Exception {
-        HistogramGauge h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
+        HistogramMetric h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
 
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -333,11 +288,11 @@ public class MetricsSelfTest {
     public void testGetMetrics() throws Exception {
         MetricRegistry mreg = newMetricRegistry();
 
-        mreg.counter("test1", "");
-        mreg.counter("test2", "");
-        mreg.counter("test3", "");
-        mreg.counter("test4", "");
-        mreg.counter("test5", "");
+        mreg.metric("test1", "");
+        mreg.metric("test2", "");
+        mreg.metric("test3", "");
+        mreg.metric("test4", "");
+        mreg.metric("test5", "");
 
         Set<String> names = new HashSet<>(asList(
             testMetricName("test1"),
@@ -358,17 +313,17 @@ public class MetricsSelfTest {
     public void testCreationListener() throws Exception {
         MetricRegistry mreg = newMetricRegistry();
 
-        mreg.counter("test0", "");
+        mreg.metric("test0", "");
 
         Set<String> res = new HashSet<>();
 
         mreg.addMetricCreationListener(m -> res.add(m.name()));
 
-        mreg.counter("test1", null);
-        mreg.counter("test2", null);
-        mreg.counter("test3", null);
-        mreg.counter("test4", null);
-        mreg.counter("test5", null);
+        mreg.metric("test1", null);
+        mreg.metric("test2", null);
+        mreg.metric("test3", null);
+        mreg.metric("test4", null);
+        mreg.metric("test5", null);
 
         Set<String> names = new HashSet<>(asList(
             testMetricName("test1"),
@@ -385,8 +340,8 @@ public class MetricsSelfTest {
     public void testRemove() throws Exception {
         MetricRegistry mreg = newMetricRegistry();
 
-        LongCounter cntr = mreg.counter("my.name", null);
-        LongCounter cntr2 = mreg.counter("my.name.x", null);
+        LongMetricImpl cntr = mreg.metric("my.name", null);
+        LongMetricImpl cntr2 = mreg.metric("my.name.x", null);
 
         assertNotNull(cntr);
         assertNotNull(cntr2);
@@ -399,7 +354,7 @@ public class MetricsSelfTest {
         assertNull(mreg.findMetric("my.name"));
         assertNotNull(mreg.findMetric("my.name.x"));
 
-        cntr = mreg.counter("my.name", null);
+        cntr = mreg.metric("my.name", null);
 
         assertNotNull(mreg.findMetric("my.name"));
     }

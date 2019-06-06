@@ -21,8 +21,8 @@ package org.apache.ignite.internal.metric;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.metric.MetricRegistry;
-import org.apache.ignite.spi.metric.counter.LongAdderCounter;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 
 /**
  * Index statistics holder to gather statistics related to concrete index.
@@ -44,16 +44,16 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
     public static final String PHYSICAL_READS_INNER = "PHYSICAL_READS_INNER";
 
     /** */
-    private final LongAdderCounter logicalReadLeafCtr;
+    private final LongAdderMetricImpl logicalReadLeafCtr;
 
     /** */
-    private final LongAdderCounter logicalReadInnerCtr;
+    private final LongAdderMetricImpl logicalReadInnerCtr;
 
     /** */
-    private final LongAdderCounter physicalReadLeafCtr;
+    private final LongAdderMetricImpl physicalReadLeafCtr;
 
     /** */
-    private final LongAdderCounter physicalReadInnerCtr;
+    private final LongAdderMetricImpl physicalReadInnerCtr;
 
     /** */
     private final String cacheName;
@@ -79,14 +79,14 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
 
         MetricRegistry mset = mreg.withPrefix(type.metricGroupName(), cacheName, idxName);
 
-        mset.gauge("startTime", null).value(U.currentTimeMillis());
-        mset.objectGauge("name", String.class, null).value(cacheName);
-        mset.objectGauge("indexName", String.class, null).value(idxName);
+        mset.metric("startTime", null).value(U.currentTimeMillis());
+        mset.objectMetric("name", String.class, null).value(cacheName);
+        mset.objectMetric("indexName", String.class, null).value(idxName);
 
-        logicalReadLeafCtr = mset.longAdderCounter(LOGICAL_READS_LEAF, null);
-        logicalReadInnerCtr = mset.longAdderCounter(LOGICAL_READS_INNER, null);
-        physicalReadLeafCtr = mset.longAdderCounter(PHYSICAL_READS_LEAF, null);
-        physicalReadInnerCtr = mset.longAdderCounter(PHYSICAL_READS_INNER, null);
+        logicalReadLeafCtr = mset.longAdderMetric(LOGICAL_READS_LEAF, null);
+        logicalReadInnerCtr = mset.longAdderMetric(LOGICAL_READS_INNER, null);
+        physicalReadLeafCtr = mset.longAdderMetric(PHYSICAL_READS_LEAF, null);
+        physicalReadInnerCtr = mset.longAdderMetric(PHYSICAL_READS_INNER, null);
     }
 
     /** {@inheritDoc} */
