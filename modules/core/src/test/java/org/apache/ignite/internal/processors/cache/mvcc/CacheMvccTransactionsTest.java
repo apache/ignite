@@ -2422,6 +2422,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         for (int i = 0; i < 3; i++) {
             startGrid(i + 1);
 
+            awaitPartitionMapExchange();
+
             checkPutGet(cacheNames);
 
             checkCoordinatorsConsistency(null);
