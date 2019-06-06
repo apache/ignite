@@ -564,7 +564,7 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                int flags = singlePartMode && !enforceJoinOrder ? 0 : GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+                int flags = enforceJoinOrder || qry.distributedJoins() ? GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER : 0;
 
                 // Distributed joins flag is set if it is either reald
                 if (qry.distributedJoins())
