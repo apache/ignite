@@ -153,7 +153,7 @@ public class JmhCacheFreelistBenchmark {
         private Collection<CacheDataRow> rows = new ArrayList<>(ROWS_COUNT);
 
         /** */
-        @Setup(Level.Iteration)
+        @Setup(Level.Invocation)
         public void prepare() {
             Random rnd = ThreadLocalRandom.current();
 
@@ -170,7 +170,7 @@ public class JmhCacheFreelistBenchmark {
         }
 
         /** */
-        @TearDown(Level.Iteration)
+        @TearDown(Level.Invocation)
         public void cleanup() {
             rows.clear();
         }
