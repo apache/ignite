@@ -79,8 +79,15 @@
     <Compile Include="Failure\NoOpFailureHandler.cs" />
     <Compile Include="Failure\StopNodeFailureHandler.cs" />
     <Compile Include="Failure\StopNodeOrHaltFailureHandler.cs" />
+    <Compile Include="Impl\Binary\BinaryHashCodeUtils.cs" />
     <Compile Include="Impl\Cache\QueryMetricsImpl.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCacheAffinityAwarenessGroup.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCachePartitionMap.cs" />
+    <Compile Include="Impl\Client\Cache\ClientCacheTopologyPartitionMap.cs" />
+    <Compile Include="Impl\Client\Cache\ClientRendezvousAffinityFunction.cs" />
+    <Compile Include="Impl\Client\ClientFlags.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
+    <Compile Include="Impl\Client\SocketEndpoint.cs" />
     <Compile Include="Impl\Common\TaskRunner.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Ssl\ISslContextFactory.cs" />
