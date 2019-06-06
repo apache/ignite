@@ -25,6 +25,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -34,6 +35,9 @@ import org.apache.ignite.internal.metric.AbstractExporterSpiTest;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.monitoring.opencensus.OpenCensusMetricExporterSpi.CONSISTENT_ID_TAG;
+import static org.apache.ignite.internal.processors.monitoring.opencensus.OpenCensusMetricExporterSpi.INSTANCE_NAME_TAG;
+import static org.apache.ignite.internal.processors.monitoring.opencensus.OpenCensusMetricExporterSpi.NODE_ID_TAG;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
@@ -44,7 +48,6 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     private static IgniteEx ignite;
-
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -63,6 +66,9 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         ocSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
         ocSpi.setPeriod(EXPORT_TIMEOUT);
+        ocSpi.setSendConsistentId(true);
+        ocSpi.setSendInstanceName(true);
+        ocSpi.setSendNodeId(true);
 
         cfg.setMetricExporterSpi(ocSpi);
 
@@ -95,6 +101,16 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
                         return false;
                 }
 
+                if (!httpMetrics.contains(INSTANCE_NAME_TAG.getName() + "=\"" + ignite.name() + '\"'))
+                    return false;
+
+                String consistentId = CONSISTENT_ID_TAG.getName() + "=\"" + ignite.localNode().consistentId() + '\"';
+                if (!httpMetrics.contains(consistentId))
+                    return false;
+
+                if (!httpMetrics.contains(NODE_ID_TAG.getName() + "=\"" + ignite.localNode().id() + '\"'))
+                    return false;
+
                 return true;
             }
             catch (IOException e) {
@@ -111,9 +127,9 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
         createAdditionalMetrics(ignite);
 
         Set<String> expectedMetrics = new GridConcurrentHashSet<>(Arrays.asList(
-            "other_prefix_test 42",
-            "other_prefix_test2 43",
-            "other_prefix2_test3 44"
+            "other_prefix_test\\{.*\\} 42",
+            "other_prefix_test2\\{.*\\} 43",
+            "other_prefix2_test3\\{.*\\} 44"
         ));
 
         boolean res = waitForCondition(() -> {
@@ -124,7 +140,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
                     httpMetrics.contains(FILTERED_PREFIX.replaceAll("\\.", "_")));
 
                 for (String expMetric : expectedMetrics) {
-                    if (!httpMetrics.contains(expMetric))
+                    if (!Pattern.compile(expMetric).matcher(httpMetrics).find())
                         return false;
                 }
 

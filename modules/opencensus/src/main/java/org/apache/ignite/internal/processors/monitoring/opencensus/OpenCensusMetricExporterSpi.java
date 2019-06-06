@@ -38,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -85,7 +84,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     private boolean sendConsistentId;
 
     /** Ignite instance name. */
-    private static final TagKey INSTANCE_NAME_TAG = TagKey.create("iin");
+    public static final TagKey INSTANCE_NAME_TAG = TagKey.create("iin");
 
     /** Ignite node id. */
     public static final TagKey NODE_ID_TAG = TagKey.create("ini");
