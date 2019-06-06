@@ -138,8 +138,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 writer.Write(val);
 
-                if (hashCode.HasValue)
+                if (hashCode != null)
                 {
+                    // ReSharper disable once PossibleInvalidOperationException (false detection).
                     return hashCode.Value;
                 }
 
