@@ -83,6 +83,13 @@ public interface MetricRegistry {
     public void register(Metric metric);
 
     /**
+     * Removes metrics with the {@code name} from registry.
+     *
+     * @param name Metric name.
+     */
+    public void remove(String name);
+
+    /**
      * Resets state of this metric set.
      */
     public default void reset() {

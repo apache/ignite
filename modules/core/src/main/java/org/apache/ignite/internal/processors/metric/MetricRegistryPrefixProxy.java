@@ -100,6 +100,11 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
     }
 
     /** {@inheritDoc} */
+    @Override public void remove(String name) {
+        reg.remove(fullName(name));
+    }
+
+    /** {@inheritDoc} */
     @Override public void register(String name, BooleanSupplier supplier, @Nullable String description) {
         reg.register(fullName(name), supplier, description);
     }

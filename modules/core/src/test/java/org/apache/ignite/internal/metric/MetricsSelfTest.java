@@ -47,11 +47,13 @@ import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 /** */
 @RunWith(Parameterized.class)
@@ -329,10 +331,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = new MetricRegistryImpl();
-
-        if (!F.isEmpty(prefix))
-            mreg = mreg.withPrefix(prefix);
+        MetricRegistry mreg = newMetricRegistry();
 
         mreg.counter("test1", "");
         mreg.counter("test2", "");
@@ -357,10 +356,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testCreationListener() throws Exception {
-        MetricRegistry mreg = new MetricRegistryImpl();
-
-        if (!F.isEmpty(prefix))
-            mreg = mreg.withPrefix(prefix);
+        MetricRegistry mreg = newMetricRegistry();
 
         mreg.counter("test0", "");
 
@@ -382,6 +378,39 @@ public class MetricsSelfTest {
             testMetricName("test5")));
 
         assertEquals(names, res);
+    }
+
+    /** */
+    @Test
+    public void testRemove() throws Exception {
+        MetricRegistry mreg = newMetricRegistry();
+
+        LongCounter cntr = mreg.counter("my.name", null);
+        LongCounter cntr2 = mreg.counter("my.name.x", null);
+
+        assertNotNull(cntr);
+        assertNotNull(cntr2);
+
+        assertNotNull(mreg.findMetric("my.name"));
+        assertNotNull(mreg.findMetric("my.name.x"));
+
+        mreg.remove("my.name");
+
+        assertNull(mreg.findMetric("my.name"));
+        assertNotNull(mreg.findMetric("my.name.x"));
+
+        cntr = mreg.counter("my.name", null);
+
+        assertNotNull(mreg.findMetric("my.name"));
+    }
+
+    /** */
+    private MetricRegistry newMetricRegistry() {
+        MetricRegistry mreg = new MetricRegistryImpl();
+
+        if (!F.isEmpty(prefix))
+            mreg = mreg.withPrefix(prefix);
+        return mreg;
     }
 
     /** */

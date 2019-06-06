@@ -102,6 +102,11 @@ public class MetricRegistryImpl implements MetricRegistry {
     }
 
     /** {@inheritDoc} */
+    @Override public void remove(String name) {
+        metrics.remove(name);
+    }
+
+    /** {@inheritDoc} */
     @Override public void register(String name, BooleanSupplier supplier, @Nullable String description) {
         addMetric(name, new BooleanMetricImpl(name, description, nonThrowableSupplier(supplier, log)));
     }
