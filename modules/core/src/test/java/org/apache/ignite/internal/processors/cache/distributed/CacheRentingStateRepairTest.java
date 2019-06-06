@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -303,7 +304,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
                         l2.countDown(); // Finish partition rebalancing after initiating clear.
                     }
                     catch (Exception e) {
-                        e.printStackTrace();
+                        fail(X.getFullStackTrace(e));
                     }
                 }
             }, 1);
