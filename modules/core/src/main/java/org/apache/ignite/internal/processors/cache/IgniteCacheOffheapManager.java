@@ -83,7 +83,8 @@ public interface IgniteCacheOffheapManager {
      * @return Number of processed partitions.
      * @throws IgniteCheckedException If failed.
      */
-    long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException;
+    public long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates)
+        throws IgniteCheckedException;
 
     /**
      * Partition counter update callback. May be overridden by plugin-provided subclasses.
@@ -391,70 +392,65 @@ public interface IgniteCacheOffheapManager {
          *
          * @return {@code True} if initialized.
          */
-        boolean init();
+        public boolean init();
 
         /**
          * @return Partition ID.
          */
-        int partId();
-
-        /**
-         * @return Store name.
-         */
-        String name();
+        public int partId();
 
         /**
          * @param cacheId Cache ID.
          * @return Size.
          */
-        long cacheSize(int cacheId);
+        public long cacheSize(int cacheId);
 
         /**
          * @return Cache sizes if store belongs to group containing multiple caches.
          */
-        Map<Integer, Long> cacheSizes();
+        public Map<Integer, Long> cacheSizes();
 
         /**
          * @return Total size.
          */
-        long fullSize();
+        public long fullSize();
 
         /**
          * @return {@code True} if there are no items in the store.
          */
-        boolean isEmpty();
+        public boolean isEmpty();
 
         /**
          * @return Update counter (LWM).
          */
-        long updateCounter();
+        public long updateCounter();
 
         /**
          * @return Reserved counter (HWM).
          */
-        long reservedCounter();
+        public long reservedCounter();
 
         /**
          * @return Update counter or {@code null} if store is not yet created.
          */
-        @Nullable PartitionUpdateCounter partUpdateCounter();
+        public @Nullable PartitionUpdateCounter partUpdateCounter();
 
         /**
          * @param delta Delta.
          */
-        long reserve(long delta);
+        public long reserve(long delta);
 
         /**
          * @param val Update counter.
          */
-        void updateCounter(long val);
+        public void updateCounter(long val);
 
         /**
          * Updates counters from start value by delta value.
          * @param start Start.
          * @param delta Delta.
          */
-        boolean updateCounter(long start, long delta);
+        public boolean updateCounter(long start, long delta);
 
         /**
          * @return Next update counter.
@@ -605,14 +601,14 @@ public interface IgniteCacheOffheapManager {
          *
          * @return PendingTree instance.
          */
-        PendingEntriesTree pendingTree();
+        public PendingEntriesTree pendingTree();
 
         /**
          * Flushes pending update counters closing all possible gaps.
          *
          * @return Even-length array of pairs [start, end] for each gap.
          */
-        GridLongList finalizeUpdateCounters();
+        public GridLongList finalizeUpdateCounters();
 
         /**
          * Preload a store into page memory.
@@ -623,7 +619,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * Reset counters for partition.
          */
-        void resetUpdateCounter();
+        public void resetUpdateCounter();
 
         /**
          * Partition storage.

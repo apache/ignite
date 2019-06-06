@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
@@ -1680,15 +1679,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage partMetastoreReuseListRoot = metas.partMetastoreReuseListRoot;
 
+                    String partMetastoreName = partitionMetaStoreName();
+
                     partStorage = new PartitionMetaStorageImpl<SimpleDataRow>(
                         grp.groupId(),
-                        grp.cacheOrGroupName() + "-partstore-" + partId,
+                        partMetastoreName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
                         null, // TODO: cannot use reuseList
                         ctx.wal(),
                         partMetastoreReuseListRoot.pageId().pageId(),
-                        partMetastoreReuseListRoot.isAllocated()) {
+                        partMetastoreReuseListRoot.isAllocated(),
+                        ctx.diagnostic().pageLockTracker().createPageLockTracker(partMetastoreName)) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();

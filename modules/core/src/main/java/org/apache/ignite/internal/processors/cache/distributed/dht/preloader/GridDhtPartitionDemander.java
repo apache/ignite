@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -56,7 +57,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
 
@@ -1036,7 +1035,7 @@ public class GridDhtPartitionDemander {
 
         /** Used to enforce the condition: after rebalance future cancellation no more supply messages could be applied
          * to partition. */
-        private final StripedCompositeReadWriteLock cancelLock;
+        private final ReentrantReadWriteLock cancelLock;
 
         /**
          * @param grp Cache group.
@@ -1069,7 +1068,7 @@ public class GridDhtPartitionDemander {
 
             ctx = grp.shared();
 
-            cancelLock = new StripedCompositeReadWriteLock(ctx.gridConfig().getRebalanceThreadPoolSize());
+            cancelLock = new ReentrantReadWriteLock();
         }
 
         /**
