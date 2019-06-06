@@ -44,6 +44,7 @@ import org.apache.ignite.spi.metric.gauge.ObjectGauge;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
 
 /**
  * Simple implementation.
@@ -102,27 +103,27 @@ public class MetricRegistryImpl implements MetricRegistry {
 
     /** {@inheritDoc} */
     @Override public void register(String name, BooleanSupplier supplier, @Nullable String description) {
-        addMetric(name, new BooleanMetricImpl(name, description, supplier));
+        addMetric(name, new BooleanMetricImpl(name, description, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, DoubleSupplier supplier, @Nullable String description) {
-        addMetric(name, new DoubleMetricImpl(name, description, supplier));
+        addMetric(name, new DoubleMetricImpl(name, description, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, IntSupplier supplier, @Nullable String description) {
-        addMetric(name, new IntMetricImpl(name, description, supplier));
+        addMetric(name, new IntMetricImpl(name, description, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
     @Override public void register(String name, LongSupplier supplier, @Nullable String description) {
-        addMetric(name, new LongMetricImpl(name, description, supplier));
+        addMetric(name, new LongMetricImpl(name, description, nonThrowableSupplier(supplier, log)));
     }
 
     /** {@inheritDoc} */
     @Override public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description) {
-        addMetric(name, new ObjectMetricImpl<>(name, description, supplier, type));
+        addMetric(name, new ObjectMetricImpl<>(name, description, nonThrowableSupplier(supplier, log), type));
     }
 
     /** {@inheritDoc} */
