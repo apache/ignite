@@ -369,13 +369,13 @@ namespace Apache.Ignite.Core.Impl.Client
                 return false;
             }
 
-            return map.AffinityTopologyVersion.CompareTo(_affinityTopologyVersion.Value) >= 0;
+            return map.AffinityTopologyVersion >= _affinityTopologyVersion.Value;
         }
 
         /// <summary>
         /// Updates the partition mapping.
         /// </summary>
-        private void UpdateDistributionMap(int cacheId) // TODO: Sync and async versions to call from sync and async methods.
+        private void UpdateDistributionMap(int cacheId)
         {
             if (IsDistributionMapUpToDate())
                 return; // Up to date.

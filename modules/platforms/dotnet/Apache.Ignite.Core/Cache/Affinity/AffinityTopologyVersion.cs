@@ -101,8 +101,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Implements the operator ==.
         /// </summary>
-        /// <param name="left">The left.</param>
-        /// <param name="right">The right.</param>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
         /// <returns>
         /// The result of the operator.
         /// </returns>
@@ -114,14 +114,66 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Implements the operator !=.
         /// </summary>
-        /// <param name="left">The left.</param>
-        /// <param name="right">The right.</param>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
         /// <returns>
         /// The result of the operator.
         /// </returns>
         public static bool operator !=(AffinityTopologyVersion left, AffinityTopologyVersion right)
         {
             return !left.Equals(right);
+        }
+
+        /// <summary>
+        /// Implements the operator 'less than'.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator <(AffinityTopologyVersion left, AffinityTopologyVersion right)
+        {
+            return left.CompareTo(right) < 0;
+        }
+
+        /// <summary>
+        /// Implements the operator 'greater than'.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator >(AffinityTopologyVersion left, AffinityTopologyVersion right)
+        {
+            return left.CompareTo(right) > 0;
+        }
+
+        /// <summary>
+        /// Implements the operator 'less or equal than'.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator <=(AffinityTopologyVersion left, AffinityTopologyVersion right)
+        {
+            return left.CompareTo(right) <= 0;
+        }
+
+        /// <summary>
+        /// Implements the operator 'greater or equal than'.
+        /// </summary>
+        /// <param name="left">The left operand.</param>
+        /// <param name="right">The right operand.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
+        public static bool operator >=(AffinityTopologyVersion left, AffinityTopologyVersion right)
+        {
+            return left.CompareTo(right) >= 0;
         }
 
         /// <summary>
