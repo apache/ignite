@@ -46,6 +46,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
+import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstorage.Parti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -235,6 +237,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
 
         if (!empty) {
+            CacheDiagnosticManager diagnosticMgr = cctx.diagnostic();
+            
             partStorage = new PartitionMetaStorageImpl<MetastorageDataRow>(METASTORAGE_CACHE_ID, "metastorage",
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated()) {
@@ -488,7 +492,9 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                         io.setTreeRoot(pageAddr, treeRoot);
                         io.setReuseListRoot(pageAddr, reuseListRoot);
 
-                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null))
+                        if (PageHandler.isWalDeltaRecordNeeded(pageMem, METASTORAGE_CACHE_ID, partMetaId, partMetaPage, wal, null)) {
+                            assert io.getType() == PageIO.T_PART_META;
+
                             wal.log(new MetaPageInitRecord(
                                 METASTORAGE_CACHE_ID,
                                 partMetaId,
@@ -497,6 +503,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                                 treeRoot,
                                 reuseListRoot
                             ));
+                        }
 
                         allocated = true;
                     }

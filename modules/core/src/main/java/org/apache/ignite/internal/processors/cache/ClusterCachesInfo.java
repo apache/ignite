@@ -2165,7 +2165,6 @@ class ClusterCachesInfo {
         Set<Integer> stoppedCacheGrps = new HashSet<>();
 
         Set<String> survivedCaches = new HashSet<>();
-        Set<Integer> survivedCacheGrps = new HashSet<>();
 
         if (!active) {
             joinOnTransition = transition;
@@ -2208,11 +2207,8 @@ class ClusterCachesInfo {
 
                 if (stopped)
                     stoppedCacheGrps.add(locDesc.groupId());
-                else {
+                else
                     assert locDesc.groupId() == desc.groupId();
-
-                    survivedCacheGrps.add(locDesc.groupId());
-                }
             }
 
             for (Map.Entry<String, DynamicCacheDescriptor> e : cachesOnDisconnect.caches.entrySet()) {
@@ -2237,7 +2233,6 @@ class ClusterCachesInfo {
             }
 
             if (locJoinCachesCtx != null) {
-                locJoinCachesCtx.removeSurvivedCacheGroups(survivedCacheGrps);
                 locJoinCachesCtx.removeSurvivedCaches(survivedCaches);
 
                 if (locJoinCachesCtx.isEmpty())

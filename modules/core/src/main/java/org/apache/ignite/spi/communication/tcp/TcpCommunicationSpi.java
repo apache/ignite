@@ -40,6 +40,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -66,6 +67,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -2944,7 +2946,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 else
                     fut = oldFut;
 
-                client = fut.get();
+                WorkersRegistry registry = getWorkersRegistry(ignite);
+
+                long clientReserveWaitTimeout = registry != null ? registry.getSystemWorkerBlockedTimeout() / 3
+                    : connTimeout / 3;
+
+                long currTimeout = System.currentTimeMillis();
+
+                // This cycle will eventually quit when future is completed by concurrent thread reserving client.
+                while (true) {
+                    try {
+                        client = fut.get(clientReserveWaitTimeout, TimeUnit.MILLISECONDS);
+
+                        break;
+                    }
+                    catch (IgniteFutureTimeoutCheckedException ignored) {
+                        currTimeout += clientReserveWaitTimeout;
+
+                        if (log.isDebugEnabled())
+                            log.debug("Still waiting for reestablishing connection to node [nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]");
+
+                        if (registry != null) {
+                            GridWorker wrkr = registry.worker(Thread.currentThread().getName());
+
+                            if (wrkr != null)
+                                wrkr.updateHeartbeat();
+                        }
+                    }
+                }
 
                 if (client == null) {
                     if (isLocalNodeDisconnected())
@@ -3029,16 +3058,40 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             if (time > CONNECTION_ESTABLISH_THRESHOLD_MS) {
                 if (log.isInfoEnabled())
-                    log.info("TCP client created [client=" + client + ", duration=" + time + "ms]");
+                    log.info("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
             }
             else if (log.isDebugEnabled())
-                log.debug("TCP client created [client=" + client + ", duration=" + time + "ms]");
+                log.debug("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
 
             return client;
         }
         finally {
             connectGate.leave();
         }
+    }
+
+    /**
+     * Returns the string representation of client with protection from null client value. If the client if null,
+     * string representation is built from cluster node.
+     *
+     * @param client communication client
+     * @param node cluster node to which the client tried to establish a connection
+     * @return string representation of client
+     * @throws IgniteCheckedException if failed
+     */
+    private String clientString(GridCommunicationClient client, ClusterNode node) throws IgniteCheckedException {
+        if (client == null) {
+            assert node != null;
+
+            StringJoiner joiner = new StringJoiner(", ");
+
+            for (InetSocketAddress addr : nodeAddresses(node))
+                joiner.add(addr.toString());
+
+            return "null, node addrs=[" + joiner.toString() + "]";
+        }
+        else
+            return client.toString();
     }
 
     /**
@@ -3517,6 +3570,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         break;
                     }
                 }
+
+                CommunicationWorker commWorker0 = commWorker;
+
+                if (commWorker0 != null && commWorker0.runner() == Thread.currentThread())
+                    commWorker0.updateHeartbeat();
             }
 
             if (client != null)

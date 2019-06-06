@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -70,7 +70,11 @@ class GridDhtPartitionSupplier {
     /** Supply context map. T3: nodeId, topicId, topVer. */
     private final Map<T3<UUID, Integer, AffinityTopologyVersion>, SupplyContext> scMap = new HashMap<>();
 
-    /** Override for rebalance throttle. */
+    /**
+     * Override for rebalance throttle.
+     * @deprecated Use {@link IgniteConfiguration#getRebalanceThrottle()} instead.
+     */
+    @Deprecated
     private long rebalanceThrottleOverride =
         IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_REBALANCE_THROTTLE_OVERRIDE, 0);
 
@@ -167,7 +171,7 @@ class GridDhtPartitionSupplier {
      * For each demand message method lookups (or creates new) supply context and starts to iterate entries across requested partitions.
      * Each entry in iterator is placed to prepared supply message.
      *
-     * If supply message size in bytes becomes greater than {@link CacheConfiguration#getRebalanceBatchSize()}
+     * If supply message size in bytes becomes greater than {@link IgniteConfiguration#getRebalanceBatchSize()}
      * method sends this message to demand node and saves partial state of iterated entries to supply context,
      * then restores the context again after new demand message with the same context id is arrived.
      *
@@ -248,7 +252,7 @@ class GridDhtPartitionSupplier {
 
             assert !(sctx != null && !demandMsg.partitions().isEmpty());
 
-            long maxBatchesCnt = grp.config().getRebalanceBatchesPrefetchCount();
+            long maxBatchesCnt = grp.preloader().batchesPrefetchCount();
 
             if (sctx == null) {
                 if (log.isDebugEnabled())
@@ -308,7 +312,7 @@ class GridDhtPartitionSupplier {
                 remainingParts = sctx.remainingParts;
             }
 
-            final int msgMaxSize = grp.config().getRebalanceBatchSize();
+            final int msgMaxSize = grp.preloader().batchSize();
 
             long batchesCnt = 0;
 
@@ -515,8 +519,8 @@ class GridDhtPartitionSupplier {
             // Throttle preloading.
             if (rebalanceThrottleOverride > 0)
                 U.sleep(rebalanceThrottleOverride);
-            else if (grp.config().getRebalanceThrottle() > 0)
-                U.sleep(grp.config().getRebalanceThrottle());
+            else if (grp.preloader().throttle() > 0)
+                U.sleep(grp.preloader().throttle());
 
             return true;
         }

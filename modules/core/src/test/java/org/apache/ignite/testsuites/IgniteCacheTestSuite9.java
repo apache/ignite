@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
+import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
@@ -84,6 +85,8 @@ public class IgniteCacheTestSuite9 extends TestSuite {
         suite.addTestSuite(PartitionUpdateCounterTest.class);
         suite.addTestSuite(TxPartitionCounterStateConsistencyTest.class);
         suite.addTestSuite(TxPartitionCounterStateConsistencyHistoryRebalanceTest.class);
+
+        suite.addTestSuite(GridLongRunningInitNewCrdFutureDiagnosticsTest.class);
 
         return suite;
     }

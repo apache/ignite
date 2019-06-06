@@ -64,11 +64,10 @@ public class ClientListenerNioServerBuffer {
 
     /**
      * @param buf Buffer.
-     * @param checkHandshake Check handshake.
      * @return Message bytes or {@code null} if message is not fully read yet.
      * @throws IgniteCheckedException If failed to parse message.
      */
-    @Nullable public byte[] read(ByteBuffer buf, boolean checkHandshake) throws IgniteCheckedException {
+    @Nullable public byte[] read(ByteBuffer buf) throws IgniteCheckedException {
         if (cnt < 0) {
             for (; cnt < 0 && buf.hasRemaining(); cnt++)
                 msgSize |= (buf.get() & 0xFF) << (8*(4 + cnt));
@@ -109,12 +108,7 @@ public class ClientListenerNioServerBuffer {
 
             return data0;
         }
-        else {
-            if (checkHandshake && cnt > 0 && (msgSize > ClientListenerNioListener.MAX_HANDSHAKE_MSG_SIZE
-                || data[0] != ClientListenerRequest.HANDSHAKE))
-                throw new IgniteCheckedException("Invalid handshake message");
 
-            return null;
-        }
+        return null;
     }
 }

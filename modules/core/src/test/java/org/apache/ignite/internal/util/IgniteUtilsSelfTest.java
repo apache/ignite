@@ -24,6 +24,7 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.annotation.Documented;
@@ -34,6 +35,7 @@ import java.lang.annotation.Target;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -661,6 +663,26 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 1));
         assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 2));
         assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 3));
+    }
+
+    /**
+     * Test getLocalHost() always return physical interface, if present.
+     */
+    public void testGetLocalHost() {
+        try {
+            InetAddress locAddr = U.getLocalHost();
+
+            NetworkInterface netInt = NetworkInterface.getByInetAddress(locAddr);
+
+            assertFalse(netInt.isVirtual());
+            assertFalse(netInt.isLoopback());
+            assertFalse(netInt.isPointToPoint());
+            assertTrue(netInt.isUp());
+            assertFalse(netInt.getName().contains("docker"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

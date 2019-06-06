@@ -21,11 +21,19 @@ import junit.framework.TestSuite;
 import org.apache.ignite.cache.ResetLostPartitionTest;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistenceAndMemoryReuse;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.IgniteRebalanceOnCachesStoppingOrDestroyingTest;
+import org.apache.ignite.internal.processors.cache.persistence.CorruptedTreeFailureHandlingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTaskCancelingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheWalDisabledOnRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchive;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchiveWALFsync;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManagerTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.SharedPageLockTrackerTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessorTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.HeapArrayLockLogTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.OffHeapLockLogTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 
 /**
  *
@@ -51,6 +59,19 @@ public class IgnitePdsTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsStartWIthEmptyArchive.class);
         suite.addTestSuite(IgnitePdsStartWIthEmptyArchiveWALFsync.class);
+
+        suite.addTestSuite(CorruptedTreeFailureHandlingTest.class);
+
+        // Page lock tracker tests.
+        suite.addTestSuite(PageLockTrackerManagerTest.class);
+        suite.addTestSuite(SharedPageLockTrackerTest.class);
+        suite.addTestSuite(ToFileDumpProcessorTest.class);
+        suite.addTestSuite(SharedPageLockTrackerTest.class);
+
+        suite.addTestSuite(HeapArrayLockLogTest.class);
+        suite.addTestSuite(HeapArrayLockStackTest.class);
+        suite.addTestSuite(OffHeapLockLogTest.class);
+        suite.addTestSuite(OffHeapLockStackTest.class);
 
         return suite;
     }
