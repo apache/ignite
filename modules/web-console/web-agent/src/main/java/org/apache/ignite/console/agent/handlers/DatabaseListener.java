@@ -217,12 +217,12 @@ public class DatabaseListener {
      * @return Connection to database.
      * @throws SQLException If failed to connect.
      */
-    private Connection connect(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
+    public Connection connect(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {
         if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl))
             return AgentMetadataDemo.testDrive();
 
-        if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
+        if (jdbcDriverJarPath!=null && !new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();
 
         //add@byron

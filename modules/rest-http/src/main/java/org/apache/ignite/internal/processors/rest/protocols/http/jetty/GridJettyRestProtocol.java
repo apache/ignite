@@ -291,7 +291,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
             srvConn.setPort(srvPort);
             srvConn.setIdleTimeout(60000L);
-            srvConn.setReuseAddress(true);
+            //-srvConn.setReuseAddress(true);
 
             httpSrv.addConnector(srvConn);
 
@@ -340,17 +340,18 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 		
 		File workDir = new File(ctx.config().getWorkDirectory(),"webapp");
 		context.setTempDirectory(workDir); 
-		context.setClassLoader(Thread.currentThread().getContextClassLoader());  
+		//-context.setClassLoader(Thread.currentThread().getContextClassLoader());  
 		
 
 		 // Create a handler list to store our static and servlet context handlers.
+		
+		Handler hnd = httpSrv.getHandler();
 		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] { jettyHnd, context });	
+		handlers.setHandlers(new Handler[] { jettyHnd, context, hnd });	
 
         //-httpSrv.setHandler(jettyHnd);
         httpSrv.setHandler(handlers);
         
-      
         //end@
 
         override(getJettyConnector());

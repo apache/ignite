@@ -22,8 +22,10 @@ import java.io.StringWriter;
 import java.net.ConnectException;
 import java.security.GeneralSecurityException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -33,6 +35,8 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.Dispatcher;
@@ -42,12 +46,14 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.console.agent.db.JdbcQueryExecutor;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
@@ -77,6 +83,8 @@ public class RestForRDSExecutor implements AutoCloseable {
 
     /** Index of alive node URI. */
     private final Map<List<String>, Integer> startIdxs = U.newHashMap(2);
+    
+    int jdbcQueryCancellationTime = 10000;
 
     /**
      * Constructor.
@@ -177,19 +185,27 @@ public class RestForRDSExecutor implements AutoCloseable {
      * @return Response from cluster.
      * @throws IOException If failed to send request to cluster.
      */
-    public RestResult sendRequest(      
+    public RestResult sendRequest(Map<String, Object> args, 
         Map<String, Object> params,
         Map<String, Object> headers
     ) throws IOException {
     	
+    	String jdbcDriverCls = this.dbListener.currentDriverCls;
+    	String jdbcUrl = this.dbListener.currentJdbcUrl;
+    	Properties jdbcInfo = this.dbListener.currentJdbcInfo;
+        
     	String nodeUrl = this.dbListener.currentJdbcUrl;
     	
+    	
+    	Connection conn = null;
     	int  urlsCnt = 2;
         for (int i = 0;  i < urlsCnt; i++) {           
 
             try {
+            	conn = dbListener.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
             	
-                RestResult res = sendRequestToFlink(nodeUrl, params, headers);
+            	JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),(String)params.get("p5"));
+            	JSONObject res = exec.call();
 
                 // If first attempt failed then throttling should be cleared.
                 if (i > 0)
@@ -197,14 +213,28 @@ public class RestForRDSExecutor implements AutoCloseable {
 
                 LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
 
+                conn.close();
+               
+                return RestResult.success(res.toString(), (String)args.get("token"));
 
-                return res;
+                
             }
             catch (ConnectException ignored) {
-                LT.warn(log, "Failed connect to cluster [url=" + nodeUrl + "]");
-            }
+            	
+                LT.warn(log, "Failed connect to cluster [url=" + nodeUrl + "]");                
+                return RestResult.fail(STATUS_FAILED, ignored.getMessage());
+                
+            } catch (SQLException e) {			
+            	
+				LT.warn(log, "Failed connect to db [url=" + nodeUrl + "] "+e.getMessage());
+				return RestResult.fail(e.getErrorCode(), e.getMessage());
+			} catch (Exception e) {
+				LT.warn(log, "Failed connect to db [url=" + nodeUrl + "] "+e.getMessage());
+				return RestResult.fail(STATUS_FAILED, e.getMessage());
+			}
         }
-
+        
+        
         LT.warn(log, "Failed connect to cluster. " +
             "Please ensure that nodes have [ignite-rest-http] module in classpath " +
             "(was copied from libs/optional to libs folder).");

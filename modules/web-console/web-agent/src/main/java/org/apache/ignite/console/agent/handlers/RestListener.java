@@ -96,11 +96,12 @@ public class RestListener extends AbstractListener {
             
             //add@byron support query on backend rds
             //到配置的关系数据库查询数据
-            if (args.containsKey("to_rds")) {
-            	return rdsExecutor.sendRequest(params, headers);
+            String cmd = (String)params.get("p2");
+            if ("org.apache.ignite.internal.visor.query.VisorQueryTask".equals(cmd) || "rds".equals(args.get("url"))) {
+            	return rdsExecutor.sendRequest(args, params, headers);
             }
             //到配置的flink sql gateway数据代理查询数据
-            if (args.containsKey("to_flink")) {
+            if ("flink_sql".equals(args.get("url"))) {
             	return rdsExecutor.sendRequestToFlink(this.cfg.flinkSqlURI(),params, headers);
             }
             //end

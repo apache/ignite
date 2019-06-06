@@ -199,6 +199,18 @@ module.exports = {
                     .then((agentSock) => agentSock.emitEvent('node:rest',
                         {uri: 'ignite', token, demo, params: _.merge({}, credentials, params)}));
             }
+            
+            executeOnRdsNode(agent, token, demo, credentials, params) {
+                return agent
+                    .then((agentSock) => agentSock.emitEvent('node:rest',
+                        {uri: 'rds', token, demo, params: _.merge({}, credentials, params)}));
+            }
+            
+            executeOnFlinkSqlNode(agent, token, demo, credentials, params) {
+                return agent
+                    .then((agentSock) => agentSock.emitEvent('node:rest',
+                        {uri: 'flink_sql', token, demo, params: _.merge({}, credentials, params)}));
+            }
 
             registerVisorTask(taskId, taskCls, ...argCls) {
                 this._visorTasks.set(taskId, {
