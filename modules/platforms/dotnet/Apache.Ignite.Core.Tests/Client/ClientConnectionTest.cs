@@ -192,7 +192,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 srv.GetCluster().SetActive(true);
 
-                using (var cli = Ignition.StartClient(GetSecureClientConfig()))
+                using (var cli = Ignition.StartClient(SecureClientConfig()))
                 {
                     CacheClientConfiguration ccfg = new CacheClientConfiguration
                     {
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     cache.Query(new SqlFieldsQuery("CREATE USER \"" + user + "\" WITH PASSWORD '" + pass + "'")).GetAll();
                 }
 
-                var cliCfg = GetSecureClientConfig();
+                var cliCfg = SecureClientConfig();
 
                 cliCfg.UserName = user;
                 cliCfg.Password = pass;
