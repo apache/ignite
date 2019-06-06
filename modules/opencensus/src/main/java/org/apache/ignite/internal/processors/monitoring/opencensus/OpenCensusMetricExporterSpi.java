@@ -70,7 +70,6 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  *
- * @see MetricExporterPushSpi
  * @see MetricRegistry
  */
 public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
