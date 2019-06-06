@@ -21,7 +21,6 @@ import io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector;
 import io.prometheus.client.exporter.HTTPServer;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Arrays;

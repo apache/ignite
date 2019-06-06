@@ -17,34 +17,13 @@
 
 package org.apache.ignite.spi.metric.log;
 
-import java.util.function.Predicate;
+import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.spi.IgniteSpiAdapter;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.MetricExporterPushSpi;
-import org.apache.ignite.spi.metric.MetricRegistry;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This SPI implementation exports metrics to Ignite log.
  */
-public class LogExporterSpi extends IgniteSpiAdapter implements MetricExporterPushSpi {
-    /**
-     * Monitoring registry.
-     */
-    private MetricRegistry mreg;
-
-    /**
-     * Metric filter.
-     */
-    private @Nullable Predicate<Metric> filter;
-
-    /**
-     * Timeout.
-     */
-    private long timeout;
-
+public class LogExporterSpi extends PushMetricsExporterAdapter {
     /** {@inheritDoc} */
     @Override public void export() {
         if (!log.isInfoEnabled()) {
@@ -62,35 +41,5 @@ public class LogExporterSpi extends IgniteSpiAdapter implements MetricExporterPu
 
             log.info(m.name() + " = " + m.getAsString());
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void spiStop() throws IgniteSpiException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setPeriod(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getPeriod() {
-        return timeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMetricRegistry(MetricRegistry mreg) {
-        this.mreg = mreg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<Metric> filter) {
-        this.filter = filter;
     }
 }

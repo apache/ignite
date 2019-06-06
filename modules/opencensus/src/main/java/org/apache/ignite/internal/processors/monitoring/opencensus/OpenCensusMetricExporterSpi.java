@@ -40,10 +40,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.metric.MetricExporterPushSpi;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -58,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * <br>
  * This class will export all Ignite metrics with the OpenCensus API.<br>
  * <br>
- * Please, note, metrics recorded with the OpenCensus API each {@link #timeout} milliseconds.
+ * Please, note, metrics recorded with the OpenCensus API each {@link #period} milliseconds.
  * <br>
  * To enable export from OpenCensus to the wild user should configure OpenCensus exporter.
  * Please, see <a href="https://opencensus.io/exporters/supported-exporters/java/">OpenCensus documentation</a> for additional information.
@@ -75,65 +74,32 @@ import org.jetbrains.annotations.Nullable;
  * @see MetricExporterPushSpi
  * @see MetricRegistry
  */
-public class OpenCensusMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterPushSpi {
-    /**
-     * Metric registry.
-     */
-    private MetricRegistry mreg;
-
-    /**
-     * Metric filter.
-     */
-    private @Nullable Predicate<Metric> filter;
-
-    /**
-     * Timeout.
-     */
-    private long timeout;
-
-    /**
-     * Flag to enable or disable tag with Ignite instance name.
-     */
+public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
+    /** Flag to enable or disable tag with Ignite instance name. */
     private boolean sendInstanceName;
 
-    /**
-     * Flag to enable or disable tag with Node id.
-     */
+    /** Flag to enable or disable tag with Node id. */
     private boolean sendNodeId;
 
-    /**
-     * Flag to enable or disable tag with Consistent id.
-     */
+    /** Flag to enable or disable tag with Consistent id. */
     private boolean sendConsistentId;
 
-    /**
-     * Ignite instance name.
-     */
+    /** Ignite instance name. */
     private static final TagKey INSTANCE_NAME_TAG = TagKey.create("iin");
 
-    /**
-     * Ignite node id.
-     */
+    /** Ignite node id. */
     public static final TagKey NODE_ID_TAG = TagKey.create("ini");
 
-    /**
-     * Ignite node consistent id.
-     */
+    /** Ignite node consistent id. */
     public static final TagKey CONSISTENT_ID_TAG = TagKey.create("inci");
 
-    /**
-     * Ignite instance name in the form of {@link TagValue}.
-     */
+    /** Ignite instance name in the form of {@link TagValue}. */
     private TagValue instanceNameValue;
 
-    /**
-     * Ignite node id in the form of {@link TagValue}.
-     */
+    /** Ignite node id in the form of {@link TagValue}. */
     private TagValue nodeIdValue;
 
-    /**
-     * Ignite consistent id in the form of {@link TagValue}.
-     */
+    /** Ignite consistent id in the form of {@link TagValue}. */
     private TagValue consistenIdValue;
 
     /**
@@ -258,6 +224,8 @@ public class OpenCensusMetricExporterSpi extends IgniteSpiAdapter implements Met
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        super.spiStart(igniteInstanceName);
+
         if (sendInstanceName) {
             tags.add(INSTANCE_NAME_TAG);
 
@@ -276,38 +244,12 @@ public class OpenCensusMetricExporterSpi extends IgniteSpiAdapter implements Met
             //Node consistent id will be known in #onContextInitialized0(IgniteSpiContext), after DiscoMgr started.
             consistenIdValue = TagValue.create("unknown");
         }
-
     }
 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         consistenIdValue = TagValue.create(
             ((IgniteEx)ignite()).context().discovery().localNode().consistentId().toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void spiStop() throws IgniteSpiException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMetricRegistry(MetricRegistry mreg) {
-        this.mreg = mreg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<Metric> filter) {
-        this.filter = filter;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setPeriod(long timeout) {
-        this.timeout = timeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getPeriod() {
-        return timeout;
     }
 
     /**

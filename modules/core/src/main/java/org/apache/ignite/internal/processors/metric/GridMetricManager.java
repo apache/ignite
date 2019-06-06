@@ -17,22 +17,15 @@
 
 package org.apache.ignite.internal.processors.metric;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.StripedExecutor;
-import org.apache.ignite.spi.metric.MetricExporterPushSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.MetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -93,12 +86,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Group for a thread pools. */
     public static final String THREAD_POOLS = "threadPools";
 
-    /** Push spi executor. */
-    private ScheduledExecutorService pushSpiExecutor;
-
-    /** Future for scheduled push spi export. */
-    private List<ScheduledFuture<?>> pushFuts;
-
     /** Monitoring registry. */
     private MetricRegistry mreg;
 
@@ -117,51 +104,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
             spi.setMetricRegistry(mreg);
 
         startSpi();
-
-        int cnt = (int)Arrays.stream(getSpis()).filter(spi -> spi instanceof MetricExporterPushSpi).count();
-
-        if (cnt > 0) {
-            pushSpiExecutor = Executors.newScheduledThreadPool(cnt);
-
-            pushFuts = new ArrayList<>(cnt);
-
-            for (MetricExporterSpi spi : getSpis()) {
-                if (!(spi instanceof MetricExporterPushSpi))
-                    continue;
-
-                MetricExporterPushSpi pushSpi = (MetricExporterPushSpi)spi;
-
-                long timeout = pushSpi.getPeriod();
-
-                ScheduledFuture<?> fut = pushSpiExecutor.scheduleWithFixedDelay(() -> {
-                    try {
-                        pushSpi.export();
-                    }
-                    catch (Exception e) {
-                        log.error("Metrics export error. This exporter will be stopped " + spi.getClass(), e);
-
-                        throw e;
-                    }
-                }, timeout, timeout, MILLISECONDS);
-
-                pushFuts.add(fut);
-            }
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
-
-        if (pushSpiExecutor != null) {
-            for (ScheduledFuture<?> fut : pushFuts)
-                fut.cancel(cancel);
-
-            if (cancel)
-                pushSpiExecutor.shutdownNow();
-            else
-                pushSpiExecutor.shutdown();
-        }
     }
 
     /**
