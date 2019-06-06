@@ -70,6 +70,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePart
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheContainsKeyColocatedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePartitionedBackupNodeFailureRecoveryTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheTxNearEnabledSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheContainsKeyColocatedAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheContainsKeyNearAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearReadersSelfTest;
@@ -215,6 +217,9 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(IgniteCrossCacheTxNearEnabledSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyColocatedSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyNearSelfTest.class);
+        ignoredTests.add(IgniteCacheContainsKeyColocatedAtomicSelfTest.class);
+        ignoredTests.add(IgniteCacheContainsKeyNearAtomicSelfTest.class);
+
 
         List<Class<?>> suite = new ArrayList<>(IgniteCacheTestSuite2.suite(ignoredTests));
 
