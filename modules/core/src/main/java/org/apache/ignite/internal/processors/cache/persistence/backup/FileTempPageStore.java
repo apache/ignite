@@ -122,11 +122,6 @@ public class FileTempPageStore implements TempPageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void read(ByteBuffer pageBuf) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
         init();
 
@@ -172,6 +167,11 @@ public class FileTempPageStore implements TempPageStore {
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWritable() {
+        return true;
     }
 
     /** {@inheritDoc} */

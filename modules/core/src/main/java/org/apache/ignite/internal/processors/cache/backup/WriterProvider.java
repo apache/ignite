@@ -18,26 +18,9 @@
 
 package org.apache.ignite.internal.processors.cache.backup;
 
-import java.io.File;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheManager;
-
 /**
  *
  */
-public interface CacheBackupManager extends GridCacheManager {
-    /**
-     * @param backupName Unique backup name.
-     * @param dir Destination directory to save backup to.
-     * @return Future will be completed when backup process finished.
-     */
-    public IgniteInternalFuture<?> localBackup(String backupName, File dir);
-
-    /**
-     * @param backupName Uniqure backup name.
-     * @param provider Provider which hosts writer.
-     * @return Future will be completed when backup process finished.
-     */
-    public IgniteInternalFuture<?> remoteBackup(String backupName, WriterProvider provider);
+public interface WriterProvider {
 
 }

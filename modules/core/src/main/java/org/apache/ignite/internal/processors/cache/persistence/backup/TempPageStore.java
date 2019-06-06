@@ -26,17 +26,16 @@ import org.apache.ignite.IgniteCheckedException;
  */
 public interface TempPageStore extends Closeable {
     /**
-     * @param pageBuf Page buffer to read into.
-     * @throws IgniteCheckedException If failed (IO error occurred).
-     */
-    public void read(ByteBuffer pageBuf) throws IgniteCheckedException;
-
-    /**
      * @param pageId Page ID.
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
     public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
+
+    /**
+     * @return {@code true} if writes to the PageStore is allowed.
+     */
+    public boolean isWritable();
 
     /**
      * @throws IgniteCheckedException If failed.

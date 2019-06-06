@@ -23,6 +23,7 @@ import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -38,7 +39,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
@@ -75,6 +78,12 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     /** */
     public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [name=%s]";
 
+    /** */
+    private final ConcurrentMap<String, GridFutureAdapter<?>> scheduledBackups = new ConcurrentHashMap<>();
+
+    /** TODO: CAS on list with temporary page stores */
+    private final ConcurrentMap<GroupPartitionId, List<TempPageStore>> processingParts = new ConcurrentHashMap<>();
+
     /** Factory to working with {@link TempPageStore} as file storage. */
     private final FileIOFactory ioFactory;
 
@@ -87,17 +96,23 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     /** Collection of backup stores indexed by [grpId, partId] key. */
     private final Map<GroupPartitionId, TempPageStore> backupStores = new ConcurrentHashMap<>();
 
-    /** */
+    /** Checkpoint listener to handle scheduled backup requests. */
+    private DbCheckpointListener cpLsnr;
+
+    /** Database manager for enabled persistence. */
+    private GridCacheDatabaseSharedManager dbMgr;
+
+    /** Configured data storage page size. */
     private int pageSize;
+
+    /** Thread local with buffers for handling copy-on-write over {@link PageStore} events. */
+    private ThreadLocal<ByteBuffer> threadPageBuff;
 
     /** */
     private final ReadWriteLock rwlock = new ReentrantReadWriteLock();
 
     /** Base working directory for saving copied pages. */
     private File backupWorkDir;
-
-    /** Thread local with buffers for handling copy-on-write over {@link PageStore} events. */
-    private ThreadLocal<ByteBuffer> threadPageBuff;
 
     /** A byte array to store intermediate calculation results of process handling page writes. */
     private ThreadLocal<byte[]> threadTempArr;
@@ -158,6 +173,31 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
             ByteBuffer.allocateDirect(pageSize).order(ByteOrder.nativeOrder())));
 
         threadTempArr = ThreadLocal.withInitial(() -> new byte[pageSize]);
+
+        dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
+
+        dbMgr.addCheckpointListener(cpLsnr = new DbCheckpointListener() {
+            @Override public void beforeMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
+
+            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        dbMgr.removeCheckpointListener(cpLsnr);
     }
 
     /** {@inheritDoc} */
@@ -173,6 +213,28 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
         backupStores.clear();
         trackMap.clear();
         pageTrackErrors.clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CheckpointFuture forceStart() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Set<CompletableBackup>> scheduleCacheBackup(
+        String backupName,
+        GridCacheContext cctx,
+        Set<Integer> parts,
+        File dir
+    ) {
+        scheduledBackups.putIfAbsent(backupName, new GridFutureAdapter<>());
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stopCacheBackup(String backupName, GridCacheContext cctx) {
+
     }
 
     /** {@inheritDoc} */
@@ -374,7 +436,9 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
         }
     }
 
-    /** */
+    /**
+     * @param buf Buffer to set.
+     */
     public void setThreadPageBuff(final ThreadLocal<ByteBuffer> buf) {
         threadPageBuff = buf;
     }
@@ -457,6 +521,72 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
                     rwlock.readLock().unlock();
                 }
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PartitionCompletableBackup implements CompletableBackup {
+        /** {@inheritDoc} */
+        @Override public File getPartition() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getPartitionSize() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public File getPartitionDelta() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void complete() {
+
+        }
+    }
+
+    /**
+     *
+     */
+    private static class CacheBackupContext {
+        /** Cache group id. */
+        private final int grpId;
+
+        /** Unique backup name. */
+        private final String backupName;
+
+        /** Set of partitions to process. */
+        private final Set<Integer> partIds = new HashSet<>();
+
+        /**
+         * The length of file size per each cache partiton file.
+         * Partition has value greater than zero only for partitons in OWNING state.
+         * Information collected under checkpoint write lock.
+         */
+        private final Map<File, Integer> partSizesMap = new HashMap<>();
+
+        /** Map of partitions to backup and theirs corresponding PageStores. */
+        private final Map<Integer, TempPageStore> partTempStoreMap = new HashMap<>();
+
+        /** Ready to start partitions copy process future. */
+        private final IgniteInternalFuture<?> beginFut = new GridFutureAdapter<>();
+
+        /**
+         * @param grpId Backup cache group id.
+         * @param backupName Unique backup name.
+         */
+        public CacheBackupContext(int grpId, String backupName) {
+            this.grpId = grpId;
+            this.backupName = backupName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CacheBackupContext.class, this);
         }
     }
 

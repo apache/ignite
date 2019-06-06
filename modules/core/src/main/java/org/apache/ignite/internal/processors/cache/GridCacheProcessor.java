@@ -3394,11 +3394,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheDatabaseSharedManager dbMgr;
         IgnitePageStoreManager pageStoreMgr = null;
         IgniteWriteAheadLogManager walMgr = null;
-        IgniteBackupPageStoreManager storeBackupMgr = null;
+        IgniteBackupPageStoreManager backupMgr = null;
 
 
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
+            backupMgr = new IgniteBackupPageStoreManagerImpl(ctx);
 
             pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
 
@@ -3409,11 +3410,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (walMgr == null)
                 walMgr = new FileWriteAheadLogManager(ctx);
-
-            storeBackupMgr = ctx.plugins().createComponent(IgniteBackupPageStoreManager.class);
-
-            if (storeBackupMgr == null)
-                storeBackupMgr = new IgniteBackupPageStoreManagerImpl(ctx);
         }
         else {
             if (CU.isPersistenceEnabled(ctx.config()) && ctx.clientNode()) {
@@ -3451,7 +3447,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             walMgr,
             walStateMgr,
             dbMgr,
-            storeBackupMgr,
+            backupMgr,
             snpMgr,
             depMgr,
             exchMgr,

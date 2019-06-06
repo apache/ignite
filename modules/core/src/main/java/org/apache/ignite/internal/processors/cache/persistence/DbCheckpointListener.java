@@ -64,6 +64,13 @@ public interface DbCheckpointListener {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    public default void beforeMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException;
 
     /**
@@ -77,11 +84,4 @@ public interface DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException;
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public default void beforeMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
-        // No-op.
-    }
 }

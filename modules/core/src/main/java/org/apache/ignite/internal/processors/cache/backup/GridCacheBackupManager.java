@@ -18,11 +18,21 @@
 
 package org.apache.ignite.internal.processors.cache.backup;
 
+import java.io.File;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 
 /**
  *
  */
 public class GridCacheBackupManager extends GridCacheManagerAdapter implements CacheBackupManager {
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> localBackup(String backupName, File dir) {
+        return null;
+    }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> remoteBackup(String backupName, WriterProvider provider) {
+        return null;
+    }
 }

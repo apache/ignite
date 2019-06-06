@@ -13,31 +13,33 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.cache.backup;
+package org.apache.ignite.internal.processors.cache.persistence.backup;
 
 import java.io.File;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheManager;
 
 /**
  *
  */
-public interface CacheBackupManager extends GridCacheManager {
+public interface CompletableBackup {
     /**
-     * @param backupName Unique backup name.
-     * @param dir Destination directory to save backup to.
-     * @return Future will be completed when backup process finished.
+     * @return File resource of cache partition.
      */
-    public IgniteInternalFuture<?> localBackup(String backupName, File dir);
+    public File getPartition();
 
     /**
-     * @param backupName Uniqure backup name.
-     * @param provider Provider which hosts writer.
-     * @return Future will be completed when backup process finished.
+     * @return Partition file in bytes to read.
      */
-    public IgniteInternalFuture<?> remoteBackup(String backupName, WriterProvider provider);
+    public long getPartitionSize();
 
+    /**
+     * @return Partition copied pages.
+     */
+    public File getPartitionDelta();
+
+    /**
+     * Mark cache partition processing complete.
+     */
+    public void complete();
 }

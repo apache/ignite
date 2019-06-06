@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
+import java.io.File;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
@@ -38,6 +42,31 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
         Map<Integer, Set<Integer>> parts,
         PageStoreInClosure closure
     ) throws IgniteCheckedException;
+
+    /**
+     * @return Checkpoint future for scheduled backups.
+     */
+    public CheckpointFuture forceStart();
+
+    /**
+     * @param backupName Unique backup name.
+     * @param cctx Cache context to use to.
+     * @param parts Collection of cache partitions to backup.
+     * @param dir Local directory to save cache partition deltas to.
+     * @return Future which will be completed when cache is ready to be processed.
+     */
+    public IgniteInternalFuture<Set<CompletableBackup>> scheduleCacheBackup(
+        String backupName,
+        GridCacheContext cctx,
+        Set<Integer> parts,
+        File dir
+    );
+
+    /**
+     * @param backupName Unique backup name.
+     * @param cctx Cache context to use to.
+     */
+    public void stopCacheBackup(String backupName, GridCacheContext cctx);
 
     /**
      * @param pairId Cache group, partition identifiers pair.
