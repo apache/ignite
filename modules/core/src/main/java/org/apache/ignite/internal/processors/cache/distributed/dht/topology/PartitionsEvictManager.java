@@ -125,7 +125,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             if (!grpEvictionCtx.partIds.add(part.id()))
                 return;
 
-            bucket = evictionQueue.offer(new PartitionEvictionTask(part, grpEvictionCtx, grp.affinity().lastVersion()));
+            bucket = evictionQueue.offer(new PartitionEvictionTask(part, grpEvictionCtx));
         }
 
         grpEvictionCtx.totalTasks.incrementAndGet();
@@ -397,8 +397,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
          */
         private PartitionEvictionTask(
             GridDhtLocalPartition part,
-            GroupEvictionContext grpEvictionCtx,
-            AffinityTopologyVersion startVer
+            GroupEvictionContext grpEvictionCtx
         ) {
             this.part = part;
             this.grpEvictionCtx = grpEvictionCtx;
