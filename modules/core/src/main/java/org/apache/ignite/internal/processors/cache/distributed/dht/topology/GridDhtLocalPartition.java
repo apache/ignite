@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -673,6 +674,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param updateSeq Update sequence.
      */
     private void clearAsync0(boolean updateSeq) {
+        // Method expected to be called  from exchange worker or rebalancing thread when rebalancing is done.
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);
@@ -723,11 +725,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         clear = true;
 
-        IgniteInternalFuture<Boolean> rebFut = grp.preloader().rebalanceFuture();
+        GridDhtPartitionDemander.RebalanceFuture rebFut =
+            (GridDhtPartitionDemander.RebalanceFuture)grp.preloader().rebalanceFuture();
 
         // Make sure current rebalance future finishes before clearing
         // to avoid clearing currently rebalancing partition.
-        if (state0 == MOVING && !rebFut.isDone())
+        // NOTE: this invariant is not true for initial rebalance future.
+        if (rebFut.topologyVersion() != null && state0 == MOVING && !rebFut.isDone())
             rebFut.listen(fut -> clearAsync0(false));
         else
             clearAsync0(false);
@@ -1588,7 +1592,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         public void finish() {
             synchronized (this) {
                 onDone();
-                finished = true;
+                finished = true; // Marks state when all future listeners are finished.
             }
         }
 
