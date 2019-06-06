@@ -234,7 +234,5 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             Assert.assertNotNull("Value for " + k + " is null", val);
             Assert.assertEquals("Check failed for " + k + " = " + val, k, (int)val);
         }
-
-        assertPartitionsSame(idleVerify(ignite));
     }
 }
