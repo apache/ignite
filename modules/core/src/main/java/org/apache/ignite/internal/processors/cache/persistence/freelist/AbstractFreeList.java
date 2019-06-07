@@ -549,9 +549,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** {@inheritDoc} */
     @Override public void insertDataRows(Collection<T> rows,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        if (rows.isEmpty())
-            return;
-
         try {
             Iterator<T> iter = rows.iterator();
 
@@ -560,17 +557,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int written = COMPLETE;
 
             while (iter.hasNext() || written != COMPLETE) {
-                if (written == COMPLETE)
+                if (written == COMPLETE) {
                     row = iter.next();
 
-                if (row.link() == 0 && (written = writeWholePages(row, statHolder)) == COMPLETE)
-                    continue;
+                    // If the data row was completely written without remainder, proceed to the next.
+                    if ((written = writeWholePages(row, statHolder)) == COMPLETE)
+                        continue;
+                }
 
                 int remaining = row.size() - written;
 
                 long pageId = 0L;
 
-                if (remaining > 0 && remaining < MIN_SIZE_FOR_DATA_PAGE) {
+                if (remaining < MIN_SIZE_FOR_DATA_PAGE) {
                     for (int b = bucket(remaining, false) + 1; b < REUSE_BUCKET; b++) {
                         pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
@@ -616,20 +615,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                             if (written == COMPLETE) {
                                 row = iter.next();
 
-                                written = writeWholePages(row, statHolder);
+                                // If the data row was completely written without remainder, proceed to the next.
+                                if ((written = writeWholePages(row, statHolder)) == COMPLETE)
+                                    continue;
 
-                                if (written != COMPLETE && io.getFreeSpace(pageAddr) < row.size() - written)
+                                if (io.getFreeSpace(pageAddr) < row.size() - written)
                                     break;
                             }
 
-                            if (written != COMPLETE) {
-                                written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, lockLsnr,
-                                    writeRowKeepPage, initIo, wal, null, row, written, statHolder);
+                            written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, lockLsnr,
+                                writeRowKeepPage, initIo, wal, null, row, written, statHolder);
 
-                                initIo = null;
+                            initIo = null;
 
-                                dirty = true;
-                            }
+                            dirty = true;
 
                             assert written == COMPLETE;
                         }
