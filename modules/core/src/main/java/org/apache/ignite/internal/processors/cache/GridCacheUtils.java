@@ -54,6 +54,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -72,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -1996,6 +1999,37 @@ public class GridCacheUtils {
      */
     public static boolean isCacheTemplateName(String cacheName) {
         return cacheName.endsWith("*");
+    }
+
+    /**
+     * @param memPlc Data region.
+     * @param size Data size in bytes.
+     * @return {@code True} if a specified amount of data can be stored in the memory region without evictions.
+     */
+    public static boolean isEnoughSpaceForData(DataRegion memPlc, int size) {
+        DataRegionConfiguration plc = memPlc.config();
+
+        if (plc.isPersistenceEnabled() || plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+            return true;
+
+        PageMemory pageMem = memPlc.pageMemory();
+
+        int sysPageSize = pageMem.systemPageSize();
+
+        // The number of pages is calculated taking into account memory fragmentation and possible concurrent updates.
+        int pagesRequired = (size / sysPageSize) * 2;
+
+        long maxPages = plc.getMaxSize() / sysPageSize;
+
+        // There are enough pages left.
+        if (pagesRequired < maxPages - pageMem.loadedPages())
+            return true;
+
+        // Empty pages pool size restricted.
+        if (pagesRequired > plc.getEmptyPagesPoolSize())
+            return false;
+
+        return pagesRequired < maxPages * (1.0d - plc.getEvictionThreshold());
     }
 
     /**

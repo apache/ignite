@@ -546,12 +546,18 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Reduces the workload on the free list by writing multiple rows into a single memory page at once.<br>
+     * <br>
+     * Rows are sequentially added to the page as long as there is enough free space on it. If the row is large then
+     * those fragments that occupy the whole memory page are written to other pages, and the remainder is added to the
+     * current one.
+     *
+     * @param rows Rows.
+     * @throws IgniteCheckedException If failed.
+     */
     @Override public void insertDataRows(Collection<T> rows,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        if (rows.isEmpty())
-            return;
-
         try {
             Iterator<T> iter = rows.iterator();
 
@@ -560,17 +566,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             int written = COMPLETE;
 
             while (iter.hasNext() || written != COMPLETE) {
-                if (written == COMPLETE)
+                if (written == COMPLETE) {
                     row = iter.next();
 
-                if ((written = writeWholePages(row, statHolder)) == COMPLETE)
-                    continue;
+                    // If the data row was completely written without remainder, proceed to the next.
+                    if ((written = writeWholePages(row, statHolder)) == COMPLETE)
+                        continue;
+                }
 
                 int remaining = row.size() - written;
 
                 long pageId = 0L;
 
-                if (remaining > 0 && remaining < MIN_SIZE_FOR_DATA_PAGE) {
+                if (remaining < MIN_SIZE_FOR_DATA_PAGE) {
                     for (int b = bucket(remaining, false) + 1; b < REUSE_BUCKET; b++) {
                         pageId = takeEmptyPage(b, row.ioVersions(), statHolder);
 
@@ -616,23 +624,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                             if (written == COMPLETE) {
                                 row = iter.next();
 
-                                written = 0;
+                                // If the data row was completely written without remainder, proceed to the next.
+                                if ((written = writeWholePages(row, statHolder)) == COMPLETE)
+                                    continue;
 
-                                if (io.getFreeSpace(pageAddr) < (row.size() % MIN_SIZE_FOR_DATA_PAGE))
+                                if (io.getFreeSpace(pageAddr) < row.size() - written)
                                     break;
                             }
 
-                            if (written == 0)
-                                written = writeWholePages(row, statHolder);
+                            written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, lockLsnr,
+                                writeRowKeepPage, initIo, wal, null, row, written, statHolder);
 
-                            if (written != COMPLETE) {
-                                written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, lockLsnr,
-                                    writeRowKeepPage, initIo, wal, null, row, written, statHolder);
+                            initIo = null;
 
-                                initIo = null;
-
-                                dirty = true;
-                            }
+                            dirty = true;
 
                             assert written == COMPLETE;
                         }
@@ -649,7 +654,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
                     }
                     finally {
-                        // Should always unlock data page after write.
+                        // Should always unlock data page after an update.
                         assert writeRowKeepPage.releaseAfterWrite(grpId, pageId, page, pageAddr, row, 0);
 
                         writeUnlock(pageId, page, pageAddr, dirty);
