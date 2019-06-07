@@ -563,7 +563,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 if (written == COMPLETE)
                     row = iter.next();
 
-                if ((written = writeWholePages(row, statHolder)) == COMPLETE)
+                if (row.link() == 0 && (written = writeWholePages(row, statHolder)) == COMPLETE)
                     continue;
 
                 int remaining = row.size() - written;
@@ -616,14 +616,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                             if (written == COMPLETE) {
                                 row = iter.next();
 
-                                written = 0;
+                                written = writeWholePages(row, statHolder);
 
-                                if (io.getFreeSpace(pageAddr) < (row.size() % MIN_SIZE_FOR_DATA_PAGE))
+                                if (written != COMPLETE && io.getFreeSpace(pageAddr) < row.size() - written)
                                     break;
                             }
-
-                            if (written == 0)
-                                written = writeWholePages(row, statHolder);
 
                             if (written != COMPLETE) {
                                 written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, lockLsnr,
