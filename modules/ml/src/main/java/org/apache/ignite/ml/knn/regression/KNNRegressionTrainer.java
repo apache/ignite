@@ -26,7 +26,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  */
 public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> KNNRegressionModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                    Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);

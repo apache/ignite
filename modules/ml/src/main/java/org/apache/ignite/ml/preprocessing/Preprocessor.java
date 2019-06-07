@@ -38,6 +38,4 @@ public interface Preprocessor<K, V> extends IgniteBiFunction<K, V, LabeledVector
     public default <L1, L2> Preprocessor<K, V> map(IgniteFunction<LabeledVector<L1>, LabeledVector<L2>> func) {
         return new MappedPreprocessor<K, V, L1, L2>(this, func);
     }
-
-
 }

@@ -25,7 +25,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /** Base class for multi-classification model for set of classifiers. */
-public class MultiClassModel<M extends IgniteModel<Vector, Double>> implements IgniteModel<Vector, Double>, Exportable<MultiClassModel>, Serializable {
+public final class MultiClassModel<M extends IgniteModel<Vector, Double>> implements IgniteModel<Vector, Double>, Exportable<MultiClassModel>, Serializable {
     /** */
     private static final long serialVersionUID = -114986533359917L;
 

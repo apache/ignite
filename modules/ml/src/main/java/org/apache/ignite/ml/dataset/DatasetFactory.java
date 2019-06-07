@@ -30,6 +30,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetD
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.preprocessing.Preprocessor;
 
@@ -73,6 +74,7 @@ public class DatasetFactory {
      * @param datasetBuilder Dataset builder.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param partDataBuilder Partition {@code data} builder.
+     * @param environment Local learning environment.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> ype of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -83,11 +85,13 @@ public class DatasetFactory {
         DatasetBuilder<K, V> datasetBuilder,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        LearningEnvironment environment) {
         return datasetBuilder.build(
             envBuilder,
             partCtxBuilder,
-            partDataBuilder
+            partDataBuilder,
+            environment
         );
     }
 
@@ -109,10 +113,15 @@ public class DatasetFactory {
         DatasetBuilder<K, V> datasetBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+
+        LearningEnvironment environment = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
+        environment.deployingContext().initByClientObject(partDataBuilder);
+
         return datasetBuilder.build(
             LearningEnvironmentBuilder.defaultBuilder(),
             partCtxBuilder,
-            partDataBuilder
+            partDataBuilder,
+            environment
         );
     }
 
@@ -126,6 +135,7 @@ public class DatasetFactory {
      * @param envBuilder Learning environment builder.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param partDataBuilder Partition {@code data} builder.
+     * @param environment Local learning environment.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -136,12 +146,14 @@ public class DatasetFactory {
         Ignite ignite, IgniteCache<K, V> upstreamCache,
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
-        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        LearningEnvironment environment) {
         return create(
             new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             envBuilder,
             partCtxBuilder,
-            partDataBuilder
+            partDataBuilder,
+            environment
         );
     }
 
@@ -190,11 +202,16 @@ public class DatasetFactory {
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
         Preprocessor<K, V> featureExtractor) {
+
+        LearningEnvironment environment = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
+        environment.initDeployingContext(featureExtractor);
+
         return create(
             datasetBuilder,
             envBuilder,
             partCtxBuilder,
-            new SimpleDatasetDataBuilder<>(featureExtractor)
+            new SimpleDatasetDataBuilder<>(featureExtractor),
+            environment
         ).wrap(SimpleDataset::new);
     }
 
@@ -247,11 +264,16 @@ public class DatasetFactory {
         LearningEnvironmentBuilder envBuilder,
         PartitionContextBuilder<K, V, C> partCtxBuilder,
         Preprocessor<K, V> vectorizer) {
+
+        LearningEnvironment environment = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
+        environment.initDeployingContext(vectorizer);
+
         return create(
             datasetBuilder,
             envBuilder,
             partCtxBuilder,
-            new SimpleLabeledDatasetDataBuilder<>(vectorizer)
+            new SimpleLabeledDatasetDataBuilder<>(vectorizer),
+            environment
         ).wrap(SimpleLabeledDataset::new);
     }
 
@@ -418,6 +440,7 @@ public class DatasetFactory {
      * @param partCtxBuilder Partition {@code context} builder.
      * @param envBuilder Learning environment builder.
      * @param partDataBuilder Partition {@code data} builder.
+     * @param environment Local learning environment.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @param <C> Type of a partition {@code context}.
@@ -428,12 +451,14 @@ public class DatasetFactory {
         Map<K, V> upstreamMap,
         LearningEnvironmentBuilder envBuilder,
         int partitions, PartitionContextBuilder<K, V, C> partCtxBuilder,
-        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        PartitionDataBuilder<K, V, C, D> partDataBuilder,
+        LearningEnvironment environment) {
         return create(
             new LocalDatasetBuilder<>(upstreamMap, partitions),
             envBuilder,
             partCtxBuilder,
-            partDataBuilder
+            partDataBuilder,
+            environment
         );
     }
 

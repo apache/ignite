@@ -108,7 +108,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> MultilayerPerceptron fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                      Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -125,7 +125,8 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new SimpleLabeledDatasetDataBuilder<>(extractor)
+            new SimpleLabeledDatasetDataBuilder<>(extractor),
+            learningEnvironment()
         )) {
             MultilayerPerceptron mdl;
             if (lastLearnedMdl != null)

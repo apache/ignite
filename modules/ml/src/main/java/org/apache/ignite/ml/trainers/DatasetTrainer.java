@@ -58,7 +58,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public static <I, L> DatasetTrainer<IgniteModel<I, I>, L> identityTrainer() {
         return new DatasetTrainer<IgniteModel<I, I>, L>() {
             /** {@inheritDoc} */
-            @Override public <K, V> IgniteModel<I, I> fit(DatasetBuilder<K, V> datasetBuilder,
+            @Override public <K, V> IgniteModel<I, I> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                           Preprocessor<K, V> preprocessor) {
                 return x -> x;
             }
@@ -85,7 +85,38 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Model.
      */
-    public abstract <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor);
+    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+        learningEnvironment().initDeployingContext(preprocessor);
+
+        return fitWithInitializedDeployingContext(datasetBuilder, preprocessor);
+    }
+
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param datasetBuilder Dataset builder.
+     * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param learningEnvironment Local learning environment.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Model.
+     */
+    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor, LearningEnvironment learningEnvironment) {
+        environment = learningEnvironment;
+        return fitWithInitializedDeployingContext(datasetBuilder, preprocessor);
+    }
+
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param datasetBuilder Dataset builder.
+     * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Model.
+     */
+    protected abstract <K, V> M fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> preprocessor);
 
     /**
      * Gets state of model in arguments, compare it with training parameters of trainer and if they are fit then trainer
@@ -101,9 +132,11 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
     public <K, V> M update(M mdl, DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
 
         if (mdl != null) {
-            if (isUpdateable(mdl))
+            if (isUpdateable(mdl)) {
+                learningEnvironment().initDeployingContext(preprocessor);
+
                 return updateModel(mdl, datasetBuilder, preprocessor);
-            else {
+            } else {
                 environment.logger(getClass()).log(
                     MLLogger.VerboseLevel.HIGH,
                     "Model cannot be updated because of initial state of " +
@@ -349,7 +382,7 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
                 return old.updateModel(mdl, datasetBuilder, getNewExtractor(preprocessor));
             }
 
-            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+            @Override public <K, V> M fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
                 return old.fit(datasetBuilder, getNewExtractor(preprocessor));
             }
 

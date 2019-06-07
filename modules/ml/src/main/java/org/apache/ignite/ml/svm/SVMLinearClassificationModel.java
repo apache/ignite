@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Base class for SVM linear classification model.
  */
-public class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
+public final class SVMLinearClassificationModel implements IgniteModel<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
     /** */
     private static final long serialVersionUID = -996984622291440226L;
 

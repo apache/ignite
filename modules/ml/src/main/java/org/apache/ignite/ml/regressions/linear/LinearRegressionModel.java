@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * Simple linear regression model which predicts result value Y as a linear combination of input variables:
  * Y = weights * X + intercept.
  */
-public class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel>, Serializable {
+public final class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel>, Serializable {
     /** */
     private static final long serialVersionUID = -105984600091550226L;
 

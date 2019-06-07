@@ -182,13 +182,14 @@ public class BaggingTest extends TrainerTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> IgniteModel<Vector, Double> fit(
+        @Override public <K, V> IgniteModel<Vector, Double> fitWithInitializedDeployingContext(
             DatasetBuilder<K, V> datasetBuilder,
             Preprocessor<K, V> extractor) {
             Dataset<Long, CountData> dataset = datasetBuilder.build(
                 TestUtils.testEnvBuilder(),
                 (env, upstreamData, upstreamDataSize) -> upstreamDataSize,
-                (env, upstreamData, upstreamDataSize, ctx) -> new CountData(upstreamDataSize)
+                (env, upstreamData, upstreamDataSize, ctx) -> new CountData(upstreamDataSize),
+                TestUtils.testEnvBuilder().buildForTrainer()
             );
 
             Long cnt = dataset.computeWithCtx(cntr, BaggingTest::plusOfNullables);

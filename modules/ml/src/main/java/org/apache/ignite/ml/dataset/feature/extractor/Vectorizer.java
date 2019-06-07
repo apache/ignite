@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -237,7 +238,7 @@ public abstract class Vectorizer<K, V, C extends Serializable, L> implements Fea
      * @param <C> Type of coordinate.
      * @param <L> Type od label.
      */
-    public static class VectorizerAdapter<K, V, C extends Serializable, L> extends Vectorizer<K, V, C, L> {
+    public abstract static class VectorizerAdapter<K, V, C extends Serializable, L> extends Vectorizer<K, V, C, L> {
         /** {@inheritDoc} */
         @Override protected Double feature(C coord, K key, V value) {
             throw new IllegalStateException();

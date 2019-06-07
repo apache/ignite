@@ -82,7 +82,7 @@ public class TrainersSequentialComposition<I, O1, O2, L> extends DatasetTrainer<
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> ModelsSequentialComposition<I, O1, O2> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> preprocessor) {
 
         IgniteModel<I, O1> mdl1 = tr1.fit(datasetBuilder, preprocessor);

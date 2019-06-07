@@ -60,7 +60,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @return Model.
      */
-    @Override public <K, V> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> SVMLinearClassificationModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                              Preprocessor<K, V> preprocessor) {
 
         return updateModel(null, datasetBuilder, preprocessor);
@@ -92,7 +92,8 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
         try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
-            partDataBuilder
+            partDataBuilder,
+            learningEnvironment()
         )) {
             if (mdl == null) {
                 final int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {

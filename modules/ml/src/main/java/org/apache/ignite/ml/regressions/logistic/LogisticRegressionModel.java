@@ -26,7 +26,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Logistic regression (logit model) is a generalized linear model used for binomial regression.
  */
-public class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel>, Serializable {
+public final class LogisticRegressionModel implements IgniteModel<Vector, Double>, Exportable<LogisticRegressionModel>, Serializable {
     /** */
     private static final long serialVersionUID = -133984600091550776L;
 

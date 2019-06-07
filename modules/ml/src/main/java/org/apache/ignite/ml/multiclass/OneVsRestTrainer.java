@@ -55,7 +55,7 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> MultiClassModel<M> fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> MultiClassModel<M> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                    Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);
@@ -110,7 +110,7 @@ public class OneVsRestTrainer<M extends IgniteModel<Vector, Double>>
         try (Dataset<EmptyContext, LabelPartitionDataOnHeap> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
-            partDataBuilder
+            partDataBuilder, learningEnvironment()
         )) {
             final Set<Double> clsLabels = dataset.compute(data -> {
                 final Set<Double> locClsLabels = new HashSet<>();

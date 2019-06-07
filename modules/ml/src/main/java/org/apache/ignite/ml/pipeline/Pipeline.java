@@ -27,6 +27,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
@@ -136,7 +137,6 @@ public class Pipeline<K, V, C extends Serializable, L> {
         finalPreprocessor = vectorizer;
 
         preprocessingTrainers.forEach(e -> {
-
             finalPreprocessor = e.fit(
                 envBuilder,
                 datasetBuilder,
@@ -144,10 +144,13 @@ public class Pipeline<K, V, C extends Serializable, L> {
             );
         });
 
+        LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
+        env.initDeployingContext(finalPreprocessor);
         IgniteModel<Vector, Double> internalMdl = finalStage
             .fit(
                 datasetBuilder,
-                finalPreprocessor
+                finalPreprocessor,
+                env
             );
 
         return new PipelineMdl<K, V>()

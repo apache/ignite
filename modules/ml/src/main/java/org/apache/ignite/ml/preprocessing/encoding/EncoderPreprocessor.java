@@ -45,10 +45,10 @@ public abstract class EncoderPreprocessor<K, V> implements Preprocessor<K, V> {
      * Constructs a new instance of String Encoder preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
-     * @param handledIndices   Handled indices.
+     * @param handledIndices Handled indices.
      */
     public EncoderPreprocessor(Map<String, Integer>[] encodingValues,
-                               Preprocessor<K, V> basePreprocessor, Set<Integer> handledIndices) {
+        Preprocessor<K, V> basePreprocessor, Set<Integer> handledIndices) {
         this.handledIndices = handledIndices;
         this.encodingValues = encodingValues;
         this.basePreprocessor = basePreprocessor;

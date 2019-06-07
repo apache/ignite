@@ -62,7 +62,7 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
     private long seed = 1234L;
 
     /** {@inheritDoc} */
-    @Override public <K, V> LogisticRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> LogisticRegressionModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> extractor) {
 
         return updateModel(null, datasetBuilder, extractor);

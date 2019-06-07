@@ -102,7 +102,7 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> GmmModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> GmmModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
         Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
@@ -481,7 +481,8 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
 
         try (Dataset<EmptyContext, GmmPartitionData> dataset = datasetBuilder.build(envBuilder,
             new EmptyContextBuilder<>(),
-            new GmmPartitionData.Builder<>(extractor, maxCountOfClusters)
+            new GmmPartitionData.Builder<>(extractor, maxCountOfClusters),
+            learningEnvironment()
         )) {
             if (mdl != null) {
                 if (initialMeans != null)

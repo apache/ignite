@@ -17,6 +17,7 @@
 package org.apache.ignite.ml.environment;
 
 import java.util.Random;
+import org.apache.ignite.ml.environment.deploy.DeployingContext;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.logging.NoOpLogger;
 import org.apache.ignite.ml.environment.parallelism.DefaultParallelismStrategy;
@@ -130,6 +131,9 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
         /** Random numbers generator. */
         private final Random randomNumGen;
 
+        /** Deploy context. */
+        private final DeployingContext deployingContext = DeployingContext.unitialized();
+
         /**
          * Creates an instance of LearningEnvironmentImpl.
          *
@@ -172,6 +176,11 @@ public class DefaultLearningEnvironmentBuilder implements LearningEnvironmentBui
         /** {@inheritDoc} */
         @Override public int partition() {
             return part;
+        }
+
+        /** {@inheritDoc} */
+        @Override public DeployingContext deployingContext() {
+            return deployingContext;
         }
     }
 }

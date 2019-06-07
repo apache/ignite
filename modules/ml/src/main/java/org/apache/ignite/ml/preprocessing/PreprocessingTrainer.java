@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 
 /**
@@ -130,5 +131,19 @@ public interface PreprocessingTrainer<K, V> {
             new LocalDatasetBuilder<>(data, parts),
             basePreprocessor
         );
+    }
+
+    /**
+     * Returns local learning environment with initialized deploying context by base preptocessor.
+     *
+     * @param basePreprocessor Preprocessor.
+     * @param <K> Type of key.
+     * @param <V> Type of value.
+     * @return Learning environment.
+     */
+    public default <K,V> LearningEnvironment learningEnvironment(Preprocessor<K,V> basePreprocessor) {
+        LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
+        env.initDeployingContext(basePreprocessor);
+        return env;
     }
 }

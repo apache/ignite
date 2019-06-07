@@ -56,7 +56,6 @@ public class TensorFlowServerAddressSpec implements Serializable {
      */
     public String format(Ignite ignite) {
         Collection<String> names = ignite.cluster().forNodeId(nodeId).hostNames();
-
         return names.iterator().next() + ":" + port;
     }
 

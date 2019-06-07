@@ -69,15 +69,15 @@ public class LinearRegressionLSQRTrainerExample {
                 // DatasetTrainer#fit(Ignite, IgniteCache, IgniteBiFunction, IgniteBiFunction) method call
                 // where there is a separate lambda for extracting label from (key, value) and a separate labmda for
                 // extracting features.
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
-                    .labeled(Vectorizer.LabelCoordinate.FIRST);
 
-                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, vectorizer);
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, new DummyVectorizer<Integer>()
+                    .labeled(Vectorizer.LabelCoordinate.FIRST));
 
                 double rmse = Evaluator.evaluate(
                     dataCache,
                     mdl,
-                    vectorizer,
+                    new DummyVectorizer<Integer>()
+                        .labeled(Vectorizer.LabelCoordinate.FIRST),
                     new RegressionMetrics()
                 );
 

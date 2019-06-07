@@ -17,7 +17,10 @@
 package org.apache.ignite.ml.dataset.feature.extractor.impl;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -25,7 +28,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  *
  * @param <K> Type of key.
  */
-public class DummyVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, Vector> {
+public final class DummyVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, Vector> implements DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = -6225354615212148224L;
 
@@ -48,4 +51,8 @@ public class DummyVectorizer<K> extends ExtractionUtils.ArrayLikeVectorizer<K, V
         return value.size();
     }
 
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.emptyList();
+    }
 }

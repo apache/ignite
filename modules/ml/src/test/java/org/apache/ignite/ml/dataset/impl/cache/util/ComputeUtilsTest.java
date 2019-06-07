@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
+import org.apache.ignite.ml.environment.deploy.DeployingContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -88,7 +89,8 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     ignite,
                     Arrays.asList(firstCacheName, secondCacheName),
                     part -> part,
-                    0
+                    0,
+                    DeployingContext.unitialized()
                 );
             }
             catch (IllegalStateException expectedException) {
@@ -133,7 +135,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                 cnt.incrementAndGet();
 
                 return part;
-            }, 0);
+            }, 0, DeployingContext.unitialized());
 
             assertEquals(1, cnt.get());
         }
@@ -192,7 +194,8 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     TestUtils.testEnvBuilder().buildForWorker(part),
                     false
                 ),
-                0
+                0,
+                DeployingContext.unitialized()
             );
 
             assertEquals(1, data.size());
@@ -242,7 +245,8 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
             TestUtils.testEnvBuilder(),
             0,
             0,
-            false
+            false,
+            DeployingContext.unitialized()
         );
 
         assertEquals(1, datasetCache.size());

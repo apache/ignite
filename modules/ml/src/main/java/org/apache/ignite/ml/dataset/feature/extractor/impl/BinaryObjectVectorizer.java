@@ -16,6 +16,7 @@
 
 package org.apache.ignite.ml.dataset.feature.extractor.impl;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.ml.dataset.feature.extractor.ExtractionUtils;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
 
@@ -31,7 +33,8 @@ import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
  *
  * @param <K> Type of key.
  */
-public class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVectorizer<K, BinaryObject> {
+public final class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVectorizer<K, BinaryObject>
+    implements DeployableObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 2152161240934492838L;
 
@@ -136,5 +139,10 @@ public class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVector
 
             return value;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.emptyList();
     }
 }

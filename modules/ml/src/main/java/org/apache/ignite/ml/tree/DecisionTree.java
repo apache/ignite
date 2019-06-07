@@ -105,12 +105,13 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> extends SingleL
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> DecisionTreeNode fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
                                                  Preprocessor<K, V> preprocessor) {
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(preprocessor, usingIdx)
+            new DecisionTreeDataBuilder<>(preprocessor, usingIdx),
+            learningEnvironment()
         )) {
             return fit(dataset);
         }

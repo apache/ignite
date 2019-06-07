@@ -74,7 +74,7 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
                 }
                 return new EncoderPartitionData()
                     .withCategoryFrequencies(categoryFrequencies);
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
             Map<String, Integer>[] encodingValues = calculateEncodingValuesByFrequencies(dataset);
 
