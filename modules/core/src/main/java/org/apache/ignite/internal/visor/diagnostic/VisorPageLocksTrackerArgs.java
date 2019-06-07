@@ -35,17 +35,29 @@ public class VisorPageLocksTrackerArgs extends IgniteDataTransferObject {
 
     /** */
     private String op;
+
     /** */
     private String type;
+
     /** */
     private String filePath;
+
     /** */
     @Nullable private Set<String> consistentIds;
 
+    /**
+     * Default constructor.
+     */
     public VisorPageLocksTrackerArgs() {
 
     }
 
+    /**
+     * @param op Operation.
+     * @param type Type.
+     * @param filePath File path.
+     * @param consistentIds Consistend id.
+     */
     public VisorPageLocksTrackerArgs(String op, String type, String filePath, Set<String> consistentIds) {
         this.op = op;
         this.type = type;

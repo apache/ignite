@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagel
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.DumpProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockDump;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
 
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.LOCK_IDX_MASK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.LOCK_OP_MASK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker.OP_OFFSET;
@@ -35,18 +34,25 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
 public class PageLockLogSnapshot implements PageLockDump {
     /** Page lock log name. */
     public final String name;
+
     /** Creation time. */
     public final long time;
+
     /** Head position. */
     public final int headIdx;
+
     /** List of log entries. */
     public final List<LogEntry> locklog;
+
     /** */
     public final PageMetaInfoStore log;
+
     /** Next operation. */
     public final int nextOp;
+
     /** Next data structure. */
     public final int nextOpStructureId;
+
     /** Next page id. */
     public final long nextOpPageId;
 
@@ -107,12 +113,16 @@ public class PageLockLogSnapshot implements PageLockDump {
     public static class LogEntry {
         /** */
         public final long pageId;
+
         /** */
         public final int structureId;
+
         /** */
         public final int operation;
+
         /** */
         public final int holdedLocks;
+
         /** */
         public LogEntry(long pageId, int structureId, int operation, int holdedLock) {
             this.pageId = pageId;

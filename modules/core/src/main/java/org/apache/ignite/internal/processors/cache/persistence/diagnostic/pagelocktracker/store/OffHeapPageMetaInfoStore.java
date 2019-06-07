@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.store;
 
-import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerManager.MemoryCalculator;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageMetaInfoStore;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,38 +32,47 @@ public class OffHeapPageMetaInfoStore implements PageMetaInfoStore {
      *
      */
     private static final long OVERHEAD_SIZE = 16 + 4 + 4 + 8 + 8;
+
     /**
      *
      */
     private static final int PAGE_ID_OFFSET = 0;
+
     /**
      *
      */
     private static final int PAGE_HEADER_ADDRESS_OFFSET = 8;
+
     /**
      *
      */
     private static final int PAGE_ADDRESS_OFFSET = 16;
+
     /**
      *
      */
     private static final int PAGE_META_OFFSET = 24;
+
     /**
      *
      */
     private static final int ITEM_SIZE = 4;
+
     /**
      *
      */
     private final int size;
+
     /**
      *
      */
     private final int capacity;
+
     /**
      *
      */
     private final long ptr;
+
     /**
      *
      */
