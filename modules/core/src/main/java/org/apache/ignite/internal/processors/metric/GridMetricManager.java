@@ -128,7 +128,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
      * @param igfsExecSvc IGFS executor service.
-     * @param dataStreamExecSvc data stream executor service.
+     * @param dataStreamExecSvc Data stream executor service.
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
      * @param idxExecSvc Indexing executor service.
@@ -136,7 +136,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param qryExecSvc Query executor service.
      * @param schemaExecSvc Schema executor service.
      * @param customExecSvcs Custom named executors.
-     * @param workersRegistry Worker registry.
      */
     public void registerThreadPools(
         ExecutorService utilityCachePool,
@@ -190,9 +189,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /**
      * Creates a MetricSet for an executor.
      *
-     * @param name name of the bean to register
-     * @param exec executor to register a bean for
-     * @throws IgniteCheckedException if registration fails.
+     * @param name Name of the bean to register.
+     * @param execSvc Executor to register a bean for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
         MetricRegistry mset = mreg.withPrefix(THREAD_POOLS, name);

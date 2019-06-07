@@ -34,7 +34,6 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -90,7 +89,6 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     /** */
     public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
         /**
-         * @param set Metric set.
          * @param ctx Context.
          */
         public MetricSetLocalSystemView(GridKernalContext ctx) {

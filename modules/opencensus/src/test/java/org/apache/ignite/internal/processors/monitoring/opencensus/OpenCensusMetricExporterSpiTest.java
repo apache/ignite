@@ -51,10 +51,6 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        PrometheusStatsCollector.createAndRegister();
-
-        HTTPServer server = new HTTPServer(HOST, PORT, true);
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
@@ -78,6 +74,10 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         cleanPersistenceDir();
+
+        PrometheusStatsCollector.createAndRegister();
+
+        HTTPServer server = new HTTPServer(HOST, PORT, true);
 
         ignite = startGrid(0);
     }

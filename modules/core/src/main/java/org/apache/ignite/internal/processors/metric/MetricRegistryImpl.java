@@ -52,17 +52,17 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
  */
 public class MetricRegistryImpl implements MetricRegistry {
     /** Registered metrics. */
-    private ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
 
     /** Logger. */
-    @Nullable private IgniteLogger log;
+    @Nullable private final IgniteLogger log;
 
     /** Metric set creation listeners. */
     private final List<Consumer<Metric>> metricCreationLsnrs = new CopyOnWriteArrayList<>();
 
-    /** */
+    /** For test usage only. */
     public MetricRegistryImpl() {
-        // No-op.
+        this.log = null;
     }
 
     /**

@@ -101,7 +101,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     private TagValue consistenIdValue;
 
     /**
-     * Tags that will be exported with each measure
+     * Tags that will be exported with each measure.
      *
      * @see #sendInstanceName
      * @see #sendNodeId
@@ -115,11 +115,11 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     private Map<String, Measure> measures = new HashMap<>();
 
     /** */
-    private static Function<Metric, Measure> CREATE_LONG = m ->
+    private static final Function<Metric, Measure> CREATE_LONG = m ->
         MeasureLong.create(m.name(), m.description(), "");
 
     /** */
-    private static Function<Metric, Measure> CREATE_DOUBLE = m ->
+    private static final Function<Metric, Measure> CREATE_DOUBLE = m ->
         MeasureDouble.create(m.name(), m.description(), "");
 
     /** {@inheritDoc} */
@@ -271,7 +271,7 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /**
      * If {@code true} then {@link #CONSISTENT_ID_TAG} will be added to each exported measure.
      *
-     * @param consistentId Flag value.
+     * @param sendConsistentId Flag value.
      */
     public void setSendConsistentId(boolean sendConsistentId) {
         this.sendConsistentId = sendConsistentId;

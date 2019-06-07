@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.SEPARATOR;
 import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
 
 /**
@@ -72,7 +73,7 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
 
     /** {@inheritDoc} */
     @Override public Collection<Metric> getMetrics() {
-        String p = this.prefix + '.';
+        String p = this.prefix + SEPARATOR;
 
         return F.view(reg.getMetrics(), m -> m.name().startsWith(p));
     }

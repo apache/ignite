@@ -22,14 +22,9 @@ import java.util.Iterator;
 import java.util.Map;
 import javax.management.Attribute;
 import javax.management.AttributeList;
-import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
-import javax.management.InvalidAttributeValueException;
 import javax.management.MBeanAttributeInfo;
-import javax.management.MBeanException;
 import javax.management.MBeanInfo;
-import javax.management.ReflectionException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.metric.MetricNameUtils.MetricName;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
@@ -45,21 +40,16 @@ import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse
  * MBean for exporting values of metric set.
  */
 public class MetricSetMBean implements DynamicMBean {
-    /**
-     * Metric set name.
-     */
-    private String msetName;
+    /** Metric set name. */
+    private final String msetName;
 
-    /**
-     * Metric set.
-     */
-    private Map<String, Metric> mset = new HashMap<>();
+    /** Metric set. */
+    private final Map<String, Metric> mset = new HashMap<>();
 
     /**
      * @param msetName Metrics set name.
      * @param mreg Metrics registry.
      * @param first First set entry.
-     * @param m
      */
     public MetricSetMBean(String msetName, ReadOnlyMetricRegistry mreg, Metric first) {
         this.msetName = msetName;
@@ -79,8 +69,7 @@ public class MetricSetMBean implements DynamicMBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Object getAttribute(String attribute)
-        throws AttributeNotFoundException, MBeanException, ReflectionException {
+    @Override public Object getAttribute(String attribute) {
         if (attribute.equals("MBeanInfo"))
             return getMBeanInfo();
 
@@ -154,23 +143,17 @@ public class MetricSetMBean implements DynamicMBean {
     @Override public AttributeList getAttributes(String[] attributes) {
         AttributeList list = new AttributeList();
 
-        try {
-            for (String attribute : attributes) {
-                Object val = getAttribute(attribute);
+        for (String attribute : attributes) {
+            Object val = getAttribute(attribute);
 
-                list.add(val);
-            }
-        }
-        catch (ReflectionException | MBeanException | AttributeNotFoundException e) {
-            throw new IgniteException(e);
+            list.add(val);
         }
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void setAttribute(Attribute attribute)
-        throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
+    @Override public void setAttribute(Attribute attribute) {
         throw new UnsupportedOperationException("setAttribute not supported.");
     }
 
@@ -180,16 +163,9 @@ public class MetricSetMBean implements DynamicMBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Object invoke(String actionName, Object[] params, String[] signature)
-        throws MBeanException, ReflectionException {
-        if (actionName.equals("getAttribute")) {
-            try {
-                return getAttribute((String)params[0]);
-            }
-            catch (AttributeNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
+    @Override public Object invoke(String actionName, Object[] params, String[] signature) {
+        if (actionName.equals("getAttribute"))
+            return getAttribute((String)params[0]);
 
         throw new UnsupportedOperationException("invoke not supported.");
     }
