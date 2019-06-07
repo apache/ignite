@@ -579,17 +579,24 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     }
                 }
 
-
-                if (pageId == 0)
-                    pageId = takeReusedPage(row, statHolder);
+                if (pageId == 0L) { // Handle reuse bucket.
+                    if (reuseList == this)
+                        pageId = takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder);
+                    else
+                        pageId = reuseList.takeRecycledPage();
+                }
 
                 AbstractDataPageIO initIo = null;
 
-                if (pageId == 0) {
+                if (pageId == 0L) {
                     pageId = allocateDataPage(row.partition());
 
                     initIo = row.ioVersions().latest();
                 }
+                else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
+                    pageId = initReusedPage(row, pageId, statHolder);
+                else // Page is taken from free space bucket. For in-memory mode partition must be changed.
+                    pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
                 // Acquire and lock page.
                 long page = acquirePage(pageId, statHolder);
@@ -619,7 +626,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                                 written = writeWholePages(row, statHolder);
 
                             if (written != COMPLETE) {
-                                written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, this,
+                                written = PageHandler.writePage(pageMem, grpId, pageId, page, pageAddr, lockLsnr,
                                     writeRowKeepPage, initIo, wal, null, row, written, statHolder);
 
                                 initIo = null;
@@ -675,15 +682,20 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         int written = 0;
 
         do {
-            long pageId = takeReusedPage(row, statHolder);
+            long pageId = reuseList == this ? takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder) :
+                    reuseList.takeRecycledPage();
 
             AbstractDataPageIO initIo = null;
 
-            if (pageId == 0) {
+            if (pageId == 0L) {
                 pageId = allocateDataPage(row.partition());
 
                 initIo = row.ioVersions().latest();
             }
+            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
+                pageId = initReusedPage(row, pageId, statHolder);
+            else // Page is taken from free space bucket. For in-memory mode partition must be changed.
+                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
             written = write(pageId, writeRow, initIo, row, written, FAIL_I, statHolder);
 
@@ -694,28 +706,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         while (row.size() - written >= MIN_SIZE_FOR_DATA_PAGE);
 
         return written;
-    }
-
-    /**
-     * Get a page from reuse bucket of the free list.
-     *
-     * @param row Row.
-     * @param statHolder Statistics holder to track IO operations.
-     * @return Page ID or {@code 0} if none available.
-     * @throws IgniteCheckedException If failed.
-     */
-    private long takeReusedPage(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        long pageId = reuseList == this ?
-            takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder) : reuseList.takeRecycledPage();
-
-        if (pageId != 0L) {
-            if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
-                pageId = initReusedPage(row, pageId, statHolder);
-            else
-                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
-        }
-
-        return pageId;
     }
 
     /**
