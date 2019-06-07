@@ -29,16 +29,22 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
 public class PageLockStackSnapshot implements PageLockDump {
     /** */
     public final String name;
+
     /** */
     public final long time;
+
     /** */
     public final int headIdx;
+
     /** */
     public final PageMetaInfoStore pageIdLocksStack;
+
     /** */
     public final int nextOp;
+
     /** */
     public final int nextOpStructureId;
+
     /** */
     public final long nextOpPageId;
 

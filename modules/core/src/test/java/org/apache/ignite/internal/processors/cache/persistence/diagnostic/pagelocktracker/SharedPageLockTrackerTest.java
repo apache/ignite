@@ -502,14 +502,17 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
          *
          */
         final int structureId;
+
         /**
          *
          */
         final long pageId;
+
         /**
          *
          */
         final long page;
+
         /**
          *
          */
@@ -530,6 +533,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
             this.pageAddr = pageAddr;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "PageMeta{" +
                 "structureId=" + structureId +
