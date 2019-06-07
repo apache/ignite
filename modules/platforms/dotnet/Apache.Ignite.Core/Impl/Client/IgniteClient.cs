@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Client
     internal class IgniteClient : IIgniteInternal, IIgniteClient
     {
         /** Socket. */
-        private readonly IClientSocket _socket;
+        private readonly ClientFailoverSocket _socket;
 
         /** Marshaller. */
         private readonly Marshaller _marsh;
@@ -63,12 +63,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
             _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _socket = new ClientFailoverSocket(_configuration);
-
             _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
                 Ignite = this
             };
+
+            _socket = new ClientFailoverSocket(_configuration, _marsh);
 
             _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
 
@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket.
         /// </summary>
-        public IClientSocket Socket
+        public ClientFailoverSocket Socket
         {
             get { return _socket; }
         }

@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(ClientOp.CacheGet, w => w.WriteObject(key), UnmarshalNotNull<TV>);
+            return DoOutInOpAffinity(ClientOp.CacheGet, key, UnmarshalNotNull<TV>);
         }
 
         /** <inheritDoc /> */
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpAsync(ClientOp.CacheGet, w => w.WriteObject(key), UnmarshalNotNull<TV>);
+            return DoOutInOpAffinityAsync(ClientOp.CacheGet, key, w => w.WriteObjectDetached(key), UnmarshalNotNull<TV>);
         }
 
         /** <inheritDoc /> */
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            var res = DoOutInOp(ClientOp.CacheGet, w => w.WriteObject(key), UnmarshalCacheResult<TV>);
+            var res = DoOutInOpAffinity(ClientOp.CacheGet, key, UnmarshalCacheResult<TV>);
 
             value = res.Value;
 
@@ -123,7 +123,8 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpAsync(ClientOp.CacheGet, w => w.WriteObject(key), UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinityAsync(ClientOp.CacheGet, key, w => w.WriteObjectDetached(key),
+                UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -148,7 +149,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            DoOutOp(ClientOp.CachePut, w => WriteKeyVal(w, key, val));
+            DoOutOpAffinity(ClientOp.CachePut, key, val);
         }
 
         /** <inheritDoc /> */
@@ -157,7 +158,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutOpAsync(ClientOp.CachePut, w => WriteKeyVal(w, key, val));
+            return DoOutOpAffinityAsync(ClientOp.CachePut, key, w => WriteKeyVal(w, key, val));
         }
 
         /** <inheritDoc /> */
@@ -165,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(ClientOp.CacheContainsKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
+            return DoOutInOpAffinity(ClientOp.CacheContainsKey, key, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -173,7 +174,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpAsync(ClientOp.CacheContainsKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
+            return DoOutInOpAffinityAsync(ClientOp.CacheContainsKey, key, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -242,7 +243,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp(ClientOp.CacheGetAndPut, w => WriteKeyVal(w, key, val), UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinity(ClientOp.CacheGetAndPut, key, val, UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -251,7 +252,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpAsync(ClientOp.CacheGetAndPut, w => WriteKeyVal(w, key, val), UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinityAsync(ClientOp.CacheGetAndPut, key, val, UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -260,7 +261,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp(ClientOp.CacheGetAndReplace, w => WriteKeyVal(w, key, val), UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinity(ClientOp.CacheGetAndReplace, key, val, UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -269,7 +270,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpAsync(ClientOp.CacheGetAndReplace, w => WriteKeyVal(w, key, val), UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinityAsync(ClientOp.CacheGetAndReplace, key, val, UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -277,8 +278,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(ClientOp.CacheGetAndRemove, w => w.WriteObjectDetached(key),
-                UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinity(ClientOp.CacheGetAndRemove, key, UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -286,8 +286,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpAsync(ClientOp.CacheGetAndRemove, w => w.WriteObjectDetached(key),
-                UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinityAsync(ClientOp.CacheGetAndRemove, key, UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -296,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp(ClientOp.CachePutIfAbsent, w => WriteKeyVal(w, key, val), s => s.ReadBool());
+            return DoOutInOpAffinity(ClientOp.CachePutIfAbsent, key, val, s => s.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -305,7 +304,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpAsync(ClientOp.CachePutIfAbsent, w => WriteKeyVal(w, key, val), s => s.ReadBool());
+            return DoOutInOpAffinityAsync(ClientOp.CachePutIfAbsent, key, val, s => s.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -314,8 +313,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp(ClientOp.CacheGetAndPutIfAbsent, w => WriteKeyVal(w, key, val),
-                UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinity(ClientOp.CacheGetAndPutIfAbsent, key, val, UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -324,8 +322,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpAsync(ClientOp.CacheGetAndPutIfAbsent, w => WriteKeyVal(w, key, val),
-                UnmarshalCacheResult<TV>);
+            return DoOutInOpAffinityAsync(ClientOp.CacheGetAndPutIfAbsent, key, val, UnmarshalCacheResult<TV>);
         }
 
         /** <inheritDoc /> */
@@ -334,7 +331,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp(ClientOp.CacheReplace, w => WriteKeyVal(w, key, val), s => s.ReadBool());
+            return DoOutInOpAffinity(ClientOp.CacheReplace, key, val, s => s.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -343,7 +340,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpAsync(ClientOp.CacheReplace, w => WriteKeyVal(w, key, val), s => s.ReadBool());
+            return DoOutInOpAffinityAsync(ClientOp.CacheReplace, key, val, s => s.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -353,7 +350,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(oldVal, "oldVal");
             IgniteArgumentCheck.NotNull(newVal, "newVal");
 
-            return DoOutInOp(ClientOp.CacheReplaceIfEquals, w =>
+            return DoOutInOpAffinity(ClientOp.CacheReplaceIfEquals, key, w =>
             {
                 w.WriteObjectDetached(key);
                 w.WriteObjectDetached(oldVal);
@@ -368,7 +365,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(oldVal, "oldVal");
             IgniteArgumentCheck.NotNull(newVal, "newVal");
 
-            return DoOutInOpAsync(ClientOp.CacheReplaceIfEquals, w =>
+            return DoOutInOpAffinityAsync(ClientOp.CacheReplaceIfEquals, key, w =>
             {
                 w.WriteObjectDetached(key);
                 w.WriteObjectDetached(oldVal);
@@ -409,7 +406,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            DoOutOp(ClientOp.CacheClearKey, w => w.WriteObjectDetached(key));
+            DoOutOpAffinity(ClientOp.CacheClearKey, key);
         }
 
         /** <inheritDoc /> */
@@ -417,7 +414,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutOpAsync(ClientOp.CacheClearKey, w => w.WriteObjectDetached(key));
+            return DoOutOpAffinityAsync(ClientOp.CacheClearKey, key, w => w.WriteObjectDetached(key));
         }
 
         /** <inheritDoc /> */
@@ -441,7 +438,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(ClientOp.CacheRemoveKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
+            return DoOutInOpAffinity(ClientOp.CacheRemoveKey, key, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -449,7 +446,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpAsync(ClientOp.CacheRemoveKey, w => w.WriteObjectDetached(key), r => r.ReadBool());
+            return DoOutInOpAffinityAsync(ClientOp.CacheRemoveKey, key, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -458,7 +455,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOp(ClientOp.CacheRemoveIfEquals, w => WriteKeyVal(w, key, val), r => r.ReadBool());
+            return DoOutInOpAffinity(ClientOp.CacheRemoveIfEquals, key, val, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -467,7 +464,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             IgniteArgumentCheck.NotNull(key, "key");
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpAsync(ClientOp.CacheRemoveIfEquals, w => WriteKeyVal(w, key, val), r => r.ReadBool());
+            return DoOutInOpAffinityAsync(ClientOp.CacheRemoveIfEquals, key, val, r => r.ReadBool());
         }
 
         /** <inheritDoc /> */
@@ -561,11 +558,35 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /// <summary>
-        /// Does the out op.
+        /// Does the out op with affinity awareness.
+        /// </summary>
+        private void DoOutOpAffinity(ClientOp opId, TK key)
+        {
+            DoOutInOpAffinity<object>(opId, key, null);
+        }
+
+        /// <summary>
+        /// Does the out op with affinity awareness.
+        /// </summary>
+        private void DoOutOpAffinity(ClientOp opId, TK key, TV val)
+        {
+            DoOutInOpAffinity<object>(opId, key, val, null);
+        }
+
+        /// <summary>
+        /// Does the out op with affinity awareness.
         /// </summary>
         private Task DoOutOpAsync(ClientOp opId, Action<BinaryWriter> writeAction = null)
         {
             return DoOutInOpAsync<object>(opId, writeAction, null);
+        }
+
+        /// <summary>
+        /// Does the out op with affinity awareness.
+        /// </summary>
+        private Task DoOutOpAffinityAsync(ClientOp opId, TK key, Action<BinaryWriter> writeAction = null)
+        {
+            return DoOutInOpAffinityAsync<object>(opId, key, writeAction, null);
         }
 
         /// <summary>
@@ -579,6 +600,53 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         }
 
         /// <summary>
+        /// Does the out in op with affinity awareness.
+        /// </summary>
+        private T DoOutInOpAffinity<T>(ClientOp opId, TK key, Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinity(
+                opId,
+                stream => WriteRequest(w => w.WriteObjectDetached(key), stream),
+                readFunc,
+                _id,
+                key,
+                HandleError<T>);
+        }
+
+        /// <summary>
+        /// Does the out in op with affinity awareness.
+        /// </summary>
+        private T DoOutInOpAffinity<T>(ClientOp opId, TK key, Action<BinaryWriter> writeAction,
+            Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinity(
+                opId,
+                stream => WriteRequest(writeAction, stream),
+                readFunc,
+                _id,
+                key,
+                HandleError<T>);
+        }
+
+        /// <summary>
+        /// Does the out in op with affinity awareness.
+        /// </summary>
+        private T DoOutInOpAffinity<T>(ClientOp opId, TK key, TV val, Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinity(
+                opId,
+                stream => WriteRequest(w =>
+                {
+                    w.WriteObjectDetached(key);
+                    w.WriteObjectDetached(val);
+                }, stream),
+                readFunc,
+                _id,
+                key,
+                HandleError<T>);
+        }
+
+        /// <summary>
         /// Does the out in op.
         /// </summary>
         private Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<BinaryWriter> writeAction,
@@ -586,6 +654,44 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         {
             return _ignite.Socket.DoOutInOpAsync(opId, stream => WriteRequest(writeAction, stream),
                 readFunc, HandleError<T>);
+        }
+
+        /// <summary>
+        /// Does the out in op with affinity awareness.
+        /// </summary>
+        private Task<T> DoOutInOpAffinityAsync<T>(ClientOp opId, TK key, Action<BinaryWriter> writeAction,
+            Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinityAsync(opId, stream => WriteRequest(writeAction, stream),
+                readFunc, _id, key, HandleError<T>);
+        }
+
+        /// <summary>
+        /// Does the out in op with affinity awareness.
+        /// </summary>
+        private Task<T> DoOutInOpAffinityAsync<T>(ClientOp opId, TK key, TV val, Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinityAsync(
+                opId,
+                stream => WriteRequest(w =>
+                {
+                    w.WriteObjectDetached(key);
+                    w.WriteObjectDetached(val);
+                }, stream),
+                readFunc,
+                _id,
+                key,
+                HandleError<T>);
+        }
+
+        /// <summary>
+        /// Does the out in op with affinity awareness.
+        /// </summary>
+        private Task<T> DoOutInOpAffinityAsync<T>(ClientOp opId, TK key, Func<IBinaryStream, T> readFunc)
+        {
+            return _ignite.Socket.DoOutInOpAffinityAsync(opId,
+                stream => WriteRequest(w => w.WriteObjectDetached(key), stream),
+                readFunc, _id, key, HandleError<T>);
         }
 
         /// <summary>
