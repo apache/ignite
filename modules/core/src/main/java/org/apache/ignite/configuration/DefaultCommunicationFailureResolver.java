@@ -86,9 +86,15 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
             boolean fullyConnected = graph.checkFullyConnected(nodesSet);
 
             if (fullyConnected && nodeCnt == srvNodes.size()) {
-                U.warn(log, "All alive nodes are fully connected, this should be resolved automatically.");
+                Set<ClusterNode> clients = findConnectedClients(ctx, nodesSet);
 
-                return null;
+                if (clients.size() + nodeCnt == ctx.topologySnapshot().size()) {
+                    U.warn(log, "All alive nodes are fully connected, this should be resolved automatically.");
+
+                    return null;
+                }
+                else
+                    return new ClusterPart(nodesSet, clients);
             }
 
             if (log.isInfoEnabled())

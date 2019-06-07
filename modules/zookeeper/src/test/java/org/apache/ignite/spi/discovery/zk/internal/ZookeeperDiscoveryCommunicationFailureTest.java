@@ -537,6 +537,46 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
     }
 
     /**
+     * Test verifies scenario when communication connectivity is broken between one client node
+     * and the rest of the cluster.
+     *
+     * In that case client node should be shut down by the default {@link CommunicationFailureResolver}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDefaultCommunicationFailureResolver6() throws Exception {
+        testCommSpi = true;
+        sesTimeout = 5000;
+
+        startGrids(2);
+
+        helper.clientMode(true);
+
+        startGrid(2);
+        startGrid(3);
+
+        helper.clientMode(false);
+
+        awaitPartitionMapExchange();
+
+        UUID isolatedClientId = ignite(3).localNode().id();
+
+        ZkTestCommunicationSpi.testSpi(ignite(0)).initCheckResult(4, 0, 1, 2);
+        ZkTestCommunicationSpi.testSpi(ignite(1)).initCheckResult(4, 0, 1, 2);
+        ZkTestCommunicationSpi.testSpi(ignite(2)).initCheckResult(4, 0, 1, 2);
+        ZkTestCommunicationSpi.testSpi(ignite(3)).initCheckResult(4, 3);
+
+        ZookeeperDiscoverySpi spi = spi(ignite(0));
+
+        spi.resolveCommunicationFailure(spi.getNode(ignite(0).cluster().localNode().id()), new Exception("test"));
+
+        waitForTopology(3);
+
+        assertNull(ignite(0).cluster().node(isolatedClientId));
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test

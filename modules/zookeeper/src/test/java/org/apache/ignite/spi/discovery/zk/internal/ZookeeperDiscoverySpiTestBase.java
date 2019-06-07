@@ -744,10 +744,12 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
          * @param setBitIdxs Bits indexes to set in check result.
          */
         void initCheckResult(int nodes, Integer... setBitIdxs) {
-            checkRes = new BitSet(nodes);
+            BitSet res = new BitSet(nodes);
 
             for (Integer bitIdx : setBitIdxs)
-                checkRes.set(bitIdx);
+                res.set(bitIdx);
+
+            checkRes = res;
         }
 
         /** {@inheritDoc} */
