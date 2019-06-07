@@ -17,6 +17,7 @@
 #include "ignite/impl/ignite_impl.h"
 
 using namespace ignite::common::concurrent;
+using namespace ignite::cluster;
 using namespace ignite::jni::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
@@ -57,11 +58,21 @@ namespace ignite
             return env.Get()->GetBinding();
         }
 
+        IgniteImpl::SP_IgniteClusterImpl IgniteImpl::GetCluster()
+        {
+            return IgniteImpl::SP_IgniteClusterImpl(new cluster::IgniteClusterImpl(this->GetProjection()));
+        }
+
         IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute()
         {
             cluster::SP_ClusterGroupImpl serversCluster = prjImpl.Get().Get()->ForServers();
 
             return serversCluster.Get()->GetCompute();
+        }
+
+        IgniteImpl::SP_ComputeImpl IgniteImpl::GetCompute(ClusterGroup grp)
+        {
+            return this->GetProjection().Get()->GetCompute(grp);
         }
 
         transactions::TransactionsImpl* IgniteImpl::InternalGetTransactions()

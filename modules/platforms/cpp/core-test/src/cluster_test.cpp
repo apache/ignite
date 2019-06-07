@@ -20,7 +20,9 @@
 #include <ignite/test_utils.h>
 
 using namespace ignite;
+using namespace ignite::common;
 using namespace ignite::common::concurrent;
+using namespace ignite::cluster;
 
 using namespace boost::unit_test;
 
@@ -84,27 +86,72 @@ struct ClusterTestSuiteFixtureIsolated
 
 BOOST_FIXTURE_TEST_SUITE(ClusterTestSuite, ClusterTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(IgniteImplProjection)
+BOOST_AUTO_TEST_CASE(IgniteGetCluster)
 {
-    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(node);
+    IgniteCluster cluster = node.GetCluster();
 
-    BOOST_REQUIRE(impl != 0);
-    BOOST_REQUIRE(impl->GetProjection().IsValid());
+    BOOST_REQUIRE(cluster.IsActive());
 }
 
-BOOST_AUTO_TEST_CASE(IgniteImplForServers)
+BOOST_AUTO_TEST_CASE(IgniteGetNodes)
 {
-    impl::IgniteImpl* impl = impl::IgniteImpl::GetFromProxy(node);
+    IgniteCluster cluster = node.GetCluster();
 
-    BOOST_REQUIRE(impl != 0);
+    BOOST_REQUIRE(cluster.IsActive());
 
-    SharedPointer<impl::cluster::ClusterGroupImpl> clusterGroup = impl->GetProjection();
+    ClusterGroup group = cluster.AsClusterGroup();
 
-    BOOST_REQUIRE(clusterGroup.IsValid());
+    std::vector<ClusterNode> nodes = group.GetNodes();
 
-    IgniteError err;
+    BOOST_REQUIRE(nodes.size() == 1);
+}
 
-    BOOST_REQUIRE(clusterGroup.Get()->ForServers().IsValid());
+BOOST_AUTO_TEST_CASE(IgniteForAttribute)
+{
+    IgniteCluster cluster = node.GetCluster();
+
+    BOOST_REQUIRE(cluster.IsActive());
+
+    ClusterGroup group1 = cluster.AsClusterGroup().ForAttribute("TestAttribute", "Value");
+    ClusterGroup group2 = cluster.AsClusterGroup().ForAttribute("NotExistAttribute", "Value");
+
+    BOOST_REQUIRE(group1.GetNodes().size() == 1);
+    BOOST_REQUIRE(group2.GetNodes().size() == 0);
+}
+
+BOOST_AUTO_TEST_CASE(IgniteForDataNodes)
+{
+    IgniteCluster cluster = node.GetCluster();
+
+    BOOST_REQUIRE(cluster.IsActive());
+
+    ClusterGroup group1 = cluster.AsClusterGroup().ForDataNodes("cache1");
+    ClusterGroup group2 = cluster.AsClusterGroup().ForDataNodes("notExist");
+
+    BOOST_REQUIRE(group1.GetNodes().size() == 1);
+    BOOST_REQUIRE(group2.GetNodes().size() == 0);
+}
+
+BOOST_AUTO_TEST_CASE(IgniteForServers)
+{
+    IgniteCluster cluster = node.GetCluster();
+
+    BOOST_REQUIRE(cluster.IsActive());
+
+    ClusterGroup group = cluster.AsClusterGroup().ForServers();
+
+    BOOST_REQUIRE(group.GetNodes().size() == 1);
+}
+
+BOOST_AUTO_TEST_CASE(IgniteForCpp)
+{
+    IgniteCluster cluster = node.GetCluster();
+
+    BOOST_REQUIRE(cluster.IsActive());
+
+    ClusterGroup group = cluster.AsClusterGroup().ForCpp();
+
+    BOOST_REQUIRE(group.GetNodes().size() == 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

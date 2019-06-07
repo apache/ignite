@@ -154,6 +154,16 @@ namespace ignite
                 jobject InStreamOutObject(int32_t opType, InteropMemory& outInMem, IgniteError& err);
 
                 /**
+                 * In stream out stream operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param inMem Input memory.
+                 * @param outMem Output memory.
+                 * @param err Error.
+                 */
+                 void InStreamOutStream(int32_t opType, InteropMemory& inMem, InteropMemory& outMem, IgniteError& err);
+
+                /**
                 * Internal out-in operation.
                 *
                 * @param opType Operation type.

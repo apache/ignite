@@ -97,6 +97,10 @@
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="ATOMIC"/>
                 </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache1"/>
+                </bean>
             </list>
         </property>
 
@@ -120,6 +124,13 @@
             <bean class="org.apache.ignite.configuration.TransactionConfiguration">
                 <property name="txSerializableEnabled" value="true"/>
             </bean>
+        </property>
+
+        <!-- User attributes to allow to manipulate nodes in the cluster. -->
+        <property name="userAttributes">
+            <map>
+                <entry key="TestAttribute" value="Value"/>
+            </map>
         </property>
     </bean>
 

@@ -208,6 +208,9 @@
     <ClInclude Include="..\..\include\ignite\cache\query\query_sql.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_sql_fields.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query_text.h" />
+    <ClInclude Include="..\..\include\ignite\cluster\cluster_group.h" />
+    <ClInclude Include="..\..\include\ignite\cluster\cluster_node.h" />
+    <ClInclude Include="..\..\include\ignite\cluster\ignite_cluster.h" />
     <ClInclude Include="..\..\include\ignite\compute\compute.h" />
     <ClInclude Include="..\..\include\ignite\compute\compute_func.h" />
     <ClInclude Include="..\..\include\ignite\ignite_binding_context.h" />
@@ -227,6 +230,8 @@
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_node_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\cluster\ignite_cluster_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\cancelable_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\compute_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\compute\compute_job_holder.h" />
@@ -252,6 +257,9 @@
     <ClInclude Include="..\..\include\ignite\transactions\transaction_metrics.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\cluster\cluster_group.cpp" />
+    <ClCompile Include="..\..\src\cluster\cluster_node.cpp" />
+    <ClCompile Include="..\..\src\cluster\ignite_cluster.cpp" />
     <ClCompile Include="..\..\src\ignite.cpp" />
     <ClCompile Include="..\..\src\ignition.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp" />
@@ -260,6 +268,8 @@
     <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cluster\cluster_group_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\cluster\cluster_node_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\cluster\ignite_cluster_impl.cpp" />
     <ClCompile Include="..\..\src\impl\compute\cancelable_impl.cpp" />
     <ClCompile Include="..\..\src\impl\compute\compute_impl.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_binding_impl.cpp" />

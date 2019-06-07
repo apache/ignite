@@ -54,6 +54,9 @@ libignite_la_DEPENDENCIES = \
 libignite_la_SOURCES = \
 	src/ignite.cpp \
 	src/ignition.cpp \
+	src/cluster/cluster_group.cpp \
+	src/cluster/cluster_node.cpp \
+	src/cluster/ignite_cluster.cpp \
 	src/impl/ignite_environment.cpp \
 	src/impl/binary/binary_type_updater_impl.cpp \
 	src/impl/handle_registry.cpp \
@@ -66,6 +69,8 @@ libignite_la_SOURCES = \
 	src/impl/transactions/transaction_impl.cpp \
 	src/impl/transactions/transactions_impl.cpp \
 	src/impl/cluster/cluster_group_impl.cpp \
+	src/impl/cluster/cluster_node_impl.cpp \
+	src/impl/cluster/ignite_cluster_impl.cpp \
 	src/impl/compute/cancelable_impl.cpp \
 	src/impl/compute/compute_impl.cpp \
 	src/impl/ignite_impl.cpp \

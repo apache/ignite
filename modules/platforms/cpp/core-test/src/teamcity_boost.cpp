@@ -80,6 +80,7 @@ public:
     virtual void log_start(std::ostream&, boost::unit_test::counter_t);
     virtual void log_finish(std::ostream&);
     virtual void log_build_info(std::ostream&);
+    virtual void log_build_info(std::ostream&, bool);
 
     virtual void test_unit_start(std::ostream&, const boost::unit_test::test_unit&);
     virtual void test_unit_finish(std::ostream&, const boost::unit_test::test_unit&, unsigned long);
@@ -143,6 +144,9 @@ void TeamcityBoostLogFormatter::log_finish(std::ostream& /*out*/)
 {}
 
 void TeamcityBoostLogFormatter::log_build_info(std::ostream& /*out*/)
+{}
+
+void TeamcityBoostLogFormatter::log_build_info(std::ostream& /*out*/, bool)
 {}
 
 void TeamcityBoostLogFormatter::test_unit_start(std::ostream& /*out*/, const boost::unit_test::test_unit& tu)

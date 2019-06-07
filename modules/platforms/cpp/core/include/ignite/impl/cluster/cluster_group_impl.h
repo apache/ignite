@@ -22,9 +22,17 @@
 
 #include <ignite/impl/interop/interop_target.h>
 #include <ignite/impl/compute/compute_impl.h>
+#include <ignite/impl/cluster/cluster_node_impl.h>
 
 namespace ignite
 {
+    /* Forward declaration of interfaces. */
+    namespace cluster
+    {
+        class ClusterGroup;
+        class ClusterNode;
+    }
+
     namespace impl
     {
         namespace cluster
@@ -42,6 +50,7 @@ namespace ignite
             {
                 typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
                 typedef common::concurrent::SharedPointer<compute::ComputeImpl> SP_ComputeImpl;
+                typedef common::concurrent::SharedPointer<std::vector<ignite::cluster::ClusterNode> > SP_ClusterNodes;
             public:
                 /**
                  * Constructor used to create new instance.
@@ -57,18 +66,56 @@ namespace ignite
                 ~ClusterGroupImpl();
 
                 /**
-                 * Get server nodes cluster group implementation.
+                 * Get cluster group for nodes containing given name and value specified in user attributes.
                  *
-                 * @return Server nodes cluster group implementation.
+                 * @param name Name of the attribute.
+                 * @param val Optional attribute value to match.
+                 * @return Pointer to cluster group for nodes containing specified attribute.
+                 */
+                SP_ClusterGroupImpl ForAttribute(std::string name, std::string val);
+
+                /**
+                 * Get cluster group for all data nodes that have the cache with the specified name running.
+                 *
+                 * @param cacheName Cache name.
+                 * @return Pointer to cluster group over nodes that have the cache with the specified name running.
+                 */
+                SP_ClusterGroupImpl ForDataNodes(std::string cacheName);
+
+                /**
+                 * Creates a cluster group of nodes started in server mode.
+                 *
+                 * @return Pointer to cluster group of nodes started in server mode.
                  */
                 SP_ClusterGroupImpl ForServers();
 
                 /**
+                 * Creates a cluster group of cpp nodes.
+                 *
+                 * @return Pointer to cluster group of cpp nodes.
+                 */
+                SP_ClusterGroupImpl ForCpp();
+
+                /**
                  * Get compute instance over this cluster group.
                  *
-                 * @return Compute instance.
+                 * @return Pointer to compute instance.
                  */
                 SP_ComputeImpl GetCompute();
+
+                /**
+                 * Get compute instance over specified cluster group.
+                 *
+                 * @return Pointer to compute instance.
+                 */
+                SP_ComputeImpl GetCompute(ignite::cluster::ClusterGroup grp);
+
+                /**
+                 * Gets the vector of nodes in this cluster group.
+                 *
+                 * @return All nodes in this cluster group.
+                 */
+                std::vector<ignite::cluster::ClusterNode> GetNodes();
 
                 /**
                  * Check if the Ignite grid is active.
@@ -89,23 +136,48 @@ namespace ignite
                 IGNITE_NO_COPY_ASSIGNMENT(ClusterGroupImpl);
 
                 /**
-                 * Make cluster group implementation using java reference and
+                 * Cluster group over nodes that have specified cache running.
+                 *
+                 * @param cache name to include into cluster group.
+                 * @param operation id.
+                 * @return Pointer to cluster group.
+                 */
+                SP_ClusterGroupImpl ForCacheNodes(std::string name, int32_t op);
+
+                /**
+                 * Make cluster group using java reference and
                  * internal state of this cluster group.
                  *
                  * @param javaRef Java reference to cluster group to be created.
-                 * @return New cluster group implementation.
+                 * @return Pointer to cluster group.
                  */
                 SP_ClusterGroupImpl FromTarget(jobject javaRef);
 
                 /**
                  * Gets instance of compute internally.
                  *
-                 * @return Instance of compute.
+                 * @return Pointer to compute.
                  */
                 SP_ComputeImpl InternalGetCompute();
 
+                /**
+                 * Get container of refreshed cluster nodes over this cluster group.
+                 *
+                 * @return Instance of compute.
+                 */
+                std::vector<ignite::cluster::ClusterNode> RefreshNodes();
+
                 /** Compute for the cluster group. */
                 SP_ComputeImpl computeImpl;
+
+                /** Cluster nodes. */
+                SP_ClusterNodes nodes;
+
+                /** Cluster nodes lock. */
+                common::concurrent::CriticalSection nodesLock;
+
+                /** Cluster nodes top version. */
+                int64_t topVer;
             };
         }
     }

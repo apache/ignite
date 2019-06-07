@@ -96,6 +96,17 @@
     <ClInclude Include="..\..\include\ignite\test_utils.h" />
     <ClInclude Include="..\..\include\teamcity_messages.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\config\compute-client-32.xml" />
+    <Xml Include="..\..\config\compute-client-default.xml" />
+    <Xml Include="..\..\config\compute-client.xml" />
+    <Xml Include="..\..\config\compute-server0-32.xml" />
+    <Xml Include="..\..\config\compute-server0-default.xml" />
+    <Xml Include="..\..\config\compute-server0.xml" />
+    <Xml Include="..\..\config\compute-server1-32.xml" />
+    <Xml Include="..\..\config\compute-server1-default.xml" />
+    <Xml Include="..\..\config\compute-server1.xml" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{133A22DB-FD60-44B9-B5E3-6CBB3EA5ABF0}</ProjectGuid>
     <RootNamespace>coretest</RootNamespace>

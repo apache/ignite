@@ -243,6 +243,22 @@ namespace ignite
                 return 0;
             }
 
+            void InteropTarget::InStreamOutStream(int32_t opType,
+                InteropMemory& inMem, InteropMemory& outMem, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                int64_t inPtr = inMem.PointerLong();
+                int64_t outPtr = outMem.PointerLong();
+
+                if (inPtr && outPtr)
+                {
+                    env.Get()->Context()->TargetInStreamOutStream(javaRef, opType, inPtr, outPtr, &jniErr);
+
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                }
+            }
+
             int64_t InteropTarget::OutInOpLong(int32_t opType, int64_t val, IgniteError& err)
             {
                 JniErrorInfo jniErr;

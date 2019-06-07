@@ -194,4 +194,33 @@
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\config\compute-client.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-client-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-client-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server0.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server0-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server0-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server1.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server1-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server1-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+  </ItemGroup>
 </Project>
