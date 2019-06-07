@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -33,7 +32,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -80,42 +78,14 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
     /**
      * List of closures to execute transaction operation that prohibited in suspended state.
      */
-    private static final List<CI1Exc<Transaction>> SUSPENDED_TX_PROHIBITED_OPS = Arrays.asList(
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.suspend();
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.close();
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.commit();
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.commitAsync().get(FUT_TIMEOUT);
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.rollback();
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.rollbackAsync().get(FUT_TIMEOUT);
-            }
-        },
-        new CI1Exc<Transaction>() {
-            @Override public void applyx(Transaction tx) throws Exception {
-                tx.setRollbackOnly();
-            }
-        }
+    private static final List<CI1<Transaction>> SUSPENDED_TX_PROHIBITED_OPS = Arrays.asList(
+        Transaction::suspend,
+        Transaction::close,
+        Transaction::commit,
+        tx -> tx.commitAsync().get(FUT_TIMEOUT),
+        Transaction::rollback,
+        tx -> tx.rollbackAsync().get(FUT_TIMEOUT),
+        Transaction::setRollbackOnly
     );
 
     /** {@inheritDoc} */
@@ -205,21 +175,19 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
                     assertNull(cache.get(cntr.get()));
 
                     for (int i = 0; i < 10; i++) {
-                        GridTestUtils.runAsync(new Runnable() {
-                            @Override public void run() {
-                                assertEquals(SUSPENDED, tx.state());
+                        GridTestUtils.runAsync(() -> {
+                            assertEquals(SUSPENDED, tx.state());
 
-                                tx.resume();
+                            tx.resume();
 
-                                assertEquals(ACTIVE, tx.state());
+                            assertEquals(ACTIVE, tx.state());
 
-                                for (int j = -1; j > -10; j--)
-                                    cache.put(j, j);
+                            for (int j = -1; j > -10; j--)
+                                cache.put(j, j);
 
-                                cache.put(cntr.get(), cntr.getAndIncrement());
+                            cache.put(cntr.get(), cntr.getAndIncrement());
 
-                                tx.suspend();
-                            }
+                            tx.suspend();
                         }).get(FUT_TIMEOUT);
                     }
 
@@ -272,20 +240,18 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
                     tx.suspend();
 
                     for (int i = 0; i < 10; i++) {
-                        GridTestUtils.runAsync(new Runnable() {
-                            @Override public void run() {
-                                tx.resume();
+                        GridTestUtils.runAsync(() -> {
+                            tx.resume();
 
-                                assertEquals(ACTIVE, tx.state());
+                            assertEquals(ACTIVE, tx.state());
 
-                                cache.put(-1, -1);
-                                otherCache.put(-1, -1);
+                            cache.put(-1, -1);
+                            otherCache.put(-1, -1);
 
-                                cache.put(cntr.get(), cntr.get());
-                                otherCache.put(cntr.get(), cntr.getAndIncrement());
+                            cache.put(cntr.get(), cntr.get());
+                            otherCache.put(cntr.get(), cntr.getAndIncrement());
 
-                                tx.suspend();
-                            }
+                            tx.suspend();
                         }).get(FUT_TIMEOUT);
                     }
 
@@ -334,23 +300,17 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
                     assertEquals(SUSPENDED, tx.state());
 
-                    GridTestUtils.runAsync(new Runnable() {
-                        @Override public void run() {
-                            tx.resume();
+                    GridTestUtils.runAsync(() -> {
+                        tx.resume();
 
-                            assertEquals(ACTIVE, tx.state());
+                        assertEquals(ACTIVE, tx.state());
 
-                            cache.put(3, 3);
+                        cache.put(3, 3);
 
-                            tx.rollback();
-                        }
+                        tx.rollback();
                     }).get(FUT_TIMEOUT);
 
-                    assertTrue(GridTestUtils.waitForCondition(new PA() {
-                        @Override public boolean apply() {
-                            return tx.state() == ROLLED_BACK;
-                        }
-                    }, getTestTimeout()));
+                    assertTrue(GridTestUtils.waitForCondition(() -> tx.state() == ROLLED_BACK, getTestTimeout()));
 
                     assertEquals(ROLLED_BACK, tx.state());
 
@@ -386,8 +346,8 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
                         clientTxs.add(tx);
                     }
 
-                    GridTestUtils.runMultiThreaded(new CI1Exc<Integer>() {
-                        @Override public void applyx(Integer idx) throws Exception {
+                    GridTestUtils.runMultiThreaded(new CI1<Integer>() {
+                        @Override public void apply (Integer idx) {
                             Transaction tx = clientTxs.get(idx);
 
                             assertEquals(SUSPENDED, tx.state());
@@ -418,7 +378,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
     public void testOpsProhibitedOnSuspendedTxFromOtherThread() throws Exception {
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (final CI1Exc<Transaction> txOperation : SUSPENDED_TX_PROHIBITED_OPS) {
+                for (final CI1<Transaction> txOperation : SUSPENDED_TX_PROHIBITED_OPS) {
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         final Transaction tx = ignite.transactions().txStart(transactionConcurrency(), isolation);
 
@@ -426,11 +386,8 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
                         tx.suspend();
 
-                        multithreaded(new RunnableX() {
-                            @Override public void runx() throws Exception {
-                                GridTestUtils.assertThrowsWithCause(txOperation, tx, IgniteException.class);
-                            }
-                        }, 1);
+                        multithreaded(() -> GridTestUtils.assertThrowsWithCause(txOperation, tx, IgniteException.class),
+                            1);
 
                         tx.resume();
                         tx.close();
@@ -451,7 +408,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
     public void testOpsProhibitedOnSuspendedTx() throws Exception {
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                for (CI1Exc<Transaction> txOperation : SUSPENDED_TX_PROHIBITED_OPS) {
+                for (CI1<Transaction> txOperation : SUSPENDED_TX_PROHIBITED_OPS) {
                     for (TransactionIsolation isolation : TransactionIsolation.values()) {
                         Transaction tx = ignite.transactions().txStart(transactionConcurrency(), isolation);
 
@@ -507,19 +464,9 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
                     U.sleep(TX_TIMEOUT + 100L);
 
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            tx.resume();
+                    GridTestUtils.assertThrowsWithCause(tx::resume, TransactionTimeoutException.class);
 
-                            return null;
-                        }
-                    }, TransactionTimeoutException.class);
-
-                    assertTrue(GridTestUtils.waitForCondition(new PA() {
-                        @Override public boolean apply() {
-                            return tx.state() == ROLLED_BACK;
-                        }
-                    }, getTestTimeout()));
+                    assertTrue(GridTestUtils.waitForCondition(() -> tx.state() == ROLLED_BACK, getTestTimeout()));
 
                     assertEquals(ROLLED_BACK, tx.state());
 
@@ -571,19 +518,9 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
                     U.sleep(TX_TIMEOUT + 100L);
 
-                    GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            tx.suspend();
+                    GridTestUtils.assertThrowsWithCause(tx::suspend, TransactionTimeoutException.class);
 
-                            return null;
-                        }
-                    }, TransactionTimeoutException.class);
-
-                    assertTrue(GridTestUtils.waitForCondition(new PA() {
-                        @Override public boolean apply() {
-                            return tx.state() == ROLLED_BACK;
-                        }
-                    }, getTestTimeout()));
+                    assertTrue(GridTestUtils.waitForCondition(() -> tx.state() == ROLLED_BACK, getTestTimeout()));
 
                     assertEquals(ROLLED_BACK, tx.state());
 
@@ -715,53 +652,6 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
         @Override public void apply(E1 e1, E2 e2) {
             try {
                 applyx(e1, e2);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /**
-     * Closure that can throw any exception.
-     *
-     * @param <T> Type of closure parameter.
-     */
-    public abstract static class CI1Exc<T> implements CI1<T> {
-        /**
-         * Closure body.
-         *
-         * @param o Closure argument.
-         * @throws Exception If failed.
-         */
-        public abstract void applyx(T o) throws Exception;
-
-        /** {@inheritDoc} */
-        @Override public void apply(T o) {
-            try {
-                applyx(o);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /**
-     * Runnable that can throw any exception.
-     */
-    public abstract static class RunnableX implements Runnable {
-        /**
-         * Closure body.
-         *
-         * @throws Exception If failed.
-         */
-        public abstract void runx() throws Exception;
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                runx();
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

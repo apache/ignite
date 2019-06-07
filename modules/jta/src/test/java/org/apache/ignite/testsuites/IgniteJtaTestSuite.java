@@ -20,15 +20,14 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.CacheJndiTmFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaFactoryConfigValidationSelfTest;
-import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
-import org.apache.ignite.internal.processors.cache.GridJtaOptimisticTxTransactionManagerSelfTest;
-import org.apache.ignite.internal.processors.cache.GridJtaPessimisticTxTransactionManagerSelfTest;
+import org.apache.ignite.internal.processors.cache.GridJtaTransactionManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridPartitionedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridPartitionedCacheJtaFactoryUseSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridPartitionedCacheJtaLookupClassNameSelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaFactoryUseSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaLookupClassNameSelfTest;
+import org.apache.ignite.internal.processors.cache.GridJtaLifecycleAwareSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -50,8 +49,7 @@ import org.junit.runners.Suite;
     GridCacheJtaConfigurationValidationSelfTest.class,
     GridCacheJtaFactoryConfigValidationSelfTest.class,
 
-    GridJtaOptimisticTxTransactionManagerSelfTest.class,
-    GridJtaPessimisticTxTransactionManagerSelfTest.class,
+    GridJtaTransactionManagerSelfTest.class,
 
     // Factory
     CacheJndiTmFactorySelfTest.class

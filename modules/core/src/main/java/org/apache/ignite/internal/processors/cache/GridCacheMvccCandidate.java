@@ -398,7 +398,7 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @param threadId Thread id.
      */
     public boolean isHeldByThread(long threadId) {
-        return this.threadId == threadId && !isHeldByTx();
+        return this.threadId == threadId && !isHeldByExplicitTx();
     }
 
     /**
@@ -408,7 +408,7 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @param ver Version.
      */
     public boolean isHeldByThreadOrVer(long threadId, GridCacheVersion ver) {
-        return isHeldByTx() ? this.ver.equals(ver) : this.threadId == threadId;
+        return isHeldByExplicitTx() ? this.ver.equals(ver) : this.threadId == threadId;
     }
 
     /**
@@ -417,17 +417,17 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @param other Other lock.
      */
     public boolean hasSameHolderAs(GridCacheMvccCandidate other) {
-        return isHeldByTx() ? other.isHeldByTx() && ver.equals(other.ver) :
-            !other.isHeldByTx() && threadId == other.threadId;
+        return isHeldByExplicitTx() ? other.isHeldByExplicitTx() && ver.equals(other.ver) :
+            !other.isHeldByExplicitTx() && threadId == other.threadId;
     }
 
     /**
      * If there is transaction started explicitly and the lock was acquired within this transaction then the lock is
      * held by the transaction, otherwise (explicit locks or implicit transactions) lock is held by the thread.
      *
-     * @return {@code true} if lock held by tx, {@code false} if lock held by thread.
+     * @return {@code true} if lock held by explicit tx, {@code false} if lock held by thread.
      */
-    private boolean isHeldByTx() {
+    private boolean isHeldByExplicitTx() {
         return tx() && !singleImplicit();
     }
 

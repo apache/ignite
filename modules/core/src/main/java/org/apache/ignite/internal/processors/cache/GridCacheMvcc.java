@@ -1322,11 +1322,11 @@ public final class GridCacheMvcc {
     }
 
     /**
-     * Near local candidate.
+     * Local candidate.
      *
      * @param nodeId Node ID.
      * @param threadId Thread ID.
-     * @return Remote candidate.
+     * @return Local candidate.
      */
     @Nullable public GridCacheMvccCandidate localCandidate(UUID nodeId, long threadId) {
         if (locs != null)
@@ -1338,12 +1338,12 @@ public final class GridCacheMvcc {
     }
 
     /**
-     * Near local candidate.
+     * Local candidate.
      *
      * @param nodeId Node ID.
      * @param threadId Thread ID.
      * @param ver Lock version.
-     * @return Remote candidate.
+     * @return Local candidate.
      */
     @Nullable public GridCacheMvccCandidate localCandidateByThreadOrVer(UUID nodeId, long threadId, GridCacheVersion ver) {
         if (locs != null) {
