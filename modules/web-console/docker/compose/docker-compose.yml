@@ -32,6 +32,8 @@ services:
     environment:
       # Port for serving frontend API
       - server_port=3000
+      # Host for serving frontend API
+      - server_host=0.0.0.0
       # Cookie session secret
       - server_sessionSecret=CHANGE ME
       # URL for mongodb connection
