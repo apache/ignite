@@ -44,6 +44,7 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
      *
      */
     public static final String DUMP = "dump";
+
     /**
      *
      */
@@ -177,18 +178,22 @@ public class PageLocksCommand implements Command<PageLocksCommand.Args> {
          *
          */
         private final String op;
+
         /**
          *
          */
         private final String type;
+
         /**
          *
          */
         private final String filePath;
+
         /**
          *
          */
         private final boolean allNodes;
+
         /**
          *
          */

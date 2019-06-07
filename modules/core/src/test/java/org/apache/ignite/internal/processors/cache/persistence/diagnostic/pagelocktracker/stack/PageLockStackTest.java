@@ -35,6 +35,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.diagnostic
 public abstract class PageLockStackTest extends AbstractPageLockTest {
     /** */
     protected static final int STRUCTURE_ID = 123;
+
     /** */
     protected abstract LockStack createLockStackTracer(String name);
 

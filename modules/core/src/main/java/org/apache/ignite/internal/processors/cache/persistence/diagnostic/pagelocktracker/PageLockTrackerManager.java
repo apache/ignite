@@ -62,6 +62,7 @@ public class PageLockTrackerManager implements LifecycleAware {
     /** */
     private final String managerNameId;
 
+    /** */
     private final boolean trackingEnable;
 
 
@@ -73,7 +74,8 @@ public class PageLockTrackerManager implements LifecycleAware {
     }
 
     /**
-     * Default constructor.
+     * @param log Ignite logger.
+     * @param managerNameId Manager name.
      */
     public PageLockTrackerManager(IgniteLogger log, String managerNameId) {
         this.trackingEnable = !(getInteger(IGNITE_PAGE_LOCK_TRACKER_TYPE, HEAP_LOG) == -1);
@@ -235,6 +237,7 @@ public class PageLockTrackerManager implements LifecycleAware {
    public static class MemoryCalculator {
         /** */
         private final AtomicLong heapUsed = new AtomicLong();
+
         /** */
         private final AtomicLong offHeapUsed = new AtomicLong();
 
