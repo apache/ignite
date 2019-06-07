@@ -25,14 +25,14 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.gridgain</groupId>
-        <artifactId>community.parent</artifactId>
+        <groupId>org.apache.ignite</groupId>
+        <artifactId>ignite-parent</artifactId>
         <version>1</version>
         <relativePath>../../parent</relativePath>
     </parent>
 
     <artifactId>ignite-h2</artifactId>
-    <version>8.7.0-SNAPSHOT</version>
+    <version>2.7.0-SNAPSHOT</version>
     <description>H2 Database Engine Fork</description>
     <url>http://h2database.com</url>
 

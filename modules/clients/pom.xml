@@ -113,7 +113,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-h2</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
