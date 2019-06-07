@@ -162,6 +162,11 @@ namespace ignite
             return BinaryStringArrayReader(impl, id, size);
         }
 
+        BinaryEnumEntry BinaryRawReader::ReadBinaryEnum()
+        {
+            return impl->ReadBinaryEnum();
+        }
+
         CollectionType::Type BinaryRawReader::ReadCollectionType()
         {
             return impl->ReadCollectionType();
