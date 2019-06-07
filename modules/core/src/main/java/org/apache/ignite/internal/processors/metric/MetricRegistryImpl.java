@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.metric.impl.DoubleGauge;
 import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
@@ -204,7 +205,7 @@ public class MetricRegistryImpl implements MetricRegistry {
                 lsnr.accept(t);
             }
             catch (Exception e) {
-                log.warning("Metric listener error", e);
+                U.warn(log, "Metric listener error", e);
             }
         }
     }

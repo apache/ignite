@@ -73,7 +73,7 @@ public class MetricsSelfTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistryImpl(null);
+        mreg = new MetricRegistryImpl();
 
         if (!F.isEmpty(prefix))
             mreg = mreg.withPrefix(prefix);
@@ -361,7 +361,7 @@ public class MetricsSelfTest {
 
     /** */
     private MetricRegistry newMetricRegistry() {
-        MetricRegistry mreg = new MetricRegistryImpl(null);
+        MetricRegistry mreg = new MetricRegistryImpl();
 
         if (!F.isEmpty(prefix))
             mreg = mreg.withPrefix(prefix);
