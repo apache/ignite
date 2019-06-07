@@ -241,11 +241,11 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRebalanceEstimateFinishTime() throws Exception {
-        System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(1000));
+        System.setProperty(IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL, String.valueOf(10_000));
 
         Ignite ig1 = startGrid(1);
 
-        final int KEYS = 4_000_000;
+        final int KEYS = 1_000_000;
 
         try (IgniteDataStreamer<Integer, String> st = ig1.dataStreamer(CACHE1)) {
             for (int i = 0; i < KEYS; i++)
@@ -258,10 +258,10 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         ig2.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
-                CacheRebalancingEvent rebEvent = (CacheRebalancingEvent)evt;
+                CacheRebalancingEvent rebEvt = (CacheRebalancingEvent)evt;
 
-                if (rebEvent.cacheName().equals(CACHE1)) {
-                    log.info("CountDown rebalance stop latch: " + rebEvent.cacheName());
+                if (rebEvt.cacheName().equals(CACHE1)) {
+                    log.info("CountDown rebalance stop latch: " + rebEvt.cacheName());
 
                     finishRebalanceLatch.countDown();
                 }
@@ -270,11 +270,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             }
         }, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        waitForCondition(new PA() {
+        boolean rebalancingStartTimeGot = waitForCondition(new PA() {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getRebalancingStartTime() != -1L;
             }
         }, 5_000);
+
+        assertTrue("Unable to resolve rebalancing start time.", rebalancingStartTimeGot);
 
         CacheMetrics metrics = ig2.cache(CACHE1).localMetrics();
 
@@ -287,11 +289,12 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         runAsync(new Runnable() {
+            @SuppressWarnings("BusyWait")
             @Override public void run() {
-                // Waiting 25% keys will be rebalanced.
+                // Waiting 75% keys will be rebalanced.
                 int partKeys = KEYS / 2;
 
-                final long keysLine = partKeys * 3L / 4L;
+                final long keysLine = (long)partKeys / 4L;
 
                 log.info("Wait until keys left will be less than: " + keysLine);
 
@@ -322,11 +325,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         assertTrue(latch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
 
-        waitForCondition(new PA() {
+        boolean estimatedRebalancingFinishTimeGot = waitForCondition(new PA() {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime() != -1L;
             }
         }, 5_000L);
+
+        assertTrue("Unable to resolve estimated rebalancing finish time.", estimatedRebalancingFinishTimeGot);
 
         long finishTime = ig2.cache(CACHE1).localMetrics().getEstimatedRebalancingFinishTime();
 
@@ -342,11 +347,13 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 //        assertTrue("Got timeout while waiting for rebalancing. Estimated left time: " + timeLeft,
 //            finishRebalanceLatch.await(timeLeft + 10_000L, TimeUnit.MILLISECONDS));
 
-        waitForCondition(new GridAbsPredicate() {
+        boolean allKeysRebalanced = waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getKeysToRebalanceLeft() == 0;
             }
         }, timeLeft + 12_000L);
+
+        assertTrue("Some keys aren't rebalanced.", allKeysRebalanced);
 
         log.info("[timePassed=" + timePassed + ", timeLeft=" + timeLeft +
                 ", Time to rebalance=" + (finishTime - startTime) +

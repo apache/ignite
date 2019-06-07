@@ -1121,7 +1121,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         long rate = rebalancingKeysRate.getRate();
 
         return rate <= 0 ? -1L :
-            ((getKeysToRebalanceLeft() / rate) * REBALANCE_RATE_INTERVAL) + U.currentTimeMillis();
+            (long)(((double)getKeysToRebalanceLeft() / rate) * REBALANCE_RATE_INTERVAL) + U.currentTimeMillis();
     }
 
     /** {@inheritDoc} */
