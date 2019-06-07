@@ -41,14 +41,17 @@ public final class LockTrackerFactory {
      *
      */
     public static final int HEAP_STACK = 1;
+
     /**
      *
      */
     public static final int HEAP_LOG = 2;
+
     /**
      *
      */
     public static final int OFF_HEAP_STACK = 3;
+
     /**
      *
      */
@@ -58,6 +61,7 @@ public final class LockTrackerFactory {
      *
      */
     public static volatile int DEFAULT_CAPACITY = getInteger(IGNITE_PAGE_LOCK_TRACKER_CAPACITY, 512);
+
     /**
      *
      */
