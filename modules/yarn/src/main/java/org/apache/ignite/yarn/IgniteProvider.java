@@ -74,7 +74,7 @@ public class IgniteProvider {
         if (curVer == null || curVer.isEmpty())
             throw new IllegalStateException("Failed to determine Ignite version");
 
-        log.info("Searching for Ignite redistribute of version " + curVer);
+        log.info("Searching for Ignite release " + curVer);
 
         File release = findIgnite(folder, curVer);
 
@@ -88,7 +88,7 @@ public class IgniteProvider {
         }
 
         return IgniteYarnUtils.copyLocalToHdfs(fs, release.getAbsolutePath(),
-            formatPath(props.igniteReleasesDir(), release.getName()));
+            props.igniteReleasesDir() + File.separator + release.getName());
     }
 
     /**
@@ -164,15 +164,6 @@ public class IgniteProvider {
             fs.copyFromLocalFile(new Path(props.igniteLocalWorkDir() + File.separator + fileName), dst);
 
         return dst;
-    }
-
-    /**
-     * @param folder folder
-     * @param version version
-     * @return Path
-     */
-    private static String formatPath(String folder, String version) {
-        return folder + File.separator + igniteRelease(version);
     }
 
     /**
