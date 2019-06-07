@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
@@ -248,8 +248,17 @@ public class JmhCacheFreelistBenchmark {
 
             DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 
-            return new CacheFreeListImpl(1, "freelist", regionMetrics, dataRegion, null,
-                null, metaPageId, true);
+            return new CacheFreeList(
+                1,
+                "freelist",
+                regionMetrics,
+                dataRegion,
+                null,
+                null,
+                metaPageId,
+                true,
+                null
+            );
         }
     }
 

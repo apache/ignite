@@ -649,7 +649,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                         assert PageIO.getCrc(pageAddr) == 0; //TODO GG-11480
                     }
                     finally {
-                        // Should always unlock data page after write.
+                        // Should always unlock data page after an update.
                         assert writeRowKeepPage.releaseAfterWrite(grpId, pageId, page, pageAddr, row, 0);
 
                         writeUnlock(pageId, page, pageAddr, dirty);
