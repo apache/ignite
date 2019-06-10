@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.GridIterableAdapter;
 import org.apache.ignite.internal.util.lang.GridIterableAdapter.IteratorWrapper;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
@@ -1362,14 +1363,14 @@ public class GridDhtPartitionDemander {
                                 }
 
                                 if (waitCnt.decrementAndGet() == 0)
-                                    ctx.kernalContext().closure().runLocalSafe(() -> requestPartitions0(node, parts, d));
+                                    ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> requestPartitions0(node, parts, d));
                             }
                         });
                     }
 
                     // The special case for historical only rebalancing.
                     if (d.partitions().fullSet().isEmpty() && !d.partitions().historicalSet().isEmpty())
-                        ctx.kernalContext().closure().runLocalSafe(() -> requestPartitions0(node, parts, d));
+                        ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> requestPartitions0(node, parts, d));
                 }
             }
         }

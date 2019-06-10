@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -894,7 +895,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
 
         if (locNode != null) {
-            cctx.closures().callLocalSafe(new Callable<Object>() {
+            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
                 @Override public Object call() throws Exception {
                     req.beforeLocalExecution(cctx);
 

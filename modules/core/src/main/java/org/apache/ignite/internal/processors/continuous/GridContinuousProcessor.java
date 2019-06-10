@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -702,7 +703,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (ctx.config().isPeerClassLoadingEnabled()) {
             // Peer class loading cannot be performed before a node joins, so we delay the deployment.
             // Run the deployment task in the system pool to avoid blocking of the discovery thread.
-            ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe(() -> {
+            ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
                 try {
                     hnd.p2pUnmarshal(srcNodeId, ctx);
                 }

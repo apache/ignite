@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -233,7 +234,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            ctx.closure().runLocalSafe(new Runnable() {
+                            ctx.closure().runLocalSafe(new GridPlainRunnable() {
                                 @Override public void run() {
                                     processRequest(nodeId, req);
                                 }
