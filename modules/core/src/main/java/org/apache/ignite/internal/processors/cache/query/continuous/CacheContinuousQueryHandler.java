@@ -38,6 +38,7 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -337,15 +338,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (initFut == null) {
             initFut = p2pUnmarshalFut.chain((fut) -> {
                 try {
+                    fut.get();
+
                     initRemoteFilter(getEventFilter0(), ctx);
                 }
                 catch (IgniteCheckedException e) {
-                    throw F.wrap(e);
+                    throw new IgniteException("Failed to initialize a remote filter.", e);
                 }
 
                 return null;
             });
         }
+
+        if (initFut.error() != null)
+            throw new IgniteCheckedException("Failed to initialize a continuous query.", initFut.error());
 
         entryBufs = new ConcurrentHashMap<>();
 
