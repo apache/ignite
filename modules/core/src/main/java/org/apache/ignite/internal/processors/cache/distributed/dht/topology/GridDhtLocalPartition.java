@@ -1152,7 +1152,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     CacheDataRow row = it0.next();
 
                     // Do not clear fresh rows in case of partition reloading.
-                    // This is required because updates are possible to moving partition which is currently cleared.
+                    // This is required because normal updates are possible to moving partition which is currently cleared.
                     if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
                         continue;
 
@@ -1459,7 +1459,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @param last {@code True} is last batch for partition.
+     * Called before next batch is about to be applied during rebalance. Currently used for tests.
+     *
+     * @param last {@code True} if last batch for partition.
      */
     public void beforeApplyBatch(boolean last) {
         // No-op.

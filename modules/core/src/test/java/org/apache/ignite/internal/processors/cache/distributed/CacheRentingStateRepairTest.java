@@ -44,7 +44,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJU
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- *
+ * Contains several test scenarios related to partition state transitions during it's lifecycle.
  */
 public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /** */
@@ -110,7 +110,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Tests partition is properly evicted when node is restarted in the middle of the eviction.
      */
     @Test
     public void testRentingStateRepairAfterRestart() throws Exception {
@@ -204,25 +204,33 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * Tests the partition is not cleared when rebalanced.
+     */
     @Test
     public void testRebalanceRentingPartitionAndServerNodeJoin() throws Exception {
         testRebalanceRentingPartitionAndNodeJoin(false, 0);
     }
 
-    /** */
+    /**
+     * Tests the partition is not cleared when rebalanced.
+     */
     @Test
     public void testRebalanceRentingPartitionAndClientNodeJoin() throws Exception {
         testRebalanceRentingPartitionAndNodeJoin(true, 0);
     }
 
-    /** */
+    /**
+     * Tests the partition is not cleared when rebalanced.
+     */
     @Test
     public void testRebalanceRentingPartitionAndServerNodeJoinWithDelay() throws Exception {
         testRebalanceRentingPartitionAndNodeJoin(false, 5_000);
     }
 
-    /** */
+    /**
+     * Tests the partition is not cleared when rebalanced.
+     */
     @Test
     public void testRebalanceRentingPartitionAndClientNodeJoinWithDelay() throws Exception {
         testRebalanceRentingPartitionAndNodeJoin(true, 5_000);
@@ -280,7 +288,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
                             U.awaitQuiet(l2);
 
-                            if (delay > 0)
+                            if (delay > 0) // Delay rebalance finish to enforce race with clearing.
                                 doSleep(delay);
                         }
                     }
@@ -288,7 +296,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             stopGrid(2);
 
-            resetBaselineTopology(); // Trigger rebalance after eviction
+            resetBaselineTopology(); // Trigger rebalance for delayEvictPart after eviction.
 
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
@@ -301,7 +309,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
                         else
                             startGrid(2);
 
-                        l2.countDown(); // Finish partition rebalancing after initiating clear.
+                        l2.countDown(); // Finish partition rebalance after initiating clear.
                     }
                     catch (Exception e) {
                         fail(X.getFullStackTrace(e));

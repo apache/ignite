@@ -181,7 +181,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
-     * @param factory Factory. Currently is used for tests.
+     * Set partition factory to use. Currently is used for tests.
+     *
+     * @param factory Factory.
      */
     public void partitionFactory(PartitionFactory factory) {
         this.partFactory = factory;
@@ -3117,13 +3119,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
-    /** */
+    /**
+     * Partition factory used for (re-)creating partitions during their lifecycle.
+     * Currently used in tests for overriding default partition behavior.
+     */
     public interface PartitionFactory {
         /**
          * @param ctx Context.
          * @param grp Group.
          * @param id Partition id.
-         * @return Partition instance.
+         * @return New partition instance.
          */
         public GridDhtLocalPartition create(GridCacheSharedContext ctx,
             CacheGroupContext grp,
