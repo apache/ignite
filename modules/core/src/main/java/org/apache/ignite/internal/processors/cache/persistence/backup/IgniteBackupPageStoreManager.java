@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.RunnableFuture;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -55,7 +56,14 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
      * @param dir Local directory to save cache partition deltas to.
      * @return Future which will be completed when cache is ready to be processed.
      */
-    public IgniteInternalFuture<Set<CompletableBackup>> scheduleCacheBackup(
+    public IgniteInternalFuture<Set<CompletableReadyState>> scheduleCacheBackup(
+        String backupName,
+        GridCacheContext cctx,
+        Set<Integer> parts,
+        File dir
+    );
+
+    public RunnableFuture<Set<CompletableReadyState>> makeCacheBackup(
         String backupName,
         GridCacheContext cctx,
         Set<Integer> parts,

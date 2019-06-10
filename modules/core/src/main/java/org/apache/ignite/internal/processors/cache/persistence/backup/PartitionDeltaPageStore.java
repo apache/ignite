@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.backup;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public class FileTempPageStore implements TempPageStore {
+public class PartitionDeltaPageStore implements Closeable {
     /** */
     private final File file;
 
@@ -55,16 +56,22 @@ public class FileTempPageStore implements TempPageStore {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** */
+    private final Object mux = new Object();
+
+    /** */
     private volatile FileIO fileIO;
 
     /** */
     private volatile boolean init;
 
+    /** */
+    private volatile boolean writable = true;
+
     /**
      * @param file File to store.
      * @param factory Facotry.
      */
-    public FileTempPageStore(File file, FileIOFactory factory, int pageSize) {
+    public PartitionDeltaPageStore(File file, FileIOFactory factory, int pageSize) {
         this.file = file;
         this.factory = factory;
         this.pageSize = pageSize;
@@ -74,64 +81,66 @@ public class FileTempPageStore implements TempPageStore {
      * @throws IgniteCheckedException If failed to initialize store file.
      */
     public void init() throws IgniteCheckedException {
-        if (!init) {
-            lock.writeLock().lock();
+        if (init)
+            return;
+
+        synchronized (mux) {
+            if (init)
+                return;
+
+            FileIO fileIO = null;
+            IgniteCheckedException err = null;
 
             try {
-                if (!init) {
-                    FileIO fileIO = null;
-                    IgniteCheckedException err = null;
+                boolean interrupted = false;
 
+                while (true) {
                     try {
-                        boolean interrupted = false;
+                        this.fileIO = fileIO = factory.create(file);
 
-                        while (true) {
-                            try {
-                                this.fileIO = fileIO = factory.create(file);
+                        if (interrupted)
+                            Thread.currentThread().interrupt();
 
-                                if (interrupted)
-                                    Thread.currentThread().interrupt();
-
-                                break;
-                            }
-                            catch (ClosedByInterruptException e) {
-                                interrupted = true;
-
-                                Thread.interrupted();
-                            }
-                        }
-
-                        init = true;
+                        break;
                     }
-                    catch (IOException e) {
-                        err = new IgniteCheckedException("Failed to initialize backup partition file: " +
-                            file.getAbsolutePath(), e);
+                    catch (ClosedByInterruptException e) {
+                        interrupted = true;
 
-                        throw err;
-                    }
-                    finally {
-                        if (err != null)
-                            U.closeQuiet(fileIO);
+                        Thread.interrupted();
                     }
                 }
+
+                init = true;
+            }
+            catch (IOException e) {
+                err = new IgniteCheckedException("Failed to initialize backup partition file: " +
+                    file.getAbsolutePath(), e);
+
+                throw err;
             }
             finally {
-                lock.writeLock().unlock();
+                if (err != null)
+                    U.closeQuiet(fileIO);
             }
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
+    /**
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer to write.
+     * @throws IgniteCheckedException If page writing failed (IO error occurred).
+     */
+    public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
         init();
+
+        if (!writable())
+            return;
 
         //TODO write pages for parallel backup processes
         if (writtenPagesCount.contains(pageId))
             return;
 
-        lock.writeLock().lock();
-
-        try {
+        synchronized (mux) {
             if (writtenPagesCount.add(pageId)) {
                 try {
                     assert pageBuf.position() == 0;
@@ -164,67 +173,76 @@ public class FileTempPageStore implements TempPageStore {
                 }
             }
         }
-        finally {
-            lock.writeLock().unlock();
+    }
+
+    /**
+     * @return {@code true} if writes to the storage is allowed.
+     */
+    public boolean writable() {
+        return writable;
+    }
+
+    /**
+     * @param writable {@code true} if writes to the storage is allowed.
+     */
+    public void writable(boolean writable) {
+        synchronized (mux) {
+            this.writable = writable;
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isWritable() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
+    /**
+     * @param pageId Page id to evaluate.
+     * @return Page id offset.
+     */
     public long pageOffset(long pageId) {
         return (long)PageIdUtils.pageIndex(pageId) * pageSize + pageSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void truncate() throws IgniteCheckedException {
-        lock.writeLock().lock();
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void truncate() throws IgniteCheckedException {
+        synchronized (mux) {
+            try {
+                writtenPagesCount.clear();
 
-        try {
-            writtenPagesCount.clear();
-
-            if (fileIO != null)
-                fileIO.clear();
-        }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Truncate store failed", e);
-        }
-        finally {
-            lock.writeLock().unlock();
+                if (fileIO != null)
+                    fileIO.clear();
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Truncate store failed", e);
+            }
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public int writtenPagesCount() {
-        lock.writeLock().lock();
-
-        try {
+    /**
+     * @return The value of pages successfully written to the temporary store.
+     */
+    public int writtenPagesCount() {
+        synchronized (mux) {
             return writtenPagesCount.size();
         }
-        finally {
-            lock.writeLock().unlock();
-        }
+    }
+
+    /**
+     * @return Partition resource file link.
+     */
+    public File getFile() {
+        return file;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
-        lock.writeLock().lock();
+        if (!init)
+            return;
 
-        try {
-            if (!init)
-                return;
-
+        synchronized (mux) {
             fileIO.close();
 
             fileIO = null;
 
             Files.delete(file.toPath());
-        }
-        finally {
-            lock.writeLock().unlock();
         }
     }
 }

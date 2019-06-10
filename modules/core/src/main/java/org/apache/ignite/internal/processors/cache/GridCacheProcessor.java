@@ -3396,7 +3396,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteWriteAheadLogManager walMgr = null;
         IgniteBackupPageStoreManager backupMgr = null;
 
-
         if (CU.isPersistenceEnabled(ctx.config()) && !ctx.clientNode()) {
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
             backupMgr = new IgniteBackupPageStoreManagerImpl(ctx);

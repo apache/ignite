@@ -22,9 +22,14 @@ import java.io.File;
 /**
  *
  */
-public interface CompletableBackup {
+public interface CompletableReadyState {
     /**
-     * @return File resource of cache partition.
+     * @return Partition id.
+     */
+    public int getPartId();
+
+    /**
+     * @return File resource of partition.
      */
     public File getPartition();
 
