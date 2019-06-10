@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.metric.CacheMetricsAddRemoveTest;
 import org.apache.ignite.internal.metric.IoStatisticsCachePersistenceSelfTest;
 import org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest;
 import org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest;
@@ -108,6 +109,7 @@ public class IgniteCacheTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsMetricsLocalMXBeanImplSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsAddRemoveTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, JmxExporterSpiTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, LogExporterSpiTest.class, ignoredTests);
 

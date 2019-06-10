@@ -55,7 +55,7 @@ import static org.junit.Assert.assertNotNull;
 /** */
 @RunWith(Parameterized.class)
 public class MetricsSelfTest {
-    /** Parameters. */
+    /** Metrics prefix. */
     @Parameterized.Parameters(name = "Prefix {0}")
     public static Iterable<String[]> data() {
         return asList(
@@ -63,7 +63,7 @@ public class MetricsSelfTest {
             new String[] {"test.prefix"});
     }
 
-    /** Use index. */
+    /** Prefix. */
     @Parameterized.Parameter
     public String prefix;
 

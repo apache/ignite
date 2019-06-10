@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
-import org.apache.ignite.internal.processors.metric.MetricNameUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,6 +34,8 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
 
 /**
  * Adapter for cache metrics.
@@ -166,6 +167,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Write-behind store, if configured. */
     private GridCacheWriteBehindStore store;
 
+    /** Prefix for the cache metrics. */
+    private String prefix;
+
     /**
      * Creates cache metrics.
      *
@@ -194,12 +198,10 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        String prefix;
-
         if (suffix == null)
-            prefix = MetricNameUtils.metricName("cache", cctx.name());
+            prefix = metricName("cache", cctx.name());
         else
-            prefix = MetricNameUtils.metricName("cache", cctx.name(), suffix);
+            prefix = metricName("cache", cctx.name(), suffix);
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry().withPrefix(prefix);
 
@@ -1362,6 +1364,11 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onOffHeapEvict();
+    }
+
+    /** @return Prefix for the cache metrics. */
+    public String metricsPrefix() {
+        return prefix;
     }
 
     /** {@inheritDoc} */
