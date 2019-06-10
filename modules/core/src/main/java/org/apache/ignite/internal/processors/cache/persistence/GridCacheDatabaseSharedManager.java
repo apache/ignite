@@ -1546,13 +1546,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         GridQueryProcessor qryProc = cctx.kernalContext().query();
 
-        if (qryProc.moduleEnabled()) {
-            GridCountDownCallback rebuildIndexesCompleteCntr = new GridCountDownCallback(
-                cctx.cacheContexts().size(),
-                () -> log().info("Indexes rebuilding completed for all caches."),
-                1  //need at least 1 index rebuilded to print message about rebuilding completion
-            );
+        GridCompoundFuture compoundAllIdxsRebuilt = null;
 
+        if (qryProc.moduleEnabled()) {
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion())) {
                     final int cacheId = cacheCtx.cacheId();
@@ -1564,7 +1560,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         log().info("Started indexes rebuilding for cache [name=" + cacheCtx.name()
                             + ", grpName=" + cacheCtx.group().name() + ']');
 
-                        assert usrFut != null : "Missing user future for cache: " + cacheCtx.name();
+                        if (compoundAllIdxsRebuilt == null)
+                            compoundAllIdxsRebuilt = new GridCompoundFuture();
+
+                        compoundAllIdxsRebuilt.add(rebuildFut);
 
                         rebuildFut.listen(new CI1<IgniteInternalFuture>() {
                             @Override public void apply(IgniteInternalFuture igniteInternalFut) {
@@ -1578,8 +1577,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     log().info("Finished indexes rebuilding for cache [name=" + ccfg.getName()
                                         + ", grpName=" + ccfg.getGroupName() + ']');
                                 }
-
-                                rebuildIndexesCompleteCntr.countDown(true);
                             }
                         });
                     }
@@ -1588,11 +1585,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             idxRebuildFuts.remove(cacheId, usrFut);
 
                             usrFut.onDone();
-
-                            rebuildIndexesCompleteCntr.countDown(false);
                         }
                     }
                 }
+            }
+
+            if (compoundAllIdxsRebuilt != null) {
+                compoundAllIdxsRebuilt.listen(a -> log().info("Indexes rebuilding completed for all caches."));
+
+                compoundAllIdxsRebuilt.markInitialized();
             }
         }
     }

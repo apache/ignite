@@ -122,8 +122,6 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         // control.sh
         suite.addTestSuite(CommandHandlerParsingTest.class);
 
-        suite.addTestSuite(GridCountDownCallbackTest.class);
-
         return suite;
     }
 }
