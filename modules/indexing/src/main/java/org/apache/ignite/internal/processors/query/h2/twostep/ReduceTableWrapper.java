@@ -91,8 +91,8 @@ public class ReduceTableWrapper extends Table {
 
     /** {@inheritDoc} */
     @Override public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter[] filters, int filter,
-        SortOrder sortOrder, AllColumnsForPlan allColumnsSet) {
-        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder, allColumnsSet);
+        SortOrder sortOrder, AllColumnsForPlan allColumnsSet, boolean isEquiJoined) {
+        return innerTable().getBestPlanItem(session, masks, filters, filter, sortOrder, allColumnsSet, isEquiJoined);
     }
 
     /** {@inheritDoc} */

@@ -27,6 +27,7 @@ import org.h2.expression.analysis.Window;
 import org.h2.expression.condition.Comparison;
 import org.h2.expression.condition.ConditionAndOr;
 import org.h2.index.Cursor;
+import org.h2.index.HashJoinIndex;
 import org.h2.index.Index;
 import org.h2.index.IndexType;
 import org.h2.index.ViewIndex;
@@ -308,9 +309,13 @@ public class Select extends Query {
         if (result == null) {
             return lazyResult;
         }
+
         while (lazyResult.next()) {
             result.addRow(lazyResult.currentRow());
         }
+
+        lazyResult.close();
+
         return null;
     }
 
@@ -754,6 +759,9 @@ public class Select extends Query {
             }
             result.limitsWereApplied();
         }
+
+        lazyResult.close();
+
         return null;
     }
 
@@ -1849,6 +1857,8 @@ public class Select extends Query {
             if (!isClosed()) {
                 super.close();
                 resetJoinBatchAfterQuery();
+
+                clearHashJoinIndexAfterQuery();
             }
         }
 
@@ -1984,4 +1994,16 @@ public class Select extends Query {
         return parentSelect;
     }
 
+
+    /**
+     * Reset the hash index is used for join after the query result is closed.
+     */
+    void clearHashJoinIndexAfterQuery() {
+        topTableFilter.visit(new TableFilterVisitor() {
+            @Override public void accept(TableFilter f) {
+                if (f != null && f.getIndex() != null && f.getIndex().getClass() == HashJoinIndex.class)
+                    ((HashJoinIndex)f.getIndex()).clearHashTable(session);
+            }
+        });
+    }
 }

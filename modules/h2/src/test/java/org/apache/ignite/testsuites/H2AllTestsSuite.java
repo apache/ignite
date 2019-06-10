@@ -16,12 +16,14 @@
 
 package org.apache.ignite.testsuites;
 
+import org.h2.test.synth.TestHashJoin;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     H2InMemoryMultiThreadTestSuite.class,
+    TestHashJoin.class,
 //    H2InMemoryMultiThreadLazyTestSuite.class,
 /*  H2MultiThreadTestSuite.class,
     H2PageStoreOffloadTestSuite.class,

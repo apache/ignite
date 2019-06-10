@@ -122,10 +122,10 @@ public class IndexCursor implements Cursor {
                     }
                 }
                 if (isStart) {
-                    start = getSearchRow(start, columnId, v, true);
+                    start = table.getSearchRow(start, columnId, v, true);
                 }
                 if (isEnd) {
-                    end = getSearchRow(end, columnId, v, false);
+                    end = table.getSearchRow(end, columnId, v, false);
                 }
                 if (isIntersects) {
                     intersects = getSpatialSearchRow(intersects, columnId, v);
@@ -204,39 +204,6 @@ public class IndexCursor implements Cursor {
             row.setValue(columnId, v);
         }
         return row;
-    }
-
-    private SearchRow getSearchRow(SearchRow row, int columnId, Value v, boolean max) {
-        if (row == null) {
-            row = table.getTemplateRow();
-        } else {
-            v = getMax(row.getValue(columnId), v, max);
-        }
-        if (columnId == SearchRow.ROWID_INDEX) {
-            row.setKey(v.getLong());
-        } else {
-            row.setValue(columnId, v);
-        }
-        return row;
-    }
-
-    private Value getMax(Value a, Value b, boolean bigger) {
-        if (a == null) {
-            return b;
-        } else if (b == null) {
-            return a;
-        }
-        // IS NULL must be checked later
-        if (a == ValueNull.INSTANCE) {
-            return b;
-        } else if (b == ValueNull.INSTANCE) {
-            return a;
-        }
-        int comp = table.getDatabase().compare(a, b);
-        if (comp == 0) {
-            return a;
-        }
-        return (comp > 0) == bigger ? a : b;
     }
 
     /**
@@ -326,5 +293,4 @@ public class IndexCursor implements Cursor {
     public boolean previous() {
         throw DbException.throwInternalError(toString());
     }
-
 }

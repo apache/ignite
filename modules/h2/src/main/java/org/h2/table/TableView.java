@@ -259,7 +259,7 @@ public class TableView extends Table {
     @Override
     public PlanItem getBestPlanItem(Session session, int[] masks,
             TableFilter[] filters, int filter, SortOrder sortOrder,
-            AllColumnsForPlan allColumnsSet) {
+            AllColumnsForPlan allColumnsSet, boolean isEquiJoined) {
         final CacheKey cacheKey = new CacheKey(masks, this);
         Map<Object, ViewIndex> indexCache = session.getViewIndexCache(topQuery != null);
         ViewIndex i = indexCache.get(cacheKey);
@@ -461,7 +461,7 @@ public class TableView extends Table {
 
     @Override
     public Index getScanIndex(Session session) {
-        return getBestPlanItem(session, null, null, -1, null, null).getIndex();
+        return getBestPlanItem(session, null, null, -1, null, null, false).getIndex();
     }
 
     @Override
@@ -473,7 +473,7 @@ public class TableView extends Table {
             throw DbException.get(ErrorCode.VIEW_IS_INVALID_2,
                     createException, getSQL(false), msg);
         }
-        PlanItem item = getBestPlanItem(session, masks, filters, filter, sortOrder, allColumnsSet);
+        PlanItem item = getBestPlanItem(session, masks, filters, filter, sortOrder, allColumnsSet, false);
         return item.getIndex();
     }
 

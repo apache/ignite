@@ -1233,6 +1233,23 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP = "IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP";
 
     /**
+     * Maximum size of table (rows count) when temporary hash index can be built on fly.
+     *
+     * Default: 100_000 (rows).
+     */
+    public static final String IGNITE_HASH_JOIN_MAX_TABLE_SIZE = "IGNITE_HASH_JOIN_MAX_TABLE_SIZE";
+
+    /**
+     * Enable hash join (create hash index on the fly) for query optimizer.
+     * When disabled hash join may be enabled only by index hint.
+     * e.g.: SELECT * from A, B USE INDEX (HASH_JOIN_IDX) WHERE A.jid = B.jid
+     * hash index will be created for B.jid on the fly.
+     *
+     * Default: false.
+     */
+    public static final String IGNITE_ENABLE_HASH_JOIN = "IGNITE_ENABLE_HASH_JOIN";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

@@ -590,6 +590,10 @@ public class Set extends Prepared {
             }
             break;
         }
+        case SetTypes.HASH_JOIN_ENABLE: {
+            session.setHashJoinEnabled(getIntValue() == 1);
+            break;
+        }
         default:
             DbException.throwInternalError("type="+type);
         }

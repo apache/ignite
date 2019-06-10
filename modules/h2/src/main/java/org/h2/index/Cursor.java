@@ -18,6 +18,23 @@ import org.h2.result.SearchRow;
  *
  */
 public interface Cursor {
+    Cursor EMPTY = new Cursor() {
+        @Override public Row get() {
+            return null;
+        }
+
+        @Override public SearchRow getSearchRow() {
+            return null;
+        }
+
+        @Override public boolean next() {
+            return false;
+        }
+
+        @Override public boolean previous() {
+            return false;
+        }
+    };
 
     /**
      * Get the complete current row.

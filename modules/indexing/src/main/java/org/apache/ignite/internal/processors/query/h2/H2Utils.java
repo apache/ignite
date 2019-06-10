@@ -41,6 +41,7 @@ import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -101,6 +102,8 @@ import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_HASH_JOIN;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_HASH_JOIN_MAX_TABLE_SIZE;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
@@ -109,6 +112,9 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  * H2 utility methods.
  */
 public class H2Utils {
+    /** Default hash join max table size. */
+    public static final int DFLT_HASH_JOIN_MAX_TABLE_SIZE = 100_000;
+
     /**
      * The default precision for a char/varchar value.
      */
@@ -137,6 +143,19 @@ public class H2Utils {
 
     /** Quotation character. */
     private static final char ESC_CH = '\"';
+
+
+    /** Hash join max table size (not final for test). */
+    private static int hashJoinMaxTableSize
+        = IgniteSystemProperties.getInteger(IGNITE_HASH_JOIN_MAX_TABLE_SIZE, DFLT_HASH_JOIN_MAX_TABLE_SIZE);
+
+    /**
+     * Enable use hash join by query optimizer. When disabled hash join may be used only with index hint:
+     * USE INDEX(HASH_JOIN_IDX)
+     * (not final for tests).
+     */
+    private static boolean enableHashJoin
+        = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_HASH_JOIN, false);
 
     /** Empty cursor. */
     public static final GridCursor<H2Row> EMPTY_CURSOR = new GridCursor<H2Row>() {
@@ -443,6 +462,8 @@ public class H2Utils {
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
         s.setLazyQueryExecution(lazy);
+        s.setHashJoinMaxTableSize(hashJoinMaxTableSize);
+        s.setHashJoinEnabled(enableHashJoin && !distributedJoins);
 
         H2QueryContext oldCtx = s.getQueryContext();
 

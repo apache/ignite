@@ -355,7 +355,7 @@ public class SourceCompiler {
     private static void javacProcess(File javaFile) {
         exec("javac",
                 "-sourcepath", COMPILE_DIR,
-                "-cp", System.getProperty("surefire.test.class.path", "target/classes:target/test-classes"),
+                "-cp", getClassPath(),
                 "-d", COMPILE_DIR,
                 "-encoding", "UTF-8",
                 javaFile.getAbsolutePath());
@@ -393,6 +393,10 @@ public class SourceCompiler {
         }.execute();
     }
 
+    private static String getClassPath() {
+        return System.getProperty("surefire.test.class.path", "target/classes:target/test-classes");
+    }
+
     private static synchronized void javacSun(File javaFile) {
         PrintStream old = System.err;
         ByteArrayOutputStream buff = new ByteArrayOutputStream();
@@ -408,7 +412,7 @@ public class SourceCompiler {
             final Integer status = (Integer)compile.invoke(javac, (Object) new String[] {
                     "-sourcepath", COMPILE_DIR,
                     // "-Xlint:unchecked",
-                    "-cp", System.getProperty("surefire.test.class.path", "target/classes:target/test-classes"),
+                    "-cp", getClassPath(),
                     "-d", COMPILE_DIR,
                     "-encoding", "UTF-8",
                     javaFile.getAbsolutePath() });

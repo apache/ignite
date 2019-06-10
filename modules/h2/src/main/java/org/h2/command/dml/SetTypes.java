@@ -262,7 +262,12 @@ public class SetTypes {
      */
     public static final int UUID_COLLATION = 50;
 
-    private static final int COUNT = UUID_COLLATION + 1;
+    /**
+     * Enable hash join fake index.
+     */
+    public static final int HASH_JOIN_ENABLE = 51;
+
+    private static final int COUNT = HASH_JOIN_ENABLE + 1;
 
     private static final ArrayList<String> TYPES;
 
@@ -323,6 +328,7 @@ public class SetTypes {
         list.add(AUTHENTICATOR, "AUTHENTICATOR");
         list.add(LOCAL_RESULT_FACTORY, "LOCAL_RESULT_FACTORY");
         list.add(UUID_COLLATION, "UUID_COLLATION");
+        list.add(HASH_JOIN_ENABLE, "HASH_JOIN_ENABLE");
         TYPES = list;
     }
 

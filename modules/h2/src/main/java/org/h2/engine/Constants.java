@@ -550,6 +550,11 @@ public class Constants {
      */
     public static final String PG_VERSION = "8.2.23";
 
+    /**
+     * Default max size of the table when HASH JOIN is allowed.
+     */
+    public static final int HASH_JOIN_MAX_TABLE_SIZE_DFLT = 100_000;
+
     private Constants() {
         // utility class
     }

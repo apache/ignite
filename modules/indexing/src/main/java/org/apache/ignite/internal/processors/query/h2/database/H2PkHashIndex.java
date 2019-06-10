@@ -104,7 +104,8 @@ public class H2PkHashIndex extends GridH2IndexBase {
             IndexingQueryFilter f = qctx.filter();
             filter = f != null ? f.forCache(getTable().cacheName()) : null;
             mvccSnapshot = qctx.mvccSnapshot();
-            seg = qctx.segment();
+
+            seg = segment(qctx);
         }
 
         assert !cctx.mvccEnabled() || mvccSnapshot != null;
