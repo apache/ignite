@@ -117,7 +117,7 @@ public class IgniteCacheTestSuite5 {
 
         GridTestUtils.addTestIfNeeded(suite, ConcurrentCacheStartTest.class, ignoredTests);
 
-        suite.add(IgniteCacheReadThroughEvictionsVariationsSuite.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheReadThroughEvictionsVariationsSuite.class, ignoredTests);
 
         //GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicPreloadSelfTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, IgniteCacheContainsKeyColocatedAtomicSelfTest.class, ignoredTests);

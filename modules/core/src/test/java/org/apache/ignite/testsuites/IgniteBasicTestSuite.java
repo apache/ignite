@@ -96,6 +96,7 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilderTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.MessageOrderLogListenerTest;
+import org.apache.ignite.testframework.test.ConfigVariationsExecutionTest;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
 import org.apache.ignite.testframework.test.ListeningTestLoggerTest;
 import org.apache.ignite.testframework.test.ParametersTest;
@@ -231,6 +232,7 @@ import org.junit.runners.Suite;
         ParametersTest.class,
         VariationsIteratorTest.class,
         NotStringSystemPropertyTest.class,
+        ConfigVariationsExecutionTest.class,
         ConfigVariationsTestSuiteBuilderTest.class,
 
     DeadLockOnNodeLeftExchangeTest.class,
