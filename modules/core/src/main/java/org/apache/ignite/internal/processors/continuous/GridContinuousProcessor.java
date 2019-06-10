@@ -44,6 +44,8 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
@@ -611,9 +613,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 nodeFilter = null;
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal continuous routine filter, ignore routine [" +
+            U.error(log, "Failed to unmarshal continuous routine filter [" +
                 "routineId=" + routineInfo.routineId +
                 ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+
+            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             return;
         }
@@ -624,9 +628,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             hnd = U.unmarshal(marsh, routineInfo.hnd, U.resolveClassLoader(ctx.config()));
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to unmarshal continuous routine handler, ignore routine [" +
+            U.error(log, "Failed to unmarshal continuous routine handler [" +
                 "routineId=" + routineInfo.routineId +
                 ", srcNodeId=" + routineInfo.srcNodeId + ']', e);
+
+            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             return;
         }
@@ -660,9 +666,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     false);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to register continuous routine handler, ignore routine [" +
+                U.error(log, "Failed to register continuous routine handler [" +
                     "routineId=" + routineId +
                     ", srcNodeId=" + srcNodeId + ']', e);
+
+                ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
             }
         }
         else {
@@ -681,9 +689,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     hnd.p2pUnmarshal(srcNodeId, ctx);
                 }
                 catch (IgniteCheckedException | IgniteException e) {
-                    U.error(log, "Failed to unmarshal continuous routine handler, ignore routine [" +
+                    U.error(log, "Failed to unmarshal continuous routine handler [" +
                         "routineId=" + routineId +
                         ", srcNodeId=" + srcNodeId + ']', e);
+
+                    ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
                     unregisterHandler(routineId, hnd, false);
                 }
