@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -505,40 +506,42 @@ public class GridDhtPartitionDemander {
                     IgniteInternalFuture<?> clearAllFuture = clearFullPartitions(fut, demandMsg.partitions().fullSet());
 
                     // Start rebalancing after clearing full partitions is finished.
-                    clearAllFuture.listen(f -> ctx.kernalContext().closure().runLocalSafe(() -> {
-                        if (fut.isDone())
-                            return;
+                    clearAllFuture.listen(f -> ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                        @Override public void run() {
+                            if (fut.isDone())
+                                return;
 
-                        try {
-                            ctx.io().sendOrderedMessage(node, rebalanceTopics.get(topicId),
-                                demandMsg.convertIfNeeded(node.version()), grp.ioPolicy(), demandMsg.timeout());
+                            try {
+                                ctx.io().sendOrderedMessage(node, rebalanceTopics.get(topicId),
+                                    demandMsg.convertIfNeeded(node.version()), grp.ioPolicy(), demandMsg.timeout());
 
-                            // Cleanup required in case partitions demanded in parallel with cancellation.
-                            synchronized (fut) {
-                                if (fut.isDone())
-                                    fut.cleanupRemoteContexts(node.id());
+                                // Cleanup required in case partitions demanded in parallel with cancellation.
+                                synchronized (fut) {
+                                    if (fut.isDone())
+                                        fut.cleanupRemoteContexts(node.id());
+                                }
+
+                                if (log.isInfoEnabled())
+                                    log.info("Started rebalance routine [" + grp.cacheOrGroupName() +
+                                        ", supplier=" + node.id() + ", topic=" + topicId +
+                                        ", fullPartitions=" + S.compact(stripePartitions.get(topicId).fullSet()) +
+                                        ", histPartitions=" + S.compact(stripePartitions.get(topicId).historicalSet()) + "]");
                             }
+                            catch (IgniteCheckedException e1) {
+                                ClusterTopologyCheckedException cause = e1.getCause(ClusterTopologyCheckedException.class);
 
-                            if (log.isInfoEnabled())
-                                log.info("Started rebalance routine [" + grp.cacheOrGroupName() +
-                                    ", supplier=" + node.id() + ", topic=" + topicId +
-                                    ", fullPartitions=" + S.compact(stripePartitions.get(topicId).fullSet()) +
-                                    ", histPartitions=" + S.compact(stripePartitions.get(topicId).historicalSet()) + "]");
-                        }
-                        catch (IgniteCheckedException e1) {
-                            ClusterTopologyCheckedException cause = e1.getCause(ClusterTopologyCheckedException.class);
+                                if (cause != null)
+                                    log.warning("Failed to send initial demand request to node. " + e1.getMessage());
+                                else
+                                    log.error("Failed to send initial demand request to node.", e1);
 
-                            if (cause != null)
-                                log.warning("Failed to send initial demand request to node. " + e1.getMessage());
-                            else
-                                log.error("Failed to send initial demand request to node.", e1);
+                                fut.cancel();
+                            }
+                            catch (Throwable th) {
+                                log.error("Runtime error caught during initial demand request sending.", th);
 
-                            fut.cancel();
-                        }
-                        catch (Throwable th) {
-                            log.error("Runtime error caught during initial demand request sending.", th);
-
-                            fut.cancel();
+                                fut.cancel();
+                            }
                         }
                     }, true));
                 }

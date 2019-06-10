@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -251,7 +252,7 @@ public class QueryCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Execute query callable.
      */
-    private static class ExecuteQueryCallable implements Callable<GridRestResponse> {
+    private static class ExecuteQueryCallable implements GridPlainCallable<GridRestResponse> {
         /** Kernal context. */
         private GridKernalContext ctx;
 

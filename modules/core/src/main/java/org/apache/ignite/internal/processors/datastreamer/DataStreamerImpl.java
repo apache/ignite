@@ -96,6 +96,7 @@ import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -326,7 +327,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 // Only async notification is possible since
                 // discovery thread may be trapped otherwise.
                 if (buf != null) {
-                    waitAffinityAndRun(new Runnable() {
+                    waitAffinityAndRun(new GridPlainRunnable() {
                         @Override public void run() {
                             buf.onNodeLeft();
                         }
@@ -1046,7 +1047,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (bufMappings.remove(nodeId, buf)) {
                             final Buffer buf0 = buf;
 
-                            waitAffinityAndRun(new Runnable() {
+                            waitAffinityAndRun(new GridPlainRunnable() {
                                 @Override public void run() {
                                     buf0.onNodeLeft();
 

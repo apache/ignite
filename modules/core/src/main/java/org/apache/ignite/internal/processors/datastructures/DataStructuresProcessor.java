@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
@@ -143,8 +144,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             // This may require cache operation to execute,
             // therefore cannot use event notification thread.
             ctx.closure().callLocalSafe(
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
+                new GridPlainCallable<Object>() {
+                    @Override public Object call() {
                         DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         UUID leftNodeId = discoEvt.eventNode().id();

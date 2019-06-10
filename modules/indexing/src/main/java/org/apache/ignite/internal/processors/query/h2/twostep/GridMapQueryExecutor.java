@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -212,7 +213,7 @@ public class GridMapQueryExecutor {
             final int segment = i;
 
             ctx.closure().callLocal(
-                new Callable<Void>() {
+                new GridPlainCallable<Void>() {
                     @Override public Void call() {
                         onQueryRequest0(node,
                             req.requestId(),

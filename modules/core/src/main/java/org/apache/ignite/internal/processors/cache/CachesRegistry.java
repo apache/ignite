@@ -30,6 +30,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -296,13 +297,15 @@ public class CachesRegistry {
             }
         }
 
-        return cctx.kernalContext().closure().runLocalSafe(() -> {
-            try {
-                for (StoredCacheData data : cacheConfigsToPersist)
-                    cctx.pageStore().storeCacheData(data, false);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Error while saving cache configurations on disk", e);
+        return cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+            @Override public void run() {
+                try {
+                    for (StoredCacheData data : cacheConfigsToPersist)
+                        cctx.pageStore().storeCacheData(data, false);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Error while saving cache configurations on disk", e);
+                }
             }
         });
     }

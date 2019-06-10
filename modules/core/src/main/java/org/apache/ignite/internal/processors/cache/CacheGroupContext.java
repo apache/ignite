@@ -53,6 +53,7 @@ import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1030,7 +1031,7 @@ public class CacheGroupContext {
         final List<Runnable> procC = skipCtx != null ? skipCtx.processClosures() : null;
 
         if (procC != null) {
-            ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+            ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     for (Runnable c : procC)
                         c.run();

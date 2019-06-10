@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.commun
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.HadoopMessageListener;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -365,7 +366,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         assert old == null;
 
-        ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+        ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
             @Override public void run() {
                 if (!busyLock.tryReadLock()) {
                     fut.onDone(new IgniteCheckedException("Failed to start external process (grid is stopping)."));

@@ -355,7 +355,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     public void removeExplicitNodeLocks(UUID leftNodeId) {
         cctx.kernalContext().closure().runLocalSafe(
-            new Runnable() {
+            new GridPlainRunnable() {
                 @Override public void run() {
                     for (GridDistributedCacheEntry entry : locked()) {
                         try {

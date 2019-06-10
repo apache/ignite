@@ -42,6 +42,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -130,7 +131,11 @@ public class ExchangeLatchManager {
 
                 // Do not process from discovery thread.
                 // TODO: Should use queue to guarantee the order of processing left nodes.
-                ctx.closure().runLocalSafe(() -> processNodeLeft(cache.version(), e.eventNode()));
+                ctx.closure().runLocalSafe(new GridPlainRunnable() {
+                    @Override public void run() {
+                        processNodeLeft(cache.version(), e.eventNode());
+                    }
+                });
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {

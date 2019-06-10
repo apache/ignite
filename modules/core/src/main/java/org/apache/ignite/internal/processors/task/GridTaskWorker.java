@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.processors.service.GridServiceNotFoundException;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -1002,7 +1003,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (waitForAffTop && affFut != null) {
                 affFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                     @Override public void apply(IgniteInternalFuture<?> fut0) {
-                        ctx.closure().runLocalSafe(new Runnable() {
+                        ctx.closure().runLocalSafe(new GridPlainRunnable() {
                             @Override public void run() {
                                 onResponse(failoverRes);
                             }
@@ -1021,7 +1022,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private void sendRetryRequest(final long waitms, final GridJobResultImpl jRes, final GridJobExecuteResponse resp) {
         ctx.timeout().schedule(new Runnable() {
             @Override public void run() {
-                ctx.closure().runLocalSafe(new Runnable() {
+                ctx.closure().runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
                         try {
                             ClusterNode newNode = ctx.affinity().mapPartitionToNode(affCacheName, affPartId,

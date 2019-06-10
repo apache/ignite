@@ -91,6 +91,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -649,7 +650,11 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
         // Complete init future if local node is a new coordinator. All previous txs have been already completed here.
         if (curCrd0.local())
-            ctx.closure().runLocalSafe(initFut::onDone);
+            ctx.closure().runLocalSafe(new GridPlainRunnable() {
+                @Override public void run() {
+                    initFut.onDone();
+                }
+            });
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.io.Externalizable;
 import java.util.Collection;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -36,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -188,7 +188,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync() {
-        return ctx.closures().callLocalSafe(new Callable<Void>() {
+        return ctx.closures().callLocalSafe(new GridPlainCallable<Void>() {
             @Override public Void call() throws Exception {
                 removeAll();
 
@@ -239,7 +239,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
-        return ctx.closures().callLocalSafe(new Callable<Void>() {
+        return ctx.closures().callLocalSafe(new GridPlainCallable<Void>() {
             @Override public Void call() throws Exception {
                 preloadPartition(part);
 

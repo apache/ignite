@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -208,7 +209,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (val == null)
             throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
-        return ctx.closure().callLocalSafe(new Callable<Object>() {
+        return ctx.closure().callLocalSafe(new GridPlainCallable<Object>() {
             @Override public Object call() throws Exception {
                 EntryProcessorResult<Boolean> res = cache.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
                     @Override public Boolean process(MutableEntry<Object, Object> entry,
@@ -1685,7 +1686,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             GridKernalContext ctx) {
             assert c != null;
 
-            return ctx.closure().callLocalSafe(new Callable<Object>() {
+            return ctx.closure().callLocalSafe(new GridPlainCallable<Object>() {
                 @Override public Object call() throws Exception {
                     EntryProcessorResult<Boolean> res = c.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
                         @Override public Boolean process(MutableEntry<Object, Object> entry,
