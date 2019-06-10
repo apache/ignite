@@ -64,12 +64,18 @@ public class CommandHandler {
     private final CommandLogger commandLogger= new CommandLogger();
 
     /** JULs logger. */
-    private final Logger logger = setupJavaLogger();
+    private static final Logger staticLogger = setupJavaLogger();
 
-    private Logger setupJavaLogger() {
+    /** */
+    private final Logger logger;
+
+    /**
+     * @return Instance of default Java logger.
+     */
+    private static Logger setupJavaLogger() {
         Logger result;
 
-        result = Logger.getLogger(getClass().getName());
+        result = Logger.getLogger(CommandHandler.class.getName());
         result.setLevel(Level.INFO);
 
         // Adding logging to file.
@@ -144,6 +150,20 @@ public class CommandHandler {
         CommandHandler hnd = new CommandHandler();
 
         System.exit(hnd.execute(Arrays.asList(args)));
+    }
+
+    /**
+     *
+     */
+    public CommandHandler() {
+        logger = staticLogger;
+    }
+
+    /**
+     * @param logger Logger to use.
+     */
+    public CommandHandler(Logger logger) {
+        this.logger = logger;
     }
 
     /**

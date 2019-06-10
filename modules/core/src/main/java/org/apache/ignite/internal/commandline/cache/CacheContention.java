@@ -115,7 +115,7 @@ public class CacheContention implements Command<CacheContention.Arguments> {
         CommandLogger.printErrors(res.exceptions(), "Contention check failed on nodes:", logger);
 
         for (ContentionInfo info : res.getInfos())
-            info.print();
+            info.print(logger);
 
         return res;
     }
