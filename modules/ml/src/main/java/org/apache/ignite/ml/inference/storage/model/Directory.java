@@ -26,8 +26,27 @@ class Directory implements FileOrDirectory {
     /** */
     private static final long serialVersionUID = -6441963559954107245L;
 
+    /** Time since last modification. */
+    private final long modificationTs;
+
     /** List of files in the directory. */
     private final Set<String> files = new HashSet<>();
+
+    /**
+     * Creates an instance of class.
+     */
+    public Directory() {
+        this.modificationTs = System.currentTimeMillis();
+    }
+
+    /**
+     * Creates an instance of class.
+     *
+     * @param modificationTs Modification time.
+     */
+    public Directory(long modificationTs) {
+        this.modificationTs = modificationTs;
+    }
 
     /** {@inheritDoc} */
     @Override public boolean isFile() {
@@ -37,5 +56,17 @@ class Directory implements FileOrDirectory {
     /** */
     Set<String> getFiles() {
         return files;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getModificationTs() {
+        return modificationTs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public FileOrDirectory updateModifictaionTs(long modificationTs) {
+        Directory directory = new Directory(modificationTs);
+        directory.getFiles().addAll(this.files);
+        return directory;
     }
 }

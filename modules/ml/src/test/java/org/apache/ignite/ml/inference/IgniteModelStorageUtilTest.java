@@ -16,12 +16,16 @@
 
 package org.apache.ignite.ml.inference;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.plugin.MLPluginConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -35,13 +39,22 @@ public class IgniteModelStorageUtilTest extends GridCommonAbstractTest {
      * Constructs a new instance of Ignite model storage util test.
      */
     public IgniteModelStorageUtilTest() {
-        cfg = new IgniteConfiguration();
+        cfg = new IgniteConfiguration()
+            .setDiscoverySpi(new TcpDiscoverySpi()
+                .setIpFinder(new TcpDiscoveryVmIpFinder()
+                    .setAddresses(Arrays.asList("127.0.0.1:47500..47509"))));
 
         MLPluginConfiguration mlCfg = new MLPluginConfiguration();
         mlCfg.setWithMdlDescStorage(true);
         mlCfg.setWithMdlStorage(true);
 
         cfg.setPluginConfigurations(mlCfg);
+    }
+
+    /** */
+    @After
+    public void tearDown() throws Exception {
+        stopAllGrids();
     }
 
     /** */

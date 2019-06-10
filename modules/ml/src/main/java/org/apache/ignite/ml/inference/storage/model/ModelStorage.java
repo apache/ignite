@@ -17,6 +17,7 @@
 package org.apache.ignite.ml.inference.storage.model;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Storage that allows to load, keep and get access to model in byte representation.
@@ -111,4 +112,22 @@ public interface ModelStorage {
      * @return {@code true} if the specified path associated with a regular file.
      */
     public boolean isFile(String path);
+
+    /**
+     * Returns statistics for file.
+     *
+     * @param path Path to directory or file.
+     * @return Statistics for file or directory.
+     */
+    public FileStat getFileStat(String path);
+
+    /**
+     * Locks paths in model storage and call passed method.
+     *
+     * @param supplier Supplier.
+     * @param paths Paths for lock.
+     * @param <T> Type of result.
+     * @return Result of {@code callable}.
+     */
+    public <T> T lockPaths(Supplier<T> supplier, String... paths);
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.client.ClientTcpMultiThreadedSelfTest;
 import org.apache.ignite.internal.client.ClientTcpSslAuthenticationSelfTest;
 import org.apache.ignite.internal.client.ClientTcpSslMultiThreadedSelfTest;
 import org.apache.ignite.internal.client.ClientTcpTaskExecutionAfterTopologyRestartSelfTest;
+import org.apache.ignite.internal.client.ThinClientCustomQueryRegistryTest;
 import org.apache.ignite.internal.client.impl.ClientCacheFlagsCodecTest;
 import org.apache.ignite.internal.client.impl.ClientComputeImplSelfTest;
 import org.apache.ignite.internal.client.impl.ClientDataImplSelfTest;
@@ -168,7 +169,10 @@ import org.junit.runners.Suite;
     // SSL params.
     ClientSslParametersTest.class,
 
-    IgniteClientFailuresTest.class
+    IgniteClientFailuresTest.class,
+
+    // Test for custom queries registry
+    ThinClientCustomQueryRegistryTest.class
 })
 public class IgniteClientTestSuite {
 }

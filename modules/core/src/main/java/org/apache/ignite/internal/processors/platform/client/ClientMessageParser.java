@@ -205,6 +205,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** */
     private static final short OP_BINARY_TYPE_PUT = 3003;
 
+    /* Custom queries working through processors registry. */
+    /** */
+    private static final short OP_CUSTOM_QUERY = 32_000;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -378,6 +382,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_QUERY_SQL_FIELDS_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
+
+            case OP_CUSTOM_QUERY:
+                return new ClientCustomQueryRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

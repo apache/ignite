@@ -37,4 +37,26 @@ public interface FileOrDirectory extends Serializable {
     public default boolean isDirectory() {
         return !isFile();
     }
+
+    /**
+     * Returns time since file modification.
+     *
+     * @return time since file modification.
+     */
+    public long getModificationTs();
+
+    /**
+     * Create new instance of filesystem object with modified timestamp.
+     *
+     * @param modificationTs Modification timestamp.
+     * @return new instance with new value.
+     */
+    public FileOrDirectory updateModifictaionTs(long modificationTs);
+
+    /**
+     * Create new instance of filesystem object with current timestamp.
+     */
+    public default FileOrDirectory updateModifictaionTs() {
+        return updateModifictaionTs(System.currentTimeMillis());
+    }
 }
