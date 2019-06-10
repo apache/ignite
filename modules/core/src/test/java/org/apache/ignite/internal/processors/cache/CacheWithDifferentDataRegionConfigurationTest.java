@@ -159,56 +159,6 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
      *
      */
     @Test
-    public void firstNodeHasDefaultAndSecondWithTwoRegionsDefaultAndPersistenceAcceptable() throws Exception {
-        IgniteEx node1 = node(NODE_1)
-            .andCache(CACHE_1)
-            .start();
-
-        IgniteEx node2 = node(NODE_2)
-            .withRegion(REGION_1, MEMORY)
-            .withRegion(REGION_2, PERSISTENCE)
-            .andExclusiveCache(CACHE_2, REGION_2)
-            .start();
-
-        node1.cluster().active(true);
-
-        populateCache(node1, CACHE_1, 1000);
-        populateCache(node2, CACHE_2, 350);
-
-        assertThatCacheContains(node2, CACHE_1, 1000);
-        assertThatCacheContains(node1, CACHE_2, 350);
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void twoNodesHaveTwoNonOverlappingRegionsAcceptable() throws Exception {
-        IgniteEx node1 = node(NODE_1)
-            .withRegion(REGION_1, PERSISTENCE)
-            .withRegion(REGION_2, MEMORY)
-            .andExclusiveCache(CACHE_1, REGION_1)
-            .start();
-
-        IgniteEx node2 = node(NODE_2)
-            .withRegion(REGION_3, MEMORY)
-            .withRegion(REGION_4, PERSISTENCE)
-            .andExclusiveCache(CACHE_2, REGION_4)
-            .start();
-
-        node1.cluster().active(true);
-
-        populateCache(node1, CACHE_1, 1000);
-        populateCache(node2, CACHE_2, 350);
-
-        assertThatCacheContains(node2, CACHE_1, 1000);
-        assertThatCacheContains(node1, CACHE_2, 350);
-    }
-
-    /**
-     *
-     */
-    @Test
     public void twoNodesWithSameRegionsButDifferentPersistenceModeForThemUnacceptable() throws Exception {
         node(NODE_1)
             .withRegion(REGION_1, PERSISTENCE)
