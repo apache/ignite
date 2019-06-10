@@ -204,7 +204,7 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
             if (args.dump())
                 cacheIdleVerifyDump(client, clientCfg, logger);
             else if (idleVerifyV2)
-                cacheIdleVerifyV2(client, clientCfg);
+                cacheIdleVerifyV2(client, clientCfg, logger);
             else
                 legacyCacheIdleVerify(client, clientCfg, logger);
         }
@@ -329,7 +329,8 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
      */
     private void cacheIdleVerifyV2(
         GridClient client,
-        GridClientConfiguration clientCfg
+        GridClientConfiguration clientCfg,
+        Logger log
     ) throws GridClientException {
         IdleVerifyResultV2 res = executeTask(
             client,
@@ -337,7 +338,7 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
             new VisorIdleVerifyTaskArg(args.caches(), args.excludeCaches(), args.idleCheckCrc()),
             clientCfg);
 
-        res.print(System.out::print);
+        res.print(log::info);
     }
 
 
