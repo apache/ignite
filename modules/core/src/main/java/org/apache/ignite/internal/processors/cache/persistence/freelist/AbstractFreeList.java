@@ -546,7 +546,16 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Reduces the workload on the free list by writing multiple rows into a single memory page at once.<br>
+     * <br>
+     * Rows are sequentially added to the page as long as there is enough free space on it. If the row is large then
+     * those fragments that occupy the whole memory page are written to other pages, and the remainder is added to the
+     * current one.
+     *
+     * @param rows Rows.
+     * @throws IgniteCheckedException If failed.
+     */
     @Override public void insertDataRows(Collection<T> rows,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
