@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLoggerFormatter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -65,7 +67,10 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     /** System out. */
     protected PrintStream sysOut;
 
-    /** Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test. */
+    /**
+     * Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test.
+     * Will be as well passed as a handler output for an anonymous logger in the test.
+     */
     protected ByteArrayOutputStream testOut;
 
     /** Atomic configuration. */
@@ -103,13 +108,23 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
 
         sysOut = System.out;
 
-        testOut = new ByteArrayOutputStream(40 * 1024 * 1024);
+        testOut = new ByteArrayOutputStream(16 * 1024);
 
         checkpointFreq = DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        log.info("Test output for " + currentTestMethod());
+        log.info("----------------------------------------");
+
+        if (testOut != null)
+            System.out.println(testOut.toString());
+
+        testOut = null;
+
+        System.setOut(sysOut);
+
         stopAllGrids();
 
         cleanPersistenceDir();
@@ -121,12 +136,20 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         }
 
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+    }
 
-        System.setOut(sysOut);
+    /**
+     * @return Logger.
+     */
+    private Logger createTestLogger() {
+        Logger log = Logger.getAnonymousLogger();
 
-        log.info("----------------------------------------");
-        if (testOut != null)
-            System.out.println(testOut.toString());
+        // Adding logging to console.
+        StreamHandler streamHandler = new StreamHandler(testOut, new JavaLoggerFormatter());
+
+        log.addHandler(streamHandler);
+
+        return log;
     }
 
     /** */
@@ -178,7 +201,7 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(new CommandHandler(), args);
+        return execute(new CommandHandler(createTestLogger()), args);
     }
 
     /**

@@ -122,7 +122,7 @@ public class CacheDistribution implements Command<CacheDistribution.Arguments> {
 
         CommandLogger.printErrors(res.exceptions(), "Cache distrubution task failed on nodes:", logger);
 
-        res.print(System.out);
+        res.print(System.out::println);
 
         return res;
     }
