@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.ClusterStateReplicatedSelfTes
 import org.apache.ignite.internal.processors.cache.ConcurrentCacheStartTest;
 import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadThroughTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
@@ -86,6 +87,7 @@ public class IgniteCacheMvccTestSuite5 {
         ignoredTests.add(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);
         ignoredTests.add(GridCachePartitionExchangeManagerHistSizeTest.class);
         ignoredTests.add(ConcurrentCacheStartTest.class);
+        ignoredTests.add(IgniteCacheReadThroughEvictionsVariationsSuite.class);
 
         return IgniteCacheTestSuite5.suite(ignoredTests);
     }
