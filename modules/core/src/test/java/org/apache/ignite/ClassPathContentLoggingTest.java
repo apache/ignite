@@ -63,7 +63,7 @@ public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
             .append(File.separator)
             .append("*");
 
-        System.setProperty("java.class.path", javaClassPath + ";" + jarPath.toString());
+        System.setProperty("java.class.path", javaClassPath + File.pathSeparator + jarPath.toString());
     }
 
     /** {@inheritDoc} */
