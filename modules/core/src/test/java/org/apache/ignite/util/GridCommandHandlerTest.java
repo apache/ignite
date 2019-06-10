@@ -1715,6 +1715,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         awaitPartitionMapExchange();
 
+        forceCheckpoint();
+
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute(args));
