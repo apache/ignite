@@ -21,7 +21,6 @@ import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
-import org.apache.ignite.internal.util.GridCountDownCallbackTest;
 import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
@@ -125,9 +124,7 @@ import org.junit.runners.Suite;
     PageIdUtilsSelfTest.class,
 
     // control.sh
-    CommandHandlerParsingTest.class,
-
-    GridCountDownCallbackTest.class
+    CommandHandlerParsingTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }
