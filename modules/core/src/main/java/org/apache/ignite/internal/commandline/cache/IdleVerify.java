@@ -335,8 +335,15 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
         IdleVerifyResultV2 res = executeTask(
             client,
             VisorIdleVerifyTaskV2.class,
-            new VisorIdleVerifyTaskArg(args.caches(), args.excludeCaches(), args.idleCheckCrc()),
-            clientCfg);
+            new VisorIdleVerifyTaskArg(
+                args.caches(),
+                args.excludeCaches(),
+                args.isSkipZeros(),
+                args.getCacheFilterEnum(),
+                args.idleCheckCrc()
+            ),
+            clientCfg
+        );
 
         res.print(log::info);
     }
@@ -354,7 +361,13 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
         VisorIdleVerifyTaskResult res = executeTask(
             client,
             VisorIdleVerifyTask.class,
-            new VisorIdleVerifyTaskArg(args.caches(), args.excludeCaches(), args.idleCheckCrc()),
+            new VisorIdleVerifyTaskArg(
+                args.caches(),
+                args.excludeCaches(),
+                args.isSkipZeros(),
+                args.getCacheFilterEnum(),
+                args.idleCheckCrc()
+            ),
             clientCfg);
 
         Map<PartitionKey, List<PartitionHashRecord>> conflicts = res.getConflicts();
