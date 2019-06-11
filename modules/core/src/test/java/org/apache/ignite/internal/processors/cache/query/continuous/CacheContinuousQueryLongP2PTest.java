@@ -47,7 +47,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperationP2PTest {
     /** */
-    private static volatile int delay = 300;
+    private static volatile int delay;
 
     /** {@inheritDoc} */
     @Override protected CommunicationSpi communicationSpi() {
@@ -66,9 +66,9 @@ public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperati
      *
      * @throws Exception If failed.
      */
-    @Test
+    @Test(timeout = 60_000)
     public void testLongP2PClassLoadingDoesntBlockNodeStart() throws Exception {
-        delay = 30_000;
+        delay = 3_000;
 
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, ATOMIC);
         IgniteCache cache = grid(NODES - 1).getOrCreateCache(ccfg.getName());
@@ -90,7 +90,7 @@ public class CacheContinuousQueryLongP2PTest extends CacheContinuousQueryOperati
             }
         });
 
-        startFut.get(3, TimeUnit.SECONDS);
+        startFut.get(1, TimeUnit.SECONDS);
 
         assertNull("Error occurred when starting a node: " + err.get(), err.get());
     }
