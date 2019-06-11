@@ -20,12 +20,12 @@ package org.apache.ignite.internal.commandline.cache.distribution;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -96,9 +96,9 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
     /**
      * Print collect information on the distribution of partitions.
      *
-     * @param out Print stream.
+     * @param printer Line printer.
      */
-    public void print(PrintStream out) {
+    public void print(Consumer<String> printer) {
         if (nodeResList.isEmpty())
             return;
 
@@ -135,18 +135,19 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
                     userAttrsName.append(userAttribute);
             }
         }
-        out.println("[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses" + userAttrsName + "]");
+
+        printer.accept("[groupId,partition,nodeId,primary,state,updateCounter,partitionSize,nodeAddresses" + userAttrsName + "]");
 
         int oldGrpId = 0;
 
         for (Row row : rows) {
             if (oldGrpId != row.grpId) {
-                out.println("[next group: id=" + row.grpId + ", name=" + row.grpName + ']');
+                printer.accept("[next group: id=" + row.grpId + ", name=" + row.grpName + ']');
 
                 oldGrpId = row.getGroupId();
             }
 
-            row.print(out);
+            row.print(printer);
         }
     }
 
@@ -308,39 +309,41 @@ public class CacheDistributionTaskResult extends VisorDataTransferObject {
         }
 
         /** */
-        public void print(PrintStream out) {
-            out.print(grpId);
-            out.print(',');
+        public void print(Consumer<String> printer) {
+            StringBuilder sb = new StringBuilder();
 
-            out.print(partId);
-            out.print(',');
+            sb.append(grpId);
+            sb.append(',');
 
-            out.print(U.id8(getNodeId()));
-            out.print(',');
+            sb.append(partId);
+            sb.append(',');
 
-            out.print(primary ? "P" : "B");
-            out.print(',');
+            sb.append(U.id8(getNodeId()));
+            sb.append(',');
 
-            out.print(state);
-            out.print(',');
+            sb.append(primary ? "P" : "B");
+            sb.append(',');
 
-            out.print(updateCntr);
-            out.print(',');
+            sb.append(state);
+            sb.append(',');
 
-            out.print(size);
-            out.print(',');
+            sb.append(updateCntr);
+            sb.append(',');
 
-            out.print(addrs);
+            sb.append(size);
+            sb.append(',');
+
+            sb.append(addrs);
 
             if (userAttrs != null) {
                 for (String userAttribute : userAttrs.values()) {
-                    out.print(',');
+                    sb.append(',');
                     if (userAttribute != null)
-                        out.print(userAttribute);
+                        sb.append(userAttribute);
                 }
             }
 
-            out.println();
+            printer.accept(sb.toString());
         }
     }
 }
