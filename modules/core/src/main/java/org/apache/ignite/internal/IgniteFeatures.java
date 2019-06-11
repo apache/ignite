@@ -65,7 +65,10 @@ public enum IgniteFeatures {
     TX_TRACKING_UPDATE_COUNTER(12),
 
     /** Support new security processor */
-    IGNITE_SECURITY_PROCESSOR(13);
+    IGNITE_SECURITY_PROCESSOR(13),
+
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14);
 
     /**
      * Unique feature identifier.
