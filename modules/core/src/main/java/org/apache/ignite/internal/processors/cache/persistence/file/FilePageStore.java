@@ -160,8 +160,11 @@ public class FilePageStore implements PageStore {
             lock.writeLock().lock();
 
             try {
-                if (fileExists == null)
-                    fileExists = Files.exists(pathProvider.apply());
+                if (fileExists == null) {
+                    File file = pathProvider.apply().toFile();
+
+                    fileExists = file.exists() && file.length() > headerSize();
+                }
             }
             finally {
                 lock.writeLock().unlock();
