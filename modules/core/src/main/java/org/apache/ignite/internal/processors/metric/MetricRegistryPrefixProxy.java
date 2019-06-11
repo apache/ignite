@@ -45,10 +45,10 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class MetricRegistryPrefixProxy implements MetricRegistry {
     /** Prefix for underlying registry. */
-    private String prefix;
+    private final String prefix;
 
     /** Underlying implementation. */
-    private MetricRegistry reg;
+    private final MetricRegistry reg;
 
     /**
      * @param prefix Metrics prefix.
