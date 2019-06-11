@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheReadFr
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSingleGetMessageTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheMvccTxSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCrossCacheTxSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheNoMessagesTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoadAllTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLoaderWriterTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicLocalLoadAllTest;
@@ -169,6 +170,7 @@ public class IgniteCacheMvccTestSuite4 {
         ignoredTests.add(CacheVersionedEntryPartitionedAtomicSelfTest.class);
         ignoredTests.add(CacheGetFutureHangsSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyAtomicTest.class);
+        ignoredTests.add(NearCacheNoMessagesTest.class);
         ignoredTests.add(CacheVersionedEntryReplicatedAtomicSelfTest.class);
         ignoredTests.add(CacheResultIsNotNullOnPartitionLossTest.class);
 

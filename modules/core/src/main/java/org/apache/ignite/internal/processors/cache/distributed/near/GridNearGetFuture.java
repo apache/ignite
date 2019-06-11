@@ -335,11 +335,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
         final GridNearCacheAdapter near = cache();
 
-        // Allow to get cached value from the local node.
-        boolean allowLocRead = !forcePrimary || cctx.localNode().equals(affNodes.get(0));
-
         while (true) {
-            GridNearCacheEntry entry = allowLocRead ? (GridNearCacheEntry)near.peekEx(key) : null;
+            GridNearCacheEntry entry = (GridNearCacheEntry)near.peekEx(key);
 
             try {
                 CacheObject v = null;
@@ -383,6 +380,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 if (v == null) {
+                    // Allow to get cached value from the local node.
+                    boolean allowLocRead = (!forcePrimary && cctx.config().isReadFromBackup())|| cctx.localNode().equals(affNodes.get(0));
+
                     boolean fastLocGet = allowLocRead && cctx.reserveForFastLocalGet(part, topVer);
 
                     if (fastLocGet) {
