@@ -43,7 +43,7 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param pointer to cluster group implementation.
+             * @param impl Pointer to cluster group implementation.
              */
             ClusterGroup(impl::cluster::SP_ClusterGroupImpl impl);
 

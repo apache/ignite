@@ -163,7 +163,7 @@ namespace ignite
                 /**
                  * Get container of refreshed cluster nodes over this cluster group.
                  *
-                 * @return Instance of compute.
+                 * @return Vector of cluster nodes.
                  */
                 std::vector<ignite::cluster::ClusterNode> RefreshNodes();
 
