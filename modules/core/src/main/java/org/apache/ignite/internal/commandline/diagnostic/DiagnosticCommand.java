@@ -16,12 +16,14 @@
 
 package org.apache.ignite.internal.commandline.diagnostic;
 
+import java.util.Arrays;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 
+import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
 import static org.apache.ignite.internal.commandline.CommandLogger.join;
@@ -32,14 +34,10 @@ import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCom
  *
  */
 public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
-    /**
-     *
-     */
+    /** */
     private DiagnosticSubCommand subcommand;
 
-    /**
-     *
-     */
+    /** */
     private Logger logger;
 
     /** {@inheritDoc} */
@@ -101,20 +99,28 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return "Diagnostic command";
+        return "diagnostic";
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage() {
-        logger.info("View diagnostic information in a cluster. For more details type:");
-        logger.info(join(" ", UTILITY_NAME, DIAGNOSTIC, HELP));
-        logger.info("\n");
+        usage("View diagnostic information in a cluster:", DIAGNOSTIC);
     }
 
     /**
-     *
+     * Print diagnostic command help.
      */
     private void printDiagnosticHelp() {
-        logger.info(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
+        CommandLogger.logWithIndent(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
+
+        CommandLogger.nl();
+
+        CommandLogger.logWithIndent("Subcommands:");
+
+        Arrays.stream(DiagnosticSubCommand.values()).forEach(c -> {
+            if (c.subcommand() != null) c.subcommand().printUsage();
+        });
+
+        CommandLogger.nl();
     }
 }
