@@ -34,15 +34,12 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -55,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -774,7 +772,8 @@ public class GridDhtPartitionDemander {
 
                     boolean last = supplyMsg.last().containsKey(p);
 
-                    boolean batched = canStoreWithoutEvictions(supplyMsg.messageSize());
+                    // In-memory evictions can be configured in such a way that batch mode may lead to OOME.
+                    boolean batched = GridCacheUtils.isEnoughSpaceForData(grp.dataRegion(), supplyMsg.messageSize());
 
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
@@ -868,36 +867,6 @@ public class GridDhtPartitionDemander {
             LT.error(log, e, "Error during rebalancing [" + demandRoutineInfo(topicId, nodeId, supplyMsg) +
                 ", err=" + e + ']');
         }
-    }
-
-    /**
-     * @param size Data size.
-     * @return {@code True} if rebalanced cache group allows writing a specified amount of data without evictions.
-     */
-    private boolean canStoreWithoutEvictions(int size) {
-        DataRegionConfiguration plc = grp.dataRegion().config();
-
-        if (plc.isPersistenceEnabled() || plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
-            return true;
-
-        PageMemory pageMem = grp.dataRegion().pageMemory();
-
-        int sysPageSize = pageMem.systemPageSize();
-
-        // The number of pages is calculated taking into account memory fragmentation and possible concurrent updates.
-        int pagesRequired = (size / sysPageSize) * 2;
-
-        long maxPages = plc.getMaxSize() / sysPageSize;
-
-        // There are enough pages left.
-        if (pagesRequired < maxPages - pageMem.loadedPages())
-            return true;
-
-        // Empty pages pool size restricted.
-        if (pagesRequired > plc.getEmptyPagesPoolSize())
-            return false;
-
-        return pagesRequired < maxPages * (1.0d - plc.getEvictionThreshold());
     }
 
     /**
