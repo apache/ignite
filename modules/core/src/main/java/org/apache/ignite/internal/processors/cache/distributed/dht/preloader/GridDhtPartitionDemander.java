@@ -1226,7 +1226,8 @@ public class GridDhtPartitionDemander {
          * @param grp Cache group.
          * @param assignments Assignments.
          * @param log Logger.
-         * @param rebalanceId Rebalance id.
+         *
+            @param rebalanceId Rebalance id.
          */
         RebalanceFuture(
             CacheGroupContext grp,
@@ -1267,7 +1268,7 @@ public class GridDhtPartitionDemander {
             this.log = null;
             this.rebalanceId = -1;
             this.routines = 0;
-            this.cancelLock = null;
+            this.cancelLock = new ReentrantReadWriteLock();
         }
 
         /**
