@@ -140,7 +140,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
      * @return {@code true} if this records should be add to result and {@code false} otherwise.
      */
     private boolean needToAdd(List<PartitionHashRecordV2> records) {
-        if (records.isEmpty() || (taskArg != null && !taskArg.isSkipZeros()))
+        if (records.isEmpty() || (taskArg != null && !taskArg.skipZeros()))
             return true;
 
         PartitionHashRecordV2 record = records.get(0);
@@ -255,24 +255,24 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
     private String taskArgsAsCmd() {
         StringBuilder result = new StringBuilder();
 
-        if (!F.isEmpty(taskArg.getCaches())) {
-            for (String cache : taskArg.getCaches()) {
+        if (!F.isEmpty(taskArg.caches())) {
+            for (String cache : taskArg.caches()) {
                 result.append(cache);
                 result.append(" ");
             }
         }
 
-        if (taskArg.getCacheFilterEnum() != null && taskArg.getCacheFilterEnum() != CacheFilterEnum.DEFAULT) {
+        if (taskArg.cacheFilterEnum() != null && taskArg.cacheFilterEnum() != CacheFilterEnum.DEFAULT) {
             result.append(CACHE_FILTER);
             result.append(" ");
-            result.append(taskArg.getCacheFilterEnum());
+            result.append(taskArg.cacheFilterEnum());
             result.append(" ");
         }
 
-        if (!F.isEmpty(taskArg.getExcludeCaches())) {
+        if (!F.isEmpty(taskArg.excludeCaches())) {
             result.append(EXCLUDE_CACHES + " ");
 
-            for (String excluded : taskArg.getExcludeCaches()) {
+            for (String excluded : taskArg.excludeCaches()) {
                 result.append(excluded);
                 result.append(" ");
             }
