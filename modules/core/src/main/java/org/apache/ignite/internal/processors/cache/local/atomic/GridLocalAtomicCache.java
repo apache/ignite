@@ -54,8 +54,8 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
@@ -366,7 +366,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private Map<K, V> getAllInternal(@Nullable Collection<? extends K> keys,
+    private Map<K, V> getAllInternal(
+        @Nullable Collection<? extends K> keys,
         boolean storeEnabled,
         String taskName,
         boolean deserializeBinary,
@@ -531,18 +532,15 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (success || !storeEnabled)
             return vals;
 
-        return getAllAsync(
-            keys,
-            null,
+        return this.<K, V>getAllAsync0(ctx.cacheKeysView(keys),
             opCtx == null || !opCtx.skipStore(),
             false,
             subjId,
             taskName,
             deserializeBinary,
-            opCtx != null && opCtx.recovery(),
-            /*force primary*/false,
             expiry,
             skipVals,
+            opCtx != null && opCtx.recovery(),
             needVer).get();
     }
 
