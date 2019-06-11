@@ -113,7 +113,7 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
         logger.logWithIndent("Subcommands:");
 
         Arrays.stream(DiagnosticSubCommand.values()).forEach(c -> {
-            if (c.subcommand() != null) c.subcommand().printUsage();
+            if (c.subcommand() != null) c.subcommand().printUsage(logger);
         });
 
         logger.nl();
