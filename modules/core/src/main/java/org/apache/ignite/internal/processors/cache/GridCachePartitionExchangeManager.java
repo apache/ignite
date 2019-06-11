@@ -3046,11 +3046,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (isCancelled())
                         Thread.currentThread().interrupt();
 
-                    updateHeartbeat();
+                    blockingSectionBegin();
 
-                    task = futQ.poll(timeout, MILLISECONDS);
-
-                    updateHeartbeat();
+                    try {
+                        task = futQ.poll(timeout, MILLISECONDS);
+                    }
+                    finally {
+                        blockingSectionEnd();
+                    }
 
                     if (task == null)
                         continue; // Main while loop.
