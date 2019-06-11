@@ -19,8 +19,9 @@ SUBDIRS = \
     put-get-example \
     odbc-example \
     query-example \
-	continuous-query-example \
-	compute-example \
-	thin-client-put-get-example \
+    continuous-query-example \
+    compute-example \
+    cluster-compute-example \
+    thin-client-put-get-example \
     include
 
