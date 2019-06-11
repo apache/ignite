@@ -31,10 +31,10 @@ import org.junit.jupiter.api.Test;
 public class DeploymentExamplesSelfTest extends GridAbstractExamplesTest {
     // TODO: IGNITE-711 next example(s) should be implemented for java 8
     // or testing method(s) should be removed if example(s) does not applicable for java 8.
-    @Test
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeploymentExample() throws Exception {
         DeploymentExample.main(EMPTY_ARGS);
     }
