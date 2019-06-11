@@ -26,7 +26,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.metric.MetricNameUtils.MetricName;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils.MetricName;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -35,7 +35,7 @@ import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
 
 /**
  * This SPI implementation exports metrics as JMX beans.

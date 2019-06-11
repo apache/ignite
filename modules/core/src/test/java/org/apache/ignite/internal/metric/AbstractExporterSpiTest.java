@@ -24,7 +24,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** */
 public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {

@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric;
+package org.apache.ignite.internal.processors.metric.impl;
+
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -23,7 +26,7 @@ package org.apache.ignite.internal.processors.metric;
  * @see GridMetricManager
  * @see MetricRegistry
  */
-public class MetricNameUtils {
+public class MetricUtils {
     /** Metric name part separator. */
     public static final String SEPARATOR = ".";
 
@@ -64,6 +67,20 @@ public class MetricNameUtils {
 
         return String.join(SEPARATOR, names);
 
+    }
+
+    /**
+     * Atomically sets the value to the given updated value
+     * if the current value {@code ==} the expected value.
+     *
+     * @param m Metric.
+     * @param expect The expected value.
+     * @param update The new value.
+     * @return {@code true} if successful. False return indicates that
+     * the actual value was not equal to the expected value.
+     */
+    public static boolean compareAndSet(LongMetricImpl m, long expect, long update) {
+        return LongMetricImpl.updater.compareAndSet(m, expect, update);
     }
 
     /**

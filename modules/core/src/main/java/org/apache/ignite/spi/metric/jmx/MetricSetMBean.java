@@ -25,7 +25,7 @@ import javax.management.AttributeList;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
-import org.apache.ignite.internal.processors.metric.MetricNameUtils.MetricName;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils.MetricName;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -34,7 +34,7 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
-import static org.apache.ignite.internal.processors.metric.MetricNameUtils.parse;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.parse;
 
 /**
  * MBean for exporting values of metric set.

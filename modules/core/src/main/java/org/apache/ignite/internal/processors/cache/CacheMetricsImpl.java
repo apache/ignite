@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,7 +36,7 @@ import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Adapter for cache metrics.
@@ -867,7 +868,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         long minTime = entryProcessorMinInvocationTime.longValue();
 
         while (minTime > duration || minTime == 0) {
-            if (entryProcessorMinInvocationTime.compareAndSet(minTime, duration))
+            if (MetricUtils.compareAndSet(entryProcessorMinInvocationTime, minTime, duration))
                 break;
             else
                 minTime = entryProcessorMinInvocationTime.longValue();
@@ -883,7 +884,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         long maxTime = entryProcessorMaxInvocationTime.longValue();
 
         while (maxTime < duration) {
-            if (entryProcessorMaxInvocationTime.compareAndSet(maxTime, duration))
+            if (MetricUtils.compareAndSet(entryProcessorMaxInvocationTime, maxTime, duration))
                 break;
             else
                 maxTime = entryProcessorMaxInvocationTime.longValue();

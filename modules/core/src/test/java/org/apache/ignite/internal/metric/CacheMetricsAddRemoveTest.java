@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** */
 @RunWith(Parameterized.class)

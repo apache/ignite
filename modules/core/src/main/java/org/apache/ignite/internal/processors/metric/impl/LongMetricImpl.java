@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class LongMetricImpl extends AbstractMetric implements LongMetric {
     /** Field updater. */
-    private static final AtomicLongFieldUpdater<LongMetricImpl> updater =
+    static final AtomicLongFieldUpdater<LongMetricImpl> updater =
         AtomicLongFieldUpdater.newUpdater(LongMetricImpl.class, "val");
 
     /** Field value. */
@@ -77,18 +77,5 @@ public class LongMetricImpl extends AbstractMetric implements LongMetric {
      */
     public void value(long val) {
         this.val = val;
-    }
-
-    /**
-     * Atomically sets the value to the given updated value
-     * if the current value {@code ==} the expected value.
-     *
-     * @param expect The expected value.
-     * @param update The new value.
-     * @return {@code true} if successful. False return indicates that
-     * the actual value was not equal to the expected value.
-     */
-    public boolean compareAndSet(long expect, long update) {
-        return updater.compareAndSet(this, expect, update);
     }
 }

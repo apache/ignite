@@ -37,8 +37,8 @@ import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.MetricNameUtils.SEPARATOR;
-import static org.apache.ignite.internal.processors.metric.MetricNameUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Proxy registry that adds {@code prefix} to all metric names on each method call.
