@@ -61,7 +61,10 @@ public enum IgniteFeatures {
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
 
     /** Distributed metastorage. */
-    IGNITE_SECURITY_PROCESSOR(13);
+    IGNITE_SECURITY_PROCESSOR(13),
+
+    /** Replacing TcpDiscoveryNode field with nodeId field in discovery messages. */
+    TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION(14);
 
     /**
      * Unique feature identifier.
