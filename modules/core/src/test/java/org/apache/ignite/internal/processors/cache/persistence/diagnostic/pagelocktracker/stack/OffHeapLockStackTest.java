@@ -15,13 +15,16 @@
  * limitations under the License.
  */
 
-'use strict';
+package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack;
 
-const mongoose = require('mongoose');
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
 
-// Fire me up!
+import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory.OFF_HEAP_STACK;
 
-module.exports = {
-    implements: 'mongoose',
-    factory: () => mongoose
-};
+/** */
+public class OffHeapLockStackTest extends PageLockStackTest {
+    /** {@inheritDoc} */
+    @Override protected LockStack createLockStackTracer(String name) {
+        return (LockStack)LockTrackerFactory.create(OFF_HEAP_STACK, name);
+    }
+}

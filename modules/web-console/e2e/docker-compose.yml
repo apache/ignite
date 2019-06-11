@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-version: '2'
+version: '3'
 services:
   mongodb:
-    image: 'mongo:3.4'
+    image: mongo:4.0
     container_name: 'mongodb'
 
   testenv:

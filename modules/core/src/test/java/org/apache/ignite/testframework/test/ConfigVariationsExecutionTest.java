@@ -15,16 +15,28 @@
  * limitations under the License.
  */
 
-'use strict';
+package org.apache.ignite.testframework.test;
 
-// Fire me up!
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.AfterClass;
+import org.junit.Test;
 
-module.exports = {
-    implements: 'mongoose:mock',
-    inject: ['require(mongoose)', 'require(mockgoose)']
-};
+/**
+ * Test for {@link IgniteConfigVariationsAbstractTest} subclasses execution.
+ */
+public class ConfigVariationsExecutionTest extends IgniteConfigVariationsAbstractTest {
+    /** Boolean for checking test execution */
+    private static boolean testExecuted;
 
-module.exports.factory = (mongoose, mockgoose) => {
-    return mockgoose(mongoose)
-            .then(() => mongoose);
-};
+    /** Executes after test class. Checks that {@link #testCheck()} method was executed indeed. */
+    @AfterClass
+    public static void validatetestExecution() {
+        assertTrue(testExecuted);
+    }
+
+    /** JUnit test method. */
+    @Test
+    public void testCheck() {
+        testExecuted = true;
+    }
+}

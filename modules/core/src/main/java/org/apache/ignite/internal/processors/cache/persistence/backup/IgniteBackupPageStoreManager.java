@@ -63,13 +63,6 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
         File dir
     );
 
-    public RunnableFuture<Set<CompletableReadyState>> makeCacheBackup(
-        String backupName,
-        GridCacheContext cctx,
-        Set<Integer> parts,
-        File dir
-    );
-
     /**
      * @param backupName Unique backup name.
      * @param cctx Cache context to use to.

@@ -22,13 +22,13 @@ exports.up = function up(done) {
 
     accountsModel.find({}).lean().exec()
         .then((accounts) => _.reduce(accounts, (start, account) => start
-            .then(() => accountsModel.update({_id: account._id}, {$set: {registered: account.lastLogin}}).exec()), Promise.resolve()))
+            .then(() => accountsModel.updateOne({_id: account._id}, {$set: {registered: account.lastLogin}}).exec()), Promise.resolve()))
         .then(() => done())
         .catch(done);
 };
 
 exports.down = function down(done) {
-    this('Account').update({}, {$unset: {registered: 1}}, {multi: true}).exec()
+    this('Account').updateMany({}, {$unset: {registered: 1}}).exec()
         .then(() => done())
         .catch(done);
 };
