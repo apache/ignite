@@ -361,7 +361,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    private Map<K, V> getAllInternal(@Nullable Collection<? extends K> keys,
+    private Map<K, V> getAllInternal(
+        @Nullable Collection<? extends K> keys,
         boolean storeEnabled,
         String taskName,
         boolean deserializeBinary,
@@ -526,18 +527,15 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (success || !storeEnabled)
             return vals;
 
-        return getAllAsync(
-            keys,
-            null,
+        return this.<K, V>getAllAsync0(ctx.cacheKeysView(keys),
             opCtx == null || !opCtx.skipStore(),
             false,
             subjId,
             taskName,
             deserializeBinary,
-            opCtx != null && opCtx.recovery(),
-            /*force primary*/false,
             expiry,
             skipVals,
+            opCtx != null && opCtx.recovery(),
             needVer).get();
     }
 

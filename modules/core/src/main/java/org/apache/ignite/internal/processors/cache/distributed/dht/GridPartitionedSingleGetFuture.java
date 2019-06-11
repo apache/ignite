@@ -404,7 +404,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     ) {
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
+            ((!forcePrimary && cctx.config().isReadFromBackup()) || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
