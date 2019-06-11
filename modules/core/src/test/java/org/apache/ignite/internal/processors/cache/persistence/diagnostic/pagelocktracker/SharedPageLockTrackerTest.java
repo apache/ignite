@@ -127,6 +127,8 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
             pages.addAll(pageMetas);
 
+            boolean latchDown = false;
+
             while (!stop.get()) {
                 Collections.shuffle(locks);
                 Collections.shuffle(pages);
@@ -156,8 +158,11 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                     }
                 }
 
-                if (awaitThreadStartLatch.getCount() > 0)
+                if (!latchDown) {
                     awaitThreadStartLatch.countDown();
+
+                    latchDown = true;
+                }
             }
         }, threads, "PageLocker");
 
@@ -212,17 +217,19 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
             pages.addAll(pageMetas);
 
+            boolean latchDown = false;
+
             while (!stop.get()) {
                 Collections.shuffle(locks);
                 Collections.shuffle(pages);
 
                 for (PageLockListener lsnr : locks) {
                     for (PageMeta pageMeta : pages) {
-                        //awaitRandom(5);
+                        awaitRandom(5);
 
                         lsnr.onBeforeReadLock(pageMeta.structureId, pageMeta.pageId, pageMeta.page);
 
-                        //awaitRandom(5);
+                        awaitRandom(5);
 
                         lsnr.onReadLock(pageMeta.structureId, pageMeta.pageId, pageMeta.page, pageMeta.pageAddr);
                     }
@@ -233,14 +240,17 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
 
                 for (PageLockListener lsnr : locks) {
                     for (PageMeta pageMeta : pages) {
-                        // awaitRandom(5);
+                        awaitRandom(5);
 
                         lsnr.onReadUnlock(pageMeta.structureId, pageMeta.pageId, pageMeta.page, pageMeta.pageAddr);
                     }
                 }
 
-                if (awaitThreadStartLatch.getCount() > 0)
+                if (!latchDown) {
                     awaitThreadStartLatch.countDown();
+
+                    latchDown = true;
+                }
             }
         }, threads, "PageLocker");
 
@@ -498,26 +508,15 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
      *
      */
     private static class PageMeta {
-        /**
-         *
-         */
+        /** */
         final int structureId;
-        /**
-         *
-         */
+        /** */
         final long pageId;
-        /**
-         *
-         */
+        /** */
         final long page;
-        /**
-         *
-         */
+        /** */
         final long pageAddr;
-
-        /**
-         *
-         */
+        /** */
         private PageMeta(
             int structureId,
             long pageId,
@@ -530,6 +529,7 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
             this.pageAddr = pageAddr;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "PageMeta{" +
                 "structureId=" + structureId +
