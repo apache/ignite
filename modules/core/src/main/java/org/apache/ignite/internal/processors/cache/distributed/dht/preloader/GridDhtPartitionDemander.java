@@ -772,9 +772,6 @@ public class GridDhtPartitionDemander {
 
                     boolean last = supplyMsg.last().containsKey(p);
 
-                    // In-memory evictions can be configured in such a way that batch mode may lead to OOME.
-                    boolean batched = GridCacheUtils.isEnoughSpaceForData(grp.dataRegion(), supplyMsg.messageSize());
-
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
 
@@ -788,8 +785,13 @@ public class GridDhtPartitionDemander {
 
                             if (grp.mvccEnabled())
                                 mvccPreloadEntries(topVer, node, p, infos);
-                            else
+                            else {
+                                // In-memory evictions can be configured in such a way that batch mode will lead to OOME.
+                                boolean batched = GridCacheUtils.isEnoughSpaceForData(grp.dataRegion(),
+                                    supplyMsg.messageSize());
+
                                 preloadEntries(topVer, node, p, infos, batched);
+                            }
 
                             // If message was last for this partition,
                             // then we take ownership.
@@ -866,97 +868,6 @@ public class GridDhtPartitionDemander {
         catch (IgniteSpiException | IgniteCheckedException e) {
             LT.error(log, e, "Error during rebalancing [" + demandRoutineInfo(topicId, nodeId, supplyMsg) +
                 ", err=" + e + ']');
-        }
-    }
-
-    /**
-     * @param from Node which sent entry.
-     * @param p Partition id.
-     * @param infos Preloaded entries.
-     * @param topVer Topology version.
-     * @param batchSize Batch size.
-     * @throws IgniteCheckedException If failed.
-     */
-    private boolean preloadEntriesBatched(
-        AffinityTopologyVersion topVer,
-        ClusterNode from,
-        int p,
-        Iterator<GridCacheEntryInfo> infos,
-        int batchSize
-    ) throws IgniteCheckedException {
-        Map<Integer, List<GridCacheEntryInfo>> cctxs = new HashMap<>();
-
-        // Groupping by cache id, since we cannot place entries from different caches on the same page.
-        for (GridCacheEntryInfo e; infos.hasNext() && batchSize-- > 0;
-            e = infos.next(), cctxs.computeIfAbsent(e.cacheId(), v -> new ArrayList<>(8)).add(e));
-
-        for (Map.Entry<Integer, List<GridCacheEntryInfo>> cctxEntry : cctxs.entrySet()) {
-            GridCacheContext cctx =
-                grp.sharedGroup() ? ctx.cacheContext(cctxEntry.getKey()) : grp.singleCacheContext();
-
-            if (cctx == null)
-                continue;
-
-            if (cctx.isNear())
-                cctx = cctx.dhtCache().context();
-
-            List<GridCacheEntryInfo> cctxInfos = cctxEntry.getValue();
-
-            Iterator<CacheDataRow> rowsItr = null;
-
-            try {
-                GridDhtLocalPartition part = cctx.topology().localPartition(p);
-
-                // Filter NULL values (it means that we should remove entry from cache).
-                Collection<GridCacheEntryInfo> hasValues = F.view(cctxInfos, info -> info.value() != null);
-
-                cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
-
-                // Store all cache entries to data store before get locks.
-                rowsItr = cctx.offheap().storeAll(cctx, part, hasValues).iterator();
-
-                for (GridCacheEntryInfo info : cctxInfos) {
-                    CacheDataRow row = info.value() == null ? null : rowsItr.next();
-
-                    // Link created cache entry in BPlusTree.
-                    if (!preloadEntry(from, p, info, topVer, cctx, row))
-                        return false;
-
-                    //TODO: IGNITE-11330: Update metrics for touched cache only.
-                    for (GridCacheContext cctx0 : grp.caches()) {
-                        if (cctx0.statisticsEnabled())
-                            cctx0.cache().metrics0().onRebalanceKeyReceived();
-                    }
-                }
-            }
-            catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition became invalid during rebalancing (will ignore): " + p);
-
-                return false;
-            }
-            finally {
-                // Remove all unprocessed rows on error.
-                while (rowsItr != null && rowsItr.hasNext())
-                    cleanupRow(cctx, rowsItr.next());
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Remove row from data store.
-     *
-     * @param cctx Cache context.
-     * @param row Row to remove.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void cleanupRow(GridCacheContext cctx, CacheDataRow row) throws IgniteCheckedException {
-        if (row != null) {
-            RowStore rowStore = cctx.offheap().dataStore(cctx.topology().localPartition(row.partition())).rowStore();
-
-            rowStore.removeRow(row.link(), grp.statisticsHolderData());
         }
     }
 
@@ -1114,6 +1025,96 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * @param from Node which sent entry.
+     * @param p Partition id.
+     * @param infos Preloaded entries.
+     * @param topVer Topology version.
+     * @param batchSize Batch size.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean preloadEntriesBatched(
+        AffinityTopologyVersion topVer,
+        ClusterNode from,
+        int p,
+        Iterator<GridCacheEntryInfo> infos,
+        int batchSize
+    ) throws IgniteCheckedException {
+        Map<Integer, List<GridCacheEntryInfo>> cctxs = new HashMap<>();
+
+        // Groupping by cache id, since we cannot place entries from different caches on the same page.
+        for (GridCacheEntryInfo e; infos.hasNext() && batchSize-- > 0;
+            e = infos.next(), cctxs.computeIfAbsent(e.cacheId(), v -> new ArrayList<>(8)).add(e));
+
+        for (Map.Entry<Integer, List<GridCacheEntryInfo>> cctxEntry : cctxs.entrySet()) {
+            GridCacheContext cctx =
+                grp.sharedGroup() ? ctx.cacheContext(cctxEntry.getKey()) : grp.singleCacheContext();
+
+            if (cctx == null)
+                continue;
+
+            if (cctx.isNear())
+                cctx = cctx.dhtCache().context();
+
+            List<GridCacheEntryInfo> cctxInfos = cctxEntry.getValue();
+
+            Iterator<CacheDataRow> rowsIter = null;
+
+            try {
+                GridDhtLocalPartition part = cctx.topology().localPartition(p);
+
+                // Filter NULL values (it means that we should remove entry from cache).
+                Collection<GridCacheEntryInfo> updates = F.view(cctxInfos, info -> info.value() != null);
+
+                cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
+
+                // Store all cache entries to data store before get locks.
+                rowsIter = cctx.offheap().storeAll(cctx, part, updates).iterator();
+
+                for (GridCacheEntryInfo info : cctxInfos) {
+                    CacheDataRow row = info.value() == null ? null : rowsIter.next();
+
+                    if (!preloadEntry(from, p, info, topVer, cctx, row))
+                        return false;
+
+                    //TODO: IGNITE-11330: Update metrics for touched cache only.
+                    for (GridCacheContext cctx0 : grp.caches()) {
+                        if (cctx0.statisticsEnabled())
+                            cctx0.cache().metrics0().onRebalanceKeyReceived();
+                    }
+                }
+            }
+            catch (GridDhtInvalidPartitionException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Partition became invalid during rebalancing (will ignore): " + p);
+
+                return false;
+            }
+            finally {
+                // Remove all unprocessed rows on error.
+                while (rowsIter != null && rowsIter.hasNext())
+                    cleanupRow(cctx, rowsIter.next());
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Remove row from data store.
+     *
+     * @param cctx Cache context.
+     * @param row Row to remove.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void cleanupRow(GridCacheContext cctx, CacheDataRow row) throws IgniteCheckedException {
+        if (row != null) {
+            RowStore rowStore = cctx.offheap().dataStore(cctx.topology().localPartition(row.partition())).rowStore();
+
+            rowStore.removeRow(row.link(), grp.statisticsHolderData());
+        }
+    }
+
+    /**
      * Adds {@code entry} to partition {@code p}.
      *
      * @param from Node which sent entry.
@@ -1131,7 +1132,7 @@ public class GridDhtPartitionDemander {
         GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer,
         GridCacheContext cctx,
-        CacheDataRow row
+        @Nullable CacheDataRow row
     ) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
 

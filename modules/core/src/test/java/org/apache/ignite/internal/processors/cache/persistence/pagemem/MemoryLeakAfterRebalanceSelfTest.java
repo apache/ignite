@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -47,7 +46,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -77,20 +75,25 @@ public class MemoryLeakAfterRebalanceSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        boolean isSupplierNode = getTestIgniteInstanceIndex(igniteInstanceName) == 0;
+
+        cfg.setCommunicationSpi(new TestCommunicationSpi(isSupplierNode ? preloadStartLatch : null));
+
         cfg.setDataStorageConfiguration(new DataStorageConfiguration().
-            setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration()
+                .setMaxSize(200 * 1024 * 1024)
                 .setPersistenceEnabled(true)));
 
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setAtomicityMode(cacheAtomicityMode);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 16));
+
+        cfg.setCacheConfiguration(ccfg);
+
         cfg.setRebalanceThreadPoolSize(4);
-
-        cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
-            .setAffinity(new RendezvousAffinityFunction(false, 16))
-            .setCacheMode(CacheMode.REPLICATED)
-            .setAtomicityMode(cacheAtomicityMode));
-
-        boolean supplier = getTestIgniteInstanceIndex(igniteInstanceName) == 0;
-
-        cfg.setCommunicationSpi(new TestCommunicationSpi(supplier ? preloadStartLatch : null));
 
         return cfg;
     }
@@ -113,7 +116,6 @@ public class MemoryLeakAfterRebalanceSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testPreloadingWithConcurrentUpdates() throws Exception {
         int size = GridTestUtils.SF.applyLB(500_000, 5_000);
 
@@ -128,13 +130,13 @@ public class MemoryLeakAfterRebalanceSelfTest extends GridCommonAbstractTest {
 
         node.cluster().active(true);
 
+        node.cluster().baselineAutoAdjustTimeout(0);
+
         // Load data.
         node.cache(DEFAULT_CACHE_NAME).putAll(data);
 
         // Start 2 node.
         IgniteEx node2 = startGrid(1);
-
-        node.cluster().setBaselineTopology(node.cluster().nodes());
 
         IgniteInternalCache<Object, Object> cache = node2.cachex(DEFAULT_CACHE_NAME);
 
@@ -162,7 +164,7 @@ public class MemoryLeakAfterRebalanceSelfTest extends GridCommonAbstractTest {
         GridCacheContext cctx = cache.context();
 
         // Ensure that there are no duplicate entries left on data pages in page memory.
-        try (GridCloseableIterator<Cache.Entry<Integer, String>> itr = cctx.offheap().cacheEntriesIterator(
+        try (GridCloseableIterator<Cache.Entry<Integer, String>> iter = cctx.offheap().cacheEntriesIterator(
             cctx,
             true,
             true,
@@ -171,8 +173,8 @@ public class MemoryLeakAfterRebalanceSelfTest extends GridCommonAbstractTest {
             null,
             true)) {
 
-            while (itr.hasNext()) {
-                Cache.Entry<Integer, String> entry = itr.next();
+            while (iter.hasNext()) {
+                Cache.Entry<Integer, String> entry = iter.next();
 
                 Integer key = entry.getKey();
 
@@ -188,11 +190,11 @@ public class MemoryLeakAfterRebalanceSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** */
-        private final CountDownLatch latch;
+        private final CountDownLatch delaySupplyMessagesLatch;
 
         /** */
-        private TestCommunicationSpi(CountDownLatch latch) {
-            this.latch = latch;
+        private TestCommunicationSpi(CountDownLatch delaySupplyMessagesLatch) {
+            this.delaySupplyMessagesLatch = delaySupplyMessagesLatch;
         }
 
         /** {@inheritDoc} */
@@ -205,8 +207,8 @@ public class MemoryLeakAfterRebalanceSelfTest extends GridCommonAbstractTest {
                 boolean supplyMsg = msg instanceof GridIoMessage &&
                     ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage;
 
-                if (supplyMsg && latch != null)
-                    U.await(latch, 10, TimeUnit.SECONDS);
+                if (supplyMsg && delaySupplyMessagesLatch != null)
+                    U.await(delaySupplyMessagesLatch, 10, TimeUnit.SECONDS);
 
                 super.sendMessage(node, msg, ackC);
             } catch (IgniteInterruptedCheckedException e) {
