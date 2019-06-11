@@ -258,7 +258,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        String revTsStr = IgniteVersionUtils.BUILD_TSTAMP_DATE_FORMATTER.format(new Date(revTs * 1000));
+        String revTsStr = IgniteVersionUtils.formatBuildTimeStamp(revTs * 1000);
 
         String hash = U.byteArray2HexString(revHash).toLowerCase();
 
