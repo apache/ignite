@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersion
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
@@ -140,9 +141,10 @@ public abstract class PagesList extends DataStructure {
         PageMemory pageMem,
         int buckets,
         IgniteWriteAheadLogManager wal,
-        long metaPageId
+        long metaPageId,
+        PageLockListener lockLsnr
     ) {
-        super(cacheId, pageMem, wal);
+        super(cacheId, pageMem, wal, lockLsnr);
 
         this.name = name;
         this.buckets = buckets;
@@ -660,7 +662,7 @@ public abstract class PagesList extends DataStructure {
      * @throws IgniteCheckedException If failed.
      */
     protected final void put(
-        ReuseBag bag,
+        @Nullable ReuseBag bag,
         final long dataId,
         final long dataPage,
         final long dataAddr,
@@ -669,10 +671,13 @@ public abstract class PagesList extends DataStructure {
         throws IgniteCheckedException {
         assert bag == null ^ dataAddr == 0L;
 
+        if (bag != null && bag.isEmpty()) // Skip allocating stripe for empty bag.
+            return;
+
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForPut(bucket, bag);
 
-            // No need to continue if bag has been utilized at getPageForPut.
+            // No need to continue if bag has been utilized at getPageForPut (free page can be used for pagelist).
             if (bag != null && bag.isEmpty())
                 return;
 
@@ -936,7 +941,6 @@ public abstract class PagesList extends DataStructure {
                 int idx = io.addPage(prevAddr, nextId, pageSize());
 
                 if (idx == -1) { // Attempt to add page failed: the node page is full.
-
                     final long nextPage = acquirePage(nextId, statHolder);
 
                     try {
@@ -1095,7 +1099,7 @@ public abstract class PagesList extends DataStructure {
      * @return Removed page ID.
      * @throws IgniteCheckedException If failed.
      */
-    protected final long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers,
+    protected long takeEmptyPage(int bucket, @Nullable IOVersions initIoVers,
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForTake(bucket);
@@ -1256,6 +1260,11 @@ public abstract class PagesList extends DataStructure {
         boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
 
         if (needWalDeltaRecord) {
+            assert PageIdUtils.partId(reusedPageId) == PageIdUtils.partId(newPageId):
+                "Partition consistency failure: " +
+                "newPageId=" + Long.toHexString(newPageId) + " (newPartId: " + PageIdUtils.partId(newPageId) + ") " +
+                "reusedPageId=" + Long.toHexString(reusedPageId) + " (partId: " + PageIdUtils.partId(reusedPageId) + ")";
+
             wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
                 initIo.getVersion(), newPageId));
         }
@@ -1273,6 +1282,8 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * Removes data page from bucket, merges bucket list if needed.
+     *
      * @param dataId Data page ID.
      * @param dataPage Data page pointer.
      * @param dataAddr Data page address.
@@ -1637,7 +1648,7 @@ public abstract class PagesList extends DataStructure {
         public volatile long tailId;
 
         /** */
-        volatile boolean empty;
+        public volatile boolean empty;
 
         /**
          * @param tailId Tail ID.

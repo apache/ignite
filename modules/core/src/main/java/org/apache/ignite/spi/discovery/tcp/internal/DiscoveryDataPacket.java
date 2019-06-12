@@ -41,6 +41,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 public class DiscoveryDataPacket implements Serializable {
     /** Local file header signature(read as a little-endian number). */
     private static int ZIP_HEADER_SIGNATURE = 0x04034b50;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -322,7 +323,7 @@ public class DiscoveryDataPacket implements Serializable {
      * @param b Source of bytes.
      * @return Made int.
      */
-    static private int makeInt(byte[] b) {
+    private static int makeInt(byte[] b) {
         return (((b[3]) << 24) |
             ((b[2] & 0xff) << 16) |
             ((b[1] & 0xff) << 8) |

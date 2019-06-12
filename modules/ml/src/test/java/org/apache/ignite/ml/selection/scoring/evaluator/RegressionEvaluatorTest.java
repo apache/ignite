@@ -24,7 +24,6 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
@@ -105,7 +104,6 @@ public class RegressionEvaluatorTest extends TrainerTest {
         data.put(14, VectorUtils.of(70551, 116.9, 554894, 4007, 2827, 130081, 1962));
 
         KNNRegressionTrainer trainer = new KNNRegressionTrainer();
-
 
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.5);

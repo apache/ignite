@@ -234,7 +234,6 @@ public class PersistentStoreConfiguration implements Serializable {
         return this;
     }
 
-
     /**
      * Gets a number of threads to use for the checkpointing purposes.
      *

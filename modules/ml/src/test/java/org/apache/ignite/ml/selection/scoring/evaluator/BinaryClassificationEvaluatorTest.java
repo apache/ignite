@@ -22,7 +22,6 @@ import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
@@ -74,7 +73,6 @@ public class BinaryClassificationEvaluatorTest extends TrainerTest {
             cacheMock.put(i, VectorUtils.of(twoLinearlySeparableClasses[i]));
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
-
 
         TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>()
             .split(0.75);

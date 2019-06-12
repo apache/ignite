@@ -68,7 +68,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testTaskDeployment() throws Exception {
         ClassLoader ldr = getExternalClassLoader();

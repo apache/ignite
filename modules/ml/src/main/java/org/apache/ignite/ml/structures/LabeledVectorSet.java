@@ -95,7 +95,6 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
         super(data, colSize);
     }
 
-
     /**
      * Creates new local Labeled Dataset by matrix and vector of labels.
      *

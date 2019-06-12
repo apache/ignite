@@ -21,7 +21,7 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
-import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_3_0;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_4_0;
 
 /**
  * Thin client response.
@@ -80,7 +80,7 @@ public class ClientResponse extends ClientListenerResponse {
 
         assert ver != null;
 
-        if (ver.compareTo(VER_1_3_0) >= 0) {
+        if (ver.compareTo(VER_1_4_0) >= 0) {
             boolean error = status() != ClientStatus.SUCCESS;
 
             short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());

@@ -417,4 +417,19 @@ public interface ConnectionProperties {
      * for this connection, if {@code false} then it's disabled.
      */
     public void setAffinityAwareness(boolean affinityAwareness);
+
+    /**
+     * Note: Batch size of 1 prevents deadlock on update where keys sequence are different in several concurrent updates.
+     *
+     * @return update internal bach size.
+     */
+    @Nullable public Integer getUpdateBatchSize();
+
+    /**
+     * Note: Set to 1 to prevent deadlock on update where keys sequence are different in several concurrent updates.
+     *
+     * @param updateBatchSize update internal bach size.
+     * @throws SQLException On error.
+     */
+    public void setUpdateBatchSize(@Nullable Integer updateBatchSize) throws SQLException;
 }

@@ -224,7 +224,6 @@ public class GridCacheTwoStepQuery {
         return mvccEnabled;
     }
 
-
     /**
      * @return Number of parameters
      */

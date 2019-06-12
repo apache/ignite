@@ -104,6 +104,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -1027,6 +1028,31 @@ public final class GridTestUtils {
     }
 
     /**
+     * Wait for all passed futures to complete even if they fail.
+     *
+     * @param futs Futures.
+     * @throws AssertionError Suppresses underlying exceptions if some futures failed.
+     */
+    public static void waitForAllFutures(IgniteInternalFuture<?>... futs) {
+        AssertionError err = null;
+
+        for (IgniteInternalFuture<?> fut : futs) {
+            try {
+                fut.get();
+            }
+            catch (Throwable t) {
+                if (err == null)
+                    err = new AssertionError("One or several futures threw the exception.");
+
+                err.addSuppressed(t);
+            }
+        }
+
+        if (err != null)
+            throw err;
+    }
+
+    /**
      * Interrupts and waits for termination of all the threads started
      * so far by current test.
      *
@@ -1563,7 +1589,6 @@ public final class GridTestUtils {
             cls = cls.getSuperclass();
         } while (cls != Object.class);
 
-
         throw new RuntimeException("Failed to find method" +
             " [obj=" + obj + ", mtd=" + mtd + ", params=" + Arrays.toString(params) + ']');
     }
@@ -1734,7 +1759,6 @@ public final class GridTestUtils {
 
         return factory;
     }
-
 
     /**
      * Creates test-purposed SSL context factory from test key store with disabled trust manager.
@@ -2030,7 +2054,7 @@ public final class GridTestUtils {
 
         /** */
         public static int apply(int val) {
-            return (int) Math.round(TEST_SCALE_FACTOR_VALUE * val);
+            return (int)Math.round(TEST_SCALE_FACTOR_VALUE * val);
         }
 
         /** */
@@ -2090,6 +2114,7 @@ public final class GridTestUtils {
     public static class SqlTestFunctions {
         /** Sleep milliseconds. */
         public static volatile long sleepMs;
+
         /** Fail flag. */
         public static volatile boolean fail;
 
@@ -2143,6 +2168,52 @@ public final class GridTestUtils {
             can_fail();
 
             return sleep;
+        }
+    }
+
+    /**
+     * Runnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface RunnableX extends Runnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritdoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
+     * IgniteRunnable that can throw exceptions.
+     */
+    @FunctionalInterface
+    public interface IgniteRunnableX extends IgniteRunnable {
+        /**
+         * Runnable body.
+         *
+         * @throws Exception If failed.
+         */
+        void runx() throws Exception;
+
+        /** {@inheritdoc} */
+        @Override default void run() {
+            try {
+                runx();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
         }
     }
 }

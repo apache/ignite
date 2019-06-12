@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageP
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
@@ -90,9 +91,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         ReuseList reuseList,
         CacheDataRowStore rowStore,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        PageLockListener lockLsnr
     ) throws IgniteCheckedException {
-        super(name,
+        super(
+            name,
             grp.groupId(),
             grp.dataRegion().pageMemory(),
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
@@ -101,7 +104,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             reuseList,
             innerIO(grp),
             leafIO(grp),
-            grp.shared().kernalContext().failure());
+            grp.shared().kernalContext().failure(),
+            lockLsnr
+        );
 
         assert rowStore != null;
 
@@ -145,8 +150,11 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         Object x
     ) throws IgniteCheckedException {
         // If there is a group of caches, lower and upper bounds will not be null here.
-        if (lower == null && upper == null && grp.persistenceEnabled() && dataPageScanEnabled.get() &&
-            (c == null || c instanceof MvccDataPageClosure))
+        if (lower == null
+                && upper == null
+                && grp.persistenceEnabled()
+                && dataPageScanEnabled.get()
+                && (c == null || c instanceof MvccDataPageClosure))
             return scanDataPages(asRowData(x), (MvccDataPageClosure)c);
 
         lastFindWithDataPageScan = FALSE;

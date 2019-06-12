@@ -185,7 +185,6 @@ public class QueryUtils {
         return indexName(tableName(entity), idx);
     }
 
-
     /**
      * Get index name.
      *

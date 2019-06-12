@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -70,4 +71,19 @@ public interface IndexStorage {
      * @throws IgniteCheckedException  If failed.
      */
     public void destroy() throws IgniteCheckedException;
+
+    /**
+     * @return Index names of all indexes which this storage keeps.
+     *
+     * @throws IgniteCheckedException  If failed.
+     */
+    public Collection<String> getIndexNames() throws IgniteCheckedException;
+
+    /**
+     *
+     * @param idxName Index name to check.
+     * @param cacheId Cache id to check.
+     * @return True if the given idxName could be assosiated with the given cacheId (existing is not checked).
+     */
+    boolean nameIsAssosiatedWithCache(String idxName, int cacheId);
 }

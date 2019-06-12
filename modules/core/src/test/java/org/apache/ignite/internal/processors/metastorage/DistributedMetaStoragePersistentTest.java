@@ -21,11 +21,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
@@ -294,7 +290,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         stopGrid(3);
 
-
         for (int i = 0; i < cnt; i++)
             startGrid(i);
 
@@ -337,7 +332,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         metastorage(5).write("key5", "value5");
 
         stopGrid(5);
-
 
         startGrid(1);
 
@@ -383,7 +377,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         metastorage(4).write("key4", "value4");
 
         stopGrid(4);
-
 
         startGrid(1);
 
@@ -433,7 +426,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         metastorage(5).write("key5", "value5");
 
         stopGrid(5);
-
 
         startGrid(2);
 

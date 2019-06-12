@@ -46,14 +46,18 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
     /** Version 1.2.0. */
     public static final ClientListenerProtocolVersion VER_1_2_0 = ClientListenerProtocolVersion.create(1, 2, 0);
 
-    /** Version 1.3.0. Added: Affinity Awareness support, IEP-23. */
+    /** Version 1.3.0. */
     public static final ClientListenerProtocolVersion VER_1_3_0 = ClientListenerProtocolVersion.create(1, 3, 0);
 
+    /** Version 1.4.0. Added: Affinity Awareness, IEP-23. */
+    public static final ClientListenerProtocolVersion VER_1_4_0 = ClientListenerProtocolVersion.create(1, 4, 0);
+
     /** Default version. */
-    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_3_0;
+    public static final ClientListenerProtocolVersion DEFAULT_VER = VER_1_4_0;
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
+        VER_1_4_0,
         VER_1_3_0,
         VER_1_2_0,
         VER_1_1_0,
