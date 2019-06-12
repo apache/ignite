@@ -655,30 +655,33 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void registerHandlerOnJoin(UUID srcNodeId, UUID routineId, IgnitePredicate<ClusterNode> nodeFilter,
         GridContinuousHandler hnd, int bufSize, long interval, boolean autoUnsubscribe) {
 
-        if (nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode())) {
-            try {
-                registerHandler(srcNodeId,
-                    routineId,
-                    hnd,
-                    bufSize,
-                    interval,
-                    autoUnsubscribe,
-                    false);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to register continuous routine handler [" +
-                    "routineId=" + routineId +
-                    ", srcNodeId=" + srcNodeId + ']', e);
+        try {
+            if (nodeFilter != null)
+                ctx.resource().injectGeneric(nodeFilter);
 
-                ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+            if (nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode())) {
+                    registerHandler(srcNodeId,
+                        routineId,
+                        hnd,
+                        bufSize,
+                        interval,
+                        autoUnsubscribe,
+                        false);
+            }
+            else {
+                if (log.isDebugEnabled()) {
+                    log.debug("Do not register continuous routine, rejected by node filter [" +
+                        "routineId=" + routineId +
+                        ", srcNodeId=" + srcNodeId + ']');
+                }
             }
         }
-        else {
-            if (log.isDebugEnabled()) {
-                log.debug("Do not register continuous routine, rejected by node filter [" +
-                    "routineId=" + routineId +
-                    ", srcNodeId=" + srcNodeId + ']');
-            }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to register continuous routine handler [" +
+                "routineId=" + routineId +
+                ", srcNodeId=" + srcNodeId + ']', e);
+
+            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
         }
 
         if (ctx.config().isPeerClassLoadingEnabled()) {
