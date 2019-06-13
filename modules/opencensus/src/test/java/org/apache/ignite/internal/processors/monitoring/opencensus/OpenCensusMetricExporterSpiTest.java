@@ -42,8 +42,10 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
+    /** */
     public static final String HOST = "localhost";
 
+    /** */
     public static final int PORT = 8888;
 
     /** */

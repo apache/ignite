@@ -31,6 +31,9 @@ import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
  *
  */
 public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
+    /** Prefix for all data storage metrics. */
+    public static final String DATASTORAGE_METRIC_PREFIX = "io.datastorage";
+
     /** */
     private final HitRateMetric walLoggingRate;
 
@@ -116,7 +119,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         this.rateTimeInterval = rateTimeInterval;
         this.subInts = subInts;
 
-        MetricRegistry mset = mreg.withPrefix("io.datastorage");
+        MetricRegistry mset = mreg.withPrefix(DATASTORAGE_METRIC_PREFIX);
 
         walLoggingRate = mset.hitRateMetric("WalLoggingRate",
             "Average number of WAL records per second written during the last time interval.",

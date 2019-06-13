@@ -34,6 +34,13 @@ import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
  *
  */
 public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTracker {
+    /**
+     * Data region metrics prefix.
+     * Full name will contain {@link DataRegionConfiguration#getName()} also.
+     * {@code "io.dataregion.default"}, for example.
+     */
+    public static final String DATAREGION_METRICS_PREFIX = "io.dataregion";
+
     /** */
     private final DataRegionMetricsProvider dataRegionMetricsProvider;
 
@@ -135,7 +142,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         subInts = memPlcCfg.getMetricsSubIntervalCount();
 
-        MetricRegistry mset = mreg.withPrefix("io.dataregion", memPlcCfg.getName());
+        MetricRegistry mset = mreg.withPrefix(DATAREGION_METRICS_PREFIX, memPlcCfg.getName());
 
         totalAllocatedPages = mset.longAdderMetric("TotalAllocatedPages",
             "Total number of allocated pages.");

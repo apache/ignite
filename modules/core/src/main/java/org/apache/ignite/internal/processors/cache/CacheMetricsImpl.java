@@ -53,6 +53,13 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
+    /**
+     * Cache metrics prefix.
+     * Full name will contain {@link CacheConfiguration#getName()} also.
+     * {@code "cache.sys-cache"}, for example.
+     */
+    public static final String CACHE_METRICS_PREFIX = "cache";
+
     /** Number of reads. */
     private final LongMetricImpl reads;
 
@@ -200,9 +207,9 @@ public class CacheMetricsImpl implements CacheMetrics {
         delegate = null;
 
         if (suffix == null)
-            prefix = metricName("cache", cctx.name());
+            prefix = metricName(CACHE_METRICS_PREFIX, cctx.name());
         else
-            prefix = metricName("cache", cctx.name(), suffix);
+            prefix = metricName(CACHE_METRICS_PREFIX, cctx.name(), suffix);
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry().withPrefix(prefix);
 
