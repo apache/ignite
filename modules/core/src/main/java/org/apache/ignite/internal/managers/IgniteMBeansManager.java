@@ -28,6 +28,7 @@ import org.apache.ignite.internal.ClusterLocalNodeMetricsMXBeanImpl;
 import org.apache.ignite.internal.ClusterMetricsMXBeanImpl;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.RollingUpgradeMXBeanImpl;
 import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
 import org.apache.ignite.internal.ThreadPoolMXBeanAdapter;
 import org.apache.ignite.internal.TransactionMetricsMxBeanImpl;
@@ -46,6 +47,7 @@ import org.apache.ignite.mxbean.DataStorageMXBean;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.IoStatisticsMetricsMXBean;
+import org.apache.ignite.mxbean.RollingUpgradeMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
@@ -150,6 +152,11 @@ public class IgniteMBeansManager {
         BaselineAutoAdjustMXBean baselineAutoAdjustMXBean = new BaselineAutoAdjustMXBeanImpl(ctx);
         registerMBean("Baseline", baselineAutoAdjustMXBean.getClass().getSimpleName(), baselineAutoAdjustMXBean,
             BaselineAutoAdjustMXBean.class);
+
+        // Rolling upgrade
+        RollingUpgradeMXBean rollingUpgradeMXBean = new RollingUpgradeMXBeanImpl(ctx);
+        registerMBean("RollingUpgrade", rollingUpgradeMXBean.getClass().getSimpleName(), rollingUpgradeMXBean,
+            RollingUpgradeMXBean.class);
 
         // Executors
         registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);

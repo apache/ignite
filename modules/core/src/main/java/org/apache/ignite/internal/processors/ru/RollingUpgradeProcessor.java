@@ -13,15 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.nodevalidation;
+package org.apache.ignite.internal.processors.ru;
 
 import org.apache.ignite.internal.processors.GridProcessor;
-import org.apache.ignite.internal.processors.ru.RollingUpgradeProcessor;
 
 /**
- * Node validation.
+ * Defines public API for Rolling Upgrade process.
  */
-public interface DiscoveryNodeValidationProcessor extends GridProcessor, RollingUpgradeProcessor {
-    //No-op.
+public interface RollingUpgradeProcessor extends GridProcessor {
+    /**
+     * Enables or disables rolling upgrade mode.
+     *
+     * @param enable {@code true} in order to enable rolling upgrade mode.
+     */
+    RollingUpgradeModeChangeResult setMode(boolean enable);
+
+    /**
+     * Returns cluster-wide status of Rolling Upgrade process.
+     *
+     * @return status of Rolling Upgrade process.
+     */
+    RollingUpgradeStatus getStatus();
+
+    /**
+     * Disables strict validation mode.
+     */
+    void enableForcedMode();
 }

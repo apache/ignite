@@ -63,7 +63,6 @@ public class CommandLogger {
         return sb;
     }
 
-
     /**
      * Join input parameters with space and wrap optional braces {@code []}.
      *
@@ -152,7 +151,6 @@ public class CommandLogger {
         return indent(o, 1);
     }
 
-
     /**
      * Adds specified indents to begin of object's string representation.
      *
@@ -214,8 +212,6 @@ public class CommandLogger {
 
         log("Error: " + errorMessage(e));
     }
-
-
 
     public boolean printErrors(Map<UUID, Exception> exceptions, String s) {
         if (!F.isEmpty(exceptions)) {
