@@ -2401,16 +2401,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             delegate.invoke(cctx, key, c);
         }
 
-        /** {@inheritDoc} */
+        /** {@inheritDoc}
+         * @param entries*/
         @Override public List<CacheDataRow> storeAll(
-            GridCacheContext cctx,
-            Collection<? extends GridCacheEntryInfo> entries
+            Collection<GridCacheEntryInfo> entries
         ) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
-            return delegate.storeAll(cctx, entries);
+            return delegate.storeAll(entries);
         }
 
         /** {@inheritDoc} */

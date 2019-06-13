@@ -449,11 +449,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public List<CacheDataRow> storeAll(
-        GridCacheContext cctx,
         GridDhtLocalPartition part,
-        Collection<? extends GridCacheEntryInfo> entries
+        Collection<GridCacheEntryInfo> entries
     ) throws IgniteCheckedException {
-        return dataStore(part).storeAll(cctx, entries);
+        return dataStore(part).storeAll(entries);
     }
 
     /** {@inheritDoc} */
@@ -1705,8 +1704,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public List<CacheDataRow> storeAll(
-            GridCacheContext cctx,
-            Collection<? extends GridCacheEntryInfo> infos
+            Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
@@ -1714,15 +1712,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             List<CacheDataRow> rows = new ArrayList<>(infos.size());
 
             try {
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
-
-                assert !cctx.mvccEnabled();
-
-                int cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
                 IoStatisticsHolder statHolder = grp.statisticsHolderData();
 
                 for (GridCacheEntryInfo info : infos) {
+                    GridCacheContext cctx =
+                        grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
+
                     KeyCacheObject key = info.key();
                     CacheObject val = info.value();
 
@@ -1731,6 +1726,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     key.valueBytes(coCtx);
                     val.valueBytes(coCtx);
 
+                    int cacheId = grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID;
+
                     DataRow row = makeDataRow(key, val, info.version(), info.expireTime(), cacheId);
 
                     rows.add(row);
@@ -1738,14 +1735,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 rowStore().addRows(rows, statHolder);
 
-                if (grp.sharedGroup() && !cctx.group().storeCacheIdInDataPage()) {
+                Iterator<GridCacheEntryInfo> iter = infos.iterator();
+
+                if (grp.sharedGroup() && !grp.storeCacheIdInDataPage()) {
                     for (CacheDataRow row : rows)
-                        ((DataRow)row).cacheId(cctx.cacheId());
+                        ((DataRow)row).cacheId(iter.next().cacheId());
                 }
             }
             finally {
                 busyLock.leaveBusy();
             }
+
+            assert rows.size() == infos.size();
 
             return rows;
         }
