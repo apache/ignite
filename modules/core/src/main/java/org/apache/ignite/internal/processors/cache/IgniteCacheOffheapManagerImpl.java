@@ -449,11 +449,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public List<CacheDataRow> storeAll(
-        GridCacheContext cctx,
         GridDhtLocalPartition part,
         Collection<? extends GridCacheEntryInfo> entries
     ) throws IgniteCheckedException {
-        return dataStore(part).storeAll(cctx, entries);
+        return dataStore(part).storeAll(entries);
     }
 
     /** {@inheritDoc} */
@@ -1705,7 +1704,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public List<CacheDataRow> storeAll(
-            GridCacheContext cctx0,
             Collection<? extends GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())

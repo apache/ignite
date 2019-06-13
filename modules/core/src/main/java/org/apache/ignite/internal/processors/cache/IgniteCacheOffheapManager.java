@@ -192,13 +192,11 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
-     * @param cctx Cache context.
      * @param part Partition.
      * @param entries Entries.
      * @throws IgniteCheckedException If failed.
      */
     public List<CacheDataRow> storeAll(
-        GridCacheContext cctx,
         GridDhtLocalPartition part,
         Collection<? extends GridCacheEntryInfo> entries
     ) throws IgniteCheckedException;
@@ -744,13 +742,11 @@ public interface IgniteCacheOffheapManager {
 
 
         /**
-         * @param cctx Cache context.
          * @param entries Entries.
          * @return Created rows.
          * @throws IgniteCheckedException If failed.
          */
         public List<CacheDataRow> storeAll(
-            GridCacheContext cctx,
             Collection<? extends GridCacheEntryInfo> entries
         ) throws IgniteCheckedException;
 
