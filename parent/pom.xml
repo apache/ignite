@@ -784,7 +784,7 @@
                                     <consoleOutput>true</consoleOutput>
                                     <logViolationsToConsole>true</logViolationsToConsole>
                                     <failsOnError>false</failsOnError>
-                                    <failOnViolation>false</failOnViolation>
+                                    <failOnViolation>true</failOnViolation>
                                     <outputFile>${project.build.directory}/checkstyle-result.xml</outputFile>
                                     <configLocation>../checkstyle/checkstyle.xml</configLocation>
                                     <suppressionsLocation>../checkstyle/checkstyle-suppressions.xml</suppressionsLocation>
