@@ -98,7 +98,7 @@ public class GridQueryKillRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeBoolean("asyncRes", asyncRes))
                     return false;
 
                 writer.incrementState();
@@ -110,10 +110,11 @@ public class GridQueryKillRequest implements Message {
                 writer.incrementState();
 
             case 2:
-                if(!writer.writeBoolean("asyncRes", asyncRes))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -128,7 +129,7 @@ public class GridQueryKillRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                reqId = reader.readLong("reqId");
+                asyncRes = reader.readBoolean("asyncRes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -144,12 +145,13 @@ public class GridQueryKillRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                asyncRes = reader.readBoolean("asyncRes");
+                reqId = reader.readLong("reqId");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridQueryKillRequest.class);
