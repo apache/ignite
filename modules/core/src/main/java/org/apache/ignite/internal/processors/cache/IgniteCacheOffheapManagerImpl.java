@@ -1720,7 +1720,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     KeyCacheObject key = info.key();
                     CacheObject val = info.value();
 
-                    CacheObjectContext coCtx = ctx.cacheContext(info.cacheId()).cacheObjectContext();
+                    GridCacheContext cctx = grp.sharedGroup() ?
+                        ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
+
+                    CacheObjectContext coCtx = cctx.cacheObjectContext();
 
                     key.valueBytes(coCtx);
                     val.valueBytes(coCtx);
