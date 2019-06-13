@@ -450,7 +450,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onPartitionCreated(int grpId, int partId) throws IgniteCheckedException {
+    @Override public void onPartitionCreated(int grpId, int partId) {
         // No-op.
     }
 
@@ -555,7 +555,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      *
      */
     public Path getPath(boolean isSharedGroup, String cacheOrGroupName, int partId) {
-        return getPartitionFile(cacheWorkDir(isSharedGroup, cacheOrGroupName), partId).toPath();
+        return getPartitionFilePath(cacheWorkDir(isSharedGroup, cacheOrGroupName), partId);
     }
 
     /**
@@ -617,14 +617,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             FilePageStore[] partStores = new FilePageStore[partitions];
 
             for (int partId = 0; partId < partStores.length; partId++) {
-                FilePageStore partStore =
-                    pageStoreFactory.createPageStore(
-                        PageMemory.FLAG_DATA,
-                        getPartitionFile(cacheWorkDir, partId),
-                        allocatedTracker);
+                final int p = partId;
 
-                    partStores[partId] = partStore;
-                }
+                FilePageStore partStore = pageStoreFactory.createPageStore(
+                    PageMemory.FLAG_DATA,
+                    () -> getPartitionFilePath(cacheWorkDir, p),
+                    allocatedTracker);
+
+                partStores[partId] = partStore;
+            }
 
             return new CacheStoreHolder(idxStore, partStores);
         }
@@ -640,8 +641,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param cacheWorkDir Cache work directory.
      * @param partId Partition id.
      */
-    @NotNull private File getPartitionFile(File cacheWorkDir, int partId) {
-        return new File(cacheWorkDir, format(PART_FILE_TEMPLATE, partId));
+    @NotNull private Path getPartitionFilePath(File cacheWorkDir, int partId) {
+        return new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)).toPath();
     }
 
     /** {@inheritDoc} */
