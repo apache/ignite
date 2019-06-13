@@ -28,8 +28,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -37,7 +35,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Node filter test.
  */
-@RunWith(JUnit4.class)
 public class CacheIteratorScanQueryTest extends GridCommonAbstractTest {
     /** Client mode. */
     private boolean client = false;

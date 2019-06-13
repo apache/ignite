@@ -38,8 +38,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,7 +50,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * Tests for dynamic index creation.
  */
 @SuppressWarnings({"unchecked"})
-@RunWith(JUnit4.class)
 public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbstractSelfTest {
     /** Node index for regular server (coordinator). */
     protected static final int IDX_SRV_CRD = 0;

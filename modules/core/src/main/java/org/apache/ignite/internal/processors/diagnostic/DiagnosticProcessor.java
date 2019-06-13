@@ -48,7 +48,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     /** Time formatter for dump file name. */
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss_SSS");
     /** Folder name for store diagnostic info. **/
-    static final String DEFAULT_TARGET_FOLDER = "diagnostic";
+    public static final String DEFAULT_TARGET_FOLDER = "diagnostic";
     /** File format. */
     static final String FILE_FORMAT = ".txt";
     /** Raw file format. */

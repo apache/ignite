@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -47,30 +48,13 @@ public class VisorPageLocksResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        if (payload == null) {
-            out.writeInt(0);
-        }
-        else {
-            byte[] bytes = payload.getBytes();
-            int length = bytes.length;
-
-            out.writeInt(length);
-            out.write(bytes);
-        }
+        U.writeString(out, payload);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in)
         throws IOException, ClassNotFoundException {
-        int length = in.readInt();
-
-        if (length != 0) {
-            byte[] bytes = new byte[length];
-
-            in.read(bytes);
-
-            payload = new String(bytes);
-        }
+        payload = U.readString(in);
     }
 
     /**

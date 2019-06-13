@@ -33,13 +33,10 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link SqlFieldsQueryEx#skipReducerOnUpdate} flag.
  */
-@RunWith(JUnit4.class)
 public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static int NODE_COUNT = 4;
@@ -175,6 +172,13 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexin
         client.cache(CACHE_TRADE).clear();
         client.cache(CACHE_REPORT).clear();
         client.cache(CACHE_LIST).clear();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        client = null;
     }
 
     /**

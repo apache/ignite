@@ -451,7 +451,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<V> getAsync(
         final K key,
-        final boolean forcePrimary,
         final boolean skipTx,
         @Nullable UUID subjId,
         final String taskName,
@@ -476,7 +475,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
                 return getAsync0(ctx.toCacheKeyObject(key),
-                    forcePrimary,
+                    false,
                     subjId0,
                     taskName,
                     deserializeBinary,
@@ -495,7 +494,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         return getAllAsyncInternal(keys,
-            !ctx.config().isReadFromBackup(),
+            false,
             null,
             ctx.kernalContext().job().currentTaskName(),
             deserializeBinary,
@@ -1467,7 +1466,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean evt = !skipVals;
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
-        if (!forcePrimary && ctx.affinityNode()) {
+        if (!forcePrimary && ctx.config().isReadFromBackup() && ctx.affinityNode()) {
             try {
                 Map<K, V> locVals = U.newHashMap(keys.size());
 

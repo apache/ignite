@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.verify;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.logging.Logger;
 import org.apache.ignite.cluster.ClusterNode;
 
 /**
@@ -61,11 +62,11 @@ public class ContentionInfo implements Serializable {
     }
 
     /** */
-    public void print() {
-        System.out.println("[node=" + node + ']');
+    public void print(Logger logger) {
+        logger.info("[node=" + node + ']');
 
         for (String entry : entries)
-            System.out.println("    " + entry);
+            logger.info("    " + entry);
     }
 }
 

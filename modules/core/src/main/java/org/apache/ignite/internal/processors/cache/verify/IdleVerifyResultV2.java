@@ -231,24 +231,25 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             }
         }
         else {
-            printer.accept("idle_verify failed.");
+            printer.accept("\nidle_verify failed.\n");
 
             if (noMatchingCaches)
-                printer.accept("There are no caches matching given filter options.");
+                printer.accept("\nThere are no caches matching given filter options.\n");
         }
 
         if (!F.isEmpty(exceptions())) {
-            printer.accept("Idle verify failed on nodes:\n");
+            printer.accept("\nIdle verify failed on nodes:\n");
 
             for (Map.Entry<ClusterNode, Exception> e : exceptions().entrySet()) {
                 ClusterNode n = e.getKey();
 
-                printer.accept("Node ID: " + n.id() + " " + n.addresses() + " consistent ID: " + n.consistentId() + "\n");
+                printer.accept("\nNode ID: " + n.id() + " " + n.addresses() + "\nConsistent ID: " + n.consistentId() + "\n");
 
                 if (printExceptionMessages) {
-                    printer.accept("Exception message:" + "\n");
+                    String msg = e.getValue().getMessage();
 
-                    printer.accept(e.getValue().getMessage() + "\n");
+                    printer.accept("Exception: " + e.getValue().getClass().getCanonicalName() + "\n");
+                    printer.accept(msg == null ? "" : msg + "\n");
                 }
             }
         }

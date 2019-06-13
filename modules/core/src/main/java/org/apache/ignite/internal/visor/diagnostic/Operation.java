@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
-
-import org.apache.ignite.testframework.config.GridTestProperties;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.internal.visor.diagnostic;
 
 /**
- * Cache query suite with binary marshaller.
+ * Operation type for {@link VisorPageLocksTask}
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteBinaryCacheQueryTestSuite.class})
-public class IgniteBinarySimpleNameMapperCacheQueryTestSuite {
-    /** */
-    @BeforeClass
-    public static void init() {
-        GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
-    }
+public enum Operation {
+    /** Dump page locks to file operation. */
+    DUMP_FILE,
+    /** Dump page locks to log. */
+    DUMP_LOG
 }
