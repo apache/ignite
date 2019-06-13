@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.scanner;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,9 +35,11 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
+import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -73,13 +76,13 @@ public class WalScannerTest {
         long expPageId = 984;
         int grpId = 123;
 
-        PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId, grpId), new byte[0], 10);
+        PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId, grpId), dummyPage(1024, expPageId), 1024);
         CheckpointRecord expCheckpoint = new CheckpointRecord(new FileWALPointer(5738, 0, 0));
         FixCountRecord expDeltaPage = new FixCountRecord(grpId, expPageId, 4);
 
         WALIterator mockedIter = mockWalIterator(
             new IgniteBiTuple<>(ZERO_POINTER, expPageSnapshot),
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(455, grpId), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(455, grpId), dummyPage(4096, 455), 1024)),
             new IgniteBiTuple<>(ZERO_POINTER, expCheckpoint),
             new IgniteBiTuple<>(ZERO_POINTER, new MetastoreDataRecord("key", new byte[0])),
             new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(grpId, 1, OWNING, 1)),
@@ -123,14 +126,14 @@ public class WalScannerTest {
 
         int grpId = 123;
 
-        PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId1, grpId), new byte[0], 10);
+        PageSnapshot expPageSnapshot = new PageSnapshot(new FullPageId(expPageId1, grpId), dummyPage(1024, expPageId1), 1024);
         CheckpointRecord expCheckpoint = new CheckpointRecord(new FileWALPointer(5738, 0, 0));
         FixCountRecord expDeltaPage1 = new FixCountRecord(grpId, expPageId2, 4);
         FixCountRecord expDeltaPage2 = new FixCountRecord(grpId, expPageId3, 4);
 
         WALIterator mockedIter = mockWalIterator(
             new IgniteBiTuple<>(ZERO_POINTER, expPageSnapshot),
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(455, grpId), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(455, grpId), dummyPage(1024, 455), 1024)),
             new IgniteBiTuple<>(ZERO_POINTER, expCheckpoint),
             new IgniteBiTuple<>(ZERO_POINTER, new MetastoreDataRecord("key", new byte[0])),
             new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(grpId, 1, OWNING, 1)),
@@ -181,7 +184,7 @@ public class WalScannerTest {
         doNothing().when(log).info(valCapture.capture());
 
         WALIterator mockedIter = mockWalIterator(
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, grpId), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, grpId), dummyPage(1024, expPageId), 1024)),
             new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
             new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expPageId, 4))
         );
@@ -220,7 +223,7 @@ public class WalScannerTest {
         int grpId = 123;
 
         WALIterator mockedIter = mockWalIterator(
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expectedPageId, grpId), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expectedPageId, grpId), dummyPage(1024, expectedPageId), 1024)),
             new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
             new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expectedPageId, 4))
         );
@@ -246,12 +249,12 @@ public class WalScannerTest {
             targetFile.delete();
         }
 
-        // then: Should be find only expected value from file.
-        assertEquals(actualRecords.size(), 3);
+        // then: Should be find only expected value from file. PageSnapshot string representation is 11 lines long.
+        assertEquals(13, actualRecords.size());
 
         assertTrue(actualRecords.get(0), actualRecords.get(0).contains("PageSnapshot ["));
-        assertTrue(actualRecords.get(1), actualRecords.get(1).contains("CheckpointRecord ["));
-        assertTrue(actualRecords.get(2), actualRecords.get(2).contains("FixCountRecord ["));
+        assertTrue(actualRecords.get(11), actualRecords.get(11).contains("CheckpointRecord ["));
+        assertTrue(actualRecords.get(12), actualRecords.get(12).contains("FixCountRecord ["));
     }
 
     /**
@@ -271,7 +274,7 @@ public class WalScannerTest {
         doNothing().when(log).info(valCapture.capture());
 
         WALIterator mockedIter = mockWalIterator(
-            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, grpId), new byte[0], 10)),
+            new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(expPageId, grpId), dummyPage(1024, expPageId), 1024)),
             new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0))),
             new IgniteBiTuple<>(ZERO_POINTER, new FixCountRecord(grpId, expPageId, 4))
         );
@@ -333,5 +336,20 @@ public class WalScannerTest {
         when(mockedIter.next()).thenReturn(first, tail);
 
         return mockedIter;
+    }
+
+    /** */
+    public static byte[] dummyPage(int pageSize, long pageId) {
+        ByteBuffer pageBuf = ByteBuffer.allocateDirect(pageSize);
+
+        DummyPageIO.VERSIONS.latest().initNewPage(GridUnsafe.bufferAddress(pageBuf), pageId, pageSize);
+
+        byte[] pageData = new byte[pageSize];
+
+        pageBuf.get(pageData);
+
+        GridUnsafe.cleanDirectBuffer(pageBuf);
+
+        return pageData;
     }
 }
