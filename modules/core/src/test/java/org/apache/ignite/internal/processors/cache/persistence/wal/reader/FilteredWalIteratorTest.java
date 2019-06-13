@@ -45,6 +45,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PART_META_UPDATE_STATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScannerTest.dummyPage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.when;
@@ -174,7 +175,7 @@ public class FilteredWalIteratorTest {
             case 1:
                 return new IgniteBiTuple<>(ZERO_POINTER, new CheckpointRecord(new FileWALPointer(5738, 0, 0)));
             case 2:
-                return new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(1, 1), new byte[0], 10));
+                return new IgniteBiTuple<>(ZERO_POINTER, new PageSnapshot(new FullPageId(1, 1), dummyPage(1024, 1), 1024));
             case 3:
                 return new IgniteBiTuple<>(ZERO_POINTER, new PartitionMetaStateRecord(1, 1, OWNING, 1));
             case 4:
