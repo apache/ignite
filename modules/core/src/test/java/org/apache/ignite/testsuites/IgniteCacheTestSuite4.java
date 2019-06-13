@@ -360,7 +360,7 @@ public class IgniteCacheTestSuite4 {
 
         addTestIfNeeded(suite, CacheEventWithTxLabelTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, NearCacheNoMessagesTest.class, ignoredTests);
+        addTestIfNeeded(suite, NearCacheNoMessagesTest.class, ignoredTests);
 
         return suite;
     }
