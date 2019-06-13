@@ -16,6 +16,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -39,13 +44,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -67,7 +66,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
@@ -275,12 +273,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Affinity impl. */
     private Affinity<K> aff;
 
-    /** Whether this cache is IGFS data cache. */
-    private boolean igfsDataCache;
-
-    /** Current IGFS data cache size. */
-    private LongAdder igfsDataCacheSize;
-
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
@@ -333,21 +325,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         locMxBean = new CacheLocalMetricsMXBeanImpl(this);
         clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
-
-        FileSystemConfiguration[] igfsCfgs = gridCfg.getFileSystemConfiguration();
-
-        if (igfsCfgs != null) {
-            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                if (F.eq(ctx.name(), igfsCfg.getDataCacheConfiguration().getName())) {
-                    if (!ctx.isNear()) {
-                        igfsDataCache = true;
-                        igfsDataCacheSize = new LongAdder();
-                    }
-
-                    break;
-                }
-            }
-        }
 
         if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
             asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());
@@ -4159,29 +4136,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> rebalance() {
         return ctx.preloader().forceRebalance();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isIgfsDataCache() {
-        return igfsDataCache;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long igfsDataSpaceUsed() {
-        assert igfsDataCache;
-
-        return igfsDataCacheSize.longValue();
-    }
-
-    /**
-     * Callback invoked when data is added to IGFS cache.
-     *
-     * @param delta Size delta.
-     */
-    public void onIgfsDataSizeChanged(long delta) {
-        assert igfsDataCache;
-
-        igfsDataCacheSize.add(delta);
     }
 
     /**

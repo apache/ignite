@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Igfs endpoint factory for inter-process communication.
+ * endpoint factory for inter-process communication.
  */
 public class IpcEndpointFactory {
     /**

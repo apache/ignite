@@ -73,7 +73,6 @@ import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
@@ -148,8 +147,6 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.hadoop.Hadoop;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
@@ -239,9 +236,6 @@ import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
 import static org.apache.ignite.internal.GridKernalState.STOPPING;
 import static org.apache.ignite.internal.IgniteComponentType.COMPRESSION;
-import static org.apache.ignite.internal.IgniteComponentType.HADOOP_HELPER;
-import static org.apache.ignite.internal.IgniteComponentType.IGFS;
-import static org.apache.ignite.internal.IgniteComponentType.IGFS_HELPER;
 import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
@@ -867,7 +861,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
-     * @param igfsExecSvc IGFS executor service.
      * @param dataStreamExecSvc data stream executor service.
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
@@ -890,7 +883,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         final StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
-        ExecutorService igfsExecSvc,
         StripedExecutor dataStreamExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
@@ -1012,7 +1004,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 stripedExecSvc,
                 p2pExecSvc,
                 mgmtExecSvc,
-                igfsExecSvc,
                 dataStreamExecSvc,
                 restExecSvc,
                 affExecSvc,
@@ -1067,10 +1058,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Starts lifecycle aware components.
             U.startLifecycleAware(lifecycleAwares(cfg));
-
-            addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
-
-            addHelper(HADOOP_HELPER.createIfInClassPath(ctx, false));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
 
@@ -1136,9 +1123,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(new GridRestProcessor(ctx));
                 startProcessor(new DataStreamProcessor(ctx));
-                startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
                 startProcessor(new GridContinuousProcessor(ctx));
-                startProcessor(createHadoopComponent());
                 startProcessor(new DataStructuresProcessor(ctx));
                 startProcessor(createComponent(PlatformProcessor.class, ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
@@ -1278,7 +1263,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
-                mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
+                mgmtExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
                 qryExecSvc, schemaExecSvc, customExecSvcs, ctx.workersRegistry());
 
             // Lifecycle bean notifications.
@@ -1433,54 +1418,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         return execSvcName + " [active=" + poolActiveThreads + ", idle=" + poolIdleThreads + ", qSize=" + poolQSize + "]";
-    }
-
-    /**
-     * Create Hadoop component.
-     *
-     * @return Non-null Hadoop component: workable or no-op.
-     * @throws IgniteCheckedException If the component is mandatory and cannot be initialized.
-     */
-    private HadoopProcessorAdapter createHadoopComponent() throws IgniteCheckedException {
-        boolean mandatory = cfg.getHadoopConfiguration() != null;
-
-        if (mandatory) {
-            if (cfg.isPeerClassLoadingEnabled())
-                throw new IgniteCheckedException("Hadoop module cannot be used with peer class loading enabled " +
-                    "(set IgniteConfiguration.peerClassLoadingEnabled to \"false\").");
-
-            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
-
-            res.validateEnvironment();
-
-            return res;
-        }
-        else {
-            HadoopProcessorAdapter cmp = null;
-
-            if (!ctx.hadoopHelper().isNoOp() && cfg.isPeerClassLoadingEnabled()) {
-                U.warn(log, "Hadoop module is found in classpath, but will not be started because peer class " +
-                    "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" if you want " +
-                    "to use Hadoop module).");
-            }
-            else {
-                cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
-
-                try {
-                    cmp.validateEnvironment();
-                }
-                catch (IgniteException | IgniteCheckedException e) {
-                    U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
-
-                    cmp = null;
-                }
-            }
-
-            if (cmp == null)
-                cmp = IgniteComponentType.HADOOP.create(ctx, true);
-
-            return cmp;
-        }
     }
 
     /**
@@ -2451,9 +2388,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                         throw e;
                 }
             }
-
-            if (ctx.hadoopHelper() != null)
-                ctx.hadoopHelper().close();
 
             if (starveTask != null)
                 starveTask.close();
@@ -3641,73 +3575,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             checkClusterState();
 
             return ctx.<K, V>dataStream().dataStreamer(cacheName);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFileSystem fileSystem(String name) {
-        if (name == null)
-            throw new IllegalArgumentException("IGFS name cannot be null");
-
-        guard();
-
-        try {
-            checkClusterState();
-
-            IgniteFileSystem fs = ctx.igfs().igfs(name);
-
-            if (fs == null)
-                throw new IllegalArgumentException("IGFS is not configured: " + name);
-
-            return fs;
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(String name) {
-        if (name == null)
-            throw new IllegalArgumentException("IGFS name cannot be null");
-
-        guard();
-
-        try {
-            checkClusterState();
-
-            return ctx.igfs().igfs(name);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteFileSystem> fileSystems() {
-        guard();
-
-        try {
-            checkClusterState();
-
-            return ctx.igfs().igfss();
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Hadoop hadoop() {
-        guard();
-
-        try {
-            checkClusterState();
-
-            return ctx.hadoop().hadoop();
         }
         finally {
             unguard();

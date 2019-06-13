@@ -222,10 +222,6 @@ export default class IgniteMavenGenerator {
                 this.storeFactoryDependency(artifactGrp, storeDeps, spi.JDBC, igniteVer);
         });
 
-        if (_.get(cluster, 'hadoopConfiguration.mapReducePlanner.kind') === 'Weighted' ||
-            _.find(cluster.igfss, (igfs) => igfs.secondaryFileSystemEnabled))
-            this.addDependency(deps, artifactGrp, 'ignite-hadoop', igniteVer);
-
         if (_.find(caches, blobStoreFactory))
             this.addDependency(deps, artifactGrp, 'ignite-hibernate', igniteVer);
 

@@ -62,7 +62,6 @@ function getClusterForMigration(clustersModel, space) {
                 name: LOST_AND_FOUND,
                 connector: {noDelay: true},
                 communication: {tcpNoDelay: true},
-                igfss: [],
                 caches: [],
                 binaryConfiguration: {
                     compactFooter: true,

@@ -62,7 +62,6 @@ const QUERY_PING_SINCE = [['2.5.6', '2.6.0'], '2.7.4'];
 
 /** Reserved cache names */
 const RESERVED_CACHE_NAMES = [
-    'ignite-hadoop-mr-sys-cache',
     'ignite-sys-cache',
     'MetaStorage',
     'TxLog'

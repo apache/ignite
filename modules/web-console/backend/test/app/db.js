@@ -25,7 +25,6 @@ const testAccounts = require('../data/accounts.json');
 const testClusters = require('../data/clusters.json');
 const testCaches = require('../data/caches.json');
 const testDomains = require('../data/domains.json');
-const testIgfss = require('../data/igfss.json');
 const testSpaces = require('../data/spaces.json');
 
 module.exports = {
@@ -38,7 +37,6 @@ module.exports.factory = (mongo) => {
     const prepareClusters = () => mongo.Cluster.create(testClusters);
     const prepareDomains = () => mongo.DomainModel.create(testDomains);
     const prepareCaches = () => mongo.Cache.create(testCaches);
-    const prepareIgfss = () => mongo.Igfs.create(testIgfss);
 
     const drop = () => {
         return Promise.all(_.map(mongoose.connection.collections, (collection) => collection.deleteMany()));
@@ -49,8 +47,7 @@ module.exports.factory = (mongo) => {
             .then(prepareUserSpaces)
             .then(prepareClusters)
             .then(prepareDomains)
-            .then(prepareCaches)
-            .then(prepareIgfss);
+            .then(prepareCaches);
     };
 
     return {
@@ -61,7 +58,6 @@ module.exports.factory = (mongo) => {
             clusters: testClusters,
             caches: testCaches,
             domains: testDomains,
-            igfss: testIgfss,
             spaces: testSpaces
         }
     };

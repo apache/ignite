@@ -33,7 +33,6 @@ import selectors from './store/selectors';
 import effects from './store/effects';
 import Clusters from './services/Clusters';
 import Caches from './services/Caches';
-import IGFSs from './services/IGFSs';
 import Models from './services/Models';
 
 import pageConfigure from './components/page-configure';
@@ -76,8 +75,6 @@ import {
     shortCachesActionTypes,
     modelsActionTypes,
     shortModelsActionTypes,
-    igfssActionTypes,
-    shortIGFSsActionTypes,
     refsReducer
 } from './store/reducer';
 
@@ -140,8 +137,6 @@ export default angular
             shortCaches: mapCacheReducerFactory(shortCachesActionTypes)(state.shortCaches, action),
             models: mapStoreReducerFactory(modelsActionTypes)(state.models, action),
             shortModels: mapCacheReducerFactory(shortModelsActionTypes)(state.shortModels, action),
-            igfss: mapStoreReducerFactory(igfssActionTypes)(state.igfss, action),
-            shortIgfss: mapCacheReducerFactory(shortIGFSsActionTypes)(state.shortIgfss, action),
             edit: editReducer2(state.edit, action)
         }));
 
@@ -183,7 +178,6 @@ export default angular
     .service('ConfigurationDownload', ConfigurationDownload)
     .service('Clusters', Clusters)
     .service('Caches', Caches)
-    .service('IGFSs', IGFSs)
     .service('Models', Models)
     .directive('pcIsInCollection', isInCollection)
     .directive('fakeUiCanExit', fakeUiCanExit)

@@ -288,7 +288,6 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
         execSvcT += ("Public thread pool size", safe(execCfg.getPublicThreadPoolSize))
         execSvcT += ("System thread pool size", safe(execCfg.getSystemThreadPoolSize))
         execSvcT += ("Management thread pool size", safe(execCfg.getManagementThreadPoolSize))
-        execSvcT += ("IGFS thread pool size", safe(execCfg.getIgfsThreadPoolSize))
         execSvcT += ("Peer-to-Peer thread pool size", safe(execCfg.getPeerClassLoadingThreadPoolSize))
         execSvcT += ("Rebalance Thread Pool size", execCfg.getRebalanceThreadPoolSize)
         execSvcT += ("REST thread pool size", safe(execCfg.getRestThreadPoolSize))

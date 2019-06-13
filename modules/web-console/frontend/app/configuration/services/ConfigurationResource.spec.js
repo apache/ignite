@@ -29,8 +29,7 @@ const CHECKED_CONFIGURATION = {
         space: '1space',
         name: 'Test cluster',
         caches: ['1cache'],
-        models: ['1model'],
-        igfss: ['1igfs']
+        models: ['1model']
     }],
     caches: [{
         _id: '1cache',
@@ -45,12 +44,6 @@ const CHECKED_CONFIGURATION = {
         name: 'Test model',
         clusters: ['1cluster'],
         caches: ['1cache']
-    }],
-    igfss: [{
-        _id: '1igfs',
-        space: '1space',
-        name: 'Test IGFS',
-        clusters: ['1cluster']
     }]
 };
 
@@ -64,14 +57,11 @@ suite('ConfigurationResourceTestsSuite', () => {
 
         assert.deepEqual(converted.clusters[0].caches, CHECKED_CONFIGURATION.clusters[0].caches);
         assert.deepEqual(converted.clusters[0].models, CHECKED_CONFIGURATION.clusters[0].models);
-        assert.deepEqual(converted.clusters[0].igfss, CHECKED_CONFIGURATION.clusters[0].igfss);
 
         assert.deepEqual(converted.caches[0].clusters, CHECKED_CONFIGURATION.caches[0].clusters);
         assert.deepEqual(converted.caches[0].models, CHECKED_CONFIGURATION.caches[0].models);
 
         assert.deepEqual(converted.domains[0].clusters, CHECKED_CONFIGURATION.domains[0].clusters);
         assert.deepEqual(converted.domains[0].caches, CHECKED_CONFIGURATION.domains[0].caches);
-
-        assert.deepEqual(converted.igfss[0].clusters, CHECKED_CONFIGURATION.igfss[0].clusters);
     });
 });
