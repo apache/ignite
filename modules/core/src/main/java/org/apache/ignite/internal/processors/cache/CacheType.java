@@ -29,7 +29,7 @@ public enum CacheType {
     USER(true, SYSTEM_POOL),
 
     /**
-     * Internal cache, should not be visible via public API (caches used by IGFS, Hadoop).
+     * Internal cache, should not be visible via public API.
      */
     INTERNAL(false, SYSTEM_POOL),
 

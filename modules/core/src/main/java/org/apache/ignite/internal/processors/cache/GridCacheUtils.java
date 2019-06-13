@@ -16,6 +16,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheWriter;
+import javax.cache.integration.CacheWriterException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,14 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import javax.cache.configuration.Factory;
-import javax.cache.expiry.Duration;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.integration.CacheLoader;
-import javax.cache.integration.CacheWriter;
-import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -110,18 +109,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
-import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_REPLICATION;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
-import static org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager.SYSTEM_DATA_REGION_NAME;
 
 /**
  * Cache utility methods.
@@ -169,9 +164,6 @@ public class GridCacheUtils {
         return cheatCacheId != 0 && id == cheatCacheId;
     }
 
-    /**  Hadoop syste cache name. */
-    public static final String SYS_CACHE_HADOOP_MR = "ignite-hadoop-mr-sys-cache";
-
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
@@ -180,7 +172,6 @@ public class GridCacheUtils {
 
     /** Reserved cache names */
     public static final String[] RESERVED_NAMES = new String[] {
-        SYS_CACHE_HADOOP_MR,
         UTILITY_CACHE_NAME,
         MetaStorage.METASTORAGE_CACHE_NAME,
         TxLog.TX_LOG_CACHE_NAME,
@@ -1071,37 +1062,6 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
-     * @return {@code True} if this is Hadoop system cache.
-     */
-    public static boolean isHadoopSystemCache(String cacheName) {
-        return F.eq(cacheName, SYS_CACHE_HADOOP_MR);
-    }
-
-    /**
-     * Create system cache used by Hadoop component.
-     *
-     * @return Hadoop cache configuration.
-     */
-    public static CacheConfiguration hadoopSystemCache() {
-        CacheConfiguration cache = new CacheConfiguration();
-
-        cache.setName(CU.SYS_CACHE_HADOOP_MR);
-        cache.setCacheMode(REPLICATED);
-        cache.setAtomicityMode(TRANSACTIONAL);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-
-        cache.setEvictionPolicyFactory(null);
-        cache.setEvictionPolicy(null);
-        cache.setCacheStoreFactory(null);
-        cache.setNodeFilter(CacheConfiguration.ALL_NODES);
-        cache.setEagerTtl(true);
-        cache.setRebalanceMode(SYNC);
-
-        return cache;
-    }
-
-    /**
-     * @param cacheName Cache name.
      * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
@@ -1113,7 +1073,7 @@ public class GridCacheUtils {
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
+        return isUtilityCache(cacheName);
     }
 
     /**
@@ -1142,15 +1102,6 @@ public class GridCacheUtils {
         assert cacheName != null;
 
         return grpName != null ? CU.cacheId(grpName) : CU.cacheId(cacheName);
-    }
-
-    /**
-     * @param cfg Grid configuration.
-     * @param cacheName Cache name.
-     * @return {@code True} in this is IGFS data or meta cache.
-     */
-    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        return IgfsUtils.isIgfsCache(cfg, cacheName);
     }
 
     /**
@@ -1821,7 +1772,7 @@ public class GridCacheUtils {
             return false;
 
         // Special handling for system cache is needed.
-        if (isSystemCache(ccfg.getName()) || isIgfsCacheInSystemRegion(ccfg)) {
+        if (isSystemCache(ccfg.getName())) {
             if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
                 return true;
 
@@ -1848,16 +1799,6 @@ public class GridCacheUtils {
         }
 
         return false;
-    }
-
-    /**
-     * Checks whether cache configuration represents IGFS cache that will be placed in system memory region.
-     *
-     * @param ccfg Cache config.
-     */
-    private static boolean isIgfsCacheInSystemRegion(CacheConfiguration ccfg) {
-        return IgfsUtils.matchIgfsCacheName(ccfg.getName()) &&
-            (SYSTEM_DATA_REGION_NAME.equals(ccfg.getDataRegionName()) || ccfg.getDataRegionName() == null);
     }
 
     /**

@@ -161,20 +161,6 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopDirectShuffleMessage;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishRequest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishResponse;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
-import org.apache.ignite.internal.processors.igfs.IgfsAckMessage;
-import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
-import org.apache.ignite.internal.processors.igfs.IgfsBlocksMessage;
-import org.apache.ignite.internal.processors.igfs.IgfsDeleteMessage;
-import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
-import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerRequest;
-import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerResponse;
-import org.apache.ignite.internal.processors.igfs.IgfsSyncMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -276,36 +262,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case -43:
                 msg = new IgniteIoTestMessage();
-
-                break;
-
-            case -42:
-                msg = new HadoopDirectShuffleMessage();
-
-                break;
-
-            case -41:
-                msg = new HadoopShuffleFinishResponse();
-
-                break;
-
-            case -40:
-                msg = new HadoopShuffleFinishRequest();
-
-                break;
-
-            case -39:
-                msg = new HadoopJobId();
-
-                break;
-
-            case -38:
-                msg = new HadoopShuffleAck();
-
-                break;
-
-            case -37:
-                msg = new HadoopShuffleMessage();
 
                 break;
 
@@ -651,46 +607,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 63:
                 msg = new DataStreamerResponse();
-
-                break;
-
-            case 64:
-                msg = new IgfsAckMessage();
-
-                break;
-
-            case 65:
-                msg = new IgfsBlockKey();
-
-                break;
-
-            case 66:
-                msg = new IgfsBlocksMessage();
-
-                break;
-
-            case 67:
-                msg = new IgfsDeleteMessage();
-
-                break;
-
-            case 68:
-                msg = new IgfsFileAffinityRange();
-
-                break;
-
-            case 69:
-                msg = new IgfsFragmentizerRequest();
-
-                break;
-
-            case 70:
-                msg = new IgfsFragmentizerResponse();
-
-                break;
-
-            case 71:
-                msg = new IgfsSyncMessage();
 
                 break;
 
@@ -1160,6 +1076,8 @@ public class GridIoMessageFactory implements MessageFactory {
             // [-4..-22, -30..-35] - SQL
             // [2048..2053] - Snapshots
             // [4096..4096] - TxDR
+            // [-42..-37] - former hadoop.
+            // [64..71] - former IGFS.
             default:
                 if (ext != null) {
                     for (MessageFactory factory : ext) {

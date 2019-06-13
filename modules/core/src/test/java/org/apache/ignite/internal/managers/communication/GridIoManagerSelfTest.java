@@ -125,56 +125,6 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSendUserMessageUnorderedThickVersionIfOneOfNodesIsLocal() throws Exception {
-        Object msg = new Object();
-
-        GridIoManager ioMgr = spy(new TestGridIoManager(ctx));
-
-        try {
-            ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg, GridTopic.TOPIC_IGFS, false, 123L, false);
-        }
-        catch (IgniteCheckedException ignored) {
-            // No-op. We are using mocks so real sending is impossible.
-        }
-
-        verify(ioMgr).sendToGridTopic(eq(locNode), eq(GridTopic.TOPIC_COMM_USER), any(GridIoUserMessage.class),
-            eq(GridIoPolicy.PUBLIC_POOL));
-
-        Collection<? extends ClusterNode> rmtNodes = F.view(F.asList(rmtNode), F.remoteNodes(locNode.id()));
-
-        verify(ioMgr).sendToGridTopic(argThat(new IsEqualCollection(rmtNodes)), eq(GridTopic.TOPIC_COMM_USER),
-            any(GridIoUserMessage.class), eq(GridIoPolicy.PUBLIC_POOL));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSendUserMessageOrderedThickVersionIfOneOfNodesIsLocal() throws Exception {
-        Object msg = new Object();
-
-        GridIoManager ioMgr = spy(new TestGridIoManager(ctx));
-
-        try {
-            ioMgr.sendUserMessage(F.asList(locNode, rmtNode), msg, GridTopic.TOPIC_IGFS, true, 123L, false);
-        }
-        catch (Exception ignored) {
-            // No-op. We are using mocks so real sending is impossible.
-        }
-
-        verify(ioMgr).sendOrderedMessageToGridTopic(
-            argThat(new IsEqualCollection(F.asList(locNode, rmtNode))),
-            eq(GridTopic.TOPIC_COMM_USER),
-            any(GridIoUserMessage.class),
-            eq(GridIoPolicy.PUBLIC_POOL),
-            eq(123L),
-            false);
-    }
-
-    /**
      * Test-purposed extension of {@code GridIoManager} with no-op {@code send(...)} methods.
      */
     private static class TestGridIoManager extends GridIoManager {

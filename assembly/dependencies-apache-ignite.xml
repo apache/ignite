@@ -123,7 +123,6 @@
                 <exclude>org.gridgain:ignite-visor-console</exclude>
                 <exclude>org.gridgain:ignite-visor-console_2.10</exclude>
                 <exclude>org.gridgain:ignite-visor-plugins</exclude>
-                <exclude>org.gridgain:ignite-hadoop</exclude>
                 <exclude>org.gridgain:ignite-codegen</exclude>
                 <exclude>org.gridgain:ignite-apache-license-gen</exclude>
                 <exclude>org.gridgain:ignite-hibernate-core</exclude>

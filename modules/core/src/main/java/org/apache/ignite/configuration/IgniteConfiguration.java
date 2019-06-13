@@ -269,9 +269,6 @@ public class IgniteConfiguration {
     /** Management pool size. */
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
-    /** IGFS pool size. */
-    private int igfsPoolSize = AVAILABLE_PROC_CNT;
-
     /** Data stream pool size. */
     private int dataStreamerPoolSize = DFLT_DATA_STREAMER_POOL_SIZE;
 
@@ -462,14 +459,8 @@ public class IgniteConfiguration {
     /** Local event listeners. */
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
-    /** IGFS configuration. */
-    private FileSystemConfiguration[] igfsCfg;
-
     /** Service configuration. */
     private ServiceConfiguration[] svcCfgs;
-
-    /** Hadoop configuration. */
-    private HadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
@@ -612,9 +603,6 @@ public class IgniteConfiguration {
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
-        hadoopCfg = cfg.getHadoopConfiguration();
-        igfsCfg = cfg.getFileSystemConfiguration();
-        igfsPoolSize = cfg.getIgfsThreadPoolSize();
         failureHnd = cfg.getFailureHandler();
         igniteHome = cfg.getIgniteHome();
         igniteInstanceName = cfg.getIgniteInstanceName();
@@ -981,17 +969,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing outgoing IGFS messages.
-     * <p>
-     * If not provided, executor service will have size equals number of processors available in system.
-     *
-     * @return Thread pool size to be used for IGFS outgoing message sending.
-     */
-    public int getIgfsThreadPoolSize() {
-        return igfsPoolSize;
-    }
-
-    /**
      * Size of thread pool that is in charge of processing data stream messages.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_DATA_STREAMER_POOL_SIZE}.
@@ -1134,19 +1111,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setPeerClassLoadingThreadPoolSize(int poolSize) {
         p2pPoolSize = poolSize;
-
-        return this;
-    }
-
-    /**
-     * Set thread pool size that will be used to process outgoing IGFS messages.
-     *
-     * @param poolSize Executor service to use for outgoing IGFS messages.
-     * @see IgniteConfiguration#getIgfsThreadPoolSize()
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setIgfsThreadPoolSize(int poolSize) {
-        igfsPoolSize = poolSize;
 
         return this;
     }
@@ -2817,48 +2781,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMetricsLogFrequency(long metricsLogFreq) {
         this.metricsLogFreq = metricsLogFreq;
-
-        return this;
-    }
-
-    /**
-     * Gets IGFS (Ignite In-Memory File System) configurations.
-     *
-     * @return IGFS configurations.
-     */
-    public FileSystemConfiguration[] getFileSystemConfiguration() {
-        return igfsCfg;
-    }
-
-    /**
-     * Sets IGFS (Ignite In-Memory File System) configurations.
-     *
-     * @param igfsCfg IGFS configurations.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setFileSystemConfiguration(FileSystemConfiguration... igfsCfg) {
-        this.igfsCfg = igfsCfg;
-
-        return this;
-    }
-
-    /**
-     * Gets hadoop configuration.
-     *
-     * @return Hadoop configuration.
-     */
-    public HadoopConfiguration getHadoopConfiguration() {
-        return hadoopCfg;
-    }
-
-    /**
-     * Sets hadoop configuration.
-     *
-     * @param hadoopCfg Hadoop configuration.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setHadoopConfiguration(HadoopConfiguration hadoopCfg) {
-        this.hadoopCfg = hadoopCfg;
 
         return this;
     }

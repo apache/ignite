@@ -71,19 +71,6 @@
         ]
     },
     {
-        "title": "In-memory File System",
-        "message": [
-            "<div class='col-60'>",
-            " <img src='/images/igfs.png' width='100%' />",
-            "</div>",
-            "<div class='col-40'>",
-            " <ul class='align-top'>",
-            "  <li>Configure IGFS properties</li>",
-            " </ul>",
-            "</div>"
-        ]
-    },
-    {
         "title": "Preview configuration result",
         "message": [
             "<div class='col-60'>",

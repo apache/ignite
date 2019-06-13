@@ -22,7 +22,7 @@ const _ = require('lodash');
 
 module.exports = {
     implements: 'services/clusters',
-    inject: ['mongo', 'services/spaces', 'services/caches', 'services/domains', 'services/igfss', 'errors']
+    inject: ['mongo', 'services/spaces', 'services/caches', 'services/domains', 'errors']
 };
 
 /**
@@ -30,11 +30,10 @@ module.exports = {
  * @param {SpacesService} spacesService
  * @param {CachesService} cachesService
  * @param {DomainsService} modelsService
- * @param {IgfssService} igfssService
  * @param errors
  * @returns {ClustersService}
  */
-module.exports.factory = (mongo, spacesService, cachesService, modelsService, igfssService, errors) => {
+module.exports.factory = (mongo, spacesService, cachesService, modelsService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
@@ -54,8 +53,6 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
         return mongo.Cluster.updateOne({_id: clusterId}, cluster, {upsert: true}).exec()
             .then(() => mongo.Cache.updateMany({_id: {$in: cluster.caches}}, {$addToSet: {clusters: clusterId}}).exec())
             .then(() => mongo.Cache.updateMany({_id: {$nin: cluster.caches}}, {$pull: {clusters: clusterId}}).exec())
-            .then(() => mongo.Igfs.updateMany({_id: {$in: cluster.igfss}}, {$addToSet: {clusters: clusterId}}).exec())
-            .then(() => mongo.Igfs.updateMany({_id: {$nin: cluster.igfss}}, {$pull: {clusters: clusterId}}).exec())
             .then(() => cluster)
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_UPDATE_ERROR || err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
@@ -81,7 +78,6 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
             })
             .then((savedCluster) =>
                 mongo.Cache.updateMany({_id: {$in: savedCluster.caches}}, {$addToSet: {clusters: savedCluster._id}}).exec()
-                    .then(() => mongo.Igfs.updateMany({_id: {$in: savedCluster.igfss}}, {$addToSet: {clusters: savedCluster._id}}).exec())
                     .then(() => savedCluster)
             );
     };
@@ -95,8 +91,7 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
     const removeAllBySpaces = (spaceIds) => {
         return Promise.all([
             mongo.DomainModel.deleteMany({space: {$in: spaceIds}}).exec(),
-            mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec(),
-            mongo.Igfs.deleteMany({space: {$in: spaceIds}}).exec()
+            mongo.Cache.deleteMany({space: {$in: spaceIds}}).exec()
         ])
             .then(() => mongo.Cluster.deleteMany({space: {$in: spaceIds}}).exec());
     };
@@ -104,14 +99,13 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
     class ClustersService {
         static shortList(userId, demo) {
             return spacesService.spaceIds(userId, demo)
-                .then((spaceIds) => mongo.Cluster.find({space: {$in: spaceIds}}).select('name discovery.kind caches models igfss').lean().exec())
+                .then((spaceIds) => mongo.Cluster.find({space: {$in: spaceIds}}).select('name discovery.kind caches models').lean().exec())
                 .then((clusters) => _.map(clusters, (cluster) => ({
                     _id: cluster._id,
                     name: cluster.name,
                     discovery: cluster.discovery.kind,
                     cachesCount: _.size(cluster.caches),
-                    modelsCount: _.size(cluster.models),
-                    igfsCount: _.size(cluster.igfss)
+                    modelsCount: _.size(cluster.models)
                 })));
         }
 
@@ -177,17 +171,17 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
                 .then(() => ({rowsAffected: 1}));
         }
 
-        static upsert(userId, demo, {cluster, caches, models, igfss}) {
+        static upsert(userId, demo, {cluster, caches, models}) {
             if (_.isNil(cluster._id))
                 return Promise.reject(new errors.IllegalArgumentException('Cluster id can not be undefined or null'));
 
             return spacesService.spaceIds(userId, demo)
                 .then((spaceIds) => {
-                    this.normalize(_.head(spaceIds), cluster, caches, models, igfss);
+                    this.normalize(_.head(spaceIds), cluster, caches, models);
 
                     const query = _.pick(cluster, ['space', '_id']);
 
-                    return mongo.Cluster.findOneAndUpdate(query, {$set: cluster}, {projection: {models: 1, caches: 1, igfss: 1}, upsert: true}).lean().exec()
+                    return mongo.Cluster.findOneAndUpdate(query, {$set: cluster}, {projection: {models: 1, caches: 1}, upsert: true}).lean().exec()
                         .catch((err) => {
                             if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                                 throw new errors.DuplicateKeyException(`Cluster with name: "${cluster.name}" already exist.`);
@@ -197,12 +191,11 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
                         .then((oldCluster) => {
                             const modelIds = this.removedInCluster(oldCluster, cluster, 'models');
                             const cacheIds = this.removedInCluster(oldCluster, cluster, 'caches');
-                            const igfsIds = this.removedInCluster(oldCluster, cluster, 'igfss');
 
-                            return Promise.all([modelsService.remove(modelIds), cachesService.remove(cacheIds), igfssService.remove(igfsIds)]);
+                            return Promise.all([modelsService.remove(modelIds), cachesService.remove(cacheIds)]);
                         });
                 })
-                .then(() => Promise.all(_.concat(_.map(models, modelsService.upsert), _.map(caches, cachesService.upsert), _.map(igfss, igfssService.upsert))))
+                .then(() => Promise.all(_.concat(_.map(models, modelsService.upsert), _.map(caches, cachesService.upsert))))
                 .then(() => ({rowsAffected: 1}));
         }
 
@@ -252,8 +245,7 @@ module.exports.factory = (mongo, spacesService, cachesService, modelsService, ig
 
                         return Promise.all([
                             mongo.DomainModel.deleteMany({_id: {$in: cluster.models}}).exec(),
-                            mongo.Cache.deleteMany({_id: {$in: cluster.caches}}).exec(),
-                            mongo.Igfs.deleteMany({_id: {$in: cluster.igfss}}).exec()
+                            mongo.Cache.deleteMany({_id: {$in: cluster.caches}}).exec()
                         ])
                             .then(() => 1);
                     });

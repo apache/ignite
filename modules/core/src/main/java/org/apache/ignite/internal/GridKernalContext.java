@@ -47,10 +47,6 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
-import org.apache.ignite.internal.processors.igfs.IgfsHelper;
-import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
@@ -286,32 +282,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public IgniteAuthenticationProcessor authentication();
 
     /**
-     * Gets file system processor.
-     *
-     * @return File system processor.
-     */
-    public IgfsProcessorAdapter igfs();
-
-    /**
-     * Gets IGFS utils processor.
-     *
-     * @return IGFS utils processor.
-     */
-    public IgfsHelper igfsHelper();
-
-    /**
      * Gets event continuous processor.
      *
      * @return Event continuous processor.
      */
     public GridContinuousProcessor continuous();
-
-    /**
-     * Gets Hadoop processor.
-     *
-     * @return Hadoop processor.
-     */
-    public HadoopProcessorAdapter hadoop();
 
     /**
      * Gets pool processor.
@@ -326,13 +301,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Mapping processor.
      */
     public GridMarshallerMappingProcessor mapping();
-
-    /**
-     * Gets Hadoop helper.
-     *
-     * @return Hadoop helper.
-     */
-    public HadoopHelper hadoopHelper();
 
     /**
      * Gets utility cache pool.
@@ -593,13 +561,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *      requests handling.
      */
     public ExecutorService getPeerClassLoadingExecutorService();
-
-    /**
-     * Executor service that is in charge of processing outgoing IGFS messages.
-     *
-     * @return Thread pool implementation to be used for IGFS outgoing message sending.
-     */
-    public ExecutorService getIgfsExecutorService();
 
     /**
      * Executor service that is in charge of processing data stream messages.
