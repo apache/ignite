@@ -76,6 +76,19 @@ import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
+import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cache.EntryProcessorPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cache.ScanQueryPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.CacheLoadRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.EntryProcessorRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.compute.ComputePermissionCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.BitSetIntSetTest;
@@ -133,6 +146,21 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(IgniteStreamSelfTestSuite.suite());
 
         suite.addTest(IgnitePlatformsTestSuite.suite());
+
+        suite.addTestSuite(CacheOperationPermissionCheckTest.class);
+        suite.addTestSuite(DataStreamerPermissionCheckTest.class);
+        suite.addTestSuite(ScanQueryPermissionCheckTest.class);
+        suite.addTestSuite(EntryProcessorPermissionCheckTest.class);
+        suite.addTestSuite(ComputePermissionCheckTest.class);
+
+        suite.addTestSuite(DistributedClosureRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(ComputeTaskRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(ExecutorServiceRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(ScanQueryRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(EntryProcessorRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(DataStreamerRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(CacheLoadRemoteSecurityContextCheckTest.class);
+        suite.addTestSuite(ThinClientPermissionCheckTest.class);
 
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));

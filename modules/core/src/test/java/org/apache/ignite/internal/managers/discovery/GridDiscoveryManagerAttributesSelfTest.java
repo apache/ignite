@@ -24,8 +24,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TestReconnectPluginProvider;
 import org.apache.ignite.spi.discovery.tcp.TestReconnectProcessor;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -57,6 +57,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /** */
     private static boolean binaryMarshallerEnabled;
 
+    /** Security enabled. */
+    private static boolean secEnabled;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -71,11 +74,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         cfg.setDeploymentMode(mode);
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
-        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
-
-        discoverySpi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(discoverySpi);
+        if(secEnabled){
+            cfg.setPluginConfigurations(
+                (TestSecurityPluginConfiguration)TestReconnectProcessor::new
+            );
+        }
 
         return cfg;
     }
@@ -285,8 +288,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testSecurityCompatibilityEnabled() throws Exception {
-        TestReconnectPluginProvider.enabled = true;
-        TestReconnectProcessor.enabled = true;
+        secEnabled = true;
 
         try {
             doTestSecurityCompatibilityEnabled(true, null, true);
@@ -301,8 +303,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             doTestSecurityCompatibilityEnabled(true, true, false);
         }
         finally {
-            TestReconnectPluginProvider.enabled = false;
-            TestReconnectProcessor.enabled = false;
+            secEnabled = false;
         }
     }
 

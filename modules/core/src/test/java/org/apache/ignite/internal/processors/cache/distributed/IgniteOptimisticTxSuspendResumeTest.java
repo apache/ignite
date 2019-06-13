@@ -1,6 +1,6 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
+ *contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -781,28 +782,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         @Override public void apply(T o) {
             try {
                 applyx(o);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /**
-     * Runnable that can throw any exception.
-     */
-    public static abstract class RunnableX implements Runnable {
-        /**
-         * Closure body.
-         *
-         * @throws Exception If failed.
-         */
-        public abstract void runx() throws Exception;
-
-        /** {@inheritdoc} */
-        @Override public void run() {
-            try {
-                runx();
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
