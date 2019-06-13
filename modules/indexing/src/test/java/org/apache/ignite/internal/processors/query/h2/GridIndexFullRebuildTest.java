@@ -50,17 +50,17 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridIndexFullRebuildTest extends GridCommonAbstractTest {
+    /** */
     public static final String FIRST_CACHE = "cache1";
+
+    /** */
     public static final String SECOND_CACHE = "cache2";
 
     /** {@inheritDoc} */

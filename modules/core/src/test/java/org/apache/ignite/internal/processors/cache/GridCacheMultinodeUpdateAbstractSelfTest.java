@@ -80,9 +80,6 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
      */
     @Test
     public void testInvoke() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10778");
-
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final Integer key = primaryKey(cache);

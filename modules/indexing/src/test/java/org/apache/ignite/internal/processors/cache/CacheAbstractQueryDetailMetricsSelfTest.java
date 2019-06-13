@@ -36,15 +36,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for cache query details metrics.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommonAbstractTest {
     /**  */
     private static final int QRY_DETAIL_METRICS_SIZE = 3;

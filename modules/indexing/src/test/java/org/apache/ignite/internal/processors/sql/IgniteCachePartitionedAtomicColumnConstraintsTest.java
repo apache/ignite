@@ -38,8 +38,6 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -50,7 +48,6 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
-@RunWith(JUnit4.class)
 public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractIndexingCommonTest {
     /** */
     private static final long FUT_TIMEOUT = 10_000L;
@@ -725,12 +722,12 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends AbstractI
     }
 
     /** */
-    @NotNull protected CacheAtomicityMode atomicityMode() {
+    protected @NotNull CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 
     /** */
-    @NotNull protected CacheMode cacheMode() {
+    protected @NotNull CacheMode cacheMode() {
         return PARTITIONED;
     }
 
