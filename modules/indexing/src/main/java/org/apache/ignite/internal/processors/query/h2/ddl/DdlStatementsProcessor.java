@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
+ * 
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -335,9 +335,9 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
-                GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
+                ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, null);
 
-                ctx.security().authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE);
+                GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -368,6 +368,8 @@ public class DdlStatementsProcessor {
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
+                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
+
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
@@ -379,11 +381,8 @@ public class DdlStatementsProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
                             cmd.tableName());
                 }
-                else {
-                    ctx.security().authorize(tbl.cacheName(), SecurityPermission.CACHE_DESTROY);
-
+                else
                     ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
-                }
             }
             else if (stmt0 instanceof GridSqlAlterTableAddColumn) {
                 GridSqlAlterTableAddColumn cmd = (GridSqlAlterTableAddColumn)stmt0;

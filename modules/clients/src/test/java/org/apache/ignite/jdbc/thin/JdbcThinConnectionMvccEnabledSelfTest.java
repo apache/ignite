@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.testframework.GridStringLogger;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,8 +38,6 @@ import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
 import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
-import static org.apache.ignite.testframework.GridTestUtils.RunnableX;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Connection test.
@@ -129,7 +128,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setAutoCommit(true);
                 }
             });
@@ -145,7 +144,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             assertTrue(conn.getMetaData().supportsTransactions());
 
             // Should not be called in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.commit();
@@ -165,7 +164,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.commit();
                 }
             });
@@ -181,7 +180,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             assertTrue(conn.getMetaData().supportsTransactions());
 
             // Should not be called in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.rollback();
@@ -201,7 +200,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.rollback();
                 }
             });
@@ -217,7 +216,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             assert !conn.getMetaData().supportsSavepoints();
 
             // Disallowed in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint();
@@ -233,7 +232,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
 
             // Unsupported
             checkNotSupported(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setSavepoint();
                 }
             });
@@ -241,7 +240,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setSavepoint();
                 }
             });
@@ -257,7 +256,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint(null);
@@ -272,7 +271,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             final String name = "savepoint";
 
             // Disallowed in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint(name);
@@ -288,7 +287,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
 
             // Unsupported
             checkNotSupported(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setSavepoint(name);
                 }
             });
@@ -296,7 +295,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setSavepoint(name);
                 }
             });
@@ -312,7 +311,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.rollback(null);
@@ -327,7 +326,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             final Savepoint savepoint = getFakeSavepoint();
 
             // Disallowed in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.rollback(savepoint);
@@ -343,7 +342,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
 
             // Unsupported
             checkNotSupported(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.rollback(savepoint);
                 }
             });
@@ -351,7 +350,7 @@ public class JdbcThinConnectionMvccEnabledSelfTest extends JdbcThinAbstractSelfT
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.rollback(savepoint);
                 }
             });

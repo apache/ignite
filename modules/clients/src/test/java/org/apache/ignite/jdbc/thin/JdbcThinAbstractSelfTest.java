@@ -27,12 +27,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -44,18 +44,27 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
      * @param r Runnable to check support.
      */
     protected void checkNotSupported(final RunnableX r) {
-        GridTestUtils.assertThrowsWithCause(r, SQLFeatureNotSupportedException.class);
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
+
+                    return null;
+                }
+            }, SQLFeatureNotSupportedException.class, null);
     }
 
     /**
      * @param r Runnable to check on closed connection.
      */
     protected void checkConnectionClosed(final RunnableX r) {
-        GridTestUtils.assertThrowsAnyCause(log,
-            () -> {
-                r.run();
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
 
-                return null;
+                    return null;
+                }
             }, SQLException.class, "Connection is closed");
     }
 
@@ -63,11 +72,13 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
      * @param r Runnable to check on closed statement.
      */
     protected void checkStatementClosed(final RunnableX r) {
-        GridTestUtils.assertThrowsAnyCause(log,
-            () -> {
-                r.run();
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
 
-                return null;
+                    return null;
+                }
             }, SQLException.class, "Statement is closed");
     }
 
@@ -75,12 +86,24 @@ public class JdbcThinAbstractSelfTest extends GridCommonAbstractTest {
      * @param r Runnable to check on closed result set.
      */
     protected void checkResultSetClosed(final RunnableX r) {
-        GridTestUtils.assertThrowsAnyCause(log,
-            () -> {
-                r.run();
+        GridTestUtils.assertThrows(log,
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    r.run();
 
-                return null;
+                    return null;
+                }
             }, SQLException.class, "Result set is closed");
+    }
+
+    /**
+     * Runnable that can throw an exception.
+     */
+    interface RunnableX {
+        /**
+         * @throws Exception On error.
+         */
+        void run() throws Exception;
     }
 
     /**

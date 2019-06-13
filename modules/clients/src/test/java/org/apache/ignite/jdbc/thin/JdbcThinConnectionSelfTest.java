@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
+ * 
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,6 @@ package org.apache.ignite.jdbc.thin;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -67,11 +66,6 @@ import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 import static org.apache.ignite.internal.processors.odbc.SqlStateCode.TRANSACTION_STATE_EXCEPTION;
-import static org.apache.ignite.testframework.GridTestUtils.RunnableX;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
-import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
  * Connection test.
@@ -535,7 +529,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @SuppressWarnings("ThrowableNotThrown")
     private void assertInvalid(final String url, String errMsg) {
-        assertThrowsAnyCause(log, new Callable<Void>() {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 DriverManager.getConnection(url);
 
@@ -563,7 +557,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         assert !conn.isValid(2) : "Connection must be closed";
 
-        assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 conn.isValid(-2);
 
@@ -587,7 +581,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
                 // Exception when called on closed connection
                 checkConnectionClosed(new RunnableX() {
-                    @Override public void runx() throws Exception {
+                    @Override public void run() throws Exception {
                         conn.createStatement();
                     }
                 });
@@ -625,7 +619,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                         continue;
                     }
 
-                    assertThrows(log,
+                    GridTestUtils.assertThrows(log,
                         new Callable<Object>() {
                             @Override public Object call() throws Exception {
                                 return conn.createStatement(type, concur);
@@ -641,7 +635,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.createStatement(TYPE_FORWARD_ONLY,
                         CONCUR_READ_ONLY);
                 }
@@ -684,7 +678,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                             continue;
                         }
 
-                        assertThrows(log,
+                        GridTestUtils.assertThrows(log,
                             new Callable<Object>() {
                                 @Override public Object call() throws Exception {
                                     return conn.createStatement(type, concur, holdabililty);
@@ -701,7 +695,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.createStatement(TYPE_FORWARD_ONLY,
                         CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
                 }
@@ -716,7 +710,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testPrepareStatement() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // null query text
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(null);
@@ -736,7 +730,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.prepareStatement(sqlText);
                 }
             });
@@ -766,7 +760,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                         assert concur == CONCUR_READ_ONLY;
 
                         // null query text
-                        assertThrows(log,
+                        GridTestUtils.assertThrows(log,
                             new Callable<Object>() {
                                 @Override public Object call() throws Exception {
                                     return conn.prepareStatement(null, type, concur);
@@ -779,7 +773,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                         continue;
                     }
 
-                    assertThrows(log,
+                    GridTestUtils.assertThrows(log,
                         new Callable<Object>() {
                             @Override public Object call() throws Exception {
                                 return conn.prepareStatement(sqlText, type, concur);
@@ -795,7 +789,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
                 }
             });
@@ -831,7 +825,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                             assert concur == CONCUR_READ_ONLY;
 
                             // null query text
-                            assertThrows(log,
+                            GridTestUtils.assertThrows(log,
                                 new Callable<Object>() {
                                     @Override public Object call() throws Exception {
                                         return conn.prepareStatement(null, type, concur, holdabililty);
@@ -844,7 +838,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                             continue;
                         }
 
-                        assertThrows(log,
+                        GridTestUtils.assertThrows(log,
                             new Callable<Object>() {
                                 @Override public Object call() throws Exception {
                                     return conn.prepareStatement(sqlText, type, concur, holdabililty);
@@ -861,7 +855,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.prepareStatement(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT);
                 }
             });
@@ -878,7 +872,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "insert into test (val) values (?)";
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(sqlText, RETURN_GENERATED_KEYS);
@@ -888,7 +882,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Auto generated keys are not supported."
             );
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(sqlText, NO_GENERATED_KEYS);
@@ -898,7 +892,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Auto generated keys are not supported."
             );
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(sqlText, new int[] {1});
@@ -908,7 +902,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Auto generated keys are not supported."
             );
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareStatement(sqlText, new String[] {"ID"});
@@ -928,7 +922,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             final String sqlText = "exec test()";
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareCall(sqlText);
@@ -938,7 +932,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Callable functions are not supported."
             );
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY, CONCUR_READ_ONLY);
@@ -948,7 +942,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Callable functions are not supported."
             );
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.prepareCall(sqlText, TYPE_FORWARD_ONLY,
@@ -968,7 +962,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testNativeSql() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // null query text
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.nativeSQL(null);
@@ -986,7 +980,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.nativeSQL(sqlText);
                 }
             });
@@ -1011,7 +1005,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setAutoCommit(ac0);
                 }
             });
@@ -1025,7 +1019,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Should not be called in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.commit();
@@ -1040,7 +1034,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertTrue(conn.getAutoCommit());
 
             // Should not be called in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.commit();
@@ -1056,7 +1050,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.commit();
                 }
             });
@@ -1070,7 +1064,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testRollback() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Should not be called in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.rollback();
@@ -1086,7 +1080,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.rollback();
                 }
             });
@@ -1151,7 +1145,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.getMetaData();
                 }
             });
@@ -1168,14 +1162,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setReadOnly(true);
                 }
             });
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.isReadOnly();
                 }
             });
@@ -1200,14 +1194,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setCatalog("");
                 }
             });
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.getCatalog();
                 }
             });
@@ -1221,7 +1215,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testGetSetTransactionIsolation() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Invalid parameter value
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @SuppressWarnings("MagicConstant")
                     @Override public Object call() throws Exception {
@@ -1251,14 +1245,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             // Exception when called on closed connection
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.getTransactionIsolation();
                 }
             });
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setTransactionIsolation(TRANSACTION_SERIALIZABLE);
                 }
             });
@@ -1285,14 +1279,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.getWarnings();
                 }
             });
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.clearWarnings();
                 }
             });
@@ -1315,7 +1309,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Types mapping is not supported"
             );
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setTypeMap(new HashMap<String, Class<?>>());
@@ -1330,7 +1324,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             // Exception when called on closed connection
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.getTypeMap();
@@ -1341,7 +1335,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             );
 
             // Exception when called on closed connection
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setTypeMap(new HashMap<String, Class<?>>());
@@ -1371,7 +1365,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals(CLOSE_CURSORS_AT_COMMIT, conn.getHoldability());
 
             // Invalid constant
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setHoldability(-1);
@@ -1385,7 +1379,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             conn.close();
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.getHoldability();
@@ -1395,7 +1389,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Connection is closed"
             );
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setHoldability(HOLD_CURSORS_OVER_COMMIT);
@@ -1418,7 +1412,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Disallowed in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint();
@@ -1433,7 +1427,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setSavepoint();
                 }
             });
@@ -1449,7 +1443,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint(null);
@@ -1464,7 +1458,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final String name = "savepoint";
 
             // Disallowed in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setSavepoint(name);
@@ -1479,7 +1473,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setSavepoint(name);
                 }
             });
@@ -1495,7 +1489,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.rollback(null);
@@ -1510,7 +1504,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final Savepoint savepoint = getFakeSavepoint();
 
             // Disallowed in auto-commit mode
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.rollback(savepoint);
@@ -1525,7 +1519,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.rollback(savepoint);
                 }
             });
@@ -1541,7 +1535,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             assert !conn.getMetaData().supportsSavepoints();
 
             // Invalid arg
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.releaseSavepoint(null);
@@ -1556,7 +1550,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final Savepoint savepoint = getFakeSavepoint();
 
             checkNotSupported(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.releaseSavepoint(savepoint);
                 }
             });
@@ -1564,7 +1558,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.releaseSavepoint(savepoint);
                 }
             });
@@ -1578,7 +1572,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testCreateClob() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Unsupported
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createClob();
@@ -1590,7 +1584,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             conn.close();
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createClob();
@@ -1609,7 +1603,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testCreateBlob() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Unsupported
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createBlob();
@@ -1621,7 +1615,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             conn.close();
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createBlob();
@@ -1640,7 +1634,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testCreateNClob() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Unsupported
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createNClob();
@@ -1652,7 +1646,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             conn.close();
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createNClob();
@@ -1671,7 +1665,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testCreateSQLXML() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Unsupported
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createSQLXML();
@@ -1683,7 +1677,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             conn.close();
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createSQLXML();
@@ -1715,12 +1709,12 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.getClientInfo(name);
                 }
             });
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setClientInfo(name, val);
@@ -1754,12 +1748,12 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.getClientInfo();
                 }
             });
 
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setClientInfo(props);
@@ -1781,7 +1775,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final String[] elements = new String[] {"apple", "pear"};
 
             // Invalid typename
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.createArrayOf(null, null);
@@ -1796,7 +1790,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             // Unsupported
 
             checkNotSupported(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.createArrayOf(typeName, elements);
                 }
             });
@@ -1804,7 +1798,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.createArrayOf(typeName, elements);
                 }
             });
@@ -1818,7 +1812,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testCreateStruct() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             // Invalid typename
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return conn.createStruct(null, null);
@@ -1833,7 +1827,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final Object[] attrs = new Object[] {100, "Tom"};
 
             checkNotSupported(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.createStruct(typeName, attrs);
                 }
             });
@@ -1841,7 +1835,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.createStruct(typeName, attrs);
                 }
             });
@@ -1869,13 +1863,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setSchema(schema);
                 }
             });
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.getSchema();
                 }
             });
@@ -1889,7 +1883,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testAbort() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             //Invalid executor
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.abort(null);
@@ -1923,7 +1917,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final int timeout = 1000;
 
             //Invalid timeout
-            assertThrows(log,
+            GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         conn.setNetworkTimeout(executor, -1);
@@ -1942,13 +1936,13 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             conn.close();
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.getNetworkTimeout();
                 }
             });
 
             checkConnectionClosed(new RunnableX() {
-                @Override public void runx() throws Exception {
+                @Override public void run() throws Exception {
                     conn.setNetworkTimeout(executor, timeout);
                 }
             });
@@ -1960,7 +1954,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testInvalidNestedTxMode() {
-        assertThrows(null, new Callable<Object>() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 DriverManager.getConnection(URL + "/?nestedTransactionsMode=invalid");
 
@@ -1987,6 +1981,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         boolean acc = ctor.isAccessible();
 
+        ctor.setAccessible(true);
+
         final JdbcThinTcpIo io = (JdbcThinTcpIo)ctor.newInstance(connProps);
 
         try {
@@ -2009,7 +2005,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testSslClientAndPlainServer()  {
-        Throwable e = assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
