@@ -1042,12 +1042,19 @@ public class GridDhtPartitionDemander {
         Map<Integer, List<GridCacheEntryInfo>> cctxs = new HashMap<>();
 
         // Groupping by cache id, since we cannot place entries from different caches on the same page.
-        for (GridCacheEntryInfo e; infos.hasNext() && batchSize-- > 0;
-            e = infos.next(), cctxs.computeIfAbsent(e.cacheId(), v -> new ArrayList<>(8)).add(e));
+//        for (GridCacheEntryInfo e; infos.hasNext() && batchSize-- > 0;
+//            e = infos.next(), cctxs.computeIfAbsent(e.cacheId(), v -> new ArrayList<>(8)).add(e));
 
-        for (Map.Entry<Integer, List<GridCacheEntryInfo>> cctxEntry : cctxs.entrySet()) {
+
+
+        List<GridCacheEntryInfo> cctxInfos = new ArrayList<>(batchSize);
+
+        while (infos.hasNext() && batchSize-- > 0)
+            cctxInfos.add(infos.next());
+
+        for (GridCacheEntryInfo cctxEntry : cctxInfos) {
             GridCacheContext cctx =
-                grp.sharedGroup() ? ctx.cacheContext(cctxEntry.getKey()) : grp.singleCacheContext();
+                grp.sharedGroup() ? ctx.cacheContext(cctxEntry.cacheId()) : grp.singleCacheContext();
 
             if (cctx == null)
                 continue;
@@ -1055,7 +1062,7 @@ public class GridDhtPartitionDemander {
             if (cctx.isNear())
                 cctx = cctx.dhtCache().context();
 
-            List<GridCacheEntryInfo> cctxInfos = cctxEntry.getValue();
+            //List<GridCacheEntryInfo> cctxInfos = cctxEntry.getValue();
 
             Iterator<CacheDataRow> rowsIter = null;
 
@@ -1068,7 +1075,7 @@ public class GridDhtPartitionDemander {
                 cctx.shared().database().ensureFreeSpace(cctx.dataRegion());
 
                 // Store all cache entries to data store before get locks.
-                rowsIter = cctx.offheap().storeAll(cctx, part, updates).iterator();
+                rowsIter = cctx.offheap().storeAll(null, part, updates).iterator();
 
                 for (GridCacheEntryInfo info : cctxInfos) {
                     CacheDataRow row = info.value() == null ? null : rowsIter.next();

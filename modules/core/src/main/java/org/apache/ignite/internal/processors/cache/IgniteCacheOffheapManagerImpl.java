@@ -1705,7 +1705,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public List<CacheDataRow> storeAll(
-            GridCacheContext cctx,
+            GridCacheContext cctx0,
             Collection<? extends GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
@@ -1714,19 +1714,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             List<CacheDataRow> rows = new ArrayList<>(infos.size());
 
             try {
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
-
-                assert !cctx.mvccEnabled();
-
-                int cacheId = cctx.group().storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
                 IoStatisticsHolder statHolder = grp.statisticsHolderData();
 
                 for (GridCacheEntryInfo info : infos) {
+                    int cacheId = grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID;
+
                     KeyCacheObject key = info.key();
                     CacheObject val = info.value();
 
-                    CacheObjectContext coCtx = cctx.cacheObjectContext();
+                    CacheObjectContext coCtx = ctx.cacheContext(info.cacheId()).cacheObjectContext();
 
                     key.valueBytes(coCtx);
                     val.valueBytes(coCtx);
@@ -1738,9 +1734,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 rowStore().addRows(rows, statHolder);
 
-                if (grp.sharedGroup() && !cctx.group().storeCacheIdInDataPage()) {
+                Iterator<? extends GridCacheEntryInfo> iter = infos.iterator();
+
+                if (grp.sharedGroup() && !grp.storeCacheIdInDataPage()) {
                     for (CacheDataRow row : rows)
-                        ((DataRow)row).cacheId(cctx.cacheId());
+                        ((DataRow)row).cacheId(iter.next().cacheId());
                 }
             }
             finally {
