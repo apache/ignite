@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.internal.A;

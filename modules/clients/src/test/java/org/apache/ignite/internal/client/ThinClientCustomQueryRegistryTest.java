@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.client;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.CustomQueryProcessor;
