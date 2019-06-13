@@ -27,7 +27,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME
  * Abstract class for all control.sh commands, has already implemented methods and abstract methods.
  * Define flow how to work with command.
  *
- * @param <T> Generic for getArg method which should return command-specific paramters which it would be run with.
+ * @param <T> Generic for getArg method which should return command-specific parameters which it would be run with.
  */
 public interface Command<T> {
     /**
@@ -70,7 +70,7 @@ public interface Command<T> {
     public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception;
 
     /**
-     * @return Message text to show user for. If null it means that confirmantion is not needed.
+     * @return Message text to show user for. If null it means that confirmation is not needed.
      */
     public default String confirmationPrompt() {
         return null;

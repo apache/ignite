@@ -270,6 +270,8 @@ public class CommandHandler {
             logger.severe(CommandLogger.errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
 
+            e.printStackTrace();
+
             return EXIT_CODE_UNEXPECTED_ERROR;
         }
     }

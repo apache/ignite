@@ -37,13 +37,8 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     /** */
     private DiagnosticSubCommand subcommand;
 
-    /** */
-    private Logger logger;
-
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
-        this.logger = logger;
-
         if (subcommand == HELP) {
             printDiagnosticHelp();
 

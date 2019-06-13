@@ -292,8 +292,8 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateSSLArguments() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
-                continue; // --cache subcommand requires its own specific arguments.
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.ROLLING_UPGRADE)
+                continue; // --cache, --wal and --rolling-upgrade commands requires its own specific arguments.
 
             try {
                 parseArgs(asList("--truststore"));
@@ -328,8 +328,8 @@ public class CommandHandlerParsingTest {
     @Test
     public void testParseAndValidateUserAndPassword() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
-                continue; // --cache subcommand requires its own specific arguments.
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.ROLLING_UPGRADE)
+                continue; // --cache, --wal and --rolling-upgrade commands requires its own specific arguments.
 
             try {
                 parseArgs(asList("--user"));
@@ -471,8 +471,8 @@ public class CommandHandlerParsingTest {
     @Test
     public void testConnectionSettings() {
         for (CommandList cmd : CommandList.values()) {
-            if (cmd == CommandList.CACHE || cmd == CommandList.WAL)
-                continue; // --cache subcommand requires its own specific arguments.
+            if (cmd == CommandList.CACHE || cmd == CommandList.WAL || cmd == CommandList.ROLLING_UPGRADE)
+                continue; // --cache, --wal and --rolling-upgrade commands requires its own specific arguments.
 
             ConnectionAndSslParameters args = parseArgs(asList(cmd.text()));
 
