@@ -347,7 +347,12 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 		
 		Handler hnd = httpSrv.getHandler();
 		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] { jettyHnd, context, hnd });	
+		if(hnd!=null) {
+			handlers.setHandlers(new Handler[] { jettyHnd, context, hnd });	
+		}
+		else {
+			handlers.setHandlers(new Handler[] { jettyHnd, context });	
+		}
 
         //-httpSrv.setHandler(jettyHnd);
         httpSrv.setHandler(handlers);

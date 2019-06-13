@@ -75,8 +75,7 @@ import org.h2.store.fs.FileUtils;
 import org.h2.tools.SimpleResultSet;
 import org.h2.util.IOUtils;
 import org.h2.util.JdbcUtils;
-import org.h2.util.New;
-import org.h2.util.StatementBuilder;
+
 import org.h2.util.StringUtils;
 import org.h2.util.Utils;
 import org.h2.value.DataType;
@@ -636,7 +635,7 @@ public class FullTextLucene {
                 }
                 // read index desc form FTL.INDEXES
                 if(conn!=null){
-                	ArrayList<String> indexList = New.arrayList();
+                	ArrayList<String> indexList = new ArrayList<>();
 	                PreparedStatement prep = conn.prepareStatement(
 	                        "SELECT COLUMNS FROM " + SCHEMA+ ".INDEXES WHERE SCHEMA=? AND TABLE=?");
 	                prep.setString(1, schema);
@@ -1002,13 +1001,13 @@ public class FullTextLucene {
             this.table = tableName;
             this.indexPath = getIndexPath(conn,schemaName,table);
             this.indexAccess = getIndexAccess(conn,schemaName,table);
-            ArrayList<String> keyList = New.arrayList();
+            ArrayList<String> keyList = new ArrayList<>();
             DatabaseMetaData meta = conn.getMetaData();
             ResultSet rs = meta.getColumns(null,
                     StringUtils.escapeMetaDataPattern(schemaName),
                     StringUtils.escapeMetaDataPattern(tableName),
                     null);
-            ArrayList<String> columnList = New.arrayList();
+            ArrayList<String> columnList = new ArrayList<>();
             while (rs.next()) {
                 columnList.add(rs.getString("COLUMN_NAME"));
             }
@@ -1035,7 +1034,7 @@ public class FullTextLucene {
             if (keyList.size() == 0) {
                 throw throwException("No primary key for table " + tableName);
             }
-            ArrayList<String> indexList = New.arrayList();
+            ArrayList<String> indexList = new ArrayList<>();
             PreparedStatement prep = conn.prepareStatement(
                     "SELECT COLUMNS FROM " + SCHEMA + ".INDEXES WHERE SCHEMA=? AND TABLE=?");
             prep.setString(1, schemaName);
