@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -82,7 +82,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
@@ -157,7 +157,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityProcessor securityProc;
+    private IgniteSecurity security;
 
     /** */
     @GridToStringExclude
@@ -570,8 +570,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             failoverMgr = (GridFailoverManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridSecurityProcessor)
-            securityProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
@@ -650,6 +648,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
         else if (comp instanceof IgniteAuthenticationProcessor)
             authProc = (IgniteAuthenticationProcessor)comp;
+        else if (comp instanceof IgniteSecurity)
+            security = (IgniteSecurity)comp;
         else if (comp instanceof DiagnosticProcessor)
             diagnosticProcessor = (DiagnosticProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -810,8 +810,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityProcessor security() {
-        return securityProc;
+    @Override public IgniteSecurity security() {
+        return security;
     }
 
     /** {@inheritDoc} */

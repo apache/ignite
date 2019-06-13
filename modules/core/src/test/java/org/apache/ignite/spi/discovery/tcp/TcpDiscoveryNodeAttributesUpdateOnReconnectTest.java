@@ -27,6 +27,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -70,19 +71,16 @@ public class TcpDiscoveryNodeAttributesUpdateOnReconnectTest extends GridCommonA
 
         cfg.setDiscoverySpi(spi);
 
+        cfg.setPluginConfigurations(
+            (TestSecurityPluginConfiguration)TestReconnectProcessor::new
+        );
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        TestReconnectPluginProvider.enabled = false;
-
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        TestReconnectPluginProvider.enabled = true;
     }
 
     /**

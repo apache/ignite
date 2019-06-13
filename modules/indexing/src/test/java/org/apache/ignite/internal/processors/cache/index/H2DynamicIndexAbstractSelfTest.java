@@ -125,8 +125,8 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
             + FIELD_NAME_1_ESCAPED + "\" ASC)"));
 
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+        assertSqlException(new Runnable() {
+            @Override public void run() {
                 cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" +
                     TBL_NAME_ESCAPED + "\"(\"id\" ASC)"));
             }
@@ -190,8 +190,8 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     public void testDropMissingIndex() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+        assertSqlException(new Runnable() {
+            @Override public void run() {
                 cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1_ESCAPED + "\""));
             }
         }, IgniteQueryErrorCode.INDEX_NOT_FOUND);

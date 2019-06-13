@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
@@ -87,5 +93,27 @@ public class SecurityUtils {
             SecurityPermission.SERVICE_INVOKE));
 
         return srvcPerms;
+    }
+
+    /**
+     * Gets the node's security context.
+     *
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     * @param node Node.
+     * @return Node's security context.
+     */
+    public static SecurityContext nodeSecurityContext(Marshaller marsh, ClassLoader ldr, ClusterNode node) {
+        byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+
+        if (subjBytes == null)
+            throw new SecurityException("Security context isn't certain.");
+
+        try {
+            return U.unmarshal(marsh, subjBytes, ldr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new SecurityException("Failed to get security context.", e);
+        }
     }
 }
