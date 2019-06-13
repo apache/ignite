@@ -252,7 +252,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private CommandProcessor cmdProc;
 
     /** Partition reservation manager. */
-    private PartitionReservationManager partReservationMgr;
+    protected PartitionReservationManager partReservationMgr;
 
     /** Partition extractor. */
     private PartitionExtractor partExtractor;
