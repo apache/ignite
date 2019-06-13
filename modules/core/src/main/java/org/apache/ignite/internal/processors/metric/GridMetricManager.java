@@ -177,7 +177,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         if (stripedExecSvc != null) {
             // Striped executor uses a custom adapter.
-            monitorStrippedPool(stripedExecSvc);
+            monitorStripedPool(stripedExecSvc);
         }
 
         if (customExecSvcs != null) {
@@ -244,7 +244,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      *
      * @param svc Executor.
      */
-    private void monitorStrippedPool(StripedExecutor svc) {
+    private void monitorStripedPool(StripedExecutor svc) {
         MetricRegistry mset = mreg.withPrefix(THREAD_POOLS, "StripedExecutor");
 
         mset.register("DetectStarvation",

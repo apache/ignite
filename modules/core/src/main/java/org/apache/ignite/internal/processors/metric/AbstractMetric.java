@@ -35,6 +35,9 @@ public abstract class AbstractMetric implements Metric {
      * @param descr Description.
      */
     public AbstractMetric(String name, String descr) {
+        assert name != null;
+        assert !name.isEmpty();
+
         this.name = name;
         this.descr = descr;
     }
@@ -47,5 +50,26 @@ public abstract class AbstractMetric implements Metric {
     /** {@inheritDoc} */
     @Override @Nullable public String description() {
         return descr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        AbstractMetric metric = (AbstractMetric)o;
+
+        if (!name.equals(metric.name))
+            return false;
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return name.hashCode();
     }
 }

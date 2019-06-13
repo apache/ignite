@@ -65,7 +65,7 @@ public interface MetricRegistry extends ReadOnlyMetricRegistry {
     }
 
     /**
-     * Register {@link BooleanMetric} that value will be queried from specified supplier.
+     * Registers {@link BooleanMetric} which value will be queried from the specified supplier.
      *
      * @param name Name.
      * @param supplier Supplier.
@@ -74,7 +74,7 @@ public interface MetricRegistry extends ReadOnlyMetricRegistry {
     public void register(String name, BooleanSupplier supplier, @Nullable String description);
 
     /**
-     * Register {@link BooleanMetric} that value will be queried from specified supplier.
+     * Registers {@link BooleanMetric} which value will be queried from the specified supplier.
      *
      * @param name Name.
      * @param supplier Supplier.
@@ -83,7 +83,7 @@ public interface MetricRegistry extends ReadOnlyMetricRegistry {
     public void register(String name, DoubleSupplier supplier, @Nullable String description);
 
     /**
-     * Register {@link IntMetric} that value will be queried from specified supplier.
+     * Registers {@link IntMetric} which value will be queried from the specified supplier.
      *
      * @param name Name.
      * @param supplier Supplier.
@@ -92,7 +92,7 @@ public interface MetricRegistry extends ReadOnlyMetricRegistry {
     public void register(String name, IntSupplier supplier, @Nullable String description);
 
     /**
-     * Register {@link LongMetric} that value will be queried from specified supplier.
+     * Registers {@link LongMetric} which value will be queried from the specified supplier.
      *
      * @param name Name.
      * @param supplier Supplier.
@@ -101,7 +101,7 @@ public interface MetricRegistry extends ReadOnlyMetricRegistry {
     public void register(String name, LongSupplier supplier, @Nullable String description);
 
     /**
-     * Register {@code ObjectMetric} that value will be queried from specified supplier.
+     * Registers {@code ObjectMetric} which value will be queried from the specified supplier.
      *
      * @param name Name.
      * @param supplier Supplier.
