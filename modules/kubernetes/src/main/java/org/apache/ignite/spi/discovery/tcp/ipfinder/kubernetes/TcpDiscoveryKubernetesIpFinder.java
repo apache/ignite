@@ -320,6 +320,8 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
     private static class Subset {
         /** */
         public List<Address> addresses;
+
+        /** */
         public List<Address> notReadyAddresses;
     }
 
