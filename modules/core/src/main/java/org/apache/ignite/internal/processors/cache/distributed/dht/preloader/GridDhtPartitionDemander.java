@@ -1025,11 +1025,12 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * @param topVer Topology version.
      * @param from Node which sent entry.
      * @param p Partition id.
      * @param infosIter Preloaded entries.
-     * @param topVer Topology version.
      * @param batchSize Batch size.
+     * @return {@code False} if partition has become invalid during preloading.
      * @throws IgniteCheckedException If failed.
      */
     private boolean preloadEntriesBatched(

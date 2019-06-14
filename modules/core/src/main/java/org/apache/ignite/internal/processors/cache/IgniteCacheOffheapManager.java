@@ -196,6 +196,7 @@ public interface IgniteCacheOffheapManager {
      *
      * @param part Partition.
      * @param entries Entries.
+     * @return Created rows.
      * @throws IgniteCheckedException If failed.
      */
     public List<CacheDataRow> storeAll(

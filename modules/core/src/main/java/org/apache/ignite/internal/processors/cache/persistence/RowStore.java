@@ -120,6 +120,7 @@ public class RowStore {
 
     /**
      * @param rows Rows.
+     * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
     public void addRows(Collection<CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {

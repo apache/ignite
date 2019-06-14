@@ -2401,8 +2401,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             delegate.invoke(cctx, key, c);
         }
 
-        /** {@inheritDoc}
-         * @param entries*/
+        /** {@inheritDoc} */
         @Override public List<CacheDataRow> storeAll(
             Collection<GridCacheEntryInfo> entries
         ) throws IgniteCheckedException {

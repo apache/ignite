@@ -138,9 +138,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** Write handler which doesn't put memory page into the free list after an update. */
     private final PageHandler<T, Integer> writeRowKeepPage = new WriteRowHandler(false);
 
-    /**
-     *
-     */
+    /** */
     private final class WriteRowHandler extends PageHandler<T, Integer> {
         /** */
         private final boolean putPageIntoFreeList;
@@ -554,6 +552,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * current one.
      *
      * @param rows Rows.
+     * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
     @Override public void insertDataRows(Collection<T> rows,
@@ -614,11 +613,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                     assert pageAddr != 0;
 
-                    AbstractDataPageIO io = initIo == null ? PageIO.getPageIO(pageAddr) : initIo;
-
                     boolean dirty = false;
 
                     try {
+                        AbstractDataPageIO io = initIo == null ? PageIO.getPageIO(pageAddr) : initIo;
+
                         // Fill the page up to the end.
                         while (iter.hasNext() || written != COMPLETE) {
                             if (written == COMPLETE) {
