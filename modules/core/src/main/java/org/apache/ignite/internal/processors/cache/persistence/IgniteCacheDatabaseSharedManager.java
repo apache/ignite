@@ -27,13 +27,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.management.InstanceNotFoundException;
-
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -363,8 +362,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
 
-        DataRegionMetricsImpl memMetrics =
-                new DataRegionMetricsImpl(dataRegionCfg, dataRegionMetricsProvider(dataRegionCfg));
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(
+            dataRegionCfg,
+            cctx.kernalContext().metric().registry(),
+            dataRegionMetricsProvider(dataRegionCfg));
 
         DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 
@@ -1277,7 +1278,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 MBEAN_GROUP_NAME,
                 region.memoryMetrics().getName()
             );
-            }
+        }
 
         dataRegionMap.clear();
 

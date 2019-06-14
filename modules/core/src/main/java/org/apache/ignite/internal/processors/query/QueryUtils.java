@@ -99,6 +99,9 @@ public class QueryUtils {
     /** Schema for system view. */
     public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE, false) ? "IGNITE" : "SYS";
 
+    /** Schema for monitoring views. */
+    public static final String SCHEMA_MONITORING = "MONITORING";
+
     /** Schema for system view. */
     public static final String SCHEMA_INFORMATION = "INFORMATION_SCHEMA";
 
