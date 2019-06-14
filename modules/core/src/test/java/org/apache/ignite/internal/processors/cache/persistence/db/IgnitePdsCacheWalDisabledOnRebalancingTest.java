@@ -308,30 +308,37 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
             return false;
         };
 
+        IgniteEx ig1;
+        CacheGroupMetricsMXBean mxBean;
+        int locMovingPartsNum;
+
         // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
         fileIoBlockingSemaphore.drainPermits();
+        try {
+            ig1 = startGrid(1);
 
-        IgniteEx ig1 = startGrid(1);
+            mxBean = ig1.cachex(CACHE3_NAME).context().group().mxBean();
+            locMovingPartsNum = mxBean.getLocalNodeMovingPartitionsCount();
 
-        CacheGroupMetricsMXBean mxBean = ig1.cachex(CACHE3_NAME).context().group().mxBean();
-        int locMovingPartsNum = mxBean.getLocalNodeMovingPartitionsCount();
+            // Partitions remain in MOVING state even after PME and rebalancing when checkpointer is blocked.
+            assertTrue("Expected non-zero value for local moving partitions count on node idx = 1: " +
+                locMovingPartsNum, 0 < locMovingPartsNum && locMovingPartsNum < CACHE3_PARTS_NUM);
 
-        // Partitions remain in MOVING state even after PME and rebalancing when checkpointer is blocked.
-        assertTrue("Expected non-zero value for local moving partitions count on node idx = 1: " +
-            locMovingPartsNum, 0 < locMovingPartsNum && locMovingPartsNum < CACHE3_PARTS_NUM);
+            blockRebalanceEnabled.set(true);
 
-        blockRebalanceEnabled.set(true);
-
-        // Change baseline topology and release checkpointer to verify
-        // that no partitions will be owned after affinity change.
-        ig0.cluster().setBaselineTopology(ig1.context().discovery().topologyVersion());
-        fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+            // Change baseline topology and release checkpointer to verify
+            // that no partitions will be owned after affinity change.
+            ig0.cluster().setBaselineTopology(ig1.context().discovery().topologyVersion());
+        }
+        finally {
+            fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
+        }
 
         locMovingPartsNum = mxBean.getLocalNodeMovingPartitionsCount();
         assertTrue("Expected moving partitions count on node idx = 1 equals to all partitions of the cache " +
              CACHE3_NAME + ": " + locMovingPartsNum, locMovingPartsNum == CACHE3_PARTS_NUM);
 
-        TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi) ig1
+        TestRecordingCommunicationSpi commSpi = (TestRecordingCommunicationSpi)ig1
             .configuration().getCommunicationSpi();
 
         // When we stop blocking demand message rebalancing should complete and all partitions should be owned.
