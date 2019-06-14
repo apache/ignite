@@ -115,6 +115,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-807")
     public void testNearTxNodeLeft() throws Exception {
         checkTxNodeLeft(PARTITION_READER);
     }
@@ -132,6 +133,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-807")
     public void testBackupTxNodeLeft() throws Exception {
         checkTxNodeLeft(PARTITION_BACKUP);
     }
