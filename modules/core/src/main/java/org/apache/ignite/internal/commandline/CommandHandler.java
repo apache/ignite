@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.io.File;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -205,12 +206,14 @@ public class CommandHandler {
      * @return Exit code.
      */
     public int execute(List<String> rawArgs) {
+        LocalDateTime startTime = LocalDateTime.now();
+
         Thread.currentThread().setName("session=" + ses);
 
         logger.info("Control utility [ver. " + ACK_VER_STR + "]");
         logger.info(COPYRIGHT);
         logger.info("User: " + System.getProperty("user.name"));
-        logger.info("Time: " + LocalDateTime.now());
+        logger.info("Time: " + startTime);
 
         String commandName = "";
 
@@ -312,6 +315,13 @@ public class CommandHandler {
             return EXIT_CODE_UNEXPECTED_ERROR;
         }
         finally {
+            LocalDateTime endTime = LocalDateTime.now();
+
+            Duration diff = Duration.between(startTime, endTime);
+
+            logger.info("Control utility has completed execution at: " + endTime);
+            logger.info("Execution time: " + diff.toMillis() + " ms");
+
             Arrays.stream(logger.getHandlers())
                   .filter(handler -> handler instanceof FileHandler)
                   .forEach(Handler::close);
