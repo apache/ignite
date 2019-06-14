@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.backup;
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -47,21 +47,22 @@ public interface IgniteBackupPageStoreManager extends GridCacheSharedManager, Ig
     /**
      * @return Checkpoint future for scheduled backups.
      */
-    public CheckpointFuture forceStart();
+    public IgniteInternalFuture<Void> forceStart();
 
     /**
      * @param backupName Unique backup name.
-     * @param cctx Cache context to use to.
-     * @param parts Collection of cache partitions to backup.
-     * @param dir Local directory to save cache partition deltas to.
+     * @param parts Collection of pairs group and appropratate cache partition to be backuped.
      * @return Future which will be completed when cache is ready to be processed.
      */
-    public IgniteInternalFuture<Set<CompletableReadyState>> scheduleCacheBackup(
-        String backupName,
-        GridCacheContext cctx,
-        Set<Integer> parts,
-        File dir
-    );
+    public IgniteInternalFuture<Void> setupCacheBackup(String backupName, Map<Integer, Set<Integer>> parts);
+
+    /**
+     * @param backupName Unique backup name.
+     * @param dir Local directory to save cache partition deltas to.
+     * @param executor Executor to use for async backup execution.
+     * @return Future which will be completed when backup is done.
+     */
+    public IgniteInternalFuture<?> runLocalBackup(String backupName, File dir, Executor executor);
 
     /**
      * @param backupName Unique backup name.

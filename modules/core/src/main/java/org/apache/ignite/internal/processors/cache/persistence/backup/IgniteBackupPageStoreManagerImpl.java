@@ -26,12 +26,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -80,14 +80,14 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     /** */
     public static final String BACKUP_CP_REASON = "Wakeup for checkpoint to take backup [name=%s]";
 
-    /** */
-    private final ConcurrentMap<String, CacheBackupContext> scheduledBackups = new ConcurrentHashMap<>();
+    /** Factory to working with {@link PartitionDeltaPageStore} as file storage. */
+    private static final FileIOFactory ioFactory = new RandomAccessFileIOFactory();
+
+    /** Map of registered cache backup processes and their corresponding contexts. */
+    private final ConcurrentMap<String, BackupContext> backupMap = new ConcurrentHashMap<>();
 
     /** TODO: CAS on list with temporary page stores */
     private final ConcurrentMap<GroupPartitionId, List<PartitionDeltaPageStore>> processingParts = new ConcurrentHashMap<>();
-
-    /** Factory to working with {@link PartitionDeltaPageStore} as file storage. */
-    private final FileIOFactory ioFactory;
 
     /** Tracking partition files over all running snapshot processes. */
     private final ConcurrentMap<GroupPartitionId, AtomicInteger> trackMap = new ConcurrentHashMap<>();
@@ -123,7 +123,6 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     public IgniteBackupPageStoreManagerImpl(GridKernalContext ctx) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
 
-        ioFactory = new RandomAccessFileIOFactory();
     }
 
     /**
@@ -218,45 +217,77 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public CheckpointFuture forceStart() {
-        return null;
+    @Override public IgniteInternalFuture<Void> forceStart() {
+        return (IgniteInternalFuture<Void>)dbMgr.forceCheckpoint("backup manager").beginFuture();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Set<CompletableReadyState>> scheduleCacheBackup(
+    @Override public IgniteInternalFuture<Void> setupCacheBackup(
         String backupName,
-        GridCacheContext cctx,
-        Set<Integer> parts,
-        File dir
+        Map<Integer, Set<Integer>> parts
     ) {
-        if (scheduledBackups.containsKey(backupName)) {
+        if (backupMap.containsKey(backupName)) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Backup with requested name is already scheduled " +
                 "to be created: " + backupName));
         }
 
-        CacheBackupContext bctx = new CacheBackupContext(cctx.groupId(), backupName);
-
-        scheduledBackups.put(backupName, bctx);
+        BackupContext result = new BackupContext(backupName);
+        File backupDir = new File(backupWorkDir, backupName);
 
         try {
-            for (int partId : parts) {
-                // Create cache temporary directory if not.
-                File tempGroupDir = U.resolveWorkDirectory(dir.getAbsolutePath(),
-                    cacheDirName(cctx.config()), false);
-
-                U.ensureDirectory(tempGroupDir, "temporary directory for cache group: " + cctx.groupId(), null);
-
-                bctx.partDeltaStores.putIfAbsent(partId,
-                    new PartitionDeltaPageStore(getPartionDeltaFile(tempGroupDir, partId),
-                        ioFactory,
-                        pageSize));
+            for (Map.Entry<Integer, Set<Integer>> grpEntry : parts.entrySet()) {
+                result.grpBackupMap.put(grpEntry.getKey(),
+                    createCacheBackupContext(backupDir,
+                        cctx.cacheContext(grpEntry.getKey()),
+                        grpEntry.getValue()));
             }
         }
         catch (IgniteCheckedException e) {
-            bctx.readyFut.onDone(e);
+            result.setupFut.onDone(e);
         }
 
-        return bctx.readyFut;
+        return result.setupFut;
+    }
+
+    /**
+     * @param dir Backup directory to save intermeidate results.
+     * @param cctx Cache context to setup cache backup context.
+     * @param parts Collection of cache partition to be backuped.
+     * @return Configured cache backup context.
+     * @throws IgniteCheckedException If fails.
+     */
+    private static CacheBackupContext createCacheBackupContext(
+        File dir,
+        GridCacheContext cctx,
+        Set<Integer> parts
+    ) throws IgniteCheckedException {
+        CacheBackupContext result = new CacheBackupContext();
+
+        for (int partId : parts) {
+            result.partSizes.put(partId, 0L);
+
+            // Create cache backup directory if not.
+            File grpDir = U.resolveWorkDirectory(dir.getAbsolutePath(),
+                cacheDirName(cctx.config()), false);
+
+            U.ensureDirectory(grpDir, "temporary directory for cache group: " + cctx.groupId(), null);
+
+            result.partDeltaStores.put(partId,
+                new PartitionDeltaPageStore(getPartionDeltaFile(grpDir, partId),
+                    ioFactory,
+                    cctx.shared().gridConfig().getDataStorageConfiguration().getPageSize()));
+        }
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> runLocalBackup(String backupName, File dir, Executor executor) {
+        BackupContext ctx = backupMap.get(backupName);
+
+        // Submit to executor service.
+
+        return ctx.completeFut;
     }
 
     /** {@inheritDoc} */
@@ -554,117 +585,16 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     /**
      *
      */
-    private static class CompletableReadyStateImpl implements CompletableReadyState {
-        /** */
-        private final int partId;
-
-        /** */
-        private final File part;
-
-        /** */
-        private final PartitionDeltaPageStore delta;
-
-        /** */
-        private long size;
-
-        /**
-         * @param partId Partition id.
-         * @param part File resource of partition.
-         * @param delta File with saved pages.
-         */
-        public CompletableReadyStateImpl(int partId, File part, PartitionDeltaPageStore delta) {
-            this.partId = partId;
-            this.part = part;
-            this.delta = delta;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getPartId() {
-            return partId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public File getPartition() {
-            return part;
-        }
-
-        /**
-         * @param size Partition size in bytes.
-         */
-        public void setPartitionSize(long size) {
-            this.size = size;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getPartitionSize() {
-            return size;
-        }
-
-        /** {@inheritDoc} */
-        @Override public File getPartitionDelta() {
-            return delta.getFile();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void complete() {
-            delta.writable(false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            CompletableReadyStateImpl backup = (CompletableReadyStateImpl)o;
-
-            return partId == backup.partId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(partId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(CompletableReadyStateImpl.class, this);
-        }
-    }
-
-    /**
-     *
-     */
     private static class CacheBackupContext {
-        /** Cache group id. */
-        private final int grpId;
-
-        /** Unique backup name. */
-        private final String backupName;
-
         /**
          * The length of file size per each cache partiton file.
          * Partition has value greater than zero only for partitons in OWNING state.
          * Information collected under checkpoint write lock.
          */
-        private final Map<Integer, CompletableReadyState> partSizeMap = new HashMap<>();
+        private final Map<Integer, Long> partSizes = new HashMap<>();
 
         /** Map of partitions to backup and theirs corresponding PageStores. */
         private final Map<Integer, PartitionDeltaPageStore> partDeltaStores = new HashMap<>();
-
-        /** Future represents a collection of requested partition are ready to be copied. */
-        private final GridFutureAdapter<Set<CompletableReadyState>> readyFut = new GridFutureAdapter<>();
-
-        /**
-         * @param grpId Backup cache group id.
-         * @param backupName Unique backup name.
-         */
-        public CacheBackupContext(int grpId, String backupName) {
-            this.grpId = grpId;
-            this.backupName = backupName;
-        }
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -672,16 +602,29 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
         }
     }
 
-    /** */
+    /**
+     *
+     */
     private static class BackupContext {
+        /** Unique identifier of backup process. */
+        private final String name;
+
+        /** Backup context per each cache group. */
+        private final Map<Integer, CacheBackupContext> grpBackupMap = new HashMap<>();
+
+        /** Future will be completed when all the scheduled partitions are ready to be copied. */
+        private final GridFutureAdapter<Void> setupFut = new GridFutureAdapter<>();
+
+        /** Future will be completed when cache backups are created. */
+        private final GridFutureAdapter<Void> completeFut = new GridFutureAdapter<>();
+
+
+
         /** */
         private final AtomicBoolean inited = new AtomicBoolean();
 
         /** */
         private final AtomicBoolean tracked = new AtomicBoolean();
-
-        /** Unique identifier of backup process. */
-        private final String name;
 
         /**
          * The length of partition file sizes up to each cache partiton file.

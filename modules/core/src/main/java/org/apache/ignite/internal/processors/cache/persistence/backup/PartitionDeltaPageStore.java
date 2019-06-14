@@ -53,9 +53,6 @@ public class PartitionDeltaPageStore implements Closeable {
     private final Set<Long> writtenPagesCount = new HashSet<>();
 
     /** */
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
-
-    /** */
     private final Object mux = new Object();
 
     /** */
@@ -72,6 +69,8 @@ public class PartitionDeltaPageStore implements Closeable {
      * @param factory Facotry.
      */
     public PartitionDeltaPageStore(File file, FileIOFactory factory, int pageSize) {
+        assert pageSize > 0;
+
         this.file = file;
         this.factory = factory;
         this.pageSize = pageSize;
