@@ -35,7 +35,7 @@
     </parent>
 
     <artifactId>ignite-ml-xgboost-model-parser</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>9.0.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <build>

@@ -25,12 +25,12 @@
     <parent>
         <groupId>org.gridgain</groupId>
         <artifactId>ignite-cassandra</artifactId>
-        <version>8.8.0-SNAPSHOT</version>
+        <version>9.0.0-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>ignite-cassandra-serializers</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>9.0.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
