@@ -1139,6 +1139,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         assertNotContains(log, testOutStr, "Control.sh");
     }
 
+    /** */
+    @Test
+    public void testPrintTimestampAtEndsOfExecution() {
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute());
+
+        String testOutStr = testOut.toString();
+
+        assertContains(log, testOutStr, "Control utility has completed execution at: ");
+    }
+
     /**
      * @throws Exception If failed.
      */
