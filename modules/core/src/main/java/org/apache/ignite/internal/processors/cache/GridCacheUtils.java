@@ -2002,6 +2002,9 @@ public class GridCacheUtils {
     }
 
     /**
+     * Calculates whether there is enough free space in a region to store a specified amount of data. Required number of
+     * pages for data is estimated taking into account memory fragmentation and possible concurrent updates.
+     *
      * @param memPlc Data region.
      * @param size Data size in bytes.
      * @return {@code True} if a specified amount of data can be stored in the memory region without evictions.
@@ -2009,7 +2012,7 @@ public class GridCacheUtils {
     public static boolean isEnoughSpaceForData(DataRegion memPlc, int size) {
         DataRegionConfiguration plc = memPlc.config();
 
-        if (plc.isPersistenceEnabled() || plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
+        if (size <= 0 || plc.isPersistenceEnabled() || plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
             return true;
 
         PageMemory pageMem = memPlc.pageMemory();
@@ -2017,7 +2020,7 @@ public class GridCacheUtils {
         int sysPageSize = pageMem.systemPageSize();
 
         // The number of pages is calculated taking into account memory fragmentation and possible concurrent updates.
-        int pagesRequired = (size / sysPageSize) * 2;
+        int pagesRequired = Math.round((size / (float)sysPageSize) * 2);
 
         long maxPages = plc.getMaxSize() / sysPageSize;
 
@@ -2029,7 +2032,7 @@ public class GridCacheUtils {
         if (pagesRequired > plc.getEmptyPagesPoolSize())
             return false;
 
-        return pagesRequired < maxPages * (1.0d - plc.getEvictionThreshold());
+        return pagesRequired < Math.round(maxPages * (1.0d - plc.getEvictionThreshold()));
     }
 
     /**

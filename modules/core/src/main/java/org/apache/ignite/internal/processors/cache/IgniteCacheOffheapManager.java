@@ -192,6 +192,8 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * Put entries into the data store.
+     *
      * @param part Partition.
      * @param entries Entries.
      * @throws IgniteCheckedException If failed.
@@ -742,6 +744,8 @@ public interface IgniteCacheOffheapManager {
 
 
         /**
+         * Put entries into the data store.
+         *
          * @param entries Entries.
          * @return Created rows.
          * @throws IgniteCheckedException If failed.
