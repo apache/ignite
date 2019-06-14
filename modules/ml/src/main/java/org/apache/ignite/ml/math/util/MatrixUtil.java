@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -57,6 +57,13 @@ public class MatrixUtil {
         // a fastest possible visiting order.
         for (int i = 0; i < n; i++)
             res.setX(i, i, 1.0);
+        return res;
+    }
+
+    public static Matrix identity(int n) {
+        DenseMatrix res = new DenseMatrix(n, n);
+        for (int i = 0; i < n; i++)
+            res.set(i, i, 1.0);
         return res;
     }
 
@@ -196,10 +203,10 @@ public class MatrixUtil {
     }
 
     /**
-     * Zip two vectors with given tri-function taking as third argument position in vector
-     * (i.e. apply binary function to both vector elementwise and construct vector from results).
-     * Example zipWith({200, 400, 600}, {100, 300, 500}, plusAndMultiplyByIndex) = {(200 + 100) * 0, (400 + 300) * 1, (600 + 500) * 3}.
-     * Length of result is length of shortest of vectors.
+     * Zip two vectors with given tri-function taking as third argument position in vector (i.e. apply binary function
+     * to both vector elementwise and construct vector from results). Example zipWith({200, 400, 600}, {100, 300, 500},
+     * plusAndMultiplyByIndex) = {(200 + 100) * 0, (400 + 300) * 1, (600 + 500) * 3}. Length of result is length of
+     * shortest of vectors.
      *
      * @param v1 First vector.
      * @param v2 Second vector.

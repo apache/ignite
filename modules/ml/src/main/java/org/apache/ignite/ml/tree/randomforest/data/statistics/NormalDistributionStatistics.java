@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -61,7 +61,7 @@ public class NormalDistributionStatistics implements Serializable {
      * Returns plus of normal distribution statistics.
      *
      * @param stats Stats.
-     * @return plus of normal distribution statistics.
+     * @return Plus of normal distribution statistics.
      */
     public NormalDistributionStatistics plus(NormalDistributionStatistics stats) {
         return new NormalDistributionStatistics(
@@ -74,14 +74,14 @@ public class NormalDistributionStatistics implements Serializable {
     }
 
     /**
-     * @return mean value.
+     * @return Mean value.
      */
     public double mean() {
         return sumOfValues / n;
     }
 
     /**
-     * @return variance value.
+     * @return Variance value.
      */
     public double variance() {
         double mean = mean();
@@ -89,21 +89,21 @@ public class NormalDistributionStatistics implements Serializable {
     }
 
     /**
-     * @return standard deviation value.
+     * @return Standard deviation value.
      */
     public double std() {
         return Math.sqrt(variance());
     }
 
     /**
-     * @return min value.
+     * @return Min value.
      */
     public double min() {
         return min;
     }
 
     /**
-     * @return max value.
+     * @return Max value.
      */
     public double max() {
         return max;

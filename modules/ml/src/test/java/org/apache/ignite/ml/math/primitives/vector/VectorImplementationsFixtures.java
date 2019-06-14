@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -78,7 +78,7 @@ class VectorImplementationsFixtures {
     private static class SparseLocalVectorFixture extends VectorSizesExtraFixture<Integer> {
         /** */
         SparseLocalVectorFixture() {
-            super("SparseLocalVector", SparseVector::new, "access mode",
+            super("SparseLocalVector", (x,y) -> new SparseVector(x), "access mode",
                 new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null});
         }
     }
@@ -128,7 +128,7 @@ class VectorImplementationsFixtures {
     }
 
     /** */
-    private static abstract class VectorSizesFixture implements Iterable<Vector> {
+    private abstract static class VectorSizesFixture implements Iterable<Vector> {
         /** */
         private final Supplier<VectorSizesIterator> iter;
 
@@ -214,8 +214,8 @@ class VectorImplementationsFixtures {
             return (size, delta) -> ctor.apply(size + delta, extras[extraIdx]);
         }
 
-        /** */
-        void selfTest() {
+        /** {@inheritDoc} */
+        @Override void selfTest() {
             final Set<Integer> extraIdxs = new HashSet<>();
 
             int cnt = 0;

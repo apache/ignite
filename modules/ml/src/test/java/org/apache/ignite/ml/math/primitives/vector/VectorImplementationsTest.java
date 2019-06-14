@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /** See also: {@link AbstractVectorTest} and {@link VectorToMatrixTest}. */
-public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to smaller cohesive test classes
+public class VectorImplementationsTest { // TODO: IGNITE-5723, split this to smaller cohesive test classes
     /** */
     @Test
     public void setGetTest() {
@@ -91,7 +91,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     public void operateXOutOfBoundsTest() {
         consumeSampleVectors((v, desc) -> {
             if (v instanceof SparseVector)
-                return; // TODO: IGNTIE-5723, find out if it's OK to skip by instances here
+                return; // TODO: IGNITE-5723, find out if it's OK to skip by instances here
 
             boolean expECaught = false;
 
@@ -492,7 +492,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
 
     /** */
     private boolean getXOutOfBoundsOK(Vector v) {
-        // TODO: IGNTIE-5723, find out if this is indeed OK
+        // TODO: IGNITE-5723, find out if this is indeed OK
         return false;
     }
 
@@ -556,7 +556,7 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
     private void operationVectorTest(BiFunction<Double, Double, Double> operation,
         BiFunction<Vector, Vector, Vector> vecOperation) {
         consumeSampleVectors((v, desc) -> {
-            // TODO : IGNTIE-5723, find out if more elaborate testing scenario is needed or it's okay as is.
+            // TODO : IGNITE-5723, find out if more elaborate testing scenario is needed or it's okay as is.
             final int size = v.size();
             final double[] ref = new double[size];
 
@@ -670,7 +670,8 @@ public class VectorImplementationsTest { // TODO: IGNTIE-5723, split this to sma
                 for (int idx = 0; idx < size; idx++)
                     ref[idx] = operation.apply(ref[idx], val);
 
-                checker.assertCloseEnough(vecOperation.apply(v, val), ref);
+                Vector apply = vecOperation.apply(v, val);
+                checker.assertCloseEnough(apply, ref);
             });
     }
 

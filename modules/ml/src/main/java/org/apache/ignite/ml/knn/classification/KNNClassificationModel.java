@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,9 @@ import org.apache.ignite.ml.structures.LabeledVectorSet;
 
 /**
  * kNN algorithm model to solve multi-class classification task.
+ *
+ * NOTE: This model is especial, because it takes dataset as an input.
+ * The dataset (or datasets in case of model updating) are closing automatically.
  */
 public class KNNClassificationModel extends NNClassificationModel implements Exportable<KNNModelFormat> {
     /** */
@@ -57,7 +60,7 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
         if (!datasets.isEmpty()) {
             List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
@@ -142,5 +145,17 @@ public class KNNClassificationModel extends NNClassificationModel implements Exp
     public void copyStateFrom(KNNClassificationModel mdl) {
         this.copyParametersFrom(mdl);
         datasets.addAll(mdl.datasets);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        for (int i = 0; i < datasets.size(); i++) {
+            try {
+                datasets.get(i).close();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

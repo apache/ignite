@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,18 +16,22 @@
 
 package org.apache.ignite.ml.pipeline;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
@@ -37,51 +41,39 @@ import org.apache.ignite.ml.trainers.DatasetTrainer;
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
- * @param <R> Type of a result in {@code upstream} feature extractor.
  */
-public class Pipeline<K, V, R> {
-    /** Feature extractor. */
-    private IgniteBiFunction<K, V, R> finalFeatureExtractor;
+public class Pipeline<K, V, C extends Serializable, L> {
+    /** Final Feature extractor. */
+    private Preprocessor<K, V> finalPreprocessor;
 
-    /** Label extractor. */
-    private IgniteBiFunction<K, V, Double> lbExtractor;
+    /** Vectorizer. */
+    private Vectorizer<K, V, C, L> vectorizer;
 
-    /** Prerpocessor stages. */
-    private List<PreprocessingTrainer> preprocessors = new ArrayList<>();
+    /** Preprocessor stages. */
+    private List<PreprocessingTrainer> preprocessingTrainers = new ArrayList<>();
 
     /** Final trainer stage. */
     private DatasetTrainer finalStage;
 
-    /**
-     * Adds feature extractor as a zero stage.
-     *
-     * @param featureExtractor The parameter value.
-     * @return The updated Pipeline.
-     */
-    public Pipeline<K, V, R> addFeatureExtractor(IgniteBiFunction<K, V, R> featureExtractor) {
-        this.finalFeatureExtractor = featureExtractor;
-        return this;
-    }
+    /** Learning environment builder. */
+    private LearningEnvironmentBuilder envBuilder = LearningEnvironmentBuilder.defaultBuilder();
 
     /**
-     * Adds a label extractor for the produced model.
-     *
-     * @param lbExtractor The parameter value.
-     * @return The updated Pipeline.
+     * @param vectorizer Vectorizer.
      */
-    public Pipeline<K, V, R> addLabelExtractor(IgniteBiFunction<K, V, Double> lbExtractor) {
-        this.lbExtractor = lbExtractor;
+    public Pipeline<K, V, C, L> addVectorizer(Vectorizer<K, V, C, L> vectorizer) {
+        this.vectorizer = vectorizer;
         return this;
     }
 
     /**
      * Adds a preprocessor.
      *
-     * @param preprocessor The parameter value.
+     * @param preprocessingTrainer The parameter value.
      * @return The updated Pipeline.
      */
-    public Pipeline<K, V, R> addPreprocessor(PreprocessingTrainer preprocessor) {
-        preprocessors.add(preprocessor);
+    public Pipeline<K, V, C, L> addPreprocessingTrainer(PreprocessingTrainer preprocessingTrainer) {
+        preprocessingTrainers.add(preprocessingTrainer);
         return this;
     }
 
@@ -91,9 +83,16 @@ public class Pipeline<K, V, R> {
      * @param trainer The parameter value.
      * @return The updated Pipeline.
      */
-    public Pipeline<K, V, R> addTrainer(DatasetTrainer trainer) {
+    public Pipeline<K, V, C, L> addTrainer(DatasetTrainer trainer) {
         this.finalStage = trainer;
         return this;
+    }
+
+    /**
+     * Returns trainer.
+     */
+    public DatasetTrainer getTrainer() {
+        return finalStage;
     }
 
     /**
@@ -109,6 +108,15 @@ public class Pipeline<K, V, R> {
     }
 
     /**
+     * Set learning environment builder.
+     *
+     * @param envBuilder Learning environment builder.
+     */
+    public void setEnvironmentBuilder(LearningEnvironmentBuilder envBuilder) {
+        this.envBuilder = envBuilder;
+    }
+
+    /**
      * Fits the pipeline to the input mock data.
      *
      * @param data Data.
@@ -121,31 +129,34 @@ public class Pipeline<K, V, R> {
     }
 
     /** Fits the pipeline to the input dataset builder. */
-    private PipelineMdl<K, V> fit(DatasetBuilder datasetBuilder) {
-        assert lbExtractor != null;
-        assert finalFeatureExtractor != null;
-
+    public PipelineMdl<K, V> fit(DatasetBuilder datasetBuilder) {
         if (finalStage == null)
             throw new IllegalStateException("The Pipeline should be finished with the Training Stage.");
 
-        preprocessors.forEach(e -> {
+        // Reload for new fit
+        finalPreprocessor = vectorizer;
 
-            finalFeatureExtractor = e.fit(
+        preprocessingTrainers.forEach(e -> {
+            finalPreprocessor = e.fit(
+                envBuilder,
                 datasetBuilder,
-                finalFeatureExtractor
+                finalPreprocessor
             );
         });
 
-        Model<Vector, Double> internalMdl = finalStage
+        LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
+        env.initDeployingContext(finalPreprocessor);
+        IgniteModel<Vector, Double> internalMdl = finalStage
             .fit(
                 datasetBuilder,
-                finalFeatureExtractor,
-                lbExtractor
+                finalPreprocessor,
+                env
             );
 
         return new PipelineMdl<K, V>()
-            .withFeatureExtractor(finalFeatureExtractor)
-            .withLabelExtractor(lbExtractor)
+            .withPreprocessor(finalPreprocessor)
             .withInternalMdl(internalMdl);
     }
+
+
 }

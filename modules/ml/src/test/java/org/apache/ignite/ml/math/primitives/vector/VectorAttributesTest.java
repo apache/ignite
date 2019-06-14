@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,11 +36,7 @@ public class VectorAttributesTest {
             DenseVector.class),
         new AttrCfg("isArrayBased", Vector::isArrayBased,
             DenseVector.class),
-        new AttrCfg("isSequentialAccess", Vector::isSequentialAccess,
-            DenseVector.class, SparseLocalVectorSequentialAccess.class),
         new AttrCfg("guidNotNull", v -> v.guid() == null), // IMPL NOTE this is somewhat artificial
-        new AttrCfg("isRandomAccess", Vector::isRandomAccess,
-            DenseVector.class, SparseLocalVectorSequentialAccess.class, SparseLocalVectorRandomAccess.class),
         new AttrCfg("isDistributed", Vector::isDistributed));
 
     /** */
@@ -53,7 +49,7 @@ public class VectorAttributesTest {
         new Specification(new SparseLocalVectorRandomAccess(1)),
         new Specification(new VectorizedViewMatrix(new DenseMatrix(1, 1), 0, 0, 1, 1),
             DenseVector.class, "isDense",
-            "isRandomAccess", "isDistributed")); // TODO: IGNTIE-5723, find out why "isSequentialAccess" fails here
+            "isRandomAccess", "isDistributed")); // TODO: IGNITE-5723, find out why "isSequentialAccess" fails here
 
     /** */
     @Test
@@ -69,20 +65,8 @@ public class VectorAttributesTest {
 
     /** */
     @Test
-    public void isSequentialAccessTest() {
-        assertAttribute("isSequentialAccess");
-    }
-
-    /** */
-    @Test
     public void guidTest() {
         assertAttribute("guidNotNull");
-    }
-
-    /** */
-    @Test
-    public void isRandomAccessTest() {
-        assertAttribute("isRandomAccess");
     }
 
     /** */
@@ -173,7 +157,7 @@ public class VectorAttributesTest {
 
         /** */
         SparseLocalVectorSequentialAccess(int size) {
-            super(size, SEQUENTIAL_ACCESS_MODE);
+            super(size);
         }
     }
 
@@ -186,7 +170,7 @@ public class VectorAttributesTest {
 
         /** */
         SparseLocalVectorRandomAccess(int size) {
-            super(size, RANDOM_ACCESS_MODE);
+            super(size);
         }
     }
 }

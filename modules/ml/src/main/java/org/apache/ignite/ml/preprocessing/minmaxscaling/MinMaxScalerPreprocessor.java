@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,8 +16,11 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Preprocessing function that makes minmaxscaling. From mathematical point of view it's the following function which
@@ -31,7 +34,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
+public final class MinMaxScalerPreprocessor<K, V> implements Preprocessor<K, V>, DeployableObject {
     /** */
     private static final long serialVersionUID = 6997800576392623469L;
 
@@ -42,7 +45,7 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
     private final double[] max;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
+    private final Preprocessor<K, V> basePreprocessor;
 
     /**
      * Constructs a new instance of minmaxscaling preprocessor.
@@ -51,7 +54,7 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
      * @param max Maximum values.
      * @param basePreprocessor Base preprocessor.
      */
-    public MinMaxScalerPreprocessor(double[] min, double[] max, IgniteBiFunction<K, V, Vector> basePreprocessor) {
+    public MinMaxScalerPreprocessor(double[] min, double[] max, Preprocessor<K, V> basePreprocessor) {
         this.min = min;
         this.max = max;
         this.basePreprocessor = basePreprocessor;
@@ -64,14 +67,22 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public Vector apply(K k, V v) {
-        Vector res = basePreprocessor.apply(k, v);
+    @Override public LabeledVector apply(K k, V v) {
+        LabeledVector res = basePreprocessor.apply(k, v);
 
         assert res.size() == min.length;
         assert res.size() == max.length;
 
-        for (int i = 0; i < res.size(); i++)
-            res.set(i, (res.get(i) - min[i]) / (max[i] - min[i]));
+        for (int i = 0; i < res.size(); i++) {
+            double num = res.get(i) - min[i];
+            double denom = max[i] - min[i];
+            double scaled = num / denom;
+
+            if (Double.isNaN(scaled))
+                res.set(i, num);
+            else
+                res.set(i, scaled);
+        }
 
         return res;
     }
@@ -84,5 +95,10 @@ public class MinMaxScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
     /** */
     public double[] getMax() {
         return max;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(basePreprocessor);
     }
 }

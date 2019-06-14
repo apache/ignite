@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.knn.classification.KNNModelFormat;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
@@ -40,7 +41,8 @@ import org.jetbrains.annotations.NotNull;
  * Common methods and fields for all kNN and aNN models
  * to predict label based on neighbours' labels.
  */
-public abstract class NNClassificationModel implements Model<Vector, Double>, Exportable<KNNModelFormat> {
+public abstract class NNClassificationModel implements IgniteModel<Vector, Double>, Exportable<KNNModelFormat>,
+    DeployableObject {
     /** Amount of nearest neighbors. */
     protected int k = 5;
 
@@ -227,6 +229,11 @@ public abstract class NNClassificationModel implements Model<Vector, Double>, Ex
         this.stgy = mdl.stgy;
     }
 
-    /** */
-    public abstract <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path);
+    /** {@inheritDoc} */
+    @Override public abstract <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path);
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(distanceMeasure);
+    }
 }

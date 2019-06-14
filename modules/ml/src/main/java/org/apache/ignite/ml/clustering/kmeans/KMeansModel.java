@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,10 +17,12 @@
 package org.apache.ignite.ml.clustering.kmeans;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -29,7 +31,8 @@ import org.apache.ignite.ml.util.ModelTrace;
 /**
  * This class encapsulates result of clusterization by KMeans algorithm.
  */
-public class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
+public final class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat>,
+    DeployableObject {
     /** Centers of clusters. */
     private final Vector[] centers;
 
@@ -52,22 +55,18 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         return distanceMeasure;
     }
 
-    /** Amount of centers in clusterization. */
+    /** {@inheritDoc} */
     @Override public int getAmountOfClusters() {
         return centers.length;
     }
 
-    /** Get centers of clusters. */
+    /** {@inheritDoc} */
     @Override public Vector[] getCenters() {
         return Arrays.copyOf(centers, centers.length);
     }
 
-    /**
-     * Predict closest center index for a given vector.
-     *
-     * @param vec Vector.
-     */
-    public Integer apply(Vector vec) {
+    /** {@inheritDoc} */
+    @Override public Integer predict(Vector vec) {
         int res = -1;
         double minDist = Double.POSITIVE_INFINITY;
 
@@ -127,5 +126,10 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
             .addField("distance measure", measureName)
             .addField("centroids", centersList)
             .toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(distanceMeasure);
     }
 }

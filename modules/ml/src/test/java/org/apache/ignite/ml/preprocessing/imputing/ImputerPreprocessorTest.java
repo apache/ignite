@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,8 @@
 
 package org.apache.ignite.ml.preprocessing.imputing;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
@@ -35,9 +36,11 @@ public class ImputerPreprocessorTest {
             {Double.NaN, Double.NaN, Double.NaN},
         };
 
-        ImputerPreprocessor<Integer, Vector> preprocessor = new ImputerPreprocessor<>(
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<>(0, 1, 2);
+
+        ImputerPreprocessor<Integer,  double[]> preprocessor = new ImputerPreprocessor<>(
             VectorUtils.of(1.1, 10.1, 100.1),
-            (k, v) -> v
+            vectorizer
         );
 
         double[][] postProcessedData = new double[][]{
@@ -47,6 +50,6 @@ public class ImputerPreprocessorTest {
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
+           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 }

@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * Predictions aggregator returning weighted plus of predictions.
  * result(p1, ..., pn) = bias + p1*w1 + ... + pn*wn
  */
-public class WeightedPredictionsAggregator implements PredictionsAggregator {
+public final class WeightedPredictionsAggregator implements PredictionsAggregator {
     /** Weights for predictions. */
     private final double[] weights;
     /** Bias. */

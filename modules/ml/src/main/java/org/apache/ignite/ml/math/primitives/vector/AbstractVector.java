@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.primitives.vector;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -125,11 +126,37 @@ public abstract class AbstractVector implements Vector {
     }
 
     /**
+     * Sets serializable value.
+     *
+     * @param i Index.
+     * @param v Value.
+     */
+    protected void storageSetRaw(int i, Serializable v) {
+        ensureReadOnly();
+
+        sto.setRaw(i, v);
+
+        // Reset cached values.
+        lenSq = 0.0;
+        maxElm = minElm = null;
+    }
+
+    /**
      * @param i Index.
      * @return Value.
      */
     protected double storageGet(int i) {
         return sto.get(i);
+    }
+
+    /**
+     * Gets serializable value from storage and casts it to targe type T.
+     *
+     * @param i Index.
+     * @return Value.
+     */
+    protected <T extends Serializable> T storageGetRaw(int i) {
+        return sto.getRaw(i);
     }
 
     /** {@inheritDoc} */
@@ -157,6 +184,18 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public double getX(int idx) {
         return storageGet(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int idx) {
+        checkIndex(idx);
+
+        return sto.getRaw(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRawX(int idx) {
+        return sto.getRaw(idx);
     }
 
     /** {@inheritDoc} */
@@ -235,6 +274,16 @@ public abstract class AbstractVector implements Vector {
             @Override public void set(double val) {
                 storageSet(idx, val);
             }
+
+            /** {@inheritDoc} */
+            @Override public void setRaw(Serializable val) {
+                storageSetRaw(idx, val);
+            }
+
+            /** {@inheritDoc} */
+            @Override public <T extends Serializable> T getRaw() {
+                return storageGetRaw(idx);
+            }
         };
     }
 
@@ -292,6 +341,22 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Vector setX(int idx, double val) {
         storageSet(idx, val);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector setRaw(int idx, Serializable val) {
+        checkIndex(idx);
+
+        storageSetRaw(idx, val);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector setRawX(int idx, Serializable val) {
+        storageSetRaw(idx, val);
 
         return this;
     }
@@ -616,18 +681,13 @@ public abstract class AbstractVector implements Vector {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDistributed() {
         return sto.isDistributed();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isNumeric() {
+        return sto.isNumeric();
     }
 
     /** {@inheritDoc} */
@@ -838,6 +898,15 @@ public abstract class AbstractVector implements Vector {
     /** {@inheritDoc} */
     @Override public Vector copy() {
         return like(size()).assign(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Vector copyOfRange(int from, int to) {
+        Vector copiedVector = like(to - from);
+        for (int i = from, j = 0; i < to; i++, j++)
+            copiedVector.set(j, this.get(i));
+
+        return copiedVector;
     }
 
     /**

@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableDoubleToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -42,7 +42,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.elementWiseTimes;
 /**
  * Class encapsulating logic of multilayer perceptron.
  */
-public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
+public final class MultilayerPerceptron implements IgniteModel<Matrix, Matrix>, SmoothParametrized<MultilayerPerceptron>,
     Serializable {
     /**
      * This MLP architecture.
@@ -175,7 +175,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      * @param val Matrix containing objects.
      * @return Matrix with predicted vectors.
      */
-    @Override public Matrix apply(Matrix val) {
+    @Override public Matrix predict(Matrix val) {
         MLPState state = new MLPState(null);
         forwardPass(val.transpose(), state, false);
         return state.activatorsOutput.get(state.activatorsOutput.size() - 1).transpose();
@@ -353,8 +353,10 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /** {@inheritDoc} */
-    public Vector differentiateByParameters(IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        Matrix inputsBatch, Matrix truthBatch) {
+    @Override public Vector differentiateByParameters(
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+        Matrix inputsBatch, Matrix truthBatch
+    ) {
         // Backpropagation algorithm is used here.
         int batchSize = inputsBatch.columnSize();
         double invBatchSize = 1 / (double)batchSize;
@@ -394,7 +396,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /** {@inheritDoc} */
-    public Vector parameters() {
+    @Override public Vector parameters() {
         return paramsAsVector(layers);
     }
 
@@ -419,7 +421,7 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /** {@inheritDoc} */
-    public MultilayerPerceptron setParameters(Vector vector) {
+    @Override public MultilayerPerceptron setParameters(Vector vector) {
         int off = 0;
 
         for (int l = 1; l < layersCount(); l++) {

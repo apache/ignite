@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,8 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 
 /**
  * Distributed implementation of LSQR algorithm based on {@link AbstractLSQR} and {@link Dataset}.
@@ -34,13 +36,18 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      * Constructs a new instance of OnHeap LSQR algorithm implementation.
      *
      * @param datasetBuilder Dataset builder.
+     * @param envBuilder Learning environment builder.
      * @param partDataBuilder Partition data builder.
      */
     public LSQROnHeap(DatasetBuilder<K, V> datasetBuilder,
-        PartitionDataBuilder<K, V, LSQRPartitionContext, SimpleLabeledDatasetData> partDataBuilder) {
+        LearningEnvironmentBuilder envBuilder,
+        PartitionDataBuilder<K, V, LSQRPartitionContext, SimpleLabeledDatasetData> partDataBuilder,
+        LearningEnvironment localLearningEnv) {
         this.dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new LSQRPartitionContext(),
-            partDataBuilder
+            envBuilder,
+            (env, upstream, upstreamSize) -> new LSQRPartitionContext(),
+            partDataBuilder,
+            localLearningEnv
         );
     }
 

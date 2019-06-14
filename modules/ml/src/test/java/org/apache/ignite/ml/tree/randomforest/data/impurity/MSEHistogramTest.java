@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,14 +16,15 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 
@@ -96,14 +97,14 @@ public class MSEHistogramTest extends ImpurityHistogramTest {
         List<MSEHistogram> partitions1 = new ArrayList<>();
         List<MSEHistogram> partitions2 = new ArrayList<>();
 
-        int cntOfPartitions = rnd.nextInt(100);
+        int cntOfPartitions = rnd.nextInt(100) + 1;
 
         for (int i = 0; i < cntOfPartitions; i++) {
             partitions1.add(new MSEHistogram(sampleId, bucketMeta1));
             partitions2.add(new MSEHistogram(sampleId, bucketMeta2));
         }
 
-        int datasetSize = rnd.nextInt(1000);
+        int datasetSize = rnd.nextInt(1000) + 1;
         for(int i = 0; i < datasetSize; i++) {
             BootstrappedVector vec = randomVector(false);
             vec.features().set(1, (vec.features().get(1) * 100) % 100);

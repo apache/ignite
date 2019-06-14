@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,13 +16,16 @@
 
 package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownCategorialFeatureValue;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Preprocessing function that makes String encoding.
@@ -44,7 +47,7 @@ import org.apache.ignite.ml.preprocessing.encoding.EncoderPreprocessor;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
+public final class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> implements DeployableObject {
     /** */
     protected static final long serialVersionUID = 6237712226382623488L;
 
@@ -55,7 +58,7 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
      * @param handledIndices   Handled indices.
      */
     public StringEncoderPreprocessor(Map<String, Integer>[] encodingValues,
-                                     IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
+                                     Preprocessor<K, V> basePreprocessor, Set<Integer> handledIndices) {
         super(encodingValues, basePreprocessor, handledIndices);
     }
 
@@ -66,12 +69,12 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public Vector apply(K k, V v) {
-        Object[] tmp = basePreprocessor.apply(k, v);
-        double[] res = new double[tmp.length];
+    @Override public LabeledVector apply(K k, V v) {
+        LabeledVector tmp = basePreprocessor.apply(k, v);
+        double[] res = new double[tmp.size()];
 
         for (int i = 0; i < res.length; i++) {
-            Object tmpObj = tmp[i];
+            Object tmpObj = tmp.getRaw(i);
             if (handledIndices.contains(i)) {
                 if (tmpObj.equals(Double.NaN) && encodingValues[i].containsKey(KEY_FOR_NULL_VALUES))
                     res[i] = encodingValues[i].get(KEY_FOR_NULL_VALUES);
@@ -82,6 +85,11 @@ public class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
             } else
                 res[i] = (double) tmpObj;
         }
-        return VectorUtils.of(res);
+        return new LabeledVector(VectorUtils.of(res), tmp.label());
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(basePreprocessor);
     }
 }

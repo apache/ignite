@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.primitives.vector.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
 
 /**
@@ -88,8 +89,18 @@ public class VectorViewStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int i) {
+        return sto.getRaw(off + i);
+    }
+
+    /** {@inheritDoc} */
     @Override public void set(int i, double v) {
         sto.set(off + i, v);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setRaw(int i, Serializable v) {
+        sto.setRaw(off + i, v);
     }
 
     /** {@inheritDoc} */
@@ -98,18 +109,13 @@ public class VectorViewStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
+    @Override public Serializable[] rawData() {
+        return sto.rawData();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
     }
 
     /** {@inheritDoc} */
@@ -120,6 +126,11 @@ public class VectorViewStorage implements VectorStorage {
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return sto.isArrayBased();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isNumeric() {
+        return sto.isNumeric();
     }
 
     /** {@inheritDoc} */

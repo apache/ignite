@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,15 +16,20 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
+import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
+
+import java.io.Serializable;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 
 /**
  * Helper class for ImpurityHistograms.
  */
-public abstract class ImpurityHistogram {
+public abstract class ImpurityHistogram implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = -8982240673834216798L;
+
     /** Bucket ids. */
     protected final Set<Integer> bucketIds = new TreeSet<>();
 
@@ -47,7 +52,7 @@ public abstract class ImpurityHistogram {
      * @param bestBucketId Best bucket id.
      * @param bestSplitVal Best split value.
      * @param bestImpurity Best impurity.
-     * @return best split value.
+     * @return Best split value.
      */
     protected Optional<NodeSplit> checkAndReturnSplitValue(int bestBucketId, double bestSplitVal, double bestImpurity) {
         if (isLastBucket(bestBucketId))
@@ -58,7 +63,7 @@ public abstract class ImpurityHistogram {
 
     /**
      * @param bestBucketId Best bucket id.
-     * @return true if best found bucket is last within all bucketIds.
+     * @return True if best found bucket is last within all bucketIds.
      */
     private boolean isLastBucket(int bestBucketId) {
         int minBucketId = Integer.MAX_VALUE;

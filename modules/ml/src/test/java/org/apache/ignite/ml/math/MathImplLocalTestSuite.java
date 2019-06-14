@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math;
 import org.apache.ignite.ml.math.distances.DistanceTest;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeapTest;
 import org.apache.ignite.ml.math.primitives.matrix.DenseMatrixConstructorTest;
+import org.apache.ignite.ml.math.primitives.matrix.LUDecompositionTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixAttributeTest;
 import org.apache.ignite.ml.math.primitives.matrix.MatrixStorageImplementationTest;
@@ -35,6 +36,8 @@ import org.apache.ignite.ml.math.primitives.vector.VectorFoldMapTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorNormTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorToMatrixTest;
 import org.apache.ignite.ml.math.primitives.vector.VectorViewTest;
+import org.apache.ignite.ml.math.primitives.vector.storage.DenseVectorStorageTest;
+import org.apache.ignite.ml.math.primitives.vector.storage.SparseVectorStorageTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -58,6 +61,8 @@ import org.junit.runners.Suite;
     VectorFoldMapTest.class,
     // Vector storage tests
     VectorArrayStorageTest.class,
+    DenseVectorStorageTest.class,
+    SparseVectorStorageTest.class,
     // Matrix storage tests.
     MatrixStorageImplementationTest.class,
     MatrixArrayStorageTest.class,
@@ -68,7 +73,8 @@ import org.junit.runners.Suite;
     // Matrix tests.
     MatrixAttributeTest.class,
     DistanceTest.class,
-    LSQROnHeapTest.class
+    LSQROnHeapTest.class,
+    LUDecompositionTest.class
 })
 public class MathImplLocalTestSuite {
     // No-op.

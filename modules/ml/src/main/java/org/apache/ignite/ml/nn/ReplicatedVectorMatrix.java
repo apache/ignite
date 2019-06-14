@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -73,16 +73,6 @@ class ReplicatedVectorMatrix implements Matrix {
      */
     public ReplicatedVectorMatrix() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return vector.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return vector.isRandomAccess();
     }
 
     /** {@inheritDoc} */
@@ -182,7 +172,7 @@ class ReplicatedVectorMatrix implements Matrix {
         return asCol ? new ReplicatedVectorMatrix(swap(row1, row2), replicationCnt, asCol) : this;
     }
 
-    /** {@inheritDoc} */
+    /** */
     private Vector swap(int idx1, int idx2) {
         double val = vector.getX(idx1);
 
@@ -361,7 +351,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of minus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be subtracted.
-     * @return new ReplicatedVectorMatrix resulting from subtraction.
+     * @return New ReplicatedVectorMatrix resulting from subtraction.
      */
     public Matrix minus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {
@@ -389,7 +379,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of plus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be added.
-     * @return new ReplicatedVectorMatrix resulting from addition.
+     * @return New ReplicatedVectorMatrix resulting from addition.
      */
     public Matrix plus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {
@@ -549,5 +539,19 @@ class ReplicatedVectorMatrix implements Matrix {
      */
     public Vector replicant() {
         return vector;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double determinant() {
+        // If matrix is not square throw exception.
+        checkCardinality(vector.size(), replicationCnt);
+
+        // If matrix is 1x1 then determinant is its single element otherwise there are linear dependence and determinant is 0.
+        return vector.size() > 1 ? 0 : vector.get(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Matrix inverse() {
+        throw new UnsupportedOperationException();
     }
 }

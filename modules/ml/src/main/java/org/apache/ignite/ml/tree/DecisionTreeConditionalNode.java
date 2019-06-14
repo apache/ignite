@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 /**
  * Decision tree conditional (non-leaf) node.
  */
-public class DecisionTreeConditionalNode implements DecisionTreeNode {
+public final class DecisionTreeConditionalNode implements DecisionTreeNode {
     /** */
     private static final long serialVersionUID = 981630737007982172L;
 
@@ -32,10 +32,13 @@ public class DecisionTreeConditionalNode implements DecisionTreeNode {
     private final double threshold;
 
     /** Node that will be used in case tested value is greater then threshold. */
-    private final DecisionTreeNode thenNode;
+    private DecisionTreeNode thenNode;
 
     /** Node that will be used in case tested value is not greater then threshold. */
-    private final DecisionTreeNode elseNode;
+    private DecisionTreeNode elseNode;
+
+    /** Node that will be used in case tested value is not presented. */
+    private DecisionTreeNode missingNode;
 
     /**
      * Constructs a new instance of decision tree conditional node.
@@ -44,17 +47,29 @@ public class DecisionTreeConditionalNode implements DecisionTreeNode {
      * @param threshold Threshold.
      * @param thenNode Node that will be used in case tested value is greater then threshold.
      * @param elseNode Node that will be used in case tested value is not greater then threshold.
+     * @param missingNode Node that will be used in case tested value is not presented.
      */
-    DecisionTreeConditionalNode(int col, double threshold, DecisionTreeNode thenNode, DecisionTreeNode elseNode) {
+    public DecisionTreeConditionalNode(int col, double threshold, DecisionTreeNode thenNode, DecisionTreeNode elseNode,
+        DecisionTreeNode missingNode) {
         this.col = col;
         this.threshold = threshold;
         this.thenNode = thenNode;
         this.elseNode = elseNode;
+        this.missingNode = missingNode;
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector features) {
-        return features.get(col) > threshold ? thenNode.apply(features) : elseNode.apply(features);
+    @Override public Double predict(Vector features) {
+        double val = features.get(col);
+
+        if (Double.isNaN(val)) {
+            if (missingNode == null)
+                throw new IllegalArgumentException("Feature must not be null or missing node should be specified");
+
+            return missingNode.predict(features);
+        }
+
+        return val > threshold ? thenNode.predict(features) : elseNode.predict(features);
     }
 
     /** */
@@ -73,8 +88,28 @@ public class DecisionTreeConditionalNode implements DecisionTreeNode {
     }
 
     /** */
+    public void setThenNode(DecisionTreeNode thenNode) {
+        this.thenNode = thenNode;
+    }
+
+    /** */
     public DecisionTreeNode getElseNode() {
         return elseNode;
+    }
+
+    /** */
+    public void setElseNode(DecisionTreeNode elseNode) {
+        this.elseNode = elseNode;
+    }
+
+    /** */
+    public DecisionTreeNode getMissingNode() {
+        return missingNode;
+    }
+
+    /** */
+    public void setMissingNode(DecisionTreeNode missingNode) {
+        this.missingNode = missingNode;
     }
 
     /** {@inheritDoc} */

@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,11 @@
 
 package org.apache.ignite.tensorflow.cluster.util;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -95,12 +100,17 @@ public class TensorFlowClusterResolver {
         Affinity<?> affinity = ignite.affinity(upstreamCacheName);
         int parts = affinity.partitions();
 
+        Set<UUID> distinctNodeIds = new HashSet<>();
         for (int part = 0; part < parts; part++) {
             ClusterNode node = affinity.mapPartitionToNode(part);
             UUID nodeId = node.id();
+            distinctNodeIds.add(nodeId);
+        }
+        List<UUID> nodeIds = new ArrayList<>(distinctNodeIds);
+        Collections.sort(nodeIds);
 
+        for (UUID nodeId : nodeIds) {
             int port = portMgr.acquirePort(nodeId);
-
             spec.addTask(WORKER_JOB_NAME, nodeId, port);
         }
     }

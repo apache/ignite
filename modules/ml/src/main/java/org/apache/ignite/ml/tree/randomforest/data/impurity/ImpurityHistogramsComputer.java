@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,14 +16,6 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
@@ -33,6 +25,11 @@ import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
+
+import java.io.Serializable;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Class containing logic of aggregation impurity statistics within learning dataset.
@@ -44,7 +41,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
     private static final long serialVersionUID = -4984067145908187508L;
 
     /**
-     * Computes histograms for each features.
+     * Computes histograms for each feature.
      *
      * @param roots Random forest roots.
      * @param histMeta Histograms meta.
@@ -107,7 +104,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
      *
      * @param left Left.
      * @param right Right.
-     * @return merged leaf impurity statistics.
+     * @return Merged leaf impurity statistics.
      */
     private Map<NodeId, NodeImpurityHistograms<S>> reduceImpurityStatistics(Map<NodeId, NodeImpurityHistograms<S>> left,
         Map<NodeId, NodeImpurityHistograms<S>> right) {
@@ -135,7 +132,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
      *
      * @param sampleId Sample id.
      * @param meta Bucket Meta.
-     * @return impurity computer
+     * @return Impurity computer
      */
     protected abstract S createImpurityComputerForFeature(int sampleId, BucketMeta meta);
 
@@ -167,7 +164,7 @@ public abstract class ImpurityHistogramsComputer<S extends ImpurityComputer<Boot
          * @param other Other instance.
          */
         public NodeImpurityHistograms<S> plus(NodeImpurityHistograms<S> other) {
-            assert nodeId == other.nodeId;
+            assert nodeId.equals(other.nodeId);
             NodeImpurityHistograms<S> res = new NodeImpurityHistograms<>(nodeId);
             addTo(this.perFeatureStatistics, res.perFeatureStatistics);
             addTo(other.perFeatureStatistics, res.perFeatureStatistics);

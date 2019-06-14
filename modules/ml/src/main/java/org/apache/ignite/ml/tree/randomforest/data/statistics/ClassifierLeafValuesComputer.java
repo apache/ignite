@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,12 +41,14 @@ public class ClassifierLeafValuesComputer extends LeafValuesComputer<ObjectHisto
     }
 
     /** {@inheritDoc} */
-    @Override protected void addElementToLeafStatistic(ObjectHistogram<BootstrappedVector> leafStatAggr, BootstrappedVector vec, int sampleId) {
+    @Override protected void addElementToLeafStatistic(ObjectHistogram<BootstrappedVector> leafStatAggr,
+        BootstrappedVector vec, int sampleId) {
         leafStatAggr.addElement(vec);
     }
 
     /** {@inheritDoc} */
-    @Override protected ObjectHistogram<BootstrappedVector> mergeLeafStats(ObjectHistogram<BootstrappedVector> leftStats,
+    @Override protected ObjectHistogram<BootstrappedVector> mergeLeafStats(
+        ObjectHistogram<BootstrappedVector> leftStats,
         ObjectHistogram<BootstrappedVector> rightStats) {
 
         return leftStats.plus(rightStats);
@@ -54,10 +56,7 @@ public class ClassifierLeafValuesComputer extends LeafValuesComputer<ObjectHisto
 
     /** {@inheritDoc} */
     @Override protected ObjectHistogram<BootstrappedVector> createLeafStatsAggregator(int sampleId) {
-        return new ObjectHistogram<>(
-            x -> lblMapping.get(x.label()),
-            x -> (double)x.counters()[sampleId]
-        );
+        return new LeafStatsHistogram(lblMapping, sampleId);
     }
 
     /**
@@ -70,12 +69,48 @@ public class ClassifierLeafValuesComputer extends LeafValuesComputer<ObjectHisto
             .max(Comparator.comparing(b -> stat.getValue(b).orElse(0.0)))
             .orElse(-1);
 
-        if(bucketId == -1)
+        if (bucketId == -1)
             return Double.NaN;
 
         return lblMapping.entrySet().stream()
             .filter(x -> x.getValue().equals(bucketId))
             .findFirst()
             .get().getKey();
+    }
+
+    /** */
+    private static class LeafStatsHistogram extends ObjectHistogram<BootstrappedVector> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 4017587488421003308L;
+
+        /** Label mapping. */
+        private final Map<Double, Integer> lblMapping;
+
+        /** Sample id. */
+        private final int sampleId;
+
+        /**
+         * @param lblMapping Lbl mapping.
+         * @param sampleId Sample id.
+         */
+        public LeafStatsHistogram(Map<Double, Integer> lblMapping, int sampleId) {
+            this.lblMapping = lblMapping;
+            this.sampleId = sampleId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer mapToBucket(BootstrappedVector x) {
+            return lblMapping.get(x.label());
+        }
+
+        /** {@inheritDoc} */
+        @Override public Double mapToCounter(BootstrappedVector x) {
+            return (double)x.counters()[sampleId];
+        }
+
+        /** {@inheritDoc} */
+        @Override public ObjectHistogram<BootstrappedVector> newInstance() {
+            return new LeafStatsHistogram(lblMapping, sampleId);
+        }
     }
 }

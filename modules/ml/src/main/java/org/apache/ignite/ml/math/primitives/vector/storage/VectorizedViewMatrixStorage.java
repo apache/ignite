@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.primitives.vector.storage;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.Serializable;
 import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.VectorStorage;
@@ -137,23 +138,18 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return parent.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return parent.isDense();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return parent.isRandomAccess();
+    @Override public boolean isDistributed() {
+        return parent.isDistributed();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return parent.isDistributed();
+    @Override public boolean isNumeric() {
+        return parent.isNumeric();
     }
 
     /** {@inheritDoc} */
@@ -190,5 +186,19 @@ public class VectorizedViewMatrixStorage implements VectorStorage {
         colStride = in.readInt();
 
         size = getSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Serializable> T getRaw(int i) {
+        Double v = parent.get(row + i * rowStride, col + i * colStride);
+        return (T) v;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setRaw(int i, Serializable v) {
+        if(!(v instanceof Number))
+            throw new IllegalStateException("Matriсes don't support non-Number values");
+
+        parent.set(row + i * rowStride, col + i * colStride, ((Number) v).doubleValue());
     }
 }

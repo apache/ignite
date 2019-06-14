@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,7 @@ package org.apache.ignite.ml.composition;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.util.ModelTrace;
@@ -27,7 +27,7 @@ import org.apache.ignite.ml.util.ModelTrace;
 /**
  * Model trained on a features subspace with mapping from original features space to subspace.
  */
-public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
+public final class ModelOnFeaturesSubspace implements IgniteModel<Vector, Double> {
     /**
      * Features mapping to subspace.
      */
@@ -35,7 +35,7 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
     /**
      * Trained model of features subspace.
      */
-    private final Model<Vector, Double> mdl;
+    private final IgniteModel<Vector, Double> mdl;
 
     /**
      * Constructs new instance of ModelOnFeaturesSubspace.
@@ -43,7 +43,7 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
      * @param featuresMapping Features mapping to subspace.
      * @param mdl Learned model.
      */
-    ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, Model<Vector, Double> mdl) {
+    ModelOnFeaturesSubspace(Map<Integer, Integer> featuresMapping, IgniteModel<Vector, Double> mdl) {
         this.featuresMapping = Collections.unmodifiableMap(featuresMapping);
         this.mdl = mdl;
     }
@@ -54,10 +54,10 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
      * @param features Features vector.
      * @return Estimation.
      */
-    @Override public Double apply(Vector features) {
+    @Override public Double predict(Vector features) {
         double[] newFeatures = new double[featuresMapping.size()];
         featuresMapping.forEach((localId, featureVectorId) -> newFeatures[localId] = features.get(featureVectorId));
-        return mdl.apply(VectorUtils.of(newFeatures));
+        return mdl.predict(VectorUtils.of(newFeatures));
     }
 
     /**
@@ -70,7 +70,7 @@ public class ModelOnFeaturesSubspace implements Model<Vector, Double> {
     /**
      * Returns model.
      */
-    public Model<Vector, Double> getMdl() {
+    public IgniteModel<Vector, Double> getMdl() {
         return mdl;
     }
 

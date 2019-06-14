@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,9 @@
 
 package org.apache.ignite.ml.environment;
 
+import java.util.Random;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.environment.deploy.DeployingContext;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
 
@@ -25,7 +28,7 @@ import org.apache.ignite.ml.environment.parallelism.ParallelismStrategy;
  */
 public interface LearningEnvironment {
     /** Default environment */
-    public static final LearningEnvironment DEFAULT = builder().build();
+    public static final LearningEnvironment DEFAULT_TRAINER_ENV = LearningEnvironmentBuilder.defaultBuilder().buildForTrainer();
 
     /**
      * Returns Parallelism Strategy instance.
@@ -38,6 +41,13 @@ public interface LearningEnvironment {
     public MLLogger logger();
 
     /**
+     * Random numbers generator.
+     *
+     * @return Random numbers generator.
+     */
+    public Random randomNumbersGenerator();
+
+    /**
      * Returns an instance of logger for specific class.
      *
      * @param forCls Logging class context.
@@ -45,9 +55,26 @@ public interface LearningEnvironment {
     public <T> MLLogger logger(Class<T> forCls);
 
     /**
-     * Creates an instance of LearningEnvironmentBuilder.
+     * Gets current partition. If this is called not in one of compute tasks of {@link Dataset}, will return -1.
+     *
+     * @return Partition.
      */
-    public static LearningEnvironmentBuilder builder() {
-        return new LearningEnvironmentBuilder();
+    public int partition();
+
+    /**
+     * Returns deploy context instance.
+     *
+     * @return Deploy context.
+     */
+    public DeployingContext deployingContext();
+
+    /**
+     * Initializes deploying context by object representing current client computation
+     * with classes unknown for server side.
+     *
+     * @param clientSideObj Client side object.
+     */
+    public default void initDeployingContext(Object clientSideObj) {
+        deployingContext().initByClientObject(clientSideObj);
     }
 }

@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,14 +16,6 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.statistics;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedDatasetPartition;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
@@ -31,6 +23,11 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.randomforest.data.NodeId;
 import org.apache.ignite.ml.tree.randomforest.data.TreeNode;
 import org.apache.ignite.ml.tree.randomforest.data.TreeRoot;
+
+import java.io.Serializable;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Class containing logic of leaf values computing after building of all trees in random forest.
@@ -75,7 +72,7 @@ public abstract class LeafValuesComputer<T> implements Serializable {
      * @param roots Learned trees.
      * @param leafs List of all leafs.
      * @param data Data.
-     * @return statistics on labels for each leaf nodes.
+     * @return Statistics on labels for each leaf nodes.
      */
     private Map<NodeId, T> computeLeafsStatisticsInPartition(ArrayList<TreeRoot> roots,
         Map<NodeId, TreeNode> leafs, BootstrappedDatasetPartition data) {
@@ -104,7 +101,7 @@ public abstract class LeafValuesComputer<T> implements Serializable {
      *
      * @param left first partition.
      * @param right second partition.
-     * @return merged statistics.
+     * @return Merged statistics.
      */
     private Map<NodeId, T> mergeLeafStatistics(Map<NodeId, T> left, Map<NodeId, T> right) {
         if (left == null)

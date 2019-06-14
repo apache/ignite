@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,12 +49,9 @@ public class SparseVector extends AbstractVector implements StorageConstants {
 
     /**
      * @param size Vector size.
-     * @param acsMode Vector elements access mode.
      */
-    public SparseVector(int size, int acsMode) {
-        assertAccessMode(acsMode);
-
-        setStorage(new SparseVectorStorage(size, acsMode));
+    public SparseVector(int size) {
+        setStorage(new SparseVectorStorage(size));
     }
 
     /** */
@@ -64,9 +61,7 @@ public class SparseVector extends AbstractVector implements StorageConstants {
 
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
-        SparseVectorStorage sto = storage();
-
-        return new SparseVector(crd, sto.getAccessMode());
+        return new SparseVector(crd);
     }
 
     /** {@inheritDoc} */

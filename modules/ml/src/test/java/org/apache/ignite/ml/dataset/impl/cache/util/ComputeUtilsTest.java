@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,10 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.UpstreamTransformerBuilder;
+import org.apache.ignite.ml.environment.deploy.DeployingContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -49,11 +52,6 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         for (int i = 1; i <= NODE_COUNT; i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -91,7 +89,8 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     ignite,
                     Arrays.asList(firstCacheName, secondCacheName),
                     part -> part,
-                    0
+                    0,
+                    DeployingContext.unitialized()
                 );
             }
             catch (IllegalStateException expectedException) {
@@ -136,7 +135,7 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                 cnt.incrementAndGet();
 
                 return part;
-            }, 0);
+            }, 0, DeployingContext.unitialized());
 
             assertEquals(1, cnt.get());
         }
@@ -181,19 +180,22 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
                     ignite,
                     upstreamCacheName,
                     (k, v) -> true,
+                    UpstreamTransformerBuilder.identity(),
                     datasetCacheName,
                     datasetId,
-                    0,
-                    (upstream, upstreamSize, ctx) -> {
+                    (env, upstream, upstreamSize, ctx) -> {
                         cnt.incrementAndGet();
 
                         assertEquals(1, upstreamSize);
 
                         UpstreamEntry<Integer, Integer> e = upstream.next();
                         return new TestPartitionData(e.getKey() + e.getValue());
-                    }
+                    },
+                    TestUtils.testEnvBuilder().buildForWorker(part),
+                    false
                 ),
-                0
+                0,
+                DeployingContext.unitialized()
             );
 
             assertEquals(1, data.size());
@@ -230,16 +232,21 @@ public class ComputeUtilsTest extends GridCommonAbstractTest {
         ComputeUtils.<Integer, Integer, Integer>initContext(
             ignite,
             upstreamCacheName,
+            UpstreamTransformerBuilder.identity(),
             (k, v) -> true,
             datasetCacheName,
-            (upstream, upstreamSize) -> {
+            (env, upstream, upstreamSize) -> {
 
                 assertEquals(1, upstreamSize);
 
                 UpstreamEntry<Integer, Integer> e = upstream.next();
                 return e.getKey() + e.getValue();
             },
-            0
+            TestUtils.testEnvBuilder(),
+            0,
+            0,
+            false,
+            DeployingContext.unitialized()
         );
 
         assertEquals(1, datasetCache.size());

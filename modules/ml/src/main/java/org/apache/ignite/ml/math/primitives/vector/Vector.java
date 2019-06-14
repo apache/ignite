@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,7 @@
 package org.apache.ignite.ml.math.primitives.vector;
 
 import java.io.Externalizable;
+import java.io.Serializable;
 import java.util.Spliterator;
 import java.util.function.IntToDoubleFunction;
 import org.apache.ignite.lang.IgniteUuid;
@@ -30,6 +31,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * A vector interface.
@@ -70,6 +72,21 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
          * @param val Value to set.
          */
         void set(double val);
+
+        /**
+         * Sets any serializable object value.
+         *
+         * @param val Value to set.
+         */
+        void setRaw(Serializable val);
+
+        /**
+         * Gets element's value.
+         *
+         * @param <T> Type of expected value.
+         * @return The value of this vector element.
+         */
+        <T extends Serializable> T getRaw();
     }
 
     /**
@@ -124,6 +141,15 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * Sorts this vector in ascending order.
      */
     public Vector sort();
+
+    /**
+     * Copies the specified range of the vector into a new vector.
+     * @param from the initial index of the range to be copied, inclusive
+     * @param to the final index of the range to be copied, exclusive.
+     *     (This index may lie outside the array.)
+     * @return A new vector containing the specified range from the original vector
+     */
+    public Vector copyOfRange(int from, int to);
 
     /**
      * Gets element at the given index.
@@ -235,6 +261,23 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return Vector value.
      */
     public double getX(int idx);
+
+    /**
+     * Gets the value at specified index.
+     *
+     * @param idx Vector index.
+     * @return Vector value.
+     * @throws IndexException Throw if index is out of bounds.
+     */
+    public <T extends Serializable> T getRaw(int idx);
+
+    /**
+     * Gets the value at specified index without checking for index boundaries.
+     *
+     * @param idx Vector index.
+     * @return Vector value.
+     */
+    public <T extends Serializable> T getRawX(int idx);
 
     /**
      * Creates new empty vector of the same underlying class but of different cardinality.
@@ -383,6 +426,25 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     public Vector setX(int idx, double val);
 
     /**
+     * Sets value.
+     *
+     * @param idx Vector index to set value at.
+     * @param val Value to set.
+     * @return This vector.
+     * @throws IndexException Throw if index is out of bounds.
+     */
+    public Vector setRaw(int idx, Serializable val);
+
+    /**
+     * Sets value without checking for index boundaries.
+     *
+     * @param idx Vector index to set value at.
+     * @param val Value to set.
+     * @return This vector.
+     */
+    public Vector setRawX(int idx, Serializable val);
+
+    /**
      * Increments value at given index without checking for index boundaries.
      *
      * @param idx Vector index.
@@ -517,5 +579,16 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public default double[] asArray() {
         return getStorage().data();
+    }
+
+    /**
+     * Creates {@link LabeledVector} instance.
+     *
+     * @param lbl Label value.
+     * @param <L> Label class.
+     * @return Labeled vector.
+     */
+    public default <L> LabeledVector<L> labeled(L lbl) {
+        return new LabeledVector<>(this, lbl);
     }
 }

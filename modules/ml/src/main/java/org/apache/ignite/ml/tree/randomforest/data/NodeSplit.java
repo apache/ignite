@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,12 +16,16 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Class represents a split point for decision tree.
  */
-public class NodeSplit {
+public class NodeSplit implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 1331311529596106124L;
+
     /** Feature id in feature vector. */
     private final int featureId;
 
@@ -48,7 +52,7 @@ public class NodeSplit {
      * Split node from parameter onto two children nodes.
      *
      * @param node Node.
-     * @return list of children.
+     * @return List of children.
      */
     public List<TreeNode> split(TreeNode node) {
         List<TreeNode> children = node.toConditional(featureId, val);

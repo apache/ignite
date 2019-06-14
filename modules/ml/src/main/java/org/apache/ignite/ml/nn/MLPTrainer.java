@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,7 @@ import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilde
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
@@ -35,6 +35,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
 
@@ -107,24 +108,25 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
-
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+    @Override public <K, V> MultilayerPerceptron fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+                                                     Preprocessor<K, V> extractor) {
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> MultilayerPerceptron updateModel(MultilayerPerceptron lastLearnedMdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+                                                                DatasetBuilder<K, V> datasetBuilder,
+                                                                Preprocessor<K, V> extractor) {
 
         assert archSupplier != null;
         assert loss!= null;
         assert updatesStgy!= null;
 
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
+            envBuilder,
             new EmptyContextBuilder<>(),
-            new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
+            new SimpleLabeledDatasetDataBuilder<>(extractor),
+            learningEnvironment()
         )) {
             MultilayerPerceptron mdl;
             if (lastLearnedMdl != null)
@@ -352,7 +354,7 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(MultilayerPerceptron mdl) {
+    @Override public boolean isUpdateable(MultilayerPerceptron mdl) {
         return true;
     }
 
@@ -374,5 +376,11 @@ public class MLPTrainer<P extends Serializable> extends MultiLabelDatasetTrainer
                 res[j * rows.length + i] = data[j * totalRows + rows[i]];
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MLPTrainer<P> withEnvironmentBuilder(
+        LearningEnvironmentBuilder envBuilder) {
+        return (MLPTrainer<P>)super.withEnvironmentBuilder(envBuilder);
     }
 }

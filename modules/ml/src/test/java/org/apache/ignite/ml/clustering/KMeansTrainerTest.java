@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,16 +16,16 @@
 
 package org.apache.ignite.ml.clustering;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -60,14 +60,13 @@ public class KMeansTrainerTest extends TrainerTest {
         KMeansTrainer trainer = createAndCheckTrainer();
         KMeansModel knnMdl = trainer.withAmountOfClusters(1).fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
-        assertEquals(knnMdl.apply(firstVector), 0.0, PRECISION);
+        assertEquals(knnMdl.predict(firstVector), 0.0, PRECISION);
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(knnMdl.apply(secondVector), 0.0, PRECISION);
+        assertEquals(knnMdl.predict(secondVector), 0.0, PRECISION);
         assertEquals(trainer.getMaxIterations(), 1);
         assertEquals(trainer.getEpsilon(), PRECISION, PRECISION);
     }
@@ -76,30 +75,28 @@ public class KMeansTrainerTest extends TrainerTest {
     @Test
     public void testUpdateMdl() {
         KMeansTrainer trainer = createAndCheckTrainer();
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
         KMeansModel originalMdl = trainer.withAmountOfClusters(1).fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            vectorizer
         );
         KMeansModel updatedMdlOnSameDataset = trainer.update(
             originalMdl,
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            vectorizer
         );
         KMeansModel updatedMdlOnEmptyDataset = trainer.update(
             originalMdl,
             new LocalDatasetBuilder<>(new HashMap<Integer, double[]>(), parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            vectorizer
         );
 
         Vector firstVector = new DenseVector(new double[] {2.0, 2.0});
         Vector secondVector = new DenseVector(new double[] {-2.0, -2.0});
-        assertEquals(originalMdl.apply(firstVector), updatedMdlOnSameDataset.apply(firstVector), PRECISION);
-        assertEquals(originalMdl.apply(secondVector), updatedMdlOnSameDataset.apply(secondVector), PRECISION);
-        assertEquals(originalMdl.apply(firstVector), updatedMdlOnEmptyDataset.apply(firstVector), PRECISION);
-        assertEquals(originalMdl.apply(secondVector), updatedMdlOnEmptyDataset.apply(secondVector), PRECISION);
+        assertEquals(originalMdl.predict(firstVector), updatedMdlOnSameDataset.predict(firstVector), PRECISION);
+        assertEquals(originalMdl.predict(secondVector), updatedMdlOnSameDataset.predict(secondVector), PRECISION);
+        assertEquals(originalMdl.predict(firstVector), updatedMdlOnEmptyDataset.predict(firstVector), PRECISION);
+        assertEquals(originalMdl.predict(secondVector), updatedMdlOnEmptyDataset.predict(secondVector), PRECISION);
     }
 
     /** */
@@ -108,10 +105,8 @@ public class KMeansTrainerTest extends TrainerTest {
             .withDistance(new EuclideanDistance())
             .withAmountOfClusters(10)
             .withMaxIterations(1)
-            .withEpsilon(PRECISION)
-            .withSeed(2);
+            .withEpsilon(PRECISION);
         assertEquals(10, trainer.getAmountOfClusters());
-        assertEquals(2, trainer.getSeed());
         assertTrue(trainer.getDistance() instanceof EuclideanDistance);
         return trainer;
     }

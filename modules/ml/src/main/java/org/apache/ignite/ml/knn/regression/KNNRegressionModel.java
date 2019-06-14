@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,7 +49,7 @@ public class KNNRegressionModel extends KNNClassificationModel {
     }
 
     /** {@inheritDoc} */
-    @Override public Double apply(Vector v) {
+    @Override public Double predict(Vector v) {
         List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
         return predictYBasedOn(neighbors, v);
@@ -71,18 +71,20 @@ public class KNNRegressionModel extends KNNClassificationModel {
     private double weightedRegression(List<LabeledVector> neighbors, Vector v) {
         double sum = 0.0;
         double div = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors) {
+        for (LabeledVector<Double> neighbor : neighbors) {
             double distance = distanceMeasure.compute(v, neighbor.features());
             sum += neighbor.label() * distance;
             div += distance;
         }
+        if (div == 0.0) // when all neighbours are equal to the given point
+            return simpleRegression(neighbors);
         return sum / div;
     }
 
     /** */
     private double simpleRegression(List<LabeledVector> neighbors) {
         double sum = 0.0;
-        for (LabeledVector<Vector, Double> neighbor : neighbors)
+        for (LabeledVector<Double> neighbor : neighbors)
             sum += neighbor.label();
         return sum / (double)k;
     }

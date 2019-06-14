@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,20 +36,20 @@ public interface Histogram<T, H extends Histogram<T, H>> extends Serializable {
 
     /**
      *
-     * @return bucket ids.
+     * @return Bucket ids.
      */
     public Set<Integer> buckets();
 
     /**
      *
      * @param bucketId Bucket id.
-     * @return value in according to bucket id.
+     * @return Value in according to bucket id.
      */
     public Optional<Double> getValue(Integer bucketId);
 
     /**
      * @param other Other histogram.
-     * @return sum of this and other histogram.
+     * @return Sum of this and other histogram.
      */
     public H plus(H other);
 
@@ -57,7 +57,7 @@ public interface Histogram<T, H extends Histogram<T, H>> extends Serializable {
      * Compares histogram with other and returns true if they are equals
      *
      * @param other Other histogram.
-     * @return true if histograms are equal.
+     * @return True if histograms are equal.
      */
     public boolean isEqualTo(H other);
 }

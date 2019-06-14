@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,10 +22,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.selection.scoring.LabelPair;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -39,30 +40,25 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
     /** Query cursor. */
     private final QueryCursor<Cache.Entry<K, V>> cursor;
 
-    /** Feature extractor. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Label extractor. */
-    private final IgniteBiFunction<K, V, L> lbExtractor;
+    /** Preprocessor. */
+    private final Preprocessor<K, V> preprocessor;
 
     /** Model for inference. */
-    private final Model<Vector, L> mdl;
+    private final IgniteModel<Vector, L> mdl;
 
     /**
      * Constructs a new instance of cache based truth with prediction cursor.
      *
      * @param upstreamCache Ignite cache with {@code upstream} data.
      * @param filter Filter for {@code upstream} data.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param preprocessor Preprocessor.
      * @param mdl Model for inference.
      */
     public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
-                                     IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-                                     Model<Vector, L> mdl) {
+                                     Preprocessor<K, V> preprocessor,
+                                     IgniteModel<Vector, L> mdl) {
         this.cursor = query(upstreamCache, filter);
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
+        this.preprocessor = preprocessor;
         this.mdl = mdl;
     }
 
@@ -70,16 +66,14 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
      * Constructs a new instance of cache based truth with prediction cursor.
      *
      * @param upstreamCache Ignite cache with {@code upstream} data.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param preprocessor Preprocessor.
      * @param mdl Model for inference.
      */
     public CacheBasedLabelPairCursor(IgniteCache<K, V> upstreamCache,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
-        Model<Vector, L> mdl) {
+                                     Preprocessor<K, V> preprocessor,
+                                     IgniteModel<Vector, L> mdl) {
         this.cursor = query(upstreamCache);
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
+        this.preprocessor = preprocessor;
         this.mdl = mdl;
     }
 
@@ -97,12 +91,14 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
      * Queries the specified cache using the specified filter.
      *
      * @param upstreamCache Ignite cache with {@code upstream} data.
-     * @param filter Filter for {@code upstream} data.
+     * @param filter Filter for {@code upstream} data. If {@code null} then all entries will be returned.
      * @return Query cursor.
      */
     private QueryCursor<Cache.Entry<K, V>> query(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter) {
         ScanQuery<K, V> qry = new ScanQuery<>();
-        qry.setFilter(filter);
+
+        if (filter != null) // This section was added to keep code correct of qry.setFilter(null) behaviour will changed.
+            qry.setFilter(filter);
 
         return upstreamCache.query(qry);
     }
@@ -144,10 +140,9 @@ public class CacheBasedLabelPairCursor<L, K, V> implements LabelPairCursor<L> {
         @Override public LabelPair<L> next() {
             Cache.Entry<K, V> entry = iter.next();
 
-            Vector features = featureExtractor.apply(entry.getKey(), entry.getValue());
-            L lb = lbExtractor.apply(entry.getKey(), entry.getValue());
+            LabeledVector<L> lv = preprocessor.apply(entry.getKey(), entry.getValue());
 
-            return new LabelPair<>(lb, mdl.apply(features));
+            return new LabelPair<>(lv.label(), mdl.predict(lv.features()));
         }
     }
 }

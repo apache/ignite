@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,22 +16,22 @@
 
 package org.apache.ignite.ml.knn;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
 import org.apache.ignite.ml.knn.regression.KNNRegressionTrainer;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for {@link KNNRegressionTrainer}.
@@ -52,15 +52,14 @@ public class KNNRegressionTest extends TrainerTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
-        System.out.println(knnMdl.apply(vector));
-        Assert.assertEquals(15, knnMdl.apply(vector), 1E-12);
+        System.out.println(knnMdl.predict(vector));
+        Assert.assertEquals(15, knnMdl.predict(vector), 1E-12);
     }
 
     /** */
@@ -98,17 +97,16 @@ public class KNNRegressionTest extends TrainerTest {
 
         KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(stgy);
 
         Vector vector = new DenseVector(new double[] {104.6, 419180, 2822, 2857, 118734, 1956});
 
-        Assert.assertNotNull(knnMdl.apply(vector));
+        Assert.assertNotNull(knnMdl.predict(vector));
 
-        Assert.assertEquals(67857, knnMdl.apply(vector), 2000);
+        Assert.assertEquals(67857, knnMdl.predict(vector), 2000);
 
         Assert.assertTrue(knnMdl.toString().contains(stgy.name()));
         Assert.assertTrue(knnMdl.toString(true).contains(stgy.name()));
@@ -130,26 +128,23 @@ public class KNNRegressionTest extends TrainerTest {
 
         KNNRegressionModel originalMdl = (KNNRegressionModel) trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 1, v.length)),
-            (k, v) -> v[0]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST)
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(NNStrategy.SIMPLE);
 
         KNNRegressionModel updatedOnSameDataset = trainer.update(originalMdl,
             data, parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         KNNRegressionModel updatedOnEmptyDataset = trainer.update(originalMdl,
             new HashMap<Integer, double[]>(), parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Vector vector = new DenseVector(new double[] {0, 0, 0, 5.0, 0.0});
-        assertEquals(originalMdl.apply(vector), updatedOnSameDataset.apply(vector));
-        assertEquals(originalMdl.apply(vector), updatedOnEmptyDataset.apply(vector));
+        assertEquals(originalMdl.predict(vector), updatedOnSameDataset.predict(vector));
+        assertEquals(originalMdl.predict(vector), updatedOnEmptyDataset.predict(vector));
     }
 }

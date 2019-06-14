@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,10 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * A partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
@@ -36,26 +38,22 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     /** */
     private static final long serialVersionUID = 3678784980215216039L;
 
-    /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Function that extracts labels from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, double[]> lbExtractor;
+    /** Function that extracts labeled vectors from an {@code upstream} data. */
+    private final Preprocessor<K, V> vectorizer;
 
     /**
      * Constructs a new instance of partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
      *
-     * @param featureExtractor Function that extracts features from an {@code upstream} data.
-     * @param lbExtractor Function that extracts labels from an {@code upstream} data.
+     * @param vectorizer Function that extracts labeled vectors from an {@code upstream} data.
      */
-    public SimpleLabeledDatasetDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, double[]> lbExtractor) {
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
+    public SimpleLabeledDatasetDataBuilder(Preprocessor<K, V> vectorizer) {
+        this.vectorizer = vectorizer;
     }
 
     /** {@inheritDoc} */
-    @Override public SimpleLabeledDatasetData build(Iterator<UpstreamEntry<K, V>> upstreamData,
+    @Override public SimpleLabeledDatasetData build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
         long upstreamDataSize, C ctx) {
         // Prepares the matrix of features in flat column-major format.
         int featureCols = -1;
@@ -67,7 +65,8 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            Vector featureRow = featureExtractor.apply(entry.getKey(), entry.getValue());
+            LabeledVector<double[]> labeledVector = vectorizer.apply(entry.getKey(), entry.getValue());
+            Vector featureRow = labeledVector.features();
 
             if (featureCols < 0) {
                 featureCols = featureRow.size();
@@ -80,7 +79,7 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
             for (int i = 0; i < featureCols; i++)
                 features[Math.toIntExact(i * upstreamDataSize) + ptr] = featureRow.get(i);
 
-            double[] lbRow = lbExtractor.apply(entry.getKey(), entry.getValue());
+            double[] lbRow = labeledVector.label();
 
             if (lbCols < 0) {
                 lbCols = lbRow.length;

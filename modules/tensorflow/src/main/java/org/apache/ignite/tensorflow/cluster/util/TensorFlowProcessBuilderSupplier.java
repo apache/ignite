@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,19 +33,19 @@ public class TensorFlowProcessBuilderSupplier extends PythonProcessBuilderSuppli
     /** Prefix for worker environment variables. */
     private static final String ENV_PREFIX = "IGNITE_DATASET_";
 
-    /** Partition of the upstream cache. */
-    private final Integer part;
+    /** Upstream cache query local mode. */
+    private final Boolean loc;
 
     /**
      * Constructs a new instance of Python process builder supplier.
      *
      * @param interactive Interactive flag (allows to used standard input to pass Python script).
-     * @param part Partition index.
+     * @param loc Upstream cache query local mode.
      * @param meta Meta information that adds to script as arguments.
      */
-    public TensorFlowProcessBuilderSupplier(boolean interactive, Integer part, String... meta) {
+    public TensorFlowProcessBuilderSupplier(boolean interactive, Boolean loc, String... meta) {
         super(interactive, meta);
-        this.part = part;
+        this.loc = loc;
     }
 
     /** {@inheritDoc} */
@@ -63,8 +63,8 @@ public class TensorFlowProcessBuilderSupplier extends PythonProcessBuilderSuppli
         if (port != null)
             env.put(ENV_PREFIX + "PORT", String.valueOf(port));
 
-        if (part != null)
-            env.put(ENV_PREFIX + "PART", String.valueOf(part));
+        if (loc != null)
+            env.put(ENV_PREFIX + "LOCAL", String.valueOf(loc));
 
         return pythonProcBuilder;
     }

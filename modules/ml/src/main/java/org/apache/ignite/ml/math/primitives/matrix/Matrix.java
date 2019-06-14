@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -504,10 +504,8 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public Vector viewDiagonal();
 
-    /**
-     * Destroys matrix if managed outside of JVM. It's a no-op in all other cases.
-     */
-    public default void destroy() {
+    /** {@inheritDoc} */
+    @Override public default void destroy() {
         // No-op.
     }
 
@@ -519,4 +517,24 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param f Function used for replacing.
      */
     public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f);
+
+    /**
+     * Returns matrix determinant using Laplace theorem.
+     *
+     * @return A determinant for this matrix.
+     * @throws CardinalityException Thrown if matrix is not square.
+     */
+    public double determinant();
+
+    /**
+     * Returns the inverse matrix of this matrix
+     *
+     * @return Inverse of this matrix
+     */
+    public Matrix inverse();
+
+    /** {@inheritDoc} */
+    @Override default boolean isNumeric() {
+        return true;
+    }
 }

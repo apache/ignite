@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,7 @@ public class MLPTest {
 
         int input = 2;
 
-        Matrix predict = mlp.apply(new DenseMatrix(new double[][] {{input}}));
+        Matrix predict = mlp.predict(new DenseMatrix(new double[][] {{input}}));
 
         Assert.assertEquals(predict, new DenseMatrix(new double[][] {{Activators.SIGMOID.apply(input)}}));
     }
@@ -67,7 +67,7 @@ public class MLPTest {
 
         Matrix input = new DenseMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}});
 
-        Matrix predict = mlp.apply(input);
+        Matrix predict = mlp.predict(input);
         Matrix truth = new DenseMatrix(new double[][] {{0.0}, {1.0}, {1.0}, {0.0}});
 
         TestUtils.checkIsInEpsilonNeighbourhood(predict.getRow(0), truth.getRow(0), 1E-4);
@@ -98,8 +98,8 @@ public class MLPTest {
 
         MultilayerPerceptron stackedMLP = mlp1.add(mlp2);
 
-        Matrix predict = mlp.apply(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
-        Matrix stackedPredict = stackedMLP.apply(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
+        Matrix predict = mlp.predict(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
+        Matrix stackedPredict = stackedMLP.predict(new DenseMatrix(new double[][] {{1}, {2}, {3}, {4}}).transpose());
 
         Assert.assertEquals(predict, stackedPredict);
     }

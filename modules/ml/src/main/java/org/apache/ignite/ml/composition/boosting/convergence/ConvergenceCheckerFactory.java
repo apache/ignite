@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,15 +18,14 @@ package org.apache.ignite.ml.composition.boosting.convergence;
 
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Factory for ConvergenceChecker.
  */
 public abstract class ConvergenceCheckerFactory {
-    /** Precision of error checking. If error <= precision then it is equated to 0.0*/
+    /** Precision of error checking. If error <= precision then it is equated to 0.0 */
     protected double precision;
 
     /**
@@ -45,13 +44,11 @@ public abstract class ConvergenceCheckerFactory {
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param loss Loss function.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @return ConvergenceCheckerFactory instance.
      */
-    public abstract <K,V> ConvergenceChecker<K,V> create(long sampleSize,
-        IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor);
+    public abstract <K, V> ConvergenceChecker<K, V> create(long sampleSize,
+                                                              IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
+                                                              DatasetBuilder<K, V> datasetBuilder,
+                                                              Preprocessor<K, V> vectorizer);
 }

@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -352,16 +352,10 @@ public class AbstractVectorTest {
      * @param storage {@link VectorStorage}
      * @return AbstractVector.
      */
-    @SuppressWarnings("ClassWithoutNoArgConstructor")
     private AbstractVector getAbstractVector(VectorStorage storage) {
-        return new AbstractVector(storage) { // TODO: IGNTIE-5723, find out how to fix warning about missing constructor
+        return new AbstractVector(storage) { // TODO: IGNITE-5723, find out how to fix warning about missing constructor
             /** {@inheritDoc} */
             @Override public boolean isDense() {
-                return false;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
                 return false;
             }
 
@@ -403,11 +397,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
             }
 
             /** {@inheritDoc} */
@@ -423,7 +412,7 @@ public class AbstractVectorTest {
      * @return AbstractVector.
      */
     private AbstractVector getAbstractVector() {
-        return new AbstractVector() { // TODO: IGNTIE-5723, find out how to fix warning about missing constructor
+        return new AbstractVector() { // TODO: IGNITE-5723, find out how to fix warning about missing constructor
             /** {@inheritDoc} */
             @Override public boolean isDense() {
                 return false;
@@ -432,11 +421,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Matrix likeMatrix(int rows, int cols) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isSequentialAccess() {
-                return false;
             }
 
             /** {@inheritDoc} */
@@ -472,11 +456,6 @@ public class AbstractVectorTest {
             /** {@inheritDoc} */
             @Override public Vector viewPart(int off, int len) {
                 return null;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean isRandomAccess() {
-                return true;
             }
 
             /** {@inheritDoc} */

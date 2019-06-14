@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,12 +19,15 @@ package org.apache.ignite.ml.regressions.linear;
 import java.util.Arrays;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -34,26 +37,38 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
  */
 public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<LinearRegressionModel> {
     /** {@inheritDoc} */
-    @Override public <K, V> LinearRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override public <K, V> LinearRegressionModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+                                                      Preprocessor<K, V> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
+    }
+
+    /**
+     * @param lb Label.
+     */
+    private static LabeledVector<double[]> extendLabeledVector(LabeledVector<Double> lb) {
+        double[] featuresArr = new double[lb.features().size() + 1];
+        System.arraycopy(lb.features().asArray(), 0, featuresArr, 0, lb.features().size());
+        featuresArr[featuresArr.length - 1] = 1.0;
+
+        Vector features = VectorUtils.of(featuresArr);
+        double[] lbl = new double[] {lb.label()};
+        return features.labeled(lbl);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> LinearRegressionModel updateModel(LinearRegressionModel mdl,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
+                                                                 DatasetBuilder<K, V> datasetBuilder,
+                                                                 Preprocessor<K, V> extractor) {
         LSQRResult res;
 
+        PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(LinearRegressionLSQRTrainer::extendLabeledVector, extractor);
+
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
-            datasetBuilder,
-            new SimpleLabeledDatasetDataBuilder<>(
-                new FeatureExtractorWrapper<>(featureExtractor),
-                lbExtractor.andThen(e -> new double[] {e})
-            )
-        )) {
+            datasetBuilder, envBuilder,
+            new SimpleLabeledDatasetDataBuilder<>(patchedPreprocessor),
+            learningEnvironment())) {
+
             double[] x0 = null;
             if (mdl != null) {
                 int x0Size = mdl.getWeights().size() + 1;
@@ -77,7 +92,7 @@ public class LinearRegressionLSQRTrainer extends SingleLabelDatasetTrainer<Linea
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean checkState(LinearRegressionModel mdl) {
+    @Override public boolean isUpdateable(LinearRegressionModel mdl) {
         return true;
     }
 }

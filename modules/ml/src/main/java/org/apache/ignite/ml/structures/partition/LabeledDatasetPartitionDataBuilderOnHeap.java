@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,9 @@ import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 
@@ -37,27 +38,23 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
 
-    /** Extractor of X matrix row. */
-    private final IgniteBiFunction<K, V, Vector> xExtractor;
-
-    /** Extractor of Y vector value. */
-    private final IgniteBiFunction<K, V, Double> yExtractor;
+    /** Upstream vectorizer. */
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Constructs a new instance of SVM partition data builder.
      *
-     * @param xExtractor Extractor of X matrix row.
-     * @param yExtractor Extractor of Y vector value.
+     * @param preprocessor Upstream preprocessor.
      */
-    public LabeledDatasetPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, Vector> xExtractor,
-                                         IgniteBiFunction<K, V, Double> yExtractor) {
-        this.xExtractor = xExtractor;
-        this.yExtractor = yExtractor;
+    public LabeledDatasetPartitionDataBuilderOnHeap(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
-    @Override public LabeledVectorSet<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData,
-                                                                   long upstreamDataSize, C ctx) {
+    @Override public LabeledVectorSet<Double, LabeledVector> build(
+        LearningEnvironment env,
+        Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize, C ctx) {
         int xCols = -1;
         double[][] x = null;
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
@@ -66,7 +63,8 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
 
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            Vector row = xExtractor.apply(entry.getKey(), entry.getValue());
+            LabeledVector<Double> labeledVector = preprocessor.apply(entry.getKey(), entry.getValue());
+            Vector row = labeledVector.features();
 
             if (xCols < 0) {
                 xCols = row.size();
@@ -77,7 +75,7 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
 
             x[ptr] = row.asArray();
 
-            y[ptr] = yExtractor.apply(entry.getKey(), entry.getValue());
+            y[ptr] = labeledVector.label();
 
             ptr++;
         }

@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,10 +16,15 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * Preprocessing function that makes normalization.
@@ -31,7 +36,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
+public final class NormalizationPreprocessor<K, V> implements Preprocessor<K, V>, DeployableObject {
     /** */
     private static final long serialVersionUID = 6873438115778921295L;
 
@@ -39,7 +44,7 @@ public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, V
     private int p;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
+    private final Preprocessor<K, V> basePreprocessor;
 
     /**
      * Constructs a new instance of Normalization preprocessor.
@@ -47,7 +52,7 @@ public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, V
      * @param p Degree of L^p space value.
      * @param basePreprocessor Base preprocessor.
      */
-    public NormalizationPreprocessor(int p, IgniteBiFunction<K, V, Vector> basePreprocessor) {
+    public NormalizationPreprocessor(int p, Preprocessor<K, V> basePreprocessor) {
         this.p = p;
         this.basePreprocessor = basePreprocessor;
     }
@@ -59,10 +64,10 @@ public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, V
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public Vector apply(K k, V v) {
-        Vector res = basePreprocessor.apply(k, v);
+    @Override public LabeledVector apply(K k, V v) {
+        LabeledVector res = basePreprocessor.apply(k, v);
 
-        double pNorm = Math.pow(foldMap(res, Functions.PLUS, Functions.pow(p), 0d), 1.0 / p);
+        double pNorm = Math.pow(foldMap(res.features(), Functions.PLUS, Functions.pow(p), 0d), 1.0 / p);
 
         for (int i = 0; i < res.size(); i++)
             res.set(i, res.get(i) / pNorm);
@@ -89,5 +94,10 @@ public class NormalizationPreprocessor<K, V> implements IgniteBiFunction<K, V, V
     /** Gets the degree of L^p space parameter value. */
     public double p() {
         return p;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(basePreprocessor);
     }
 }

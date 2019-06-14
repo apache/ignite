@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@ package org.apache.ignite.ml.util;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -88,32 +89,62 @@ public class MnistUtils {
      * @return List of MNIST samples.
      * @throws IOException In case of exception.
      */
-    public static List<MnistLabeledImage> mnistAsList(String imagesPath, String labelsPath, Random rnd, int cnt) throws IOException {
+    public static List<MnistLabeledImage> mnistAsList(String imagesPath, String labelsPath, Random rnd,
+        int cnt) throws IOException {
+        return mnistAsList(new FileInputStream(imagesPath), new FileInputStream(labelsPath), rnd, cnt);
+    }
 
+    /**
+     * Read random {@code count} samples from MNIST dataset from two resources (images and labels) into a stream of
+     * labeled vectors.
+     *
+     * @param imagesPath Path to the resource with images.
+     * @param labelsPath Path to the resource with labels.
+     * @param rnd Random numbers generator.
+     * @param cnt Count of samples to read.
+     * @return List of MNIST samples.
+     * @throws IOException In case of exception.
+     */
+    public static List<MnistLabeledImage> mnistAsListFromResource(String imagesPath, String labelsPath, Random rnd,
+        int cnt) throws IOException {
+        return mnistAsList(
+            MnistUtils.class.getClassLoader().getResourceAsStream(imagesPath),
+            MnistUtils.class.getClassLoader().getResourceAsStream(labelsPath),
+            rnd,
+            cnt
+        );
+    }
+
+    /**
+     * Read random {@code count} samples from MNIST dataset from two resources (images and labels) into a stream of
+     * labeled vectors.
+     *
+     * @param imageStream Stream with image data.
+     * @param lbStream Stream with label data.
+     * @param rnd Random numbers generator.
+     * @param cnt Count of samples to read.
+     * @return List of MNIST samples.
+     * @throws IOException In case of exception.
+     */
+    private static List<MnistLabeledImage> mnistAsList(InputStream imageStream, InputStream lbStream, Random rnd,
+        int cnt) throws IOException {
         List<MnistLabeledImage> res = new ArrayList<>();
 
-        try (
-            FileInputStream isImages = new FileInputStream(imagesPath);
-            FileInputStream isLabels = new FileInputStream(labelsPath)
-        ) {
-            read4Bytes(isImages); // Skip magic number.
-            int numOfImages = read4Bytes(isImages);
-            int imgHeight = read4Bytes(isImages);
-            int imgWidth = read4Bytes(isImages);
+        read4Bytes(imageStream); // Skip magic number.
+        int numOfImages = read4Bytes(imageStream);
+        int imgHeight = read4Bytes(imageStream);
+        int imgWidth = read4Bytes(imageStream);
 
-            read4Bytes(isLabels); // Skip magic number.
-            read4Bytes(isLabels); // Skip number of labels.
+        read4Bytes(lbStream); // Skip magic number.
+        read4Bytes(lbStream); // Skip number of labels.
 
-            int numOfPixels = imgHeight * imgWidth;
+        int numOfPixels = imgHeight * imgWidth;
 
-            for (int imgNum = 0; imgNum < numOfImages; imgNum++) {
-                double[] pixels = new double[numOfPixels];
-                for (int p = 0; p < numOfPixels; p++) {
-                    int c = 128 - isImages.read();
-                    pixels[p] = ((double)c) / 128;
-                }
-                res.add(new MnistLabeledImage(pixels, isLabels.read()));
-            }
+        for (int imgNum = 0; imgNum < numOfImages; imgNum++) {
+            double[] pixels = new double[numOfPixels];
+            for (int p = 0; p < numOfPixels; p++)
+                pixels[p] = (float)(1.0 * (imageStream.read() & 0xFF) / 255);
+            res.add(new MnistLabeledImage(pixels, lbStream.read()));
         }
 
         Collections.shuffle(res, rnd);
@@ -162,7 +193,7 @@ public class MnistUtils {
      * @param is Input stream.
      * @throws IOException In case of exception.
      */
-    private static int read4Bytes(FileInputStream is) throws IOException {
+    private static int read4Bytes(InputStream is) throws IOException {
         return (is.read() << 24) | (is.read() << 16) | (is.read() << 8) | (is.read());
     }
 

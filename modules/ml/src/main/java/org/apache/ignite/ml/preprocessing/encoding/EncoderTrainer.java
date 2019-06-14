@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,8 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -26,11 +28,12 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.onehotencoder.OneHotEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -39,33 +42,39 @@ import org.jetbrains.annotations.NotNull;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[], Vector> {
+public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
     /** Indices of features which should be encoded. */
     private Set<Integer> handledIndices = new HashSet<>();
 
     /** Encoder preprocessor type. */
     private EncoderType encoderType = EncoderType.ONE_HOT_ENCODER;
 
+    /** Encoder sorting strategy. */
+    private EncoderSortingStrategy encoderSortingStgy = EncoderSortingStrategy.FREQUENCY_DESC;
+
     /** {@inheritDoc} */
-    @Override public EncoderPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-                                                   IgniteBiFunction<K, V, Object[]> basePreprocessor) {
+    @Override public EncoderPreprocessor<K, V> fit(
+        LearningEnvironmentBuilder envBuilder,
+        DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> basePreprocessor) {
         if (handledIndices.isEmpty())
             throw new RuntimeException("Add indices of handled features");
 
         try (Dataset<EmptyContext, EncoderPartitionData> dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new EmptyContext(),
-            (upstream, upstreamSize, ctx) -> {
+            envBuilder,
+            (env, upstream, upstreamSize) -> new EmptyContext(),
+            (env, upstream, upstreamSize, ctx) -> {
                 // This array will contain not null values for handled indices
                 Map<String, Integer>[] categoryFrequencies = null;
 
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
-                    Object[] row = basePreprocessor.apply(entity.getKey(), entity.getValue());
+                    LabeledVector<Double> row = basePreprocessor.apply(entity.getKey(), entity.getValue());
                     categoryFrequencies = calculateFrequencies(row, categoryFrequencies);
                 }
                 return new EncoderPartitionData()
                     .withCategoryFrequencies(categoryFrequencies);
-            }
+            }, learningEnvironment(basePreprocessor)
         )) {
             Map<String, Integer>[] encodingValues = calculateEncodingValuesByFrequencies(dataset);
 
@@ -128,9 +137,16 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      * @return Encoding values.
      */
     private Map<String, Integer> transformFrequenciesToEncodingValues(Map<String, Integer> frequencies) {
+        Comparator<Map.Entry<String, Integer>> comp;
+
+        if (encoderSortingStgy.equals(EncoderSortingStrategy.FREQUENCY_DESC))
+            comp = Map.Entry.comparingByValue();
+        else
+            comp = Collections.reverseOrder(Map.Entry.comparingByValue());
+
         final HashMap<String, Integer> resMap = frequencies.entrySet()
             .stream()
-            .sorted(Map.Entry.comparingByValue())
+            .sorted(comp)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                 (oldValue, newValue) -> oldValue, LinkedHashMap::new));
 
@@ -149,21 +165,21 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      * @param categoryFrequencies Holds the frequencies of categories by values and features.
      * @return Updated frequencies by values and features.
      */
-    private Map<String, Integer>[] calculateFrequencies(Object[] row, Map<String, Integer>[] categoryFrequencies) {
+    private Map<String, Integer>[] calculateFrequencies(LabeledVector row, Map<String, Integer>[] categoryFrequencies) {
         if (categoryFrequencies == null)
             categoryFrequencies = initializeCategoryFrequencies(row);
         else
-            assert categoryFrequencies.length == row.length : "Base preprocessor must return exactly "
+            assert categoryFrequencies.length == row.size() : "Base preprocessor must return exactly "
                 + categoryFrequencies.length + " features";
 
         for (int i = 0; i < categoryFrequencies.length; i++) {
             if (handledIndices.contains(i)) {
                 String strVal;
-                Object featureVal = row[i];
+                Object featureVal = row.features().getRaw(i);
 
                 if (featureVal.equals(Double.NaN)) {
-                    strVal = "";
-                    row[i] = strVal;
+                    strVal = EncoderPreprocessor.KEY_FOR_NULL_VALUES;
+                    row.features().setRaw(i, strVal);
                 } else if (featureVal instanceof String)
                     strVal = (String) featureVal;
                 else if (featureVal instanceof Double)
@@ -188,8 +204,8 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      * @param row Feature vector.
      * @return The array contains not null values for handled indices.
      */
-    @NotNull private Map<String, Integer>[] initializeCategoryFrequencies(Object[] row) {
-        Map<String, Integer>[] categoryFrequencies = new HashMap[row.length];
+    @NotNull private Map<String, Integer>[] initializeCategoryFrequencies(LabeledVector row) {
+        Map<String, Integer>[] categoryFrequencies = new HashMap[row.size()];
 
         for (int i = 0; i < categoryFrequencies.length; i++)
             if (handledIndices.contains(i))
@@ -206,6 +222,17 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V, Object[]
      */
     public EncoderTrainer<K, V> withEncodedFeature(int idx) {
         handledIndices.add(idx);
+        return this;
+    }
+
+    /**
+     * Sets the encoder indexing strategy.
+     *
+     * @param encoderSortingStgy The encoder indexing strategy.
+     * @return The changed trainer.
+     */
+    public EncoderTrainer<K, V> withEncoderIndexingStrategy(EncoderSortingStrategy encoderSortingStgy) {
+        this.encoderSortingStgy = encoderSortingStgy;
         return this;
     }
 

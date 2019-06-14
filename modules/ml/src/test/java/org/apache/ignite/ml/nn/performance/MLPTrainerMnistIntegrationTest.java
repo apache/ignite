@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,33 +16,14 @@
 
 package org.apache.ignite.ml.nn.performance;
 
-import java.io.IOException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
-import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
-import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
-import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests {@link MLPTrainer} on the MNIST dataset that require to start the whole Ignite infrastructure.
  */
-@RunWith(JUnit4.class)
 public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -56,11 +37,6 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -72,7 +48,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** Tests on the MNIST dataset. */
-    @Test
+   /* @Test
     public void testMNIST() throws IOException {
         int featCnt = 28 * 28;
         int hiddenNeuronsCnt = 100;
@@ -95,8 +71,8 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
             LossFunctions.MSE,
             new UpdatesStrategy<>(
                 new RPropUpdateCalculator(),
-                RPropParameterUpdate::sum,
-                RPropParameterUpdate::avg
+                RPropParameterUpdate.SUM,
+                RPropParameterUpdate.AVG
             ),
             200,
             2000,
@@ -109,8 +85,10 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         MultilayerPerceptron mdl = trainer.fit(
             ignite,
             trainingSet,
-            (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
+            FeatureLabelExtractorWrapper.wrap(
+                (k, v) -> VectorUtils.of(v.getPixels()),
+                (k, v) -> VectorUtils.oneHot(v.getLabel(), 10).getStorage().data()
+            )
         );
         System.out.println("Training completed in " + (System.currentTimeMillis() - start) + "ms");
 
@@ -118,10 +96,10 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         int incorrectAnswers = 0;
 
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(1_000)) {
-            Matrix input = new DenseMatrix(new double[][]{e.getPixels()});
-            Matrix outputMatrix = mdl.apply(input);
+            Matrix input = new DenseMatrix(new double[][] {e.getPixels()});
+            Matrix outputMatrix = mdl.predict(input);
 
-            int predicted = (int) VectorUtils.vec2Num(outputMatrix.getRow(0));
+            int predicted = (int)VectorUtils.vec2Num(outputMatrix.getRow(0));
 
             if (predicted == e.getLabel())
                 correctAnswers++;
@@ -131,5 +109,5 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
 
         double accuracy = 1.0 * correctAnswers / (correctAnswers + incorrectAnswers);
         assertTrue("Accuracy should be >= 80%", accuracy >= 0.8);
-    }
+    }*/
 }

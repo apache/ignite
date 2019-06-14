@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,7 +18,11 @@ package org.apache.ignite.ml.dataset.primitive;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.DatasetFactory;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
 
@@ -31,18 +35,21 @@ public class SimpleDatasetTest {
     /** Basic test for SimpleDataset features. IMPL NOTE derived from LocalDatasetExample. */
     @Test
     public void basicTest() throws Exception {
-        Map<Integer, DataPoint> dataPoints = new HashMap<Integer, DataPoint>() {{
-            put(1, new DataPoint(42, 10000));
-            put(2, new DataPoint(32, 64000));
-            put(3, new DataPoint(53, 120000));
-            put(4, new DataPoint(24, 70000));
+        Map<Integer, Vector> dataPoints = new HashMap<Integer, Vector>() {{
+            put(5, VectorUtils.of(42, 10000));
+            put(6, VectorUtils.of(32, 64000));
+            put(7,  VectorUtils.of(53, 120000));
+            put(8,  VectorUtils.of(24, 70000));
         }};
+
+        Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<>();
 
         // Creates a local simple dataset containing features and providing standard dataset API.
         try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
             dataPoints,
             2,
-            (k, v) -> VectorUtils.of(v.getAge(), v.getSalary())
+            TestUtils.testEnvBuilder(),
+            vectorizer
         )) {
             assertArrayEquals("Mean values.", new double[] {37.75, 66000.0}, dataset.mean(), 0);
 
@@ -69,36 +76,6 @@ public class SimpleDatasetTest {
             for (double[] row : corr)
                 assertArrayEquals("Correlation matrix row " + rowCorr,
                     corrExp[rowCorr++], row, 0);
-        }
-    }
-
-    /** */
-    private static class DataPoint {
-        /** Age. */
-        private final double age;
-
-        /** Salary. */
-        private final double salary;
-
-        /**
-         * Constructs a new instance of person.
-         *
-         * @param age Age.
-         * @param salary Salary.
-         */
-        DataPoint(double age, double salary) {
-            this.age = age;
-            this.salary = salary;
-        }
-
-        /** */
-        double getAge() {
-            return age;
-        }
-
-        /** */
-        double getSalary() {
-            return salary;
         }
     }
 }

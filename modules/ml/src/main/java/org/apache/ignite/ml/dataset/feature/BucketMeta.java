@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,6 +22,9 @@ import java.io.Serializable;
  * Bucket meta-information for feature histogram.
  */
 public class BucketMeta implements Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 7827158624437006995L;
+
     /** Feature meta. */
     private final FeatureMeta featureMeta;
 
@@ -44,7 +47,7 @@ public class BucketMeta implements Serializable {
      * Returns bucket id for feature value.
      *
      * @param val Value.
-     * @return bucket id.
+     * @return Bucket id.
      */
     public int getBucketId(Double val) {
         if(featureMeta.isCategoricalFeature())
@@ -57,7 +60,7 @@ public class BucketMeta implements Serializable {
      * Returns mean value by bucket id.
      *
      * @param bucketId Bucket id.
-     * @return mean value of feature.
+     * @return Mean value of feature.
      */
     public double bucketIdToValue(int bucketId) {
         if(featureMeta.isCategoricalFeature())

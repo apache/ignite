@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,9 +16,15 @@
 
 package org.apache.ignite.ml;
 
+import java.io.Serializable;
 import java.util.stream.IntStream;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.junit.Assert;
 
 import static org.junit.Assert.assertTrue;
@@ -166,6 +172,31 @@ public class TestUtils {
     }
 
     /**
+     * Verifies that two vectors are equal.
+     *
+     * @param exp Expected vector.
+     * @param observed Actual vector.
+     */
+    public static void assertEquals(Vector exp, Vector observed, double eps) {
+        Assert.assertNotNull("Observed should not be null", observed);
+
+        if (exp.size() != observed.size()) {
+            String msgBuff = "Observed has incorrect dimensions." +
+                "\nobserved is " + observed.size() +
+                " x " + observed.size();
+
+            Assert.fail(msgBuff);
+        }
+
+        for (int i = 0; i < exp.size(); ++i) {
+            double eij = exp.getX(i);
+            double aij = observed.getX(i);
+
+            Assert.assertEquals(eij, aij, eps);
+        }
+    }
+
+    /**
      * Verifies that two double arrays are close (sup norm).
      *
      * @param msg The identifying message for the assertion error.
@@ -225,7 +256,8 @@ public class TestUtils {
     public static boolean checkIsInEpsilonNeighbourhoodBoolean(Vector v1, Vector v2, double epsilon) {
         try {
             checkIsInEpsilonNeighbourhood(new Vector[] {v1}, new Vector[] {v2}, epsilon);
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             return false;
         }
 
@@ -323,5 +355,123 @@ public class TestUtils {
             return isEqual && !Double.isNaN(x) && !Double.isNaN(y);
 
         }
+    }
+
+    /**
+     * Gets test learning environment builder.
+     *
+     * @return Test learning environment builder.
+     */
+    public static LearningEnvironmentBuilder testEnvBuilder() {
+        return testEnvBuilder(123L);
+    }
+
+    /**
+     * Gets test learning environment builder with a given seed.
+     *
+     * @param seed Seed.
+     * @return Test learning environment builder.
+     */
+    public static LearningEnvironmentBuilder testEnvBuilder(long seed) {
+        return LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed);
+    }
+
+    /**
+     * Simple wrapper class which adds {@link AutoCloseable} to given type.
+     *
+     * @param <T> Type to wrap.
+     */
+    public static class DataWrapper<T> implements AutoCloseable {
+        /**
+         * Value to wrap.
+         */
+        T val;
+
+        /**
+         * Wrap given value in {@link AutoCloseable}.
+         *
+         * @param val Value to wrap.
+         * @param <T> Type of value to wrap.
+         * @return Value wrapped as {@link AutoCloseable}.
+         */
+        public static <T> DataWrapper<T> of(T val) {
+            return new DataWrapper<>(val);
+        }
+
+        /**
+         * Construct instance of this class from given value.
+         *
+         * @param val Value to wrap.
+         */
+        public DataWrapper(T val) {
+            this.val = val;
+        }
+
+        /**
+         * Get wrapped value.
+         *
+         * @return Wrapped value.
+         */
+        public T val() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            if (val instanceof AutoCloseable)
+                ((AutoCloseable)val).close();
+        }
+    }
+
+    /**
+     * Return model which returns given constant.
+     *
+     * @param v Constant value.
+     * @param <T> Type of input.
+     * @param <V> Type of output.
+     * @return Model which returns given constant.
+     */
+    public static <T, V> IgniteModel<T, V> constantModel(V v) {
+        return t -> v;
+    }
+
+    /**
+     * Returns trainer which independently of dataset outputs given model.
+     *
+     * @param ml Model.
+     * @param <I> Type of model input.
+     * @param <O> Type of model output.
+     * @param <M> Type of model.
+     * @param <L> Type of dataset labels.
+     * @return Trainer which independently of dataset outputs given model.
+     */
+    public static <I, O, M extends IgniteModel<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
+        return new DatasetTrainer<M, L>() {
+            /** */
+            public <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
+                return ml;
+            }
+
+            @Override public <K, V> M fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+                return null;
+            }
+
+            /** {@inheritDoc} */
+            @Override public boolean isUpdateable(M mdl) {
+                return true;
+            }
+
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Preprocessor<K, V> preprocessor) {
+                return null;
+            }
+
+            /** */
+            public <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
+                return ml;
+            }
+        };
     }
 }

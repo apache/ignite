@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,8 +16,9 @@
 
 package org.apache.ignite.ml.environment.logging;
 
-import org.apache.ignite.ml.Model;
+import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.Tracer;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
@@ -56,7 +57,7 @@ public class ConsoleLogger implements MLLogger {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Model<K, V> log(VerboseLevel verboseLevel, Model<K, V> mdl) {
+    @Override public <K, V> IgniteModel<K, V> log(VerboseLevel verboseLevel, IgniteModel<K, V> mdl) {
         print(verboseLevel, mdl.toString(true));
         return mdl;
     }
@@ -80,7 +81,10 @@ public class ConsoleLogger implements MLLogger {
     /**
      * ConsoleLogger factory.
      */
-    private static class Factory implements MLLogger.Factory {
+    public static class Factory implements MLLogger.Factory {
+        /** Serial version uuid. */
+        private static final long serialVersionUID = 5864605548782107893L;
+
         /** Max Verbose level. */
         private final VerboseLevel maxVerboseLevel;
 
@@ -97,5 +101,14 @@ public class ConsoleLogger implements MLLogger {
         @Override public <T> MLLogger create(Class<T> targetCls) {
             return new ConsoleLogger(maxVerboseLevel, targetCls.getName());
         }
+
+        /** Low. */
+        public static final IgniteFunction<Integer, MLLogger.Factory> LOW = part -> new Factory(VerboseLevel.LOW);
+
+        /** High. */
+        public static final IgniteFunction<Integer, MLLogger.Factory> HIGH = part -> new Factory(VerboseLevel.HIGH);
+
+        /** Offset. */
+        public static final IgniteFunction<Integer, MLLogger.Factory> OFF = part -> new Factory(VerboseLevel.OFF);
     }
 }

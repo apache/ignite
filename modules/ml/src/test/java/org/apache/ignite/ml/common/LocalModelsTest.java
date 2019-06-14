@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,6 @@ package org.apache.ignite.ml.common;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -28,6 +27,8 @@ import org.apache.ignite.ml.FileExporter;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.clustering.kmeans.KMeansModelFormat;
 import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.NNClassificationModel;
 import org.apache.ignite.ml.knn.ann.ANNClassificationModel;
@@ -39,15 +40,12 @@ import org.apache.ignite.ml.knn.classification.KNNModelFormat;
 import org.apache.ignite.ml.knn.classification.NNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.distances.ManhattanDistance;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
-import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModel;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -98,36 +96,11 @@ public class LocalModelsTest {
     @Test
     public void importExportSVMBinaryClassificationModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
-            Exporter<SVMLinearBinaryClassificationModel, String> exporter = new FileExporter<>();
+            SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(new DenseVector(new double[] {1, 2}), 3);
+            Exporter<SVMLinearClassificationModel, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
-            SVMLinearBinaryClassificationModel load = exporter.load(mdlFilePath);
-
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
-
-            return null;
-        });
-    }
-
-    /** */
-    @Test
-    public void importExportSVMMultiClassClassificationModelTest() throws IOException {
-        executeModelTest(mdlFilePath -> {
-            SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{1, 2}), 3);
-            SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{2, 3}), 4);
-            SVMLinearBinaryClassificationModel binaryMdl3 = new SVMLinearBinaryClassificationModel(new DenseVector(new double[]{3, 4}), 5);
-
-            SVMLinearMultiClassClassificationModel mdl = new SVMLinearMultiClassClassificationModel();
-            mdl.add(1, binaryMdl1);
-            mdl.add(2, binaryMdl2);
-            mdl.add(3, binaryMdl3);
-
-            Exporter<SVMLinearMultiClassClassificationModel, String> exporter = new FileExporter<>();
-            mdl.saveModel(exporter, mdlFilePath);
-
-            SVMLinearMultiClassClassificationModel load = exporter.load(mdlFilePath);
+            SVMLinearClassificationModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);
@@ -145,23 +118,6 @@ public class LocalModelsTest {
             mdl.saveModel(exporter, mdlFilePath);
 
             LogisticRegressionModel load = exporter.load(mdlFilePath);
-
-            Assert.assertNotNull(load);
-            Assert.assertEquals("", mdl, load);
-
-            return null;
-        });
-    }
-
-    /** */
-    @Test
-    public void importExportLogRegressionMultiClassModelTest() throws IOException {
-        executeModelTest(mdlFilePath -> {
-            LogRegressionMultiClassModel mdl = new LogRegressionMultiClassModel();
-            Exporter<LogRegressionMultiClassModel, String> exporter = new FileExporter<>();
-            mdl.saveModel(exporter, mdlFilePath);
-
-            LogRegressionMultiClassModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);
@@ -199,8 +155,7 @@ public class LocalModelsTest {
 
         return trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
     }
 

@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,16 +16,16 @@
 
 package org.apache.ignite.ml.tree.randomforest.data;
 
-import java.io.Serializable;
+import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+
 import java.util.Arrays;
 import java.util.List;
-import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 
 /**
  * Decision tree node class.
  */
-public class TreeNode implements Model<Vector, Double>, Serializable {
+public class TreeNode implements IgniteModel<Vector, Double> {
     /** Serial version uid. */
     private static final long serialVersionUID = -8546263332508653661L;
 
@@ -82,16 +82,16 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
     }
 
     /** {@inheritDoc} */
-    public Double apply(Vector features) {
+    @Override public Double predict(Vector features) {
         assert type != Type.UNKNOWN;
 
         if (type == Type.LEAF)
             return val;
         else {
             if (features.get(featureId) <= val)
-                return left.apply(features);
+                return left.predict(features);
             else
-                return right.apply(features);
+                return right.predict(features);
         }
     }
 
@@ -170,28 +170,28 @@ public class TreeNode implements Model<Vector, Double>, Serializable {
     }
 
     /**
-     * @return impurity in current node.
+     * @return Impurity in current node.
      */
     public double getImpurity() {
         return impurity;
     }
 
     /**
-     * @return depth of current node.
+     * @return Depth of current node.
      */
     public int getDepth() {
         return depth;
     }
 
     /**
-     * @return right subtree.
+     * @return Right subtree.
      */
     public TreeNode getLeft() {
         return left;
     }
 
     /**
-     * @return left subtree.
+     * @return Left subtree.
      */
     public TreeNode getRight() {
         return right;

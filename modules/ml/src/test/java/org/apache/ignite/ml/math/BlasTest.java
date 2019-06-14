@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -139,7 +139,7 @@ public class BlasTest {
     public void testSprSparseDense2() {
         double alpha = 3.0;
 
-        SparseVector v = new SparseVector(2, StorageConstants.RANDOM_ACCESS_MODE);
+        SparseVector v = new SparseVector(2);
         v.set(0, 1);
 
         DenseVector u = new DenseVector(new double[] {3.0, 13.0, 20.0, 0.0});
@@ -295,10 +295,10 @@ public class BlasTest {
      * Create a sparse vector from array.
      *
      * @param arr Array with vector elements.
-     * @return sparse local on-heap vector.
+     * @return Sparse local on-heap vector.
      */
     private static SparseVector sparseFromArray(double[] arr) {
-        SparseVector res = new SparseVector(2, StorageConstants.RANDOM_ACCESS_MODE);
+        SparseVector res = new SparseVector(2);
 
         for (int i = 0; i < arr.length; i++)
             res.setX(i, arr[i]);
@@ -311,7 +311,7 @@ public class BlasTest {
      *
      * @param a Matrix a.
      * @param b Vector b
-     * @return true if vectors are equal element-wise, false otherwise.
+     * @return True if vectors are equal element-wise, false otherwise.
      */
     private static boolean elementsEqual(Vector a, Vector b) {
         int n = b.size();
@@ -330,7 +330,7 @@ public class BlasTest {
      * @param rows Rows number in the target matrix.
      * @param acsMode column or row major mode.
      * @param p bipredicate to filter entities by.
-     * @return dense local on-heap matrix.
+     * @return Dense local on-heap matrix.
      */
     private static DenseMatrix fromVector(DenseVector v, int rows, int acsMode,
         BiPredicate<Integer, Integer> p) {
