@@ -292,7 +292,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Future for the get operation.
      * @see GridCacheAdapter#getAllAsync(Collection)
      */
-    protected IgniteInternalFuture<Map<K, V>> getAllAsync(
+    @Override protected IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,

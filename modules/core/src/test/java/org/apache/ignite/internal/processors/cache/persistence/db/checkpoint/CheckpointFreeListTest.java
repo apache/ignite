@@ -278,7 +278,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
             int awaitSize = entriesToRemove.size() - iterationDataCount;
 
-            waitForCondition(() -> entriesToRemove.size() < awaitSize || entriesToRemove.size() == 0, 20000);
+            waitForCondition(() -> entriesToRemove.size() < awaitSize || entriesToRemove.isEmpty(), 20000);
         }
 
         forceCheckpoint();
