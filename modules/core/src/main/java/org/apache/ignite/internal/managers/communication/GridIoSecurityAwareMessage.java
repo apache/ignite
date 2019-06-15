@@ -30,6 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridIoSecurityAwareMessage extends GridIoMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
     /** */
     public static final short TYPE_CODE = 174;
 

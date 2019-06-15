@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.service;
 
-
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a node failed.
  *

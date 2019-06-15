@@ -1002,7 +1002,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
     }
 
-
     /**
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      *

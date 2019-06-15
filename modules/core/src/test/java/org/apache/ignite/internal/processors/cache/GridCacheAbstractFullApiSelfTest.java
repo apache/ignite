@@ -2481,7 +2481,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteCache<String, Integer> cache = jcache();
 
-
         try {
             IgniteFuture<Integer> fut1 = cache.getAndPutIfAbsentAsync("key", 1);
 

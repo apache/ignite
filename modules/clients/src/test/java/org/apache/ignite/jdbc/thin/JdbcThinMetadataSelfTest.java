@@ -750,6 +750,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 ". Expected schemas: " + expectedSchemas;
         }
     }
+
     /**
      * Negative scenarios for catalog name.
      * Perform metadata lookups, that use incorrect catalog names.

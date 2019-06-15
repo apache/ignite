@@ -47,6 +47,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 public class ResetLostPartitionTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String[] CACHE_NAMES = {"cacheOne", "cacheTwo", "cacheThree"};
+
     /** Cache size */
     public static final int CACHE_SIZE = 100000 / CACHE_NAMES.length;
 

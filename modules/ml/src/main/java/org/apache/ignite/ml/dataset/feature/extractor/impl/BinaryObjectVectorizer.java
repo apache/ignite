@@ -38,6 +38,7 @@ public class BinaryObjectVectorizer<K> extends ExtractionUtils.StringCoordVector
 
     /** Object for denoting default value of feature mapping. */
     public static final String DEFAULT_VALUE = "DEFAULT";
+
     /** Mapping for feature with non-number values. */
     private HashMap<String, HashMap<Object, Double>> featureValueMappings = new HashMap<>();
 
