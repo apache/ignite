@@ -390,9 +390,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
     /** {@inheritDoc} */
     @Override public CacheQuery<T> timeout(long timeout) {
-        A.ensure(timeout >= 0, "timeout >= 0");
-
-        this.timeout = timeout;
+        if (timeout >= 0)
+            this.timeout = timeout;
+        else
+            this.timeout = cctx.gridConfig().getDefaultQueryTimeout();
 
         return this;
     }
