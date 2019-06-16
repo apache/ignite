@@ -59,9 +59,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseB
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -754,9 +755,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos,
-        @Nullable FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor,
+        @Nullable PageLockListener lockLsnr
     ) throws IgniteCheckedException {
-        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
+        this(
+            name,
+            cacheId,
+            pageMem,
+            wal,
+            globalRmvId,
+            metaPageId,
+            reuseList,
+            failureProcessor,
+            lockLsnr
+        );
+
         setIos(innerIos, leafIos);
     }
 
@@ -779,9 +792,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         AtomicLong globalRmvId,
         long metaPageId,
         ReuseList reuseList,
-        @Nullable FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor,
+        @Nullable PageLockListener lsnr
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, wal);
+        super(cacheId, pageMem, wal, lsnr);
 
         assert !F.isEmpty(name);
 
@@ -1949,7 +1963,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
-
     /**
      * @param row Lookup row.
      * @param needOld {@code True} if need return removed row.
@@ -2610,7 +2623,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
-
     /**
      * @param c Get.
      * @throws IgniteCheckedException If failed.
@@ -3224,9 +3236,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * Get the last item in the tree which matches the passed filter.
      */
     private final class GetLast extends Get {
+        /** */
         private final TreeRowClosure<L, T> c;
+
+        /** */
         private boolean retry = true;
+
+        /** */
         private long lastPageId;
+
+        /** */
         private T row0;
 
         /**

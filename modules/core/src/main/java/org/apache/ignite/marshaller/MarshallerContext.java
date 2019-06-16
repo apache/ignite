@@ -90,7 +90,6 @@ public interface MarshallerContext {
      */
     public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException;
 
-
     /**
      * Gets class name for provided (platformId, typeId) pair.
      *

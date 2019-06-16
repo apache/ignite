@@ -400,7 +400,6 @@ public class Ignition {
         }
     }
 
-
     /**
      * Gets or starts new grid instance if it hasn't been started yet.
      *

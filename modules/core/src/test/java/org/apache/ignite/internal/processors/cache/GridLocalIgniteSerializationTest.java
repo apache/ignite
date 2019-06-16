@@ -98,7 +98,6 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
      */
     private void checkPutGet(final TestObject obj, final String igniteInstanceName) throws Exception {
 
-
         // Run async to emulate user thread.
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

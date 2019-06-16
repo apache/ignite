@@ -379,7 +379,7 @@ public class IgniteWalIteratorFactory {
             kernalCtx, null, null, null,
             null, null, null, dbMgr, null,
             null, null, null, null, null,
-            null,null, null, null, null
+            null, null, null, null, null, null
         );
     }
 
@@ -389,6 +389,7 @@ public class IgniteWalIteratorFactory {
     public static class IteratorParametersBuilder {
         /** Logger. */
         private IgniteLogger log;
+
         /** */
         public static final FileWALPointer DFLT_LOW_BOUND = new FileWALPointer(Long.MIN_VALUE, 0, 0);
 

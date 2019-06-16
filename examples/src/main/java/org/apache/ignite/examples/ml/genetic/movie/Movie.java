@@ -25,8 +25,10 @@ import java.util.List;
 public class Movie {
     /** Name of movie. */
     private String name;
+
     /** Genre of movie. */
     private List genre;
+
     /** Rating of movie. */
     private String rating;
 

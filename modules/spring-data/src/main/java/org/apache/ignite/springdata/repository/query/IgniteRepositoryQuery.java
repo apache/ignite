@@ -75,15 +75,19 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
     /** Type. */
     private final Class<?> type;
+
     /** Sql. */
     private final IgniteQuery qry;
+
     /** Cache. */
     private final IgniteCache cache;
 
     /** Method. */
     private final Method mtd;
+
     /** Metadata. */
     private final RepositoryMetadata metadata;
+
     /** Factory. */
     private final ProjectionFactory factory;
 

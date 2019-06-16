@@ -204,7 +204,6 @@ public class GridReflectionCache implements Externalizable {
         return fieldsList;
     }
 
-
     /**
      * Gets methods.
      *

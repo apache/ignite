@@ -155,6 +155,4 @@ public class Pipeline<K, V, C extends Serializable, L> {
             .withPreprocessor(finalPreprocessor)
             .withInternalMdl(internalMdl);
     }
-
-
 }

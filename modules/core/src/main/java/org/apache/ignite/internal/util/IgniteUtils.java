@@ -3581,6 +3581,7 @@ public abstract class IgniteUtils {
 
         return e;
     }
+
     /**
      * Deletes file or directory with all sub-directories and files.
      *
@@ -4723,9 +4724,16 @@ public abstract class IgniteUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
+        DynamicMBean mbean;
 
-        mbean.getMBeanInfo();
+        if (impl instanceof DynamicMBean) {
+            mbean = (DynamicMBean)impl;
+        }
+        else {
+            mbean = new IgniteStandardMXBean(impl, itf);
+
+            mbean.getMBeanInfo();
+        }
 
         return mbeanSrv.registerMBean(mbean, name).getObjectName();
     }
@@ -8102,6 +8110,7 @@ public abstract class IgniteUtils {
             return false;
         }
     }
+
     /**
      * Gets object field offset.
      *
@@ -10690,7 +10699,6 @@ public abstract class IgniteUtils {
     public static BaselineTopology getBaselineTopology(@NotNull GridKernalContext ctx) {
         return ctx.state().clusterState().baselineTopology();
     }
-
 
     /**
      * @param cctx Context.

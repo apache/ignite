@@ -100,7 +100,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         queryCachesWithFailedPredicates(srv, cfg);
 
         assertEquals(client.cluster().nodes().size(), 5);
-    };
+    }
 
     /**
      * @throws Exception If failed.
@@ -112,7 +112,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         queryCachesWithFailedPredicates(srv, new CacheConfiguration(LOCAL_CACHE_NAME).setCacheMode(LOCAL));
 
         assertEquals(srv.cluster().nodes().size(), 4);
-    };
+    }
 
     /**
      * @param ignite Ignite instance.

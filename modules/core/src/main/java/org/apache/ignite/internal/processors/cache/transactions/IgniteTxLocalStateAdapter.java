@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public abstract class IgniteTxLocalStateAdapter implements IgniteTxLocalState {
     /** */
     private static final Function<Integer, Set<Integer>> CREATE_INT_SET = k -> new HashSet<>();
+
     /** */
     private Map<Integer, Set<Integer>> touchedParts;
 

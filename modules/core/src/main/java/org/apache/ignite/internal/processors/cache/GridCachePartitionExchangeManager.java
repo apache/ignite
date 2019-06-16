@@ -2559,7 +2559,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
     }
 
-
     /**
      * For testing purposes. Stores discovery events with merged exchanges to enable examining them later.
      *
@@ -2933,7 +2932,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     err = e;
             }
             catch (Throwable e) {
-                if (!(stop && X.hasCause(e, IgniteInterruptedCheckedException.class)))
+                if (!(e == stopErr || (stop && (X.hasCause(e, IgniteInterruptedCheckedException.class)))))
                     err = e;
             }
             finally {

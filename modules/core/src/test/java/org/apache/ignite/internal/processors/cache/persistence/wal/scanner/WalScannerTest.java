@@ -62,6 +62,7 @@ import static org.mockito.Mockito.when;
 public class WalScannerTest {
     /** **/
     private static final String TEST_DUMP_FILE = "output.txt";
+
     /** **/
     private static FileWALPointer ZERO_POINTER = new FileWALPointer(0, 0, 0);
 
@@ -95,7 +96,7 @@ public class WalScannerTest {
         List<WALRecord> holder = new ArrayList<>();
         ScannerHandler recordCaptor = (rec) -> holder.add(rec.get2());
 
-        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
 
         groupAndPageIds.add(new T2<>(grpId, expPageId));
 
@@ -147,7 +148,7 @@ public class WalScannerTest {
         List<WALRecord> holder = new ArrayList<>();
         ScannerHandler recordCaptor = (rec) -> holder.add(rec.get2());
 
-        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
 
         groupAndPageIds.add(new T2<>(grpId, expPageId1));
         groupAndPageIds.add(new T2<>(grpId, expPageId2));
@@ -190,7 +191,7 @@ public class WalScannerTest {
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
 
         groupAndPageIds.add(new T2<>(grpId, expPageId));
 
@@ -204,9 +205,17 @@ public class WalScannerTest {
 
         assertEquals(actualRecords.size(), 1);
 
-        assertTrue(actualRecords.get(0), actualRecords.get(0).contains("PageSnapshot ["));
-        assertTrue(actualRecords.get(0), actualRecords.get(0).contains("CheckpointRecord ["));
-        assertTrue(actualRecords.get(0), actualRecords.get(0).contains("FixCountRecord ["));
+        assertRecord(actualRecords.get(0), "PageSnapshot [", "PAGE_RECORD");
+        assertRecord(actualRecords.get(0), "CheckpointRecord [", "CHECKPOINT_RECORD");
+        assertRecord(actualRecords.get(0), "FixCountRecord [", "BTREE_FIX_COUNT");
+    }
+
+    /**
+     * @param actual Actual value to check.
+     * @param oneOfExpected One of expected value.
+     */
+    private static void assertRecord(String actual, String... oneOfExpected) {
+        assertTrue(actual, Arrays.stream(oneOfExpected).anyMatch(actual::contains));
     }
 
     /**
@@ -229,7 +238,7 @@ public class WalScannerTest {
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
 
         groupAndPageIds.add(new T2<>(grpId, expectedPageId));
 
@@ -250,9 +259,9 @@ public class WalScannerTest {
         // then: Should be find only expected value from file.
         assertEquals(actualRecords.size(), 3);
 
-        assertTrue(actualRecords.get(0), actualRecords.get(0).contains("PageSnapshot ["));
-        assertTrue(actualRecords.get(1), actualRecords.get(1).contains("CheckpointRecord ["));
-        assertTrue(actualRecords.get(2), actualRecords.get(2).contains("FixCountRecord ["));
+        assertRecord(actualRecords.get(0), "PageSnapshot [", "PAGE_RECORD");
+        assertRecord(actualRecords.get(1), "CheckpointRecord [", "CHECKPOINT_RECORD");
+        assertRecord(actualRecords.get(2), "FixCountRecord [", "BTREE_FIX_COUNT");
     }
 
     /**
@@ -280,7 +289,7 @@ public class WalScannerTest {
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        Set<T2<Integer,Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
 
         groupAndPageIds.add(new T2<>(grpId, expPageId));
 
@@ -301,18 +310,18 @@ public class WalScannerTest {
         // then: Should be find only expected value from file.
         assertEquals(actualFileRecords.size(), 3);
 
-        assertTrue(actualFileRecords.get(0), actualFileRecords.get(0).contains("PageSnapshot ["));
-        assertTrue(actualFileRecords.get(1), actualFileRecords.get(1).contains("CheckpointRecord ["));
-        assertTrue(actualFileRecords.get(2), actualFileRecords.get(2).contains("FixCountRecord ["));
+        assertRecord(actualFileRecords.get(0), "PageSnapshot [", "PAGE_RECORD");
+        assertRecord(actualFileRecords.get(1), "CheckpointRecord [", "CHECKPOINT_RECORD");
+        assertRecord(actualFileRecords.get(2), "FixCountRecord [", "BTREE_FIX_COUNT");
 
         // then: Should be find only expected value from log.
         List<String> actualLogRecords = valCapture.getAllValues();
 
         assertEquals(actualLogRecords.size(), 1);
 
-        assertTrue(actualLogRecords.get(0), actualLogRecords.get(0).contains("PageSnapshot ["));
-        assertTrue(actualLogRecords.get(0), actualLogRecords.get(0).contains("CheckpointRecord ["));
-        assertTrue(actualLogRecords.get(0), actualLogRecords.get(0).contains("FixCountRecord ["));
+        assertRecord(actualLogRecords.get(0), "PageSnapshot [", "PAGE_RECORD");
+        assertRecord(actualLogRecords.get(0), "CheckpointRecord [", "CHECKPOINT_RECORD");
+        assertRecord(actualLogRecords.get(0), "FixCountRecord [", "BTREE_FIX_COUNT");
     }
 
     /**

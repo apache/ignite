@@ -375,7 +375,6 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         ccfg.setBackups(0);
         ccfg.setAtomicityMode(TRANSACTIONAL);
 
-
         return ccfg;
     }
 

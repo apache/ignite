@@ -440,7 +440,6 @@ public final class ClientCacheConfiguration implements Serializable {
         return this;
     }
 
-
     /**
      * @return Copy on read.
      */
@@ -616,7 +615,6 @@ public final class ClientCacheConfiguration implements Serializable {
 
         return this;
     }
-
 
     /**
      * @return Cache key configuration.

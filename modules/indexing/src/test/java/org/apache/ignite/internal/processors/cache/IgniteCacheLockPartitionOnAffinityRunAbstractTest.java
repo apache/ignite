@@ -319,7 +319,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAbstractTest extends GridCache
         }
     }
 
-
     /**
      * Test class Organization.
      */
