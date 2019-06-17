@@ -5003,7 +5003,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Performs repair and retries get.
+     * Performs repair and retries get if necessary.
+     * @param orig Original get future.
+     * @param repair Repair callback, used in case of inconcstency.
+     * @param retry Callback to original method to retry operation after repair.
      */
     private <R> IgniteInternalFuture<R> getWithRepairAsync(
         IgniteInternalFuture<R> orig,
