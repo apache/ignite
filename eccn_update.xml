@@ -1,0 +1,56 @@
+<!-- this file should be moved to
+https://svn.apache.org/repos/asf/infrastructure/site/trunk/content/licenses/exports/index.page/eccnmatrix.xml
+
+No need to merge it to Apache Ignite code base.
+-->
+<Project href="http://ignite.apache.org/">
+    <Name>Apache Ignite Project</Name>
+    <Contact>
+        <Name>Denis Magda</Name>
+    </Contact>
+    <Product>
+        <Name>Apache Ignite</Name>
+        <Version>
+            <Names>development</Names>
+            <ECCN>5D002</ECCN>
+            <ControlledSource href="https://gitbox.apache.org/repos/asf/ignite.git">
+                <Manufacturer>ASF</Manufacturer>
+                <Why>Designed to use with built-in Java Cryptography Architecture (JCA)</Why>
+            </ControlledSource>
+            <ControlledSource href="https://www.oracle.com/technetwork/java/javase/downloads/index.html">
+                <Manufacturer>Oracle</Manufacturer>
+                <Why>Designed to use with built-in Java encryption libraries (JCE)</Why>
+            </ControlledSource>
+            <ControlledSource href="http://www.openssl.org/source/">
+                <Manufacturer>The OpenSSL Project</Manufacturer>
+                <Why>Designed to use General Purpose cryptography library included with OpenSSL</Why>
+            </ControlledSource>
+            <ControlledSource href="http://www.openssl.org/source/">
+                <Manufacturer>The OpenSSL Project</Manufacturer>
+                <Why>Designed to use General Purpose cryptography library included with OpenSSL</Why>
+            </ControlledSource>
+            <ControlledSource href="https://dotnet.microsoft.com/download">
+                <Manufacturer>Microsoft</Manufacturer>
+                <Why>Designed to use .NET Framework Cryptography Model</Why>
+            </ControlledSource>
+            <!-- TODO include .NET Core -->
+            <!-- TODO which url to use here -->
+            <!-- https://github.com/dotnet/corefx
+            (controlled by)
+.NET Foundation
+title=Designed to use .NET Framework Cryptography Model
+href=https://dotnetfoundation.org/projects-->
+
+            <ControlledSource href="http://www.jcraft.com/jsch/">
+                <Manufacturer>JCraft, Inc.</Manufacturer>
+                <Why>Provides encryption SSH library</Why>
+            </ControlledSource>
+            <!-- TODO: Confirm that REST-HTTP module can use HTTPS itself, or remove -->
+            <ControlledSource href="http://eclipse.org/jetty">
+                <Manufacturer>The Eclipse Foundation</Manufacturer>
+                <Why>HTTPS support in Jetty (uses SSL)</Why>
+            </ControlledSource>
+        </Version>
+        <!-- TODO Declare some older version -->
+    </Product>
+</Project>
