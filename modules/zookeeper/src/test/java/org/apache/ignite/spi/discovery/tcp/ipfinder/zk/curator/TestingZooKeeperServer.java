@@ -40,10 +40,13 @@ public class TestingZooKeeperServer extends QuorumPeerMain implements Closeable 
 
     /** Config builder. */
     private final QuorumConfigBuilder configBuilder;
+
     /** This instance index. */
     private final int thisInstanceIndex;
+
     /** Main. */
     private volatile ZooKeeperMainFace main;
+
     /** State. */
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
 

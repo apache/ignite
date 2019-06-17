@@ -38,12 +38,15 @@ public class DeadlockProbe implements Message {
 
     /** */
     private GridCacheVersion initiatorVer;
+
     /** */
     @GridToStringInclude
     @GridDirectCollection(ProbedTx.class)
     private Collection<ProbedTx> waitChain;
+
     /** */
     private ProbedTx blocker;
+
     /** */
     private boolean nearCheck;
 

@@ -152,8 +152,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridReadOnlyArrayView;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -414,6 +415,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         lockWaitTime = persistenceCfg.getLockWaitTime();
 
         persStoreMetrics = new DataStorageMetricsImpl(
+            ctx.metric().registry(),
             persistenceCfg.isMetricsEnabled(),
             persistenceCfg.getMetricsRateTimeInterval(),
             persistenceCfg.getMetricsSubIntervalCount()
@@ -1452,6 +1454,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         GridQueryProcessor qryProc = cctx.kernalContext().query();
 
         if (qryProc.moduleEnabled()) {
+            GridCountDownCallback rebuildIndexesCompleteCntr = new GridCountDownCallback(
+                cctx.cacheContexts().size(),
+                () -> log().info("Indexes rebuilding completed for all caches."),
+                1  //need at least 1 index rebuilded to print message about rebuilding completion
+            );
+
             for (final GridCacheContext cacheCtx : (Collection<GridCacheContext>)cctx.cacheContexts()) {
                 if (cacheCtx.startTopologyVersion().equals(fut.initialVersion())) {
                     final int cacheId = cacheCtx.cacheId();
@@ -1485,6 +1493,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                                 + ", grpName=" + ccfg.getGroupName() + ']', err);
                                     }
                                 }
+
+                                rebuildIndexesCompleteCntr.countDown(true);
                             }
                         });
                     }
@@ -1493,6 +1503,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             idxRebuildFuts.remove(cacheId, usrFut);
 
                             usrFut.onDone();
+
+                            rebuildIndexesCompleteCntr.countDown(false);
                         }
                     }
                 }
@@ -4464,8 +4476,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private class DbCheckpointContextImpl implements DbCheckpointListener.Context {
             /** Current checkpoint progress. */
             private final CheckpointProgress curr;
+
             /** Partition map. */
             private final PartitionAllocationMap map;
+
             /** Pending tasks from executor. */
             private GridCompoundFuture pendingTaskFuture;
 
@@ -4499,6 +4513,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 return asyncRunner == null ? null : cmd -> {
                     try {
                         GridFutureAdapter<?> res = new GridFutureAdapter<>();
+
+                        res.listen(fut -> updateHeartbeat());
 
                         asyncRunner.execute(U.wrapIgniteFuture(cmd, res));
 

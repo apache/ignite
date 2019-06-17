@@ -154,7 +154,6 @@ public class IgnteCacheClientWriteBehindStoreNonCoalescingTest extends IgniteCac
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
             Object oldVal = storeMap.put(entry.getKey(), entry.getValue());
 
-
             if (oldVal != null) {
                 Integer oldInt = (Integer) oldVal;
                 Integer newInt = (Integer)entry.getValue();

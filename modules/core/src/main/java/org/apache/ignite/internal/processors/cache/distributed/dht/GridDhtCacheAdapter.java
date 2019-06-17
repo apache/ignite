@@ -182,6 +182,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             log.debug("Receive force key response for unknown future (is it duplicate?) [nodeId=" + node.id() +
                 ", res=" + msg + ']');
     }
+
     /**
      * @param node Node originated request.
      * @param msg Force keys message.

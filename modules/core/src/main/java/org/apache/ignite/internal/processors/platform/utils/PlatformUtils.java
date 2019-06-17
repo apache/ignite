@@ -979,6 +979,7 @@ public class PlatformUtils {
 
         return map0;
     }
+
     /**
      * Create Java object.
      *

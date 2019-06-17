@@ -695,7 +695,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-
             cfg.setCacheConfiguration(cacheCfg);
         }
         else

@@ -236,13 +236,16 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            if (context().mvccEnabled())
+            if (context().mvccEnabled()) // Can (should?) be supported in future.
                 throw new UnsupportedOperationException("Read Repair is not supported at MVCC mode.");
 
-            if (context().isLocal())
+            if (context().isNear()) // Can be supported in future.
+                throw new UnsupportedOperationException("Read Repair is not supported for near caches.");
+
+            if (context().isLocal()) // Can't be supported in future.
                 throw new UnsupportedOperationException("Read Repair is not supported for local caches.");
 
-            if (context().config().getBackups() == 0)
+            if (context().config().getBackups() == 0) // // Can't be supported in future.
                 throw new UnsupportedOperationException("Read Repair is suitable only in case " +
                     "at least 1 backup configured for cache.");
 
