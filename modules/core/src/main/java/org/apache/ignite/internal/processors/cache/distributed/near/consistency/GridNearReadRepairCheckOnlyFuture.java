@@ -38,7 +38,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  * Checks data consistency. Checks that each backup value equals to primary value.
  */
-public class GridNearGetWithConsistencyCheckFuture extends GridNearGetWithConsistencyAbstractFuture {
+public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstractFuture {
     /** Context. */
     private GridCacheContext ctx;
 
@@ -57,7 +57,7 @@ public class GridNearGetWithConsistencyCheckFuture extends GridNearGetWithConsis
     /**
      *
      */
-    public GridNearGetWithConsistencyCheckFuture(
+    public GridNearReadRepairCheckOnlyFuture(
         AffinityTopologyVersion topVer,
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,

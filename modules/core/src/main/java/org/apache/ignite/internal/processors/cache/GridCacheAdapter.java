@@ -4918,6 +4918,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param keys Keys.
      * @param deserializeBinary Deserialize binary flag.
      * @param needVer Need version.
+     * @param recovery Recovery flag.
+     * @param readRepair Read repair flag.
      * @return Map of cached values.
      * @throws IgniteCheckedException If read failed.
      */
@@ -5001,7 +5003,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Performs repair and retries get.
+     * Performs repair and retries get if necessary.
+     * @param orig Original get future.
+     * @param repair Repair callback, used in case of inconcstency.
+     * @param retry Callback to original method to retry operation after repair.
      */
     private <R> IgniteInternalFuture<R> getWithRepairAsync(
         IgniteInternalFuture<R> orig,

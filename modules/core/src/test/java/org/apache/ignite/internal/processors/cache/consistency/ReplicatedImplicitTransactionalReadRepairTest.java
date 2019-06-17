@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.consistency;
 
+import org.apache.ignite.cache.CacheMode;
+
 /**
  *
  */
-public class SingleBackupImplicitTransactionalCacheConsistencyTest extends ImplicitTransactionalCacheConsistencyTest {
+public class ReplicatedImplicitTransactionalReadRepairTest extends ImplicitTransactionalReadRepairTest {
     /** {@inheritDoc} */
-    @Override protected Integer backupsCount() {
-        return 1; // Single backup possible optimisations check.
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 }

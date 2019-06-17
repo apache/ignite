@@ -22,7 +22,7 @@ import org.apache.ignite.cache.CacheMode;
 /**
  *
  */
-public class ReplicatedExplicitTransactionalCacheConsistencyTest extends ExplicitTransactionalCacheConsistencyTest {
+public class ReplicatedExplicitTransactionalReadRepairTest extends ExplicitTransactionalReadRepairTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return CacheMode.REPLICATED;
