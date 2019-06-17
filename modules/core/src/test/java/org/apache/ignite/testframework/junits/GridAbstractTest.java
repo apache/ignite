@@ -121,9 +121,11 @@ import org.apache.log4j.Priority;
 import org.apache.log4j.RollingFileAppender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
@@ -180,9 +182,13 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
     /** Lock to maintain integrity of {@link TestCounters} and of {@link IgniteConfigVariationsAbstractTest}. */
     private final Lock runSerializer = new ReentrantLock();
 
+    /** */
+    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
+
     /** Manages test execution and reporting. */
-    @Rule public transient TestRule runRule = (base, description) -> new Statement() {
-        @Override public void evaluate() throws Throwable {
+    @Rule public transient TestRule runRule = RuleChain
+        .outerRule(new SystemPropertiesRule())
+        .around((base, description) -> DelegatingJUnitStatement.wrap(() -> {
             runSerializer.lock();
             try {
                 assert getName() != null : "getName returned null";
@@ -191,8 +197,7 @@ public abstract class GridAbstractTest extends JUnit3TestLegacySupport {
             } finally {
                 runSerializer.unlock();
             }
-        }
-    };
+        }));
 
     /** */
     private transient boolean startGrid;
