@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 
 /**
  * High-level commands.
@@ -43,6 +44,9 @@ public enum CommandList {
 
     /** */
     WAL("--wal", new WalCommands()),
+
+    /** */
+    DIAGNOSTIC("--diagnostic", new DiagnosticCommand()),
 
     /** */
     READ_ONLY_ENABLE("--read-only-on", new ClusterReadOnlyModeEnableCommand()),

@@ -497,6 +497,16 @@ public interface IgniteMXBean {
     void clearNodeLocalMap();
 
     /**
+     * Resets metrics for a given prefix.
+     *
+     * @param prefix Prefix for a metrics.
+     */
+    @MXBeanDescription("Resets metrics for a given prefix.")
+    @MXBeanParametersNames("prefix")
+    @MXBeanParametersDescriptions("Metric prefix.")
+    public void resetMetrics(String prefix);
+
+    /**
      * Gets cluster read-only mode status.
      *
      * @return {@code true} if cluster active and read-only mode enabled, and {@code false} otherwise.

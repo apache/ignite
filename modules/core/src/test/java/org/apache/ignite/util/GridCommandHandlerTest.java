@@ -1393,7 +1393,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (CacheSubcommands cmd : CacheSubcommands.values()) {
             Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
 
-            if(args != null)
+            if (args != null)
                 for (Enum<? extends CommandArg> arg : args.getEnumConstants())
                     assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
@@ -1753,13 +1753,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                 assertContains(testOut.toString(), outputExp);
             }
-        } else
+        }
+        else
             assertContains(testOut.toString(), outputExp);
     }
 
     /**
-     * Checks that string {@param str} contains substring {@param substr}. Logs both strings
-     * and throws {@link java.lang.AssertionError}, if not.
+     * Checks that string {@param str} contains substring {@param substr}. Logs both strings and throws {@link
+     * java.lang.AssertionError}, if not.
      *
      * @param str string
      * @param substr substring
@@ -1767,7 +1768,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     private void assertContains(String str, String substr) {
         try {
             assertTrue(str.contains(substr));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             log.warning(String.format("String does not contain substring: '%s':", substr));
             log.warning("String:");
             log.warning(str);
@@ -2726,9 +2728,53 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts several long transactions in order to test --tx command.
-     * Transactions will last until unlock latch is released: first transaction will wait for unlock latch directly,
-     * some others will wait for key lock acquisition.
+     * Test execution of --diagnostic command.
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testDiagnosticPageLocksTracker() throws Exception {
+        Ignite ignite = startGrids(4);
+
+        Collection<ClusterNode> nodes = ignite.cluster().nodes();
+
+        List<ClusterNode> nodes0 = new ArrayList<>(nodes);
+
+        ClusterNode node0 = nodes0.get(0);
+        ClusterNode node1 = nodes0.get(1);
+        ClusterNode node2 = nodes0.get(2);
+        ClusterNode node3 = nodes0.get(3);
+
+        ignite.cluster().active(true);
+
+        String dir = U.defaultWorkDirectory() + "/diagnostic/";
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "help"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "help"));
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir));
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--all"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log", "--all"));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir, "--all"));
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--nodes",
+            node0.id().toString(), node2.id().toString()));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--nodes",
+            node0.consistentId().toString(), node2.consistentId().toString()));
+
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log", "--nodes",
+            node1.id().toString(), node3.id().toString()));
+        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir, "--nodes",
+            node1.consistentId().toString(), node3.consistentId().toString()));
+    }
+
+    /**
+     * Starts several long transactions in order to test --tx command. Transactions will last until unlock latch is
+     * released: first transaction will wait for unlock latch directly, some others will wait for key lock acquisition.
      *
      * @param lockLatch Lock latch. Will be released inside body of the first transaction.
      * @param unlockLatch Unlock latch. Should be released externally. First transaction won't be finished until unlock

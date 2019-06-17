@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractD
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
@@ -47,12 +48,17 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
      */
-    public PartitionMetaStorageImpl(int cacheId, String name,
+    public PartitionMetaStorageImpl(
+        int cacheId, String name,
         DataRegionMetricsImpl memMetrics,
         DataRegion memPlc,
         ReuseList reuseList,
-        IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew);
+        IgniteWriteAheadLogManager wal,
+        long metaPageId,
+        boolean initNew,
+        PageLockListener lsnr
+    ) throws IgniteCheckedException {
+        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr);
     }
 
     /**
