@@ -271,7 +271,6 @@ public class KillQueryTest extends GridCommonAbstractTest {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -372,10 +371,8 @@ public class KillQueryTest extends GridCommonAbstractTest {
     /**
      * Tries to cancel COPY FROM command, then checks such cancellation is unsupported.
      *
-     * 1) Run COPY query, got it suspended in the middle.
-     * 2) Try to cancel it, get expected exception.
-     * 3) Wake up the COPY.
-     * 4) Check COPY is done.
+     * 1) Run COPY query, got it suspended in the middle. 2) Try to cancel it, get expected exception. 3) Wake up the
+     * COPY. 4) Check COPY is done.
      */
     @Test
     public void testBulkLoadCancellationUnsupported() throws Exception {
@@ -704,7 +701,6 @@ public class KillQueryTest extends GridCommonAbstractTest {
         cancelRes.get(CHECK_RESULT_TIMEOUT);
     }
 
-
     /**
      * Trying to async cancel long running multiple statements query. No exceptions expected.
      */
@@ -808,7 +804,6 @@ public class KillQueryTest extends GridCommonAbstractTest {
         }
     }
 
-
     /**
      * Check if query hangs due to reducer cannot get nodes for partitions, it still can be killed.
      */
@@ -863,15 +858,11 @@ public class KillQueryTest extends GridCommonAbstractTest {
         }
     }
 
-
-
     /**
      * Test if user specified partitions for query explicitly, such query is cancealble.
      *
-     * We check 3 scenarious in which partitions are belong to:
-     * 1) only first node <br/>
-     * 2) only second node <br/>
-     * 3) some to first, the others to second <br/>
+     * We check 3 scenarious in which partitions are belong to: 1) only first node <br/> 2) only second node <br/> 3)
+     * some to first, the others to second <br/>
      */
     @Test
     public void testCancelQueryWithPartitions() throws Exception {
@@ -891,6 +882,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
         checkPartitions(secondParts);
         checkPartitions(mixedParts);
     }
+
     /**
      * Test if user specified partitions for query explicitly, such query is cancealble.
      *
