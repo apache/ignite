@@ -40,6 +40,7 @@ import org.apache.ignite.internal.visor.verify.VisorValidateIndexesJobResult;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorValidateIndexesTaskResult;
 
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
@@ -59,7 +60,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY
  */
 public class CacheValidateIndexes implements Command<CacheValidateIndexes.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage() {
+    @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Verify counters and hash sums of primary and backup partitions for the specified " +
             "caches/cache groups on an idle cluster and print out the differences, if any. " +
@@ -74,7 +75,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         map.put(CHECK_FIRST + " N", "validate only the first N keys");
         map.put(CHECK_THROUGH + " K", "validate every Kth key");
 
-        usageCache(VALIDATE_INDEXES, description, map,
+        usageCache(logger, VALIDATE_INDEXES, description, map,
             optional(CACHES), OP_NODE_ID, optional(or(CHECK_FIRST + " N", CHECK_THROUGH + " K")));
     }
 
@@ -181,7 +182,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
                         logger.info(INDENT + CommandLogger.join(" ", e.getKey(), e.getValue()));
 
                         for (IndexValidationIssue is : res.issues())
-                            logger.info(INDENT + INDENT + is);
+                            logger.info(DOUBLE_INDENT + is);
                     }
                 }
 
@@ -194,7 +195,7 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
                         logger.info(INDENT + CommandLogger.join(" ", "SQL Index", e.getKey(), e.getValue()));
 
                         for (IndexValidationIssue is : res.issues())
-                            logger.info(INDENT + INDENT + is);
+                            logger.info(DOUBLE_INDENT + is);
                     }
                 }
             }

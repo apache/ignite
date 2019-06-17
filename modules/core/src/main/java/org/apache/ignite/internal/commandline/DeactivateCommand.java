@@ -30,8 +30,8 @@ import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CO
  */
 public class DeactivateCommand implements Command<Void> {
     /** {@inheritDoc} */
-    @Override public void printUsage() {
-        Command.usage("Deactivate cluster:", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION));
+    @Override public void printUsage(Logger logger) {
+        Command.usage(logger, "Deactivate cluster:", DEACTIVATE, optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */

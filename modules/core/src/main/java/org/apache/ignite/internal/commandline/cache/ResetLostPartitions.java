@@ -35,11 +35,11 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.RESE
  */
 public class ResetLostPartitions implements Command<Set<String>> {
     /** {@inheritDoc} */
-    @Override public void printUsage() {
+    @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Reset the state of lost partitions for the specified caches.";
 
-        usageCache(RESET_LOST_PARTITIONS, description, null, CACHES);
+        usageCache(logger, RESET_LOST_PARTITIONS, description, null, CACHES);
     }
 
     /**

@@ -22,6 +22,8 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 
 /**
  * Abstract class for all control.sh commands, has already implemented methods and abstract methods.
@@ -50,13 +52,14 @@ public interface Command<T> {
     /**
      * Print command usage.
      *
+     * @param logger Logger to use.
      * @param desc Command description.
      * @param args Arguments.
      */
-    public static void usage(String desc, CommandList cmd, String... args) {
-        CommandLogger.logWithIndent(desc);
-        CommandLogger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)), 2);
-        CommandLogger.nl();
+    public static void usage(Logger logger, String desc, CommandList cmd, String... args) {
+        logger.info(INDENT + desc);
+        logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, cmd, CommandLogger.join(" ", args)));
+        logger.info("");
     }
 
     /**
@@ -93,8 +96,9 @@ public interface Command<T> {
     /**
      * Print info for user about command (parameters, use cases and so on).
      *
+     * @param logger Logger to use.
      */
-    public void printUsage();
+    public void printUsage(Logger logger);
 
     /**
      * @return command name.

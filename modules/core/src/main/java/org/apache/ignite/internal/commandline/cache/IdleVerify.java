@@ -74,7 +74,7 @@ import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.USER;
  */
 public class IdleVerify implements Command<IdleVerify.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage() {
+    @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Verify counters and hash sums of primary and backup partitions for the specified caches/cache " +
             "groups on an idle cluster and print out the differences, if any. When no parameters are specified, " +
@@ -86,6 +86,7 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
             NOT_PERSISTENT + " caches, only " + SYSTEM + " caches, or " + ALL + " of the above.";
 
         usageCache(
+            logger,
             IDLE_VERIFY,
             description,
             Collections.singletonMap(CHECK_CRC.toString(),
