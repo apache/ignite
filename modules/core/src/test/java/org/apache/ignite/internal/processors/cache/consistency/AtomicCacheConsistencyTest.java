@@ -41,7 +41,7 @@ public class AtomicCacheConsistencyTest extends ImplicitTransactionalCacheConsis
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> GET_CHECK_AND_FAIL =
+    private static final Consumer<ReadRepairData> GET_CHECK_AND_FAIL =
         (data) -> {
             IgniteCache<Integer, Integer> cache = data.cache;
             Set<Integer> keys = data.data.keySet();
@@ -74,7 +74,7 @@ public class AtomicCacheConsistencyTest extends ImplicitTransactionalCacheConsis
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> GETALL_CHECK_AND_FAIL =
+    private static final Consumer<ReadRepairData> GETALL_CHECK_AND_FAIL =
         (data) -> {
             IgniteCache<Integer, Integer> cache = data.cache;
             Set<Integer> keys = data.data.keySet();
@@ -113,7 +113,7 @@ public class AtomicCacheConsistencyTest extends ImplicitTransactionalCacheConsis
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_FAIL =
+    private static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_FAIL =
         (data) -> {
             IgniteCache<Integer, Integer> cache = data.cache;
             Set<Integer> keys = data.data.keySet();
@@ -140,7 +140,7 @@ public class AtomicCacheConsistencyTest extends ImplicitTransactionalCacheConsis
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_FAIL =
+    private static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_FAIL =
         (data) -> {
             IgniteCache<Integer, Integer> cache = data.cache;
             Set<Integer> keys = data.data.keySet();
