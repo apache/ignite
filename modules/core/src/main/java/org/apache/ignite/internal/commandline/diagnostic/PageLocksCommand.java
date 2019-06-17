@@ -39,8 +39,6 @@ import org.apache.ignite.internal.visor.diagnostic.VisorPageLocksTrackerArgs;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
 import static org.apache.ignite.internal.commandline.CommandLogger.join;
-import static org.apache.ignite.internal.commandline.CommandLogger.log;
-import static org.apache.ignite.internal.commandline.CommandLogger.nl;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.PAGE_LOCKS;
 import static org.apache.ignite.internal.commandline.diagnostic.PageLocksCommand.PageLocksCommandArg.ALL;
@@ -145,9 +143,9 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage() {
-        log("View pages locks state information on the node or nodes.");
-        log(join(" ",
+    @Override public void printUsage(Logger logger) {
+        logger.info("View pages locks state information on the node or nodes.");
+        logger.info(join(" ",
             UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, DUMP,
             optional(PATH, "path_to_directory"),
             optional(ALL),
@@ -155,13 +153,13 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
             optional(CommandLogger.or(NODES, "consistentId1,consistentId2,..")),
             "// Save page locks dump to file generated in IGNITE_HOME" +
                 File.separatorChar + "work" + File.separatorChar + DEFAULT_TARGET_FOLDER + " directory."));
-        log(join(" ",
+        logger.info(join(" ",
             UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, DUMP_LOG,
             optional(ALL),
             optional(CommandLogger.or(NODES, "nodeId1,nodeId2,..")),
             optional(CommandLogger.or(NODES, "consistentId1,consistentId2,..")),
             "// Pring page locks dump to console on the node or nodes."));
-        nl();
+        logger.info("");
     }
 
     /** {@inheritDoc} */
