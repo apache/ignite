@@ -4918,6 +4918,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param keys Keys.
      * @param deserializeBinary Deserialize binary flag.
      * @param needVer Need version.
+     * @param recovery Recovery flag.
+     * @param readRepair Read repair flag.
      * @return Map of cached values.
      * @throws IgniteCheckedException If read failed.
      */
