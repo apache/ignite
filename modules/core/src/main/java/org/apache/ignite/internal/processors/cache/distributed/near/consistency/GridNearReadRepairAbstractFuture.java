@@ -66,11 +66,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
         for (KeyCacheObject key : keys) {
             Collection<ClusterNode> nodes = ctx.affinity().nodesByKey(key, topVer);
 
-            for (ClusterNode node : nodes) {
-                mappings.computeIfAbsent(node, k -> new HashSet<>());
-
-                mappings.get(node).add(key);
-            }
+            for (ClusterNode node : nodes)
+                mappings.computeIfAbsent(node, k -> new HashSet<>()).add(key);
         }
 
         futs = new HashMap<>(mappings.size());
