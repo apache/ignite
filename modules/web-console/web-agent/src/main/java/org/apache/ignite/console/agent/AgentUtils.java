@@ -17,34 +17,36 @@
 package org.apache.ignite.console.agent;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
 import java.security.ProtectionDomain;
-import java.security.cert.X509Certificate;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.AbstractMap;
+import java.util.Collection;
 import java.util.List;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
-import io.socket.client.Ack;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-import okhttp3.ConnectionSpec;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import org.apache.ignite.console.websocket.WebSocketEvent;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.ssl.SSLContextWrapper;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.Logger;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.ProxyConfiguration;
+import org.eclipse.jetty.client.Socks4Proxy;
+import org.eclipse.jetty.client.util.BasicAuthentication;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.websocket.api.Session;
+
+import static java.net.Proxy.NO_PROXY;
+import static java.net.Proxy.Type.SOCKS;
+import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.console.utils.Utils.toJson;
+import static org.eclipse.jetty.client.api.Authentication.ANY_REALM;
 
 /**
  * Utility methods.
@@ -54,23 +56,7 @@ public class AgentUtils {
     private static final Logger log = Logger.getLogger(AgentUtils.class.getName());
 
     /** */
-    private static final char[] EMPTY_PWD = new char[0];
-
-    /** JSON object mapper. */
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    static {
-        // Register special module with basic serializers.
-        MAPPER.registerModule(new JsonOrgModule());
-    }
-
-    /** */
-    private static final Ack NOOP_CB = args -> {
-        if (args != null && args.length > 0 && args[0] instanceof Throwable)
-            log.error("Failed to execute request on agent.", (Throwable)args[0]);
-        else
-            log.info("Request on agent successfully executed " + Arrays.toString(args));
-    };
+    public static final String[] EMPTY = {};
 
     /**
      * Default constructor.
@@ -83,7 +69,7 @@ public class AgentUtils {
      * @param path Path to normalize.
      * @return Normalized file path.
      */
-    public static String normalizePath(String path) {
+    private static String normalizePath(String path) {
         return path != null ? path.replace('\\', '/') : null;
     }
 
@@ -96,7 +82,7 @@ public class AgentUtils {
 
             // Should not happen, but to make sure our code is not broken.
             if (domain == null || domain.getCodeSource() == null || domain.getCodeSource().getLocation() == null) {
-                log.warn("Failed to resolve agent jar location!");
+                log.warn("Failed to resolve application folder!");
 
                 return null;
             }
@@ -113,7 +99,7 @@ public class AgentUtils {
             return new File(classesUri).getParentFile();
         }
         catch (URISyntaxException | SecurityException ignored) {
-            log.warn("Failed to resolve agent jar location!");
+            log.warn("Failed to resolve application folder!");
 
             return null;
         }
@@ -152,181 +138,166 @@ public class AgentUtils {
     }
 
     /**
-     * Get callback from handler arguments.
      *
-     * @param args Arguments.
-     * @return Callback or noop callback.
+     * @param keyStore Path to key store.
+     * @param keyStorePwd Optional key store password.
+     * @param trustAll Whether we should trust for self-signed certificate.
+     * @param trustStore Path to trust store.
+     * @param trustStorePwd Optional trust store passwo5rd.
+     * @param ciphers Optional list of enabled cipher suites.
+     * @return SSL context factory.
      */
-    public static Ack safeCallback(Object[] args) {
-        boolean hasCb = args != null && args.length > 0 && args[args.length - 1] instanceof Ack;
+    public static SslContextFactory sslContextFactory(
+        String keyStore,
+        String keyStorePwd,
+        boolean trustAll,
+        String trustStore,
+        String trustStorePwd,
+        List<String> ciphers
+    ) {
+        SslContextFactory sslCtxFactory = new SslContextFactory();
 
-        return hasCb ? (Ack)args[args.length - 1] : NOOP_CB;
+        if (!F.isEmpty(keyStore)) {
+            sslCtxFactory.setKeyStorePath(keyStore);
+
+            if (!F.isEmpty(keyStorePwd))
+                sslCtxFactory.setKeyStorePassword(keyStorePwd);
+        }
+
+        if (trustAll) {
+            sslCtxFactory.setTrustAll(true);
+            // Available in Jetty >= 9.4.15.xxxx sslCtxFactory.setHostnameVerifier((hostname, session) -> true);
+        }
+        else if (!F.isEmpty(trustStore)) {
+            sslCtxFactory.setTrustStorePath(trustStore);
+
+            if (!F.isEmpty(trustStorePwd))
+                sslCtxFactory.setTrustStorePassword(trustStorePwd);
+        }
+
+        if (!F.isEmpty(ciphers))
+            sslCtxFactory.setIncludeCipherSuites(ciphers.toArray(EMPTY));
+
+        return  sslCtxFactory;
     }
 
     /**
-     * Remove callback from handler arguments.
-     *
-     * @param args Arguments.
-     * @return Arguments without callback.
+     * @param s String with sensitive data.
+     * @return Secured string.
      */
-    public static Object[] removeCallback(Object[] args) {
-        boolean hasCb = args != null && args.length > 0 && args[args.length - 1] instanceof Ack;
+    public static String secured(String s) {
+        int len = s.length();
+        int toShow = len > 4 ? 4 : 1;
 
-        return hasCb ? Arrays.copyOf(args, args.length - 1) : args;
+        return new String(new char[len - toShow]).replace('\0', '*') + s.substring(len - toShow, len);
     }
 
     /**
-     * Map java object to JSON object.
-     *
-     * @param obj Java object.
-     * @return {@link JSONObject} or {@link JSONArray}.
-     * @throws IllegalArgumentException If conversion fails due to incompatible type.
+     * @param c Collection with sensitive data.
+     * @return Secured string.
      */
-    public static Object toJSON(Object obj) {
-        if (obj instanceof Iterable)
-            return MAPPER.convertValue(obj, JSONArray.class);
-
-        return MAPPER.convertValue(obj, JSONObject.class);
+    public static String secured(Collection<String> c) {
+        return c.stream().map(AgentUtils::secured).collect(Collectors.joining(", "));
     }
 
     /**
-     * Map JSON object to java object.
-     *
-     * @param obj {@link JSONObject} or {@link JSONArray}.
-     * @param toValType Expected value type.
-     * @return Mapped object type of {@link T}.
-     * @throws IllegalArgumentException If conversion fails due to incompatible type.
+     * @param httpClient Http client.
+     * @param proxies Proxies.
      */
-    public static <T> T fromJSON(Object obj, Class<T> toValType) throws IllegalArgumentException {
-        return MAPPER.convertValue(obj, toValType);
-    }
+    private static void addAuthentication(HttpClient httpClient, List<ProxyConfiguration.Proxy> proxies) {
+        proxies.forEach(p -> {
+            String user, pwd;
 
-    /**
-     * @param pathToJks Path to java key store file.
-     * @param pwd Key store password.
-     * @return Key store.
-     * @throws GeneralSecurityException If failed to load key store.
-     * @throws IOException If failed to load key store file content.
-     */
-    private static KeyStore keyStore(String pathToJks, char[] pwd) throws GeneralSecurityException, IOException {
-        KeyStore keyStore = KeyStore.getInstance("JKS");
-        keyStore.load(new FileInputStream(pathToJks), pwd);
+            if (p instanceof HttpProxy) {
+                String scheme = p.getURI().getScheme();
 
-        return keyStore;
-    }
-
-    /**
-     * @param keyStorePath Path to key store.
-     * @param keyStorePwd Key store password.
-     * @return Key managers.
-     * @throws GeneralSecurityException If failed to load key store.
-     * @throws IOException If failed to load key store file content.
-     */
-    private static KeyManager[] keyManagers(String keyStorePath, String keyStorePwd)
-        throws GeneralSecurityException, IOException {
-        if (keyStorePath == null)
-            return null;
-
-        char[] keyPwd = keyStorePwd != null ? keyStorePwd.toCharArray() : EMPTY_PWD;
-
-        KeyStore keyStore = keyStore(keyStorePath, keyPwd);
-
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, keyPwd);
-
-        return kmf.getKeyManagers();
-    }
-
-    /**
-     * @param trustAll {@code true} If we trust to self-signed sertificates.
-     * @param trustStorePath Path to trust store file.
-     * @param trustStorePwd Trust store password.
-     * @return Trust manager
-     * @throws GeneralSecurityException If failed to load trust store.
-     * @throws IOException If failed to load trust store file content.
-     */
-    public static X509TrustManager trustManager(boolean trustAll, String trustStorePath, String trustStorePwd)
-        throws GeneralSecurityException, IOException {
-        if (trustAll)
-            return disabledTrustManager();
-
-        if (trustStorePath == null)
-            return null;
-
-        char[] trustPwd = trustStorePwd != null ? trustStorePwd.toCharArray() : EMPTY_PWD;
-        KeyStore trustKeyStore = keyStore(trustStorePath, trustPwd);
-
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-        tmf.init(trustKeyStore);
-
-        TrustManager[] trustMgrs = tmf.getTrustManagers();
-
-        return (X509TrustManager)Arrays.stream(trustMgrs)
-            .filter(tm -> tm instanceof X509TrustManager)
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("X509TrustManager manager not found"));
-    }
-
-    /**
-     * Create SSL socket factory.
-     *
-     * @param keyStorePath Path to key store.
-     * @param keyStorePwd Key store password.
-     * @param trustMgr Trust manager.
-     * @param cipherSuites Optional cipher suites.
-     * @throws GeneralSecurityException If failed to load trust store.
-     * @throws IOException If failed to load store file content.
-     */
-    public static SSLSocketFactory sslSocketFactory(
-        String keyStorePath, String keyStorePwd,
-        X509TrustManager trustMgr,
-        List<String> cipherSuites
-    ) throws GeneralSecurityException, IOException {
-        KeyManager[] keyMgrs = keyManagers(keyStorePath, keyStorePwd);
-
-        if (keyMgrs == null && trustMgr == null)
-            return null;
-
-        SSLContext ctx = SSLContext.getInstance("TLS");
-
-        if (!F.isEmpty(cipherSuites))
-            ctx = new SSLContextWrapper(ctx, new SSLParameters(cipherSuites.toArray(new String[0])));
-
-        ctx.init(keyMgrs, new TrustManager[] {trustMgr}, null);
-
-        return ctx.getSocketFactory();
-    }
-
-    /**
-     * Create SSL configuration.
-     *
-     * @param cipherSuites SSL cipher suites.
-     */
-    public static List<ConnectionSpec> sslConnectionSpec(List<String> cipherSuites) {
-        return Collections.singletonList(new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-            .cipherSuites(cipherSuites.toArray(new String[0]))
-            .build());
-    }
-
-    /**
-     * Create a trust manager that trusts all certificates.
-     */
-    private static X509TrustManager disabledTrustManager() {
-        return new X509TrustManager() {
-            /** {@inheritDoc} */
-            @Override public X509Certificate[] getAcceptedIssuers() {
-                return new X509Certificate[0];
+                user = System.getProperty(scheme + ".proxyUsername");
+                pwd = System.getProperty(scheme + ".proxyPassword");
+            }
+            else {
+                user = System.getProperty("java.net.socks.username");
+                pwd = System.getProperty("java.net.socks.password");
             }
 
-            /** {@inheritDoc} */
-            @Override public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                // No-op.
-            }
+            httpClient.getAuthenticationStore().addAuthentication(
+                new BasicAuthentication(p.getURI(), ANY_REALM, user, pwd)
+            );
+        });
+    }
 
-            /** {@inheritDoc} */
-            @Override public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                // No-op.
-            }
-        };
+    /**
+     * @param str Server uri.
+     */
+    public static void configureProxy(HttpClient httpClient, String str) {
+        try {
+            URI uri = URI.create(str);
+
+            URI proxyUri = new URI("ws".equalsIgnoreCase(uri.getScheme()) ? "http" : "https",
+                uri.getUserInfo(),
+                uri.getHost(),
+                uri.getPort(),
+                uri.getPath(),
+                uri.getQuery(),
+                uri.getFragment()
+            );
+
+            boolean secure = "https".equalsIgnoreCase(proxyUri.getScheme());
+
+            List<ProxyConfiguration.Proxy> proxies = ProxySelector.getDefault().select(proxyUri).stream()
+                .filter(p -> !p.equals(NO_PROXY))
+                .map(p -> {
+                    InetSocketAddress inetAddr = (InetSocketAddress)p.address();
+
+                    Origin.Address addr = new Origin.Address(inetAddr.getHostName(), inetAddr.getPort());
+
+                    if (p.type().equals(SOCKS))
+                        return new Socks4Proxy(addr, secure);
+
+                    return new HttpProxy(addr, secure);
+                })
+                .collect(toList());
+
+            httpClient.getProxyConfiguration().getProxies().addAll(proxies);
+
+            addAuthentication(httpClient, proxies);
+        }
+        catch (Exception e) {
+            log.warn("Failed to configure proxy.", e);
+        }
+    }
+
+    /**
+     * @return String with short node UUIDs.
+     */
+    public static String nid8(Collection<UUID> nids) {
+        return nids.stream().map(nid -> U.id8(nid).toUpperCase()).collect(Collectors.joining(",", "[", "]"));
+    }
+
+    /**
+     * Simple entry generator.
+     * 
+     * @param key Key.
+     * @param val Value.
+     */
+    public static <K, V> Map.Entry<K, V> entry(K key, V val) {
+        return new AbstractMap.SimpleEntry<>(key, val);
+    }
+
+    /**
+     * Collector.
+     */
+    public static <K, U> Collector<Map.Entry<K, U>, ?, Map<K, U>> entriesToMap() {
+        return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
+    /**
+     * Send event to websocket.
+     *
+     * @param ses Websocket session.
+     * @param evt Event.
+     * @throws Exception If failed to send event.
+     */
+    public static void send(Session ses, WebSocketEvent evt) throws Exception {
+        ses.getRemote().sendStringByFuture(toJson(evt)).get();
     }
 }

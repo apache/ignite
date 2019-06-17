@@ -1,4 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -o nounset
+set -o errexit
+set -o pipefail
+set -o errtrace
+set -o functrace
+
 #
 # Copyright 2019 GridGain Systems, Inc. and Contributors.
 #
@@ -54,7 +60,7 @@ javaMajorVersion() {
 #
 checkJava() {
     # Check JAVA_HOME.
-    if [ "$JAVA_HOME" = "" ]; then
+    if [ "${JAVA_HOME:-}" = "" ]; then
         JAVA=`type -p java`
         RETCODE=$?
 
@@ -84,4 +90,23 @@ checkJava() {
         echo "You can also download latest JDK at http://java.com/download"
         exit 1
     fi
+}
+
+#
+# Gets correct Java class path separator symbol for the given platform.
+# The function exports SEP variable with class path separator symbol.
+#
+getClassPathSeparator() {
+    SEP=":";
+
+    case "`uname`" in
+        MINGW*)
+            SEP=";";
+            export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+            ;;
+        CYGWIN*)
+            SEP=";";
+            export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+            ;;
+    esac
 }

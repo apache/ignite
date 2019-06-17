@@ -64,7 +64,7 @@ RUN cd backend && \
     npm run build
 
 # Copy Ignite Web Agent module package
-COPY ignite-web-agent-*.zip backend/agent_dists
+COPY ignite-web-console-agent-*.zip backend/agent_dists
 
 # Copy previously built frontend
 COPY --from=frontend-build /opt/web-console/frontend/build static

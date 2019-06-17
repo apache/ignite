@@ -16,23 +16,16 @@
 
 import _ from 'lodash';
 
-ConfigurationResourceService.$inject = ['$http'];
-
-export default function ConfigurationResourceService($http: ng.IHttpService) {
+export default function ConfigurationResourceService() {
     return {
-        read() {
-            return $http.get('/api/v1/configuration/list')
-                .then(({data}) => data)
-                .catch(({data}) => Promise.reject(data));
-        },
         populate(data) {
             const {spaces, clusters, caches, domains} = _.cloneDeep(data);
 
             _.forEach(clusters, (cluster) => {
-                cluster.caches = _.filter(caches, ({_id}) => _.includes(cluster.caches, _id));
+                cluster.caches = _.filter(caches, ({id}) => _.includes(cluster.caches, id));
 
                 _.forEach(cluster.caches, (cache) => {
-                    cache.domains = _.filter(domains, ({_id}) => _.includes(cache.domains, _id));
+                    cache.domains = _.filter(domains, ({id}) => _.includes(cache.domains, id));
                 });
             });
 

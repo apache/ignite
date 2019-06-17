@@ -6,8 +6,8 @@ Ignite Web Console Build Instructions
  run "npm install --no-optional" for download backend dependencies.
 4. Change directory to 'modules/web-console/frontend' and
  run "npm install --no-optional" for download frontend dependencies.
-5. Build ignite-web-agent module follow instructions from 'modules/web-console/web-agent/README.txt'.
-6. Copy ignite-web-agent-<version>.zip from 'modules/web-console/web-agent/target'
+5. Build ignite-web-console-agent module follow instructions from 'modules/web-console/web-agent/README.txt'.
+6. Copy ignite-web-console-agent-<version>.zip from 'modules/web-console/web-agent/target'
  to 'modules/web-console/backend/agent_dists' folder.
 
 Steps 1 - 4 should be executed once.

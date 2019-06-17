@@ -75,8 +75,6 @@ module.exports.factory = function(settings, schemas) {
 
     console.log(settings.mongoUrl, 'Trying to connect to local MongoDB...');
 
-
-
     // Connect to mongoDB database.
     return mongoose.connect(settings.mongoUrl, {useNewUrlParser: true, useCreateIndex: true})
         .then(() => defineSchema(schemas))

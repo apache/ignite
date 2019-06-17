@@ -44,11 +44,11 @@ suite('page-configure component reducer', () => {
     test('ADD_CLUSTER action', () => {
         assert.deepEqual(
             reducer(
-                {clusters: new Map([[1, {_id: 1}], [2, {_id: 2}]])},
-                {type: ADD_CLUSTER, cluster: {_id: 3}}
+                {clusters: new Map([[1, {id: 1}], [2, {id: 2}]])},
+                {type: ADD_CLUSTER, cluster: {id: 3}}
             ),
             {
-                clusters: new Map([[1, {_id: 1}], [2, {_id: 2}], [3, {_id: 3}]])
+                clusters: new Map([[1, {id: 1}], [2, {id: 2}], [3, {id: 3}]])
             },
             'adds a cluster'
         );
@@ -57,10 +57,10 @@ suite('page-configure component reducer', () => {
     test('REMOVE_CLUSTERS action', () => {
         assert.deepEqual(
             reducer(
-                {clusters: new Map([[1, {_id: 1, name: 'Cluster 1'}], [2, {_id: 2, name: 'Cluster 2'}]])},
+                {clusters: new Map([[1, {id: 1, name: 'Cluster 1'}], [2, {id: 2, name: 'Cluster 2'}]])},
                 {type: REMOVE_CLUSTERS, clusterIDs: [1]}
             ),
-            {clusters: new Map([[2, {_id: 2, name: 'Cluster 2'}]])},
+            {clusters: new Map([[2, {id: 2, name: 'Cluster 2'}]])},
             'deletes clusters by id'
         );
     });
@@ -68,10 +68,10 @@ suite('page-configure component reducer', () => {
     test('UPDATE_CLUSTER action', () => {
         assert.deepEqual(
             reducer(
-                {clusters: new Map([[1, {_id: 1, name: 'Hello'}]])},
-                {type: UPDATE_CLUSTER, cluster: {_id: 1, name: 'Hello world'}}
+                {clusters: new Map([[1, {id: 1, name: 'Hello'}]])},
+                {type: UPDATE_CLUSTER, cluster: {id: 1, name: 'Hello world'}}
             ),
-            {clusters: new Map([[1, {_id: 1, name: 'Hello world'}]])},
+            {clusters: new Map([[1, {id: 1, name: 'Hello world'}]])},
             'updates a cluster'
         );
     });
@@ -80,14 +80,14 @@ suite('page-configure component reducer', () => {
         assert.deepEqual(
             reducer(
                 {clusters: new Map([
-                    [1, {_id: 1, name: 'One'}],
-                    [2, {_id: 2, name: 'Two'}]
+                    [1, {id: 1, name: 'One'}],
+                    [2, {id: 2, name: 'Two'}]
                 ])},
-                {type: UPSERT_CLUSTERS, clusters: [{_id: 1, name: '1', space: 1}]}
+                {type: UPSERT_CLUSTERS, clusters: [{id: 1, name: '1', space: 1}]}
             ),
             {clusters: new Map([
-                [1, {_id: 1, name: '1', space: 1}],
-                [2, {_id: 2, name: 'Two'}]
+                [1, {id: 1, name: '1', space: 1}],
+                [2, {id: 2, name: 'Two'}]
             ])},
             'updates one cluster'
         );
@@ -95,20 +95,20 @@ suite('page-configure component reducer', () => {
         assert.deepEqual(
             reducer(
                 {clusters: new Map([
-                    [1, {_id: 1, name: 'One'}],
-                    [2, {_id: 2, name: 'Two'}]
+                    [1, {id: 1, name: 'One'}],
+                    [2, {id: 2, name: 'Two'}]
                 ])},
                 {
                     type: UPSERT_CLUSTERS,
                     clusters: [
-                        {_id: 1, name: '1', space: 1},
-                        {_id: 2, name: '2'}
+                        {id: 1, name: '1', space: 1},
+                        {id: 2, name: '2'}
                     ]
                 }
             ),
             {clusters: new Map([
-                [1, {_id: 1, name: '1', space: 1}],
-                [2, {_id: 2, name: '2'}]
+                [1, {id: 1, name: '1', space: 1}],
+                [2, {id: 2, name: '2'}]
             ])},
             'updates two clusters'
         );
@@ -116,43 +116,43 @@ suite('page-configure component reducer', () => {
         assert.deepEqual(
             reducer(
                 {clusters: new Map()},
-                {type: UPSERT_CLUSTERS, clusters: [{_id: 1}]}
+                {type: UPSERT_CLUSTERS, clusters: [{id: 1}]}
             ),
             {clusters: new Map([
-                [1, {_id: 1}]
+                [1, {id: 1}]
             ])},
             'adds one cluster'
         );
 
         assert.deepEqual(
             reducer(
-                {clusters: new Map([[1, {_id: 1}]])},
-                {type: UPSERT_CLUSTERS, clusters: [{_id: 2}, {_id: 3}]}
+                {clusters: new Map([[1, {id: 1}]])},
+                {type: UPSERT_CLUSTERS, clusters: [{id: 2}, {id: 3}]}
             ),
             {clusters: new Map([
-                [1, {_id: 1}],
-                [2, {_id: 2}],
-                [3, {_id: 3}]
+                [1, {id: 1}],
+                [2, {id: 2}],
+                [3, {id: 3}]
             ])},
             'adds two clusters'
         );
 
         assert.deepEqual(
             reducer(
-                {clusters: new Map([[1, {_id: 1}]])},
+                {clusters: new Map([[1, {id: 1}]])},
                 {
                     type: UPSERT_CLUSTERS,
                     clusters: [
-                        {_id: 1, name: 'Test'},
-                        {_id: 2},
-                        {_id: 3}
+                        {id: 1, name: 'Test'},
+                        {id: 2},
+                        {id: 3}
                     ]
                 }
             ),
             {clusters: new Map([
-                [1, {_id: 1, name: 'Test'}],
-                [2, {_id: 2}],
-                [3, {_id: 3}]
+                [1, {id: 1, name: 'Test'}],
+                [2, {id: 2}],
+                [3, {id: 3}]
             ])},
             'adds and updates several clusters'
         );
@@ -161,11 +161,11 @@ suite('page-configure component reducer', () => {
     test('ADD_CACHE action', () => {
         assert.deepEqual(
             reducer(
-                {caches: new Map([[1, {_id: 1}], [2, {_id: 2}]])},
-                {type: ADD_CACHE, cache: {_id: 3}}
+                {caches: new Map([[1, {id: 1}], [2, {id: 2}]])},
+                {type: ADD_CACHE, cache: {id: 3}}
             ),
             {
-                caches: new Map([[1, {_id: 1}], [2, {_id: 2}], [3, {_id: 3}]])
+                caches: new Map([[1, {id: 1}], [2, {id: 2}], [3, {id: 3}]])
             },
             'adds a cache'
         );
@@ -182,10 +182,10 @@ suite('page-configure component reducer', () => {
     test('UPDATE_CACHE action', () => {
         assert.deepEqual(
             reducer(
-                {caches: new Map([[1, {_id: 1, name: 'Hello'}]])},
-                {type: UPDATE_CACHE, cache: {_id: 1, name: 'Hello world'}}
+                {caches: new Map([[1, {id: 1, name: 'Hello'}]])},
+                {type: UPDATE_CACHE, cache: {id: 1, name: 'Hello world'}}
             ),
-            {caches: new Map([[1, {_id: 1, name: 'Hello world'}]])},
+            {caches: new Map([[1, {id: 1, name: 'Hello world'}]])},
             'updates a cache'
         );
     });
@@ -194,14 +194,14 @@ suite('page-configure component reducer', () => {
         assert.deepEqual(
             reducer(
                 {caches: new Map([
-                    [1, {_id: 1, name: 'One'}],
-                    [2, {_id: 2, name: 'Two'}]
+                    [1, {id: 1, name: 'One'}],
+                    [2, {id: 2, name: 'Two'}]
                 ])},
-                {type: UPSERT_CACHES, caches: [{_id: 1, name: '1', space: 1}]}
+                {type: UPSERT_CACHES, caches: [{id: 1, name: '1', space: 1}]}
             ),
             {caches: new Map([
-                [1, {_id: 1, name: '1', space: 1}],
-                [2, {_id: 2, name: 'Two'}]
+                [1, {id: 1, name: '1', space: 1}],
+                [2, {id: 2, name: 'Two'}]
             ])},
             'updates one cache'
         );
@@ -209,20 +209,20 @@ suite('page-configure component reducer', () => {
         assert.deepEqual(
             reducer(
                 {caches: new Map([
-                    [1, {_id: 1, name: 'One'}],
-                    [2, {_id: 2, name: 'Two'}]
+                    [1, {id: 1, name: 'One'}],
+                    [2, {id: 2, name: 'Two'}]
                 ])},
                 {
                     type: UPSERT_CACHES,
                     caches: [
-                        {_id: 1, name: '1', space: 1},
-                        {_id: 2, name: '2'}
+                        {id: 1, name: '1', space: 1},
+                        {id: 2, name: '2'}
                     ]
                 }
             ),
             {caches: new Map([
-                [1, {_id: 1, name: '1', space: 1}],
-                [2, {_id: 2, name: '2'}]
+                [1, {id: 1, name: '1', space: 1}],
+                [2, {id: 2, name: '2'}]
             ])},
             'updates two caches'
         );
@@ -230,43 +230,43 @@ suite('page-configure component reducer', () => {
         assert.deepEqual(
             reducer(
                 {caches: new Map()},
-                {type: UPSERT_CACHES, caches: [{_id: 1}]}
+                {type: UPSERT_CACHES, caches: [{id: 1}]}
             ),
             {caches: new Map([
-                [1, {_id: 1}]
+                [1, {id: 1}]
             ])},
             'adds one cache'
         );
 
         assert.deepEqual(
             reducer(
-                {caches: new Map([[1, {_id: 1}]])},
-                {type: UPSERT_CACHES, caches: [{_id: 2}, {_id: 3}]}
+                {caches: new Map([[1, {id: 1}]])},
+                {type: UPSERT_CACHES, caches: [{id: 2}, {id: 3}]}
             ),
             {caches: new Map([
-                [1, {_id: 1}],
-                [2, {_id: 2}],
-                [3, {_id: 3}]
+                [1, {id: 1}],
+                [2, {id: 2}],
+                [3, {id: 3}]
             ])},
             'adds two caches'
         );
 
         assert.deepEqual(
             reducer(
-                {caches: new Map([[1, {_id: 1}]])},
+                {caches: new Map([[1, {id: 1}]])},
                 {
                     type: UPSERT_CACHES,
                     caches: [
-                        {_id: 1, name: 'Test'},
-                        {_id: 2},
-                        {_id: 3}
+                        {id: 1, name: 'Test'},
+                        {id: 2},
+                        {id: 3}
                     ]
                 }
             ),
             {caches: new Map([
-                [1, {_id: 1, name: 'Test'}],
-                [2, {_id: 2}],
-                [3, {_id: 3}]
+                [1, {id: 1, name: 'Test'}],
+                [2, {id: 2}],
+                [3, {id: 3}]
             ])},
             'adds and updates several caches'
         );

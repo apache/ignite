@@ -16,15 +16,16 @@
 
 import templateUrl from './template.tpl.pug';
 import './style.scss';
+
 import _ from 'lodash';
-import naturalCompare from 'natural-compare-lite';
 import find from 'lodash/fp/find';
 import get from 'lodash/fp/get';
+import naturalCompare from 'natural-compare-lite';
 import {combineLatest, EMPTY, from, merge, of, race, timer} from 'rxjs';
-import {distinctUntilChanged, filter, map, pluck, switchMap, take, tap} from 'rxjs/operators';
-import ObjectID from 'bson-objectid';
+import {distinctUntilChanged, exhaustMap, filter, map, pluck, switchMap, take, tap} from 'rxjs/operators';
 import {uniqueName} from 'app/utils/uniqueName';
 import {defaultNames} from '../../defaultNames';
+import uuidv4 from 'uuid/v4';
 
 // eslint-disable-next-line
 import {UIRouter} from '@uirouter/angularjs'
@@ -41,7 +42,7 @@ import {default as ActivitiesData} from 'app/core/activities/Activities.data';
 
 function _mapCaches(caches = []) {
     return caches.map((cache) => {
-        return {label: cache.name, value: cache._id, cache};
+        return {label: cache.name, value: cache.id, cache};
     });
 }
 
@@ -136,8 +137,8 @@ export class ModalImportModels {
                         models: []
                     })
                     : from(Promise.all([
-                        this.ConfigEffects.etp('LOAD_SHORT_CACHES', {ids: cluster.caches || [], clusterID: cluster._id}),
-                        this.ConfigEffects.etp('LOAD_SHORT_MODELS', {ids: cluster.models || [], clusterID: cluster._id})
+                        this.ConfigEffects.etp('LOAD_SHORT_CACHES', {ids: cluster.caches || [], clusterID: cluster.id}),
+                        this.ConfigEffects.etp('LOAD_SHORT_MODELS', {ids: cluster.models || [], clusterID: cluster.id})
                     ])).pipe(switchMap(() => {
                         return combineLatest(
                             this.ConfigureState.state$.pipe(this.ConfigSelectors.selectShortCachesValue()),
@@ -190,7 +191,7 @@ export class ModalImportModels {
                 ...req,
                 cluster: {
                     ...req.cluster,
-                    models: [...req.cluster.models, action.newDomainModel._id],
+                    models: [...req.cluster.models, action.newDomainModel.id],
                     caches: [...req.cluster.caches, ...action.newDomainModel.caches]
                 },
                 models: [...req.models, action.newDomainModel],
@@ -241,7 +242,7 @@ export class ModalImportModels {
             ),
             race(
                 this.ConfigureState.actions$.pipe(
-                    filter((a) => a.type === 'LOAD_CACHE_OK' && a.cache._id === cacheID),
+                    filter((a) => a.type === 'LOAD_CACHE_OK' && a.cache.id === cacheID),
                     pluck('cache'),
                     tap((cache) => {
                         this.loadedCaches[cacheID] = cache;
@@ -275,13 +276,6 @@ export class ModalImportModels {
             return name ? name.replace(/[^A-Za-z_0-9/.]+/g, '_') : 'org';
         };
 
-        const importDomainModal = {
-            hide: () => {
-                agentMgr.stopWatch();
-                this.onHide();
-            }
-        };
-
         const _makeDefaultPackageName = (user) => user
             ? _toJavaPackage(`${user.email.replace('@', '.').split('.').reverse().join('.')}.model`)
             : void 0;
@@ -295,7 +289,8 @@ export class ModalImportModels {
             generateFieldAliases: true,
             packageNameUserInput: _makeDefaultPackageName($root.user)
         };
-        this.$scope.$hide = importDomainModal.hide;
+
+        this.$scope.$hide = this.onHide;
 
         this.$scope.importCommon = {};
 
@@ -322,7 +317,7 @@ export class ModalImportModels {
         };
 
         this.actions = [
-            {value: 'connect', label: this.$root.IgniteDemoMode ? 'Description' : 'Connection'},
+            {value: 'connect', label: this.$root.demoMode ? 'Description' : 'Connection'},
             {value: 'schemas', label: 'Schemas'},
             {value: 'tables', label: 'Tables'},
             {value: 'options', label: 'Options'}
@@ -533,7 +528,7 @@ export class ModalImportModels {
                     $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
                     Loading.start('importDomainFromDb');
 
-                    if ($root.IgniteDemoMode)
+                    if ($root.demoMode)
                         return agentMgr.schemas($scope.demoConnection);
 
                     const preset = $scope.selectedPreset;
@@ -756,14 +751,14 @@ export class ModalImportModels {
                     skip: false,
                     table,
                     newDomainModel: {
-                        _id: ObjectID.generate(),
+                        id: uuidv4(),
                         caches: [],
                         generatePojo
                     }
                 };
 
                 if (LegacyUtils.isDefined(domainFound)) {
-                    batchAction.newDomainModel._id = domainFound._id;
+                    batchAction.newDomainModel.id = domainFound.id;
                     // Don't touch original caches value
                     delete batchAction.newDomainModel.caches;
                     batchAction.confirm = true;
@@ -815,10 +810,10 @@ export class ModalImportModels {
 
                     // const siblingCaches = batch.filter((a) => a.newCache).map((a) => a.newCache);
                     const siblingCaches = [];
-                    newCache._id = ObjectID.generate();
+                    newCache.id = uuidv4();
                     newCache.name = uniqueName(typeName + 'Cache', this.caches.concat(siblingCaches));
-                    newCache.domains = [batchAction.newDomainModel._id];
-                    batchAction.newDomainModel.caches = [newCache._id];
+                    newCache.domains = [batchAction.newDomainModel.id];
+                    batchAction.newDomainModel.caches = [newCache.id];
 
                     // POJO store factory is not defined in template.
                     if (!newCache.cacheStoreFactory || newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
@@ -920,7 +915,7 @@ export class ModalImportModels {
             const act = $scope.importDomain.action;
 
             if (act === 'drivers' && $scope.importDomain.jdbcDriversNotFound)
-                importDomainModal.hide();
+                this.onHide();
             else if (act === 'connect')
                 _loadSchemas();
             else if (act === 'schemas')
@@ -982,7 +977,7 @@ export class ModalImportModels {
                     return _.isEmpty($scope.importDomain.schemas) || !!get('importDomain.schemasToUse.length')($scope);
 
                 case 'tables':
-                    return !!$scope.importDomain.tablesToUse.length;
+                    return !_.isNil($scope.importDomain.tablesToUse) && !!$scope.importDomain.tablesToUse.length;
 
                 default:
                     return true;
@@ -1006,7 +1001,7 @@ export class ModalImportModels {
             }
         };
 
-        const demo = $root.IgniteDemoMode;
+        const demo = $root.demoMode;
 
         $scope.importDomain = {
             demo,
@@ -1053,7 +1048,7 @@ export class ModalImportModels {
                             if (!_.isEmpty(drivers)) {
                                 $scope.drivers = _.map(_.sortBy(drivers, 'jdbcDriverJar'), (drv) => ({
                                     jdbcDriverJar: drv.jdbcDriverJar,
-                                    jdbcDriverClass: drv.jdbcDriverCls,
+                                    jdbcDriverClass: drv.jdbcDriverClass,
                                     jdbcDriverImplementationVersion: drv.jdbcDriverImplVersion
                                 }));
 
@@ -1090,12 +1085,13 @@ export class ModalImportModels {
         );
 
         this.domainData$ = this.agentIsAvailable$.pipe(
-            switchMap((agentIsAvailable) => {
+            exhaustMap((agentIsAvailable) => {
                 if (!agentIsAvailable)
                     return of(EMPTY);
 
                 return from(fetchDomainData());
-            })
+            }),
+            take(1)
         );
 
         this.subscribers$ = merge(

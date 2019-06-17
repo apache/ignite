@@ -17,15 +17,17 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.console.agent.rest.RestExecutorSelfTest;
+import org.apache.ignite.websocket.SerializationTests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Web Agent tests.
+ * Web Agent test suite.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    RestExecutorSelfTest.class
+    RestExecutorSelfTest.class,
+    SerializationTests.class
 })
 public class IgniteWebAgentTestSuite {
     // No-op.

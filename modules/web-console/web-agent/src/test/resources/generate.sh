@@ -36,7 +36,7 @@ set -x
 OPENSSL_CONF=/opt/openssl/openssl.cnf
 
 # Certificates password.
-PWD=p123456
+PWD=123456
 
 # Server.
 SERVER_DOMAIN_NAME=localhost
@@ -94,17 +94,23 @@ EOF
 # Generate certificates.
 openssl genrsa -des3 -passout pass:${PWD} -out server.key 1024
 openssl req -new -passin pass:${PWD} -key server.key -config server.cnf -out server.csr
+
 openssl req -new -newkey rsa:1024 -nodes -keyout ca.key -x509 -days 365 -config server.cnf -out ca.crt
+
 openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -extensions req_ext -extfile server.cnf -out server.crt
 openssl rsa -passin pass:${PWD} -in server.key -out server.nopass.key
+
 openssl req -new -utf8 -nameopt multiline,utf8 -newkey rsa:1024 -nodes -keyout client.key -config client.cnf -out client.csr
 openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 02 -out client.crt
+
 openssl pkcs12 -export -in server.crt -inkey server.key -certfile server.crt -out server.p12 -passin pass:${PWD} -passout pass:${PWD}
 openssl pkcs12 -export -in client.crt -inkey client.key -certfile ca.crt -out client.p12 -passout pass:${PWD}
 openssl pkcs12 -export -in ca.crt -inkey ca.key -certfile ca.crt -out ca.p12 -passout pass:${PWD}
+
 keytool -importkeystore -srckeystore server.p12 -srcstoretype PKCS12 -destkeystore server.jks -deststoretype JKS -noprompt -srcstorepass ${PWD} -deststorepass ${PWD}
 keytool -importkeystore -srckeystore client.p12 -srcstoretype PKCS12 -destkeystore client.jks -deststoretype JKS -noprompt -srcstorepass ${PWD} -deststorepass ${PWD}
 keytool -importkeystore -srckeystore ca.p12 -srcstoretype PKCS12 -destkeystore ca.jks -deststoretype JKS -noprompt -srcstorepass ${PWD} -deststorepass ${PWD}
+
 openssl x509 -text -noout -in server.crt
 openssl x509 -text -noout -in client.crt
 openssl x509 -text -noout -in ca.crt

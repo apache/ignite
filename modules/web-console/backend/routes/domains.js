@@ -72,7 +72,7 @@ module.exports.factory = (mongo, domainsService) => {
          * Remove all domain models.
          */
         router.post('/remove/all', (req, res) => {
-            domainsService.removeAll(req.currentUserId(), req.header('IgniteDemoMode'))
+            domainsService.removeAll(req.currentUserId(), req.demo())
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

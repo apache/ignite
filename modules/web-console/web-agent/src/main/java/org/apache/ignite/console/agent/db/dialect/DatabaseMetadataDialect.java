@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.console.agent.db.DbColumn;
@@ -102,7 +101,7 @@ public abstract class DatabaseMetadataDialect {
 
         idx.setName(idxName);
         idx.setIndexType(QueryIndexType.SORTED);
-        idx.setFields(new LinkedHashMap<String, Boolean>());
+        idx.setFields(new LinkedHashMap<>());
 
         return idx;
     }

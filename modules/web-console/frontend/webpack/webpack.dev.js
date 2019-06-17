@@ -62,7 +62,7 @@ module.exports = merge(commonCfg, {
         contentBase: path.resolve('build'),
         inline: true,
         proxy: {
-            '/socket.io': {
+            '/browsers': {
                 target: backendUrl,
                 ws: true,
                 secure: false

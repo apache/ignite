@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import AuthService from 'app/modules/user/Auth.service';
 
 import {PageSigninStateParams} from './run';
@@ -21,6 +23,7 @@ import {PageSigninStateParams} from './run';
 interface ISiginData {
     email: string,
     password: string
+    activationToken?: PageSigninStateParams['activationToken']
 }
 
 interface ISigninFormController extends ng.IFormController {
@@ -31,10 +34,7 @@ interface ISigninFormController extends ng.IFormController {
 export default class PageSignIn implements ng.IPostLink {
     activationToken?: PageSigninStateParams['activationToken'];
 
-    data: ISiginData = {
-        email: null,
-        password: null
-    };
+    data: ISiginData;
 
     form: ISigninFormController;
 
@@ -45,6 +45,14 @@ export default class PageSignIn implements ng.IPostLink {
     static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', '$element'];
 
     constructor(private Auth: AuthService, private IgniteMessages, private IgniteFormUtils, private el: JQLite) {}
+
+    $onInit() {
+        this.data = {
+            email: null,
+            password: null,
+            activationToken: this.activationToken
+        };
+    }
 
     canSubmitForm(form: ISigninFormController) {
         return form.$error.server ? true : !form.$invalid;
@@ -74,14 +82,15 @@ export default class PageSignIn implements ng.IPostLink {
             return;
         }
 
-        return this.Auth.signin(this.data.email, this.data.password, this.activationToken).catch((res) => {
-            this.IgniteMessages.showError(null, res.data.errorMessage ? res.data.errorMessage : res.data);
+        return this.Auth.signin(this.data)
+            .catch((err) => {
+                this.IgniteMessages.showError(null, err.data);
 
-            this.setServerError(res.data);
+                this.setServerError(_.get(err, 'data.message', err.data));
 
-            this.IgniteFormUtils.triggerValidation(this.form);
+                this.IgniteFormUtils.triggerValidation(this.form);
 
-            this.isLoading = false;
-        });
+                this.isLoading = false;
+            });
     }
 }

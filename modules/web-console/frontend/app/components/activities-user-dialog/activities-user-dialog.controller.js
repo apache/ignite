@@ -18,12 +18,11 @@ export default class ActivitiesCtrl {
     static $inject = ['user'];
 
     constructor(user) {
-        const $ctrl = this;
+        this.user = user;
 
-        $ctrl.user = user;
-        $ctrl.data = _.map(user.activitiesDetail, (amount, action) => ({action, amount}));
+        this.data = user.activitiesDetail;
 
-        $ctrl.columnDefs = [
+        this.columnDefs = [
             { displayName: 'Description', field: 'action', enableFiltering: false, cellFilter: 'translate', minWidth: 120, width: '43%'},
             { displayName: 'Action', field: 'action', enableFiltering: false, minWidth: 120, width: '43%'},
             { displayName: 'Visited', field: 'amount', enableFiltering: false, minWidth: 80}

@@ -22,7 +22,7 @@ module.exports = {
     implements: 'middlewares:demo',
     factory: () => {
         return (req, res, next) => {
-            req.demo = () => req.header('IgniteDemoMode');
+            req.demo = () => req.header('demoMode');
 
             next();
         };

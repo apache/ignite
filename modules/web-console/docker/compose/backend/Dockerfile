@@ -26,7 +26,7 @@ RUN (cd backend && npm install --no-optional --production)
 # Copy source.
 COPY backend backend
 
-COPY web-agent/target/ignite-web-agent-*.zip backend/agent_dists
+COPY web-agent/target/ignite-web-console-agent-*.zip backend/agent_dists
 
 EXPOSE 3000
 

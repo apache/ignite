@@ -140,7 +140,7 @@ export default class PageConfigureBasicController {
                 // that last saved copy has same shape to what's already loaded. If stored cluster would overwrite
                 // clonedCluster every time, then data rollback on server errors would undo all changes
                 // made by user and we don't want that. Advanced configuration forms do the same too.
-                if (get(v, '_id') !== get(this.clonedCluster, '_id')) this.clonedCluster = cloneDeep(v);
+                if (get(v, 'id') !== get(this.clonedCluster, 'id')) this.clonedCluster = cloneDeep(v);
                 this.defaultMemoryPolicy = this.Clusters.getDefaultClusterMemoryPolicy(this.clonedCluster);
             }))
         ).subscribe();
@@ -181,7 +181,7 @@ export default class PageConfigureBasicController {
 
     removeCache(cache) {
         this.ConfigureState.dispatchAction(
-            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', [cache._id], false, false)
+            removeClusterItems(this.$uiRouter.globals.params.clusterID, 'caches', [cache.id], false, false)
         );
     }
 

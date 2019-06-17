@@ -11,7 +11,7 @@ Two main functions of Ignite Web Agent:
    You may need to copy JDBC driver into "./jdbc-drivers" subfolder or specify path via "-d" option.
 
 Usage example:
-  ignite-web-agent.sh
+  ignite-web-console-agent.sh
 
 Configuration file:
   Should be a file with simple line-oriented format as described here: http://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
@@ -39,7 +39,7 @@ Configuration file:
     node-uri=http://10.0.0.1:8080,http://10.0.0.2:8080
 
 Security tokens:
-  1) By default security token of current user will be included into "default.properties" inside downloaded "ignite-web-agent-x.x.x.zip".
+  1) By default security token of current user will be included into "default.properties" inside downloaded "ignite-web-console-agent-x.x.x.zip".
   2) One can get/reset token in Web Console profile (https://<your_console_address>/settings/profile).
   3) One may specify several comma-separated list of tokens using configuration file or command line arguments of web agent.
 
@@ -91,7 +91,7 @@ Options:
 
 How to build:
   To build from sources run following command in GridGain project root folder:
-  mvn clean package -pl :ignite-web-agent -am -P web-console -DskipTests=true
+  mvn clean package -pl :ignite-web-console-agent -am -P web-console -DskipTests=true
 
 Demo of Ignite Web Agent:
  In order to simplify evaluation demo mode was implemented. To start demo, you need to click button "Start demo".

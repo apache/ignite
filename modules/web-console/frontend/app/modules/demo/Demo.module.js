@@ -27,15 +27,15 @@ const DEMO_QUERY_STATE = {state: 'base.sql.notebook', params: {noteId: 'demo'}};
  */
 export function DemoProvider($state, $http) {
     if (/(\/demo.*)/ig.test(location.pathname))
-        sessionStorage.setItem('IgniteDemoMode', 'true');
+        sessionStorage.setItem('demoMode', 'true');
 
-    const enabled = sessionStorage.getItem('IgniteDemoMode') === 'true';
+    const enabled = sessionStorage.getItem('demoMode') === 'true';
 
     if (enabled)
         $http.interceptors.push('demoInterceptor');
 
     function service($root) {
-        $root.IgniteDemoMode = enabled;
+        $root.demoMode = enabled;
 
         return {enabled};
     }
@@ -57,7 +57,7 @@ function demoInterceptor(Demo) {
     return {
         request(cfg) {
             if (Demo.enabled && isApiRequest(cfg.url))
-                cfg.headers.IgniteDemoMode = true;
+                cfg.headers.demoMode = true;
 
             return cfg;
         }

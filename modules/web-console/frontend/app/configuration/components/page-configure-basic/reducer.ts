@@ -36,21 +36,21 @@ const existingCaches = (caches, cluster) => {
         return cloneDeep(caches.get(id));
     }).filter((v) => v);
 };
-export const isNewItem = (item) => item && item._id < 0;
+export const isNewItem = (item) => item && item.id < 0;
 
 export const reducer = (state = defaults, action, root) => {
     switch (action.type) {
         case SET_CLUSTER: {
             const cluster = !isNewItem(action)
-                ? cloneDeep(root.list.clusters.get(action._id))
+                ? cloneDeep(root.list.clusters.get(action.id))
                 : Object.assign({}, action.cluster, {
-                    _id: -1,
+                    id: -1,
                     space: defaultSpace(root),
                     name: uniqueName('New cluster', [...root.list.clusters.values()], ({name, i}) => `${name} (${i})`)
                 });
 
             return Object.assign({}, state, {
-                clusterID: cluster._id,
+                clusterID: cluster.id,
                 cluster,
                 newClusterCaches: [],
                 oldClusterCaches: existingCaches(root.list.caches, cluster)
@@ -59,7 +59,7 @@ export const reducer = (state = defaults, action, root) => {
 
         case ADD_NEW_CACHE: {
             const cache = {
-                _id: action._id,
+                id: action.id,
                 space: defaultSpace(root),
                 name: uniqueName('New cache', [...root.list.caches.values(), ...state.newClusterCaches], ({name, i}) => `${name} (${i})`),
                 cacheMode: 'PARTITIONED',
@@ -82,11 +82,11 @@ export const reducer = (state = defaults, action, root) => {
 
             return Object.assign({}, state, {
                 newClusterCaches: isNewItem(cache)
-                    ? state.newClusterCaches.filter((c) => c._id !== cache._id)
+                    ? state.newClusterCaches.filter((c) => c.id !== cache.id)
                     : state.newClusterCaches,
                 oldClusterCaches: isNewItem(cache)
                     ? state.oldClusterCaches
-                    : state.oldClusterCaches.filter((c) => c._id !== cache._id)
+                    : state.oldClusterCaches.filter((c) => c.id !== cache.id)
             });
         }
 

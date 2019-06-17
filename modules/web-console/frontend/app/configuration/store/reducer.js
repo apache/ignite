@@ -35,7 +35,7 @@ import {
 const defaults = {clusters: new Map(), caches: new Map(), spaces: new Map()};
 
 const mapByID = (items) => {
-    return Array.isArray(items) ? new Map(items.map((item) => [item._id, item])) : new Map(items);
+    return Array.isArray(items) ? new Map(items.map((item) => [item.id, item])) : new Map(items);
 };
 
 export const reducer = (state = defaults, action) => {
@@ -52,13 +52,13 @@ export const reducer = (state = defaults, action) => {
 
         case ADD_CLUSTER: {
             return Object.assign({}, state, {
-                clusters: new Map([...state.clusters.entries(), [action.cluster._id, action.cluster]])
+                clusters: new Map([...state.clusters.entries(), [action.cluster.id, action.cluster]])
             });
         }
 
         case ADD_CLUSTERS: {
             return Object.assign({}, state, {
-                clusters: new Map([...state.clusters.entries(), ...action.clusters.map((c) => [c._id, c])])
+                clusters: new Map([...state.clusters.entries(), ...action.clusters.map((c) => [c.id, c])])
             });
         }
 
@@ -69,32 +69,33 @@ export const reducer = (state = defaults, action) => {
         }
 
         case UPDATE_CLUSTER: {
-            const id = action._id || action.cluster._id;
+            const aid = action.id || action.cluster.id;
+
             return Object.assign({}, state, {
                 // clusters: new Map(state.clusters).set(id, Object.assign({}, state.clusters.get(id), action.cluster))
-                clusters: new Map(Array.from(state.clusters.entries()).map(([_id, cluster]) => {
-                    return _id === id
-                        ? [action.cluster._id || _id, Object.assign({}, cluster, action.cluster)]
-                        : [_id, cluster];
+                clusters: new Map(Array.from(state.clusters.entries()).map(([id, cluster]) => {
+                    return id === aid
+                        ? [action.cluster.id || id, Object.assign({}, cluster, action.cluster)]
+                        : [id, cluster];
                 }))
             });
         }
 
         case UPSERT_CLUSTERS: {
             return action.clusters.reduce((state, cluster) => reducer(state, {
-                type: state.clusters.has(cluster._id) ? UPDATE_CLUSTER : ADD_CLUSTER,
+                type: state.clusters.has(cluster.id) ? UPDATE_CLUSTER : ADD_CLUSTER,
                 cluster
             }), state);
         }
 
         case ADD_CACHE: {
             return Object.assign({}, state, {
-                caches: new Map([...state.caches.entries(), [action.cache._id, action.cache]])
+                caches: new Map([...state.caches.entries(), [action.cache.id, action.cache]])
             });
         }
 
         case UPDATE_CACHE: {
-            const id = action.cache._id;
+            const id = action.cache.id;
 
             return Object.assign({}, state, {
                 caches: new Map(state.caches).set(id, Object.assign({}, state.caches.get(id), action.cache))
@@ -103,7 +104,7 @@ export const reducer = (state = defaults, action) => {
 
         case UPSERT_CACHES: {
             return action.caches.reduce((state, cache) => reducer(state, {
-                type: state.caches.has(cache._id) ? UPDATE_CACHE : ADD_CACHE,
+                type: state.caches.has(cache.id) ? UPDATE_CACHE : ADD_CACHE,
                 cache
             }), state);
         }
@@ -175,13 +176,13 @@ export const loadingReducer = (state = loadingDefaults, action) => {
 export const setStoreReducerFactory = (actionTypes) => (state = new Set(), action = {}) => {
     switch (action.type) {
         case actionTypes.SET:
-            return new Set(action.items.map((i) => i._id));
+            return new Set(action.items.map((i) => i.id));
 
         case actionTypes.RESET:
             return new Set();
 
         case actionTypes.UPSERT:
-            return action.items.reduce((acc, item) => {acc.add(item._id); return acc;}, new Set(state));
+            return action.items.reduce((acc, item) => {acc.add(item.id); return acc;}, new Set(state));
 
         case actionTypes.REMOVE:
             return action.items.reduce((acc, item) => {acc.delete(item); return acc;}, new Set(state));
@@ -194,7 +195,7 @@ export const setStoreReducerFactory = (actionTypes) => (state = new Set(), actio
 export const mapStoreReducerFactory = (actionTypes) => (state = new Map(), action = {}) => {
     switch (action.type) {
         case actionTypes.SET:
-            return new Map(action.items.map((i) => [i._id, i]));
+            return new Map(action.items.map((i) => [i.id, i]));
 
         case actionTypes.RESET:
             return new Map();
@@ -203,7 +204,7 @@ export const mapStoreReducerFactory = (actionTypes) => (state = new Map(), actio
             if (!action.items.length)
                 return state;
 
-            return action.items.reduce((acc, item) => {acc.set(item._id, item); return acc;}, new Map(state));
+            return action.items.reduce((acc, item) => {acc.set(item.id, item); return acc;}, new Map(state));
 
         case actionTypes.REMOVE:
             if (!action.ids.length)
@@ -351,8 +352,8 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
                 changes: {
                     ...state.changes,
                     [itemType]: {
-                        ids: state.changes[itemType].ids.filter((_id) => _id !== item._id).concat(item._id),
-                        changedItems: state.changes[itemType].changedItems.filter(({_id}) => _id !== item._id).concat(item)
+                        ids: state.changes[itemType].ids.filter((id) => id !== item.id).concat(item.id),
+                        changedItems: state.changes[itemType].changedItems.filter(({id}) => id !== item.id).concat(item)
                     }
                 }
             };
@@ -366,8 +367,8 @@ export const editReducer2 = (state = editReducer2.getDefaults(), action) => {
                 changes: {
                     ...state.changes,
                     [itemType]: {
-                        ids: state.changes[itemType].ids.filter((_id) => !itemIDs.includes(_id)),
-                        changedItems: state.changes[itemType].changedItems.filter(({_id}) => !itemIDs.includes(_id))
+                        ids: state.changes[itemType].ids.filter((id) => !itemIDs.includes(id)),
+                        changedItems: state.changes[itemType].changedItems.filter(({id}) => !itemIDs.includes(id))
                     }
                 }
             };
@@ -385,14 +386,14 @@ export const refsReducer = (refs) => (state, action) => {
     switch (action.type) {
         case 'ADVANCED_SAVE_COMPLETE_CONFIGURATION': {
             const newCluster = action.changedItems.cluster;
-            const oldCluster = state.clusters.get(newCluster._id) || {};
+            const oldCluster = state.clusters.get(newCluster.id) || {};
             const val = Object.keys(refs).reduce((state, ref) => {
                 if (!state || !state[refs[ref].store].size)
                     return state;
 
                 const addedSources = new Set(difference(newCluster[ref], oldCluster[ref] || []));
                 const removedSources = new Set(difference(oldCluster[ref] || [], newCluster[ref]));
-                const changedSources = new Map(action.changedItems[ref].map((m) => [m._id, m]));
+                const changedSources = new Map(action.changedItems[ref].map((m) => [m.id, m]));
 
                 const targets = new Map();
 
@@ -406,7 +407,7 @@ export const refsReducer = (refs) => (state, action) => {
                 [...state[refs[ref].store].values()].forEach((target) => {
                     target[refs[ref].at]
                     .filter((sourceID) => removedSources.has(sourceID))
-                    .forEach((sourceID) => maybeTarget(target._id)[refs[ref].at].remove.add(sourceID));
+                    .forEach((sourceID) => maybeTarget(target.id)[refs[ref].at].remove.add(sourceID));
                 });
 
                 [...addedSources.values()].forEach((sourceID) => {
@@ -415,16 +416,16 @@ export const refsReducer = (refs) => (state, action) => {
                     });
                 });
 
-                action.changedItems[ref].filter((s) => !addedSources.has(s._id)).forEach((source) => {
+                action.changedItems[ref].filter((s) => !addedSources.has(s.id)).forEach((source) => {
                     const newSource = source;
-                    const oldSource = state[ref].get(source._id);
+                    const oldSource = state[ref].get(source.id);
                     const addedTargets = difference(newSource[refs[ref].store], oldSource[refs[ref].store]);
                     const removedCaches = difference(oldSource[refs[ref].store], newSource[refs[ref].store]);
                     addedTargets.forEach((targetID) => {
-                        maybeTarget(targetID)[refs[ref].at].add.add(source._id);
+                        maybeTarget(targetID)[refs[ref].at].add.add(source.id);
                     });
                     removedCaches.forEach((targetID) => {
-                        maybeTarget(targetID)[refs[ref].at].remove.add(source._id);
+                        maybeTarget(targetID)[refs[ref].at].remove.add(source.id);
                     });
                 });
                 const result = [...targets.entries()]

@@ -67,7 +67,7 @@ module.exports.factory = function(mongo, cachesService) {
          * Remove all caches.
          */
         router.post('/remove/all', (req, res) => {
-            cachesService.removeAll(req.currentUserId(), req.header('IgniteDemoMode'))
+            cachesService.removeAll(req.currentUserId(), req.demo())
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

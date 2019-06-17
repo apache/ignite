@@ -91,7 +91,7 @@ module.exports.factory = function(mongo, clustersService, cachesService, domains
          * Remove all clusters.
          */
         router.post('/remove/all', (req, res) => {
-            clustersService.removeAll(req.currentUserId(), req.header('IgniteDemoMode'))
+            clustersService.removeAll(req.currentUserId(), req.demo())
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

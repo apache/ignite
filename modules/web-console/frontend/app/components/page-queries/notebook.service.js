@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+import uuidv4 from 'uuid/v4';
+
 export default class Notebook {
     static $inject = ['$state', 'IgniteConfirm', 'IgniteMessages', 'IgniteNotebookData'];
 
@@ -35,7 +38,7 @@ export default class Notebook {
     }
 
     create(name) {
-        return this.NotebookData.save({name});
+        return this.NotebookData.save({id: uuidv4(), name});
     }
 
     save(notebook) {
@@ -44,13 +47,14 @@ export default class Notebook {
 
     async clone(newNotebookName, clonedNotebook) {
         const newNotebook = await this.create(newNotebookName);
-        Object.assign(clonedNotebook, {name: newNotebook.name, _id: newNotebook._id });
+
+        Object.assign(clonedNotebook, {name: newNotebook.name, id: newNotebook.id });
 
         return this.save(clonedNotebook);
     }
 
-    find(_id) {
-        return this.NotebookData.find(_id);
+    find(id) {
+        return this.NotebookData.find(id);
     }
 
     _openNotebook(idx) {
@@ -59,7 +63,7 @@ export default class Notebook {
                 const nextNotebook = notebooks.length > idx ? notebooks[idx] : _.last(notebooks);
 
                 if (nextNotebook)
-                    this.$state.go('base.sql.tabs.notebook', {noteId: nextNotebook._id});
+                    this.$state.go('base.sql.tabs.notebook', {noteId: nextNotebook.id});
                 else
                     this.$state.go('base.sql.tabs.notebooks-list');
             });
@@ -71,7 +75,7 @@ export default class Notebook {
             .then((idx) => {
                 return this.NotebookData.remove(notebook)
                     .then(() => {
-                        if (this.$state.includes('base.sql.tabs.notebook') && this.$state.params.noteId === notebook._id)
+                        if (this.$state.includes('base.sql.tabs.notebook') && this.$state.params.noteId === notebook.id)
                             return this._openNotebook(idx);
                     })
                     .catch(this.Messages.showError);

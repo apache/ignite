@@ -34,13 +34,13 @@ export default function configSelectionManager($transitions: TransitionService) 
         const firstItemID$ = visibleRows$.pipe(
             withLatestFrom(itemID$, loadedItems$),
             filter(([rows, id, items]) => !id && rows && rows.length === items.length),
-            pluck('0', '0', 'entity', '_id')
+            pluck('0', '0', 'entity', 'id')
         );
 
-        const selectedItemRowsIDs$ = selectedItemRows$.pipe(map((rows) => rows.map((r) => r._id)), share());
-        const singleSelectionEdit$ = selectedItemRows$.pipe(filter((r) => r && r.length === 1), pluck('0', '_id'));
+        const selectedItemRowsIDs$ = selectedItemRows$.pipe(map((rows) => rows.map((r) => r.id)), share());
+        const singleSelectionEdit$ = selectedItemRows$.pipe(filter((r) => r && r.length === 1), pluck('0', 'id'));
         const selectedMultipleOrNone$ = selectedItemRows$.pipe(filter((r) => r.length > 1 || r.length === 0));
-        const loadedItemIDs$ = loadedItems$.pipe(map((rows) => new Set(rows.map((r) => r._id))), share());
+        const loadedItemIDs$ = loadedItems$.pipe(map((rows) => new Set(rows.map((r) => r.id))), share());
         const currentItemWasRemoved$ = loadedItemIDs$.pipe(
             withLatestFrom(
                 itemID$.pipe(filter((v) => v && v !== 'new')),

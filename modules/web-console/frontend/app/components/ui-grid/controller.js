@@ -70,7 +70,7 @@ export default class IgniteUiGrid {
         this.$timeout = $timeout;
         this.gridUtil = gridUtil;
 
-        this.rowIdentityKey = '_id';
+        this.rowIdentityKey = 'id';
 
         this.rowHeight = 48;
         this.headerRowHeight = 70;

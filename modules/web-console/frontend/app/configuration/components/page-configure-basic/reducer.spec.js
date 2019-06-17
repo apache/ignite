@@ -38,14 +38,14 @@ suite('page-configure-basic component reducer', () => {
     test('SET_CLUSTER action', () => {
         const root = {
             list: {
-                clusters: new Map([[1, {name: 'New cluster', _id: 1, caches: [1]}]]),
+                clusters: new Map([[1, {name: 'New cluster', id: 1, caches: [1]}]]),
                 caches: new Map([[1, {}]]),
                 spaces: new Map([[0, {}]])
             }
         };
 
         const defaultCluster = {
-            _id: null,
+            id: null,
             discovery: {
                 kind: 'Multicast',
                 Vm: {addresses: ['127.0.0.1:47500..47510']},
@@ -65,29 +65,29 @@ suite('page-configure-basic component reducer', () => {
         };
 
         assert.deepEqual(
-            reducer(void 0, {type: SET_CLUSTER, _id: -1, cluster: defaultCluster}, root),
+            reducer(void 0, {type: SET_CLUSTER, id: -1, cluster: defaultCluster}, root),
             {
                 clusterID: -1,
                 cluster: Object.assign({}, defaultCluster, {
-                    _id: -1,
+                    id: -1,
                     name: 'New cluster (1)',
                     space: 0
                 }),
                 newClusterCaches: [],
                 oldClusterCaches: []
             },
-            'inits new cluster if _id is fake'
+            'inits new cluster if id is fake'
         );
 
         assert.deepEqual(
-            reducer(void 0, {type: SET_CLUSTER, _id: 1}, root),
+            reducer(void 0, {type: SET_CLUSTER, id: 1}, root),
             {
                 clusterID: 1,
                 cluster: root.list.clusters.get(1),
                 newClusterCaches: [],
                 oldClusterCaches: [root.list.caches.get(1)]
             },
-            'inits new cluster if _id is real'
+            'inits new cluster if id is real'
         );
     });
 
@@ -107,7 +107,7 @@ suite('page-configure-basic component reducer', () => {
         };
 
         const defaultCache = {
-            _id: null,
+            id: null,
             space: null,
             name: null,
             cacheMode: 'PARTITIONED',
@@ -121,14 +121,14 @@ suite('page-configure-basic component reducer', () => {
         };
 
         assert.deepEqual(
-            reducer(state, {type: ADD_NEW_CACHE, _id: -1}, root),
+            reducer(state, {type: ADD_NEW_CACHE, id: -1}, root),
             {
                 clusterID: -1,
                 cluster: {},
                 newClusterCaches: [
                     {name: 'New cache (1)'},
                     Object.assign({}, defaultCache, {
-                        _id: -1,
+                        id: -1,
                         space: 1,
                         name: 'New cache (2)'
                     })
@@ -141,29 +141,29 @@ suite('page-configure-basic component reducer', () => {
 
     test('REMOVE_CACHE action', () => {
         const state = {
-            newClusterCaches: [{_id: -1}],
-            oldClusterCaches: [{_id: 1}]
+            newClusterCaches: [{id: -1}],
+            oldClusterCaches: [{id: 1}]
         };
 
         assert.deepEqual(
-            reducer(state, {type: REMOVE_CACHE, cache: {_id: null}}),
+            reducer(state, {type: REMOVE_CACHE, cache: {id: null}}),
             state,
             'removes nothing if there\'s no matching cache'
         );
 
         assert.deepEqual(
-            reducer(state, {type: REMOVE_CACHE, cache: {_id: -1}}),
+            reducer(state, {type: REMOVE_CACHE, cache: {id: -1}}),
             {
                 newClusterCaches: [],
-                oldClusterCaches: [{_id: 1}]
+                oldClusterCaches: [{id: 1}]
             },
             'removes new cluster cache'
         );
 
         assert.deepEqual(
-            reducer(state, {type: REMOVE_CACHE, cache: {_id: 1}}),
+            reducer(state, {type: REMOVE_CACHE, cache: {id: 1}}),
             {
-                newClusterCaches: [{_id: -1}],
+                newClusterCaches: [{id: -1}],
                 oldClusterCaches: []
             },
             'removes old cluster cache'
@@ -177,7 +177,7 @@ suite('page-configure-basic component reducer', () => {
         };
 
         const root = {
-            list: {caches: new Map([[1, {_id: 1}], [2, {_id: 2}], [3, {_id: 3}]])}
+            list: {caches: new Map([[1, {id: 1}], [2, {id: 2}], [3, {id: 3}]])}
         };
 
         assert.deepEqual(
@@ -190,7 +190,7 @@ suite('page-configure-basic component reducer', () => {
             reducer(state, {type: SET_SELECTED_CACHES, cacheIDs: [1]}, root),
             {
                 cluster: {caches: [1]},
-                oldClusterCaches: [{_id: 1}]
+                oldClusterCaches: [{id: 1}]
             },
             'selects existing cache'
         );
@@ -199,7 +199,7 @@ suite('page-configure-basic component reducer', () => {
             reducer(state, {type: SET_SELECTED_CACHES, cacheIDs: [1, 2, 3]}, root),
             {
                 cluster: {caches: [1, 2, 3]},
-                oldClusterCaches: [{_id: 1}, {_id: 2}, {_id: 3}]
+                oldClusterCaches: [{id: 1}, {id: 2}, {id: 3}]
             },
             'selects three existing caches'
         );

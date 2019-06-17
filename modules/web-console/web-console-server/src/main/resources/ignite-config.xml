@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+ Copyright 2019 GridGain Systems, Inc. and Contributors.
+
+ Licensed under the GridGain Community Edition License (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <!-- Set up jetty port from the spring config. -->
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject">
+            <!-- System.getProperties() -->
+            <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+                <property name="targetClass" value="java.lang.System"/>
+                <property name="targetMethod" value="getProperties"/>
+            </bean>
+        </property>
+        
+        <property name="targetMethod" value="putAll"/>
+        <property name="arguments">
+            <util:properties>
+                <prop key="IGNITE_JETTY_PORT">60080</prop>
+            </util:properties>
+        </property>
+    </bean>
+
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="authenticationEnabled" value="false"/>
+        <property name="metricsLogFrequency" value="0"/>
+
+        <property name="queryThreadPoolSize" value="16"/>
+        <property name="failureDetectionTimeout" value="10000"/>
+        <property name="clientFailureDetectionTimeout" value="10000"/>
+        <property name="networkTimeout" value="10000"/>
+
+        <property name="cacheConfiguration">
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <property name="name" value="*"/>
+                <property name="cacheMode" value="PARTITIONED"/>
+                <property name="backups" value="1"/>
+
+                <property name="affinity">
+                    <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                        <property name="partitions" value="256"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <property name="port" value="60300"/>
+            </bean>
+        </property>
+
+        <property name="clientConnectorConfiguration"><null/></property>
+
+        <property name="communicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <property name="localPort" value="60200"/>
+                <!-- Sets socket write timeout for TCP connection. -->
+                <property name="socketWriteTimeout" value="10000"/>
+            </bean>
+        </property>
+
+        <!-- Allows encryption with SSL and TLS. For more details refer to https://apacheignite.readme.io/docs/ssltls -->
+        <!--
+            <property name="sslContextFactory">
+              <bean class="org.apache.ignite.ssl.SslContextFactory">
+                <property name="keyStoreFilePath" value="keystore/server.jks"/>
+                <property name="keyStorePassword" value="123456"/>
+                <property name="trustStoreFilePath" value="keystore/trust.jks"/>
+                <property name="trustStorePassword" value="123456"/>
+                <property name="setProtocol" value="SSL"/>
+              </bean>
+            </property>
+        -->
+
+        <property name="transactionConfiguration">
+            <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+                <property name="txTimeoutOnPartitionMapExchange" value="#{60L * 1000L}"/>
+            </bean>
+        </property>
+
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persistenceEnabled" value="true"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+        <!-- Logging configuration. -->
+        <property name="gridLogger">
+            <bean class="org.apache.ignite.logger.java.JavaLogger">
+                <constructor-arg type="java.util.logging.Logger">
+                    <bean class="java.util.logging.Logger">
+                        <constructor-arg type="java.lang.String" value="global"/>
+                    </bean>
+                </constructor-arg>
+            </bean>
+        </property>
+
+        <property name="failureHandler">
+            <bean class="org.apache.ignite.failure.NoOpFailureHandler"/>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="localPort" value="60100"/>
+                
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="shared" value="true" />
+                    </bean>
+                </property>
+            </bean>
+        </property>
+    </bean>
+</beans>

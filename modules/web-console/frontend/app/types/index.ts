@@ -33,7 +33,7 @@ export interface IIgniteNg1StateDeclaration extends Ng1StateDeclaration {
 }
 
 export type User = {
-    _id: string,
+    id: string,
     firstName: string,
     lastName: string,
     email: string,
