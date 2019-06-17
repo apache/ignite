@@ -614,6 +614,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
             }
         }, UserManagementException.class, "Invalid user name");
     }
+
     /**
      * @param createNode Node to execute create operation.
      * @param authNode Node to execute authentication.

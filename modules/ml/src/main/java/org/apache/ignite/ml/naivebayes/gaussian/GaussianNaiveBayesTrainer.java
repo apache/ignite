@@ -68,7 +68,6 @@ public class GaussianNaiveBayesTrainer extends SingleLabelDatasetTrainer<Gaussia
             (env, upstream, upstreamSize) -> new EmptyContext(),
             (env, upstream, upstreamSize, ctx) -> {
 
-
                 GaussianNaiveBayesSumsHolder res = new GaussianNaiveBayesSumsHolder();
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
