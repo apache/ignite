@@ -36,6 +36,7 @@ import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandArgIterator.isCommandOrOption;
 import static org.apache.ignite.internal.commandline.CommandList.WAL;
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
@@ -64,11 +65,11 @@ public class WalCommands implements Command<T2<String, String>> {
      */
     private String walArgs;
 
-    @Override public void printUsage() {
+    @Override public void printUsage(Logger logger) {
         if (IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false)) {
-            Command.usage("Print absolute paths of unused archived wal segments on each node:", WAL,
+            Command.usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
                 WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
-            Command.usage("Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
+            Command.usage(logger, "Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
                 "[consistentId1,consistentId2,....,consistentIdN]", optional(CMD_AUTO_CONFIRMATION));
         }
     }
@@ -210,7 +211,7 @@ public class WalCommands implements Command<T2<String, String>> {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             logger.info("Node=" + node.getConsistentId());
-            logger.info(INDENT + INDENT +"addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            logger.info(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
 
             for (String fileName : entry.getValue())
                 logger.info(INDENT + fileName);
@@ -222,7 +223,7 @@ public class WalCommands implements Command<T2<String, String>> {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             logger.info("Node=" + node.getConsistentId());
-            logger.info(INDENT + INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            logger.info(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
             logger.info(INDENT + "failed with error: " + entry.getValue().getMessage());
             logger.info("");
         }
@@ -245,7 +246,7 @@ public class WalCommands implements Command<T2<String, String>> {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             logger.info("Node=" + node.getConsistentId());
-            logger.info(INDENT + INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            logger.info(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
             logger.info("");
         }
 
@@ -253,7 +254,7 @@ public class WalCommands implements Command<T2<String, String>> {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             logger.info("Node=" + node.getConsistentId());
-            logger.info(INDENT + INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
+            logger.info(DOUBLE_INDENT + "addresses " + U.addressesAsString(node.getAddresses(), node.getHostNames()));
             logger.info(INDENT + "failed with error: " + entry.getValue().getMessage());
             logger.info("");
         }

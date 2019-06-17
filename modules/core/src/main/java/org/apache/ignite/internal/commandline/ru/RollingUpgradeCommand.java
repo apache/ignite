@@ -50,7 +50,7 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
                     null,
                     clientCfg);
 
-                printRollingUpgradeStatus(status);
+                printRollingUpgradeStatus(log, status);
 
                 return status;
             }
@@ -61,7 +61,7 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
                 toVisorArguments(rollingUpgradeArgs),
                 clientCfg);
 
-            printRollingUpgradeChangeModeResult(res);
+            printRollingUpgradeChangeModeResult(log, res);
 
             return  res;
         }
@@ -79,10 +79,10 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage() {
-        Command.usage("Enable rolling upgrade:", ROLLING_UPGRADE, RollingUpgradeSubCommands.ENABLE.text());
-        Command.usage("Disable rolling upgrade:", ROLLING_UPGRADE, RollingUpgradeSubCommands.DISABLE.text());
-        Command.usage("Get rolling upgrade status:", ROLLING_UPGRADE, RollingUpgradeSubCommands.STATUS.text());
+    @Override public void printUsage(Logger logger) {
+        Command.usage(logger, "Enable rolling upgrade:", ROLLING_UPGRADE, RollingUpgradeSubCommands.ENABLE.text());
+        Command.usage(logger, "Disable rolling upgrade:", ROLLING_UPGRADE, RollingUpgradeSubCommands.DISABLE.text());
+        Command.usage(logger, "Get rolling upgrade status:", ROLLING_UPGRADE, RollingUpgradeSubCommands.STATUS.text());
     }
 
     /** {@inheritDoc} */
@@ -129,13 +129,13 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
      *
      * @param status Rolling upgrade status.
      */
-    private void printRollingUpgradeStatus(RollingUpgradeStatus status) {
-        CommandLogger.log("Rolling upgrade is " + (status.isEnabled()? "enabled" : "disabled"));
-        CommandLogger.log("Initial version: " + status.getInitialVersion());
-        CommandLogger.log("Update version: " + status.getUpdateVersion());
+    private void printRollingUpgradeStatus(Logger log, RollingUpgradeStatus status) {
+        log.info("Rolling upgrade is " + (status.isEnabled()? "enabled" : "disabled"));
+        log.info("Initial version: " + status.getInitialVersion());
+        log.info("Update version: " + status.getUpdateVersion());
 
         if (status.isStrictVersionCheck())
-            CommandLogger.log("Strict mode is enabled.");
+            log.info("Strict mode is enabled.");
     }
 
     /**
@@ -143,11 +143,11 @@ public class RollingUpgradeCommand implements Command<RollingUpgradeArguments> {
      *
      * @param res Mode change result.
      */
-    private void printRollingUpgradeChangeModeResult(RollingUpgradeModeChangeResult res) {
+    private void printRollingUpgradeChangeModeResult(Logger log, RollingUpgradeModeChangeResult res) {
         if (RollingUpgradeModeChangeResult.Status.SUCCESS == res.status())
-            CommandLogger.log("Rolling upgrade mode successfully " +
+            log.info("Rolling upgrade mode successfully " +
                 (RollingUpgradeSubCommands.ENABLE == rollingUpgradeArgs.command()? "enabled." : "disabled."));
         else
-            CommandLogger.log("Rolling upgrade operation failed due to " + res.cause());
+            log.info("Rolling upgrade operation failed due to " + res.cause());
     }
 }

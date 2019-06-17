@@ -21,11 +21,11 @@ import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandLogger;
 
 import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.join;
 import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.HELP;
 import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.PAGE_LOCKS;
@@ -40,7 +40,7 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         if (subcommand == HELP) {
-            printDiagnosticHelp();
+            printDiagnosticHelp(logger);
 
             return null;
         }
@@ -98,24 +98,22 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage() {
-        usage("View diagnostic information in a cluster:", DIAGNOSTIC);
+    @Override public void printUsage(Logger logger) {
+        usage(logger, "View diagnostic information in a cluster:", DIAGNOSTIC);
     }
 
     /**
      * Print diagnostic command help.
      */
-    private void printDiagnosticHelp() {
-        CommandLogger.logWithIndent(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
+    private void printDiagnosticHelp(Logger logger) {
+        logger.info(INDENT + join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
 
-        CommandLogger.nl();
-
-        CommandLogger.logWithIndent("Subcommands:");
+        logger.info(INDENT + "Subcommands:");
 
         Arrays.stream(DiagnosticSubCommand.values()).forEach(c -> {
-            if (c.subcommand() != null) c.subcommand().printUsage();
+            if (c.subcommand() != null) c.subcommand().printUsage(logger);
         });
 
-        CommandLogger.nl();
+        logger.info("");
     }
 }

@@ -45,12 +45,12 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
  */
 public class FindAndDeleteGarbage implements Command<FindAndDeleteGarbage.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage() {
+    @Override public void printUsage(Logger logger) {
         String GROUPS = "groupName1,...,groupNameN";
         String description = "Find and optionally delete garbage from shared cache groups which could be left " +
             "after cache destroy.";
 
-        usageCache(FIND_AND_DELETE_GARBAGE, description, null,
+        usageCache(logger, FIND_AND_DELETE_GARBAGE, description, null,
             optional(GROUPS), OP_NODE_ID, optional(FindAndDeleteGarbageArg.DELETE));
     }
 
