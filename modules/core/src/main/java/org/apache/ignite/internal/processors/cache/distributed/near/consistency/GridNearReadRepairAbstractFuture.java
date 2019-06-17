@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 /**
  *
  */
-public abstract class GridNearGetWithConsistencyAbstractFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
+public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
     /** Affinity node's get futures. */
     protected final Map<ClusterNode, GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>> futs;
 
@@ -47,7 +47,7 @@ public abstract class GridNearGetWithConsistencyAbstractFuture extends GridFutur
     /**
      *
      */
-    protected GridNearGetWithConsistencyAbstractFuture(
+    protected GridNearReadRepairAbstractFuture(
         AffinityTopologyVersion topVer,
         GridCacheContext<KeyCacheObject, EntryGetResult> ctx,
         Collection<KeyCacheObject> keys,
@@ -117,7 +117,7 @@ public abstract class GridNearGetWithConsistencyAbstractFuture extends GridFutur
     /**
      *
      */
-    public GridNearGetWithConsistencyAbstractFuture init() {
+    public GridNearReadRepairAbstractFuture init() {
         for (GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut : futs.values())
             fut.init(topVer);
 

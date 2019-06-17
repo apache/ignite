@@ -31,13 +31,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Ideally, this test should be equal to {@link ImplicitTransactionalCacheConsistencyTest} except atomicy mode
+ * Ideally, this test should be equal to {@link ImplicitTransactionalReadRepairTest} except atomicy mode
  * configuration.
  *
  * Implement repair on atomic caches to make this happen :)
  */
 @RunWith(Parameterized.class)
-public class AtomicCacheConsistencyTest extends ImplicitTransactionalCacheConsistencyTest {
+public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
     /**
      *
      */

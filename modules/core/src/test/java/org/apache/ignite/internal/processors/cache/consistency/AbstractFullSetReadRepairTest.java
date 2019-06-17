@@ -29,7 +29,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
-public abstract class AbstractFullSetCacheConsistencyTest extends AbstractCacheConsistencyTest {
+public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTest {
     /**
      *
      */

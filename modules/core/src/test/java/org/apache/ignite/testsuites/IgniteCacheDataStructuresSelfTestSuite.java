@@ -18,13 +18,13 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
-import org.apache.ignite.internal.processors.cache.consistency.AtomicCacheConsistencyTest;
-import org.apache.ignite.internal.processors.cache.consistency.ExplicitTransactionalCacheConsistencyTest;
-import org.apache.ignite.internal.processors.cache.consistency.ImplicitTransactionalCacheConsistencyTest;
-import org.apache.ignite.internal.processors.cache.consistency.ReplicatedExplicitTransactionalCacheConsistencyTest;
-import org.apache.ignite.internal.processors.cache.consistency.ReplicatedImplicitTransactionalCacheConsistencyTest;
-import org.apache.ignite.internal.processors.cache.consistency.SingleBackupExplicitTransactionalCacheConsistencyTest;
-import org.apache.ignite.internal.processors.cache.consistency.SingleBackupImplicitTransactionalCacheConsistencyTest;
+import org.apache.ignite.internal.processors.cache.consistency.AtomicReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ExplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ImplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReplicatedExplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.ReplicatedImplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.SingleBackupExplicitTransactionalReadRepairTest;
+import org.apache.ignite.internal.processors.cache.consistency.SingleBackupImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
@@ -193,15 +193,15 @@ import org.junit.runners.Suite;
 
     IgniteCacheDataStructuresBinarySelfTestSuite.class,
 
-    ImplicitTransactionalCacheConsistencyTest.class,
-    SingleBackupImplicitTransactionalCacheConsistencyTest.class,
-    ReplicatedImplicitTransactionalCacheConsistencyTest.class,
+    ImplicitTransactionalReadRepairTest.class,
+    SingleBackupImplicitTransactionalReadRepairTest.class,
+    ReplicatedImplicitTransactionalReadRepairTest.class,
 
-    AtomicCacheConsistencyTest.class,
+    AtomicReadRepairTest.class,
 
-    ExplicitTransactionalCacheConsistencyTest.class,
-    SingleBackupExplicitTransactionalCacheConsistencyTest.class,
-    ReplicatedExplicitTransactionalCacheConsistencyTest.class,
+    ExplicitTransactionalReadRepairTest.class,
+    SingleBackupExplicitTransactionalReadRepairTest.class,
+    ReplicatedExplicitTransactionalReadRepairTest.class,
 })
 public class IgniteCacheDataStructuresSelfTestSuite {
 }

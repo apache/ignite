@@ -56,7 +56,7 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 /**
  *
  */
-public abstract class AbstractCacheConsistencyTest extends GridCommonAbstractTest {
+public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     /** Events. */
     private static ConcurrentLinkedDeque<CacheConsistencyViolationEvent> evtDeq = new ConcurrentLinkedDeque<>();
 

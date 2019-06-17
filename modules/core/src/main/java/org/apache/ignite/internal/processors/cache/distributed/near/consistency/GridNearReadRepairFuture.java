@@ -39,14 +39,14 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  * Checks data consistency. Checks that each affinity node's value equals other's. Prepares recovery data. Records
  * consistency violation event.
  */
-public class GridNearGetWithConsistencyRepairFuture extends GridNearGetWithConsistencyAbstractFuture {
+public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     /** Context. */
     GridCacheContext ctx;
 
     /**
      *
      */
-    public GridNearGetWithConsistencyRepairFuture(
+    public GridNearReadRepairFuture(
         AffinityTopologyVersion topVer,
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,

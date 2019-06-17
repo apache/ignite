@@ -61,8 +61,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridInvokeValue;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearGetWithConsistencyCheckFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearGetWithConsistencyRepairFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
@@ -2369,7 +2369,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readRepair) {
-                            return new GridNearGetWithConsistencyRepairFuture(
+                            return new GridNearReadRepairFuture(
                                 topVer,
                                 cacheCtx,
                                 keys,
@@ -3079,7 +3079,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
         else if (cacheCtx.isColocated()) {
             if (readRepair) {
-                return new GridNearGetWithConsistencyCheckFuture(
+                return new GridNearReadRepairCheckOnlyFuture(
                     topVer,
                     cacheCtx,
                     keys,

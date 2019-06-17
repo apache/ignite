@@ -83,7 +83,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearGetWithConsistencyCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
@@ -1427,7 +1427,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         IgniteCacheExpiryPolicy expiry = skipVals ? null : expiryPolicy(expiryPlc);
 
         if (readRepair) {
-            return new GridNearGetWithConsistencyCheckFuture(
+            return new GridNearReadRepairCheckOnlyFuture(
                 topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
@@ -1497,7 +1497,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean evt = !skipVals;
 
         if (readRepair) {
-            return new GridNearGetWithConsistencyCheckFuture(
+            return new GridNearReadRepairCheckOnlyFuture(
                 topVer,
                 ctx,
                 ctx.cacheKeysView(keys),

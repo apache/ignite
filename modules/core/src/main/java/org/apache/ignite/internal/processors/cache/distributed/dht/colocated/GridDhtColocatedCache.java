@@ -52,7 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFu
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearGetWithConsistencyCheckFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
@@ -264,7 +264,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             topVer = ctx.affinity().affinityTopologyVersion();
 
         if (readRepair) {
-            return new GridNearGetWithConsistencyCheckFuture(
+            return new GridNearReadRepairCheckOnlyFuture(
                 topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
@@ -388,7 +388,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             topVer = ctx.affinity().affinityTopologyVersion();
 
         if (readRepair) {
-            return new GridNearGetWithConsistencyCheckFuture(
+            return new GridNearReadRepairCheckOnlyFuture(
                 topVer,
                 ctx,
                 ctx.cacheKeysView(keys),
