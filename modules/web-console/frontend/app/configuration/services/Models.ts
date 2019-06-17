@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-import ObjectID from 'bson-objectid';
 import omit from 'lodash/fp/omit';
+import uuidv4 from 'uuid/v4';
+
 import {DomainModel, IndexField, ShortDomainModel, Index, Field, KeyField, ValueField, InlineSizeType} from '../types';
 
 export default class Models {
@@ -29,7 +30,7 @@ export default class Models {
 
     getBlankModel(): DomainModel {
         return {
-            _id: ObjectID.generate(),
+            id: uuidv4(),
             generatePojo: true,
             caches: [],
             queryKeyFields: [],
@@ -106,7 +107,7 @@ ${available('2.3.0') && entity.notNull ? ' Not NULL' : ''}${available('2.4.0') &
     normalize = omit(['__v', 'space']);
 
     addIndexField(fields: IndexField[]) {
-        return fields[fields.push({_id: ObjectID.generate(), direction: true}) - 1];
+        return fields[fields.push({id: uuidv4(), direction: true}) - 1];
     }
 
     addIndex(model: DomainModel) {
@@ -117,7 +118,7 @@ ${available('2.3.0') && entity.notNull ? ' Not NULL' : ''}${available('2.4.0') &
             model.indexes = [];
 
         model.indexes.push({
-            _id: ObjectID.generate(),
+            id: uuidv4(),
             name: '',
             indexType: 'SORTED',
             fields: []
@@ -134,7 +135,7 @@ ${available('2.3.0') && entity.notNull ? ' Not NULL' : ''}${available('2.4.0') &
 
     toShortModel(model: DomainModel): ShortDomainModel {
         return {
-            _id: model._id,
+            id: model.id,
             keyType: model.keyType,
             valueType: model.valueType,
             hasIndex: this.hasIndex(model)

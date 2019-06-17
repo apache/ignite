@@ -22,7 +22,7 @@ const cellTemplate = (state) => `
     <div class="ui-grid-cell-contents">
         <a
             class="link-success"
-            ui-sref="${state}({clusterID: row.entity._id})"
+            ui-sref="${state}({clusterID: row.entity.id})"
             title='Click to edit'
         >{{ row.entity[col.field] }}</a>
     </div>
@@ -69,14 +69,14 @@ export default class PageConfigureOverviewController {
     }
 
     removeClusters(clusters: Array<ShortCluster>) {
-        this.ConfigureState.dispatchAction(confirmClustersRemoval(clusters.map((c) => c._id)));
+        this.ConfigureState.dispatchAction(confirmClustersRemoval(clusters.map((c) => c.id)));
 
         // TODO: Implement storing selected rows in store to share this data between other components.
         this.selectedRows$.next([]);
     }
 
     editCluster(cluster: ShortCluster) {
-        return this.$uiRouter.stateService.go('^.edit', {clusterID: cluster._id});
+        return this.$uiRouter.stateService.go('^.edit', {clusterID: cluster.id});
     }
 
     $onInit() {
@@ -127,7 +127,7 @@ export default class PageConfigureOverviewController {
 
         this.selectedRows$ = new Subject();
 
-        this.selectedRowsIDs$ = this.selectedRows$.pipe(map((selectedClusters) => selectedClusters.map((cluster) => cluster._id)));
+        this.selectedRowsIDs$ = this.selectedRows$.pipe(map((selectedClusters) => selectedClusters.map((cluster) => cluster.id)));
 
         this.actions$ = this.selectedRows$.pipe(map((selectedClusters) => [
             {

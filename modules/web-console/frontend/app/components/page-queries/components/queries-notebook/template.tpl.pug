@@ -41,11 +41,11 @@ mixin btn-toolbar-data(btn, kind, tip)
 
 mixin result-toolbar
     .btn-group(ng-model='paragraph.result' ng-click='$event.stopPropagation()' style='left: 50%; margin: 0 0 0 -70px;display: block;')
-        +btn-toolbar-data('fa-table', 'table', 'Show data in tabular form')
-        +btn-toolbar-data('fa-bar-chart', 'bar', 'Show bar chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
-        +btn-toolbar-data('fa-pie-chart', 'pie', 'Show pie chart<br/>By default first column - pie labels, second column - pie values<br/>In case of one column it will be treated as pie values')
-        +btn-toolbar-data('fa-line-chart', 'line', 'Show line chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
-        +btn-toolbar-data('fa-area-chart', 'area', 'Show area chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
+        +btn-toolbar-data('fa-table', 'TABLE', 'Show data in tabular form')
+        +btn-toolbar-data('fa-bar-chart', 'BAR', 'Show bar chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
+        +btn-toolbar-data('fa-pie-chart', 'PIE', 'Show pie chart<br/>By default first column - pie labels, second column - pie values<br/>In case of one column it will be treated as pie values')
+        +btn-toolbar-data('fa-line-chart', 'LINE', 'Show line chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
+        +btn-toolbar-data('fa-area-chart', 'AREA', 'Show area chart<br/>By default first column - X values, second column - Y values<br/>In case of one column it will be treated as Y values')
 
 mixin chart-settings
     .total.row
@@ -195,7 +195,7 @@ mixin table-result-heading-query
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
             label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
         .col-xs-2
-            div(ng-if='paragraph.qryType === "query"')
+            div(ng-if='paragraph.qryType === "SQL_FIELDS"')
                 +result-toolbar
         .col-xs-3
             .pull-right
@@ -234,7 +234,7 @@ mixin table-result-heading-scan
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
             label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
         .col-xs-2
-            div(ng-if='paragraph.qryType === "query"')
+            div(ng-if='paragraph.qryType === "SQL_FIELDS"')
                 +result-toolbar
         .col-xs-3
             .pull-right
@@ -495,14 +495,14 @@ div
             .panel-group
                 .panel-paragraph(ng-repeat='paragraph in notebook.paragraphs' id='{{paragraph.id}}' ng-form='form_{{paragraph.id}}')
                     panel-collapsible(
-                        ng-if='paragraph.qryType === "scan"'
+                        ng-if='paragraph.qryType === "SCAN"'
                         opened='$ctrl.isParagraphOpened($index)'
                         on-close='$ctrl.onParagraphClose($index)'
                         on-open='$ctrl.onParagraphOpen($index)'
                     )
                         +paragraph-scan
                     panel-collapsible(
-                        ng-if='paragraph.qryType === "query"'
+                        ng-if='paragraph.qryType === "SQL_FIELDS"'
                         opened='$ctrl.isParagraphOpened($index)'
                         on-close='$ctrl.onParagraphClose($index)'
                         on-open='$ctrl.onParagraphOpen($index)'

@@ -48,9 +48,9 @@ suite('cluster-edit-form controller', () => {
 
         const $ctrl = new Controller(...mocks);
 
-        const cluster1 = {_id: 1, caches: [1, 2, 3]};
-        const cluster2 = {_id: 1, caches: [1, 2, 3, 4, 5, 6], models: [1, 2, 3]};
-        const cluster3 = {_id: 1, caches: [1, 2, 3, 4, 5, 6], models: [1, 2, 3], name: 'Foo'};
+        const cluster1 = {id: 1, caches: [1, 2, 3]};
+        const cluster2 = {id: 1, caches: [1, 2, 3, 4, 5, 6], models: [1, 2, 3]};
+        const cluster3 = {id: 1, caches: [1, 2, 3, 4, 5, 6], models: [1, 2, 3], name: 'Foo'};
 
         changeBoundCluster($ctrl, cluster1);
 

@@ -50,7 +50,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     label: 'Enable encryption',
                     model: `${model}.encryptionEnabled`,
                     name: '"encryptionEnabled"',
-                    tip: 'Enable encription of data on the disk'
+                    tip: 'Enable encryption of data on the disk'
                 })
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.5.0")')
                 +form-field__checkbox({

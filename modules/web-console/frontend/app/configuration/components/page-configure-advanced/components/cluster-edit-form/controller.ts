@@ -150,20 +150,20 @@ export default class ClusterEditFormController {
         }
 
         if ('caches' in changes) {
-            this.cachesMenu = (changes.caches.currentValue || []).map((c) => ({label: c.name, value: c._id}));
+            this.cachesMenu = (changes.caches.currentValue || []).map((c) => ({label: c.name, value: c.id}));
             this.servicesCachesMenu = [{label: 'Key-affinity not used', value: null}].concat(this.cachesMenu);
         }
     }
 
     /**
      * The form should accept incoming cluster value if:
-     * 1. It has different _id ("new" to real id).
+     * 1. It has different id ("new" to real id).
      * 2. Different caches or models (imported from DB).
      * @param a Incoming value.
      * @param b Current value.
      */
     shouldOverwriteValue<T>(a: T, b: T) {
-        return get(a, '_id') !== get(b, '_id') ||
+        return get(a, 'id') !== get(b, 'id') ||
             !isEqual(get(a, 'caches'), get(b, 'caches')) ||
             !isEqual(get(a, 'models'), get(b, 'models'));
     }

@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import org.apache.ignite.Ignite;
@@ -31,20 +31,21 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.eclipse.jetty.client.HttpResponseException;
+import org.hamcrest.core.Is;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static org.apache.ignite.console.agent.AgentUtils.sslContextFactory;
 
 /**
  * Test for RestExecutor.
@@ -67,6 +68,9 @@ public class RestExecutorSelfTest {
 
     /** */
     private static final String JETTY_WITH_SSL = "jetty-with-ssl.xml";
+
+    /** */
+    private static final String JETTY_WITH_HTTPS = "jetty-with-https.xml";
 
     /** */
     private static final String JETTY_WITH_CIPHERS_0 = "jetty-with-ciphers-0.xml";
@@ -93,6 +97,7 @@ public class RestExecutorSelfTest {
     );
 
     /** */
+    @SuppressWarnings("PublicField")
     @Rule
     public final ExpectedException ruleForExpectedException = ExpectedException.none();
 
@@ -162,6 +167,7 @@ public class RestExecutorSelfTest {
      * @param uri Node URI.
      * @param keyStore Key store.
      * @param keyStorePwd Key store password.
+     * @param trustAll Whether to trust all certificates.
      * @param trustStore Trust store.
      * @param trustStorePwd Trust store password.
      * @param cipherSuites Cipher suites.
@@ -172,21 +178,28 @@ public class RestExecutorSelfTest {
         String uri,
         String keyStore,
         String keyStorePwd,
+        boolean trustAll,
         String trustStore,
         String trustStorePwd,
         List<String> cipherSuites
-    ) throws Exception {
-        try(
-            Ignite ignite = Ignition.getOrStart(nodeCfg);
-            RestExecutor exec = new RestExecutor(false, keyStore, keyStorePwd, trustStore, trustStorePwd, cipherSuites)
-        ) {
-            Map<String, Object> params = new HashMap<>();
-            params.put("cmd", "top");
-            params.put("attr", false);
-            params.put("mtr", false);
-            params.put("caches", false);
+    ) throws Throwable {
+        try(Ignite ignored = Ignition.getOrStart(nodeCfg)) {
+            RestExecutor exec = new RestExecutor(sslContextFactory(
+                keyStore,
+                keyStorePwd,
+                trustAll,
+                trustStore,
+                trustStorePwd,
+                cipherSuites
+            ));
 
-            RestResult res = exec.sendRequest(Collections.singletonList(uri), params, null);
+            JsonObject params = new JsonObject()
+                .add("cmd", "top")
+                .add("attr", false)
+                .add("mtr", false)
+                .add("caches", false);
+
+            RestResult res = exec.sendRequest(uri, params);
 
             JsonNode json = toJson(res);
 
@@ -202,11 +215,12 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void nodeNoSslAgentNoSsl() throws Exception {
+    public void nodeNoSslAgentNoSsl() throws Throwable {
         checkRest(
             nodeConfiguration(""),
             HTTP_URI,
             null, null,
+            false,
             null, null,
             null
         );
@@ -214,13 +228,13 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void nodeNoSslAgentWithSsl() throws Exception {
-        // Check Web Agent with SSL.
-        ruleForExpectedException.expect(SSLException.class);
+    public void nodeNoSslAgentWithSsl() throws Throwable {
+        ruleForExpectedException.expectCause(Is.isA(SSLException.class));
         checkRest(
             nodeConfiguration(""),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
+            false,
             resolvePath("ca.jks"), "123456",
             null
         );
@@ -228,12 +242,13 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void nodeWithSslAgentNoSsl() throws Exception {
-        ruleForExpectedException.expect(IOException.class);
+    public void nodeWithSslAgentNoSsl() throws Throwable {
+        ruleForExpectedException.expectCause(Is.isA(HttpResponseException.class));
         checkRest(
             nodeConfiguration(JETTY_WITH_SSL),
             HTTP_URI,
             null, null,
+            false,
             null, null,
             null
         );
@@ -241,11 +256,12 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void nodeWithSslAgentWithSsl() throws Exception {
+    public void nodeWithSslAgentWithSsl() throws Throwable {
         checkRest(
             nodeConfiguration(JETTY_WITH_SSL),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
+            false,
             resolvePath("ca.jks"), "123456",
             null
         );
@@ -253,12 +269,13 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void nodeNoCiphersAgentWithCiphers() throws Exception {
-        ruleForExpectedException.expect(SSLHandshakeException.class);
+    public void nodeNoCiphersAgentWithCiphers() throws Throwable {
+        ruleForExpectedException.expectCause(Is.isA(SSLHandshakeException.class));
         checkRest(
             nodeConfiguration(JETTY_WITH_SSL),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
+            false,
             resolvePath("ca.jks"), "123456",
             CIPHER_0
         );
@@ -266,12 +283,13 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void nodeWithCiphersAgentNoCiphers() throws Exception {
-        ruleForExpectedException.expect(SSLHandshakeException.class);
+    public void nodeWithCiphersAgentNoCiphers() throws Throwable {
+        ruleForExpectedException.expectCause(Is.isA(SSLException.class));
         checkRest(
             nodeConfiguration(JETTY_WITH_CIPHERS_0),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
+            false,
             resolvePath("ca.jks"), "123456",
             null
         );
@@ -279,11 +297,12 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void nodeWithCiphersAgentWithCiphers() throws Exception {
+    public void nodeWithCiphersAgentWithCiphers() throws Throwable {
         checkRest(
             nodeConfiguration(JETTY_WITH_CIPHERS_1),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
+            false,
             resolvePath("ca.jks"), "123456",
             CIPHER_1
         );
@@ -291,12 +310,13 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void differentCiphers1() throws Exception {
-        ruleForExpectedException.expect(SSLHandshakeException.class);
+    public void differentCiphers1() throws Throwable {
+        ruleForExpectedException.expectCause(Is.isA(SSLHandshakeException.class));
         checkRest(
             nodeConfiguration(JETTY_WITH_CIPHERS_1),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
+            false,
             resolvePath("ca.jks"), "123456",
             CIPHER_2
         );
@@ -304,12 +324,13 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void differentCiphers2() throws Exception {
-        ruleForExpectedException.expect(SSLException.class);
+    public void differentCiphers2() throws Throwable {
+        ruleForExpectedException.expectCause(Is.isA(SSLException.class));
         checkRest(
             nodeConfiguration(JETTY_WITH_CIPHERS_2),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
+            false,
             resolvePath("ca.jks"), "123456",
             CIPHER_1
         );
@@ -317,13 +338,29 @@ public class RestExecutorSelfTest {
 
     /** */
     @Test
-    public void commonCiphers() throws Exception {
+    public void commonCiphers() throws Throwable {
         checkRest(
             nodeConfiguration(JETTY_WITH_CIPHERS_1),
             HTTPS_URI,
             resolvePath("client.jks"), "123456",
+            false,
             resolvePath("ca.jks"), "123456",
             COMMON_CIPHERS
         );
+   }
+
+    /** */
+    @Test
+   public void testHttps() throws Throwable {
+       checkRest(
+           nodeConfiguration(JETTY_WITH_HTTPS),
+           HTTPS_URI,
+           null,
+           null,
+           true,
+           null,
+           null,
+           null
+       );
    }
 }

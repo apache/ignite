@@ -15,24 +15,18 @@
  */
 
 export default class UserNotificationsController {
-    static $inject = ['deferred', 'message', 'isShown'];
+    static $inject = ['deferred', 'message', 'visible'];
 
-    constructor(deferred, message, isShown) {
+    constructor(deferred, message, visible) {
         this.deferred = deferred;
         this.message = message;
-        this.isShown = isShown;
+        this.visible = visible;
     }
 
     onLoad(editor) {
         editor.setHighlightActiveLine(false);
         editor.setAutoScrollEditorIntoView(true);
         editor.$blockScrolling = Infinity;
-
-        // TODO IGNITE-5366 Ace hangs when it reaches max lines.
-        // const session = editor.getSession();
-        //
-        // session.setUseWrapMode(true);
-        // session.setOption('indentedSoftWrap', false);
 
         const renderer = editor.renderer;
 
@@ -50,6 +44,6 @@ export default class UserNotificationsController {
     }
 
     submit() {
-        this.deferred.resolve({message: this.message, isShown: this.isShown });
+        this.deferred.resolve({message: this.message, visible: this.visible});
     }
 }

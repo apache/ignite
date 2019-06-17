@@ -50,7 +50,7 @@ form(novalidate name=form)
             })(
                 ignite-unique='$ctrl.shortClusters'
                 ignite-unique-property='name'
-                ignite-unique-skip=`["_id", ${model}]`
+                ignite-unique-skip=`["id", ${model}]`
             )
                 +form-field__error({ error: 'igniteUnique', message: 'Cluster name should be unique.' })
 

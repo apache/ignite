@@ -20,16 +20,11 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -54,6 +49,8 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
@@ -82,7 +79,7 @@ public class AgentClusterDemo {
     private static final AtomicBoolean initGuard = new AtomicBoolean();
 
     /** */
-    private static final String SRV_NODE_NAME = "demo-server-";
+    public static final String SRV_NODE_NAME = "demo-server-";
 
     /** */
     private static final String CLN_NODE_NAME = "demo-client-";
@@ -100,7 +97,7 @@ public class AgentClusterDemo {
     private static CountDownLatch initLatch = new CountDownLatch(1);
 
     /** */
-    private static volatile List<String> demoUrl;
+    private static volatile String demoUrl;
 
     /**
      * Configure node.
@@ -134,7 +131,7 @@ public class AgentClusterDemo {
 
         cfg.getConnectorConfiguration().setPort(basePort);
 
-        System.setProperty(IGNITE_JETTY_PORT, String.valueOf(basePort + 10));
+        System.setProperty(IGNITE_JETTY_PORT, String.valueOf(basePort + 10 + gridIdx));
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
@@ -205,7 +202,7 @@ public class AgentClusterDemo {
     }
 
     /** */
-    public static List<String> getDemoUrl() {
+    public static String getDemoUrl() {
         return demoUrl;
     }
 
@@ -228,76 +225,74 @@ public class AgentClusterDemo {
 
             final ScheduledExecutorService execSrv = newScheduledThreadPool(1, "demo-nodes-start");
 
-            execSrv.scheduleAtFixedRate(new Runnable() {
-                @Override public void run() {
-                    int idx = cnt.incrementAndGet();
-                    int port = basePort.get();
+            execSrv.scheduleWithFixedDelay(() -> {
+                int idx = cnt.incrementAndGet();
+                int port = basePort.get();
 
-                    boolean first = idx == 0;
+                boolean first = idx == 0;
 
-                    try {
-                        IgniteConfiguration cfg = igniteConfiguration(port, idx, false);
+                try {
+                    IgniteConfiguration cfg = igniteConfiguration(port, idx, false);
 
-                        if (first) {
-                            U.delete(Paths.get(cfg.getWorkDirectory()));
+                    if (first) {
+                        U.delete(Paths.get(cfg.getWorkDirectory()));
 
-                            U.resolveWorkDirectory(
-                                cfg.getWorkDirectory(),
-                                cfg.getDataStorageConfiguration().getStoragePath(),
-                                true
-                            );
-                        }
-
-                        Ignite ignite = Ignition.start(cfg);
-
-                        if (first) {
-                            ClusterNode node = ignite.cluster().localNode();
-
-                            Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
-
-                            if (jettyAddrs == null) {
-                                Ignition.stopAll(true);
-
-                                throw new IgniteException("DEMO: Failed to start Jetty REST server on embedded node");
-                            }
-
-                            String jettyHost = jettyAddrs.iterator().next();
-
-                            Integer jettyPort = node.attribute(ATTR_REST_JETTY_PORT);
-
-                            if (F.isEmpty(jettyHost) || jettyPort == null)
-                                throw new IgniteException("DEMO: Failed to start Jetty REST handler on embedded node");
-
-                            log.info("DEMO: Started embedded node for demo purpose [TCP binary port={}, Jetty REST port={}]", port, jettyPort);
-
-                            demoUrl = Collections.singletonList(String.format("http://%s:%d", jettyHost, jettyPort));
-
-                            initLatch.countDown();
-                        }
+                        U.resolveWorkDirectory(
+                            cfg.getWorkDirectory(),
+                            cfg.getDataStorageConfiguration().getStoragePath(),
+                            true
+                        );
                     }
-                    catch (Throwable e) {
-                        if (first) {
-                            basePort.getAndAdd(50);
 
-                            log.warn("DEMO: Failed to start embedded node.", e);
+                    Ignite ignite = Ignition.start(cfg);
+
+                    if (first) {
+                        ClusterNode node = ignite.cluster().localNode();
+
+                        Collection<String> jettyAddrs = node.attribute(ATTR_REST_JETTY_ADDRS);
+
+                        if (jettyAddrs == null) {
+                            Ignition.stopAll(true);
+
+                            throw new IgniteException("DEMO: Failed to start Jetty REST server on embedded node");
                         }
-                        else
-                            log.error("DEMO: Failed to start embedded node.", e);
+
+                        String jettyHost = jettyAddrs.iterator().next();
+
+                        Integer jettyPort = node.attribute(ATTR_REST_JETTY_PORT);
+
+                        if (F.isEmpty(jettyHost) || jettyPort == null)
+                            throw new IgniteException("DEMO: Failed to start Jetty REST handler on embedded node");
+
+                        log.info("DEMO: Started embedded node for demo purpose [TCP binary port={}, Jetty REST port={}]", port, jettyPort);
+
+                        demoUrl = String.format("http://%s:%d", jettyHost, jettyPort);
+
+                        initLatch.countDown();
                     }
-                    finally {
-                        if (idx == NODE_CNT) {
-                            Ignite ignite = Ignition.ignite(SRV_NODE_NAME + 0);
+                }
+                catch (Throwable e) {
+                    if (first) {
+                        basePort.getAndAdd(50);
 
-                            if (ignite != null) {
-                                ignite.cluster().active(true);
+                        log.warn("DEMO: Failed to start embedded node.", e);
+                    }
+                    else
+                        log.error("DEMO: Failed to start embedded node.", e);
+                }
+                finally {
+                    if (idx == NODE_CNT) {
+                        Ignite ignite = Ignition.ignite(SRV_NODE_NAME + 0);
 
-                                deployServices(ignite.services(ignite.cluster().forServers()));
-                            }
+                        if (ignite != null) {
+                            ignite.cluster().active(true);
 
-                            log.info("DEMO: All embedded nodes for demo successfully started");
-
-                            execSrv.shutdown();
+                            deployServices(ignite.services(ignite.cluster().forServers()));
                         }
+
+                        log.info("DEMO: All embedded nodes for demo successfully started");
+
+                        execSrv.shutdown();
                     }
                 }
             }, 1, 5, TimeUnit.SECONDS);

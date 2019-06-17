@@ -193,7 +193,7 @@ export default class ConfigEffects {
 
         this.errorNotificationsEffect$ = this.ConfigureState.actions$.pipe(
             filter((a) => a.error),
-            tap((action) => this.IgniteMessages.showError(action.error)),
+            tap((action) => this.IgniteMessages.showError(action.error.message)),
             ignoreElements()
         );
 
@@ -302,7 +302,7 @@ export default class ConfigEffects {
                     this.ConfigSelectors.selectShortCaches(),
                     take(1),
                     switchMap((items) => {
-                        if (!items.pristine && a.ids && a.ids.every((_id) => items.value.has(_id)))
+                        if (!items.pristine && a.ids && a.ids.every((id) => items.value.has(id)))
                             return of({type: `${a.type}_OK`});
 
                         return from(this.Clusters.getClusterCaches(a.clusterID)).pipe(
@@ -368,7 +368,7 @@ export default class ConfigEffects {
                     this.ConfigSelectors.selectShortModels(),
                     take(1),
                     switchMap((items) => {
-                        if (!items.pristine && a.ids && a.ids.every((_id) => items.value.has(_id)))
+                        if (!items.pristine && a.ids && a.ids.every((id) => items.value.has(id)))
                             return of({type: `${a.type}_OK`});
 
                         return from(this.Clusters.getClusterModels(a.clusterID)).pipe(
@@ -391,7 +391,7 @@ export default class ConfigEffects {
 
         this.basicSaveRedirectEffect$ = this.ConfigureState.actions$.pipe(
             ofType(BASIC_SAVE_OK),
-            tap((a) => this.$state.go('base.configuration.edit.basic', {clusterID: a.changedItems.cluster._id}, {location: 'replace', custom: {justIDUpdate: true}})),
+            tap((a) => this.$state.go('base.configuration.edit.basic', {clusterID: a.changedItems.cluster.id}, {location: 'replace', custom: {justIDUpdate: true}})),
             ignoreElements()
         );
 
@@ -428,7 +428,7 @@ export default class ConfigEffects {
             }),
             tap(([type, value, cluster]) => {
                 const go = (state, params = {}) => this.$state.go(
-                    state, {...params, clusterID: cluster._id}, {location: 'replace', custom: {justIDUpdate: true}}
+                    state, {...params, clusterID: cluster.id}, {location: 'replace', custom: {justIDUpdate: true}}
                 );
 
                 switch (type) {
@@ -436,8 +436,8 @@ export default class ConfigEffects {
                         const state = 'base.configuration.edit.advanced.models.model';
                         this.IgniteMessages.showInfo(`Model "${value.valueType}" saved`);
 
-                        if (this.$state.is(state) && this.$state.params.modelID !== value._id)
-                            return go(state, {modelID: value._id});
+                        if (this.$state.is(state) && this.$state.params.modelID !== value.id)
+                            return go(state, {modelID: value.id});
 
                         break;
                     }
@@ -446,8 +446,8 @@ export default class ConfigEffects {
                         const state = 'base.configuration.edit.advanced.caches.cache';
                         this.IgniteMessages.showInfo(`Cache "${value.name}" saved`);
 
-                        if (this.$state.is(state) && this.$state.params.cacheID !== value._id)
-                            return go(state, {cacheID: value._id});
+                        if (this.$state.is(state) && this.$state.params.cacheID !== value.id)
+                            return go(state, {cacheID: value.id});
 
                         break;
                     }
@@ -456,7 +456,7 @@ export default class ConfigEffects {
                         const state = 'base.configuration.edit.advanced.cluster';
                         this.IgniteMessages.showInfo(`Cluster "${value.name}" saved`);
 
-                        if (this.$state.is(state) && this.$state.params.clusterID !== value._id)
+                        if (this.$state.is(state) && this.$state.params.clusterID !== value.id)
                             return go(state);
 
                         break;
@@ -529,7 +529,7 @@ export default class ConfigEffects {
                 this.ConfigureState.actions$.pipe(ofType(shortClustersActionTypes.REMOVE)),
                 this.ConfigureState.actions$.pipe(ofType(clustersActionTypes.REMOVE))
             ),
-            switchMap(([, {clusterIDs}, ...backup]) => this.Clusters.removeCluster$(clusterIDs).pipe(
+            switchMap(([, {clusterIDs}, ...backup]) => from(this.Clusters.removeCluster(clusterIDs)).pipe(
                 mapTo({
                     type: 'REMOVE_CLUSTERS_OK'
                 }),
@@ -559,8 +559,8 @@ export default class ConfigEffects {
             cluster: {
                 ...edit.changes.cluster,
                 ...(cluster ? cluster : {}),
-                caches: cache ? uniq([...edit.changes.caches.ids, cache._id]) : edit.changes.caches.ids,
-                models: model ? uniq([...edit.changes.models.ids, model._id]) : edit.changes.models.ids
+                caches: cache ? uniq([...edit.changes.caches.ids, cache.id]) : edit.changes.caches.ids,
+                models: model ? uniq([...edit.changes.models.ids, model.id]) : edit.changes.models.ids
             },
             caches: cache ? uniq([...edit.changes.caches.changedItems, cache]) : edit.changes.caches.changedItems,
             models: model ? uniq([...edit.changes.models.changedItems, model]) : edit.changes.models.changedItems

@@ -152,8 +152,7 @@ const config = {
             $: 'jquery',
             'window.jQuery': 'jquery',
             _: 'lodash',
-            nv: 'nvd3',
-            io: 'socket.io-client'
+            nv: 'nvd3'
         }),
         new webpack.optimize.AggressiveMergingPlugin({moveToParents: true}),
         new HtmlWebpackPlugin({

@@ -15,8 +15,9 @@
  */
 
 import get from 'lodash/get';
-import ObjectID from 'bson-objectid';
 import omit from 'lodash/fp/omit';
+import uuidv4 from 'uuid/v4';
+
 import {CacheModes, AtomicityModes, ShortCache} from '../types';
 import {Menu} from 'app/types';
 
@@ -37,21 +38,13 @@ export default class Caches {
 
     constructor(private $http: ng.IHttpService, private JDBC_LINKS) {}
 
-    saveCache(cache) {
-        return this.$http.post('/api/v1/configuration/caches/save', cache);
-    }
-
     getCache(cacheID: string) {
         return this.$http.get(`/api/v1/configuration/caches/${cacheID}`);
     }
 
-    removeCache(cacheID: string) {
-        return this.$http.post(`/api/v1/configuration/caches/remove/${cacheID}`);
-    }
-
     getBlankCache() {
         return {
-            _id: ObjectID.generate(),
+            id: uuidv4(),
             evictionPolicy: {},
             cacheMode: 'PARTITIONED',
             atomicityMode: 'ATOMIC',
@@ -75,7 +68,7 @@ export default class Caches {
 
     toShortCache(cache: any): ShortCache {
         return {
-            _id: cache._id,
+            id: cache.id,
             name: cache.name,
             backups: cache.backups,
             cacheMode: cache.cacheMode,

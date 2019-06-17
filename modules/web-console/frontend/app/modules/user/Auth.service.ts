@@ -28,8 +28,15 @@ type SignupUserInfo = {
     country: string,
 };
 
+type SigninUserInfo = {
+    email: string,
+    password: string,
+    activationToken?: string
+};
+
 type AuthActions = 'signin' | 'signup' | 'password/forgot';
-type AuthOptions = {email:string, password:string, activationToken?: string}|SignupUserInfo|{email:string};
+
+type AuthOptions = SigninUserInfo|SignupUserInfo|{email:string};
 
 export default class AuthService {
     static $inject = ['$http', '$rootScope', '$state', '$window', 'IgniteMessages', 'gettingStarted', 'User'];
@@ -48,8 +55,8 @@ export default class AuthService {
         return this._auth('signup', userInfo, loginAfterSignup);
     }
 
-    signin(email: string, password: string, activationToken?: string) {
-        return this._auth('signin', {email, password, activationToken});
+    signin(signinInfo: SigninUserInfo) {
+        return this._auth('signin', signinInfo);
     }
 
     remindPassword(email: string) {
@@ -66,7 +73,7 @@ export default class AuthService {
                 if (action === 'password/forgot')
                     return;
 
-                this.User.read()
+                return this.User.read()
                     .then((user) => {
                         if (loginAfterwards) {
                             this.$root.$broadcast('user', user);
@@ -89,7 +96,7 @@ export default class AuthService {
 
     async resendSignupConfirmation(email: string) {
         try {
-            return await this.$http.post('/api/v1/activation/resend/', {email});
+            return await this.$http.post('/api/v1/activation/resend', {email});
         }
         catch (err) {
             throw err.data;

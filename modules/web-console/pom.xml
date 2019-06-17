@@ -31,46 +31,19 @@
 
     <artifactId>ignite-web-console</artifactId>
     <version>8.8.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <node.version>v10.15.2</node.version>
-        <docker.registry.host>docker.io</docker.registry.host>
-        <docker.repository>apacheignite</docker.repository>
-        <docker.backend.image>web-console-backend</docker.backend.image>
-        <docker.frontend.image>web-console-frontend</docker.frontend.image>
-        <docker.standalone.image>web-console-standalone</docker.standalone.image>
+        <node.version>v10.15.3</node.version>
     </properties>
 
-    <dependencies>
-        <!-- Ignite dependencies -->
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-web-agent</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-aws</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-hibernate_5.1</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>ignite-urideploy</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>web-console-common</module>
+        <module>web-console-server</module>
+        <module>web-console-mail</module>
+        <module>web-agent</module>
+    </modules>
 
     <profiles>
         <profile>
@@ -117,18 +90,6 @@
                             </execution>
 
                             <execution>
-                                <id>download dependencies for backend</id>
-                                <goals>
-                                    <goal>npm</goal>
-                                </goals>
-
-                                <configuration>
-                                    <workingDirectory>backend</workingDirectory>
-                                    <arguments>install --no-optional --production</arguments>
-                                </configuration>
-                            </execution>
-
-                            <execution>
                                 <id>build frontend</id>
                                 <goals>
                                     <goal>npm</goal>
@@ -142,20 +103,6 @@
                                     <environmentVariables>
                                         <NODE_ENV>production</NODE_ENV>
                                     </environmentVariables>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>build backend</id>
-                                <goals>
-                                    <goal>npm</goal>
-                                </goals>
-
-                                <phase>compile</phase>
-
-                                <configuration>
-                                    <workingDirectory>backend</workingDirectory>
-                                    <arguments>run build</arguments>
                                 </configuration>
                             </execution>
                         </executions>
@@ -181,99 +128,6 @@
                                     </filesets>
                                 </configuration>
                             </execution>
-
-                            <execution>
-                                <id>clean-backend-build</id>
-                                <goals>
-                                    <goal>clean</goal>
-                                </goals>
-                                <phase>process-resources</phase>
-                                <configuration>
-                                    <excludeDefaultDirectories>true</excludeDefaultDirectories>
-                                    <filesets>
-                                        <fileset>
-                                            <directory>${project.basedir}/backend/build</directory>
-                                        </fileset>
-                                    </filesets>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>1.7</version>
-
-                        <dependencies>
-                            <dependency>
-                                <groupId>ant-contrib</groupId>
-                                <artifactId>ant-contrib</artifactId>
-                                <version>1.0b3</version>
-                                <exclusions>
-                                    <exclusion>
-                                        <groupId>ant</groupId>
-                                        <artifactId>ant</artifactId>
-                                    </exclusion>
-                                </exclusions>
-                            </dependency>
-                        </dependencies>
-                        <executions>
-                            <execution>
-                                <id>fixed-getos-logic-path</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>process-resources</phase>
-                                <configuration>
-
-                                    <tasks>
-                                        <taskdef resource="net/sf/antcontrib/antlib.xml"/>
-                                        <if>
-                                            <available
-                                                file="${project.basedir}/backend/node_modules/mongodb-download/node_modules/getos/index.js"/>
-                                            <then>
-                                                <replace dir="${project.basedir}/backend/node_modules/mongodb-download/node_modules/getos"
-                                                         token='"./logic/"' value='__dirname+"/logic/"'>
-                                                    <include name="index.js"/>
-                                                </replace>
-                                            </then>
-                                        </if>
-                                    </tasks>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>fixed-rhel-detection</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>process-resources</phase>
-                                <configuration>
-                                    <target>
-                                        <replace dir="${project.basedir}/backend/node_modules/mongodb-download/built"
-                                                 token="/rhel/" value="/Red Hat Linux/i.test(os.dist) || /rhel/">
-                                            <include name="mongodb-download.js"/>
-                                        </replace>
-                                    </target>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>fixed-download-url</id>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <phase>process-resources</phase>
-                                <configuration>
-                                    <target>
-                                        <replace dir="${project.basedir}/backend/node_modules/mongodb-download/built"
-                                                 token="https://downloads.mongodb.org" value="https://fastdl.mongodb.org">
-                                            <include name="mongodb-download.js"/>
-                                        </replace>
-                                    </target>
-                                </configuration>
-                            </execution>
                         </executions>
                     </plugin>
 
@@ -285,111 +139,35 @@
 
                         <executions>
                             <execution>
-                                <id>release-direct-install</id>
+                                <id>release-web-console</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
                                     <descriptors>
-                                        <descriptor>assembly/direct-install.xml</descriptor>
+                                        <descriptor>assembly/release-web-console.xml</descriptor>
                                     </descriptors>
-                                    <finalName>ignite-web-console-direct-install-${project.version}</finalName>
+                                    <finalName>ignite-web-console-${project.version}</finalName>
                                     <outputDirectory>target</outputDirectory>
                                     <appendAssemblyId>false</appendAssemblyId>
                                 </configuration>
                             </execution>
                         </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
 
-        <profile>
-            <id>docker-image</id>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.gridgain</groupId>
+                                <artifactId>ignite-web-console-server</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
 
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>docker-build-backend</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>docker</executable>
-                                    <arguments>
-                                        <argument>build</argument>
-                                        <argument>-f</argument>
-                                        <argument>docker/compose/backend/Dockerfile</argument>
-                                        <argument>-t</argument>
-                                        <argument>
-                                            ${docker.registry.host}/${docker.repository}/${docker.backend.image}:${project.version}
-                                        </argument>
-                                        <argument>${project.basedir}</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>docker-build-frontend</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>docker</executable>
-                                    <arguments>
-                                        <argument>build</argument>
-                                        <argument>-f</argument>
-                                        <argument>docker/compose/frontend/Dockerfile</argument>
-                                        <argument>-t</argument>
-                                        <argument>
-                                            ${docker.registry.host}/${docker.repository}/${docker.frontend.image}:${project.version}
-                                        </argument>
-                                        <argument>${project.basedir}</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>docker-push-backend</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>docker</executable>
-                                    <arguments>
-                                        <argument>push</argument>
-                                        <argument>
-                                            ${docker.registry.host}/${docker.repository}/${docker.backend.image}:${project.version}
-                                        </argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>docker-push-frontend</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>docker</executable>
-                                    <arguments>
-                                        <argument>push</argument>
-                                        <argument>
-                                            ${docker.registry.host}/${docker.repository}/${docker.frontend.image}:${project.version}
-                                        </argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
+                            <dependency>
+                                <groupId>org.gridgain</groupId>
+                                <artifactId>ignite-web-console-agent</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -401,13 +179,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
 
             <plugin>

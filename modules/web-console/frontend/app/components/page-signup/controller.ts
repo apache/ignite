@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import Auth from '../../modules/user/Auth.service';
 import MessagesFactory from '../../services/Messages.service';
 import FormUtilsFactoryFactory from '../../services/FormUtils.service';
@@ -74,12 +75,13 @@ export default class PageSignup implements ng.IPostLink {
 
 
         return this.Auth.signup(this.data)
-            .catch((res) => {
-                if (isEmailConfirmationError(res))
+            .catch((err) => {
+                if (isEmailConfirmationError(err))
                     return;
 
-                this.IgniteMessages.showError(null, res.data);
-                this.setServerError(res.data);
+                this.IgniteMessages.showError(null, err.data);
+
+                this.setServerError(_.get(err, 'data.message', err.data));
             })
             .finally(() => this.isLoading = false);
     }

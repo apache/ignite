@@ -36,7 +36,7 @@ panel-collapsible(opened=`::true` ng-form=form)
                 })(
                     ignite-unique='$ctrl.caches'
                     ignite-unique-property='name'
-                    ignite-unique-skip=`["_id", ${model}]`
+                    ignite-unique-skip=`["id", ${model}]`
                 )
                     +form-field__error({ error: 'igniteUnique', message: 'Cache name should be unique' })
             .pc-form-grid-col-60

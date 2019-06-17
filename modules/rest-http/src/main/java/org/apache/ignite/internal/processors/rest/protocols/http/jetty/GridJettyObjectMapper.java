@@ -53,18 +53,16 @@ public class GridJettyObjectMapper extends ObjectMapper {
     public GridJettyObjectMapper() {
         super(null, new CustomSerializerProvider(), null);
 
+        configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         setDateFormat(DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US));
 
-        SimpleModule module = new SimpleModule();
-
-        module.addSerializer(Throwable.class, THROWABLE_SERIALIZER);
-        module.addSerializer(IgniteBiTuple.class, IGNITE_TUPLE_SERIALIZER);
-        module.addSerializer(IgniteUuid.class, IGNITE_UUID_SERIALIZER);
-        module.addSerializer(GridCacheSqlMetadata.class, IGNITE_SQL_METADATA_SERIALIZER);
-        module.addSerializer(GridCacheSqlIndexMetadata.class, IGNITE_SQL_INDEX_METADATA_SERIALIZER);
-        module.addSerializer(BinaryObjectImpl.class, IGNITE_BINARY_OBJECT_SERIALIZER);
-
-        configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        SimpleModule module = new SimpleModule()
+            .addSerializer(Throwable.class, THROWABLE_SERIALIZER)
+            .addSerializer(IgniteBiTuple.class, IGNITE_TUPLE_SERIALIZER)
+            .addSerializer(IgniteUuid.class, IGNITE_UUID_SERIALIZER)
+            .addSerializer(GridCacheSqlMetadata.class, IGNITE_SQL_METADATA_SERIALIZER)
+            .addSerializer(GridCacheSqlIndexMetadata.class, IGNITE_SQL_INDEX_METADATA_SERIALIZER)
+            .addSerializer(BinaryObjectImpl.class, IGNITE_BINARY_OBJECT_SERIALIZER);
 
         registerModule(module);
     }
@@ -243,7 +241,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
                             BinaryObjectImpl ref = (BinaryObjectImpl)val;
 
                             if (ref.hasCircularReferences())
-                                throw ser.mappingException("Failed convert to JSON object for circular references");
+                                ser.reportMappingProblem("Failed convert to JSON object for circular references");
                         }
 
                         gen.writeObjectField(name, val);

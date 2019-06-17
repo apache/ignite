@@ -14,22 +14,16 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-import pako from 'pako';
 import bigIntJSON from 'json-bigint';
 
-/** This worker decode & decompress BASE64/Zipped data and parse to JSON. */
+/** This worker parse to JSON from string. */
 // eslint-disable-next-line no-undef
 onmessage = function(e) {
     const data = e.data;
 
-    const binaryString = atob(data.payload); // Decode from BASE64
-
-    const unzipped = pako.inflate(binaryString, {to: 'string'});
-
     const res = data.useBigIntJson
-        ? bigIntJSON({storeAsString: true}).parse(unzipped)
-        : JSON.parse(unzipped);
+        ? bigIntJSON({storeAsString: true}).parse(data.payload)
+        : JSON.parse(data.payload);
 
-    postMessage(_.get(res, 'result', res));
+    postMessage(res);
 };

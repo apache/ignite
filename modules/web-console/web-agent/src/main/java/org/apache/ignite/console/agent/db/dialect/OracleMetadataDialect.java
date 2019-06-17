@@ -31,7 +31,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.console.agent.db.DbColumn;
 import org.apache.ignite.console.agent.db.DbTable;
@@ -201,8 +200,6 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
                         if (scale > 4 || precision > 19)
                             return DOUBLE;
-
-                        return NUMERIC;
                     }
                     else {
                         if (precision < 1)
@@ -219,9 +216,9 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
                         if (precision < 19)
                             return BIGINT;
-
-                        return NUMERIC;
                     }
+
+                    return NUMERIC;
 
                 case "DATE":
                     return DATE;
@@ -285,13 +282,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                 String idxName = idxsRs.getString(UNQ_IDX_NAME_IDX);
                 String colName = idxsRs.getString(UNQ_IDX_COL_NAME_IDX);
 
-                Set<String> idxCols = uniqueIdxs.get(idxName);
-
-                if (idxCols == null) {
-                    idxCols = new LinkedHashSet<>();
-
-                    uniqueIdxs.put(idxName, idxCols);
-                }
+                Set<String> idxCols = uniqueIdxs.computeIfAbsent(idxName, k -> new LinkedHashSet<>());
 
                 idxCols.add(colName);
             }
@@ -345,25 +336,26 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
     /** {@inheritDoc} */
     @Override public Collection<DbTable> tables(Connection conn, List<String> schemas, boolean tblsOnly) throws SQLException {
-        PreparedStatement pkStmt = conn.prepareStatement(SQL_PRIMARY_KEYS);
-        PreparedStatement uniqueIdxsStmt = conn.prepareStatement(SQL_UNIQUE_INDEXES_KEYS);
-        PreparedStatement idxStmt = conn.prepareStatement(SQL_INDEXES);
-
-        if (schemas.isEmpty())
-            schemas.add(null);
-
-        Set<String> sysSchemas = systemSchemas();
-
         Collection<DbTable> tbls = new ArrayList<>();
 
-        try (Statement colsStmt = conn.createStatement()) {
+        try(
+            PreparedStatement pkStmt = conn.prepareStatement(SQL_PRIMARY_KEYS);
+            PreparedStatement uniqueIdxsStmt = conn.prepareStatement(SQL_UNIQUE_INDEXES_KEYS);
+            PreparedStatement idxStmt = conn.prepareStatement(SQL_INDEXES);
+            Statement colsStmt = conn.createStatement()
+        ) {
+            if (schemas.isEmpty())
+                schemas.add(null);
+
+            Set<String> sysSchemas = systemSchemas();
+
             for (String schema: schemas) {
                 if (systemSchemas().contains(schema) || (schema != null && schema.startsWith("FLOWS_")))
                     continue;
 
                 String sql = String.format(SQL_COLUMNS,
-                        tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name and a.owner = b.owner" : "",
-                        schema != null ? String.format(" WHERE a.owner = '%s' ", schema) : "");
+                    tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name and a.owner = b.owner" : "",
+                    schema != null ? String.format(" WHERE a.owner = '%s' ", schema) : "");
 
                 try (ResultSet colsRs = colsStmt.executeQuery(sql)) {
                     String prevSchema = "";

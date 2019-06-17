@@ -555,7 +555,7 @@ export default class IgniteConfigurationGenerator {
 
                     const curCache = _.get(spi, 'Cache.cache');
 
-                    const cache = _.find(caches, (c) => curCache && (c._id === curCache || _.get(c, 'cache._id') === curCache));
+                    const cache = _.find(caches, (c) => curCache && (c.id === curCache || _.get(c, 'cache.id') === curCache));
 
                     if (cache)
                         cacheBean.prop('java.lang.String', 'cacheName', cache.name || cache.cache.name);
@@ -1898,7 +1898,7 @@ export default class IgniteConfigurationGenerator {
                 .emptyBeanProperty('service')
                 .intProperty('maxPerNodeCount')
                 .intProperty('totalCount')
-                .stringProperty('cache', 'cacheName', (_id) => _id ? _.get(_.find(caches, {_id}), 'name', null) : null)
+                .stringProperty('cache', 'cacheName', (id) => id ? _.get(_.find(caches, {id}), 'name', null) : null)
                 .stringProperty('affinityKey');
 
             srvBeans.push(bean);

@@ -30,7 +30,7 @@ export default class ModalPreviewProject {
             },
             controller: ['cluster', '$rootScope', function(cluster, $rootScope) {
                 this.cluster = cluster;
-                this.isDemo = !!$rootScope.IgniteDemoMode;
+                this.isDemo = !!$rootScope.demoMode;
             }],
             controllerAs: '$ctrl',
             template: `

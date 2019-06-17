@@ -133,8 +133,8 @@ export default class IgniteListOfRegisteredUsersCtrl {
             fastWatch: true,
             exporterSuppressColumns: ['actions'],
             exporterCsvColumnSeparator: ';',
-            rowIdentity: (row) => row._id,
-            getRowIdentity: (row) => row._id,
+            rowIdentity: (row) => row.id,
+            getRowIdentity: (row) => row.id,
             onRegisterApi: (api) => {
                 this.gridApi = api;
 
@@ -199,14 +199,14 @@ export default class IgniteListOfRegisteredUsersCtrl {
     }
 
     _updateSelected() {
-        const ids = this.gridApi.selection.legacyGetSelectedRows().map(({ _id }) => _id).sort();
+        const ids = this.gridApi.selection.legacyGetSelectedRows().map(({ id }) => id).sort();
 
         if (!_.isEqual(ids, this.selected))
             this.selected = ids;
 
         if (ids.length) {
             const user = this.gridApi.selection.legacyGetSelectedRows()[0];
-            const other = this.user._id !== user._id;
+            const other = this.user.id !== user.id;
 
             this.actionOptions[0].available = other; // Become this user.
             this.actionOptions[1].available = other && user.admin; // Revoke admin.
@@ -233,7 +233,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
     becomeUser() {
         const user = this.gridApi.selection.legacyGetSelectedRows()[0];
 
-        this.AdminData.becomeUser(user._id)
+        this.AdminData.becomeUser(user)
             .then(() => this.User.load())
             .then(() => this.$state.go('default-state'))
             .then(() => this.NotebookData.load());
@@ -264,7 +264,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
         this.Confirm.confirm(`Are you sure you want to remove user: "${user.userName}"?`)
             .then(() => this.AdminData.removeUser(user))
             .then(() => {
-                const i = _.findIndex(this.gridOptions.data, (u) => u._id === user._id);
+                const i = _.findIndex(this.gridOptions.data, (u) => u.id === user.id);
 
                 if (i >= 0) {
                     this.gridOptions.data.splice(i, 1);

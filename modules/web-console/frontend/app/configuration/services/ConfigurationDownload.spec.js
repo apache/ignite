@@ -44,10 +44,10 @@ const mocks = () => new Map([
     }],
     ['$q', Promise],
     ['$rootScope', {
-        IgniteDemoMode: true
+        demoMode: true
     }],
     ['PageConfigure', {
-        getClusterConfiguration: () => Promise.resolve({clusters: [{_id: 1, name: 'An Cluster'}]})
+        getClusterConfiguration: () => Promise.resolve({clusters: [{id: 1, name: 'An Cluster'}]})
     }],
     ['IgniteConfigurationResource', {
         populate: () => Promise.resolve({clusters: []})
@@ -61,7 +61,7 @@ const saverMock = () => ({
 suite('page-configure, ConfigurationDownload service', () => {
     test('fails and shows error message when summary zipper fails', () => {
         const service = new Provider(...mocks().values());
-        const cluster = {_id: 1, name: 'An Cluster'};
+        const cluster = {id: 1, name: 'An Cluster'};
         service.configuration._clusters = [cluster];
         service.summaryZipper = () => Promise.reject({message: 'Summary zipper failed.'});
 
@@ -79,7 +79,7 @@ suite('page-configure, ConfigurationDownload service', () => {
     test('calls correct dependcies', () => {
         const service = new Provider(...mocks().values());
         service.saver = saverMock();
-        const cluster = {_id: 1, name: 'An Cluster'};
+        const cluster = {id: 1, name: 'An Cluster'};
         service.configuration._clusters = [cluster];
 
         return service.downloadClusterConfiguration(cluster)
@@ -92,14 +92,14 @@ suite('page-configure, ConfigurationDownload service', () => {
             assert.deepEqual(service.summaryZipper.getCall(0).args, [{
                 cluster,
                 data: {},
-                IgniteDemoMode: true,
+                demoMode: true,
                 targetVer: '2.0'
             }], 'summary zipper arguments are correct');
             assert.deepEqual(service.saver.saveAs.getCall(0).args, [
                 {
                     cluster,
                     data: {},
-                    IgniteDemoMode: true,
+                    demoMode: true,
                     targetVer: '2.0'
                 },
                 'An_Cluster-project.zip'

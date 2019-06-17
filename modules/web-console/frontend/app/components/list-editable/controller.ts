@@ -26,7 +26,7 @@ export type ID = (string | number) & {tag: 'ItemID'}
 
 export type ItemScope<T> = {$index: number, item: T, form: ng.IFormController} & ng.IScope
 
-export default class ListEditable<T extends {_id?: any}> {
+export default class ListEditable<T extends {id?: any}> {
     static $inject = ['$animate', '$element', '$transclude', '$timeout'];
 
     constructor(
@@ -46,8 +46,8 @@ export default class ListEditable<T extends {_id?: any}> {
     private _cache: Map<ID, T>;
 
     id(item: T | undefined, index: number): ID {
-        if (item && item._id)
-            return item._id as ID;
+        if (item && item.id)
+            return item.id as ID;
 
         return index as ID;
     }

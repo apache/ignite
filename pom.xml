@@ -111,7 +111,7 @@
                 <module>modules/hibernate-5.1</module>
                 <module>modules/hibernate-5.3</module>
                 <module>modules/schedule</module>
-                <module>modules/web-console/web-agent</module>
+                <module>modules/web-console</module>
                 <module>modules/yardstick</module>
             </modules>
         </profile>
@@ -578,7 +578,6 @@
             <id>web-console</id>
             <modules>
                 <module>modules/web-console</module>
-                <module>modules/web-console/web-agent</module>
             </modules>
         </profile>
 

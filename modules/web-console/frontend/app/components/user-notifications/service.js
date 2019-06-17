@@ -18,7 +18,6 @@ import _ from 'lodash';
 
 import controller from './controller';
 import templateUrl from './template.tpl.pug';
-import {CancellationError} from 'app/errors/CancellationError';
 
 export default class UserNotificationsService {
     static $inject = ['$http', '$modal', '$q', 'IgniteMessages'];
@@ -27,9 +26,9 @@ export default class UserNotificationsService {
     $q;
 
     /**
-     * @param {ng.IHttpService} $http    
-     * @param {mgcrea.ngStrap.modal.IModalService} $modal   
-     * @param {ng.IQService} $q       
+     * @param {ng.IHttpService} $http
+     * @param {mgcrea.ngStrap.modal.IModalService} $modal
+     * @param {ng.IQService} $q
      * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
      */
     constructor($http, $modal, $q, Messages) {
@@ -39,12 +38,12 @@ export default class UserNotificationsService {
         this.Messages = Messages;
 
         this.message = null;
-        this.isShown = false;
+        this.visible = false;
     }
 
-    set notification(notification) {
-        this.message = _.get(notification, 'message');
-        this.isShown = _.get(notification, 'isShown');
+    set announcement(ann) {
+        this.message = _.get(ann, 'message');
+        this.visible = _.get(ann, 'visible');
     }
 
     editor() {
@@ -55,21 +54,17 @@ export default class UserNotificationsService {
             resolve: {
                 deferred: () => deferred,
                 message: () => this.message,
-                isShown: () => this.isShown
+                visible: () => this.visible
             },
             controller,
             controllerAs: '$ctrl'
         });
 
-        const modalHide = modal.hide;
-
-        modal.hide = () => deferred.reject(new CancellationError());
-
         return deferred.promise
-            .finally(modalHide)
-            .then(({ message, isShown }) => {
-                this.$http.put('/api/v1/admin/notifications', { message, isShown })
+            .then((ann) => {
+                this.$http.put('/api/v1/admin/announcement', ann)
                     .catch(this.Messages.showError);
-            });
+            })
+            .finally(modal.hide);
     }
 }

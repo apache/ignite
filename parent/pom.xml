@@ -59,6 +59,7 @@
         <commons.codec.version>1.12</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
+        <commons.compress.version>1.18</commons.compress.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>2.9.1</curator.version>
         <easymock.version>3.4</easymock.version>
@@ -121,12 +122,14 @@
         <snappy.version>1.1.7.2</snappy.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.3.0</spark.version>
+        <spring.boot.version>1.5.20.RELEASE</spring.boot.version>
         <spring.data.version>1.13.14.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
         <spring.version>4.3.18.RELEASE</spring.version><!-- don't forget to update spring-data version -->
         <spring.data-2.0.version>2.0.9.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring-5.0 version -->
         <spring-5.0.version>5.0.8.RELEASE</spring-5.0.version><!-- don't forget to update spring-data-2.0 version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
+        <swagger2.version>2.9.2</swagger2.version>
         <tomcat.version>9.0.10</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
@@ -135,6 +138,7 @@
         <zkclient.version>0.5</zkclient.version>
         <zookeeper.version>3.4.13</zookeeper.version>
         <zstd.version>1.3.7-2</zstd.version>
+        <web-console.ignite.version>8.7.5</web-console.ignite.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>2.10.4</maven.javadoc.plugin.version>
@@ -233,7 +237,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
 
@@ -244,6 +248,13 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>GridGain External Repository</id>
+            <url>http://www.gridgainsystems.com/nexus/content/repositories/external</url>
+        </repository>
+    </repositories>
 
     <build>
         <pluginManagement>
@@ -984,6 +995,8 @@
                                         <exclude>**/web-console/**/.babelrc</exclude>
                                         <exclude>**/web-console/**/*.json</exclude>
                                         <exclude>**/web-console/**/*.json.sample</exclude>
+                                        <exclude>**/web-console/**/*.crt</exclude>
+                                        <exclude>**/web-console/**/*.nopass.key</exclude>
                                         <exclude>**/web-console/backend/build/**</exclude>
                                         <exclude>**/web-console/backend/node_modules/**</exclude>
                                         <exclude>**/web-console/e2e/testcafe/node_modules/**</exclude>

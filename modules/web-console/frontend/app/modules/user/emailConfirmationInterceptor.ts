@@ -24,7 +24,7 @@ export function registerInterceptor(http: ng.IHttpProvider) {
     function emailConfirmationInterceptor($q: ng.IQService, $injector: ng.auto.IInjectorService): ng.IHttpInterceptor {
         return {
             responseError(res) {
-                if (res.status === 403 && res.data && res.data.errorCode === 10104)
+                if (res.status === 403 && res.data && res.data.code === 10104)
                     $injector.get<UIRouter>('$uiRouter').stateService.go('signup-confirmation', {email: res.data.email});
 
                 return $q.reject(res);

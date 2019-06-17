@@ -30,7 +30,7 @@ export default class WebConsoleHeaderContent {
 
     get showConnectedClusters(): boolean {
         return this.$rootScope.user &&
-            !this.$rootScope.IgniteDemoMode &&
+            !this.$rootScope.demoMode &&
             !this.constructor.connectedClusterInvisibleStates.some((state) => this.$state.includes(state)) &&
             !this.$rootScope.user.becomeUsed;
     }
@@ -40,6 +40,6 @@ export default class WebConsoleHeaderContent {
     }
 
     get showDemoModeButton(): boolean {
-        return this.$rootScope.user && !this.$rootScope.user.becomeUsed && !this.$rootScope.IgniteDemoMode;
+        return this.$rootScope.user && !this.$rootScope.user.becomeUsed && !this.$rootScope.demoMode;
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import Auth from '../../modules/user/Auth.service';
+import IgniteAdminData from '../../core/admin/Admin.data';
 import MessagesFactory from '../../services/Messages.service';
 import FormUtilsFactoryFactory from '../../services/FormUtils.service';
 import LoadingServiceFactory from '../../modules/loading/loading.service';
@@ -36,10 +36,11 @@ export class DialogAdminCreateUser {
 
     serverError: string | null = null;
 
-    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', 'IgniteLoading'];
+    static $inject = ['$rootScope', 'IgniteAdminData', 'IgniteMessages', 'IgniteFormUtils', 'IgniteLoading'];
 
     constructor(
-        private Auth: Auth,
+        private $root: ng.IRootScopeService,
+        private AdminData: IgniteAdminData,
         private IgniteMessages: ReturnType<typeof MessagesFactory>,
         private IgniteFormUtils: ReturnType<typeof FormUtilsFactoryFactory>,
         private loading: ReturnType<typeof LoadingServiceFactory>
@@ -63,8 +64,9 @@ export class DialogAdminCreateUser {
 
         this.loading.start('createUser');
 
-        this.Auth.signup(this.data, false)
+        this.AdminData.registerUser(this.data)
             .then(() => {
+                this.$root.$broadcast('userCreated');
                 this.IgniteMessages.showInfo(`User ${this.data.email} created`);
                 this.close({});
             })

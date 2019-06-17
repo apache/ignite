@@ -21,7 +21,7 @@ export default class ItemsTableController {
 
     constructor($scope, gridUtil, $timeout, uiGridSelectionService) {
         Object.assign(this, {$scope, gridUtil, $timeout, uiGridSelectionService});
-        this.rowIdentityKey = '_id';
+        this.rowIdentityKey = 'id';
     }
 
     $onInit() {

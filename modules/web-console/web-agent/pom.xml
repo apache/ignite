@@ -29,56 +29,47 @@
         <relativePath>../../../parent</relativePath>
     </parent>
 
-    <artifactId>ignite-web-agent</artifactId>
+    <artifactId>ignite-web-console-agent</artifactId>
     <packaging>jar</packaging>
     <version>8.8.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <maven.build.timestamp.format>yyMMddHHmmss</maven.build.timestamp.format>
-    </properties>
-
     <dependencies>
+        <!-- Ignite dependencies -->
         <dependency>
-            <groupId>io.socket</groupId>
-            <artifactId>socket.io-client</artifactId>
-            <version>1.0.0</version>
+            <groupId>org.gridgain</groupId>
+            <artifactId>ignite-web-console-common</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-json-org</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-            <version>1.58</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>3.12.0</version>
+            <groupId>org.gridgain</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${web-console.ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${project.version}</version>
+            <version>${web-console.ignite.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-rest-http</artifactId>
-            <version>${project.version}</version>
+            <version>${web-console.ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-spring</artifactId>
-            <version>${project.version}</version>
+            <version>${web-console.ignite.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework</groupId>
@@ -98,7 +89,38 @@
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>ignite-slf4j</artifactId>
-            <version>${project.version}</version>
+            <version>${web-console.ignite.version}</version>
+        </dependency>
+
+        <!-- Third-party dependencies -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-client</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-client</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-util</artifactId>
+            <version>${jetty.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-json-org</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.72</version>
         </dependency>
 
         <dependency>
@@ -109,7 +131,7 @@
     </dependencies>
 
     <build>
-        <finalName>ignite-web-agent-${project.version}</finalName>
+        <finalName>ignite-web-console-agent-${project.version}</finalName>
 
         <testResources>
             <testResource>
@@ -125,43 +147,18 @@
 
         <plugins>
             <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.5</version>
-
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>org.apache.ignite.console.agent.AgentLauncher</mainClass>
-                        </manifest>
-                        <manifestEntries>
-                            <Build-Time>${maven.build.timestamp}</Build-Time>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4</version>
-
+                <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <id>copy-libs</id>
+                        <phase>test-compile</phase>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>copy-dependencies</goal>
                         </goals>
-
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/maven/**</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
+                        <configuration combine.self="override">
+                            <outputDirectory>target/libs</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <excludeTransitive>false</excludeTransitive>
                         </configuration>
                     </execution>
                 </executions>
@@ -175,16 +172,16 @@
 
                 <executions>
                     <execution>
-                        <id>release-web-agent</id>
+                        <id>release-web-console-agent</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/release-web-agent.xml</descriptor>
+                                <descriptor>../assembly/release-web-console-agent.xml</descriptor>
                             </descriptors>
-                            <finalName>ignite-web-agent-${project.version}</finalName>
+                            <finalName>ignite-web-console-agent-${project.version}</finalName>
                             <outputDirectory>target</outputDirectory>
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
