@@ -41,122 +41,118 @@ public class AtomicCacheConsistencyTest extends ImplicitTransactionalCacheConsis
     /**
      *
      */
-    private static final Consumer<ReadRepairData> GET_CHECK_AND_FAIL =
-        (data) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
-            Set<Integer> keys = data.data.keySet();
-            boolean raw = data.raw;
-            boolean async = data.async;
+    private static final Consumer<ReadRepairData> GET_CHECK_AND_FAIL = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Set<Integer> keys = data.data.keySet();
+        boolean raw = data.raw;
+        boolean async = data.async;
 
-            assert keys.size() == 1;
+        assert keys.size() == 1;
 
-            for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
-                try {
-                    Integer key = entry.getKey();
-
-                    Integer res =
-                        raw ?
-                            async ?
-                                cache.withReadRepair().getEntryAsync(key).get().getValue() :
-                                cache.withReadRepair().getEntry(key).getValue() :
-                            async ?
-                                cache.withReadRepair().getAsync(key).get() :
-                                cache.withReadRepair().get(key);
-
-                    fail("Should not happen.");
-                }
-                catch (CacheException e) {
-                    assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
-                }
-            }
-        };
-
-    /**
-     *
-     */
-    private static final Consumer<ReadRepairData> GETALL_CHECK_AND_FAIL =
-        (data) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
-            Set<Integer> keys = data.data.keySet();
-            boolean raw = data.raw;
-            boolean async = data.async;
-
-            assert !keys.isEmpty();
-
+        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
             try {
-                if (raw) {
-                    Collection<CacheEntry<Integer, Integer>> res =
-                        async ?
-                            cache.withReadRepair().getEntriesAsync(keys).get() :
-                            cache.withReadRepair().getEntries(keys);
+                Integer key = entry.getKey();
 
-                    for (CacheEntry<Integer, Integer> entry : res)
-                        assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
-                }
-                else {
-                    Map<Integer, Integer> res =
+                Integer res =
+                    raw ?
                         async ?
-                            cache.withReadRepair().getAllAsync(keys).get() :
-                            cache.withReadRepair().getAll(keys);
-
-                    for (Map.Entry<Integer, Integer> entry : res.entrySet())
-                        assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
-                }
+                            cache.withReadRepair().getEntryAsync(key).get().getValue() :
+                            cache.withReadRepair().getEntry(key).getValue() :
+                        async ?
+                            cache.withReadRepair().getAsync(key).get() :
+                            cache.withReadRepair().get(key);
 
                 fail("Should not happen.");
             }
             catch (CacheException e) {
                 assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
             }
-        };
+        }
+    };
 
     /**
      *
      */
-    private static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_FAIL =
-        (data) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
-            Set<Integer> keys = data.data.keySet();
-            boolean async = data.async;
+    private static final Consumer<ReadRepairData> GETALL_CHECK_AND_FAIL = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Set<Integer> keys = data.data.keySet();
+        boolean raw = data.raw;
+        boolean async = data.async;
 
-            assert keys.size() == 1;
+        assert !keys.isEmpty();
 
-            for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
-                try {
-                    Integer key = entry.getKey();
+        try {
+            if (raw) {
+                Collection<CacheEntry<Integer, Integer>> res =
+                    async ?
+                        cache.withReadRepair().getEntriesAsync(keys).get() :
+                        cache.withReadRepair().getEntries(keys);
 
-                    boolean res = async ?
-                        cache.withReadRepair().containsKeyAsync(key).get() :
-                        cache.withReadRepair().containsKey(key);
-
-                    fail("Should not happen.");
-                }
-                catch (Exception e) {
-                    assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
-                }
+                for (CacheEntry<Integer, Integer> entry : res)
+                    assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
             }
-        };
+            else {
+                Map<Integer, Integer> res =
+                    async ?
+                        cache.withReadRepair().getAllAsync(keys).get() :
+                        cache.withReadRepair().getAll(keys);
+
+                for (Map.Entry<Integer, Integer> entry : res.entrySet())
+                    assertEquals(data.data.get(entry.getKey()).latest, entry.getValue());
+            }
+
+            fail("Should not happen.");
+        }
+        catch (CacheException e) {
+            assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
+        }
+    };
 
     /**
      *
      */
-    private static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_FAIL =
-        (data) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
-            Set<Integer> keys = data.data.keySet();
-            boolean async = data.async;
+    private static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_FAIL = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Set<Integer> keys = data.data.keySet();
+        boolean async = data.async;
 
+        assert keys.size() == 1;
+
+        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
             try {
+                Integer key = entry.getKey();
+
                 boolean res = async ?
-                    cache.withReadRepair().containsKeysAsync(keys).get() :
-                    cache.withReadRepair().containsKeys(keys);
+                    cache.withReadRepair().containsKeyAsync(key).get() :
+                    cache.withReadRepair().containsKey(key);
 
                 fail("Should not happen.");
             }
             catch (Exception e) {
                 assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
             }
-        };
+        }
+    };
+
+    /**
+     *
+     */
+    private static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_FAIL = (data) -> {
+        IgniteCache<Integer, Integer> cache = data.cache;
+        Set<Integer> keys = data.data.keySet();
+        boolean async = data.async;
+
+        try {
+            boolean res = async ?
+                cache.withReadRepair().containsKeysAsync(keys).get() :
+                cache.withReadRepair().containsKeys(keys);
+
+            fail("Should not happen.");
+        }
+        catch (Exception e) {
+            assertTrue(e.getCause() instanceof IgniteConsistencyViolationException);
+        }
+    };
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicyMode() {
