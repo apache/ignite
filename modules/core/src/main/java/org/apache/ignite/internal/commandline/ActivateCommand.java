@@ -30,8 +30,8 @@ import static org.apache.ignite.internal.commandline.CommandList.ACTIVATE;
  */
 public class ActivateCommand implements Command<Void> {
     /** {@inheritDoc} */
-    @Override public void printUsage() {
-        Command.usage("Activate cluster:", ACTIVATE);
+    @Override public void printUsage(Logger logger) {
+        Command.usage(logger, "Activate cluster:", ACTIVATE);
     }
 
     /**

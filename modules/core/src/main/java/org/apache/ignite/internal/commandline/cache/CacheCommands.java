@@ -30,6 +30,8 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.CACHE;
+import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.getCommonOptions;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONTENTION;
@@ -53,16 +55,16 @@ public class CacheCommands implements Command<CacheSubcommands> {
     private CacheSubcommands subcommand;
 
     /** {@inheritDoc} */
-    @Override public void printUsage() {
-        CommandLogger.logWithIndent("View caches information in a cluster. For more details type:");
-        CommandLogger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, CACHE, HELP), 2);
-        CommandLogger.nl();
+    @Override public void printUsage(Logger logger) {
+        logger.info(INDENT + "View caches information in a cluster. For more details type:");
+        logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, CACHE, HELP));
+        logger.info("");
     }
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         if (subcommand == CacheSubcommands.HELP) {
-            printCacheHelp();
+            printCacheHelp(logger);
 
             return null;
         }
@@ -115,57 +117,53 @@ public class CacheCommands implements Command<CacheSubcommands> {
     }
 
     /** */
-    private void printCacheHelp() {
-        CommandLogger.logWithIndent("The '" + CACHE + " subcommand' is used to get information about and perform actions" +
+    private void printCacheHelp(Logger logger) {
+        logger.info(INDENT + "The '" + CACHE + " subcommand' is used to get information about and perform actions" +
             " with caches. The command has the following syntax:");
-        CommandLogger.nl();
-        CommandLogger.logWithIndent(CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())) + " " +
+        logger.info("");
+        logger.info(INDENT + CommandLogger.join(" ", UTILITY_NAME, CommandLogger.join(" ", getCommonOptions())) + " " +
             CACHE + " [subcommand] <subcommand_parameters>");
-        CommandLogger.nl();
-        CommandLogger.logWithIndent("The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '"
+        logger.info("");
+        logger.info(INDENT + "The subcommands that take " + OP_NODE_ID + " as an argument ('" + LIST + "', '"
             + FIND_AND_DELETE_GARBAGE+ "', '" + CONTENTION + "' and '" + VALIDATE_INDEXES +
             "') will be executed on the given node or on all server nodes" +
             " if the option is not specified. Other commands will run on a random server node.");
-        CommandLogger.nl();
-        CommandLogger.nl();
-        CommandLogger.logWithIndent("Subcommands:");
+        logger.info("");
+        logger.info("");
+        logger.info(INDENT + "Subcommands:");
 
         Arrays.stream(CacheCommandList.values()).forEach(c -> {
-            if (c.subcommand() != null) c.subcommand().printUsage();
+            if (c.subcommand() != null) c.subcommand().printUsage(logger);
         });
 
-        CommandLogger.nl();
+        logger.info("");
     }
 
     /**
      * Print cache command usage with default indention.
      *
+     * @param logger Logger to use.
      * @param cmd Cache command.
      * @param description Command description.
      * @param paramsDesc Parameter desciptors.
      * @param args Cache command arguments.
      */
     protected static void usageCache(
+        Logger logger,
         CacheSubcommands cmd,
         String description,
         Map<String, String> paramsDesc,
         String... args
     ) {
-        int indentsNum = 1;
-
-        CommandLogger.logWithIndent(DELIM, indentsNum);
-        CommandLogger.nl();
-        CommandLogger.logWithIndent(CommandLogger.join(" ", CACHE, cmd, CommandLogger.join(" ", args)), indentsNum++);
-        CommandLogger.nl();
-        CommandLogger.logWithIndent(description, indentsNum);
-        CommandLogger.nl();
+        logger.info(INDENT + DELIM);
+        logger.info(INDENT + CommandLogger.join(" ", CACHE, cmd, CommandLogger.join(" ", args)));
+        logger.info(DOUBLE_INDENT + description);
 
         if (!F.isEmpty(paramsDesc)) {
-            CommandLogger.logWithIndent("Parameters:", indentsNum);
+            logger.info("");
+            logger.info(DOUBLE_INDENT + "Parameters:");
 
-            usageCacheParams(paramsDesc, indentsNum + 1);
-
-            CommandLogger.nl();
+            usageCacheParams(paramsDesc, DOUBLE_INDENT + INDENT, logger);
         }
     }
 
@@ -173,13 +171,14 @@ public class CacheCommands implements Command<CacheSubcommands> {
      * Print cache command arguments usage.
      *
      * @param paramsDesc Cache command arguments description.
-     * @param indentsNum Number of indents.
+     * @param indent Indent string.
+     * @param logger Logger to use.
      */
-    private static void usageCacheParams(Map<String, String> paramsDesc, int indentsNum) {
+    private static void usageCacheParams(Map<String, String> paramsDesc, String indent, Logger logger) {
         int maxParamLen = paramsDesc.keySet().stream().max(Comparator.comparingInt(String::length)).get().length();
 
         for (Map.Entry<String, String> param : paramsDesc.entrySet())
-            CommandLogger.logWithIndent(extendToLen(param.getKey(), maxParamLen) + "  " + "- " + param.getValue(), indentsNum);
+            logger.info(indent + extendToLen(param.getKey(), maxParamLen) + "  " + "- " + param.getValue());
     }
 
     /**

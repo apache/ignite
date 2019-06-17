@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
  */
 public class IdleVerify implements Command<IdleVerify.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage() {
+    @Override public void printUsage(Logger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Verify counters and hash sums of primary and backup partitions for the specified " +
             "caches/cache groups on an idle cluster and print out the differences, if any. " +
@@ -78,6 +78,7 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
             "regexps, by cache type and after all by exclude regexps.";
 
         usageCache(
+            logger,
             IDLE_VERIFY,
             description,
             Collections.singletonMap(CHECK_CRC.toString(),

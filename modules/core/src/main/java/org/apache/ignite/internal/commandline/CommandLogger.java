@@ -24,11 +24,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
- * Logger used in command handler.
+ * Utility class for creating {@code CommangHandler} log messages.
  */
 public class CommandLogger {
     /** Indent for help output. */
     public static final String INDENT = "  ";
+
+    /** Double indent for help output. */
+    public static final String DOUBLE_INDENT = INDENT + INDENT;
 
     /**
      * Join input parameters with specified {@code delimeter} between them.
@@ -113,133 +116,22 @@ public class CommandLogger {
     }
 
     /**
-     * Output specified string to console.
+     * Prints exception messages to log
      *
-     * @param s String to output.
+     * @param exceptions map containing node ids and exceptions
+     * @param infoMsg single message to log
+     * @param logger Logger to use
+     * @return true if errors were printed.
      */
-    public static void log(String s) {
-        System.out.println(s);
-    }
-
-    /**
-     *
-     * Output specified string to console.
-     *
-     * @param s String to output.
-     */
-    public static void logWithIndent(Object s) {
-        log(indent(s));
-    }
-
-    /**
-     *
-     * Output specified string to console.
-     *
-     * @param s String to output.
-     */
-    public static void logWithIndent(Object s, int indentCnt) {
-        log(indent(s), indentCnt);
-    }
-
-    /**
-     * Adds indent to begin of object's string representation.
-     *
-     * @param o Input object.
-     * @return Indented string.
-     */
-    public static String indent(Object o) {
-        return indent(o, 1);
-    }
-
-    /**
-     * Adds specified indents to begin of object's string representation.
-     *
-     * @param o Input object.
-     * @param indentCnt Number of indents.
-     * @return Indented string.
-     */
-    public static String indent(Object o, int indentCnt) {
-        assert indentCnt >= 0;
-
-        String s = o == null ? null : o.toString();
-
-        switch (indentCnt) {
-            case 0:
-                return s;
-
-            case 1:
-                return INDENT + s;
-
-            default:
-                int sLen = s == null ? 4 : s.length();
-
-                SB sb = new SB(sLen + indentCnt * INDENT.length());
-
-                for (int i = 0; i < indentCnt; i++)
-                    sb.a(INDENT);
-
-                return sb.a(s).toString();
-        }
-    }
-
-    /**
-     * Format and output specified string to console.
-     *
-     * @param format A format string as described in Format string syntax.
-     * @param args Arguments referenced by the format specifiers in the format string.
-     */
-    public static void log(String format, Object... args) {
-        System.out.printf(format, args);
-    }
-
-    /**
-     * Output empty line.
-     */
-    public static void nl() {
-        System.out.println();
-    }
-
-    /**
-     * Print error to console.
-     *
-
-     * @param s Optional message.
-     * @param e Error to print.
-     */
-    public void error(String s, Throwable e) {
-        if (!F.isEmpty(s))
-            log(s);
-
-        log("Error: " + errorMessage(e));
-    }
-
-    public boolean printErrors(Map<UUID, Exception> exceptions, String s) {
+    public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, Logger logger) {
         if (!F.isEmpty(exceptions)) {
-            log(s);
-
-            for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
-                logWithIndent("Node ID: " + e.getKey());
-
-                logWithIndent("Exception message:");
-                logWithIndent(e.getValue().getMessage(), 2);
-                nl();
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    public static boolean printErrors(Map<UUID, Exception> exceptions, String s, Logger logger) {
-        if (!F.isEmpty(exceptions)) {
-            logger.info(s);
+            logger.info(infoMsg);
 
             for (Map.Entry<UUID, Exception> e : exceptions.entrySet()) {
                 logger.info(INDENT + "Node ID: " + e.getKey());
 
                 logger.info(INDENT + "Exception message:");
-                logger.info(INDENT + INDENT + e.getValue().getMessage());
+                logger.info(DOUBLE_INDENT + e.getValue().getMessage());
                 logger.info("");
             }
 
