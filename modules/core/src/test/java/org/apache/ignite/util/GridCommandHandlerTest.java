@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -115,6 +116,7 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static java.io.File.separatorChar;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Arrays.asList;
@@ -129,6 +131,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -152,6 +155,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** Additional data region configuration. */
     private DataRegionConfiguration dataRegionConfiguration;
+
+    /** */
+    private File defaultDiagnosticDir;
+    /** */
+    private File customDiagnosticDir;
 
     /**
      * @return Folder in work directory.
@@ -185,6 +193,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
+        initDiagnosticDir();
+
+        cleanDiagnosticDir();
+
         sysOut = System.out;
 
         testOut = new ByteArrayOutputStream(1024 * 1024);
@@ -206,6 +218,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 delete(path);
         }
 
+        cleanDiagnosticDir();
+
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         System.setOut(sysOut);
@@ -213,6 +227,25 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         log.info("----------------------------------------");
         if (testOut != null)
             System.out.println(testOut.toString());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void initDiagnosticDir() throws IgniteCheckedException {
+        defaultDiagnosticDir = new File(U.defaultWorkDirectory()
+            + separatorChar + DEFAULT_TARGET_FOLDER + separatorChar);
+
+        customDiagnosticDir = new File(U.defaultWorkDirectory()
+            + separatorChar + "diagnostic_test_dir" + separatorChar);
+    }
+
+    /**
+     * Clean diagnostic directories.
+     */
+    private void cleanDiagnosticDir() {
+        U.delete(defaultDiagnosticDir);
+        U.delete(customDiagnosticDir);
     }
 
     /**
@@ -2702,29 +2735,108 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        String dir = U.defaultWorkDirectory() + "/diagnostic/";
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic")
+        );
 
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "help"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "help"));
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "help")
+        );
 
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir));
+        // Dump locks only on connected node to default path.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump")
+        );
 
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--all"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log", "--all"));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir, "--all"));
+        // Check file dump in default path.
+        checkNumberFiles(defaultDiagnosticDir, 1);
 
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--nodes",
-            node0.id().toString(), node2.id().toString()));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", "--nodes",
-            node0.consistentId().toString(), node2.consistentId().toString()));
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log")
+        );
 
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump_log", "--nodes",
-            node1.id().toString(), node3.id().toString()));
-        assertEquals(EXIT_CODE_OK, execute("--diagnostic", "pageLocks", "dump", dir, "--nodes",
-            node1.consistentId().toString(), node3.consistentId().toString()));
+        // Dump locks only on connected node to specific path.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump", "--path", customDiagnosticDir.getAbsolutePath())
+        );
+
+        // Check file dump in specific path.
+        checkNumberFiles(customDiagnosticDir, 1);
+
+        // Dump locks only all nodes.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump", "--all")
+        );
+
+        // Current cluster 4 nodes -> 4 files + 1 from previous operation.
+        checkNumberFiles(defaultDiagnosticDir, 5);
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log", "--all")
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--path", customDiagnosticDir.getAbsolutePath(), "--all")
+        );
+
+        // Current cluster 4 nodes -> 4 files + 1 from previous operation.
+        checkNumberFiles(customDiagnosticDir, 5);
+
+        // Dump locks only 2 nodes use nodeIds as arg.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--nodes", node0.id().toString() + "," + node2.id().toString())
+        );
+
+        // Dump locks only for 2 nodes -> 2 files + 5 from previous operation.
+        checkNumberFiles(defaultDiagnosticDir, 7);
+
+        // Dump locks only for 2 nodes use constIds as arg.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--nodes", node0.consistentId().toString() + "," + node2.consistentId().toString())
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log",
+                "--nodes", node1.id().toString() + "," + node3.id().toString())
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--diagnostic", "pageLocks", "dump",
+                "--path", customDiagnosticDir.getAbsolutePath(),
+                "--nodes", node1.consistentId().toString() + "," + node3.consistentId().toString())
+        );
+
+        // Dump locks only for 2 nodes -> 2 files + 5 from previous operation.
+        checkNumberFiles(customDiagnosticDir, 7);
+    }
+
+    /**
+     * @param dir Directory.
+     * @param numberFiles Number of files.
+     */
+    private void checkNumberFiles(File dir, int numberFiles) {
+        File[] files = dir.listFiles((d, name) -> name.startsWith(ToFileDumpProcessor.PREFIX_NAME));
+
+        assertEquals(numberFiles, files.length);
+
+        for (int i = 0; i < files.length; i++)
+            assertTrue(files[i].length() > 0);
     }
 
     /**
