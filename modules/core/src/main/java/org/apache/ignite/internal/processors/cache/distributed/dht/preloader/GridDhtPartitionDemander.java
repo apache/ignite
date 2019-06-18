@@ -788,7 +788,7 @@ public class GridDhtPartitionDemander {
                             else {
                                 // In-memory evictions can be configured in such a way that batch mode will lead to OOME.
                                 boolean batched = GridCacheUtils.isEnoughSpaceForData(grp.dataRegion(),
-                                    supplyMsg.messageSize());
+                                    supplyMsg.messageSize() * 2);
 
                                 preloadEntries(topVer, node, p, infos, batched);
                             }

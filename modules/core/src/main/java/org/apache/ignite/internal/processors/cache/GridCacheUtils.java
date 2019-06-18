@@ -2002,8 +2002,7 @@ public class GridCacheUtils {
     }
 
     /**
-     * Calculates whether there is enough free space in a region to store a specified amount of data. Required number of
-     * pages for data is estimated taking into account memory fragmentation and possible concurrent updates.
+     * Calculates whether there is enough free space in a region to store a specified amount of data.
      *
      * @param memPlc Data region.
      * @param size Data size in bytes.
@@ -2019,8 +2018,7 @@ public class GridCacheUtils {
 
         int sysPageSize = pageMem.systemPageSize();
 
-        // The number of pages is calculated taking into account memory fragmentation and possible concurrent updates.
-        int pagesRequired = Math.round((size / (float)sysPageSize) * 2);
+        int pagesRequired = Math.round(size / (float)sysPageSize);
 
         long maxPages = plc.getMaxSize() / sysPageSize;
 
