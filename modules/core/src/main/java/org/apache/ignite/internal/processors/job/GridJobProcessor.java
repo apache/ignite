@@ -69,6 +69,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
@@ -177,6 +181,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final AtomicLong metricsLastUpdateTstamp = new AtomicLong();
 
     /** */
+    private final GridJobMetrics jobMetrics;
+
+    /** */
     private boolean stopping;
 
     /** */
@@ -233,6 +240,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
         cancelLsnr = new JobCancelListener();
         jobExecLsnr = new JobExecutionListener();
         discoLsnr = new JobDiscoveryListener();
+
+        jobMetrics = new GridJobMetrics(ctx.metric().registry());
     }
 
     /** {@inheritDoc} */
@@ -368,8 +377,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         // We don't increment number of cancelled jobs if it
         // was already cancelled.
-        if (!job.isInternal() && !isCancelled)
+        if (!job.isInternal() && !isCancelled) {
             canceledJobsCnt.increment();
+
+            jobMetrics.canceled.increment();
+        }
 
         job.cancel(sysCancel);
     }
@@ -662,6 +674,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 log.debug("Job has been cancelled before activation: " + job);
 
             canceledJobsCnt.increment();
+
+            jobMetrics.canceled.increment();
 
             return true;
         }
@@ -1136,9 +1150,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     // No sync execution.
                                     job = null;
                                 }
-                                else if (metricsUpdateFreq > -1L)
+                                else if (metricsUpdateFreq > -1L) {
                                     // Job will be executed synchronously.
                                     startedJobsCnt.increment();
+
+                                    jobMetrics.started.increment();
+                                }
+
                             }
                             else
                                 // Job has been cancelled.
@@ -1300,8 +1318,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
             else
                 ctx.getExecutorService().execute(jobWorker);
 
-            if (metricsUpdateFreq > -1L)
+            if (metricsUpdateFreq > -1L) {
                 startedJobsCnt.increment();
+
+                jobMetrics.started.increment();
+            }
 
             return true;
         }
@@ -1314,8 +1335,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
             IgniteException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
                 "[jobSes=" + jobWorker.getSession() + ", job=" + jobWorker.getJob() + ']', e);
 
-            if (metricsUpdateFreq > -1L)
+            if (metricsUpdateFreq > -1L) {
                 rejectedJobsCnt.increment();
+
+                jobMetrics.rejected.increment();
+            }
 
             jobWorker.finishJob(null, e2, true);
         }
@@ -1663,8 +1687,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 if (passiveJobs.remove(jobWorker.getJobId(), jobWorker)) {
                     rejectJob(jobWorker, true);
 
-                    if (metricsUpdateFreq > -1L)
+                    if (metricsUpdateFreq > -1L) {
                         rejectedJobsCnt.increment();
+
+                        jobMetrics.rejected.increment();
+                    }
 
                     ret = true;
                 }
@@ -1783,6 +1810,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 // Increment job execution counter. This counter gets
                 // reset once this job will be accounted for in metrics.
                 finishedJobsCnt.increment();
+
+                jobMetrics.finished.increment();
 
                 // Increment job execution time. This counter gets
                 // reset once this job will be accounted for in metrics.
@@ -2061,6 +2090,69 @@ public class GridJobProcessor extends GridProcessorAdapter {
          */
         @Override public int size() {
             return sizex();
+        }
+    }
+
+    /**
+     * Metrics for {@link GridMetricManager}.
+     *
+     * TODO: properly update counters.
+     */
+    public class GridJobMetrics {
+        /** */
+        public static final String JOBS = "jobs";
+
+        /** */
+        public static final String STARTED = "started";
+
+        /** */
+        public static final String ACTIVE = "active";
+
+        /** */
+        public static final String WAITING = "waiting";
+
+        /** */
+        public static final String CANCELED = "canceled";
+
+        /** */
+        public static final String REJECTED = "rejected";
+
+        /** */
+        public static final String FINISHED = "finished";
+
+        /** */
+        final IntMetricImpl started;
+
+        /** */
+        final IntMetricImpl active;
+
+        /** */
+        final IntMetricImpl waiting;
+
+        /** */
+        final LongMetricImpl canceled;
+
+        /** */
+        final LongMetricImpl rejected;
+
+        /** */
+        private final LongMetricImpl finished;
+
+        public GridJobMetrics(MetricRegistry mreg) {
+            mreg = mreg.withPrefix(JOBS);
+
+            started = mreg.intMetric(STARTED, "Started jobs");
+
+            active = mreg.intMetric(ACTIVE, "Active jobs currently executing.");
+
+            waiting = mreg.intMetric(WAITING, "Queued jobs waiting to be executed");
+
+            canceled = mreg.metric(CANCELED, "Cancelled jobs that are still running.");
+
+            rejected = mreg.metric(REJECTED,
+                "Number of jobs rejected after more recent collision resolution operation.");
+
+            finished = mreg.metric(FINISHED, "Number of finished jobs since last update.");
         }
     }
 }

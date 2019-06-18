@@ -21,7 +21,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Job metrics.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public class GridJobMetrics {
     /** */
     private int maxActiveJobs;

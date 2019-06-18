@@ -30,7 +30,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_METRICS_CONCU
 
 /**
  * Processes job metrics.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** */
     private static final int CONCURRENCY_LEVEL = Integer.getInteger(IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL, 64);

@@ -22,7 +22,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Job metrics snapshot.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public class GridJobMetricsSnapshot {
     /** */
     private final long ts = U.currentTimeMillis();
