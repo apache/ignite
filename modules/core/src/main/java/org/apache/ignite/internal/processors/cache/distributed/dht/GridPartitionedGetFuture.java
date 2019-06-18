@@ -319,7 +319,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param missedNodesToKeysMapping Previously mapped.
      * @return {@code True} if has remote nodes.
      */
-    protected boolean map(
+    private boolean map(
         KeyCacheObject key,
         AffinityTopologyVersion topVer,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> nodesToKeysMapping,
@@ -379,7 +379,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param node Mapped node.
      * @param mappings Full node mapping.
      */
-    protected void addNodeMapping(
+    private void addNodeMapping(
         KeyCacheObject key,
         ClusterNode node,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings
