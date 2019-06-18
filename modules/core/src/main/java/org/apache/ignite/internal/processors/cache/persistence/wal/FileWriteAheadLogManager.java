@@ -3457,6 +3457,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 err = t;
             }
             finally {
+                this.err = err;
+
                 unparkWaiters(Long.MAX_VALUE);
 
                 if (err == null && !isCancelled)
@@ -3631,6 +3633,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 assert hdl.written == hdl.fileIO.position();
             }
             catch (IOException e) {
+                err = e;
+
                 StorageException se = new StorageException("Failed to write buffer.", e);
 
                 cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
