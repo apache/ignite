@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.LockTrackerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTracker;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -671,7 +672,7 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
         long page = 2;
         long pageAddr = 3;
 
-        int cntDumps = 5_000;
+        int cntDumps = SF.applyLB(5_000, 1_000);
 
         AtomicBoolean done = new AtomicBoolean();
 

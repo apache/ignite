@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -61,13 +62,15 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         for (int i = 0; i < trackerTypes.length; i++) {
             LockTrackerFactory.DEFAULT_TYPE = trackerTypes[i];
 
-            doTestTakeDumpByCount(5, 1, 10, 1);
+            int dumps = SF.apply(30, 10, 40);
 
-            doTestTakeDumpByCount(5, 2, 10, 2);
+            doTestTakeDumpByCount(5, 1, dumps, 1);
 
-            doTestTakeDumpByCount(10, 3, 20, 4);
+            doTestTakeDumpByCount(5, 2, dumps, 2);
 
-            doTestTakeDumpByCount(20, 6, 40, 8);
+            doTestTakeDumpByCount(10, 3, dumps, 4);
+
+            doTestTakeDumpByCount(20, 6, dumps, 8);
         }
     }
 
@@ -83,13 +86,15 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
         for (int i = 0; i < trackerTypes.length; i++) {
             LockTrackerFactory.DEFAULT_TYPE = trackerTypes[i];
 
-            doTestTakeDumpByTime(5, 1, 40_000, 1);
+            int time = SF.apply(30_000, 5_000, 40_000);
 
-            doTestTakeDumpByTime(5, 2, 20_000, 2);
+            doTestTakeDumpByTime(5, 1, time, 1);
 
-            doTestTakeDumpByTime(10, 3, 10_000, 4);
+            doTestTakeDumpByTime(5, 2, time, 2);
 
-            doTestTakeDumpByTime(20, 6, 10_000, 8);
+            doTestTakeDumpByTime(10, 3, time, 4);
+
+            doTestTakeDumpByTime(20, 6, time, 8);
         }
     }
 
@@ -171,8 +176,6 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
             awaitRandom(1000);
 
             ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
-
-            System.out.println(toStringDump(dump));
 
             assertEquals(threads, dump.threadStates.size());
             assertEquals(0, dump.threadStates.stream().filter(e -> e.invalidContext != null).count());
@@ -266,8 +269,6 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
                 awaitRandom(20);
 
                 ThreadPageLocksDumpLock dump = sharedPageLockTracker.dump();
-
-                System.out.println(toStringDump(dump));
 
                 assertEquals(threads, dump.threadStates.size());
                 assertEquals(0, dump.threadStates.stream().filter(e -> e.invalidContext != null).count());

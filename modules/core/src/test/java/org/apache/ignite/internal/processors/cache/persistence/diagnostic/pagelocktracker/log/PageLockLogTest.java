@@ -22,6 +22,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.AbstractPageLockTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.PageLockLogSnapshot.LogEntry;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -66,8 +67,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(0, logDump.headIdx);
         assertTrue(logDump.locklog.isEmpty());
         checkNextOp(logDump, pageId, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -76,8 +75,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId, READ_LOCK, STRUCTURE_ID, 1);
         checkNextOp(logDump, 0, 0, 0);
@@ -85,8 +82,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadUnlock(STRUCTURE_ID, pageId, page, pageAddr);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertTrue(logDump.locklog.isEmpty());
         checkNextOp(logDump, 0, 0, 0);
@@ -110,8 +105,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(0, logDump.headIdx);
         assertTrue(logDump.locklog.isEmpty());
         checkNextOp(logDump, pageId1, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -119,8 +112,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -130,8 +121,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkNextOp(logDump, pageId2, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -139,8 +128,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId2, page2, pageAddr2);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(2, logDump.locklog.size());
 
@@ -152,8 +139,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(3, logDump.locklog.size());
 
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -164,9 +149,7 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadUnlock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
-
+        
         assertTrue(logDump.locklog.isEmpty());
         checkNextOp(logDump, 0, 0, 0);
     }
@@ -192,8 +175,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(0, logDump.headIdx);
         assertTrue(logDump.locklog.isEmpty());
         checkNextOp(logDump, pageId1, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -201,8 +182,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -212,8 +191,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkNextOp(logDump, pageId2, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -221,8 +198,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId2, page2, pageAddr2);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(2, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -233,8 +208,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(2, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkLogEntry(logDump.locklog.get(1), pageId2, READ_LOCK, STRUCTURE_ID, 2);
@@ -243,8 +216,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId3, page3, pageAddr3);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(3, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -255,8 +226,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadUnlock(STRUCTURE_ID, pageId3, page3, pageAddr3);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(4, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -269,8 +238,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(5, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkLogEntry(logDump.locklog.get(1), pageId2, READ_LOCK, STRUCTURE_ID, 2);
@@ -282,8 +249,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadUnlock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(0, logDump.headIdx);
         assertTrue(logDump.locklog.isEmpty());
@@ -311,8 +276,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(0, logDump.headIdx);
         assertTrue(logDump.locklog.isEmpty());
         checkNextOp(logDump, pageId1, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -320,8 +283,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -331,8 +292,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkNextOp(logDump, pageId2, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -340,8 +299,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId2, page2, pageAddr2);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(2, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -351,8 +308,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadUnlock(STRUCTURE_ID, pageId2, page2, pageAddr2);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(3, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -364,8 +319,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(3, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkLogEntry(logDump.locklog.get(1), pageId2, READ_LOCK, STRUCTURE_ID, 2);
@@ -375,8 +328,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId3, page3, pageAddr3);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(4, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -389,8 +340,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(5, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkLogEntry(logDump.locklog.get(1), pageId2, READ_LOCK, STRUCTURE_ID, 2);
@@ -402,8 +351,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadUnlock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(0, logDump.headIdx);
         assertTrue(logDump.locklog.isEmpty());
@@ -431,8 +378,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(0, logDump.headIdx);
         assertTrue(logDump.locklog.isEmpty());
         checkNextOp(logDump, pageId1, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -440,8 +385,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -451,8 +394,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(1, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkNextOp(logDump, pageId2, BEFORE_READ_LOCK, STRUCTURE_ID);
@@ -460,8 +401,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId2, page2, pageAddr2);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(2, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -472,8 +411,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(2, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkLogEntry(logDump.locklog.get(1), pageId2, READ_LOCK, STRUCTURE_ID, 2);
@@ -482,8 +419,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadLock(STRUCTURE_ID, pageId3, page3, pageAddr3);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(3, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
@@ -495,8 +430,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
 
         logDump = lockLog.dump();
 
-        out.println(logDump);
-
         assertEquals(4, logDump.headIdx);
         checkLogEntry(logDump.locklog.get(0), pageId1, READ_LOCK, STRUCTURE_ID, 1);
         checkLogEntry(logDump.locklog.get(1), pageId2, READ_LOCK, STRUCTURE_ID, 2);
@@ -505,8 +438,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         checkNextOp(logDump, 0,0, 0);
 
         lockLog.onReadUnlock(STRUCTURE_ID, pageId3, page3, pageAddr3);
-
-        out.println(lockLog);
 
         logDump = lockLog.dump();
 
@@ -521,8 +452,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         lockLog.onReadUnlock(STRUCTURE_ID, pageId1, page1, pageAddr1);
 
         logDump = lockLog.dump();
-
-        out.println(logDump);
 
         assertEquals(0, logDump.headIdx);
         assertTrue(logDump.locklog.isEmpty());
@@ -546,8 +475,6 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
             lockLog.onReadLock(STRUCTURE_ID, pageId, page, pageAddr);
         });
 
-        out.println(lockLog);
-
         log = lockLog.dump();
 
         Assert.assertTrue(lockLog.isInvalid());
@@ -566,7 +493,7 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
         long page = 2;
         long pageAddr = 3;
 
-        int cntlogs = 5_000;
+        int cntlogs = SF.applyLB(5_000, 1_000);
 
         AtomicBoolean done = new AtomicBoolean();
 
@@ -617,9 +544,8 @@ public abstract class PageLockLogTest extends AbstractPageLockTest {
             Assert.assertNotNull(logDump.name);
 
             if (logDump.headIdx > 0) {
-                //TODO
-               /* for (int j = 0; j < log.headIdx; j++)
-                    Assert.assertTrue(String.valueOf(log.headIdx), log.pageIdLocksStack[j] != 0);*/
+                for (int j = 0; j < logDump.headIdx; j++)
+                    Assert.assertNotNull(String.valueOf(logDump.headIdx), logDump.locklog.get(j));
             }
 
             Assert.assertNotNull(logDump);

@@ -122,6 +122,10 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         }
         catch (ClusterTopologyException e) {
             // Expected.
+
+            e.printStackTrace();
+
+            System.out.println(e);
         }
         finally {
             stopAllGrids();
