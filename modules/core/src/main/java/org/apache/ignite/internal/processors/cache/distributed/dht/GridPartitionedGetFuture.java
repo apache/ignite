@@ -64,6 +64,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
+    /** Eplicit predefined single mapping instead of calculated . */
+    protected final ClusterNode node;
+
     /**
      * @param cctx Context.
      * @param keys Keys.
@@ -95,7 +98,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean needVer,
         boolean keepCacheObjects,
         @Nullable String txLbl,
-        @Nullable MvccSnapshot mvccSnapshot
+        @Nullable MvccSnapshot mvccSnapshot,
+        ClusterNode node
     ) {
         super(
             cctx,
@@ -115,8 +119,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         assert (mvccSnapshot == null) == !cctx.mvccEnabled();
 
         this.mvccSnapshot = mvccSnapshot;
-
         this.txLbl = txLbl;
+        this.node = node;
 
         initLogger(GridPartitionedGetFuture.class);
     }
@@ -298,7 +302,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
-                    if (e instanceof ClusterTopologyCheckedException)
+                    if (e instanceof ClusterTopologyCheckedException && node == null)
                         miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
                         miniFut.onResult(e);
@@ -322,6 +326,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
         Map<K, V> locVals
     ) {
+        if (node != null) {
+            addNodeMapping(key, node, nodesToKeysMapping); // Explicit node instead of calculated mapping.
+
+            assert nodesToKeysMapping.size() == 1; // One future per node.
+
+            return !node.isLocal();
+        }
+
         int part = cctx.affinity().partition(key);
 
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
