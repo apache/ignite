@@ -127,7 +127,9 @@ if %MAJOR_JAVA_VER% GEQ 11 (
     %JVM_OPTS%
 )
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "*" org.apache.ignite.console.agent.AgentLauncher %*
+set CP=%IGNITE_HOME%\*;%IGNITE_HOME%\libs\*
+
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" org.apache.ignite.console.agent.AgentLauncher %*
 
 set JAVA_ERRORLEVEL=%ERRORLEVEL%
 
