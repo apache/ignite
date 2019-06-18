@@ -708,7 +708,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             needVer,
             keepCacheObj,
             txLbl,
-            mvccSnapshot);
+            mvccSnapshot,
+            null);
 
         fut.init(topVer);
 

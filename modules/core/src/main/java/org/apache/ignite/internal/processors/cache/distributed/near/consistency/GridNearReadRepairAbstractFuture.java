@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -76,7 +75,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
             ClusterNode node = mapping.getKey();
 
             GridPartitionedGetFuture<KeyCacheObject, EntryGetResult> fut =
-                new GridPartitionedGetFuture<KeyCacheObject, EntryGetResult>(
+                new GridPartitionedGetFuture<>(
                     ctx,
                     mapping.getValue(), // Keys.
                     readThrough,
@@ -90,20 +89,8 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
                     true,
                     true,
                     txLbl,
-                    mvccSnapshot) {
-                    @Override protected boolean map(
-                        KeyCacheObject key,
-                        AffinityTopologyVersion topVer,
-                        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> nodesToKeysMapping,
-                        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
-                        Map<KeyCacheObject, EntryGetResult> locVals) {
-                        addNodeMapping(key, node, nodesToKeysMapping); // Explicit node instead of automated mapping.
-
-                        assert nodesToKeysMapping.size() == 1; // One future per node.
-
-                        return !node.isLocal();
-                    }
-                };
+                    mvccSnapshot,
+                    node);
 
             fut.listen(this::onResult);
 

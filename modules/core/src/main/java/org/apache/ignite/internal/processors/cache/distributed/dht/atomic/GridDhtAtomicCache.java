@@ -1682,6 +1682,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             needVer,
             false,
             null,
+            null,
             null);
 
         fut.init(topVer);
