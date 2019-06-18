@@ -2008,7 +2008,7 @@ public class GridCacheUtils {
      * @param size Data size in bytes.
      * @return {@code True} if a specified amount of data can be stored in the memory region without evictions.
      */
-    public static boolean isEnoughSpaceForData(DataRegion memPlc, int size) {
+    public static boolean isEnoughSpaceForData(DataRegion memPlc, long size) {
         DataRegionConfiguration plc = memPlc.config();
 
         if (size <= 0 || plc.isPersistenceEnabled() || plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
@@ -2018,7 +2018,7 @@ public class GridCacheUtils {
 
         int sysPageSize = pageMem.systemPageSize();
 
-        int pagesRequired = Math.round(size / (float)sysPageSize);
+        long pagesRequired = Math.round(size / (double)sysPageSize);
 
         long maxPages = plc.getMaxSize() / sysPageSize;
 
