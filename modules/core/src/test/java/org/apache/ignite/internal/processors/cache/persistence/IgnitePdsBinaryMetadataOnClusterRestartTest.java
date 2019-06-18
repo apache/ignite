@@ -312,6 +312,8 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         cache.put(0, bObj);
 
+        int createdTypeId = igniteA.binary().type(DYNAMIC_TYPE_NAME).typeId();
+
         stopAllGrids();
 
         Ignite igniteC = startGridInASeparateWorkDir("C");
@@ -334,24 +336,31 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
 
         startGridInASeparateWorkDir("A");
 
-        boolean exceptedExceptionThrown = false;
+        String expectedMsg = String.format(
+            "Type '%s' with typeId %d has a different/incorrect type for field '%s'. Expected 'int' but 'long' was " +
+                "provided. Field type's modification is unsupported, clean {root_path}/marshaller and " +
+                "{root_path}/binary_meta directories if the type change is required.",
+            DYNAMIC_TYPE_NAME,
+            createdTypeId,
+            decimalFieldName);
+
+        boolean expectedExcThrown = false;
+
         try {
             startGridInASeparateWorkDir("B");
         }
         catch (Exception e) {
             if (e.getCause() != null && e.getCause().getCause() != null) {
-                if (e.getCause().getCause().getMessage().contains(
-                        String.format("[typeName=%s, fieldName=%s, fieldTypeName1=int, fieldTypeName2=long]",
-                            DYNAMIC_TYPE_NAME,
-                            decimalFieldName)
-                ))
-                    exceptedExceptionThrown = true;
+                Throwable cause = e.getCause().getCause();
+
+                if (cause.getMessage().contains(expectedMsg))
+                    expectedExcThrown = true;
             }
             else
                 throw e;
         }
 
-        assertTrue(exceptedExceptionThrown);
+        assertTrue(expectedExcThrown);
     }
 
     /** */
