@@ -50,8 +50,9 @@
                             <excludeArtifactIds>
                                 fastutil,h2,ignite-shmem,annotations,arpack_combined_all,
                                 cache-api,commons-math3,commons-rng-client-api,commons-rng-core,
-                                commons-rng-simple,core,ignite-ml
+                                commons-rng-simple,core,ignite-ml,ignite-h2,ignite-core,SparseBitSet,jts-core
                             </excludeArtifactIds>
+                            <excludeGroupIds>com.github.fommil.netlib</excludeGroupIds>
                         </configuration>
                     </execution>
                 </executions>
