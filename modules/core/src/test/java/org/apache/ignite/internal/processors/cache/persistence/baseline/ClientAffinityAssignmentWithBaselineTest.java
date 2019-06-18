@@ -915,12 +915,8 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                             threadProgressTracker.compute(Thread.currentThread().getId(),
                                 (tId, ops) -> ops == null ? 1 : ops + 1);
                         }
-                        catch (CacheException e) {
-                            if (e.getCause() instanceof ClusterTopologyException)
-                                ((ClusterTopologyException)e.getCause()).retryReadyFuture().get();
-                        }
-                        catch (ClusterTopologyException e) {
-                            e.retryReadyFuture().get();
+                        catch (CacheException | ClusterTopologyException e) {
+                            awaitTopology(e);
                         }
                     }
                 }
@@ -931,6 +927,20 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
                 }
             }
         });
+    }
+
+    /**
+     * Extract cause of type {@link ClusterTopologyException} (if exists) and awaits retry topology.
+     *
+     * @param e Original exception.
+     */
+    private void awaitTopology(Throwable e) {
+        ClusterTopologyException ex = X.cause(e, ClusterTopologyException.class);
+        IgniteFuture f;
+
+        // For now in MVCC case the topology exception doesn't have a remap future.
+        if (ex != null && (f = ex.retryReadyFuture()) != null)
+            f.get();
     }
 
     /**
