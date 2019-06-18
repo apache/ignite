@@ -6,8 +6,8 @@ import java.util.Set;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.permissions.UserPermSet;
 import org.elasticsearch.relay.util.ESConstants;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Filters emails by the ID of the user owning the specific mailbox.
@@ -48,7 +48,7 @@ public class ImapFilter implements IFilter {
 
 			originFilter.put(ESConstants.Q_TERM, originMatch);
 
-			filters.put(originFilter);
+			filters.add(originFilter);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

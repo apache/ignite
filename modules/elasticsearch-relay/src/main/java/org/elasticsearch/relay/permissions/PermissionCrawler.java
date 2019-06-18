@@ -9,8 +9,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.elasticsearch.relay.util.HttpUtil;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Main permission crawler triggering all other crawlers regularly and
@@ -18,8 +18,10 @@ import org.json.JSONObject;
  * by Liferay ID and mail address.
  */
 public class PermissionCrawler implements IPermCrawler, Runnable {
-	private static final String SHIND_ALL_USERS_QUERY = "social/rest/user?fields=id,emails&count=0";
-
+	//获取所有用户 "social/rest/user?fields=id,emails&count=0"
+	private static final String SHIND_ALL_USERS_QUERY = "?cmd=qryfldexe&cacheName=Person&qry=select+id%2C+email+from+Person";
+	
+		
 	private static final String SHIND_LIST_FIELD = "list";
 	private static final String SHIND_ID_FIELD = "id";
 	private static final String SHIND_EMAILS_FIELD = "emails";
@@ -145,11 +147,11 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 		// retrieve list of users from configured source (shindig)
 		String response = HttpUtil.getText(fShindigUrl);
 
-		JSONObject resObj = new JSONObject(response);
-		JSONArray list = resObj.optJSONArray(SHIND_LIST_FIELD);
+		JSONObject resObj = JSONObject.parseObject(response);
+		JSONArray list = resObj.getJSONArray(SHIND_LIST_FIELD);
 		if (list != null) {
 			JSONObject entry = null;
-			for (int i = 0; i < list.length(); ++i) {
+			for (int i = 0; i < list.size(); ++i) {
 				entry = list.getJSONObject(i);
 
 				// register user
@@ -158,7 +160,7 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 
 				// register all mail addresses
 				JSONArray mailAdds = entry.getJSONArray(SHIND_EMAILS_FIELD);
-				for (int j = 0; j < mailAdds.length(); ++j) {
+				for (int j = 0; j < mailAdds.size(); ++j) {
 					String mail = mailAdds.getJSONObject(j).getString(SHIND_VALUE_FIELD);
 					tempMails.put(mail, userId);
 				}

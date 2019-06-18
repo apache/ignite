@@ -1,6 +1,6 @@
 package org.elasticsearch.relay.postprocess;
 
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Interface for a result post processor for individual result entries.

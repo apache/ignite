@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.elasticsearch.relay.util.ESConstants;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * List of JSONObjects representing an Elasticsearch result, with total number
@@ -43,21 +43,21 @@ public class ESResponse {
 		fHits = new ArrayList<JSONObject>();
 
 		if (body != null) {
-			JSONObject hitsObj = body.optJSONObject(ESConstants.R_HITS);
-			if (hitsObj != null && hitsObj.optJSONArray(ESConstants.R_HITS) != null) {
-				addHits(hitsObj.optJSONArray(ESConstants.R_HITS));
+			JSONObject hitsObj = body.getJSONObject(ESConstants.R_HITS);
+			if (hitsObj != null && hitsObj.getJSONArray(ESConstants.R_HITS) != null) {
+				addHits(hitsObj.getJSONArray(ESConstants.R_HITS));
 
-				fTotalResults = hitsObj.optInt(ESConstants.R_HITS_TOTAL);
+				fTotalResults = hitsObj.getInteger(ESConstants.R_HITS_TOTAL);
 			}
 
-			if (body.optJSONObject(ESConstants.R_SHARDS) != null) {
-				fShards = body.getJSONObject(ESConstants.R_SHARDS).getInt(ESConstants.R_SHARDS_TOT);
+			if (body.getJSONObject(ESConstants.R_SHARDS) != null) {
+				fShards = body.getJSONObject(ESConstants.R_SHARDS).getInteger(ESConstants.R_SHARDS_TOT);
 			}
 		}
 	}
 
 	private void addHits(JSONArray hits) throws Exception {
-		final int size = hits.length();
+		final int size = hits.size();
 
 		for (int i = 0; i < size; ++i) {
 			fHits.add(hits.getJSONObject(i));
@@ -110,7 +110,7 @@ public class ESResponse {
 		// actual hit entries
 		JSONArray hits = new JSONArray();
 		for (JSONObject hit : fHits) {
-			hits.put(hit);
+			hits.add(hit);
 		}
 		hitsObj.put(ESConstants.R_HITS, hits);
 

@@ -1,8 +1,8 @@
 package org.elasticsearch.relay.util;
 
 import org.elasticsearch.relay.model.ESQuery;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 public class ESUtil {
 	private static JSONObject getFilterObject(ESQuery query) throws Exception {
@@ -14,21 +14,21 @@ public class ESUtil {
 		}
 
 		// check if there is a query sub-object
-		JSONObject queryObj = jsonQuery.optJSONObject(ESConstants.Q_QUERY);
+		JSONObject queryObj = jsonQuery.getJSONObject(ESConstants.Q_QUERY);
 		if (queryObj == null) {
 			queryObj = new JSONObject();
 			jsonQuery.put(ESConstants.Q_QUERY, queryObj);
 		}
 
 		// check if there is a filtered sub-object
-		JSONObject filteredObj = queryObj.optJSONObject(ESConstants.Q_FILTERED);
+		JSONObject filteredObj = queryObj.getJSONObject(ESConstants.Q_FILTERED);
 		if (filteredObj == null) {
 			filteredObj = new JSONObject();
 			queryObj.put(ESConstants.Q_FILTERED, filteredObj);
 		}
 
 		// check if there is a filter sub-object
-		JSONObject filterObj = filteredObj.optJSONObject(ESConstants.Q_FILTER);
+		JSONObject filterObj = filteredObj.getJSONObject(ESConstants.Q_FILTER);
 		if (filterObj == null) {
 			filterObj = new JSONObject();
 			filteredObj.put(ESConstants.Q_FILTER, filterObj);
@@ -42,7 +42,7 @@ public class ESUtil {
 
 		// actual array of filters
 		// check if there is a logical 'and' array
-		JSONArray andArray = filterObj.optJSONArray(ESConstants.Q_AND);
+		JSONArray andArray = filterObj.getJSONArray(ESConstants.Q_AND);
 		if (andArray == null) {
 			andArray = new JSONArray();
 			filterObj.put(ESConstants.Q_AND, andArray);

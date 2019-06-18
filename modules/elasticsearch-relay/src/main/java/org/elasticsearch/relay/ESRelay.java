@@ -22,10 +22,17 @@ import org.elasticsearch.relay.handler.ESQueryHandler;
 import org.elasticsearch.relay.handler.ESQueryKernelIgniteHandler;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.model.ESUpdate;
+import org.elasticsearch.relay.model.ESViewQuery;
+
 import org.elasticsearch.relay.util.ESConstants;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
+import com.alibaba.fastjson.JSONObject;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
 
 /**
  * Elasticsearch Relay main servlet taking in all GET and POST requests and
@@ -39,6 +46,10 @@ public class ESRelay extends HttpServlet {
 	private final Logger fLogger;
 
 	private ESQueryHandler fHandler;
+	
+	public static ApplicationContext context = null;
+	
+	public static Map<String, ESViewQuery> allViews = null;
 
 	public ESRelay() {
 		fConfig = new ESRelayConfig();
@@ -50,6 +61,11 @@ public class ESRelay extends HttpServlet {
 	public void init() throws ServletException {
 		// initialize query handler
 		try {
+			if(context==null)
+				context = new ClassPathXmlApplicationContext("realy-*.xml");
+			
+			allViews = ESRelay.context.getBeansOfType(ESViewQuery.class);
+			
 			
 			if("ignite".equalsIgnoreCase(fConfig.getClusterBackend())){
 				
@@ -156,6 +172,7 @@ public class ESRelay extends HttpServlet {
 
 	/**
 	 * query cmd and ignite rest api
+	 * index/type/_cmd
 	 */
 	@Override
 	public void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -170,7 +187,7 @@ public class ESRelay extends HttpServlet {
 
 		// read request body
 		String requestBody = getBody(request);
-
+			
 		PrintWriter out = response.getWriter();
 		try {
 			
@@ -180,12 +197,12 @@ public class ESRelay extends HttpServlet {
 					String[] batchs = requestBody.split("\\n");
 					JSONArray list = new JSONArray();
 					for(String line: batchs){
-						list.put(new JSONObject(line));
+						list.add(JSONObject.parseObject(line));
 					}
 					jsonRequest = new JSONObject();
-					jsonRequest.append(ESConstants.BULK_FRAGMENT, list);
+					jsonRequest.put(ESConstants.BULK_FRAGMENT, list);
 				}
-				jsonRequest = new JSONObject(requestBody);
+				jsonRequest = JSONObject.parseObject(requestBody);
 			}
 			
 			String result = null;
@@ -202,12 +219,28 @@ public class ESRelay extends HttpServlet {
 				result = fHandler.handleRequest(query, user);	
 				
 			}
-			else if(request.getMethod().equalsIgnoreCase("GET") || path[2].equalsIgnoreCase(ESConstants.SEARCH_FRAGMENT)){ // ESConstants.SEARCH
+			else if(request.getMethod().equalsIgnoreCase("GET") 
+					|| path[2].equalsIgnoreCase(ESConstants.SEARCH_FRAGMENT) 
+					|| path[2].equalsIgnoreCase(ESConstants.ALL_FRAGMENT)){ // ESConstants._SEARCH ESConstants._ALL
 				
-				ESQuery query = new ESQuery(path, parameters, jsonRequest);
-				
-				// process request, forward to ES instances
-				result = fHandler.handleRequest(query, user);	
+				if(path[2].equalsIgnoreCase(ESConstants.ALL_FRAGMENT)) { //sql
+					String viewName = parameters.get("q");
+					ESViewQuery viewQuery = allViews.get(viewName);
+					if(viewQuery==null) { //q is SQL not viewName
+						viewQuery = new ESViewQuery(viewName);
+					}
+					viewQuery.setQueryPath(path);
+					viewQuery.setParams(parameters);
+					// process request, forward to ES instances
+					result = fHandler.handleRequest(viewQuery, user);	
+					
+				}
+				else {
+					ESQuery query = new ESQuery(path, parameters, jsonRequest);
+					
+					// process request, forward to ES instances
+					result = fHandler.handleRequest(query, user);	
+				}
 				
 			}
 			else if(request.getMethod().equalsIgnoreCase("POST")){

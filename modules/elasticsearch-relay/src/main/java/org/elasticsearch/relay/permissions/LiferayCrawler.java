@@ -6,7 +6,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.elasticsearch.relay.util.HttpUtil;
-import org.json.JSONArray;
+import com.alibaba.fastjson.JSONArray;
 
 /**
  * Liferay crawler retrieving users' Liferay IDs and Liferay Role IDs using
@@ -78,8 +78,8 @@ public class LiferayCrawler implements IPermCrawler {
 			// get Liferay Roles
 			response = HttpUtil.getAuthenticatedText(new URL(fLrUrl + USER_ROLES_FRAG + userId), fUser, fPassword);
 
-			JSONArray rolesArray = new JSONArray(response);
-			for (int i = 0; i < rolesArray.length(); ++i) {
+			JSONArray rolesArray = JSONArray.parseArray(response);
+			for (int i = 0; i < rolesArray.size(); ++i) {
 				roles.add(rolesArray.getJSONObject(i).getString(LR_ROLE_ID));
 			}
 		} catch (Exception e) {

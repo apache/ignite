@@ -2,8 +2,8 @@ package org.elasticsearch.relay.postprocess;
 
 import org.elasticsearch.relay.permissions.PermissionCrawler;
 import org.elasticsearch.relay.util.ESConstants;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Mail result post processor adding user IDs to the entries "to" and "from",
@@ -33,9 +33,9 @@ public class MailPostProcessor implements IPostProcessor {
 		JSONObject source = result.getJSONObject(ESConstants.R_HIT_SOURCE);
 
 		// retrieve sender Id
-		JSONObject fromObj = source.optJSONObject(FROM);
+		JSONObject fromObj = source.getJSONObject(FROM);
 		if (fromObj != null) {
-			String mail = fromObj.optString(EMAIL);
+			String mail = fromObj.getString(EMAIL);
 			String user = fPerms.getUserByMail(mail);
 
 			if (user != null) {
@@ -44,12 +44,12 @@ public class MailPostProcessor implements IPostProcessor {
 		}
 
 		// retrieve recipient IDs
-		JSONArray toArray = source.optJSONArray(TO);
+		JSONArray toArray = source.getJSONArray(TO);
 		if (toArray != null) {
-			for (int i = 0; i < toArray.length(); ++i) {
+			for (int i = 0; i < toArray.size(); ++i) {
 				JSONObject recipient = toArray.getJSONObject(i);
 
-				String mail = recipient.optString(EMAIL);
+				String mail = recipient.getString(EMAIL);
 				String user = fPerms.getUserByMail(mail);
 
 				if (user != null) {

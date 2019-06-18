@@ -6,8 +6,8 @@ import java.util.Set;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.permissions.UserPermSet;
 import org.elasticsearch.relay.util.ESConstants;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Liferay filter filtering its unspecific entries by their owners' Liferay user
@@ -49,7 +49,7 @@ public class LiferayFilter implements IFilter {
 
 			userFilter.put(ESConstants.Q_TERM, termObject);
 
-			filters.put(userFilter);
+			filters.add(userFilter);
 
 			// enable users with specific roles to find document
 			for (String roleId : roleIds) {
@@ -60,7 +60,7 @@ public class LiferayFilter implements IFilter {
 
 				roleFilter.put(ESConstants.Q_TERM, termObject);
 
-				filters.put(roleFilter);
+				filters.add(roleFilter);
 			}
 
 			// enable users with generic roles to find document
@@ -72,7 +72,7 @@ public class LiferayFilter implements IFilter {
 
 				roleFilter.put(ESConstants.Q_TERM, termObject);
 
-				filters.put(roleFilter);
+				filters.add(roleFilter);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

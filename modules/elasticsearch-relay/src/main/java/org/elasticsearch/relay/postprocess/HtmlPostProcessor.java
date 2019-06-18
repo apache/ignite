@@ -1,7 +1,7 @@
 package org.elasticsearch.relay.postprocess;
 
 import org.elasticsearch.relay.util.ESConstants;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
@@ -9,7 +9,11 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
-
+/**
+ * 处理HTML文档，格式化html，只获取body部分
+ * @author WBPC1158
+ *
+ */
 public class HtmlPostProcessor implements IPostProcessor {
 	private static final String NOTE_FIELD = "note:note";
 
@@ -17,7 +21,7 @@ public class HtmlPostProcessor implements IPostProcessor {
 	public JSONObject process(JSONObject result) throws Exception {
 		JSONObject source = result.getJSONObject(ESConstants.R_HIT_SOURCE);
 
-		if (source.has(NOTE_FIELD)) {
+		if (source!=null && source.containsKey(NOTE_FIELD)) {
 			String content = getProcessed(source.getString(NOTE_FIELD));
 			source.remove(NOTE_FIELD);
 			source.put(NOTE_FIELD, content);

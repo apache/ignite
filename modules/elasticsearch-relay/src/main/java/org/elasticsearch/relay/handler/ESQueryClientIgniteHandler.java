@@ -28,8 +28,8 @@ import org.elasticsearch.relay.model.ESUpdate;
 import org.elasticsearch.relay.postprocess.IPostProcessor;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.HttpUtil;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Central query handler splitting up queries between multiple ES instances,
@@ -37,7 +37,7 @@ import org.json.JSONObject;
  * results.
  */
 public class ESQueryClientIgniteHandler extends ESQueryKernelIgniteHandler{
-	Ignite ignite;
+	
 	
 	IgniteClient igniteClient;
 	
@@ -45,14 +45,14 @@ public class ESQueryClientIgniteHandler extends ESQueryKernelIgniteHandler{
 		super(config,null);
 		//thin
 		String host = config.getElasticApiHost();		
-		if(false && host!=null && !host.isEmpty()){
+		if(host!=null && !host.isEmpty()){
 			
 			ClientConfiguration cfg = new ClientConfiguration().setAddresses(host+":"+config.getElasticApiPort());	
 	        try {
 	        	IgniteClient igniteClient = Ignition.startClient(cfg);
 	        			
 	            System.out.println();
-	            System.out.println(">>> Thin client put-get example started.");          
+	            System.out.println(">>> Thin client ignite started.");          
 	            this.igniteClient = igniteClient;
 	        }
 	        catch (ClientException e) {
@@ -79,8 +79,11 @@ public class ESQueryClientIgniteHandler extends ESQueryKernelIgniteHandler{
 	 * Stops the permission crawler thread.
 	 */
 	public void destroy() {
+		super.destroy();
+		
 		if(ignite!=null){
 			ignite.close();
+			ignite = null;
 		}
 		
 		if(igniteClient!=null){
@@ -91,7 +94,7 @@ public class ESQueryClientIgniteHandler extends ESQueryKernelIgniteHandler{
 				fLogger.log(Level.SEVERE, e.getMessage(), e);
 			}
 		}
-		super.destroy();
+		
 	}	
 
 }

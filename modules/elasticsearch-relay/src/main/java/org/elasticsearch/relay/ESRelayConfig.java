@@ -18,6 +18,9 @@ public class ESRelayConfig {
 	private static final String ES_CLUSTER_BACKEND = "elasticsearch.relay.backend";
 
 	private static final String PERM_CRAWL_INT = "elasticsearch.relay.permissions.crawl_interval";
+	
+	//Perm get url:
+	private static final String PERM_CRAWL_URL = "elasticsearch.relay.permissions.crawl_url";
 
 	private static final String LOG_REQUESTS = "elasticsearch.relay.log_requests";	
 
@@ -61,13 +64,6 @@ public class ESRelayConfig {
 	private static final String MAIL_INDEX = "elasticsearch.relay.mail_index";
 	private static final String MAIL_TYPES = "elasticsearch.relay.mail_type";
 
-	private static final String SHINDIG_INDEX = "elasticsearch.relay.shindig_index";
-	private static final String SHINDIG_ACT_TYPE = "elasticsearch.relay.shindig_activty_type";
-	private static final String SHINDIG_MSG_TYPE = "elasticsearch.relay.shindig_message_type";
-	private static final String SHINDIG_PSN_TYPE = "elasticsearch.relay.shindig_person_type";
-
-	private static final String SHINDIG_URL = "elasticsearch.relay.shindig_url";
-
 	private final Map<String, String> fProperties;
 
 	public ESRelayConfig() {
@@ -91,6 +87,14 @@ public class ESRelayConfig {
 		return fProperties;
 	}
 
+	public String getPermissionsCrawlUrl() {
+		return fProperties.get(PERM_CRAWL_URL);
+	}
+	
+	public String getClusterBackend(){
+		return fProperties.get(ES_CLUSTER_BACKEND);
+	}
+	
 	public long getPermCrawlInterval() {
 		return Long.parseLong(fProperties.get(PERM_CRAWL_INT));
 	}
@@ -271,27 +275,5 @@ public class ESRelayConfig {
 		return indices;
 	}
 
-	public String getShindigIndex() {
-		return fProperties.get(SHINDIG_INDEX);
-	}
 
-	public String getShindigActivityType() {
-		return fProperties.get(SHINDIG_ACT_TYPE);
-	}
-
-	public String getShindigMessageType() {
-		return fProperties.get(SHINDIG_MSG_TYPE);
-	}
-
-	public String getShindigPersonType() {
-		return fProperties.get(SHINDIG_PSN_TYPE);
-	}
-
-	public String getShindigUrl() {
-		return fProperties.get(SHINDIG_URL);
-	}
-	
-	public String getClusterBackend(){
-		return fProperties.get(ES_CLUSTER_BACKEND);
-	}
 }

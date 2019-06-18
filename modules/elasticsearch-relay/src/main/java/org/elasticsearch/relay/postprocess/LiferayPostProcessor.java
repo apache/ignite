@@ -2,7 +2,7 @@ package org.elasticsearch.relay.postprocess;
 
 import org.elasticsearch.relay.permissions.PermissionCrawler;
 import org.elasticsearch.relay.util.ESConstants;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Liferay result post processor translating Liferay user IDs to the user IDs
@@ -29,7 +29,7 @@ public class LiferayPostProcessor implements IPostProcessor {
 	public JSONObject process(JSONObject result) throws Exception {
 		JSONObject source = result.getJSONObject(ESConstants.R_HIT_SOURCE);
 
-		String liferayId = source.optString(USER_ID);
+		String liferayId = source.getString(USER_ID);
 
 		if (liferayId != null) {
 			String user = fPerms.getUserByLiferayId(liferayId);

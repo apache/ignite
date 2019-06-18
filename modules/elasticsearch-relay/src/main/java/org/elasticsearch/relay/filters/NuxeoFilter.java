@@ -6,8 +6,8 @@ import java.util.Set;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.permissions.UserPermSet;
 import org.elasticsearch.relay.util.ESConstants;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Nuxeo filter allowing objects' creators and people and groups who were given
@@ -44,7 +44,7 @@ public class NuxeoFilter implements IFilter {
 
 			creatorFilter.put(ESConstants.Q_TERM, termObj);
 
-			filters.put(creatorFilter);
+			filters.add(creatorFilter);
 
 			// filter by additional ACL rules
 			JSONObject aclFilter = new JSONObject();
@@ -54,7 +54,7 @@ public class NuxeoFilter implements IFilter {
 
 			aclFilter.put(ESConstants.Q_TERM, termObj);
 
-			filters.put(aclFilter);
+			filters.add(aclFilter);
 
 			// TODO: evaluate roles via ecm:acl
 			for (String group : perms.getNuxeoGroups()) {
@@ -65,7 +65,7 @@ public class NuxeoFilter implements IFilter {
 
 				aclFilter.put(ESConstants.Q_TERM, termObj);
 
-				filters.put(aclFilter);
+				filters.add(aclFilter);
 			}
 
 		} catch (Exception e) {

@@ -12,16 +12,18 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.elasticsearch.relay.ESRelay;
 import org.elasticsearch.relay.ESRelayConfig;
+
 import org.elasticsearch.relay.filters.BlacklistFilter;
 import org.elasticsearch.relay.filters.IFilter;
 import org.elasticsearch.relay.filters.ImapFilter;
 import org.elasticsearch.relay.filters.LiferayFilter;
 import org.elasticsearch.relay.filters.NuxeoFilter;
-import org.elasticsearch.relay.filters.ShindigFilter;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.model.ESResponse;
 import org.elasticsearch.relay.model.ESUpdate;
+import org.elasticsearch.relay.model.ESViewQuery;
 import org.elasticsearch.relay.permissions.IPermCrawler;
 import org.elasticsearch.relay.permissions.LiferayCrawler;
 import org.elasticsearch.relay.permissions.NuxeoCrawler;
@@ -35,8 +37,8 @@ import org.elasticsearch.relay.postprocess.MailPostProcessor;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.ESUtil;
 import org.elasticsearch.relay.util.HttpUtil;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Central query handler splitting up queries between multiple ES instances,
@@ -54,6 +56,7 @@ public class ESQueryHandler {
 
 	protected final Map<String, IFilter> fIndexFilters, fTypeFilters;
 
+	//对搜索结果进行处理
 	protected final Map<String, IPostProcessor> fPostProcs;
 	protected final List<IPostProcessor> fGlobalPostProcs;
 
@@ -85,6 +88,8 @@ public class ESQueryHandler {
 
 		fEs1Indices = config.getElasticIndices();
 		fEs2Indices = config.getEs2Indices();
+		
+		fLogger = Logger.getLogger(this.getClass().getName());
 
 		// initialize permission crawlers
 		List<IPermCrawler> crawlers = new ArrayList<IPermCrawler>();
@@ -94,10 +99,14 @@ public class ESQueryHandler {
 		crawlers.add(new LiferayCrawler(config.getLiferayUrl(), config.getLiferayCompanyId(), config.getLiferayUser(),
 				config.getLiferayPassword()));
 
-		fPermCrawler = new PermissionCrawler(config.getShindigUrl(), crawlers, config.getPermCrawlInterval());
-		Thread pcThread = new Thread(fPermCrawler);
-		pcThread.setDaemon(true);
-		pcThread.start();
+		String permGetUrl = config.getPermissionsCrawlUrl();
+		fPermCrawler = new PermissionCrawler(permGetUrl, crawlers, config.getPermCrawlInterval());
+		
+		if(permGetUrl!=null && !permGetUrl.isEmpty()){			
+			Thread pcThread = new Thread(fPermCrawler);
+			//pcThread.setDaemon(true);
+			pcThread.start();
+		}
 
 		fIndexFilters = new HashMap<String, IFilter>();
 		fTypeFilters = new HashMap<String, IFilter>();
@@ -124,12 +133,6 @@ public class ESQueryHandler {
 			fTypeFilters.put(type, nxFilter);
 		}
 
-		ShindigFilter shFilter = new ShindigFilter(config.getShindigActivityType(), config.getShindigMessageType(),
-				config.getShindigPersonType());
-		fIndexFilters.put(config.getShindigIndex(), shFilter);
-		fTypeFilters.put(config.getShindigActivityType(), shFilter);
-		fTypeFilters.put(config.getShindigMessageType(), shFilter);
-
 		// initialize and register post processors
 		fPostProcs = new HashMap<String, IPostProcessor>();
 
@@ -147,8 +150,10 @@ public class ESQueryHandler {
 		fGlobalPostProcs = new ArrayList<>();
 		fGlobalPostProcs.add(new HtmlPostProcessor());
 		fGlobalPostProcs.add(new ContentPostProcessor());
+		
+		Map<String, IPostProcessor> allPostProcs = ESRelay.context.getBeansOfType(IPostProcessor.class);
 
-		fLogger = Logger.getLogger(this.getClass().getName());
+		fGlobalPostProcs.addAll(allPostProcs.values());
 	}
 	
 
@@ -245,7 +250,50 @@ public class ESQueryHandler {
 			return es2Response;
 		}
 		// merge results
-		JSONObject response = mergeResponses(query, es1Response, es2Response);
+		// limit returned amount if size is specified
+		int limit = getLimit(query);
+
+		JSONObject response = mergeResponses(es1Response, es2Response, limit);
+
+		return response.toString();
+	}
+	
+	public String handleRequest(ESViewQuery query, String user) throws Exception {
+		String es1Response = null;
+		String es2Response = null;
+
+		// url index and type parameters and in-query parameters
+
+		// split queries between ES instances, cancel empty queries
+		ESViewQuery es1Query = getInstanceQuery(query, fEs1Indices);
+		ESViewQuery es2Query = getInstanceQuery(query, fEs2Indices);
+
+		// process requests and run through filters
+		// forward request to Elasticsearch instances
+		// don't send empty queries
+		if (!es1Query.isCancelled()) {
+			//es1Query = handleFiltering(user, es1Query, fEs1BlacklistFilter);
+			es1Response = sendEsRequest(es1Query, fEsUrl);
+		}
+		if (!es2Query.isCancelled()) {
+			// remove incompatible nested path filter
+			//es2Query = removeNestedFilters(es2Query);
+
+			//es2Query = handleFiltering(user, es2Query, fEs2BlacklistFilter);
+			es2Response = sendEsRequest(es2Query, fEs2Url);
+		}
+		
+		if(es2Response==null){
+			return es1Response;
+		}
+
+		if(es1Response==null){
+			return es2Response;
+		}
+		
+		int limit = Integer.MAX_VALUE;
+
+		JSONObject response = mergeResponses(es1Response, es2Response,limit);
 
 		return response.toString();
 	}
@@ -255,7 +303,7 @@ public class ESQueryHandler {
 
 		JSONObject request = query.getQuery();
 		String[] path = query.getQueryPath();
-		List<String> indices = getIndexNames(request, path);
+		List<String> indices = getIndexNames(path);
 
 		// only leave indices which are on this node
 		boolean removed = false;
@@ -291,6 +339,51 @@ public class ESQueryHandler {
 		return esQuery;
 	}
 	
+
+	protected ESViewQuery getInstanceQuery(ESViewQuery query, Set<String> availIndices) throws Exception {
+		ESViewQuery esQuery = new ESViewQuery();
+
+		String request = query.getSQL();
+		String[] path = query.getQueryPath();
+		List<String> indices = getIndexNames(path);
+
+		// only leave indices which are on this node
+		boolean removed = false;
+		String indicesFrag = "";
+		for (String index : indices) {
+			if (availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
+				indicesFrag += index + ",";
+			} else {
+				removed = true;
+			}
+		}
+		if (indicesFrag.length() > 0) {
+			indicesFrag = indicesFrag.substring(0, indicesFrag.length() - 1);
+		} else if (removed) {
+			// all indices were removed - cancel
+			esQuery.cancel();
+		}
+
+		// TODO: only works if there is an actual path
+		String[] newPath = path.clone();
+		newPath[0] = indicesFrag;
+		esQuery.setQueryPath(newPath);
+
+		// TODO: also filter parameters and request body
+		esQuery.setParams(query.getParams());
+
+		// TODO: safely duplicate query body
+		if (query.getSQL() != null) {		
+			esQuery.setSQL(query.getSQL());
+		}
+		
+		if (query.getNamedSQL() != null) {		
+			esQuery.setNamedSQL(query.getNamedSQL());
+		}
+
+		return esQuery;
+	}
+	
 	/**
 	 * 只能更新一个index和type
 	 * @param query
@@ -303,7 +396,7 @@ public class ESQueryHandler {
 
 		JSONObject request = query.getQuery();
 		String[] path = query.getQueryPath();
-		List<String> indices = getIndexNames(request, path);
+		List<String> indices = getIndexNames(path);
 
 		// only leave indices which are on this node
 		boolean removed = false;
@@ -409,25 +502,59 @@ public class ESQueryHandler {
 
 		return es1Response;
 	}
+	
+	protected String sendEsRequest(ESViewQuery query, String esUrl) throws Exception {
+		String esReqUrl = esUrl + query.getSQL();
 
-	protected JSONObject mergeResponses(ESQuery query, String es1Response, String es2Response) throws Exception {
+		// replace spaces since they cause problems with proxies etc.
+		esReqUrl = esReqUrl.replaceAll(" ", "%20");
+
+		String es1Response = null;
+
+		if (query.getSQL() != null && !query.getFormat().equals("json")) {
+			String requestString = query.getSQL();
+			if (fLogRequests) {
+				fLogger.log(Level.INFO, "sending sql to " + esReqUrl);
+			}
+			
+			es1Response = HttpUtil.sendForm(new URL(esReqUrl), "GET", null);
+		}
+		else if (query.getSQL() != null) {
+			String requestString = query.getSQL();
+			if (fLogRequests) {
+				fLogger.log(Level.INFO, "sending sql to " + esReqUrl);
+			}
+
+			es1Response = HttpUtil.sendJson(new URL(esReqUrl), "GET", null);
+		} else {
+			es1Response = HttpUtil.getText(new URL(esReqUrl));
+
+			if (fLogRequests) {
+				fLogger.log(Level.INFO, "sending GET to " + esReqUrl);
+			}
+		}
+
+		return es1Response;
+	}
+
+	protected JSONObject mergeResponses(String es1Response, String es2Response,int limit) throws Exception {
 		ESResponse es1Resp = new ESResponse();
 		ESResponse es2Resp = new ESResponse();
 
 		// TODO: recognize non-result responses and only use valid responses?
 		if (es1Response != null) {
-			JSONObject es1Json = new JSONObject(es1Response);
+			JSONObject es1Json = JSONObject.parseObject(es1Response);
 
-			if (!es1Json.has(ESConstants.R_ERROR)) {
+			if (!es1Json.containsKey(ESConstants.R_ERROR)) {
 				es1Resp = new ESResponse(es1Json);
 			} else {
 				throw new Exception("ES 1.x error: " + es1Response);
 			}
 		}
 		if (es2Response != null) {
-			JSONObject es2Json = new JSONObject(es2Response);
+			JSONObject es2Json = JSONObject.parseObject(es2Response);
 
-			if (!es2Json.has(ESConstants.R_ERROR)) {
+			if (!es2Json.containsKey(ESConstants.R_ERROR)) {
 				es2Resp = new ESResponse(es2Json);
 			} else {
 				throw new Exception("ES 2.x error: " + es2Response);
@@ -440,9 +567,7 @@ public class ESQueryHandler {
 		Iterator<JSONObject> es1Hits = es1Resp.getHits().iterator();
 		Iterator<JSONObject> es2Hits = es2Resp.getHits().iterator();
 
-		// limit returned amount if size is specified
-		final int limit = getLimit(query);
-
+		
 		while ((es1Hits.hasNext() || es2Hits.hasNext()) && hits.size() < limit) {
 			if (es1Hits.hasNext()) {
 				addHit(hits, es1Hits.next());
@@ -484,21 +609,21 @@ public class ESQueryHandler {
 		JSONArray newArray = new JSONArray();
 
 		// filter out statements that ES 2 can't handle
-		for (int i = 0; i < andArray.length(); ++i) {
+		for (int i = 0; i < andArray.size(); ++i) {
 			boolean keep = true;
 			JSONObject filter = andArray.getJSONObject(i);
 
 			// case 1: nested filter added directly
-			if (filter.has(ESConstants.Q_NESTED_FILTER)) {
+			if (filter.containsKey(ESConstants.Q_NESTED_FILTER)) {
 				keep = false;
 			}
 			// case 2: nested filter in Nuxeo type or array
-			else if (keep && filter.has(ESConstants.Q_OR)) {
+			else if (keep && filter.containsKey(ESConstants.Q_OR)) {
 				JSONArray orArr = filter.getJSONArray(ESConstants.Q_OR);
-				for (int j = 0; j < orArr.length(); ++j) {
+				for (int j = 0; j < orArr.size(); ++j) {
 					JSONObject orOjb = orArr.getJSONObject(j);
 
-					if (orOjb.has(ESConstants.Q_NESTED_FILTER)) {
+					if (orOjb.containsKey(ESConstants.Q_NESTED_FILTER)) {
 						keep = false;
 						break;
 					}
@@ -507,7 +632,7 @@ public class ESQueryHandler {
 
 			// not filtered out, add to new array
 			if (keep) {
-				newArray.put(filter);
+				newArray.add(filter);
 			}
 		}
 
@@ -521,8 +646,8 @@ public class ESQueryHandler {
 		JSONObject request = query.getQuery();
 		String[] path = query.getQueryPath();
 
-		List<String> indices = getIndexNames(request, path);
-		List<String> types = getTypeNames(request, path);
+		List<String> indices = getIndexNames(path);
+		List<String> types = getTypeNames(path);
 
 		// remove or block blacklisted indices and types
 		UserPermSet perms = fPermCrawler.getPermissions(user);
@@ -583,19 +708,19 @@ public class ESQueryHandler {
 
 		// integrate "or" filter array into body if filled
 		JSONArray authFilters = query.getAuthFilterOrArr();
-		if (authFilters.length() > 0) {
+		if (authFilters.size() > 0) {
 			JSONArray filters = ESUtil.getOrCreateFilterArray(query);
 
 			JSONObject authOr = new JSONObject();
 			authOr.put(ESConstants.Q_OR, authFilters);
 
-			filters.put(authOr);
+			filters.add(authOr);
 		}
 
 		return query;
 	}
 
-	protected List<String> getIndexNames(JSONObject request, String[] path) {
+	protected List<String> getIndexNames(String[] path) {
 		List<String> indices = new ArrayList<String>();
 
 		// extract from path
@@ -618,7 +743,7 @@ public class ESQueryHandler {
 		return indices;
 	}
 
-	protected List<String> getTypeNames(JSONObject request, String[] path) {
+	protected List<String> getTypeNames(String[] path) {
 		List<String> types = new ArrayList<String>();
 
 		// extract from path
@@ -651,7 +776,7 @@ public class ESQueryHandler {
 
 		JSONObject queryObj = query.getQuery();
 		if (queryObj != null) {
-			String requestLimit = queryObj.optString(ESConstants.MAX_ELEM_PARAM);
+			String requestLimit = queryObj.getString(ESConstants.MAX_ELEM_PARAM);
 			if (requestLimit != null && !requestLimit.isEmpty()) {
 				try {
 					int reqLim = Integer.parseInt(requestLimit);
@@ -681,7 +806,7 @@ public class ESQueryHandler {
 	 */
 	protected String makeUrlParams(JSONObject query) {
 	    StringBuilder $urlParams = new StringBuilder();
-	    Iterator it = query.keys();
+	    Iterator it = query.keySet().iterator();
 	    while(it.hasNext()){
 	    	String $key =  it.next().toString();
 	    	String $value;

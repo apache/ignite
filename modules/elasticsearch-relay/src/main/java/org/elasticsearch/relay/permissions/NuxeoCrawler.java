@@ -6,8 +6,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.elasticsearch.relay.util.HttpUtil;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Crawler retrieving Nuxeo groups for users using Nuxeo's REST API.
@@ -59,7 +59,7 @@ public class NuxeoCrawler implements IPermCrawler {
 		try {
 			String response = HttpUtil.getAuthenticatedText(new URL(fNxUrl + user), fUser, fPassword);
 
-			JSONObject userData = new JSONObject(response);
+			JSONObject userData = JSONObject.parseObject(response);
 
 			List<String> groups = perms.getNuxeoGroups();
 
@@ -68,7 +68,7 @@ public class NuxeoCrawler implements IPermCrawler {
 
 			JSONArray userGroups = userData.getJSONObject(PROPERTIES).getJSONArray(GROUPS);
 
-			for (int i = 0; i < userGroups.length(); ++i) {
+			for (int i = 0; i < userGroups.size(); ++i) {
 				try {
 					// sub-object until a certain hotfix
 					JSONObject group = userGroups.getJSONObject(i);
@@ -80,7 +80,7 @@ public class NuxeoCrawler implements IPermCrawler {
 			}
 
 			JSONArray userExGroups = userData.getJSONArray(EXTENDED_GROUPS);
-			for (int i = 0; i < userExGroups.length(); ++i) {
+			for (int i = 0; i < userExGroups.size(); ++i) {
 				try {
 					JSONObject group = userExGroups.getJSONObject(i);
 					groups.add(group.getString(NAME));

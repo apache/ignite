@@ -2,9 +2,11 @@ package org.elasticsearch.relay.handler;
 
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -16,6 +18,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientException;
@@ -23,15 +26,18 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.elasticsearch.relay.ESRelayConfig;
 import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.model.ESResponse;
 import org.elasticsearch.relay.model.ESUpdate;
+import org.elasticsearch.relay.model.ESViewQuery;
 import org.elasticsearch.relay.postprocess.IPostProcessor;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.HttpUtil;
-import org.json.JSONArray;
-import org.json.JSONObject;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Central query handler splitting up queries between multiple ES instances,
@@ -39,8 +45,10 @@ import org.json.JSONObject;
  * results.
  */
 public class ESQueryKernelIgniteHandler extends ESQueryHandler{
-	Ignite ignite;	
-	GridKernalContext ctx;
+	protected Ignite ignite;	
+	protected GridKernalContext ctx;
+	
+	protected GridJettyObjectMapper objectMapper;
 	
 	public ESQueryKernelIgniteHandler(ESRelayConfig config,GridKernalContext ctx) throws Exception{
 		super(config);
@@ -50,6 +58,8 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 
 			ignite = ctx.grid();
 		}
+		
+		this.objectMapper = new GridJettyObjectMapper();
 	}
 	
 	/**
@@ -57,28 +67,49 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 	 */
 	public void destroy() {				
 		super.destroy();
+		ignite = null;
 	}
-	
+	/**
+	 * 返回cacheName，如果是表，返回SQL_SCHEMA_TABLE
+	 * @param path
+	 * @return
+	 */
 	protected String cacheName(String... path){		
 		String schema = path[0];
 		String table = path[1];		
 		if(table.length()==0){
 			return schema;
-		}			
+		}				
+		else if(ignite.cacheNames().contains(schema)){
+			return schema;
+		}
+		else if(ignite.cacheNames().contains(schema.toUpperCase())){
+			return schema.toUpperCase();
+		}
 		String cacheName = "SQL_"+schema+"_"+table.toUpperCase();		
 		return cacheName;
 	}
 	
 	protected BinaryObject jsonToBinaryObject(String typeName,JSONObject obj){	
 		BinaryObjectBuilder bb = ignite.binary().builder(typeName);
-		Iterator it = obj.keys();
-	    while(it.hasNext()){
-	    	String $key =  it.next().toString();
-	    	Object $value ;
+		Set<Map.Entry<String,Object>> ents = obj.entrySet();
+	    for(Map.Entry<String,Object> ent: ents){	    	
+	    	String $key =  ent.getKey();
+	    	Object $value = ent.getValue();
 			try {
-				$value = obj.get($key);
-				
-				bb.setField($key, $value);
+			
+				if($value instanceof JSONArray){
+					JSONArray $arr = (JSONArray)$value;
+					//-$value = $arr.toArray();
+					$value = ($arr);
+				}
+				else if($value instanceof JSONObject){
+					JSONObject $arr = (JSONObject)$value;
+					//-$value = new HashMap<String,Object>($arr);
+					$value = ($arr);
+				}
+				Object bValue = ignite.binary().toBinary($value);
+				bb.setField($key, bValue);
 				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
@@ -87,7 +118,8 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 	    }
 	    return bb.build();
 	}
-
+	
+	@Override
 	protected String sendEsRequest(ESUpdate query, String esUrl) throws Exception {
 		String esReqUrl = esUrl + query.getQueryUrl();
 		String[] path = query.getQueryPath();
@@ -99,7 +131,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		
 		//将json转为binaryObject
 		if(query.getOp().equals(ESConstants.INSERT_FRAGMENT)){
-			IgniteCache<String, BinaryObject> cache = ignite.getOrCreateCache(cacheName).withKeepBinary();
+			IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName).withKeepBinary();
 			BinaryObject bobj = jsonToBinaryObject(query.getQueryPath()[1],query.getQuery());
 			
 			rv = cache.putIfAbsent(key, bobj);
@@ -141,9 +173,14 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		}
 		else if(query.getOp().equals(ESConstants.BULK_FRAGMENT)){
 			JSONArray list = query.getQuery().getJSONArray(ESConstants.BULK_FRAGMENT);
+			
+			// TODO @byron
+			for(Object o: list) {
+				this.fLogger.fine(o.toString());
+			}
 			jsonResq.put("_index", path[0]);
 			jsonResq.put("_type", path[1]);			
-			jsonResq.put("result", list.length());
+			jsonResq.put("result", list.size());
 			return jsonResq.toString();
 		}
 
@@ -155,30 +192,74 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		return super.sendEsRequest(query, esUrl);
 	}
 	
+	@Override
 	protected String sendEsRequest(ESQuery query, String esUrl) throws Exception {
 		String esReqUrl = esUrl + query.getQueryUrl();		
 				
 		String[] path = query.getQueryPath();
 		String cacheName = cacheName(path);
-		IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName).withKeepBinary();	
+		IgniteCache<Object, BinaryObject> cache = ignite.cache(cacheName).withKeepBinary();	
 		
-		TextQuery<String, BinaryObject> qry = new TextQuery<>(path[1], "TX");
+		String keyword = query.getParams().get("q");
+		if(keyword==null){
+			JSONObject queryObj = query.getQuery().getJSONObject("query");
+			if(queryObj.containsKey("multi_match")){
+				JSONObject multi_match = queryObj.getJSONObject("multi_match");
+				JSONArray fields = multi_match.getJSONArray("fields");
+				String queryString = multi_match.getString("query");
+				keyword = "";
+				for(int i=0;i<fields.size();i++){
+					keyword+=fields.getString(i)+":"+queryString+" ";
+				}
+			}
+		}
+		TextQuery<Object, BinaryObject> qry = new TextQuery<>(path[1], keyword);
 		
-        QueryCursor<Cache.Entry<String, BinaryObject>> employees = cache.query(qry);
+		String from = query.getParams().get("from");
+		String pageSize = query.getParams().get("size");
+		if(pageSize!=null){
+			qry.setPageSize(Integer.valueOf(pageSize)+Integer.valueOf(from));
+		}
+		
+        QueryCursor<Cache.Entry<Object, BinaryObject>> employees = cache.query(qry);
+        
+        List<Cache.Entry<Object, BinaryObject>> result = employees.getAll();
 
-        System.out.println();
-        System.out.println(">>> Employees living in Texas:");
-
-        for (Cache.Entry<String, BinaryObject> e : employees.getAll())
-            System.out.println(">>>     " + e.getValue().deserialize());
+        //for (Cache.Entry<String, BinaryObject> e : result)
+        //    System.out.println(">>>     " + e.getValue().deserialize());
 
 		// replace spaces since they cause problems with proxies etc.
 		esReqUrl = esReqUrl.replaceAll(" ", "%20");
 
 		String es1Response = null;
 		query.setFormat("form");
+		es1Response = this.objectMapper.writeValueAsString(result);
+		return "{\"list\":\n"+es1Response+"}\n";
+		//return super.sendEsRequest(query, esUrl);
+	}
+	
+	@Override
+	protected String sendEsRequest(ESViewQuery query, String esUrl) throws Exception {
+		String[] path = query.getQueryPath();
+		String cacheName = cacheName(path);
+		IgniteCache<Object, BinaryObject> cache = ignite.cache(cacheName).withKeepBinary();	
 		
-		return super.sendEsRequest(query, esUrl);
+		SqlFieldsQuery qry = new SqlFieldsQuery(query.getSQL());
+		String from = query.getParams().get("from");
+		String pageSize = query.getParams().get("size");
+		if(pageSize!=null){
+			qry.setPageSize(Integer.valueOf(pageSize)+Integer.valueOf(from));
+		}
+		
+        QueryCursor<List<?>> employees = cache.query(qry);
+
+        List<?> result = employees.getAll();
+
+		String es1Response = null;
+		query.setFormat("form");		
+		es1Response = this.objectMapper.writeValueAsString(result);
+		return "{\"list\":\n"+es1Response+"}\n";
+		//return super.sendEsRequest(query, esUrl);
 	}
 	
 	
@@ -188,18 +269,18 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 
 		// TODO: recognize non-result responses and only use valid responses?
 		if (es1Response != null) {
-			JSONObject es1Json = new JSONObject(es1Response);
+			JSONObject es1Json = JSONObject.parseObject(es1Response);
 
-			if (!es1Json.has(ESConstants.R_ERROR)) {
+			if (!es1Json.containsKey(ESConstants.R_ERROR)) {
 				es1Resp = new ESResponse(es1Json);
 			} else {
 				throw new Exception("ES 1.x error: " + es1Response);
 			}
 		}
 		if (es2Response != null) {
-			JSONObject es2Json = new JSONObject(es2Response);
+			JSONObject es2Json = JSONObject.parseObject(es2Response);
 
-			if (!es2Json.has(ESConstants.R_ERROR)) {
+			if (!es2Json.containsKey(ESConstants.R_ERROR)) {
 				es2Resp = new ESResponse(es2Json);
 			} else {
 				throw new Exception("ES 2.x error: " + es2Response);

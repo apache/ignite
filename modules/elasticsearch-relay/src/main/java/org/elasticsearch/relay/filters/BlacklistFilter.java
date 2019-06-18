@@ -7,8 +7,8 @@ import org.elasticsearch.relay.model.ESQuery;
 import org.elasticsearch.relay.permissions.UserPermSet;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.ESUtil;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Filter excluding indices and types from the query result. Adjusts query body
@@ -115,7 +115,7 @@ public class BlacklistFilter implements IFilter {
 			typeFilter.put(ESConstants.Q_TYPE, valueObject);
 
 			notObject.put(ESConstants.Q_NOT, typeFilter);
-			filters.put(notObject);
+			filters.add(notObject);
 		}
 	}
 

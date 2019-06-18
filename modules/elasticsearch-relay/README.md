@@ -24,9 +24,22 @@ Ignite作为后端搜索引擎实现代替elasticsearch
 Ignite schema和elasticsearch的index对应。
 entity table和elasticsearch的type对应。
 
-/dupal/content_faq?_search="keyword"
+/dupal/content_faq/_search?query="keyword"
 
 意思是在drupal模式里面的content_faq表里搜索keyword。
+
+/cache/content_faq/_search?q="keyword"
+
+意思是在cacheName为cache的content_faq表里搜索keyword。
+
+path[0]为模式或者cacheName
+path[1]为TypeName
+
+
+/dupal/content_faq/_all?q=view2
+
+意思是在drupal模式里面的content_faq表里列出view2的结果，功能是为了在后端配置视图。
+
 
 支持以json的方式访问ignite rest api。
 
