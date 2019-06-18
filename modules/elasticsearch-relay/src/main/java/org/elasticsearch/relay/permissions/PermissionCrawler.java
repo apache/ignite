@@ -26,6 +26,11 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 	private static final String SHIND_ID_FIELD = "id";
 	private static final String SHIND_EMAILS_FIELD = "emails";
 	private static final String SHIND_VALUE_FIELD = "value";
+	
+	
+	private static PermissionCrawler fPermCrawler = null;
+	
+	
 
 	private final Object fTrigger = new Object();
 
@@ -46,6 +51,10 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 	private final Logger fLogger;
 
 	private boolean fActive;
+	
+	public static PermissionCrawler getInstance() {
+		return fPermCrawler;
+	}
 
 	/**
 	 * Creates a runnable crawler using the list of people retrieved from the
@@ -77,6 +86,8 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 		fUsers = new ArrayList<String>();
 
 		fLogger = Logger.getLogger(this.getClass().getName());
+		
+		fPermCrawler = this;
 	}
 
 	@Override

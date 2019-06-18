@@ -69,6 +69,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		super.destroy();
 		ignite = null;
 	}
+	
 	/**
 	 * 返回cacheName，如果是表，返回SQL_SCHEMA_TABLE
 	 * @param path
@@ -234,7 +235,7 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		String es1Response = null;
 		query.setFormat("form");
 		es1Response = this.objectMapper.writeValueAsString(result);
-		return "{\"list\":\n"+es1Response+"}\n";
+		return es1Response;
 		//return super.sendEsRequest(query, esUrl);
 	}
 	
@@ -258,12 +259,22 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		String es1Response = null;
 		query.setFormat("form");		
 		es1Response = this.objectMapper.writeValueAsString(result);
-		return "{\"list\":\n"+es1Response+"}\n";
+		return es1Response;
 		//return super.sendEsRequest(query, esUrl);
 	}
 	
-	
-	protected JSONObject mergeResponses(ESQuery query, String es1Response, String es2Response) throws Exception {
+	@Override
+	protected String mergeResponses(String es1Response, String es2Response,int limit) throws Exception {
+		
+		if(es2Response==null){
+			return "{\"list\":\n"+es1Response+"}\n";
+		}
+
+		if(es1Response==null){
+			return "{\"list\":\n"+es2Response+"}\n";
+		}
+		
+		
 		ESResponse es1Resp = new ESResponse();
 		ESResponse es2Resp = new ESResponse();
 
@@ -293,9 +304,6 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		Iterator<JSONObject> es1Hits = es1Resp.getHits().iterator();
 		Iterator<JSONObject> es2Hits = es2Resp.getHits().iterator();
 
-		// limit returned amount if size is specified
-		final int limit = getLimit(query);
-
 		while ((es1Hits.hasNext() || es2Hits.hasNext()) && hits.size() < limit) {
 			if (es1Hits.hasNext()) {
 				addHit(hits, es1Hits.next());
@@ -310,24 +318,8 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		mergedResponse.setShards(es1Resp.getShards() + es2Resp.getShards());
 		mergedResponse.setTotalHits(es1Resp.getTotalHits() + es2Resp.getTotalHits());
 
-		return mergedResponse.toJSON();
+		return mergedResponse.toJSON().toJSONString();
 	}
 
-	protected void addHit(List<JSONObject> hits, JSONObject hit) throws Exception {
-		// retrieve type and handle postprocessing
-		String type = hit.getString(ESConstants.R_HIT_TYPE);
-
-		IPostProcessor pp = fPostProcs.get(type);
-		if (pp != null) {
-			hit = pp.process(hit);
-		}
-
-		// postprocessors active for all types
-		for (IPostProcessor gpp : fGlobalPostProcs) {
-			hit = gpp.process(hit);
-		}
-
-		hits.add(hit);
-	}
-
+	
 }

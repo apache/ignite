@@ -44,12 +44,6 @@
 			<scope>provided</scope>
 		</dependency>
 		
-		<dependency>
-			<groupId>org.jasig.cas</groupId>
-			<artifactId>cas-client-core</artifactId>
-			<version>3.1.10</version>
-		</dependency>
-		
 		 <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -62,14 +56,14 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
             <version>${spring-5.0.version}</version>
-          
+          	<scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <version>${spring-5.0.version}</version>
-           
+           	<scope>provided</scope>
         </dependency>
 		
 		<dependency>
@@ -92,6 +86,7 @@
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-webapp</artifactId>
 			<version>9.4.11.v20180605</version>
+			<scope>provided</scope>
 		</dependency>
 
 

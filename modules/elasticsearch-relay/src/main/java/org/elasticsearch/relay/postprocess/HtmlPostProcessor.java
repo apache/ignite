@@ -1,5 +1,7 @@
 package org.elasticsearch.relay.postprocess;
 
+import java.util.Set;
+
 import org.elasticsearch.relay.util.ESConstants;
 import com.alibaba.fastjson.JSONObject;
 import org.jsoup.Jsoup;
@@ -9,22 +11,42 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
+
 /**
  * 处理HTML文档，格式化html，只获取body部分
  * @author WBPC1158
  *
  */
 public class HtmlPostProcessor implements IPostProcessor {
-	private static final String NOTE_FIELD = "note:note";
+	
+	
+	
+	private String BODY_FIELD = "body";
+
+	public void setBODY_FIELD(String bODY_FIELD) {
+		BODY_FIELD = bODY_FIELD;
+	}
+	
+	
+	private Set<String>  typeSet= null;
+	
+	public Set<String> getTypeSet() {
+		return typeSet;
+	}
+
+	public void setTypeSet(Set<String> typeSet) {
+		this.typeSet = typeSet;
+	}
+
 
 	@Override
 	public JSONObject process(JSONObject result) throws Exception {
 		JSONObject source = result.getJSONObject(ESConstants.R_HIT_SOURCE);
 
-		if (source!=null && source.containsKey(NOTE_FIELD)) {
-			String content = getProcessed(source.getString(NOTE_FIELD));
-			source.remove(NOTE_FIELD);
-			source.put(NOTE_FIELD, content);
+		if (source!=null && source.containsKey(BODY_FIELD)) {
+			String content = getProcessed(source.getString(BODY_FIELD));
+			source.remove(BODY_FIELD);
+			source.put(BODY_FIELD, content);
 		}
 
 		return result;

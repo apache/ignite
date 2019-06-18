@@ -13,9 +13,39 @@
    
 	
 	
-	<bean id="conentProcessor" class="org.elasticsearch.relay.postprocess.ContentPostProcessor">		
+	<bean id="conentProcessor" class="org.elasticsearch.relay.postprocess.ContentPostProcessor">	
+		<property name="typeSet">
+			<set>
+				<value>resume_hr</value>
+			</set>		
+		</property>	
 		<property name="sensitiveWordFile" value="sensitive_words.txt" ></property>
 	</bean>
 	
+	<bean id="htmlProcessor" class="org.elasticsearch.relay.postprocess.HtmlPostProcessor">	
+		<property name="typeSet">
+			<set>
+				<value>resume_hr</value>
+			</set>		
+		</property>	
+		<property name="BODY_FIELD" value="body" ></property>
+	</bean>
+	
+	
+	<bean id="liferayProcessor" class="org.elasticsearch.relay.postprocess.LiferayPostProcessor">	
+		<property name="typeSet">
+			<set>
+				<value>LiferayDocumentType</value>
+			</set>		
+		</property>			
+	</bean>
+	
+	<bean id="mailProcessor" class="org.elasticsearch.relay.postprocess.MailPostProcessor">	
+		<property name="typeSet">
+			<set>
+				<value>email</value>
+			</set>		
+		</property>			
+	</bean>
 
 </beans>

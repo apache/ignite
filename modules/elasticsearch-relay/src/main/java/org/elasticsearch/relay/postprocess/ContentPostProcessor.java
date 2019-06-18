@@ -9,22 +9,37 @@ import com.alibaba.fastjson.JSONObject;
 
 /** 过滤敏感词
  *  如果是标题，过滤回车符，截断过长的标题
+ *  如果含有敏感词，返回空文本。
  * @author WBPC1158
  *
  */
 public class ContentPostProcessor implements IPostProcessor {
-	private static final String CONTENT_FIELD = "content";
-	private static final String TITLE_FIELD = "title";
-
-	private static final int MAX_FIELD_LENGTH = 255;
-	
-	
 	static Logger fLogger = Logger.getLogger(ContentPostProcessor.class.getName());
 	
-	SensitivewordFilter sensitivewordFilter;
+	private  String CONTENT_FIELD = "content";
+	private  String TITLE_FIELD = "title";
+
 	
+
+
+	private  int MAX_FIELD_LENGTH = 255;
 	
 	private String sensitiveWordFile = "sensitive_words.txt";
+	
+	private SensitivewordFilter sensitivewordFilter;
+	
+	
+	
+	private Set<String>  typeSet= null;
+	
+	public Set<String> getTypeSet() {
+		return typeSet;
+	}
+
+	public void setTypeSet(Set<String> typeSet) {
+		this.typeSet = typeSet;
+	}
+
 
 	public String getSensitiveWordFile() {
 		return sensitiveWordFile;
@@ -32,6 +47,18 @@ public class ContentPostProcessor implements IPostProcessor {
 
 	public void setSensitiveWordFile(String sensitiveWordFile) {
 		this.sensitiveWordFile = sensitiveWordFile;
+	}
+	
+	public void setCONTENT_FIELD(String cONTENT_FIELD) {
+		CONTENT_FIELD = cONTENT_FIELD;
+	}
+	
+	public void setTITLE_FIELD(String tITLE_FIELD) {
+		TITLE_FIELD = tITLE_FIELD;
+	}
+	
+	public void setMAX_FIELD_LENGTH(int mAX_FIELD_LENGTH) {
+		MAX_FIELD_LENGTH = mAX_FIELD_LENGTH;
 	}
 
 	@Override

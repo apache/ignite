@@ -1,5 +1,7 @@
 package org.elasticsearch.relay.postprocess;
 
+import java.util.Set;
+
 import org.elasticsearch.relay.permissions.PermissionCrawler;
 import org.elasticsearch.relay.util.ESConstants;
 import com.alibaba.fastjson.JSONArray;
@@ -10,23 +12,23 @@ import com.alibaba.fastjson.JSONObject;
  * i.e. for recipients and senders.
  */
 public class MailPostProcessor implements IPostProcessor {
-	private static final String FROM = "from";
-	private static final String TO = "to";
-	private static final String EMAIL = "email";
-	private static final String ID = "id";
+	private final String FROM = "from";
+	private final String TO = "to";
+	private final String EMAIL = "email";
+	private final String ID = "uid";
 
-	private final PermissionCrawler fPerms;
-
-	/**
-	 * Creates a mail result post processor using the given permission crawler
-	 * to look up user IDs using mail addresses.
-	 * 
-	 * @param perms
-	 *            permission crawler to use
-	 */
-	public MailPostProcessor(PermissionCrawler perms) {
-		fPerms = perms;
+	
+	
+	
+	private Set<String>  typeSet= null;
+	
+	public Set<String> getTypeSet() {
+		return typeSet;
 	}
+
+	public void setTypeSet(Set<String> typeSet) {
+		this.typeSet = typeSet;
+	}	
 
 	@Override
 	public JSONObject process(JSONObject result) throws Exception {
@@ -36,7 +38,7 @@ public class MailPostProcessor implements IPostProcessor {
 		JSONObject fromObj = source.getJSONObject(FROM);
 		if (fromObj != null) {
 			String mail = fromObj.getString(EMAIL);
-			String user = fPerms.getUserByMail(mail);
+			String user = PermissionCrawler.getInstance().getUserByMail(mail);
 
 			if (user != null) {
 				fromObj.put(ID, user);
@@ -50,7 +52,7 @@ public class MailPostProcessor implements IPostProcessor {
 				JSONObject recipient = toArray.getJSONObject(i);
 
 				String mail = recipient.getString(EMAIL);
-				String user = fPerms.getUserByMail(mail);
+				String user = PermissionCrawler.getInstance().getUserByMail(mail);
 
 				if (user != null) {
 					recipient.put(ID, user);

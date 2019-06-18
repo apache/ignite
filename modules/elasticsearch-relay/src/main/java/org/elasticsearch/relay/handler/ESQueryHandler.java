@@ -37,6 +37,9 @@ import org.elasticsearch.relay.postprocess.MailPostProcessor;
 import org.elasticsearch.relay.util.ESConstants;
 import org.elasticsearch.relay.util.ESUtil;
 import org.elasticsearch.relay.util.HttpUtil;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
@@ -46,18 +49,21 @@ import com.alibaba.fastjson.JSONObject;
  * results.
  */
 public class ESQueryHandler {
+	
+	final PermissionCrawler fPermCrawler;
+	
 	protected final String fEsUrl;
 	protected final String fEs2Url;
 
 	protected final Set<String> fEs1Indices;
 	protected final Set<String> fEs2Indices;
 
-	protected final PermissionCrawler fPermCrawler;
+	
 
 	protected final Map<String, IFilter> fIndexFilters, fTypeFilters;
 
 	//对搜索结果进行处理
-	protected final Map<String, IPostProcessor> fPostProcs;
+	protected final MultiValueMap<String, IPostProcessor> fPostProcs;
 	protected final List<IPostProcessor> fGlobalPostProcs;
 
 	protected final BlacklistFilter fEs1BlacklistFilter;
@@ -134,26 +140,24 @@ public class ESQueryHandler {
 		}
 
 		// initialize and register post processors
-		fPostProcs = new HashMap<String, IPostProcessor>();
-
-		IPostProcessor pp = new MailPostProcessor(fPermCrawler);
-		for (String type : config.getMailTypes()) {
-			fPostProcs.put(type, pp);
-		}
-
-		pp = new LiferayPostProcessor(fPermCrawler);
-		for (String type : config.getLiferayTypes()) {
-			fPostProcs.put(type, pp);
-		}
-
+		fPostProcs = new LinkedMultiValueMap<String, IPostProcessor>();
+		
 		// add shortening post processor for all types
 		fGlobalPostProcs = new ArrayList<>();
-		fGlobalPostProcs.add(new HtmlPostProcessor());
-		fGlobalPostProcs.add(new ContentPostProcessor());
 		
 		Map<String, IPostProcessor> allPostProcs = ESRelay.context.getBeansOfType(IPostProcessor.class);
+		for(IPostProcessor pp: allPostProcs.values()) {
+			if(pp.getTypeSet()==null) {
+				fGlobalPostProcs.add(pp);
+			}
+			else {
+				for (String type : pp.getTypeSet()) {
+					fPostProcs.add(type, pp);
+				}
+			}
+		}
 
-		fGlobalPostProcs.addAll(allPostProcs.values());
+		
 	}
 	
 
@@ -242,20 +246,14 @@ public class ESQueryHandler {
 			es2Response = sendEsRequest(es2Query, fEs2Url);
 		}
 		
-		if(es2Response==null){
-			return es1Response;
-		}
-
-		if(es1Response==null){
-			return es2Response;
-		}
+		
 		// merge results
 		// limit returned amount if size is specified
 		int limit = getLimit(query);
 
-		JSONObject response = mergeResponses(es1Response, es2Response, limit);
+		String response = mergeResponses(es1Response, es2Response, limit);
 
-		return response.toString();
+		return response;
 	}
 	
 	public String handleRequest(ESViewQuery query, String user) throws Exception {
@@ -281,21 +279,13 @@ public class ESQueryHandler {
 
 			//es2Query = handleFiltering(user, es2Query, fEs2BlacklistFilter);
 			es2Response = sendEsRequest(es2Query, fEs2Url);
-		}
-		
-		if(es2Response==null){
-			return es1Response;
-		}
-
-		if(es1Response==null){
-			return es2Response;
-		}
+		}		
 		
 		int limit = Integer.MAX_VALUE;
 
-		JSONObject response = mergeResponses(es1Response, es2Response,limit);
+		String response = mergeResponses(es1Response, es2Response,limit);
 
-		return response.toString();
+		return response;
 	}
 
 	protected ESQuery getInstanceQuery(ESQuery query, Set<String> availIndices) throws Exception {
@@ -309,7 +299,7 @@ public class ESQueryHandler {
 		boolean removed = false;
 		String indicesFrag = "";
 		for (String index : indices) {
-			if (availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
+			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains("*") || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
 				indicesFrag += index + ",";
 			} else {
 				removed = true;
@@ -351,7 +341,7 @@ public class ESQueryHandler {
 		boolean removed = false;
 		String indicesFrag = "";
 		for (String index : indices) {
-			if (availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
+			if (availIndices.contains(ESConstants.ALL_FRAGMENT) || availIndices.contains("*") || availIndices.contains(index) || index.equals(ESConstants.ALL_FRAGMENT)) {
 				indicesFrag += index + ",";
 			} else {
 				removed = true;
@@ -537,7 +527,16 @@ public class ESQueryHandler {
 		return es1Response;
 	}
 
-	protected JSONObject mergeResponses(String es1Response, String es2Response,int limit) throws Exception {
+	protected String mergeResponses(String es1Response, String es2Response, int limit) throws Exception {
+		
+		if(es2Response==null){
+			return es1Response;
+		}
+
+		if(es1Response==null){
+			return es2Response;
+		}
+		
 		ESResponse es1Resp = new ESResponse();
 		ESResponse es2Resp = new ESResponse();
 
@@ -582,16 +581,18 @@ public class ESQueryHandler {
 		mergedResponse.setShards(es1Resp.getShards() + es2Resp.getShards());
 		mergedResponse.setTotalHits(es1Resp.getTotalHits() + es2Resp.getTotalHits());
 
-		return mergedResponse.toJSON();
+		return mergedResponse.toJSON().toJSONString();
 	}
 
 	protected void addHit(List<JSONObject> hits, JSONObject hit) throws Exception {
 		// retrieve type and handle postprocessing
 		String type = hit.getString(ESConstants.R_HIT_TYPE);
 
-		IPostProcessor pp = fPostProcs.get(type);
+		List<IPostProcessor> pp = fPostProcs.get(type);
 		if (pp != null) {
-			hit = pp.process(hit);
+			for(IPostProcessor gpp : pp) {
+				hit = gpp.process(hit);
+			}
 		}
 
 		// postprocessors active for all types

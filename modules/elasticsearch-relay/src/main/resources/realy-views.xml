@@ -13,7 +13,7 @@
    
 	
 	<bean id="hosp-cluster" class="org.elasticsearch.relay.model.ESViewQuery">	
-		<property name="SQL" ><value>SELECT * FROM hos_clusters </value></property>	
+		<property name="SQL" ><value>select * from "HosQualityReportCache".HOS_QUALITY_REPORT limit 10</value></property>	
 		<property name="namedSQL" >		
 			<map>
 				<entry key="zh" value="SELECT * FROM hos_clusters where type = 'zh' " />
