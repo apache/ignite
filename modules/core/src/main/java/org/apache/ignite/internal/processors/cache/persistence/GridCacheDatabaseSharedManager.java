@@ -153,7 +153,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDat
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridCountDownCallback;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -416,6 +416,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         lockWaitTime = persistenceCfg.getLockWaitTime();
 
         persStoreMetrics = new DataStorageMetricsImpl(
+            ctx.metric().registry(),
             persistenceCfg.isMetricsEnabled(),
             persistenceCfg.getMetricsRateTimeInterval(),
             persistenceCfg.getMetricsSubIntervalCount()

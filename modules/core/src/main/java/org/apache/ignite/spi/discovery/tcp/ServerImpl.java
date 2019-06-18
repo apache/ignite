@@ -496,8 +496,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        U.cancel(tcpSrvr);
-        U.join(tcpSrvr, log);
+        if (tcpSrvr != null)
+            tcpSrvr.stop();
 
         tcpSrvr = null;
 
@@ -1747,8 +1747,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
-        U.cancel(tcpSrvr);
-        U.join(tcpSrvr, log);
+        if (tcpSrvr != null) {
+            tcpSrvr.stop();
+
+            tcpSrvr = null;
+        }
 
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
@@ -6032,13 +6035,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override protected void body() throws InterruptedException {
             worker.run();
         }
-
-        /** {@inheritDoc} */
-        @Override public void interrupt() {
-            super.interrupt();
-
-            worker.onInterruption();
-        }
     }
 
     /**
@@ -6181,8 +6177,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        public void onInterruption() {
+        public void stop() {
+            cancel();
+
             U.close(srvrSock, log);
+
+            U.join(TcpServer.this, log);
         }
     }
 

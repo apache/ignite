@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreListener;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.lang.IgniteOutClosure;
 
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.
@@ -64,20 +67,22 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public FilePageStore createPageStore(
+    @Override public PageStore createPageStore(
         byte type,
-        File file,
+        IgniteOutClosure<Path> pathProvider,
         AllocatedPageTracker allocatedTracker,
         PageStoreListener storeHandler
     ) throws IgniteCheckedException {
-        if (!file.exists())
-            return createPageStore(type, file, latestVersion(), allocatedTracker, storeHandler);
+        Path filePath = pathProvider.apply();
 
-        try (FileIO fileIO = fileIOFactoryStoreV1.create(file)) {
+        if (!Files.exists(filePath))
+            return createPageStore(type, pathProvider, latestVersion(), allocatedTracker, storeHandler);
+
+        try (FileIO fileIO = fileIOFactoryStoreV1.create(filePath.toFile())) {
             int minHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minHdr)
-                return createPageStore(type, file, latestVersion(), allocatedTracker, storeHandler);
+                return createPageStore(type, pathProvider, latestVersion(), allocatedTracker, storeHandler);
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -89,10 +94,10 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             int ver = hdr.getInt();
 
-            return createPageStore(type, file, ver, allocatedTracker, storeHandler);
+            return createPageStore(type, pathProvider, ver, allocatedTracker, storeHandler);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Error while creating file page store [file=" + file + "]:", e);
+            throw new IgniteCheckedException("Error while creating file page store [file=" + filePath.toAbsolutePath() + "]:", e);
         }
     }
 
@@ -115,26 +120,26 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * Instantiates specific version of FilePageStore.
      *
      * @param type Type.
-     * @param file File.
      * @param ver Version.
      * @param allocatedTracker Metrics updater
      */
-    public FilePageStore createPageStore(
+    private FilePageStore createPageStore(
         byte type,
-        File file,
+        IgniteOutClosure<Path> pathProvider,
         int ver,
         AllocatedPageTracker allocatedTracker,
         PageStoreListener storeHandler
     ) {
+
         switch (ver) {
             case FilePageStore.VERSION:
-                return new FilePageStore(type, file, fileIOFactoryStoreV1, memCfg, allocatedTracker, storeHandler);
+                return new FilePageStore(type, pathProvider, fileIOFactoryStoreV1, memCfg, allocatedTracker, storeHandler);
 
             case FilePageStoreV2.VERSION:
-                return new FilePageStoreV2(type, file, fileIOFactory, memCfg, allocatedTracker, storeHandler);
+                return new FilePageStoreV2(type, pathProvider, fileIOFactory, memCfg, allocatedTracker, storeHandler);
 
             default:
-                throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + file.getAbsolutePath() + "]");
+                throw new IllegalArgumentException("Unknown version of file page store: " + ver + " for file [" + pathProvider.apply().toAbsolutePath() + "]");
         }
     }
 
