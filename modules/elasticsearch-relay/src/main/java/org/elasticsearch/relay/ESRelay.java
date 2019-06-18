@@ -83,6 +83,7 @@ public class ESRelay extends HttpServlet {
 			fLogger.info("init hander:" + fHandler.getClass());
 			
 		} catch (Exception e) {
+			fLogger.severe("init ESRelay:" +e.getMessage());
 			throw new ServletException(e);
 		}
 	}
@@ -111,7 +112,7 @@ public class ESRelay extends HttpServlet {
 			String line = reader.readLine();
 			while (line != null) {
 				buffer.append(line);
-
+				buffer.append("\n");
 				line = reader.readLine();
 			}
 		} catch (Exception e) {

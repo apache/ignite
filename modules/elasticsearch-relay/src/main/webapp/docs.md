@@ -38,3 +38,6 @@ path[1]为TypeName
 如：
 /_cmd/put?cacheName=test&key=k1
 
+如： 使用视图hosp-cluster
+/HosQualityReportCache/HosQualityReport/_all?q=hosp-cluster
+

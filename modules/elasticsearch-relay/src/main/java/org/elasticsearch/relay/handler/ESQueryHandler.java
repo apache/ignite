@@ -108,7 +108,7 @@ public class ESQueryHandler {
 		String permGetUrl = config.getPermissionsCrawlUrl();
 		fPermCrawler = new PermissionCrawler(permGetUrl, crawlers, config.getPermCrawlInterval());
 		
-		if(permGetUrl!=null && !permGetUrl.isEmpty()){			
+		if(config.getPermCrawlInterval()>= 0){			
 			Thread pcThread = new Thread(fPermCrawler);
 			//pcThread.setDaemon(true);
 			pcThread.start();

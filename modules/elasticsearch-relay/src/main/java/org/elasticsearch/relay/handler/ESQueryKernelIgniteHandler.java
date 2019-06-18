@@ -2,6 +2,8 @@ package org.elasticsearch.relay.handler;
 
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -26,6 +28,11 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryFieldsMetaResult;
+import org.apache.ignite.internal.processors.rest.handlers.query.CacheQueryResult;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.elasticsearch.relay.ESRelayConfig;
 import org.elasticsearch.relay.model.ESQuery;
@@ -222,16 +229,24 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 			qry.setPageSize(Integer.valueOf(pageSize)+Integer.valueOf(from));
 		}
 		
-        QueryCursor<Cache.Entry<Object, BinaryObject>> employees = cache.query(qry);
+        QueryCursor<Cache.Entry<Object, BinaryObject>> qryCur = cache.query(qry);
         
-        List<Cache.Entry<Object, BinaryObject>> result = employees.getAll();
+        List<Cache.Entry<Object, BinaryObject>> list = qryCur.getAll();
 
         //for (Cache.Entry<String, BinaryObject> e : result)
         //    System.out.println(">>>     " + e.getValue().deserialize());
 
 		// replace spaces since they cause problems with proxies etc.
 		esReqUrl = esReqUrl.replaceAll(" ", "%20");
+		
+		CacheQueryResult res = new CacheQueryResult();
+		res.setItems(list);
+		
+		List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)qryCur).fieldsMeta();
+        res.setFieldsMetadata(convertMetadata(fieldsMeta));
 
+		
+		GridRestResponse result = new GridRestResponse(res);   
 		String es1Response = null;
 		query.setFormat("form");
 		es1Response = this.objectMapper.writeValueAsString(result);
@@ -252,10 +267,19 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 			qry.setPageSize(Integer.valueOf(pageSize)+Integer.valueOf(from));
 		}
 		
-        QueryCursor<List<?>> employees = cache.query(qry);
+        QueryCursor<List<?>> qryCur = cache.query(qry);
 
-        List<?> result = employees.getAll();
+        List<?>  list = qryCur.getAll();
+        
+        CacheQueryResult res = new CacheQueryResult();
+		res.setItems(list);
+		
+		List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl)qryCur).fieldsMeta();
+        res.setFieldsMetadata(convertMetadata(fieldsMeta));
 
+
+        GridRestResponse result = new GridRestResponse(res);        
+       
 		String es1Response = null;
 		query.setFormat("form");		
 		es1Response = this.objectMapper.writeValueAsString(result);
@@ -267,13 +291,12 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 	protected String mergeResponses(String es1Response, String es2Response,int limit) throws Exception {
 		
 		if(es2Response==null){
-			return "{\"list\":\n"+es1Response+"}\n";
+			return es1Response;
 		}
 
 		if(es1Response==null){
-			return "{\"list\":\n"+es2Response+"}\n";
-		}
-		
+			return es2Response;
+		}		
 		
 		ESResponse es1Resp = new ESResponse();
 		ESResponse es2Resp = new ESResponse();
@@ -321,5 +344,18 @@ public class ESQueryKernelIgniteHandler extends ESQueryHandler{
 		return mergedResponse.toJSON().toJSONString();
 	}
 
-	
+	 /**
+     * @param meta Internal query field metadata.
+     * @return Rest query field metadata.
+     */
+    private Collection<CacheQueryFieldsMetaResult> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+        List<CacheQueryFieldsMetaResult> res = new ArrayList<>();
+
+        if (meta != null) {
+            for (GridQueryFieldMetadata info : meta)
+                res.add(new CacheQueryFieldsMetaResult(info));
+        }
+
+        return res;
+    }
 }

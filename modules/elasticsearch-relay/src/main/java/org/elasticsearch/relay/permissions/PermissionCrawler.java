@@ -19,7 +19,7 @@ import com.alibaba.fastjson.JSONObject;
  */
 public class PermissionCrawler implements IPermCrawler, Runnable {
 	//获取所有用户 "social/rest/user?fields=id,emails&count=0"
-	private static final String SHIND_ALL_USERS_QUERY = "?cmd=qryfldexe&cacheName=Person&qry=select+id%2C+email+from+Person";
+	private static final String SHIND_ALL_USERS_QUERY = "?cmd=qryfldexe&cacheName=Person&pageSize=100000&qry=select+id%2C+email+from+Person";
 	
 		
 	private static final String SHIND_LIST_FIELD = "list";
@@ -124,6 +124,10 @@ public class PermissionCrawler implements IPermCrawler, Runnable {
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			}
+			
+			if(fInterval<=0) { 
+				fActive = false;
 			}
 
 			try {
