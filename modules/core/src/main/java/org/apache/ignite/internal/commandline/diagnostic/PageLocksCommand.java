@@ -177,10 +177,13 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
     public static class Arguments {
         /** */
         private final Operation op;
+
         /** */
         private final String filePath;
+
         /** */
         private final boolean allNodes;
+
         /** */
         private final Set<String> nodeIds;
 

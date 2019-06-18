@@ -158,6 +158,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** */
     private File defaultDiagnosticDir;
+
     /** */
     private File customDiagnosticDir;
 
