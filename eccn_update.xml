@@ -43,7 +43,6 @@ No need to merge it to Apache Ignite code base.
                 <Manufacturer>JCraft, Inc.</Manufacturer>
                 <Why>Provides encryption SSH library</Why>
             </ControlledSource>
-            <!-- TODO: Confirm that REST-HTTP module can use HTTPS itself, or remove -->
             <ControlledSource href="http://eclipse.org/jetty">
                 <Manufacturer>The Eclipse Foundation</Manufacturer>
                 <Why>HTTPS support in Jetty (uses SSL)</Why>

@@ -21,23 +21,26 @@ and source code.
 The following provides more details on the included cryptographic software:
 
 - JDK SSL/TLS libraries used to enable secured connectivity between cluster
-nodes ( https://apacheignite.readme.io/docs/ssltls )
-Manufacturer - Oracle/OpenJDK (https://www.oracle.com/technetwork/java/javase/downloads/index.html)
+nodes (https://apacheignite.readme.io/docs/ssltls).
+Oracle/OpenJDK (https://www.oracle.com/technetwork/java/javase/downloads/index.html)
 
 - JDK Java Cryptography Extensions build in encryption from the Java libraries is used
 for Transparent Data Encryption of data on disk
-(https://apacheignite.readme.io/docs/transparent-data-encryption)
+(https://apacheignite.readme.io/docs/transparent-data-encryption).
 (https://java.sun.com/javase/technologies/security/)
 
 - Python client uses Python's SSL lib (https://docs.python.org/3/library/ssl.html) which is a wrapper over OpenSSL;
 - NodeJS client uses NodeJS's TLS module (https://nodejs.org/api/tls.html) which is a wrapper over OpenSSL;
 - PHP client uses PHP OpenSSL extension (https://www.php.net/manual/en/book.openssl.php);
 - C++ thin client and ODBC use OpenSSL to establish secure connection with the cluster.
-The OpenSSL Project - https://www.openssl.org/
+The OpenSSL Project (https://www.openssl.org/)
 
 - Apache Ignite SSH module requires the JSch library. This provides capabilities to
 start Apache Ignite nodes on remote machines via SSH.
 JCraft (http://www.jcraft.com/jsch/)
+
+- Apache Ignite REST http module requires Jetty, and this module can use HTTPs (uses SSL).
+Eclipse Jetty (http://eclipse.org/jetty)
 
 - Apache Ignite.NET uses .NET Framework crypto APIs from standard class library for all security and cryptographic related code.
  .NET Classic, Windows-only (https://dotnet.microsoft.com/download)
