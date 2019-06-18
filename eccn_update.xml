@@ -30,15 +30,10 @@ No need to merge it to Apache Ignite code base.
                 <Manufacturer>Microsoft</Manufacturer>
                 <Why>Designed to use .NET Framework Cryptography Model</Why>
             </ControlledSource>
-            <!-- TODO include .NET Core -->
-            <ControlledSource href="https://dotnetfoundation.org/projects">
+            <ControlledSource href="https://dotnet.microsoft.com/download">
                 <Manufacturer>.NET Foundation</Manufacturer>
                 <Why>Designed to use .NET Core, and build in Cryptography</Why>
             </ControlledSource>
-            <!-- TODO which url to use here -->
-            <!-- https://github.com/dotnet/core
-            https://dotnetfoundation.org/projects
-            https://github.com/dotnet/corefx-->
             <ControlledSource href="http://www.jcraft.com/jsch/">
                 <Manufacturer>JCraft, Inc.</Manufacturer>
                 <Why>Provides encryption SSH library</Why>
