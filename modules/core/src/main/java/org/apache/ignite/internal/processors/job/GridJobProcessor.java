@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservabl
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -271,7 +270,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
     @Override public void stop(boolean cancel) {
         // Clear collections.
         activeJobs.clear();
+
+        jobMetrics.active.reset();
+
         cancelledJobs.clear();
+
         cancelReqs = new GridBoundedConcurrentLinkedHashMap<>(FINISHED_JOBS_COUNT,
             FINISHED_JOBS_COUNT < 128 ? FINISHED_JOBS_COUNT : 128,
             0.75f, 16);
@@ -306,7 +309,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // Rejected jobs.
         if (!jobAlwaysActivate) {
             for (GridJobWorker job : passiveJobs.values())
-                if (passiveJobs.remove(job.getJobId(), job))
+                if (removeFromPassive(job))
                     rejectJob(job, false);
         }
 
@@ -669,7 +672,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private boolean cancelPassiveJob(GridJobWorker job) {
         assert !jobAlwaysActivate;
 
-        if (passiveJobs.remove(job.getJobId(), job)) {
+        if (removeFromPassive(job)) {
             if (log.isDebugEnabled())
                 log.debug("Job has been cancelled before activation: " + job);
 
@@ -690,7 +693,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param sys Flag indicating whether this is a system cancel.
      */
     private void cancelActiveJob(GridJobWorker job, boolean sys) {
-        if (activeJobs.remove(job.getJobId(), job)) {
+        if (removeFromActive(job)) {
             cancelledJobs.put(job.getJobId(), job);
 
             if (finishedJobs.contains(job.getJobId()))
@@ -700,6 +703,32 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 // No reply, since it is not cancel from collision.
                 cancelJob(job, sys);
         }
+    }
+
+    /**
+     * @param job Job to remove.
+     * @return {@code True} if job actually removed.
+     */
+    private boolean removeFromActive(GridJobWorker job) {
+        boolean res = activeJobs.remove(job.getJobId(), job);
+
+        if (res)
+            jobMetrics.active.decrement();
+
+        return res;
+    }
+
+    /**
+     * @param job Job to remove.
+     * @return {@code True} if job actually removed.
+     */
+    private boolean removeFromPassive(GridJobWorker job) {
+        boolean res = passiveJobs.remove(job.getJobId(), job);
+
+        if (res)
+            jobMetrics.waiting.decrement();
+
+        return res;
     }
 
     /**
@@ -882,6 +911,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      *
      */
+    @Deprecated
     private void updateJobMetrics() {
         assert metricsUpdateFreq > 0L;
 
@@ -896,6 +926,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /**
      *
      */
+    @Deprecated
     private void updateJobMetrics0() {
         assert metricsUpdateFreq > 0L;
 
@@ -1166,8 +1197,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         else {
                             GridJobWorker old = passiveJobs.putIfAbsent(job.getJobId(), job);
 
-                            if (old == null)
+                            if (old == null) {
+                                jobMetrics.waiting.increment();
+
                                 handleCollisions();
+                            }
                             else
                                 U.error(log, "Received computation request with duplicate job ID (could be " +
                                     "network malfunction, source node may hang if task timeout was not set) " +
@@ -1255,6 +1289,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         activeJobs.put(jobWorker.getJobId(), jobWorker);
 
+        jobMetrics.active.increment();
+
         // Check if job has been concurrently cancelled.
         Boolean sysCancelled = cancelReqs.get(jobWorker.getSession().getId());
 
@@ -1264,7 +1300,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (sysCancelled != null) {
             // Job has been concurrently cancelled.
             // Remove from active jobs.
-            activeJobs.remove(jobWorker.getJobId(), jobWorker);
+            removeFromActive(jobWorker);
 
             // Even if job has been removed from another thread, we need to reject it
             // here since job has never been executed.
@@ -1281,7 +1317,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // However we need to check if master is alive before job will get
         // its runner thread for proper master leave handling.
         if (ctx.discovery().node(jobWorker.getTaskNode().id()) == null &&
-            activeJobs.remove(jobWorker.getJobId(), jobWorker)) {
+            removeFromActive(jobWorker)) {
             // Add to cancelled jobs.
             cancelledJobs.put(jobWorker.getJobId(), jobWorker);
 
@@ -1328,7 +1364,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
         catch (RejectedExecutionException e) {
             // Remove from active jobs.
-            activeJobs.remove(jobWorker.getJobId(), jobWorker);
+            removeFromActive(jobWorker);
 
             // Even if job was removed from another thread, we need to reject it
             // here since job has never been executed.
@@ -1669,7 +1705,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         @Override public boolean activate() {
             GridJobWorker jobWorker = getJobWorker();
 
-            return passiveJobs.remove(jobWorker.getJobId(), jobWorker) &&
+            return removeFromPassive(jobWorker) &&
                 onBeforeActivateJob(jobWorker) &&
                 executeAsync(jobWorker);
         }
@@ -1684,7 +1720,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             if (passive) {
                 // If waiting job being rejected.
-                if (passiveJobs.remove(jobWorker.getJobId(), jobWorker)) {
+                if (removeFromPassive(jobWorker)) {
                     rejectJob(jobWorker, true);
 
                     if (metricsUpdateFreq > -1L) {
@@ -1697,7 +1733,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 }
             }
             // If active job being cancelled.
-            else if (activeJobs.remove(jobWorker.getJobId(), jobWorker)) {
+            else if (removeFromActive(jobWorker)) {
                 cancelledJobs.put(jobWorker.getJobId(), jobWorker);
 
                 if (finishedJobs.contains(jobWorker.getJobId()))
@@ -1825,7 +1861,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     if (metricsUpdateFreq > -1L)
                         updateJobMetrics();
 
-                    if (!activeJobs.remove(worker.getJobId(), worker))
+                    if (!removeFromActive(worker))
                         cancelledJobs.remove(worker.getJobId(), worker);
 
                     heldJobs.remove(worker.getJobId());
@@ -1838,7 +1874,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         return;
                     }
 
-                    if (!activeJobs.remove(worker.getJobId(), worker))
+                    if (!removeFromActive(worker))
                         cancelledJobs.remove(worker.getJobId(), worker);
 
                     heldJobs.remove(worker.getJobId());
@@ -1980,7 +2016,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     if (!jobAlwaysActivate) {
                         for (GridJobWorker job : passiveJobs.values()) {
                             if (job.getTaskNode().id().equals(nodeId)) {
-                                if (passiveJobs.remove(job.getJobId(), job))
+                                if (removeFromPassive(job))
                                     U.warn(log, "Task node left grid (job will not be activated) " +
                                         "[nodeId=" + nodeId + ", jobSes=" + job.getSession() + ", job=" + job + ']');
                             }
@@ -1989,7 +2025,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                     for (GridJobWorker job : activeJobs.values()) {
                         if (job.getTaskNode().id().equals(nodeId) && !job.isFinishing() &&
-                            activeJobs.remove(job.getJobId(), job)) {
+                            removeFromActive(job)) {
                             // Add to cancelled jobs.
                             cancelledJobs.put(job.getJobId(), job);
 
@@ -2100,7 +2136,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      */
     public class GridJobMetrics {
         /** */
-        public static final String JOBS = "jobs";
+        public static final String JOBS = "compute.jobs";
 
         /** */
         public static final String STARTED = "started";
@@ -2121,13 +2157,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
         public static final String FINISHED = "finished";
 
         /** */
-        final IntMetricImpl started;
+        final LongMetricImpl started;
 
         /** */
-        final IntMetricImpl active;
+        final LongMetricImpl active;
 
         /** */
-        final IntMetricImpl waiting;
+        final LongMetricImpl waiting;
 
         /** */
         final LongMetricImpl canceled;
@@ -2136,23 +2172,23 @@ public class GridJobProcessor extends GridProcessorAdapter {
         final LongMetricImpl rejected;
 
         /** */
-        private final LongMetricImpl finished;
+        final LongMetricImpl finished;
 
         public GridJobMetrics(MetricRegistry mreg) {
             mreg = mreg.withPrefix(JOBS);
 
-            started = mreg.intMetric(STARTED, "Started jobs");
+            started = mreg.metric(STARTED, "Number of started jobs.");
 
-            active = mreg.intMetric(ACTIVE, "Active jobs currently executing.");
+            active = mreg.metric(ACTIVE, "Number of active jobs currently executing.");
 
-            waiting = mreg.intMetric(WAITING, "Queued jobs waiting to be executed");
+            waiting = mreg.metric(WAITING, "Number of currently queued jobs waiting to be executed.");
 
-            canceled = mreg.metric(CANCELED, "Cancelled jobs that are still running.");
+            canceled = mreg.metric(CANCELED, "Number of cancelled jobs that are still running.");
 
             rejected = mreg.metric(REJECTED,
                 "Number of jobs rejected after more recent collision resolution operation.");
 
-            finished = mreg.metric(FINISHED, "Number of finished jobs since last update.");
+            finished = mreg.metric(FINISHED, "Number of finished jobs.");
         }
     }
 }
