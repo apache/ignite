@@ -171,7 +171,13 @@ public class IntHashMap<V> implements IntMap<V> {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return size;
+        lock.readLock().lock();
+        try {
+            return size;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -181,24 +187,42 @@ public class IntHashMap<V> implements IntMap<V> {
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(int key) {
-        return find(key) >= 0;
+        lock.readLock().lock();
+        try {
+            return find(key) >= 0;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsValue(V val) {
-        return Arrays.stream(entries)
-            .filter(Objects::nonNull)
-            .anyMatch(entry -> Objects.equals(val, entry.val));
+        lock.readLock().lock();
+        try {
+            return Arrays.stream(entries)
+                .filter(Objects::nonNull)
+                .anyMatch(entry -> Objects.equals(val, entry.val));
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        String strEntries = Arrays.stream(entries)
-            .filter(Objects::nonNull)
-            .map(Entry::toString)
-            .collect(Collectors.joining(","));
+        lock.readLock().lock();
+        try {
+            String strEntries = Arrays.stream(entries)
+                .filter(Objects::nonNull)
+                .map(Entry::toString)
+                .collect(Collectors.joining(","));
 
-        return "IntHashMap{size=" + size + ", entries=[" + strEntries + "]}";
+            return "IntHashMap{size=" + size + ", entries=[" + strEntries + "]}";
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -272,8 +296,8 @@ public class IntHashMap<V> implements IntMap<V> {
     private int find(int key) {
         int idx = index(key);
 
-        for (int i = 0; i < entries.length; i++) {
-            int curIdx = (idx + i) & (entries.length - 1);
+        for (int keyDist = 0; keyDist < entries.length; keyDist++) {
+            int curIdx = (idx + keyDist) & (entries.length - 1);
 
             Entry<V> entry = entries[curIdx];
 
@@ -282,7 +306,6 @@ public class IntHashMap<V> implements IntMap<V> {
             else if (entry.key == key)
                 return curIdx;
 
-            int keyDist = distance(curIdx, key);
             int entryDist = distance(curIdx, entry.key);
 
             if (keyDist > entryDist)

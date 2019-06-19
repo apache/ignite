@@ -67,6 +67,8 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
         bijection.put(5, 14);
         bijection.put(6, 14);
         bijection.put(7, 14);
+        bijection.put(8, 14);
+        bijection.put(9, 14);
 
         IntHashMap<String> directPositionMap = (IntHashMap<String>)bijectionHashFunctionMap(bijection);
 
@@ -77,6 +79,8 @@ public class IntHashMapTest extends AbstractBaseIntMapTest {
         directPositionMap.put(5, value(5));
         directPositionMap.put(6, value(6));
         directPositionMap.put(7, value(7));
+        directPositionMap.put(8, value(8));
+        directPositionMap.put(9, value(9));
 
         assertEquals(0, directPositionMap.distance(14, 1));
         assertEquals(1, directPositionMap.distance(15, 1));
