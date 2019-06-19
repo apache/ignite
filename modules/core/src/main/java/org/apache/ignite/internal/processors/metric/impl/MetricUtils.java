@@ -83,17 +83,6 @@ public class MetricUtils {
         return LongMetricImpl.updater.compareAndSet(m, expect, update);
     }
 
-    public static void setIfGreater(LongMetricImpl m, long update) {
-        long v = m.value();
-
-        while(v < update) {
-            if (compareAndSet(m, v, update))
-                return;
-
-            v = m.value();
-        }
-    }
-
     /**
      * Asserts all arguments are not empty.
      *
