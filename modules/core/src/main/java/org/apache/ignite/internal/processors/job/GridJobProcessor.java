@@ -200,9 +200,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final LongAdder finishedJobsTime = new LongAdder();
 
     /** Maximum job execution time for finished jobs. */
+    @Deprecated
     private final GridAtomicLong maxFinishedJobsTime = new GridAtomicLong();
 
     /** */
+    @Deprecated
     private final AtomicLong metricsLastUpdateTstamp = new AtomicLong();
 
     /** Number of started jobs. */
@@ -230,6 +232,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private boolean cancelOnStop;
 
     /** */
+    @Deprecated
     private final long metricsUpdateFreq;
 
     /** */
