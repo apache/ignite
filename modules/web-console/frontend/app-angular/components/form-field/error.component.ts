@@ -25,7 +25,7 @@ export class FormFieldError implements AfterViewInit {
     @Input()
     error: string;
 
-    @ViewChild('errorTemplate')
+    @ViewChild('errorTemplate', {static: false})
     template: TemplateRef<any>;
 
     static parameters = [[new Inject(ElementRef)], [new Inject(FormField)]];

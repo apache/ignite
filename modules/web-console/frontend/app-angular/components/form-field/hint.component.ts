@@ -26,6 +26,6 @@ import {PopperContent} from 'ngx-popper';
     `
 })
 export class FormFieldHint {
-    @ViewChild(PopperContent)
+    @ViewChild(PopperContent, {static: true})
     popper: PopperContent
 }
