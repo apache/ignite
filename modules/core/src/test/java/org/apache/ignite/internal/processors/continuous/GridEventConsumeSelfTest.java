@@ -1157,7 +1157,6 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11861")
     public void testMultithreadedWithNodeRestart() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
         final BlockingQueue<IgniteBiTuple<Integer, UUID>> queue = new LinkedBlockingQueue<>();
