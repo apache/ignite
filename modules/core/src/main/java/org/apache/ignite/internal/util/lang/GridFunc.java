@@ -39,9 +39,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -95,6 +101,7 @@ import org.apache.ignite.internal.util.lang.gridfunc.TransformMapView2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -3157,5 +3164,191 @@ public class GridFunc {
         }
 
         return rdc == null ? null : rdc.reduce();
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code True} if array sorted, {@code false} otherwise.
+     */
+    public static boolean isSorted(long[] arr) {
+        if (isEmpty(arr) || arr.length == 1)
+            return true;
+
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i - 1] > arr[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static BooleanSupplier nonThrowableSupplier(BooleanSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, false, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code .0d} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static DoubleSupplier nonThrowableSupplier(DoubleSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, .0d, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static IntSupplier nonThrowableSupplier(IntSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, 0, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code 0} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static LongSupplier nonThrowableSupplier(LongSupplier s, IgniteLogger log) {
+        return nonThrowableSupplier(s, 0, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code null} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static <T> Supplier<T> nonThrowableSupplier(Supplier<T> s, IgniteLogger log) {
+        return nonThrowableSupplier(s, null, log);
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static BooleanSupplier nonThrowableSupplier(BooleanSupplier s, boolean dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsBoolean();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static DoubleSupplier nonThrowableSupplier(DoubleSupplier s, double dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsDouble();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static IntSupplier nonThrowableSupplier(IntSupplier s, int dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsInt();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static LongSupplier nonThrowableSupplier(LongSupplier s, long dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsLong();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param dfltVal Value returned on exception in {@code s}.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    public static <T> Supplier<T> nonThrowableSupplier(Supplier<T> s, T dfltVal, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.get();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return dfltVal;
+            }
+        };
     }
 }

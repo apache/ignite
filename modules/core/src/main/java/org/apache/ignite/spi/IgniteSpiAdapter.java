@@ -70,7 +70,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
     /** */
     @LoggerResource
-    private IgniteLogger log;
+    protected IgniteLogger log;
 
     /** Ignite instance. */
     protected Ignite ignite;

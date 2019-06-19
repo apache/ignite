@@ -60,6 +60,7 @@
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
         <commons.compress.version>1.18</commons.compress.version>
+        <commons.io.version>2.6</commons.io.version>
         <commons.lang3.version>3.9</commons.lang3.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>4.2.0</curator.version>
