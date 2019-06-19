@@ -56,6 +56,8 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.collection.IntHashMap;
+import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -141,7 +143,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** */
     @GridToStringExclude
-    private final ConcurrentMap<Integer, CacheMapHolder> cacheMaps;
+    private final IntMap<CacheMapHolder> cacheMaps;
 
     /** */
     @GridToStringExclude
@@ -191,7 +193,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         if (grp.sharedGroup()) {
             singleCacheEntryMap = null;
-            cacheMaps = new ConcurrentHashMap<>();
+            cacheMaps = new IntHashMap<>();
         }
         else {
             singleCacheEntryMap = new CacheMapHolder(grp.singleCacheContext(), createEntriesMap());
@@ -252,12 +254,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** {@inheritDoc} */
     @Override public int internalSize() {
         if (grp.sharedGroup()) {
-            int size = 0;
+            final AtomicInteger size = new AtomicInteger(0);
 
-            for (CacheMapHolder hld : cacheMaps.values())
-                size += hld.map.size();
+            cacheMaps.forEach((key, hld) -> size.addAndGet(hld.map.size()));
 
-            return size;
+            return size.get();
         }
 
         return singleCacheEntryMap.map.size();
@@ -1064,10 +1065,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         boolean rec = grp.eventRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        if (grp.sharedGroup()) {
-            for (CacheMapHolder hld : cacheMaps.values())
-                clear(hld.map, extras, rec);
-        }
+        if (grp.sharedGroup())
+            cacheMaps.forEach((key, hld) -> clear(hld.map, extras, rec));
         else
             clear(singleCacheEntryMap.map, extras, rec);
 
