@@ -13,27 +13,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
-package org.apache.ignite.internal.processors.query;
-
-import org.apache.ignite.internal.IgniteEx;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+package org.apache.ignite.internal.visor.diagnostic;
 
 /**
- * Test KILL QUERY requested from client node.
+ * Operation type for {@link VisorPageLocksTask}
  */
-
-@RunWith(Parameterized.class)
-public class KillQueryFromClientTest extends KillQueryTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteEx getKillRequestNode()  {
-        IgniteEx clientNode = grid(NODES_COUNT - 1);
-
-        assertTrue(clientNode.context().clientNode());
-
-        return clientNode;
-    }
+public enum Operation {
+    /** Dump page locks to file operation. */
+    DUMP_FILE,
+    /** Dump page locks to log. */
+    DUMP_LOG
 }
