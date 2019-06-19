@@ -1238,9 +1238,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     // No sync execution.
                                     job = null;
                                 }
-                                else if (metricsUpdateFreq > -1L) {
-                                    // Job will be executed synchronously.
-                                    startedJobsCnt.increment();
+                                else {
+                                    if (metricsUpdateFreq > -1L)
+                                        // Job will be executed synchronously.
+                                        startedJobsCnt.increment();
 
                                     startedJobsMetric.increment();
                                 }
@@ -1411,11 +1412,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
             else
                 ctx.getExecutorService().execute(jobWorker);
 
-            if (metricsUpdateFreq > -1L) {
+            if (metricsUpdateFreq > -1L)
                 startedJobsCnt.increment();
 
-                startedJobsMetric.increment();
-            }
+            startedJobsMetric.increment();
 
             return true;
         }
@@ -1428,11 +1428,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
             IgniteException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
                 "[jobSes=" + jobWorker.getSession() + ", job=" + jobWorker.getJob() + ']', e);
 
-            if (metricsUpdateFreq > -1L) {
+            if (metricsUpdateFreq > -1L)
                 rejectedJobsCnt.increment();
 
-                rejectedJobsMetric.increment();
-            }
+            rejectedJobsMetric.increment();
 
             jobWorker.finishJob(null, e2, true);
         }
@@ -1780,11 +1779,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 if (removeFromPassive(jobWorker)) {
                     rejectJob(jobWorker, true);
 
-                    if (metricsUpdateFreq > -1L) {
+                    if (metricsUpdateFreq > -1L)
                         rejectedJobsCnt.increment();
 
-                        rejectedJobsMetric.increment();
-                    }
+                    rejectedJobsMetric.increment();
 
                     ret = true;
                 }
