@@ -106,6 +106,6 @@ export default class IgniteAdminData {
     registerUser(userInfo) {
         return this.$http.put('/api/v1/admin/users', userInfo)
             .then(({ data }) => data)
-            .catch(this.Messages.showError);
+            .catch(({data}) => {throw data;});
     }
 }

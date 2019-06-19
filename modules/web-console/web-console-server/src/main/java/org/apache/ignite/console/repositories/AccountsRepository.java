@@ -55,7 +55,7 @@ public class AccountsRepository {
         this.txMgr = txMgr;
 
         accountsTbl = new Table<Account>(ignite, "accounts")
-            .addUniqueIndex(Account::getUsername, (acc) -> "Account with email '" + acc.getUsername() + "' already registered")
+            .addUniqueIndex(a -> a.getUsername().trim().toLowerCase(), (acc) -> "Account with email '" + acc.getUsername() + "' already registered")
             .addUniqueIndex(Account::getToken, (acc) -> "Account with token '" + acc.getToken() + "' already registered");
     }
 
@@ -117,9 +117,6 @@ public class AccountsRepository {
      */
     public Account create(Account account) throws AuthenticationServiceException {
         try (Transaction tx = txMgr.txStart()) {
-            if (accountsTbl.getByIndex(account.getUsername()) != null)
-                throw new IgniteException("Account with email already exists: " + account.getUsername());
-
             account.setAdmin(ensureFirstUser());
 
             save(account);
