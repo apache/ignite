@@ -43,6 +43,86 @@ No need to merge it to Apache Ignite code base.
                 <Why>HTTPS support in Jetty (uses SSL)</Why>
             </ControlledSource>
         </Version>
-        <!-- TODO Declare some released version of Apache Ignite -->
+        <Version>
+            <Names>2.5.0-latest</Names>
+            <ECCN>5D002</ECCN>
+            <ControlledSource href="https://gitbox.apache.org/repos/asf/ignite.git">
+                <Manufacturer>ASF</Manufacturer>
+                <Why>Designed to use with built-in Java Cryptography Architecture (JCA)</Why>
+            </ControlledSource>
+            <ControlledSource href="https://www.oracle.com/technetwork/java/javase/downloads/index.html">
+                <Manufacturer>Oracle</Manufacturer>
+                <Why>Designed to use with built-in Java encryption libraries (JCE)</Why>
+            </ControlledSource>
+            <ControlledSource href="http://www.openssl.org/source/">
+                <Manufacturer>The OpenSSL Project</Manufacturer>
+                <Why>Designed to use General Purpose cryptography library included with OpenSSL</Why>
+            </ControlledSource>
+            <ControlledSource href="https://dotnet.microsoft.com/download">
+                <Manufacturer>Microsoft</Manufacturer>
+                <Why>Designed to use .NET Framework Cryptography Model</Why>
+            </ControlledSource>
+            <ControlledSource href="https://dotnet.microsoft.com/download">
+                <Manufacturer>.NET Foundation</Manufacturer>
+                <Why>Designed to use .NET Core, and build in Cryptography</Why>
+            </ControlledSource>
+            <ControlledSource href="http://www.jcraft.com/jsch/">
+                <Manufacturer>JCraft, Inc.</Manufacturer>
+                <Why>Provides encryption SSH library</Why>
+            </ControlledSource>
+            <ControlledSource href="http://eclipse.org/jetty">
+                <Manufacturer>The Eclipse Foundation</Manufacturer>
+                <Why>HTTPS support in Jetty (uses SSL)</Why>
+            </ControlledSource>
+        </Version>
+        <!-- TODO specify correct version when .NET was added with security -->
+        <Version>
+            <Names>V1.5.0.final-2.4.0</Names>
+            <ECCN>5D002</ECCN>
+            <ControlledSource href="https://gitbox.apache.org/repos/asf/ignite.git">
+                <Manufacturer>ASF</Manufacturer>
+                <Why>Designed to use with built-in Java Cryptography Architecture (JCA)</Why>
+            </ControlledSource>
+            <ControlledSource href="https://www.oracle.com/technetwork/java/javase/downloads/index.html">
+                <Manufacturer>Oracle</Manufacturer>
+                <Why>Designed to use with built-in Java encryption libraries (JCE)</Why>
+            </ControlledSource>
+            <ControlledSource href="https://dotnet.microsoft.com/download">
+                <Manufacturer>Microsoft</Manufacturer>
+                <Why>Designed to use .NET Framework Cryptography Model</Why>
+            </ControlledSource>
+            <ControlledSource href="https://dotnet.microsoft.com/download">
+                <Manufacturer>.NET Foundation</Manufacturer>
+                <Why>Designed to use .NET Core, and build in Cryptography</Why>
+            </ControlledSource>
+            <ControlledSource href="http://www.jcraft.com/jsch/">
+                <Manufacturer>JCraft, Inc.</Manufacturer>
+                <Why>Provides encryption SSH library</Why>
+            </ControlledSource>
+            <ControlledSource href="http://eclipse.org/jetty">
+                <Manufacturer>The Eclipse Foundation</Manufacturer>
+                <Why>HTTPS support in Jetty (uses SSL)</Why>
+            </ControlledSource>
+        </Version>
+        <Version>
+            <Names>V1.0.0-V1.5.0-b1</Names>
+            <ECCN>5D002</ECCN>
+            <ControlledSource href="https://gitbox.apache.org/repos/asf/ignite.git">
+                <Manufacturer>ASF</Manufacturer>
+                <Why>Designed to use with built-in Java Cryptography Architecture (JCA)</Why>
+            </ControlledSource>
+            <ControlledSource href="https://www.oracle.com/technetwork/java/javase/downloads/index.html">
+                <Manufacturer>Oracle</Manufacturer>
+                <Why>Designed to use with built-in Java encryption libraries (JCE)</Why>
+            </ControlledSource>
+            <ControlledSource href="http://www.jcraft.com/jsch/">
+                <Manufacturer>JCraft, Inc.</Manufacturer>
+                <Why>Provides encryption SSH library</Why>
+            </ControlledSource>
+            <ControlledSource href="http://eclipse.org/jetty">
+                <Manufacturer>The Eclipse Foundation</Manufacturer>
+                <Why>HTTPS support in Jetty (uses SSL)</Why>
+            </ControlledSource>
+        </Version>
     </Product>
 </Project>
