@@ -49,10 +49,10 @@ export class FormField implements AfterViewInit {
 
     extraMessages = {};
 
-    @ContentChild(FormControlName)
+    @ContentChild(FormControlName, {static: false})
     control: FormControlName;
 
-    @ContentChild(FormFieldHint)
+    @ContentChild(FormFieldHint, {static: false})
     hint: FormFieldHint;
 
     @HostBinding('class.form-field__required')
