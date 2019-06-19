@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.diagnostic;
 
+import java.util.Arrays;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -32,9 +33,7 @@ import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCom
  *
  */
 public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
-    /**
-     *
-     */
+    /** */
     private DiagnosticSubCommand subcommand;
 
     /**
@@ -107,9 +106,19 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     }
 
     /**
-     *
+     * Print diagnostic command help.
      */
     private void printDiagnosticHelp() {
-        logger.log(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
+        logger.logWithIndent(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
+
+        logger.nl();
+
+        logger.logWithIndent("Subcommands:");
+
+        Arrays.stream(DiagnosticSubCommand.values()).forEach(c -> {
+            if (c.subcommand() != null) c.subcommand().printUsage(logger);
+        });
+
+        logger.nl();
     }
 }
