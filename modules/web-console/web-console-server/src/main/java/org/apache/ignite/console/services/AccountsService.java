@@ -247,16 +247,6 @@ public class AccountsService implements UserDetailsService {
         try (Transaction tx = txMgr.txStart()) {
             Account acc = accountsRepo.getById(accId);
 
-            String oldEmail = acc.getEmail();
-            String newEmail = changes.getEmail();
-
-            if (!oldEmail.equals(newEmail)) {
-                Account accByEmail = accountsRepo.getByEmail(oldEmail);
-
-                if (!acc.getId().equals(accByEmail.getId()))
-                    throw new IllegalStateException("User with this email already registered");
-            }
-
             String oldTok = acc.getToken();
 
             acc.update(changes);

@@ -71,10 +71,10 @@ export class DialogAdminCreateUser {
                 this.IgniteMessages.showInfo(`User ${this.data.email} created`);
                 this.close({});
             })
-            .catch((res) => {
+            .catch((err) => {
                 this.loading.finish('createUser');
-                this.IgniteMessages.showError(null, res.data);
-                this.setServerError(res.data);
+                this.IgniteMessages.showError(null, err);
+                this.setServerError(err.message);
             });
     }
 }
