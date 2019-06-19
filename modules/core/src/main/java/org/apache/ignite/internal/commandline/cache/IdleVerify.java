@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
@@ -61,12 +60,6 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.DUMP;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.SKIP_ZEROS;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
-import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.ALL;
-import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.NOT_PERSISTENT;
-import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.PERSISTENT;
-import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.SYSTEM;
-import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.USER;
 
 /**
  *
@@ -75,14 +68,14 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
     /** {@inheritDoc} */
     @Override public void printUsage(CommandLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
-        String description = "Verify counters and hash sums of primary and backup partitions for the specified caches/cache " +
-            "groups on an idle cluster and print out the differences, if any. When no parameters are specified, " +
-            "all user caches are verified. Cache filtering options configure the set of caches that will be " +
-            "processed by " + IDLE_VERIFY + " command. If cache names are specified, in form of regular " +
-            "expressions, only matching caches will be verified. Caches matched by regexes specified after " +
-            EXCLUDE_CACHES + " parameter will be excluded from verification. Using parameter " + CACHE_FILTER +
-            " you can verify: only " + USER + " caches, only user " + PERSISTENT + " caches, only user " +
-            NOT_PERSISTENT + " caches, only " + SYSTEM + " caches, or " + ALL + " of the above.";
+        String description = "Verify counters and hash sums of primary and backup partitions for the specified " +
+            "caches/cache groups on an idle cluster and print out the differences, if any. " +
+            "Cache filtering options configure the set of caches that will be processed by idle_verify command. " +
+            "Default value for the set of cache names (or cache group names) is all cache groups. Default value" +
+            " for " + EXCLUDE_CACHES + " is empty set. " +
+            "Default value for " + CACHE_FILTER + " is no filtering. Therefore, the set of all caches is sequently " +
+            "filtered by cache name " +
+            "regexps, by cache type and after all by exclude regexps.";
 
         usageCache(logger,
             IDLE_VERIFY,
@@ -91,7 +84,7 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
                 "check the CRC-sum of pages stored on disk before verifying data " +
                     "consistency in partitions between primary and backup nodes."),
             optional(DUMP), optional(SKIP_ZEROS), optional(CHECK_CRC), optional(EXCLUDE_CACHES, CACHES),
-                optional(CACHE_FILTER, or(ALL, USER, SYSTEM, PERSISTENT, NOT_PERSISTENT)), optional(CACHES));
+                optional(CACHE_FILTER, or(CacheFilterEnum.values())), optional(CACHES));
     }
 
     /**
@@ -164,7 +157,6 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
         public boolean idleCheckCrc() {
             return idleCheckCrc;
         }
-
 
         /**
          * @return Skip zeros partitions(size == 0) in result.
@@ -268,21 +260,6 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
             }
         }
 
-        if (idleCheckCrc) {
-            if (cacheFilterEnum == ALL || cacheFilterEnum == SYSTEM) {
-                throw new IllegalArgumentException(
-                    IDLE_VERIFY + " with " + CHECK_CRC + " and " + CACHE_FILTER + " " + ALL + " or " + SYSTEM +
-                        " not allowed. You should remove " + CHECK_CRC + " or change " + CACHE_FILTER + " value."
-                );
-            }
-
-            if (F.constainsStringIgnoreCase(cacheNames, UTILITY_CACHE_NAME)) {
-                throw new IllegalArgumentException(
-                    IDLE_VERIFY + " with " + CHECK_CRC + " not allowed for `" + UTILITY_CACHE_NAME + "` cache."
-                );
-            }
-        }
-
         args = new Arguments(cacheNames, excludeCaches, dump, skipZeros, idleCheckCrc, cacheFilterEnum);
     }
 
@@ -322,7 +299,6 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
         logger.log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
     }
 
-
     /**
      * @param client Client.
      * @param clientCfg Client configuration.
@@ -339,7 +315,6 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
 
         res.print(System.out::print);
     }
-
 
     /**
      * @param client Client.

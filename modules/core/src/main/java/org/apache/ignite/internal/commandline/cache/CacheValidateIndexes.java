@@ -30,7 +30,6 @@ import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.verify.IndexIntegrityCheckIssue;
 import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
@@ -50,7 +49,6 @@ import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCo
 import static org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg.EXCLUDE_CACHES;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_FIRST;
 import static org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg.CHECK_THROUGH;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 
 /**
  * Validate indexes command.
@@ -122,7 +120,6 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
         public int checkThrough() {
             return checkThrough;
         }
-
 
         /**
          * @return Node id.
@@ -260,12 +257,6 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             }
 
             caches = argIter.parseStringSet(nextArg);
-
-            if (F.constainsStringIgnoreCase(caches, UTILITY_CACHE_NAME)) {
-                throw new IllegalArgumentException(
-                    VALIDATE_INDEXES + " not allowed for `" + UTILITY_CACHE_NAME + "` cache."
-                );
-            }
         }
 
         args = new Arguments(caches, nodeId, checkFirst, checkThrough);

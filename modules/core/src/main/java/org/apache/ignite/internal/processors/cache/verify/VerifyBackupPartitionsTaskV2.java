@@ -263,7 +263,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     }
 
                     @Override public void onCheckpointBegin(Context ctx) {
-                        if (ctx.hasUserPages())
+                        if (ctx.hasPages())
                             cpFlag.set(true);
                     }
 
