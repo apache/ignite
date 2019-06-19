@@ -2821,28 +2821,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot, FILTER_NOT_DAEMON));
 
                 if (type == EVT_NODE_METRICS_UPDATED)
-                    evt.message("Metrics were updated: " + node);
+                    evt.messageTemplate("Metrics were updated: ");
 
                 else if (type == EVT_NODE_JOINED)
-                    evt.message("Node joined: " + node);
+                    evt.messageTemplate("Node joined: ");
 
                 else if (type == EVT_NODE_LEFT)
-                    evt.message("Node left: " + node);
+                    evt.messageTemplate("Node left: ");
 
                 else if (type == EVT_NODE_FAILED)
-                    evt.message("Node failed: " + node);
+                    evt.messageTemplate("Node failed: ");
 
                 else if (type == EVT_NODE_SEGMENTED)
-                    evt.message("Node segmented: " + node);
+                    evt.messageTemplate("Node segmented: ");
 
                 else if (type == EVT_CLIENT_NODE_DISCONNECTED)
-                    evt.message("Client node disconnected: " + node);
+                    evt.messageTemplate("Client node disconnected: ");
 
                 else if (type == EVT_CLIENT_NODE_RECONNECTED)
-                    evt.message("Client node reconnected: " + node);
+                    evt.messageTemplate("Client node reconnected: ");
 
                 else
-                    assert false;
+                    assert false : "Unexpected discovery message type: " + type;;
 
                 ctx.event().record(evt, discoCache);
             }
