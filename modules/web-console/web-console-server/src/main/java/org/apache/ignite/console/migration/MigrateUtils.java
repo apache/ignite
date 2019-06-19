@@ -34,9 +34,6 @@ import static java.util.stream.Collectors.toList;
  * Utility functions for migration.
  */
 public class MigrateUtils {
-    /** */
-    private static final String TAB = "  ";
-
     /**
      * Private constructor for utility class.
      */
@@ -99,14 +96,6 @@ public class MigrateUtils {
      */
     public static List<String> asStrings(Collection<UUID> ids) {
         return ids.stream().map(UUID::toString).collect(toList());
-    }
-
-    /**
-     * @param off Offset.
-     * @param msg Message to show.
-     */
-    public static String off(int off, String msg) {
-        return new String(new char[off]).replace("\0", TAB) + msg;
     }
 
     /**
