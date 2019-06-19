@@ -305,6 +305,15 @@ public class CommandHandler {
                 return EXIT_CODE_CONNECTION_FAILED;
             }
 
+            if (X.hasCause(e, IllegalArgumentException.class)) {
+                IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
+
+                logger.severe("Check arguments. " + CommandLogger.errorMessage(iae));
+                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+
+                return EXIT_CODE_INVALID_ARGUMENTS;
+            }
+
             logger.severe(CommandLogger.errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
 
