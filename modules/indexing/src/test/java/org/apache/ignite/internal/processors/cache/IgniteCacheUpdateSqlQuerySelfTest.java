@@ -119,7 +119,9 @@ public class IgniteCacheUpdateSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         assertEqualsCollections(Arrays.asList("f0u4thk3y", createPerson(4, "Jane", "Silver"), 4, "Jane", "Silver"),
             leftovers.get(3));
-    }/**
+    }
+
+    /**
      * Test that nested fields could be updated using sql UPDATE just by nested field name.
      */
     public void testNestedFieldsUpdate() {
