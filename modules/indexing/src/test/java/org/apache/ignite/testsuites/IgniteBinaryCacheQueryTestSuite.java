@@ -164,6 +164,7 @@ import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQ
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryCancelOrTimeoutSelfTest;
 import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.metric.SqlViewExporterSpiTest;
 import org.apache.ignite.internal.processors.cache.query.CacheDataPageScanQueryTest;
 import org.apache.ignite.internal.processors.cache.query.CacheScanQueryFailoverTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryTransformerSelfTest;
@@ -573,7 +574,9 @@ import org.junit.runners.Suite;
 
     // Table statistics.
     RowCountTableStatisticsUsageTest.class,
-    RowCountTableStatisticsSurvivesNodeRestartTest.class
+    RowCountTableStatisticsSurvivesNodeRestartTest.class,
+
+    SqlViewExporterSpiTest.class
 
 })
 public class IgniteBinaryCacheQueryTestSuite {

@@ -494,4 +494,14 @@ public interface IgniteMXBean {
      */
     @MXBeanDescription("Clears local node map.")
     void clearNodeLocalMap();
+
+    /**
+     * Resets metrics for a given prefix.
+     *
+     * @param prefix Prefix for a metrics.
+     */
+    @MXBeanDescription("Resets metrics for a given prefix.")
+    @MXBeanParametersNames("prefix")
+    @MXBeanParametersDescriptions("Metric prefix.")
+    public void resetMetrics(String prefix);
 }

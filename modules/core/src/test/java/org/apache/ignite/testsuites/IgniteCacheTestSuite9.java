@@ -19,6 +19,14 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.metric.CacheMetricsAddRemoveTest;
+import org.apache.ignite.internal.metric.IoStatisticsCachePersistenceSelfTest;
+import org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest;
+import org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest;
+import org.apache.ignite.internal.metric.IoStatisticsSelfTest;
+import org.apache.ignite.internal.metric.JmxExporterSpiTest;
+import org.apache.ignite.internal.metric.LogExporterSpiTest;
+import org.apache.ignite.internal.metric.MetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
@@ -31,10 +39,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrim
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCacheWriteSynchronizationModesMultithreadedTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDataConsistencyOnCommitFailureTest;
-import org.apache.ignite.internal.stat.IoStatisticsCachePersistenceSelfTest;
-import org.apache.ignite.internal.stat.IoStatisticsCacheSelfTest;
-import org.apache.ignite.internal.stat.IoStatisticsManagerSelfTest;
-import org.apache.ignite.internal.stat.IoStatisticsMetricsLocalMXBeanImplSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -76,8 +80,12 @@ public class IgniteCacheTestSuite9 {
         // IO statistics
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsCachePersistenceSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsCacheSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IoStatisticsManagerSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IoStatisticsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsMetricsLocalMXBeanImplSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, MetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheMetricsAddRemoveTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, JmxExporterSpiTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, LogExporterSpiTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheLongRunningTransactionDiagnosticsTest.class, ignoredTests);
 

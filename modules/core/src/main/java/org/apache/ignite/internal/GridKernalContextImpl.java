@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
@@ -89,7 +90,6 @@ import org.apache.ignite.internal.processors.subscription.GridInternalSubscripti
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.txdr.TransactionalDrProcessor;
-import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -200,7 +200,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridJobMetricsProcessor metricsProc;
+    private GridJobMetricsProcessor jobMetricsProc;
+
+    /** */
+    @GridToStringInclude
+    private GridMetricManager metricMgr;
 
     /** */
     @GridToStringInclude
@@ -428,9 +432,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
     private boolean recoveryMode = true;
 
-    /** IO statistics manager. */
-    private IoStatisticsManager ioStatMgr;
-
     /**
      * No-arg constructor is required by externalization.
      */
@@ -527,8 +528,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
                     "META-INF/ignite.xml.");
         }
-
-        ioStatMgr = new IoStatisticsManager();
     }
 
     /** {@inheritDoc} */
@@ -599,7 +598,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridResourceProcessor)
             rsrcProc = (GridResourceProcessor)comp;
         else if (comp instanceof GridJobMetricsProcessor)
-            metricsProc = (GridJobMetricsProcessor)comp;
+            jobMetricsProc = (GridJobMetricsProcessor)comp;
+        else if (comp instanceof GridMetricManager)
+            metricMgr = (GridMetricManager)comp;
         else if (comp instanceof GridCacheProcessor)
             cacheProc = (GridCacheProcessor)comp;
         else if (comp instanceof GridClusterStateProcessor)
@@ -741,7 +742,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public GridJobMetricsProcessor jobMetric() {
-        return metricsProc;
+        return jobMetricsProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridMetricManager metric() {
+        return metricMgr;
     }
 
     /** {@inheritDoc} */
@@ -1157,11 +1163,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
         return internalSubscriptionProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IoStatisticsManager ioStats() {
-        return ioStatMgr;
     }
 
     /**
