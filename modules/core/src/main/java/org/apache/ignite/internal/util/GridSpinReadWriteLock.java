@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -333,7 +332,9 @@ public class GridSpinReadWriteLock {
                     break;
             }
 
-            long end = U.currentTimeMillis() + unit.toMillis(timeout);
+            long startNanos = System.nanoTime();
+
+            long timeoutNanos = unit.toNanos(timeout);
 
             while (true) {
                 if (compareAndSet(STATE_OFFS, 0, -1)) {
@@ -347,7 +348,7 @@ public class GridSpinReadWriteLock {
 
                 Thread.sleep(10);
 
-                if (end <= U.currentTimeMillis())
+                if (System.nanoTime() - startNanos >= timeoutNanos)
                     return false;
             }
         }
