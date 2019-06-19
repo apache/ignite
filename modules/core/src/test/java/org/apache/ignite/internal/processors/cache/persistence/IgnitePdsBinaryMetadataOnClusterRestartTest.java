@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -344,23 +345,22 @@ public class IgnitePdsBinaryMetadataOnClusterRestartTest extends GridCommonAbstr
             createdTypeId,
             decimalFieldName);
 
-        boolean expectedExcThrown = false;
+        Throwable thrown = GridTestUtils.assertThrows(
+            log,
+            () -> startGridInASeparateWorkDir("B"),
+            Exception.class,
+            null);
 
-        try {
-            startGridInASeparateWorkDir("B");
+        if (thrown.getCause() != null && thrown.getCause().getCause() != null) {
+            Throwable cause = thrown.getCause().getCause();
+
+            String actualMsg = cause.getMessage();
+
+            assertTrue("Cause is not correct [expected='" + expectedMsg + "', actual='" + actualMsg + "'].",
+                actualMsg.contains(expectedMsg));
         }
-        catch (Exception e) {
-            if (e.getCause() != null && e.getCause().getCause() != null) {
-                Throwable cause = e.getCause().getCause();
-
-                if (cause.getMessage().contains(expectedMsg))
-                    expectedExcThrown = true;
-            }
-            else
-                throw e;
-        }
-
-        assertTrue(expectedExcThrown);
+        else
+            throw new AssertionError("Thrown unexpected exception", thrown);
     }
 
     /** */
