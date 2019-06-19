@@ -348,7 +348,8 @@ const DFLT_CLUSTER = {
             metricsEnabled: false,
             metricsSubIntervalCount: 5,
             metricsRateTimeInterval: 60000,
-            checkpointPageBufferSize: 0
+            checkpointPageBufferSize: 0,
+            lazyMemoryAllocation: true
         },
         metricsEnabled: false,
         alwaysWriteFullPages: false,
@@ -376,7 +377,8 @@ const DFLT_CLUSTER = {
         metricsSubIntervalCount: 5,
         metricsRateTimeInterval: 60000,
         maxWalArchiveSize: 1073741824,
-        walCompactionLevel: 1
+        walCompactionLevel: 1,
+        walPageCompression: {clsName: 'org.apache.ignite.configuration.DiskPageCompression', value: 'DISABLED'}
     },
     utilityCacheKeepAliveTime: 60000,
     serviceConfigurations: {
@@ -427,7 +429,8 @@ const DFLT_CLUSTER = {
         thinClientEnabled: true,
         sslEnabled: false,
         useIgniteSslContextFactory: true,
-        sslClientAuth: false
+        sslClientAuth: false,
+        handshakeTimeout: 10000
     },
     encryptionSpi: {
         Keystore: {
@@ -451,7 +454,11 @@ const DFLT_CLUSTER = {
     sqlQueryHistorySize: 1000,
     allSegmentationResolversPassRequired: true,
     networkCompressionLevel: 1,
-    autoActivationEnabled: true
+    autoActivationEnabled: true,
+    rebalanceBatchSize: 524288,
+    rebalanceBatchesPrefetchCount: 2,
+    rebalanceTimeout: 10000,
+    rebalanceThrottle: 0
 };
 
 export default class IgniteClusterDefaults {

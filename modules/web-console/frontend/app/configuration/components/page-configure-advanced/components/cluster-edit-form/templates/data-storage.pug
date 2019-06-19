@@ -162,6 +162,14 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
             tip: 'Enable Ignite Native Persistence'
         })
 
+    .pc-form-grid-col-60(ng-if='$ctrl.available("2.8.0")')
+        +form-field__checkbox({
+            label: 'Lazy memory allocation',
+            model: `${modelAt}.lazyMemoryAllocation`,
+            name: '"MemoryPolicyLazyMemoryAllocation"',
+            tip: 'Allocate memory only on the creation of the first cache belonged to this region'
+        })
+
 panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-title Data storage configuration
     panel-description
@@ -383,6 +391,42 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                     placeholder: '-1',
                     min: '-1',
                     tip: 'Time in millis to run auto archiving segment after last record logging'
+                })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.8.0")')
+                +form-field__dropdown({
+                    label: 'WAL page compression:',
+                    model: `${model}.walPageCompression`,
+                    name: '"DataStorageWalPageCompression"',
+                    placeholder: 'DISABLED',
+                    options: `$ctrl.Clusters.walPageCompression`,
+                    tip: 'Compression algorithm for WAL page snapshot records.\
+                        <ul>\
+                            <li>DISABLED - Compression disabled</li>\
+                            <li>SKIP_GARBAGE - Retain only useful data from half-filled pages, but do not apply any compression</li>\
+                            <li>ZSTD - Zstd compression</li>\
+                            <li>LZ4 - LZ4 compression</li>\
+                            <li>SNAPPY - Snappy compression</li>\
+                        </ul>'
+                })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.8.0") && ${model}.walPageCompression === "ZSTD"`)
+                +form-field__number({
+                    label: 'WAL page compression lever:',
+                    model: `${model}.walPageCompressionLevel`,
+                    name: '"DataStorageWalPageCompressionLevel"',
+                    placeholder: '3',
+                    min: -131072,
+                    max: 22,
+                    tip: 'Compression level from -131072 to 22 or empty to use default 22'
+                })
+            .pc-form-grid-col-60(ng-if=`$ctrl.available("2.8.0") && ${model}.walPageCompression === "LZ4"`)
+                +form-field__number({
+                    label: 'WAL page compression lever:',
+                    model: `${model}.walPageCompressionLevel`,
+                    name: '"DataStorageWalPageCompressionLevel"',
+                    placeholder: '0',
+                    min: 0,
+                    max: 17,
+                    tip: 'Compression level from 0 to 17 or empty to use default 0'
                 })
             .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
                 +form-field__number({

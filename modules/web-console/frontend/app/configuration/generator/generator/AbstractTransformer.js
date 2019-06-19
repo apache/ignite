@@ -177,6 +177,11 @@ export default class AbstractTransformer {
         return this.toSection(this.generator.clusterQuery(cluster, available));
     }
 
+    // Generate cluster rebalance group.
+    static clusterRebalance(cluster, available) {
+        return this.toSection(this.generator.clusterRebalance(cluster, available));
+    }
+
     // Generate cache node filter group.
     static clusterServiceConfiguration(srvs, caches) {
         return this.toSection(this.generator.clusterServiceConfiguration(srvs, caches));
