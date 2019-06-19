@@ -69,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -105,6 +104,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -114,6 +114,27 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
+
+    /** Metrics prefix. */
+    public static final String JOBS = metricName("compute", "jobs");
+
+    /** Started jobs metric name. */
+    public static final String STARTED = "started";
+
+    /** Active jobs metric name. */
+    public static final String ACTIVE = "active";
+
+    /** Waiting jobs metric name. */
+    public static final String WAITING = "waiting";
+
+    /** Canceled jobs metric name. */
+    public static final String CANCELED = "canceled";
+
+    /** Rejected jobs metric name. */
+    public static final String REJECTED = "rejected";
+
+    /** Finished jobs metric name. */
+    public static final String FINISHED = "finished";
 
     /** */
     private final Marshaller marsh;
@@ -159,18 +180,23 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final GridLocalEventListener discoLsnr;
 
     /** Needed for statistics. */
+    @Deprecated
     private final LongAdder canceledJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
+    @Deprecated
     private final LongAdder finishedJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
+    @Deprecated
     private final LongAdder startedJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
+    @Deprecated
     private final LongAdder rejectedJobsCnt = new LongAdder();
 
     /** Total job execution time (unaccounted for in metrics). */
+    @Deprecated
     private final LongAdder finishedJobsTime = new LongAdder();
 
     /** Maximum job execution time for finished jobs. */
@@ -179,8 +205,23 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     private final AtomicLong metricsLastUpdateTstamp = new AtomicLong();
 
-    /** */
-    private final GridJobMetrics jobMetrics;
+    /** Number of started jobs. */
+    final LongMetricImpl startedJobsMetric;
+
+    /** Number of active jobs currently executing. */
+    final LongMetricImpl activeJobsMetric;
+
+    /** Number of currently queued jobs waiting to be executed. */
+    final LongMetricImpl waitingJobsMetric;
+
+    /** Number of cancelled jobs that are still running. */
+    final LongMetricImpl canceledJobsMetric;
+
+    /** Number of jobs rejected after more recent collision resolution operation. */
+    final LongMetricImpl rejectedJobsMetric;
+
+    /** Number of finished jobs. */
+    final LongMetricImpl finishedJobsMetric;
 
     /** */
     private boolean stopping;
@@ -240,7 +281,20 @@ public class GridJobProcessor extends GridProcessorAdapter {
         jobExecLsnr = new JobExecutionListener();
         discoLsnr = new JobDiscoveryListener();
 
-        jobMetrics = new GridJobMetrics(ctx.metric().registry());
+        MetricRegistry mreg = ctx.metric().registry().withPrefix(JOBS);
+
+        startedJobsMetric = mreg.metric(STARTED, "Number of started jobs.");
+
+        activeJobsMetric = mreg.metric(ACTIVE, "Number of active jobs currently executing.");
+
+        waitingJobsMetric = mreg.metric(WAITING, "Number of currently queued jobs waiting to be executed.");
+
+        canceledJobsMetric = mreg.metric(CANCELED, "Number of cancelled jobs that are still running.");
+
+        rejectedJobsMetric = mreg.metric(REJECTED,
+            "Number of jobs rejected after more recent collision resolution operation.");
+
+        finishedJobsMetric = mreg.metric(FINISHED, "Number of finished jobs.");
     }
 
     /** {@inheritDoc} */
@@ -271,7 +325,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         // Clear collections.
         activeJobs.clear();
 
-        jobMetrics.active.reset();
+        activeJobsMetric.reset();
 
         cancelledJobs.clear();
 
@@ -383,7 +437,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         if (!job.isInternal() && !isCancelled) {
             canceledJobsCnt.increment();
 
-            jobMetrics.canceled.increment();
+            canceledJobsMetric.increment();
         }
 
         job.cancel(sysCancel);
@@ -678,7 +732,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             canceledJobsCnt.increment();
 
-            jobMetrics.canceled.increment();
+            canceledJobsMetric.increment();
 
             return true;
         }
@@ -713,7 +767,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         boolean res = activeJobs.remove(job.getJobId(), job);
 
         if (res)
-            jobMetrics.active.decrement();
+            activeJobsMetric.decrement();
 
         return res;
     }
@@ -726,7 +780,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         boolean res = passiveJobs.remove(job.getJobId(), job);
 
         if (res)
-            jobMetrics.waiting.decrement();
+            waitingJobsMetric.decrement();
 
         return res;
     }
@@ -1185,7 +1239,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     // Job will be executed synchronously.
                                     startedJobsCnt.increment();
 
-                                    jobMetrics.started.increment();
+                                    startedJobsMetric.increment();
                                 }
 
                             }
@@ -1198,7 +1252,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             GridJobWorker old = passiveJobs.putIfAbsent(job.getJobId(), job);
 
                             if (old == null) {
-                                jobMetrics.waiting.increment();
+                                waitingJobsMetric.increment();
 
                                 handleCollisions();
                             }
@@ -1289,7 +1343,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         activeJobs.put(jobWorker.getJobId(), jobWorker);
 
-        jobMetrics.active.increment();
+        activeJobsMetric.increment();
 
         // Check if job has been concurrently cancelled.
         Boolean sysCancelled = cancelReqs.get(jobWorker.getSession().getId());
@@ -1357,7 +1411,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (metricsUpdateFreq > -1L) {
                 startedJobsCnt.increment();
 
-                jobMetrics.started.increment();
+                startedJobsMetric.increment();
             }
 
             return true;
@@ -1374,7 +1428,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (metricsUpdateFreq > -1L) {
                 rejectedJobsCnt.increment();
 
-                jobMetrics.rejected.increment();
+                rejectedJobsMetric.increment();
             }
 
             jobWorker.finishJob(null, e2, true);
@@ -1726,7 +1780,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     if (metricsUpdateFreq > -1L) {
                         rejectedJobsCnt.increment();
 
-                        jobMetrics.rejected.increment();
+                        rejectedJobsMetric.increment();
                     }
 
                     ret = true;
@@ -1847,7 +1901,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 // reset once this job will be accounted for in metrics.
                 finishedJobsCnt.increment();
 
-                jobMetrics.finished.increment();
+                finishedJobsMetric.increment();
 
                 // Increment job execution time. This counter gets
                 // reset once this job will be accounted for in metrics.
@@ -2126,69 +2180,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
          */
         @Override public int size() {
             return sizex();
-        }
-    }
-
-    /**
-     * Metrics for {@link GridMetricManager}.
-     *
-     * TODO: properly update counters.
-     */
-    public class GridJobMetrics {
-        /** */
-        public static final String JOBS = "compute.jobs";
-
-        /** */
-        public static final String STARTED = "started";
-
-        /** */
-        public static final String ACTIVE = "active";
-
-        /** */
-        public static final String WAITING = "waiting";
-
-        /** */
-        public static final String CANCELED = "canceled";
-
-        /** */
-        public static final String REJECTED = "rejected";
-
-        /** */
-        public static final String FINISHED = "finished";
-
-        /** */
-        final LongMetricImpl started;
-
-        /** */
-        final LongMetricImpl active;
-
-        /** */
-        final LongMetricImpl waiting;
-
-        /** */
-        final LongMetricImpl canceled;
-
-        /** */
-        final LongMetricImpl rejected;
-
-        /** */
-        final LongMetricImpl finished;
-
-        public GridJobMetrics(MetricRegistry mreg) {
-            mreg = mreg.withPrefix(JOBS);
-
-            started = mreg.metric(STARTED, "Number of started jobs.");
-
-            active = mreg.metric(ACTIVE, "Number of active jobs currently executing.");
-
-            waiting = mreg.metric(WAITING, "Number of currently queued jobs waiting to be executed.");
-
-            canceled = mreg.metric(CANCELED, "Number of cancelled jobs that are still running.");
-
-            rejected = mreg.metric(REJECTED,
-                "Number of jobs rejected after more recent collision resolution operation.");
-
-            finished = mreg.metric(FINISHED, "Number of finished jobs.");
         }
     }
 }

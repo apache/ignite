@@ -30,6 +30,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -46,13 +47,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.GridJobMetrics.ACTIVE;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.GridJobMetrics.CANCELED;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.GridJobMetrics.FINISHED;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.GridJobMetrics.JOBS;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.GridJobMetrics.REJECTED;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.GridJobMetrics.STARTED;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.GridJobMetrics.WAITING;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.ACTIVE;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.CANCELED;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.FINISHED;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.REJECTED;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.STARTED;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.WAITING;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -127,6 +128,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
         ctx.jobMetric().getJobMetrics();
     }
 
+    /** Test correctness of legacy {@link GridJobProcessor} metrics. */
     @Test
     public void testJobMetrics() throws Exception {
         ctx.jobMetric().reset();
@@ -200,6 +202,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
         assertEquals(0, m.getCurrentIdleTime());
     }
 
+    /** Test correct calculation of rejected and waiting metrics of the {@link GridJobProcessor}. */
     @Test
     public void testGridJobWaitingRejectedMetrics() throws Exception {
         latch = new CountDownLatch(1);
@@ -275,6 +278,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Test correct calculation of finished, started, active, canceled metrics of the {@link GridJobProcessor}. */
     @Test
     public void testGridJobMetrics() throws Exception {
         latch = new CountDownLatch(1);
@@ -307,6 +311,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
 
             g.compute().execute(task, 1);
 
+            //Waiting task to finish.
             boolean res = waitForCondition(() -> active.value() == 0, TIMEOUT);
 
             assertTrue("Active = " + active.value(), res);
@@ -317,10 +322,12 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, rejected.value());
             assertEquals(1, finished.value());
 
+            //Task should block until latch is down.
             task.block = true;
 
             ComputeTaskFuture<?> fut = g.compute().executeAsync(task, 1);
 
+            //Waiting task to start execution.
             res = waitForCondition(() -> active.value() == 1, TIMEOUT);
 
             assertTrue("Active = " + active.value(), res);
@@ -331,6 +338,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, rejected.value());
             assertEquals(1, finished.value());
 
+            //After latch is down, task should finish.
             latch.countDown();
 
             fut.get(TIMEOUT);
@@ -355,6 +363,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, rejected.value());
             assertEquals(2, finished.value());
 
+            //First cancel task, then allow it to finish.
             fut.cancel();
 
             latch.countDown();
@@ -376,18 +385,20 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static class SimplestJob implements ComputeJob {
+        /** */
         boolean block;
 
+        /** */
         public SimplestJob(boolean block) {
             this.block = block;
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public void cancel() {
             // No-op.
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
             if (block) {
                 try {
@@ -407,7 +418,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
         /** */
         boolean block;
 
-        /** */
+        /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) throws IgniteException {
             Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
@@ -418,7 +429,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             return jobs;
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
             return "1";
         }
