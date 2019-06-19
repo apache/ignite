@@ -302,7 +302,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
-                    if (e instanceof ClusterTopologyCheckedException && node == null)
+                    if (e instanceof ClusterTopologyCheckedException)
                         miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
                         miniFut.onResult(e);
@@ -326,13 +326,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
         Map<K, V> locVals
     ) {
-        if (node != null) {
-            addNodeMapping(key, node, nodesToKeysMapping); // Explicit node instead of calculated mapping.
-
-            assert nodesToKeysMapping.size() == 1; // One future per node.
-
-            return !node.isLocal();
-        }
+        if (node != null && !cctx.topology().owners(key.partition()).contains(node)) // Explicit owner left.
+            onDone(Collections.emptyMap());
 
         int part = cctx.affinity().partition(key);
 
@@ -346,29 +341,30 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         // Try to read key localy if we can.
-        if (tryLocalGet(key, part, topVer, affNodes, locVals))
+        if (node == null && tryLocalGet(key, part, topVer, affNodes, locVals))
             return false;
 
         Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
         // Get remote node for request for this key.
-        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+        ClusterNode mapped =
+            node != null ? node : cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
 
         // Failed if none remote node found.
-        if (node == null) {
+        if (mapped == null) {
             onDone(serverNotFoundError(part, topVer));
 
             return false;
         }
 
         // The node still can be local, see details implementation of #tryLocalGet().
-        boolean remote = !node.isLocal();
+        boolean remote = !mapped.isLocal();
 
         // Check retry counter, bound for avoid inifinit remap.
-        if (!checkRetryPermits(key, node, missedNodesToKeysMapping))
+        if (!checkRetryPermits(key, mapped, missedNodesToKeysMapping))
             return false;
 
-        addNodeMapping(key, node, nodesToKeysMapping);
+        addNodeMapping(key, mapped, nodesToKeysMapping);
 
         return remote;
     }
