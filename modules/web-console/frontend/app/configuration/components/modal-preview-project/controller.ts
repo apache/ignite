@@ -86,6 +86,7 @@ export default class ModalPreviewProjectController {
 
     doStuff(cluster: CluserLike, isDemo: boolean) {
         this.IgniteLoading.start('projectStructurePreview');
+
         return this.PageConfigure.getClusterConfiguration({clusterID: cluster.id, isDemo})
         .then((data) => {
             return this.IgniteConfigurationResource.populate(data);
