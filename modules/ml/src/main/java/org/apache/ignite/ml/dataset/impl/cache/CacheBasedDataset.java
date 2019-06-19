@@ -136,7 +136,6 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 upstreamKeepBinary
             );
 
-
             if (data != null) {
                 R res = map.apply(ctx, data, env);
 

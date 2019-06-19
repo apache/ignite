@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
@@ -115,6 +116,7 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static java.io.File.separatorChar;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newDirectoryStream;
 import static java.util.Arrays.asList;
@@ -129,6 +131,7 @@ import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -152,6 +155,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** Additional data region configuration. */
     private DataRegionConfiguration dataRegionConfiguration;
+
+    /** */
+    private File defaultDiagnosticDir;
+
+    /** */
+    private File customDiagnosticDir;
 
     /**
      * @return Folder in work directory.
@@ -185,6 +194,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
+        initDiagnosticDir();
+
+        cleanDiagnosticDir();
+
         sysOut = System.out;
 
         testOut = new ByteArrayOutputStream(1024 * 1024);
@@ -206,6 +219,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 delete(path);
         }
 
+        cleanDiagnosticDir();
+
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         System.setOut(sysOut);
@@ -213,6 +228,25 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         log.info("----------------------------------------");
         if (testOut != null)
             System.out.println(testOut.toString());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void initDiagnosticDir() throws IgniteCheckedException {
+        defaultDiagnosticDir = new File(U.defaultWorkDirectory()
+            + separatorChar + DEFAULT_TARGET_FOLDER + separatorChar);
+
+        customDiagnosticDir = new File(U.defaultWorkDirectory()
+            + separatorChar + "diagnostic_test_dir" + separatorChar);
+    }
+
+    /**
+     * Clean diagnostic directories.
+     */
+    private void cleanDiagnosticDir() {
+        U.delete(defaultDiagnosticDir);
+        U.delete(customDiagnosticDir);
     }
 
     /**
@@ -1348,7 +1382,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (CacheSubcommands cmd : CacheSubcommands.values()) {
             Class<? extends Enum<? extends CommandArg>> args = cmd.getCommandArgs();
 
-            if(args != null)
+            if (args != null)
                 for (Enum<? extends CommandArg> arg : args.getEnumConstants())
                     assertTrue(arg.toString(), p.matcher(arg.toString()).matches());
         }
@@ -1572,32 +1606,32 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCacheIdleVerifyMultipleCacheFilterOptions()
-            throws Exception {
+        throws Exception {
         IgniteEx ignite = startGrids(2);
 
         ignite.cluster().active(true);
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setGroupName("shared_grp")
-                .setBackups(1)
-                .setName(DEFAULT_CACHE_NAME));
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setGroupName("shared_grp")
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 32))
-                .setGroupName("shared_grp")
-                .setBackups(1)
-                .setName(DEFAULT_CACHE_NAME + "_second"));
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setGroupName("shared_grp")
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "_second"));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 64))
-                .setBackups(1)
-                .setName(DEFAULT_CACHE_NAME + "_third"));
+            .setAffinity(new RendezvousAffinityFunction(false, 64))
+            .setBackups(1)
+            .setName(DEFAULT_CACHE_NAME + "_third"));
 
         ignite.createCache(new CacheConfiguration<>()
-                .setAffinity(new RendezvousAffinityFunction(false, 128))
-                .setBackups(1)
-                .setName("wrong_cache"));
+            .setAffinity(new RendezvousAffinityFunction(false, 128))
+            .setBackups(1)
+            .setName("wrong_cache"));
 
         injectTestSystemOut();
 
@@ -1708,13 +1742,14 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                 assertContains(testOut.toString(), outputExp);
             }
-        } else
+        }
+        else
             assertContains(testOut.toString(), outputExp);
     }
 
     /**
-     * Checks that string {@param str} contains substring {@param substr}. Logs both strings
-     * and throws {@link java.lang.AssertionError}, if not.
+     * Checks that string {@param str} contains substring {@param substr}. Logs both strings and throws {@link
+     * java.lang.AssertionError}, if not.
      *
      * @param str string
      * @param substr substring
@@ -1722,7 +1757,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     private void assertContains(String str, String substr) {
         try {
             assertTrue(str.contains(substr));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             log.warning(String.format("String does not contain substring: '%s':", substr));
             log.warning("String:");
             log.warning(str);
@@ -2681,9 +2717,132 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts several long transactions in order to test --tx command.
-     * Transactions will last until unlock latch is released: first transaction will wait for unlock latch directly,
-     * some others will wait for key lock acquisition.
+     * Test execution of --diagnostic command.
+     *
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testDiagnosticPageLocksTracker() throws Exception {
+        Ignite ignite = startGrids(4);
+
+        Collection<ClusterNode> nodes = ignite.cluster().nodes();
+
+        List<ClusterNode> nodes0 = new ArrayList<>(nodes);
+
+        ClusterNode node0 = nodes0.get(0);
+        ClusterNode node1 = nodes0.get(1);
+        ClusterNode node2 = nodes0.get(2);
+        ClusterNode node3 = nodes0.get(3);
+
+        ignite.cluster().active(true);
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic")
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "help")
+        );
+
+        // Dump locks only on connected node to default path.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump")
+        );
+
+        // Check file dump in default path.
+        checkNumberFiles(defaultDiagnosticDir, 1);
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log")
+        );
+
+        // Dump locks only on connected node to specific path.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump", "--path", customDiagnosticDir.getAbsolutePath())
+        );
+
+        // Check file dump in specific path.
+        checkNumberFiles(customDiagnosticDir, 1);
+
+        // Dump locks only all nodes.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump", "--all")
+        );
+
+        // Current cluster 4 nodes -> 4 files + 1 from previous operation.
+        checkNumberFiles(defaultDiagnosticDir, 5);
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log", "--all")
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--path", customDiagnosticDir.getAbsolutePath(), "--all")
+        );
+
+        // Current cluster 4 nodes -> 4 files + 1 from previous operation.
+        checkNumberFiles(customDiagnosticDir, 5);
+
+        // Dump locks only 2 nodes use nodeIds as arg.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--nodes", node0.id().toString() + "," + node2.id().toString())
+        );
+
+        // Dump locks only for 2 nodes -> 2 files + 5 from previous operation.
+        checkNumberFiles(defaultDiagnosticDir, 7);
+
+        // Dump locks only for 2 nodes use constIds as arg.
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump",
+                "--nodes", node0.consistentId().toString() + "," + node2.consistentId().toString())
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute("--diagnostic", "pageLocks", "dump_log",
+                "--nodes", node1.id().toString() + "," + node3.id().toString())
+        );
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--diagnostic", "pageLocks", "dump",
+                "--path", customDiagnosticDir.getAbsolutePath(),
+                "--nodes", node1.consistentId().toString() + "," + node3.consistentId().toString())
+        );
+
+        // Dump locks only for 2 nodes -> 2 files + 5 from previous operation.
+        checkNumberFiles(customDiagnosticDir, 7);
+    }
+
+    /**
+     * @param dir Directory.
+     * @param numberFiles Number of files.
+     */
+    private void checkNumberFiles(File dir, int numberFiles) {
+        File[] files = dir.listFiles((d, name) -> name.startsWith(ToFileDumpProcessor.PREFIX_NAME));
+
+        assertEquals(numberFiles, files.length);
+
+        for (int i = 0; i < files.length; i++)
+            assertTrue(files[i].length() > 0);
+    }
+
+    /**
+     * Starts several long transactions in order to test --tx command. Transactions will last until unlock latch is
+     * released: first transaction will wait for unlock latch directly, some others will wait for key lock acquisition.
      *
      * @param lockLatch Lock latch. Will be released inside body of the first transaction.
      * @param unlockLatch Unlock latch. Should be released externally. First transaction won't be finished until unlock

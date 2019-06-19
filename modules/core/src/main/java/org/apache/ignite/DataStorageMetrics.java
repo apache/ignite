@@ -17,10 +17,14 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 
 /**
  * Data storage metrics are used to obtain statistics on persistent store and whole data storage.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public interface DataStorageMetrics {
     /**
      * Gets the average number of WAL records per second written during the last time interval.

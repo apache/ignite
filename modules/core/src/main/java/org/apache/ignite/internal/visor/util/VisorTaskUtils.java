@@ -125,7 +125,6 @@ public class VisorTaskUtils {
     /** */
     public static final int REBALANCE_COMPLETE = 1;
 
-
     /** */
     private static final int DFLT_BUFFER_SIZE = 4096;
 
