@@ -54,7 +54,8 @@ Oracle/OpenJDK (https://www.oracle.com/technetwork/java/javase/downloads/index.h
 
 * JDK Java Cryptography Extensions build in encryption from the Java libraries is used
 for Transparent Data Encryption of data on disk
-(https://apacheignite.readme.io/docs/transparent-data-encryption).
+(https://apacheignite.readme.io/docs/transparent-data-encryption)
+and for AWS S3 Client Side Encryprion.
 (https://java.sun.com/javase/technologies/security/)
 
 * Python client uses Python's SSL lib (https://docs.python.org/3/library/ssl.html) which is a wrapper over OpenSSL;
