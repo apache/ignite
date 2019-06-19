@@ -34,11 +34,12 @@ public class GridQueryKillResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Error text. */
+    private String errMsg;
+
     /** Request id.*/
     private long reqId;
 
-    /** Error text. */
-    private String errMsg;
 
     /**
      * Default constructor.
@@ -89,15 +90,17 @@ public class GridQueryKillResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("reqId", reqId))
-                    return false;
-
-                writer.incrementState();
-            case 1:
                 if (!writer.writeString("errMsg", errMsg))
                     return false;
 
                 writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("reqId", reqId))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -112,7 +115,7 @@ public class GridQueryKillResponse implements Message {
 
         switch (reader.state()) {
             case 0:
-                reqId = reader.readLong("reqId");
+                errMsg = reader.readString("errMsg");
 
                 if (!reader.isLastRead())
                     return false;
@@ -120,12 +123,13 @@ public class GridQueryKillResponse implements Message {
                 reader.incrementState();
 
             case 1:
-                errMsg = reader.readString("errMsg");
+                reqId = reader.readLong("reqId");
 
-                if(!reader.isLastRead())
+                if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridQueryKillResponse.class);
