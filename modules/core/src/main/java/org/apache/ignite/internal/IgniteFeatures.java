@@ -58,7 +58,10 @@ public enum IgniteFeatures {
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
 
     /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(11);
+    DISTRIBUTED_METASTORAGE(11),
+
+    /** Support of lightweight PME without affinity change for a not baseline server join or leave case. */
+    NOT_BASELINE_SERVER_EXCHANGE(12);
 
     /**
      * Unique feature identifier.

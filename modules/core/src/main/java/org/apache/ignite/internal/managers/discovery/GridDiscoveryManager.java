@@ -63,6 +63,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -594,8 +595,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT)
                     stateFinishMsg = ctx.state().onNodeLeft(node);
 
-                final AffinityTopologyVersion nextTopVer;
-
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
                     assert customMsg != null;
 
@@ -631,17 +630,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         verChanged = true;
                     }
-
-                    nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
-
-                    if (incMinorTopVer)
-                        ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, ctx.state().clusterState());
                 }
-                else {
-                    nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
-                    ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, ctx.state().clusterState());
-                }
+                final AffinityTopologyVersion nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
                     for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
@@ -721,6 +712,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }
                     }
                 }
+
+                // Shoud be called after possible discovery cache relculculation to provide correct cluster state.
+                if (verChanged)
+                    ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, discoCache);
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {

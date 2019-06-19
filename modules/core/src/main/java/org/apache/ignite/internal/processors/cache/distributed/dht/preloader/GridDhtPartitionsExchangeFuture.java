@@ -355,6 +355,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Partitions scheduled for historical reblanace for this topology version. */
     private Map<Integer, Set<Integer>> histPartitions;
 
+    /** True if this exchange changed affinity. */
+    private volatile boolean affinityChanged;
+
+    /** True if this exchange triggered by server not from baseline join/left. */
+    private volatile boolean notBaselineServerJoinOrLeave;
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -572,6 +578,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.firstEvtDiscoCache = discoCache;
 
         evtLatch.countDown();
+
+        notBaselineServerJoinOrLeave = cctx.affinity().isNotBaselineServerJoinOrLeave(firstEvtDiscoCache,
+            firstDiscoEvt.eventNode(), firstDiscoEvt.type());
+
+        affinityChanged = isAffinityChanged();
+    }
+
+    /**
+     * @return {@code True} if cluster state change exchange.
+     */
+    private boolean isAffinityChanged() {
+        assert firstDiscoEvt != null;
+
+        return firstDiscoEvt.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
+            || !(firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeave)
+            || firstDiscoEvt.eventNode().isLocal()
+            || ((firstDiscoEvt.type() == EVT_NODE_JOINED) &&
+            cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode()));
     }
 
     /**
@@ -619,15 +643,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** {@inheritDoc} */
     @Override public boolean changedAffinity() {
-        DiscoveryEvent firstDiscoEvt0 = firstDiscoEvt;
-
-        assert firstDiscoEvt0 != null;
-
-        return firstDiscoEvt0.type() == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
-            || !firstDiscoEvt0.eventNode().isClient()
-            || firstDiscoEvt0.eventNode().isLocal()
-            || ((firstDiscoEvt.type() == EVT_NODE_JOINED) &&
-            cctx.cache().hasCachesReceivedFromJoin(firstDiscoEvt.eventNode()));
+        return affinityChanged;
     }
 
     /**
@@ -822,13 +838,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 initCoordinatorCaches(newCrd);
 
+                if (exchId.isLeft())
+                    onLeft();
+
                 if (exchCtx.mergeExchanges()) {
                     if (localJoinExchange()) {
-                        if (cctx.kernalContext().clientNode()) {
-                            onClientNodeEvent(crdNode);
-
+                        if (cctx.kernalContext().clientNode())
                             exchange = ExchangeType.CLIENT;
-                        }
+                        else if (notBaselineServerJoinOrLeave)
+                            exchange = ExchangeType.NOT_BASELINE_SERVER;
                         else {
                             onServerNodeEvent(crdNode);
 
@@ -836,19 +854,24 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         }
                     }
                     else {
-                        if (firstDiscoEvt.eventNode().isClient())
-                            exchange = onClientNodeEvent(crdNode);
+                        if (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeave) {
+                            assert !firstDiscoEvt.eventNode().isLocal();
+
+                            exchange = ExchangeType.NONE;
+                        }
                         else
                             exchange = cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
                     }
-
-                    if (exchId.isLeft())
-                        onLeft();
                 }
                 else {
-                    exchange = firstDiscoEvt.eventNode().isClient() ? onClientNodeEvent(crdNode) :
-                        onServerNodeEvent(crdNode);
+                    if (firstDiscoEvt.eventNode().isClient())
+                        exchange = firstDiscoEvt.eventNode().isLocal() ? ExchangeType.CLIENT : ExchangeType.NONE;
+                    else
+                        exchange = onServerNodeEvent(crdNode);
                 }
+
+                if (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeave)
+                    cctx.affinity().onClientEvent(this, crdNode);
             }
 
             cctx.cache().registrateProxyRestart(resolveCacheRequests(exchActions), afterLsnrCompleteFut);
@@ -865,10 +888,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 case CLIENT: {
-                    if (!exchCtx.mergeExchanges() && exchCtx.fetchAffinityOnJoin())
-                        initTopologies();
-
                     clientOnlyExchange();
+
+                    break;
+                }
+
+                case NOT_BASELINE_SERVER: {
+                    notBaselineServerExchange();
 
                     break;
                 }
@@ -1321,33 +1347,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return Exchange type.
      * @throws IgniteCheckedException If failed.
      */
-    private ExchangeType onClientNodeEvent(boolean crd) throws IgniteCheckedException {
-        assert firstDiscoEvt.eventNode().isClient() : this;
-
-        if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED) {
-            onLeft();
-
-            assert !firstDiscoEvt.eventNode().isLocal() : firstDiscoEvt;
-        }
-        else
-            assert firstDiscoEvt.type() == EVT_NODE_JOINED || firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : firstDiscoEvt;
-
-        cctx.affinity().onClientEvent(this, crd);
-
-        return firstDiscoEvt.eventNode().isLocal() ? ExchangeType.CLIENT : ExchangeType.NONE;
-    }
-
-    /**
-     * @param crd Coordinator flag.
-     * @return Exchange type.
-     * @throws IgniteCheckedException If failed.
-     */
     private ExchangeType onServerNodeEvent(boolean crd) throws IgniteCheckedException {
         assert !firstDiscoEvt.eventNode().isClient() : this;
 
         if (firstDiscoEvt.type() == EVT_NODE_LEFT || firstDiscoEvt.type() == EVT_NODE_FAILED) {
-            onLeft();
-
             exchCtx.events().warnNoAffinityNodes(cctx);
 
             centralizedAff = cctx.affinity().onCentralizedAffinityChange(this, crd);
@@ -1361,7 +1364,56 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /**
      * @throws IgniteCheckedException If failed.
      */
+    private void notBaselineServerExchange() throws IgniteCheckedException {
+        assert firstDiscoEvt.eventNode().isLocal() && exchCtx.mergeExchanges() : this;
+
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.isLocal())
+                continue;
+
+            cctx.exchange().exchangerBlockingSectionBegin();
+
+            try {
+                grp.preloader().onTopologyChanged(this);
+            }
+            finally {
+                cctx.exchange().exchangerBlockingSectionEnd();
+            }
+        }
+
+        cctx.exchange().exchangerBlockingSectionBegin();
+
+        try {
+            cctx.database().onStateRestored(initialVersion());
+        }
+        finally {
+            cctx.exchange().exchangerBlockingSectionEnd();
+        }
+
+        assert crd != null && !crd.isLocal() : crd;
+
+        cctx.exchange().exchangerBlockingSectionBegin();
+
+        try {
+            if (!centralizedAff)
+                sendLocalPartitions(crd);
+
+            initDone();
+        }
+        finally {
+            cctx.exchange().exchangerBlockingSectionEnd();
+        }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     private void clientOnlyExchange() throws IgniteCheckedException {
+        assert cctx.localNode().isClient() : this;
+
+        if (!exchCtx.mergeExchanges() && exchCtx.fetchAffinityOnJoin())
+            initTopologies();
+
         if (crd != null) {
             assert !crd.isLocal() : crd;
 
@@ -1891,7 +1943,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 resetLostPartitions(caches);
         }
 
-        if (cctx.kernalContext().clientNode() || (dynamicCacheStartExchange() && exchangeLocE != null)) {
+        if (cctx.kernalContext().clientNode() || notBaselineServerJoinOrLeave ||
+            (dynamicCacheStartExchange() && exchangeLocE != null)) {
             msg = new GridDhtPartitionsSingleMessage(exchangeId(),
                 cctx.kernalContext().clientNode(),
                 cctx.versions().last(),
@@ -2825,7 +2878,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (finishState0 == null) {
-                    assert firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isClient() : this;
+                    assert firstDiscoEvt.type() == EVT_NODE_JOINED &&
+                        (firstDiscoEvt.eventNode().isClient() || notBaselineServerJoinOrLeave) : fut;
 
                     ClusterNode node = cctx.node(nodeId);
 
@@ -2859,7 +2913,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Partition single message.
      */
     private void processSingleMessage(UUID nodeId, GridDhtPartitionsSingleMessage msg) {
-        if (msg.client()) {
+        if (msg.client() || notBaselineServerJoinOrLeave) {
             waitAndReplyToNode(nodeId, msg);
 
             return;
@@ -5118,13 +5172,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      */
     enum ExchangeType {
-        /** */
-        CLIENT,
-
-        /** */
+        /**
+         * Regular case for custom or server node events with distributed messaging and waiting for completing all
+         * ongoing updates on the previous topology.
+         */
         ALL,
 
-        /** */
+        /**
+         * Sets on a client node. Exchange is completed after receiving a partitions full message from a coordinator and
+         * initializing local client topologies. Other nodes set type NONE for the case of client local join.
+         */
+        CLIENT,
+
+        /**
+         * Sets on a server not from a baseline topology. Exchange is completed after receiving a partitions full
+         * message from a coordinator and initializing local topologies. Other nodes set type NONE.
+         */
+        NOT_BASELINE_SERVER,
+
+        /** Case for client or server not from baseline topology leave/node events. Exchange is completed locally. */
         NONE
     }
 

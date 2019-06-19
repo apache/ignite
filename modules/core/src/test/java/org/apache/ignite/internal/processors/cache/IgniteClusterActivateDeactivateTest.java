@@ -1069,7 +1069,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         startGrid(SRVS + CLIENTS + 1);
 
-        checkRecordedMessages(true);
+        if (!persistenceEnabled())
+            checkRecordedMessages(true);
 
         checkCaches1(SRVS + CLIENTS + 2);
     }

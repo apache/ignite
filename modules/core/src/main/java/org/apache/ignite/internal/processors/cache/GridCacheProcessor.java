@@ -81,6 +81,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -4629,16 +4630,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param customMsg Custom message instance.
      * @param node Event node.
      * @param topVer Topology version.
-     * @param state Cluster state.
+     * @param discoCache Discovery cache.
      */
     public void onDiscoveryEvent(int type,
         @Nullable DiscoveryCustomMessage customMsg,
         ClusterNode node,
         AffinityTopologyVersion topVer,
-        DiscoveryDataClusterState state) {
+        DiscoCache discoCache) {
         cachesInfo.onDiscoveryEvent(type, node, topVer);
 
-        sharedCtx.affinity().onDiscoveryEvent(type, customMsg, node, topVer, state);
+        sharedCtx.affinity().onDiscoveryEvent(type, customMsg, node, topVer, discoCache);
     }
 
     /**

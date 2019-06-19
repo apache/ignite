@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -158,18 +159,21 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param customMsg Custom message instance.
      * @param node Event node.
      * @param topVer Topology version.
-     * @param state Cluster state.
+     * @param discoCache Discovery cache.
      */
     void onDiscoveryEvent(int type,
         @Nullable DiscoveryCustomMessage customMsg,
         ClusterNode node,
         AffinityTopologyVersion topVer,
-        DiscoveryDataClusterState state) {
+        DiscoCache discoCache) {
         if (type == EVT_NODE_JOINED && node.isLocal())
             lastAffVer = null;
 
-        if ((state.transition() || !state.active()) &&
+        if ((discoCache.state().transition() || !discoCache.state().active()) &&
             !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
+            return;
+
+        if (isNotBaselineServerJoinOrLeave(discoCache, node, type))
             return;
 
         if ((!node.isClient() && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
@@ -181,6 +185,35 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 lastAffVer = topVer;
             }
         }
+    }
+
+    /**
+     * Checks that the event is caused by the server node join/leave not from a baseline topology. In this case, the
+     * affinity version will not be changed.
+     *
+     * @param discoCache Discovery cache.
+     * @param evtNode Event node
+     * @param type Event type.
+     * @return {@code true} true if the event causes PME without affinity changing.
+     */
+    public boolean isNotBaselineServerJoinOrLeave(DiscoCache discoCache, ClusterNode evtNode, int type) {
+        // Joining server should not have new caches. Otherwise, it can map a transaction to a server node
+        // which has not started the required cache yet.
+        boolean joinNotBltNode = type == EVT_NODE_JOINED && !cctx.cache().hasCachesReceivedFromJoin(evtNode);
+
+        boolean leaveNotBltNode = type == EVT_NODE_LEFT || type == EVT_NODE_FAILED;
+
+        if (evtNode.isClient() || evtNode.isDaemon() || !(joinNotBltNode || leaveNotBltNode))
+            return false;
+
+        DiscoveryDataClusterState state = discoCache.state();
+
+        boolean evtNodeNotFromBlt = state.hasBaselineTopology() && !state.localBaselineAutoAdjustment() &&
+            state.baselineTopology().currentBaseline().stream().noneMatch(
+                node -> node.consistentId().equals(evtNode.consistentId()));
+
+        return evtNodeNotFromBlt &&
+            IgniteFeatures.allNodesSupports(discoCache.allNodes(), IgniteFeatures.NOT_BASELINE_SERVER_EXCHANGE);
     }
 
     /**
