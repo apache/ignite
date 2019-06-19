@@ -38,15 +38,6 @@ suite('Clusters service', () => {
         assert.isNumber(s.minMemoryPolicySize, 'has minMemoryPolicySize number');
     });
 
-    test('saveCluster', () => {
-        const s = new Provider(...mocks().values());
-        const cluster = {id: 1, name: 'Test'};
-        s.saveCluster(cluster);
-        assert.isOk(s.$http.post.called, 'calls $http.post');
-        assert.equal(s.$http.post.lastCall.args[0], '/api/v1/configuration/clusters/save', 'uses correct API URL');
-        assert.deepEqual(s.$http.post.lastCall.args[1], cluster, 'sends cluster');
-    });
-
     test('getBlankCluster', () => {
         const s = new Provider(...mocks().values());
         assert.isObject(s.getBlankCluster());
