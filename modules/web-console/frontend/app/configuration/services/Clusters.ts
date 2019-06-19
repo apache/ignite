@@ -20,7 +20,7 @@ import omit from 'lodash/fp/omit';
 import uuidv4 from 'uuid/v4';
 
 import {uniqueName} from 'app/utils/uniqueName';
-import {DiscoveryKinds, ShortDomainModel, ShortCluster, FailoverSPIs, LoadBalancingKinds} from '../types';
+import {DiscoveryKinds, ShortDomainModel, ShortCluster, FailoverSPIs, LoadBalancingKinds, WalPageCompression} from '../types';
 import {Menu} from 'app/types';
 
 const uniqueNameValidator = (defaultName = '') => (a, items = []) => {
@@ -40,6 +40,15 @@ export default class Clusters {
         {value: 'SharedFs', label: 'Shared filesystem'},
         {value: 'ZooKeeper', label: 'Apache ZooKeeper'},
         {value: 'Kubernetes', label: 'Kubernetes'}
+    ];
+
+    walPageCompression: Menu<WalPageCompression> = [
+        {value: 'DISABLED', label: 'DISABLED'},
+        {value: 'SKIP_GARBAGE', label: 'SKIP_GARBAGE'},
+        {value: 'ZSTD', label: 'ZSTD'},
+        {value: 'LZ4', label: 'LZ4'},
+        {value: 'SNAPPY', label: 'SNAPPY'},
+        {value: null, label: 'Default'}
     ];
 
     minMemoryPolicySize = 10485760; // In bytes

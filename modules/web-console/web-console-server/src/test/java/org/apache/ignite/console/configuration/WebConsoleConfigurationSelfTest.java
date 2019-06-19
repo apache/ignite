@@ -195,6 +195,10 @@ public class WebConsoleConfigurationSelfTest {
         igniteCfgProps.add("failureHandler");
         igniteCfgProps.add("rebalanceThreadPoolSize");
         igniteCfgProps.add("localEventListeners");
+        igniteCfgProps.add("rebalanceBatchSize");
+        igniteCfgProps.add("rebalanceBatchesPrefetchCount");
+        igniteCfgProps.add("rebalanceTimeout");
+        igniteCfgProps.add("rebalanceThrottle");
 
         Set<String> igniteCfgPropsDep = new HashSet<>();
         igniteCfgPropsDep.add("gridName");
@@ -312,6 +316,7 @@ public class WebConsoleConfigurationSelfTest {
         cliConProps.add("jdbcEnabled");
         cliConProps.add("odbcEnabled");
         cliConProps.add("thinClientEnabled");
+        cliConProps.add("handshakeTimeout");
         metadata.put(ClientConnectorConfiguration.class, new MetadataInfo(cliConProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> jobStealingCollisionProps = new HashSet<>();
@@ -403,6 +408,7 @@ public class WebConsoleConfigurationSelfTest {
 
         Set<String> discoverySpiExclProps = new HashSet<>(SPI_EXCLUDED_FIELDS);
         discoverySpiExclProps.add("nodeAttributes");
+        discoverySpiExclProps.add("gridStartTime");
         metadata.put(TcpDiscoverySpi.class, new MetadataInfo(discoverySpiProps, EMPTY_FIELDS, discoverySpiExclProps));
 
         Set<String> connectorProps = new HashSet<>();
@@ -464,6 +470,8 @@ public class WebConsoleConfigurationSelfTest {
         dataStorageProps.add("maxWalArchiveSize");
         dataStorageProps.add("walCompactionEnabled");
         dataStorageProps.add("walCompactionLevel");
+        dataStorageProps.add("walPageCompression");
+        dataStorageProps.add("walPageCompressionLevel");
         metadata.put(DataStorageConfiguration.class, new MetadataInfo(dataStorageProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> dataRegionProps = new HashSet<>();
@@ -479,6 +487,7 @@ public class WebConsoleConfigurationSelfTest {
         dataRegionProps.add("metricsRateTimeInterval");
         dataRegionProps.add("metricsEnabled");
         dataRegionProps.add("persistenceEnabled");
+        dataRegionProps.add("lazyMemoryAllocation");
         metadata.put(DataRegionConfiguration.class, new MetadataInfo(dataRegionProps, EMPTY_FIELDS, EMPTY_FIELDS));
 
         Set<String> uriDeploymentProps = new HashSet<>();

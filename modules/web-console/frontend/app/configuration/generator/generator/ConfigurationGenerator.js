@@ -116,6 +116,7 @@ export default class IgniteConfigurationGenerator {
         if (available(['2.1.0', '2.3.0']))
             this.clusterQuery(cluster, available, cfg);
 
+        this.clusterRebalance(cluster, available, cfg);
         this.clusterServiceConfiguration(cluster.serviceConfigurations, cluster.caches, cfg);
         this.clusterSsl(cluster, available, cfg);
 
@@ -845,7 +846,8 @@ export default class IgniteConfigurationGenerator {
         }
 
         if (available('2.5.0')) {
-            bean.boolProperty('sslEnabled')
+            bean.longProperty('handshakeTimeout')
+                .boolProperty('sslEnabled')
                 .boolProperty('sslClientAuth')
                 .boolProperty('useIgniteSslContextFactory')
                 .emptyBeanProperty('sslContextFactory');
@@ -1580,7 +1582,7 @@ export default class IgniteConfigurationGenerator {
         return cfg;
     }
 
-    static dataRegionConfiguration(dataRegionCfg) {
+    static dataRegionConfiguration(dataRegionCfg, available) {
         const plcBean = new Bean('org.apache.ignite.configuration.DataRegionConfiguration', 'dataRegionCfg', dataRegionCfg, clusterDflts.dataStorageConfiguration.dataRegionConfigurations);
 
         plcBean.stringProperty('name')
@@ -1597,6 +1599,9 @@ export default class IgniteConfigurationGenerator {
 
         if (!plcBean.valueOf('swapPath'))
             plcBean.boolProperty('persistenceEnabled');
+
+        if (available('2.8.0'))
+            plcBean.boolProperty('lazyMemoryAllocation');
 
         return plcBean;
     }
@@ -1619,7 +1624,7 @@ export default class IgniteConfigurationGenerator {
             .longProperty('systemRegionInitialSize')
             .longProperty('systemRegionMaxSize');
 
-        const dfltDataRegionCfg = this.dataRegionConfiguration(_.get(dataStorageCfg, 'defaultDataRegionConfiguration'));
+        const dfltDataRegionCfg = this.dataRegionConfiguration(_.get(dataStorageCfg, 'defaultDataRegionConfiguration'), available);
 
         if (!dfltDataRegionCfg.isEmpty())
             storageBean.beanProperty('defaultDataRegionConfiguration', dfltDataRegionCfg);
@@ -1627,7 +1632,7 @@ export default class IgniteConfigurationGenerator {
         const dataRegionCfgs = [];
 
         _.forEach(_.get(dataStorageCfg, 'dataRegionConfigurations'), (dataRegionCfg) => {
-            const plcBean = this.dataRegionConfiguration(dataRegionCfg);
+            const plcBean = this.dataRegionConfiguration(dataRegionCfg, available);
 
             if (plcBean.isEmpty())
                 return;
@@ -1655,6 +1660,15 @@ export default class IgniteConfigurationGenerator {
         if (available2_7) {
             storageBean.longProperty('maxWalArchiveSize')
                 .intProperty('walCompactionLevel');
+        }
+
+        if (available('2.8.0')) {
+            storageBean.enumProperty('walPageCompression');
+
+            const compression = storageBean.valueOf('walPageCompression');
+
+            if (compression === 'ZSTD' || compression === 'LZ4')
+                storageBean.intProperty('walPageCompressionLevel');
         }
 
         storageBean.longProperty('walAutoArchiveAfterInactivity')
@@ -1883,6 +1897,18 @@ export default class IgniteConfigurationGenerator {
             .longProperty('walAutoArchiveAfterInactivity');
 
         cfg.beanProperty('persistentStoreConfiguration', bean);
+
+        return cfg;
+    }
+
+    // Generate cluster rebalance group.
+    static clusterRebalance(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
+        if (available('2.5.0')) {
+            cfg.intProperty('rebalanceBatchSize')
+                .longProperty('rebalanceBatchesPrefetchCount')
+                .longProperty('rebalanceTimeout')
+                .longProperty('rebalanceThrottle');
+        }
 
         return cfg;
     }

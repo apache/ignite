@@ -117,6 +117,12 @@ export type LoadBalancingKinds = 'RoundRobin'
     | 'WeightedRandom'
     | 'Custom';
 
+export type WalPageCompression = 'DISABLED'
+    | 'SKIP_GARBAGE'
+    | 'ZSTD'
+    | 'LZ4'
+    | 'SNAPPY'
+
 export type FailoverSPIs = 'JobStealing' | 'Never' | 'Always' | 'Custom';
 
 export interface Cluster {
