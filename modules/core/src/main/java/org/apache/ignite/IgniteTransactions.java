@@ -72,12 +72,12 @@ public interface IgniteTransactions {
     public Transaction txStart(TransactionConcurrency concurrency, TransactionIsolation isolation);
 
     /**
-     * Starts transaction with specified isolation, concurrency, timeout, invalidation flag,
+     * Starts transaction with specified isolation, concurrency, timeout,
      * and number of participating entries.
      *
      * @param concurrency Concurrency.
      * @param isolation Isolation.
-     * @param timeout Timeout.
+     * @param timeout Timeout in milliseconds.
      * @param txSize Number of entries participating in transaction (may be approximate).
      * @return New transaction.
      * @throws IllegalStateException If transaction is already started by this thread.

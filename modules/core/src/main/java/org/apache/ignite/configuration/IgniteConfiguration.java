@@ -1158,7 +1158,7 @@ public class IgniteConfiguration {
     /**
      * Sets keep alive time of thread pool size that will be used to process utility cache messages.
      *
-     * @param keepAliveTime Keep alive time of executor service to use for utility cache messages.
+     * @param keepAliveTime Keep alive time in milliseconds of executor service to use for utility cache messages.
      * @see IgniteConfiguration#getUtilityCacheThreadPoolSize()
      * @see IgniteConfiguration#getUtilityCacheKeepAliveTime()
      * @return {@code this} for chaining.
