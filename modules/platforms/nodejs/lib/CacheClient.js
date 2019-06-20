@@ -380,7 +380,8 @@ class CacheClient {
             },
             async (payload) => {
                 result = payload.readBoolean();
-            });
+            },
+            this._createAffinityHint(key));
         return result;
     }
 
@@ -563,8 +564,30 @@ class CacheClient {
     /**
      * @ignore
      */
+    async _localPeek(socket, key, peekModes = []) {
+        ArgumentChecker.notNull(key, 'key');
+        let value = null;
+        await socket.sendRequest(
+            BinaryUtils.OPERATION.CACHE_LOCAL_PEEK,
+            async (payload) => {
+                this._writeCacheInfo(payload);
+                await this._communicator.writeObject(payload, key, this._getKeyType());
+                payload.writeInteger(peekModes.length);
+                for (let mode of peekModes) {
+                    payload.writeByte(mode);
+                }
+            },
+            async (payload) => {
+                value = await this._communicator.readObject(payload, this._getValueType());
+            });
+        return value;
+    }
+
+    /**
+     * @ignore
+     */
     static _calculateId(name) {
-        return BinaryUtils.hashCode(name);
+        return BinaryUtils.strHashCode(name);
     }
 
     /**
@@ -619,7 +642,8 @@ class CacheClient {
                 this._writeCacheInfo(payload);
                 await this._writeKeyValue(payload, key, value);
             },
-            payloadReader);
+            payloadReader,
+            this._createAffinityHint(key));
     }
 
     /**
@@ -659,7 +683,8 @@ class CacheClient {
                 this._writeCacheInfo(payload);
                 await this._communicator.writeObject(payload, key, this._getKeyType());
             },
-            payloadReader);
+            payloadReader,
+            this._createAffinityHint(key));
     }
 
     /**
@@ -714,6 +739,17 @@ class CacheClient {
                 result = payload.readBoolean();
             });
         return result;
+    }
+
+    /**
+     * @ignore
+     */
+    _createAffinityHint(key) {
+        const affinityHint = {};
+        affinityHint.cacheId = this._cacheId;
+        affinityHint.key = key;
+        affinityHint.keyType = this._keyType;
+        return affinityHint;
     }
 }
 

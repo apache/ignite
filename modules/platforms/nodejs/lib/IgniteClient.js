@@ -65,9 +65,9 @@ class IgniteClient {
      * @return {IgniteClient} - new IgniteClient instance.
      */
     constructor(onStateChanged = null) {
-        const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
-        this._socket = new ClientFailoverSocket(onStateChanged);
-        this._communicator = new BinaryCommunicator(this._socket);
+        const Router = require('./internal/Router');
+        this._router = new Router(onStateChanged);
+        this._communicator = new BinaryCommunicator(this._router);
     }
 
     static get STATE() {
@@ -97,7 +97,7 @@ class IgniteClient {
     async connect(config) {
         ArgumentChecker.notEmpty(config, 'config');
         ArgumentChecker.hasType(config, 'config', false, IgniteClientConfiguration);
-        await this._socket.connect(config);
+        await this._router.connect(this._communicator, config);
     }
 
     /**
@@ -107,9 +107,7 @@ class IgniteClient {
      * Does nothing if the client already disconnected.
      */
     disconnect() {
-        if (this._socket) {
-            this._socket.disconnect();
-        }
+        this._router.disconnect();
     }
 
     /**
@@ -137,6 +135,7 @@ class IgniteClient {
             async (payload) => {
                 await this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
+
         return this._getCache(name, cacheConfig);
     }
 
@@ -196,10 +195,13 @@ class IgniteClient {
      */
     async destroyCache(name) {
         ArgumentChecker.notEmpty(name, 'name');
+
+        const cacheId = CacheClient._calculateId(name);
+
         await this._communicator.send(
             BinaryUtils.OPERATION.CACHE_DESTROY,
             async (payload) => {
-                payload.writeInteger(CacheClient._calculateId(name));
+                payload.writeInteger(cacheId);
             });
     }
 

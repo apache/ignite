@@ -17,6 +17,7 @@
 'use strict';
 
 const Decimal = require('decimal.js');
+const Long = require('long');
 const ObjectType = require('../ObjectType').ObjectType;
 const CompositeType = require('../ObjectType').CompositeType;
 const MapObjectType = require('../ObjectType').MapObjectType;
@@ -52,6 +53,7 @@ const OPERATION = Object.freeze({
     CACHE_REMOVE_KEYS : 1018,
     CACHE_REMOVE_ALL : 1019,
     CACHE_GET_SIZE : 1020,
+    CACHE_LOCAL_PEEK  : 1021,
     // Cache Configuration
     CACHE_GET_NAMES : 1050,
     CACHE_CREATE_WITH_NAME : 1051,
@@ -60,6 +62,7 @@ const OPERATION = Object.freeze({
     CACHE_GET_OR_CREATE_WITH_CONFIGURATION : 1054,
     CACHE_GET_CONFIGURATION : 1055,
     CACHE_DESTROY : 1056,
+    CACHE_PARTITIONS : 1101,
     // SQL and Scan Queries
     QUERY_SCAN : 2000,
     QUERY_SCAN_CURSOR_GET_PAGE : 2001,
@@ -572,7 +575,66 @@ class BinaryUtils {
         return fields;
     }
 
-    static hashCode(str) {
+    static async hashCode(object, communicator, typeCode = null) {
+        if (typeCode === null) {
+            typeCode = BinaryUtils.getTypeCode(BinaryUtils.calcObjectType(object));
+        }
+
+        if (BinaryUtils.isStandardType(typeCode)) {
+            return BinaryUtils.standardHashCode(object, typeCode);
+        }
+        else {
+            return await object._getHashCode(communicator);
+        }
+    }
+
+    // Calculates hash code for an object of a standard type
+    static standardHashCode(object, typeCode = null) {
+        if (typeCode === null) {
+            typeCode = BinaryUtils.getTypeCode(BinaryUtils.calcObjectType(object));
+        }
+
+        switch (typeCode) {
+            case BinaryUtils.TYPE_CODE.BYTE:
+            case BinaryUtils.TYPE_CODE.SHORT:
+            case BinaryUtils.TYPE_CODE.INTEGER:
+                return this.intHashCode(object);
+            case BinaryUtils.TYPE_CODE.LONG:
+                return this.longHashCode(object);
+            case BinaryUtils.TYPE_CODE.FLOAT:
+                return this.floatHashCode(object);
+            case BinaryUtils.TYPE_CODE.DOUBLE:
+                return this.doubleHashCode(object);
+            case BinaryUtils.TYPE_CODE.CHAR:
+                return this.charHashCode(object);
+            case BinaryUtils.TYPE_CODE.BOOLEAN:
+                return this.boolHashCode(object);
+            case BinaryUtils.TYPE_CODE.STRING:
+                return this.strHashCode(object);
+            case BinaryUtils.TYPE_CODE.UUID:
+                return this.uuidHashCode(object);
+            case BinaryUtils.TYPE_CODE.TIME:
+                return this.timeHashCode(object);
+            case BinaryUtils.TYPE_CODE.DATE:
+            case BinaryUtils.TYPE_CODE.TIMESTAMP:
+                return this.datetimeHashCode(object);
+            default:
+                return 0;
+        }
+    }
+
+    static contentHashCode(buffer, startPos, endPos) {
+        let hash = 1;
+        for (let i = startPos; i <= endPos; i++) {
+            hash = 31 * hash + buffer._buffer[i];
+            hash |= 0; // Convert to 32bit integer
+        }
+        return hash;
+    }
+
+    static strHashCode(str) {
+        // This method calcuates hash code for the String Ignite type
+        // bool must be a js 'string'
         let hash = 0, char;
         if (str && str.length > 0) {
             for (let i = 0; i < str.length; i++) {
@@ -584,17 +646,79 @@ class BinaryUtils {
         return hash;
     }
 
-    static hashCodeLowerCase(str) {
-        return BinaryUtils.hashCode(str ? str.toLowerCase() : str);
+    static strHashCodeLowerCase(str) {
+        return BinaryUtils.strHashCode(str ? str.toLowerCase() : str);
     }
 
-    static contentHashCode(buffer, startPos, endPos) {
-        let hash = 1;
-        for (let i = startPos; i <= endPos; i++) {
-            hash = 31 * hash + buffer._buffer[i];
-            hash |= 0; // Convert to 32bit integer
+    static charHashCode(char) {
+        // This method calcuates hash code for the Char Ignite type
+        // char must be a js 'string' of length 1
+        return char.charCodeAt(0);
+    }
+
+    static intHashCode(int) {
+        // This method calcuates hash code for Byte, Short or Integer Ignite types
+        // int must be a js 'number'
+        return int;
+    }
+
+    static longHashCode(long) {
+        // This method calcuates hash code for the Long Ignite type
+        // long must be a js 'number'
+        const longObj = Long.fromNumber(long);
+        return longObj.getLowBits() ^ longObj.getHighBits();
+    }
+
+    static boolHashCode(bool) {
+        // This method calcuates hash code for the Boolean Ignite type
+        // bool must be a js 'boolean'
+        return bool ? 1231 : 1237;
+    }
+
+    static floatHashCode(float) {
+        // This method calcuates hash code for the Float Ignite type
+        // float must be a js 'number'
+        const buf = new ArrayBuffer(4);
+        (new Float32Array(buf))[0] = float;
+        const int32arr = new Int32Array(buf);
+        return int32arr[0];
+    }
+
+    static doubleHashCode(double) {
+        // This method calcuates hash code for the Double Ignite type
+        // double must be a js 'number'
+        const buf = new ArrayBuffer(8);
+        (new Float64Array(buf))[0] = double;
+        const uint32arr = new Uint32Array(buf);
+        return uint32arr[0] ^ uint32arr[1];
+    }
+
+    static uuidHashCode(uuid) {
+        // This method calcuates hash code for the UUID Ignite type
+        // uuid must be a js Array of 'number' of length 16
+        const buf = Buffer.from(uuid);
+        let xor = 0;
+
+        for (let i = 0; i < 16; i += 4) {
+            xor ^= buf.readUInt32BE(i);
         }
-        return hash;
+
+        return xor;
+    }
+
+    static timeHashCode(time) {
+        // This method calcuates hash code for the Time Ignite type
+        // time must be an instance of Date
+        const midnight = new Date(time);
+        midnight.setHours(0, 0, 0, 0);
+        const totalmsec = time.getTime() - midnight.getTime();
+        return BinaryUtils.longHashCode(totalmsec);
+    }
+
+    static datetimeHashCode(date) {
+        // This method calcuates hash code for the Timestamp and Date Ignite types
+        // date must be an instance of Date or Timestamp
+        return BinaryUtils.longHashCode(date.getTime());
     }
 }
 

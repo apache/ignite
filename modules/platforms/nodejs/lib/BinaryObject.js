@@ -25,6 +25,7 @@ const BinaryType = require('./internal/BinaryType');
 const BinaryField = require('./internal/BinaryType').BinaryField;
 const BinaryTypeBuilder = require('./internal/BinaryType').BinaryTypeBuilder;
 const ArgumentChecker = require('./internal/ArgumentChecker');
+const MessageBuffer = require('./internal/MessageBuffer');
 const Logger = require('./internal/Logger');
 
 const HEADER_LENGTH = 24;
@@ -79,6 +80,7 @@ class BinaryObject {
         this._hasSchema = false;
         this._compactFooter = false;
         this._hasRawData = false;
+        this._hashCode = null;
     }
 
     /**
@@ -294,6 +296,25 @@ class BinaryObject {
     /**
      * @ignore
      */
+    async _getHashCode(communicator) {
+        if (this._hashCode !== null && !this._modified) {
+            return this._hashCode;
+        }
+
+        await this._write(communicator, new MessageBuffer());
+        return this._hashCode;
+    }
+
+    /**
+     * @ignore
+     */
+    _getTypeId() {
+        return this._typeBuilder.getTypeId();
+    }
+
+    /**
+     * @ignore
+     */
     async _write(communicator, buffer) {
         if (this._buffer && !this._modified) {
             buffer.writeBuffer(this._buffer.buffer, this._startPos, this._startPos + this._length);
@@ -356,8 +377,9 @@ class BinaryObject {
         // type id
         this._buffer.writeInteger(this._typeBuilder.getTypeId());
         // hash code
-        this._buffer.writeInteger(BinaryUtils.contentHashCode(
-            this._buffer, this._startPos + HEADER_LENGTH, this._schemaOffset - 1));
+        this._hashCode = BinaryUtils.contentHashCode(
+            this._buffer, this._startPos + HEADER_LENGTH, this._schemaOffset - 1);
+        this._buffer.writeInteger(this._hashCode);
         // length
         this._buffer.writeInteger(this._length);
         // schema id
@@ -428,7 +450,7 @@ class BinaryObject {
         // type id
         const typeId = this._buffer.readInteger();
         // hash code
-        this._buffer.readInteger();
+        this._hashCode = this._buffer.readInteger();
         // length
         this._length = this._buffer.readInteger();
         // schema id

@@ -26,12 +26,15 @@ const IgniteClientConfiguration = require('../IgniteClientConfiguration');
 const MessageBuffer = require('./MessageBuffer');
 const BinaryUtils = require('./BinaryUtils');
 const BinaryCommunicator = require('./BinaryCommunicator');
+const AffinityAwarenessUtils = require('./AffinityAwarenessUtils');
 const ArgumentChecker = require('./ArgumentChecker');
 const Logger = require('./Logger');
 
 const HANDSHAKE_SUCCESS_STATUS_CODE = 1;
 const REQUEST_SUCCESS_STATUS_CODE = 0;
 const PORT_DEFAULT = 10800;
+const FLAG_ERROR = 1;
+const FLAG_TOPOLOGY_CHANGED = 2;
 
 class ProtocolVersion {
 
@@ -77,14 +80,18 @@ class ProtocolVersion {
 const PROTOCOL_VERSION_1_0_0 = new ProtocolVersion(1, 0, 0);
 const PROTOCOL_VERSION_1_1_0 = new ProtocolVersion(1, 1, 0);
 const PROTOCOL_VERSION_1_2_0 = new ProtocolVersion(1, 2, 0);
+const PROTOCOL_VERSION_1_3_0 = new ProtocolVersion(1, 3, 0);
+const PROTOCOL_VERSION_1_4_0 = new ProtocolVersion(1, 4, 0);
 
 const SUPPORTED_VERSIONS = [
     // PROTOCOL_VERSION_1_0_0, // Support for QueryField precision/scale fields breaks 1.0.0 compatibility
     PROTOCOL_VERSION_1_1_0,
-    PROTOCOL_VERSION_1_2_0
+    PROTOCOL_VERSION_1_2_0,
+    PROTOCOL_VERSION_1_3_0,
+    PROTOCOL_VERSION_1_4_0
 ];
 
-const CURRENT_VERSION = PROTOCOL_VERSION_1_2_0;
+const CURRENT_VERSION = PROTOCOL_VERSION_1_4_0;
 
 const STATE = Object.freeze({
     INITIAL : 0,
@@ -95,22 +102,27 @@ const STATE = Object.freeze({
 
 class ClientSocket {
 
-    constructor(endpoint, config, onSocketDisconnect) {
+    constructor(endpoint, config, communicator, onSocketDisconnect, onAffinityTopologyChange) {
         ArgumentChecker.notEmpty(endpoint, 'endpoints');
         this._endpoint = endpoint;
         this._parseEndpoint(endpoint);
         this._config = config;
+        this._communicator = communicator;
+        this._onSocketDisconnect = onSocketDisconnect;
+        this._onAffinityTopologyChange = onAffinityTopologyChange;
+
         this._state = STATE.INITIAL;
-        this._socket = null;
+        this._requests = new Map();
         this._requestId = Long.ZERO;
         this._handshakeRequestId = null;
         this._protocolVersion = null;
-        this._requests = new Map();
-        this._onSocketDisconnect = onSocketDisconnect;
-        this._error = null;
         this._wasConnected = false;
+        this._socket = null;
         this._buffer = null;
         this._offset = 0;
+        this._error = null;
+
+        this._nodeUuid = null;
     }
 
     async connect() {
@@ -128,6 +140,14 @@ class ClientSocket {
         const id = this._requestId;
         this._requestId = this._requestId.add(1);
         return id;
+    }
+
+    get endpoint() {
+        return this._endpoint;
+    }
+
+    get nodeUUID() {
+        return this._nodeUuid;
     }
 
     async sendRequest(opCode, payloadWriter, payloadReader = null) {
@@ -153,6 +173,7 @@ class ClientSocket {
         const options = Object.assign({},
             this._config._options,
             { host : this._host, port : this._port, version : this._version });
+
         if (this._config._useTLS) {
             this._socket = tls.connect(options, onConnected);
         }
@@ -199,6 +220,7 @@ class ClientSocket {
         if (this._state === STATE.DISCONNECTED) {
             return;
         }
+
         if (this._buffer) {
             this._buffer.concat(message);
             this._buffer.position = this._offset;
@@ -206,45 +228,45 @@ class ClientSocket {
         else {
             this._buffer = MessageBuffer.from(message, 0);
         }
+
         while (this._buffer && this._offset < this._buffer.length) {
+            const buffer = this._buffer;
             // Response length
-            const length = this._buffer.readInteger() + BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
-            if (this._buffer.length < this._offset + length) {
+            const length = buffer.readInteger() + BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
+
+            if (buffer.length < this._offset + length) {
               break;
             }
             this._offset += length;
 
-            let requestId, isSuccess;
+            let requestId;
             const isHandshake = this._state === STATE.HANDSHAKE;
 
             if (isHandshake) {
                 // Handshake status
-                isSuccess = (this._buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE);
                 requestId = this._handshakeRequestId.toString();
             }
             else {
                 // Request id
-                requestId = this._buffer.readLong().toString();
-                // Status code
-                isSuccess = (this._buffer.readInteger() === REQUEST_SUCCESS_STATUS_CODE);
+                requestId = buffer.readLong().toString();
             }
 
-            this._logMessage(requestId, false, this._buffer.data);
+            this._logMessage(requestId, false, buffer.getSlice(this._offset - length, length));
 
-            const buffer = this._buffer;
-            if (this._offset === this._buffer.length) {
+            if (this._offset === buffer.length) {
                 this._buffer = null;
                 this._offset = 0;
             }
+
 
             if (this._requests.has(requestId)) {
                 const request = this._requests.get(requestId);
                 this._requests.delete(requestId);
                 if (isHandshake) {
-                    await this._finalizeHandshake(buffer, request, isSuccess);
+                    await this._finalizeHandshake(buffer, request);
                 }
                 else {
-                    await this._finalizeResponse(buffer, request, isSuccess);
+                    await this._finalizeResponse(buffer, request);
                 }
             }
             else {
@@ -253,7 +275,9 @@ class ClientSocket {
         }
     }
 
-    async _finalizeHandshake(buffer, request, isSuccess) {
+    async _finalizeHandshake(buffer, request) {
+        const isSuccess = buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE;
+
         if (!isSuccess) {
             // Server protocol version
             const serverVersion = new ProtocolVersion();
@@ -281,13 +305,39 @@ class ClientSocket {
             }
         }
         else {
+            if (this._protocolVersion.compareTo(PROTOCOL_VERSION_1_4_0) >= 0) {
+                this._nodeUuid = await this._communicator.readObject(buffer, BinaryUtils.TYPE_CODE.UUID);
+            }
+
             this._state = STATE.CONNECTED;
             this._wasConnected = true;
             request.resolve();
         }
     }
 
-    async _finalizeResponse(buffer, request, isSuccess) {
+    async _finalizeResponse(buffer, request) {
+        let statusCode, isSuccess;
+
+        if (this._protocolVersion.compareTo(PROTOCOL_VERSION_1_4_0) < 0) {
+            // Check status code
+            statusCode = buffer.readInteger();
+            isSuccess = statusCode === REQUEST_SUCCESS_STATUS_CODE;
+        }
+        else {
+            // Check flags
+            let flags = buffer.readShort();
+            isSuccess = !(flags & FLAG_ERROR);
+
+            if (flags & FLAG_TOPOLOGY_CHANGED) {
+                const newVersion = new AffinityAwarenessUtils.AffinityTopologyVersion(buffer);
+                await this._onAffinityTopologyChange(newVersion);
+            }
+
+            if (!isSuccess) {
+                statusCode = buffer.readInteger();
+            }
+        }
+
         if (!isSuccess) {
             // Error message
             const errMessage = BinaryCommunicator.readString(buffer);
@@ -344,7 +394,7 @@ class ClientSocket {
             this._requests.delete(id);
         });
         if (this._wasConnected && callOnDisconnect && this._onSocketDisconnect) {
-            this._onSocketDisconnect(this._error);
+            this._onSocketDisconnect(this, this._error);
         }
         if (close) {
             this._onSocketDisconnect = null;
