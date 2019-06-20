@@ -16,8 +16,11 @@
 import ctypes
 
 from pyignite.constants import *
+from pyignite.utils import unsigned
 from .base import IgniteDataType
 from .type_codes import *
+from .type_ids import *
+from .type_names import *
 
 
 __all__ = [
@@ -33,10 +36,11 @@ class DataObject(IgniteDataType):
     Primitive data objects are built of primitive data prepended by
     the corresponding type code.
     """
-
+    _type_name = None
+    _type_id = None
+    _object_c_type = None
     c_type = None
     type_code = None
-    _object_c_type = None
 
     @classmethod
     def build_c_type(cls):
@@ -77,45 +81,88 @@ class DataObject(IgniteDataType):
 
 
 class ByteObject(DataObject):
+    _type_name = NAME_BYTE
+    _type_id = TYPE_BYTE
     c_type = ctypes.c_byte
     type_code = TC_BYTE
     pythonic = int
     default = 0
 
+    @staticmethod
+    def hashcode(value: int, *args, **kwargs) -> int:
+        return value
+
 
 class ShortObject(DataObject):
+    _type_name = NAME_SHORT
+    _type_id = TYPE_SHORT
     c_type = ctypes.c_short
     type_code = TC_SHORT
     pythonic = int
     default = 0
 
+    @staticmethod
+    def hashcode(value: int, *args, **kwargs) -> int:
+        return value
+
 
 class IntObject(DataObject):
+    _type_name = NAME_INT
+    _type_id = TYPE_INT
     c_type = ctypes.c_int
     type_code = TC_INT
     pythonic = int
     default = 0
 
+    @staticmethod
+    def hashcode(value: int, *args, **kwargs) -> int:
+        return value
+
 
 class LongObject(DataObject):
+    _type_name = NAME_LONG
+    _type_id = TYPE_LONG
     c_type = ctypes.c_longlong
     type_code = TC_LONG
     pythonic = int
     default = 0
 
+    @staticmethod
+    def hashcode(value: int, *args, **kwargs) -> int:
+        return value ^ (unsigned(value, ctypes.c_ulonglong) >> 32)
+
 
 class FloatObject(DataObject):
+    _type_name = NAME_FLOAT
+    _type_id = TYPE_FLOAT
     c_type = ctypes.c_float
     type_code = TC_FLOAT
     pythonic = float
     default = 0.0
 
+    @staticmethod
+    def hashcode(value: float, *args, **kwargs) -> int:
+        return ctypes.cast(
+            ctypes.pointer(ctypes.c_float(value)),
+            ctypes.POINTER(ctypes.c_int)
+        ).contents.value
+
 
 class DoubleObject(DataObject):
+    _type_name = NAME_DOUBLE
+    _type_id = TYPE_DOUBLE
     c_type = ctypes.c_double
     type_code = TC_DOUBLE
     pythonic = float
     default = 0.0
+
+    @staticmethod
+    def hashcode(value: float, *args, **kwargs) -> int:
+        bits = ctypes.cast(
+            ctypes.pointer(ctypes.c_double(value)),
+            ctypes.POINTER(ctypes.c_longlong)
+        ).contents.value
+        return (bits & 0xffffffff) ^ (unsigned(bits, ctypes.c_longlong) >> 32)
 
 
 class CharObject(DataObject):
@@ -125,10 +172,16 @@ class CharObject(DataObject):
     to/from UTF-8 to keep the coding hassle to minimum. Bear in mind
     though: decoded character may take 1..4 bytes in UTF-8.
     """
+    _type_name = NAME_CHAR
+    _type_id = TYPE_CHAR
     c_type = ctypes.c_short
     type_code = TC_CHAR
     pythonic = str
     default = ' '
+
+    @staticmethod
+    def hashcode(value: str, *args, **kwargs) -> int:
+        return ord(value)
 
     @classmethod
     def to_python(cls, ctype_object, *args, **kwargs):
@@ -152,7 +205,13 @@ class CharObject(DataObject):
 
 
 class BoolObject(DataObject):
+    _type_name = NAME_BOOLEAN
+    _type_id = TYPE_BOOLEAN
     c_type = ctypes.c_bool
     type_code = TC_BOOL
     pythonic = bool
     default = False
+
+    @staticmethod
+    def hashcode(value: bool, *args, **kwargs) -> int:
+        return 1231 if value else 1237

@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from pyignite.queries.op_codes import OP_SUCCESS
 from pyignite.datatypes import String
 
 
@@ -32,7 +33,7 @@ class APIResult:
     value = None
 
     def __init__(self, response: 'Response'):
-        self.status = response.status_code
+        self.status = getattr(response, 'status_code', OP_SUCCESS)
         self.query_id = response.query_id
         if hasattr(response, 'error_message'):
             self.message = String.to_python(response.error_message)

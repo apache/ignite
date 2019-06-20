@@ -13,20 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from typing import Iterable, Union
+from typing import Any, Iterable, Optional, Union
 
 from pyignite.queries.op_codes import *
 from pyignite.datatypes import (
     Map, Bool, Byte, Int, Long, AnyDataArray, AnyDataObject,
 )
 from pyignite.datatypes.key_value import PeekModes
-from pyignite.queries import Query, Response
+from pyignite.queries import Query
 from pyignite.utils import cache_id
 
 
 def cache_put(
-    connection: 'Connection', cache: Union[str, int], key, value,
-    key_hint=None, value_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any, value: Any,
+    key_hint: 'IgniteDataType' = None, value_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Puts a value with a given key to cache (overwriting existing value if any).
@@ -67,8 +68,9 @@ def cache_put(
 
 
 def cache_get(
-    connection: 'Connection', cache: Union[str, int], key,
-    key_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any,
+    key_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Retrieves a value from cache by key.
@@ -115,7 +117,7 @@ def cache_get(
 
 def cache_get_all(
     connection: 'Connection', cache: Union[str, int], keys: Iterable,
-    binary=False, query_id=None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Retrieves multiple key-value pairs from cache.
@@ -160,7 +162,7 @@ def cache_get_all(
 
 def cache_put_all(
     connection: 'Connection', cache: Union[str, int], pairs: dict,
-    binary=False, query_id=None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Puts multiple key-value pairs to cache (overwriting existing associations
@@ -200,8 +202,9 @@ def cache_put_all(
 
 
 def cache_contains_key(
-    connection: 'Connection', cache: Union[str, int], key,
-    key_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any,
+    key_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Returns a value indicating whether given key is present in cache.
@@ -248,7 +251,7 @@ def cache_contains_key(
 
 def cache_contains_keys(
     connection: 'Connection', cache: Union[str, int], keys: Iterable,
-    binary=False, query_id=None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Returns a value indicating whether all given keys are present in cache.
@@ -292,8 +295,9 @@ def cache_contains_keys(
 
 
 def cache_get_and_put(
-    connection: 'Connection', cache: Union[str, int], key, value,
-    key_hint=None, value_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any, value: Any,
+    key_hint: 'IgniteDataType' = None, value_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Puts a value with a given key to cache, and returns the previous value
@@ -345,8 +349,9 @@ def cache_get_and_put(
 
 
 def cache_get_and_replace(
-    connection: 'Connection', cache: Union[str, int], key, value,
-    key_hint=None, value_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any, value: Any,
+    key_hint: 'IgniteDataType' = None, value_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Puts a value with a given key to cache, returning previous value
@@ -397,8 +402,9 @@ def cache_get_and_replace(
 
 
 def cache_get_and_remove(
-    connection: 'Connection', cache: Union[str, int], key,
-    key_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any,
+    key_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Removes the cache entry with specified key, returning the value.
@@ -442,8 +448,9 @@ def cache_get_and_remove(
 
 
 def cache_put_if_absent(
-    connection: 'Connection', cache: Union[str, int], key, value,
-    key_hint=None, value_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any, value: Any,
+    key_hint: 'IgniteDataType' = None, value_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Puts a value with a given key to cache only if the key
@@ -494,8 +501,9 @@ def cache_put_if_absent(
 
 
 def cache_get_and_put_if_absent(
-    connection: 'Connection', cache: Union[str, int], key, value,
-    key_hint=None, value_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any, value: Any,
+    key_hint: 'IgniteDataType' = None, value_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Puts a value with a given key to cache only if the key does not
@@ -546,8 +554,9 @@ def cache_get_and_put_if_absent(
 
 
 def cache_replace(
-    connection: 'Connection', cache: Union[str, int], key, value,
-    key_hint=None, value_hint=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any, value: Any,
+    key_hint: 'IgniteDataType' = None, value_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Puts a value with a given key to cache only if the key already exist.
@@ -598,9 +607,10 @@ def cache_replace(
 
 
 def cache_replace_if_equals(
-    connection: 'Connection', cache: Union[str, int], key, sample, value,
-    key_hint=None, sample_hint=None, value_hint=None,
-    binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int],
+    key: Any, sample: Any, value: Any, key_hint: 'IgniteDatatType' = None,
+    sample_hint: 'IgniteDataType' = None, value_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Puts a value with a given key to cache only if the key already exists
@@ -657,8 +667,8 @@ def cache_replace_if_equals(
 
 
 def cache_clear(
-    connection: 'Connection', cache: Union[str, int], binary=False,
-    query_id=None,
+    connection: 'Connection', cache: Union[str, int],
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Clears the cache without notifying listeners or cache writers.
@@ -692,8 +702,9 @@ def cache_clear(
 
 
 def cache_clear_key(
-    connection: 'Connection', cache: Union[str, int], key,
-    key_hint: object=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any,
+    key_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Clears the cache key without notifying listeners or cache writers.
@@ -733,7 +744,7 @@ def cache_clear_key(
 
 def cache_clear_keys(
     connection: 'Connection', cache: Union[str, int], keys: list,
-    binary=False, query_id=None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Clears the cache keys without notifying listeners or cache writers.
@@ -770,8 +781,9 @@ def cache_clear_keys(
 
 
 def cache_remove_key(
-    connection: 'Connection', cache: Union[str, int], key,
-    key_hint: object=None, binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any,
+    key_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Clears the cache key without notifying listeners or cache writers.
@@ -817,9 +829,9 @@ def cache_remove_key(
 
 
 def cache_remove_if_equals(
-    connection: 'Connection', cache: Union[str, int], key, sample,
-    key_hint=None, sample_hint=None,
-    binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], key: Any, sample: Any,
+    key_hint: 'IgniteDataType' = None, sample_hint: 'IgniteDataType' = None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Removes an entry with a given key if provided value is equal to
@@ -872,7 +884,7 @@ def cache_remove_if_equals(
 
 def cache_remove_keys(
     connection: 'Connection', cache: Union[str, int], keys: Iterable,
-    binary=False, query_id=None,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Removes entries with given keys, notifying listeners and cache writers.
@@ -909,8 +921,8 @@ def cache_remove_keys(
 
 
 def cache_remove_all(
-    connection: 'Connection', cache: Union[str, int], binary=False,
-    query_id=None,
+    connection: 'Connection', cache: Union[str, int],
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Removes all entries from cache, notifying listeners and cache writers.
@@ -944,8 +956,8 @@ def cache_remove_all(
 
 
 def cache_get_size(
-    connection: 'Connection', cache: Union[str, int], peek_modes=0,
-    binary=False, query_id=None,
+    connection: 'Connection', cache: Union[str, int], peek_modes: int = 0,
+    binary: bool = False, query_id: Optional[int] = None,
 ) -> 'APIResult':
     """
     Gets the number of entries in cache.
@@ -992,4 +1004,65 @@ def cache_get_size(
     )
     if result.status == 0:
         result.value = result.value['count']
+    return result
+
+
+def cache_local_peek(
+    conn: 'Connection', cache: Union[str, int],
+    key: Any, key_hint: 'IgniteDataType' = None, peek_modes: int = 0,
+    binary: bool = False, query_id: Optional[int] = None,
+) -> 'APIResult':
+    """
+    Peeks at in-memory cached value using default optional peek mode.
+
+    This method will not load value from any persistent store or from a remote
+    node.
+
+    :param conn: connection: connection to Ignite server,
+    :param cache: name or ID of the cache,
+    :param key: entry key,
+    :param key_hint: (optional) Ignite data type, for which the given key
+     should be converted,
+    :param peek_modes: (optional) limit count to near cache partition
+     (PeekModes.NEAR), primary cache (PeekModes.PRIMARY), or backup cache
+     (PeekModes.BACKUP). Defaults to all cache partitions (PeekModes.ALL),
+    :param binary: (optional) pass True to keep the value in binary form.
+     False by default,
+    :param query_id: (optional) a value generated by client and returned as-is
+     in response.query_id. When the parameter is omitted, a random value
+     is generated,
+    :return: API result data object. Contains zero status and a peeked value
+     (null if not found).
+    """
+    if not isinstance(peek_modes, (list, tuple)):
+        if peek_modes == 0:
+            peek_modes = []
+        else:
+            peek_modes = [peek_modes]
+
+    query_struct = Query(
+        OP_CACHE_LOCAL_PEEK,
+        [
+            ('hash_code', Int),
+            ('flag', Byte),
+            ('key', key_hint or AnyDataObject),
+            ('peek_modes', PeekModes),
+        ],
+        query_id=query_id,
+    )
+    result = query_struct.perform(
+        conn,
+        query_params={
+            'hash_code': cache_id(cache),
+            'flag': 1 if binary else 0,
+            'key': key,
+            'peek_modes': peek_modes,
+        },
+        response_config=[
+            ('value', AnyDataObject),
+        ],
+    )
+    if result.status != 0:
+        return result
+    result.value = result.value['value']
     return result

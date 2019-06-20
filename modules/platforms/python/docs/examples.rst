@@ -445,27 +445,24 @@ When connection to the server is broken or timed out,
 (`OSError` or `SocketError`), but keeps its constructor's parameters intact
 and tries to reconnect transparently.
 
-When there's no way for :class:`~pyignite.client.Client` to reconnect, it
-raises a special :class:`~pyignite.exceptions.ReconnectError` exception.
+When :class:`~pyignite.client.Client` detects that all nodes in the list are
+failed without the possibility of restoring connection, it raises a special
+:class:`~pyignite.exceptions.ReconnectError` exception.
 
-The following example features a simple node list traversal failover mechanism.
 Gather 3 Ignite nodes on `localhost` into one cluster and run:
 
 .. literalinclude:: ../examples/failover.py
   :language: python
-  :lines: 16-49
+  :lines: 16-51
 
 Then try shutting down and restarting nodes, and see what happens.
 
 .. literalinclude:: ../examples/failover.py
   :language: python
-  :lines: 51-61
+  :lines: 53-65
 
 Client reconnection do not require an explicit user action, like calling
-a special method or resetting a parameter. Note, however, that reconnection
-is lazy: it happens only if (and when) it is needed. In this example,
-the automatic reconnection happens, when the script checks upon the last
-saved value:
+a special method or resetting a parameter.
 
 .. literalinclude:: ../examples/failover.py
   :language: python
@@ -474,29 +471,6 @@ saved value:
 It means that instead of checking the connection status it is better for
 `pyignite` user to just try the supposed data operations and catch
 the resulting exception.
-
-:py:meth:`~pyignite.connection.Connection.connect` method accepts any
-iterable, not just list. It means that you can implement any reconnection
-policy (round-robin, nodes prioritization, pause on reconnect or graceful
-backoff) with a generator.
-
-`pyignite` comes with a sample
-:class:`~pyignite.connection.generators.RoundRobin` generator. In the above
-example try to replace
-
-.. literalinclude:: ../examples/failover.py
-  :language: python
-  :lines: 29
-
-with
-
-.. code-block:: python3
-
-    client.connect(RoundRobin(nodes, max_reconnects=20))
-
-The client will try to reconnect to node 1 after node 3 is crashed, then to
-node 2, et c. At least one node should be active for the
-:class:`~pyignite.connection.generators.RoundRobin` to work properly.
 
 SSL/TLS
 -------
