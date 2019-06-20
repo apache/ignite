@@ -68,7 +68,6 @@ import org.h2.table.IndexColumn;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableType;
-import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -1277,7 +1276,7 @@ public class GridH2Table extends TableBase {
                 }
 
                 try {
-                    Column c = new Column(col.name(), DataType.getTypeFromClass(Class.forName(col.typeName())));
+                    Column c = new Column(col.name(), H2Utils.getTypeFromClass(Class.forName(col.typeName())));
 
                     c.setNullable(col.isNullable());
 
