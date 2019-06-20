@@ -93,7 +93,7 @@ public class AgentConfiguration {
     @Parameter(names = {"-dd", "--disable-demo"}, description = "Disable demo mode on this agent " +
         "                             " +
         "      Default value: false")
-    private Boolean disableDemo;
+    private Boolean disableDemo = Boolean.FALSE;
 
     /** */
     @Parameter(names = {"-nks", "--node-key-store"},
@@ -142,7 +142,7 @@ public class AgentConfiguration {
 
     /** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
-    private Boolean help;
+    private Boolean help = Boolean.FALSE;
 
     /**
      * @return Tokens.
