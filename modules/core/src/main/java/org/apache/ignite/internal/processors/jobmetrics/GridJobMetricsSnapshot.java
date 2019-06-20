@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.jobmetrics;
 
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
