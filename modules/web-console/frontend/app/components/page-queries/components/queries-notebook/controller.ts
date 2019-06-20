@@ -18,7 +18,7 @@
 import _ from 'lodash';
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import id8 from 'app/utils/id8';
-import {Subject, defer, from, of, merge, timer, EMPTY} from 'rxjs';
+import {Subject, defer, from, of, merge, timer, EMPTY, combineLatest} from 'rxjs';
 import {catchError, distinctUntilChanged, expand, exhaustMap, filter, finalize, first, ignoreElements, map, pluck, switchMap, takeUntil, takeWhile, take, tap} from 'rxjs/operators';
 
 import {CSV} from 'app/services/CSV';
@@ -964,20 +964,21 @@ export class NotebookCtrl {
             const cluster$ = agentMgr.connectionSbj.pipe(
                 pluck('cluster'),
                 distinctUntilChanged(),
-                tap((cluster) => {
-                    this.clusterIsAvailable = (!!cluster && cluster.active === true) || agentMgr.isDemoMode();
-                })
             );
 
-            this.refresh$ = cluster$.pipe(
-                switchMap((cluster) => {
-                    if (!cluster && !agentMgr.isDemoMode()) {
-                        return of(EMPTY).pipe(
-                            tap(() => {
-                                $scope.caches = [];
-                            })
-                        );
-                    }
+            const checkState$ = combineLatest(
+                cluster$,
+                agentMgr.currentCluster$.pipe(pluck('state'), distinctUntilChanged())
+            );
+
+            this.refresh$ = checkState$.pipe(
+                tap(([cluster, state]) => {
+                    if (state !== 'CONNECTED' || (!cluster && !agentMgr.isDemoMode()))
+                        $scope.caches = [];
+                }),
+                switchMap(([cluster, state]) => {
+                    if (state !== 'CONNECTED' || (!cluster && !agentMgr.isDemoMode()))
+                        return of(EMPTY);
 
                     return of(cluster).pipe(
                         tap(() => Loading.start('sqlLoading')),
