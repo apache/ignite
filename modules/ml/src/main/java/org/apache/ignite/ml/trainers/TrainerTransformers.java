@@ -59,6 +59,7 @@ public class TrainerTransformers {
         PredictionsAggregator aggregator) {
         return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator);
     }
+
     /**
      * Add bagging logic to a given trainer.
      *
@@ -152,7 +153,7 @@ public class TrainerTransformers {
         // If we need to do projection, do it.
         if (mappings != null) {
             for (int i = 0; i < models.size(); i++)
-                models.get(i).setMapping(getProjector(mappings.get(i)));
+                models.get(i).setMapping(VectorUtils.getProjector(mappings.get(i)));
         }
 
         double learningTime = (double)(System.currentTimeMillis() - startTs) / 1000.0;
@@ -172,22 +173,6 @@ public class TrainerTransformers {
      */
     public static int[] getMapping(int featuresVectorSize, int maximumFeaturesCntPerMdl, long seed) {
         return Utils.selectKDistinct(featuresVectorSize, maximumFeaturesCntPerMdl, new Random(seed));
-    }
-
-    /**
-     * Get projector from index mapping.
-     *
-     * @param mapping Index mapping.
-     * @return Projector.
-     */
-    public static IgniteFunction<Vector, Vector> getProjector(int[] mapping) {
-        return v -> {
-            Vector res = VectorUtils.zeroes(mapping.length);
-            for (int i = 0; i < mapping.length; i++)
-                res.set(i, v.get(mapping[i]));
-
-            return res;
-        };
     }
 
     /**

@@ -25,11 +25,23 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAtomicPrimarySyncBackPressureTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxCachePrimarySyncTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxConcurrentRemoveObjectsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateConsistencyHistoryRebalanceTest;
 import org.apache.ignite.internal.stat.IoStatisticsCachePersistenceSelfTest;
 import org.apache.ignite.internal.stat.IoStatisticsCacheSelfTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryOneBackupTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateOnePrimaryTwoBackupsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStatePutTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateTwoPrimaryTwoBackupsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateConsistencyTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateWithFilterTest;
 import org.junit.runner.RunWith;
 
 /**
@@ -49,6 +61,7 @@ public class IgniteCacheMvccTestSuite9 {
         ignoredTests.add(IgniteTxConcurrentRemoveObjectsTest.class);
 
         // Non supported modes.
+        ignoredTests.add(IgniteCachePrimarySyncTest.class);
         ignoredTests.add(IgniteTxCachePrimarySyncTest.class);
 
         // Atomic caches.
@@ -57,6 +70,19 @@ public class IgniteCacheMvccTestSuite9 {
         // Other non-tx tests.
         ignoredTests.add(IgniteCacheGetCustomCollectionsSelfTest.class);
         ignoredTests.add(IgniteCacheLoadRebalanceEvictionSelfTest.class);
+
+        // Non-mvcc counters and history rebalance.
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryOneBackupHistoryRebalanceTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryOneBackupTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsFailAllHistoryRebalanceTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsFailAllTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest.class);
+        ignoredTests.add(TxPartitionCounterStateOnePrimaryTwoBackupsTest.class);
+        ignoredTests.add(TxPartitionCounterStatePutTest.class);
+        ignoredTests.add(TxPartitionCounterStateTwoPrimaryTwoBackupsTest.class);
+        ignoredTests.add(TxPartitionCounterStateWithFilterTest.class);
+        ignoredTests.add(TxPartitionCounterStateConsistencyTest.class);
+        ignoredTests.add(TxPartitionCounterStateConsistencyHistoryRebalanceTest.class);
 
         // IO statistics.
         ignoredTests.add(IoStatisticsCacheSelfTest.class);

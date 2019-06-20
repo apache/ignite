@@ -34,15 +34,12 @@ import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 
 /**
  * Test affinity mapper.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractUsersAffinityMapperSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int KEY_CNT = 1000;

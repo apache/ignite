@@ -52,16 +52,14 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
+import static org.apache.ignite.testframework.GridTestUtils.RunnableX;
 
 /**
  * Concurrency tests for dynamic index create/drop.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicIndexAbstractSelfTest {
     /** Test duration. */
     private static final long TEST_DUR = 10_000L;
@@ -677,7 +675,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         // Check index create.
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1));
 
                 queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false, 0).get();
@@ -690,7 +688,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
 
         // Check index drop.
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 if (!restartCache)
                     queryProcessor(srv).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_1, false).get();
             }
@@ -710,7 +708,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_2);
 
         reconnectClientNode(srv, cli, restartCache, new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 if (!restartCache)
                     queryProcessor(srv).dynamicIndexDrop(CACHE_NAME, CACHE_NAME, IDX_NAME_2, false).get();
 
@@ -735,7 +733,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
      * @throws Exception If failed.
      */
     private void reconnectClientNode(final Ignite srvNode, final Ignite cliNode, final boolean restart,
-        final RunnableX clo) throws Exception {
+        final Runnable clo) throws Exception {
         IgniteClientReconnectAbstractTest.reconnectClientNode(log, cliNode, srvNode, new Runnable() {
             @Override public void run() {
                 if (restart) {

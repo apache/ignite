@@ -29,6 +29,8 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-5879
+ * TODO FIXME Expiration policy causes many partition validation warnings during test
+ * https://issues.apache.org/jira/browse/IGNITE-11791
  */
 public class IgnitePdsContinuousRestartTestWithExpiryPolicy extends IgnitePdsContinuousRestartTest {
     /**
@@ -59,7 +61,7 @@ public class IgnitePdsContinuousRestartTestWithExpiryPolicy extends IgnitePdsCon
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
 
         super.beforeTest();
     }

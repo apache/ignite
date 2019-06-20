@@ -38,13 +38,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     /** */
     public static final int NODES = 3;
@@ -178,8 +175,6 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
         // as workaround start first server node in test jvm and then stop it.
         stopGrid(0);
     }
-
-
 
     /**
      * @param useStreamer Use streamer.

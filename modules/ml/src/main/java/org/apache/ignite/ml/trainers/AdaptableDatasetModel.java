@@ -71,7 +71,7 @@ public class AdaptableDatasetModel<I, O, IW, OW, M extends IgniteModel<IW, OW>> 
      * @param <I1> Type of function applied before this model.
      * @return New {@code AdaptableDatasetModel} which is a composition of the form {@code thisMdl . before}.
      */
-    public <I1> AdaptableDatasetModel<I1, O, IW, OW, M> andBefore(IgniteFunction<I1, I> before) {
+    @Override public <I1> AdaptableDatasetModel<I1, O, IW, OW, M> andBefore(IgniteFunction<I1, I> before) {
         IgniteFunction<I1, IW> function = i -> this.before.apply(before.apply(i));
         return new AdaptableDatasetModel<>(function, mdl, after);
     }

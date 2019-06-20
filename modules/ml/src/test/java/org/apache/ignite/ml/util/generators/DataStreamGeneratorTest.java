@@ -37,6 +37,7 @@ import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -54,7 +55,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testUnlabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -68,7 +69,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testLabeled() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -83,7 +84,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testMapVectors() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -98,7 +99,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testBlur() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -113,7 +114,7 @@ public class DataStreamGeneratorTest {
     @Test
     public void testAsMap() {
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> new LabeledVector<>(VectorUtils.of(1., 2.), 100.));
             }
         };
@@ -132,7 +133,7 @@ public class DataStreamGeneratorTest {
     public void testAsDatasetBuilder() throws Exception {
         AtomicInteger counter = new AtomicInteger();
         DataStreamGenerator generator = new DataStreamGenerator() {
-            @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+            @Override public Stream<LabeledVector<Double>> labeled() {
                 return Stream.generate(() -> {
                     int value = counter.getAndIncrement();
                     return new LabeledVector<>(VectorUtils.of(value), (double)value % 2);
@@ -175,7 +176,7 @@ public class DataStreamGeneratorTest {
         DatasetBuilder<Vector, Double> b1) {
         return b1.build(LearningEnvironmentBuilder.defaultBuilder(),
             new EmptyContextBuilder<>(),
-            new LabeledDatasetPartitionDataBuilderOnHeap<>((v, l) -> v, (v, l) -> l)
+            new LabeledDatasetPartitionDataBuilderOnHeap<>((Preprocessor<Vector, Double>)LabeledVector::new)
         );
     }
 

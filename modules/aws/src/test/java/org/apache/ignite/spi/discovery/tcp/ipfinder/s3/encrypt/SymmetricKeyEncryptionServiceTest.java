@@ -23,13 +23,10 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Class to test {@link SymmetricKeyEncryptionService}.
  */
-@RunWith(JUnit4.class)
 public class SymmetricKeyEncryptionServiceTest extends GridCommonAbstractTest {
     /** Symmetric key encryption service. */
     private SymmetricKeyEncryptionService encryptionSvc;

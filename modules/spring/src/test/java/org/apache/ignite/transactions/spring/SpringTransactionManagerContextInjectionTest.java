@@ -24,8 +24,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +32,6 @@ import org.springframework.context.annotation.Configuration;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class SpringTransactionManagerContextInjectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

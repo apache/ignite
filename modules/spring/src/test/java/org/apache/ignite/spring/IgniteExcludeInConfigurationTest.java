@@ -27,15 +27,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
  * Checks excluding properties, beans with not existing classes in spring.
  */
-@RunWith(JUnit4.class)
 public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
     private URL cfgLocation = U.resolveIgniteUrl(
         "modules/spring/src/test/java/org/apache/ignite/spring/sprint-exclude.xml");

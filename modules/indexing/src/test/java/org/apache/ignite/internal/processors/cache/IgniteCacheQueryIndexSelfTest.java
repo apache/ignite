@@ -28,8 +28,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -37,7 +35,6 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 /**
  * Tests for cache query index.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 2;

@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.affinity;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
@@ -41,13 +43,26 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAffinityFunctionType;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionAllNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionCompositeNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionCompositeNodeOperator;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionConstantNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionGroupNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionJoinCondition;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionNoneNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionSingleNode;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTable;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableAffinityDescriptor;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionTableModel;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Collections;
 
 /**
  * Partition tree extractor.
@@ -59,24 +74,30 @@ public class PartitionExtractor {
      */
     private static final int DFLT_MAX_EXTRACTED_PARTS_FROM_BETWEEN = 16;
 
-    /** Indexing. */
-    private final IgniteH2Indexing idx;
+    /** Partition resolver. */
+    private final H2PartitionResolver partResolver;
 
     /** Maximum number of partitions to be used in case of between expression. */
     private final int maxPartsCntBetween;
 
+    /** Grid kernal context. */
+    private final GridKernalContext ctx;
+
     /**
      * Constructor.
      *
-     * @param idx Indexing.
+     * @param partResolver Partition resolver.
+     * @param ctx Grid kernal context.
      */
-    public PartitionExtractor(IgniteH2Indexing idx) {
-        this.idx = idx;
+    public PartitionExtractor(H2PartitionResolver partResolver, GridKernalContext ctx) {
+        this.partResolver = partResolver;
 
         maxPartsCntBetween = Integer.getInteger(
             IgniteSystemProperties.IGNITE_SQL_MAX_EXTRACTED_PARTS_FROM_BETWEEN,
             DFLT_MAX_EXTRACTED_PARTS_FROM_BETWEEN
         );
+
+        this.ctx = ctx;
     }
 
     /**
@@ -107,7 +128,8 @@ public class PartitionExtractor {
             return null;
 
         // Done.
-        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()));
+        return new PartitionResult(tree, tblModel.joinGroupAffinity(tree.joinGroup()),
+            ctx.cache().context().exchange().readyAffinityVersion());
     }
 
     /**
@@ -142,6 +164,8 @@ public class PartitionExtractor {
         // Merge.
         PartitionNode tree = null;
 
+        AffinityTopologyVersion affinityTopVer = null;
+
         for (GridCacheSqlQuery qry : qrys) {
             PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
 
@@ -149,6 +173,11 @@ public class PartitionExtractor {
                 tree = qryRes.tree();
             else
                 tree = new PartitionCompositeNode(tree, qryRes.tree(), PartitionCompositeNodeOperator.OR);
+
+            if (affinityTopVer == null)
+                affinityTopVer = qryRes.topologyVersion();
+            else
+                assert affinityTopVer.equals(qryRes.topologyVersion());
         }
 
         // Optimize.
@@ -162,7 +191,12 @@ public class PartitionExtractor {
         // If there is no affinity, then we assume "NONE" result.
         assert aff != null || tree == PartitionNoneNode.INSTANCE;
 
-        return new PartitionResult(tree, aff);
+        // Affinity topology version expected to be the same for all partition results derived from map queries.
+        // TODO: 09.04.19 IGNITE-11507: SQL: Ensure that affinity topology version doesn't change
+        // TODO: during PartitionResult construction/application.
+        assert affinityTopVer != null;
+        
+        return new PartitionResult(tree, aff, affinityTopVer);
     }
 
     /**
@@ -602,16 +636,71 @@ public class PartitionExtractor {
             return null;
 
         if (rightConst != null) {
-            Object constVal = H2Utils.convert(rightConst.value().getObject(), idx, leftCol0.getType());
-
-            int part = idx.kernalContext().affinity().partition(tbl.cacheName(), constVal);
+            int part = partResolver.partition(
+                rightConst.value().getObject(),
+                leftCol0.getType(),
+                tbl.cacheName()
+            );
 
             return new PartitionConstantNode(tbl0, part);
         }
-        else if (rightParam != null)
-            return new PartitionParameterNode(tbl0, idx, rightParam.index(), leftCol0.getType());
+        else if (rightParam != null) {
+            int colType = leftCol0.getType();
+
+            return new PartitionParameterNode(
+                tbl0,
+                partResolver,
+                rightParam.index(),
+                leftCol0.getType(),
+                mappedType(colType)
+            );
+        }
         else
             return null;
+    }
+
+    /**
+     * Mapped Ignite type for H2 type.
+     *
+     * @param type H2 type.
+     * @return ignite type.
+     */
+    @Nullable private static PartitionParameterType mappedType(int type) {
+        // Try map if possible.
+        switch (type) {
+            case Value.BOOLEAN:
+                return PartitionParameterType.BOOLEAN;
+
+            case Value.BYTE:
+                return PartitionParameterType.BYTE;
+
+            case Value.SHORT:
+                return PartitionParameterType.SHORT;
+
+            case Value.INT:
+                return PartitionParameterType.INT;
+
+            case Value.LONG:
+                return PartitionParameterType.LONG;
+
+            case Value.FLOAT:
+                return PartitionParameterType.FLOAT;
+
+            case Value.DOUBLE:
+                return PartitionParameterType.DOUBLE;
+
+            case Value.STRING:
+                return PartitionParameterType.STRING;
+
+            case Value.DECIMAL:
+                return PartitionParameterType.DECIMAL;
+
+            case Value.UUID:
+                return PartitionParameterType.UUID;
+        }
+
+        // Otherwise we do not support it.
+        return null;
     }
 
     /**
@@ -746,9 +835,7 @@ public class PartitionExtractor {
             return null;
 
         for (long i = leftLongVal; i <= rightLongVal; i++) {
-            Object constVal = H2Utils.convert(i, idx, leftCol.column().getType());
-
-            int part = idx.kernalContext().affinity().partition(tbl0.cacheName(), constVal);
+            int part = partResolver.partition(i , leftCol.column().getType(), tbl0.cacheName());
 
             parts.add(new PartitionConstantNode(tbl0, part));
 

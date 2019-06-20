@@ -30,7 +30,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     IgniteThrottlingUnitTest.class,
     IgnitePageMemReplaceDelayedWriteUnitTest.class,
-    IgniteThrottlingUnitTest.class,
     FullPageIdTableTest.class,
     RobinHoodBackwardShiftHashMapTest.class
 })

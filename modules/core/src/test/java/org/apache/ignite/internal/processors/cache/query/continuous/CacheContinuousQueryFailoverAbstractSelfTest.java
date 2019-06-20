@@ -104,9 +104,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -120,7 +119,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int BACKUP_ACK_THRESHOLD = 100;
@@ -1755,11 +1753,22 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 if (System.currentTimeMillis() > startFilterTime) {
                     // Stop filter and check events.
                     if (dinQry != null) {
-                        dinQry.close();
+                        // If sync callback is used then we can close a query before checking notifications
+                        // because CQ listeners on a server side have a pending notification upon each
+                        // successfull cache update operations completion.
+                        if (!asyncCallback())
+                            dinQry.close();
 
-                        log.info("Continuous query listener closed. Await events: " + expEvtsNewLsnr.size());
+                        log.info("Await events: " + expEvtsNewLsnr.size());
 
                         checkEvents(expEvtsNewLsnr, dinLsnr, backups == 0);
+
+                        // If async callback is used and we close a query before checking notifications then
+                        // some updates can be missed because a callback submitted in parallel can be executed
+                        // after CQ is closed and no notification will be sent as a result.
+                        // So, we close CQ after the check.
+                        if (asyncCallback())
+                            dinQry.close();
                     }
 
                     dinLsnr = new CacheEventListener2();
@@ -2074,6 +2083,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                                 updated = true;
                             }
                             catch (CacheException e) {
+                                assertTrue(e.getCause() instanceof TransactionSerializationException);
                                 assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                             }
                         }
@@ -2180,7 +2190,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                             updated = true;
                         }
                         catch (CacheException e) {
-                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                            assertTrue(e.getCause() instanceof TransactionSerializationException);
                             assertSame(atomicityMode(), CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
                         }
                     }

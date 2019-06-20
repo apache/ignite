@@ -30,14 +30,11 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Performance test for partitioned offheap hash map.
  */
 @SuppressWarnings({"unchecked", "NonThreadSafeLazyInitialization"})
-@RunWith(JUnit4.class)
 public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int LOAD_CNT = 256;
@@ -289,6 +286,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         info("Average random operation performance: " + (totalOpCnt.get() * 1000) / (end - start) + " ops/sec");
     }
+
     /**
      * @throws Exception If failed.
      */

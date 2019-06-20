@@ -29,8 +29,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -39,7 +37,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests for replicated cache preloader.
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePreloadLifecycleAbstractTest {
     /** Grid count. */
     private int gridCnt = 5;

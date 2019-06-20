@@ -25,8 +25,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -42,7 +40,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * </pre></b>
  *
  */
-@RunWith(JUnit4.class)
 public class SemaphoreFailoverNoWaitingAcquirerTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;

@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 
 /**
  * Tests an ability to rollback near transactions.
  */
-@RunWith(JUnit4.class)
 public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {

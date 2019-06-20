@@ -17,13 +17,15 @@
 
 package org.apache.ignite.ml.composition;
 
-import java.util.Arrays;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.common.TrainerTest;
 import org.apache.ignite.ml.composition.stacking.StackedDatasetTrainer;
 import org.apache.ignite.ml.composition.stacking.StackedModel;
 import org.apache.ignite.ml.composition.stacking.StackedVectorDatasetTrainer;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
@@ -67,8 +69,8 @@ public class StackingTest extends TrainerTest {
 
         UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.2),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg
+            SimpleGDParameterUpdate.SUM_LOCAL,
+            SimpleGDParameterUpdate.AVG
         );
 
         MLPArchitecture arch = new MLPArchitecture(2).
@@ -102,10 +104,7 @@ public class StackingTest extends TrainerTest {
             .withVector2SubmodelInputConverter(IgniteFunction.identity())
             .withOriginalFeaturesKept(IgniteFunction.identity())
             .withEnvironmentBuilder(TestUtils.testEnvBuilder())
-            .fit(getCacheMock(xor),
-                parts,
-                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-                (k, v) -> v[v.length - 1]);
+            .fit(getCacheMock(xor), parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(0.0, 0.0)), 0.3);
         assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(0.0, 1.0)), 0.3);
@@ -123,8 +122,8 @@ public class StackingTest extends TrainerTest {
 
         UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> updatesStgy = new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.2),
-            SimpleGDParameterUpdate::sumLocal,
-            SimpleGDParameterUpdate::avg
+            SimpleGDParameterUpdate.SUM_LOCAL,
+            SimpleGDParameterUpdate.AVG
         );
 
         MLPArchitecture arch = new MLPArchitecture(2).
@@ -147,10 +146,7 @@ public class StackingTest extends TrainerTest {
             .withAggregatorTrainer(new LinearRegressionLSQRTrainer().withConvertedLabels(x -> x * factor))
             .addMatrix2MatrixTrainer(mlpTrainer)
             .withEnvironmentBuilder(TestUtils.testEnvBuilder())
-            .fit(getCacheMock(xor),
-                parts,
-                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-                (k, v) -> v[v.length - 1]);
+            .fit(getCacheMock(xor), parts, new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST));
 
         assertEquals(0.0 * factor, mdl.predict(VectorUtils.of(0.0, 0.0)), 0.3);
         assertEquals(1.0 * factor, mdl.predict(VectorUtils.of(0.0, 1.0)), 0.3);
@@ -167,6 +163,6 @@ public class StackingTest extends TrainerTest {
         StackedDatasetTrainer<Void, Void, Void, IgniteModel<Void, Void>, Void> trainer =
             new StackedDatasetTrainer<>();
         thrown.expect(IllegalStateException.class);
-        trainer.fit(null, null, null);
+        trainer.fit(null, (IgniteCache<Object, Object>)null, null);
     }
 }

@@ -31,13 +31,10 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CreateTableWithDateKeySelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 1;
@@ -59,8 +56,6 @@ public class CreateTableWithDateKeySelfTest extends AbstractIndexingCommonTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         ignite = null;
         initCache = null;
     }

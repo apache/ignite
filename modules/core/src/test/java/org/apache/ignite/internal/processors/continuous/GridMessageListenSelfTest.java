@@ -41,15 +41,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Message listen test.
  */
-@RunWith(JUnit4.class)
 public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 3;
@@ -446,8 +443,10 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private static class Listener implements P2<UUID, Object> {
         /** Source node id. */
         private final UUID sourceNodeId;
+
         /** */
         private final boolean ret;
+
         /** */
         @IgniteInstanceResource
         private Ignite ignite;

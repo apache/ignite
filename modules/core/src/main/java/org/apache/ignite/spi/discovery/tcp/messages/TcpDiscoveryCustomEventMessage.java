@@ -55,6 +55,24 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     }
 
     /**
+     * Copy constructor.
+     * @param msg Message.
+     */
+    public TcpDiscoveryCustomEventMessage(TcpDiscoveryCustomEventMessage msg) {
+        super(msg);
+
+        this.msgBytes = msg.msgBytes;
+        this.msg = msg.msg;
+    }
+
+    /**
+     * Clear deserialized form of wrapped message.
+     */
+    public void clearMessage() {
+        msg = null;
+    }
+
+    /**
      * @return Serialized message.
      */
     public byte[] messageBytes() {

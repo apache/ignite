@@ -24,13 +24,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.management.ObjectName;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for the standard JMX beans registered by the kernal.
  */
-@RunWith(JUnit4.class)
 public class GridMBeansTest extends GridCommonAbstractTest {
     /** Executor name for setExecutorConfiguration */
     private static final String CUSTOM_EXECUTOR_0 = "Custom executor 0";

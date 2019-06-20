@@ -41,8 +41,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -57,7 +55,6 @@ import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEnd
 /**
  * Tests for IGFS file system handshake.
  */
-@RunWith(JUnit4.class)
 public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -101,7 +98,6 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
-
         tcp = false; // Embedded mode:
 
         checkValid(IGFS_NAME + ":" + IGNITE_INSTANCE_NAME + "@");
@@ -129,7 +125,6 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
-
 
         tcp = false; // Embedded mode:
 

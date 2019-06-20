@@ -21,8 +21,11 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT;
@@ -40,15 +43,23 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  * configured in system or environment properties IGNITE_JVM_PAUSE_DETECTOR_PRECISION,
  * IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD and IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT accordingly.
  */
-class LongJVMPauseDetector {
+public class LongJVMPauseDetector {
+    /** Ignite JVM pause detector threshold default value. */
+    public static final int DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD = 500;
+
     /** Precision. */
     private static final int PRECISION = getInteger(IGNITE_JVM_PAUSE_DETECTOR_PRECISION, 50);
 
     /** Threshold. */
-    private static final int THRESHOLD = getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, 500);
+    private static final int THRESHOLD =
+        getInteger(IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD, DEFAULT_JVM_PAUSE_DETECTOR_THRESHOLD);
 
     /** Event count. */
     private static final int EVT_CNT = getInteger(IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT, 20);
+
+    /** Disabled flag. */
+    private static final boolean DISABLED =
+        getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false);
 
     /** Logger. */
     private final IgniteLogger log;
@@ -61,6 +72,9 @@ class LongJVMPauseDetector {
 
     /** Long pause total duration. */
     private long longPausesTotalDuration;
+
+    /** Last detector's wake up time. */
+    private long lastWakeUpTime;
 
     /** Long pauses timestamps. */
     @GridToStringInclude
@@ -81,7 +95,7 @@ class LongJVMPauseDetector {
      * Starts worker if not started yet.
      */
     public void start() {
-        if (getBoolean(IGNITE_JVM_PAUSE_DETECTOR_DISABLED, false)) {
+        if (DISABLED) {
             if (log.isDebugEnabled())
                 log.debug("JVM Pause Detector is disabled.");
 
@@ -89,9 +103,12 @@ class LongJVMPauseDetector {
         }
 
         final Thread worker = new Thread("jvm-pause-detector-worker") {
-            private long prev = System.currentTimeMillis();
 
             @Override public void run() {
+                synchronized (LongJVMPauseDetector.this) {
+                    lastWakeUpTime = System.currentTimeMillis();
+                }
+
                 if (log.isDebugEnabled())
                     log.debug(getName() + " has been started.");
 
@@ -100,9 +117,7 @@ class LongJVMPauseDetector {
                         Thread.sleep(PRECISION);
 
                         final long now = System.currentTimeMillis();
-                        final long pause = now - PRECISION - prev;
-
-                        prev = now;
+                        final long pause = now - PRECISION - lastWakeUpTime;
 
                         if (pause >= THRESHOLD) {
                             log.warning("Possible too long JVM pause: " + pause + " milliseconds.");
@@ -117,6 +132,13 @@ class LongJVMPauseDetector {
                                 longPausesTimestamps[next] = now;
 
                                 longPausesDurations[next] = pause;
+
+                                lastWakeUpTime = now;
+                            }
+                        }
+                        else {
+                            synchronized (LongJVMPauseDetector.this) {
+                                lastWakeUpTime = now;
                             }
                         }
                     }
@@ -156,6 +178,14 @@ class LongJVMPauseDetector {
     }
 
     /**
+     * @return {@code false} if {@link IgniteSystemProperties#IGNITE_JVM_PAUSE_DETECTOR_DISABLED} set to {@code true},
+     * and {@code true} otherwise.
+     */
+    public static boolean enabled() {
+        return !DISABLED;
+    }
+
+    /**
      * @return Long JVM pauses count.
      */
     synchronized long longPausesCount() {
@@ -170,6 +200,13 @@ class LongJVMPauseDetector {
     }
 
     /**
+     * @return Last checker's wake up time.
+     */
+    public synchronized long getLastWakeUpTime() {
+        return lastWakeUpTime;
+    }
+
+    /**
      * @return Last long JVM pause events.
      */
     synchronized Map<Long, Long> longPauseEvents() {
@@ -179,6 +216,19 @@ class LongJVMPauseDetector {
             evts.put(longPausesTimestamps[i], longPausesDurations[i]);
 
         return evts;
+    }
+
+    /**
+     * @return Pair ({@code last long pause event time}, {@code pause time duration}) or {@code null}, if long pause
+     * wasn't occurred.
+     */
+    public synchronized @Nullable IgniteBiTuple<Long, Long> getLastLongPause() {
+        int lastPauseIdx = (int)((EVT_CNT + longPausesCnt - 1) % EVT_CNT);
+
+        if (longPausesTimestamps[lastPauseIdx] == 0)
+            return null;
+
+        return new IgniteBiTuple<>(longPausesTimestamps[lastPauseIdx], longPausesDurations[lastPauseIdx]);
     }
 
     /** {@inheritDoc} */

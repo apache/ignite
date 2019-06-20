@@ -32,13 +32,10 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Topology validator test.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCacheAbstractTest implements Serializable {
     /** key-value used at test. */
     private static String KEY_VAL = "1";

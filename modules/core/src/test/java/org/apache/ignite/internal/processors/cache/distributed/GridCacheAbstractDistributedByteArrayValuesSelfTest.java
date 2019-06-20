@@ -28,8 +28,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -39,7 +37,6 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for byte array values in distributed caches.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extends
     GridCacheAbstractByteArrayValuesSelfTest {
     /** */
@@ -61,7 +58,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         CacheConfiguration mvccCfg = cacheConfiguration(MVCC_CACHE)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             .setNearConfiguration(null); // TODO IGNITE-7187: remove near cache disabling.
-
 
         CacheConfiguration ccfg = cacheConfiguration(CACHE);
 
@@ -125,10 +121,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     @Override protected void afterTestsStopped() throws Exception {
         caches = null;
         mvccCaches = null;
-
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -190,7 +182,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     public void testPessimisticMvccMixed() throws Exception {
         testTransactionMixed0(mvccCaches, PESSIMISTIC, KEY_1, wrap(1), KEY_2, 1);
     }
-
 
     /**
      * Test transaction behavior.

@@ -24,13 +24,10 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Grid URI deployment class loader self test.
  */
-@RunWith(JUnit4.class)
 public class GridUriDeploymentClassLoaderMultiThreadedSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
@@ -67,7 +64,7 @@ public class GridUriDeploymentClassLoaderMultiThreadedSelfTest extends GridCommo
         multithreaded(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    ldr0.loadClassGarOnly("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
+                    ldr0.loadClassIsolated("org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0");
 
                     return null;
                 }

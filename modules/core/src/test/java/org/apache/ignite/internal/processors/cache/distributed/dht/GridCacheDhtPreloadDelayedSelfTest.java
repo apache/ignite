@@ -49,8 +49,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -61,7 +59,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
  */
-@RunWith(JUnit4.class)
 public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /** Key count. */
     private static final int KEY_CNT = 100;

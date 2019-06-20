@@ -34,14 +34,11 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
-@RunWith(JUnit4.class)
 public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDeploymentSpi> {
     /**
      * @return List of URI to use as deployment source.

@@ -48,8 +48,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -60,7 +58,6 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Tests for {@link IgfsTask}.
  */
-@RunWith(JUnit4.class)
 public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     /** Predefined words dictionary. */
     private static final String[] DICTIONARY = new String[] {"word0", "word1", "word2", "word3", "word4", "word5",

@@ -34,13 +34,10 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link SqlFieldsQueryEx#skipReducerOnUpdate} flag.
  */
-@RunWith(JUnit4.class)
 public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODE_COUNT = 4;

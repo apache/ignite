@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Level;
 import org.junit.Before;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Grid Log4j2 SPI test.
@@ -67,9 +67,7 @@ public class Log4j2LoggerVerboseModeSelfTest {
             System.setOut(new PrintStream(testOut));
             System.setErr(new PrintStream(testErr));
 
-
             System.setProperty("IGNITE_QUIET", "false");
-
 
             try (Ignite ignite = G.start(getConfiguration("verboseLogGrid", LOG_PATH_VERBOSE_TEST))) {
 

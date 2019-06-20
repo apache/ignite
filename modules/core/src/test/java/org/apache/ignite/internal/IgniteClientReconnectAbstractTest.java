@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -158,8 +157,6 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         int srvs = serverCount();
 
         if (srvs > 0)
@@ -178,7 +175,9 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        super.afterTestsStopped();
+
+        stopAllGrids();
     }
 
     /**

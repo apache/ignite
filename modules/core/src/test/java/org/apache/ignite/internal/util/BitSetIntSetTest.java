@@ -23,13 +23,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class BitSetIntSetTest extends GridCommonAbstractTest {
     /**
      *
@@ -128,7 +125,6 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         assertEquals(11, (int)list.get(3));
         assertEquals(1025, (int)list.get(4));
 
-
         assertFalse(bitSet.remove(2));
         assertEquals(5, bitSet.size());
 
@@ -153,7 +149,6 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
         bitSetInt.add(10);
         bitSetInt.add(11);
         bitSetInt.add(1025);
-
 
         assertTrue(bitSetInt.contains(1));
         assertFalse(bitSetInt.contains(2));

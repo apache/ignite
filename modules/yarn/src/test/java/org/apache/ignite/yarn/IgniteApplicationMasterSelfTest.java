@@ -52,15 +52,12 @@ import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Application master tests.
  */
-@RunWith(JUnit4.class)
 public class IgniteApplicationMasterSelfTest {
     /** */
     private ApplicationMaster appMaster;
@@ -295,6 +292,20 @@ public class IgniteApplicationMasterSelfTest {
         Map<String, String> result = props.toEnvs();
         assertEquals(1001, (int) Double.parseDouble(result.get(ClusterProperties.IGNITE_MEMORY_PER_NODE)));
         assertEquals(2002, (int) Double.parseDouble(result.get(ClusterProperties.IGNITE_MEMORY_OVERHEAD_PER_NODE)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueue() throws Exception {
+        // Default Queue check
+        Map<String, String> result = props.toEnvs();
+        assertEquals(ClusterProperties.DEFAULT_IGNITE_YARN_QUEUE, result.get(ClusterProperties.IGNITE_YARN_QUEUE));
+
+        props.yarnQueue("ignite");
+        result = props.toEnvs();
+        assertEquals("ignite", result.get(ClusterProperties.IGNITE_YARN_QUEUE));
     }
 
     /**

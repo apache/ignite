@@ -32,18 +32,17 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
@@ -53,24 +52,15 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests for transactional SQL.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends CacheMvccAbstractTest  {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, "-1");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY);
-
-        super.afterTestsStopped();
-    }
-
     /** */
     private static final int TIMEOUT = 3000;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return super.getConfiguration(gridName)
+            .setTransactionConfiguration(new TransactionConfiguration().setDeadlockTimeout(0));
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -173,11 +163,11 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
             IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
-            GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() {
                     return cache0.query(qry);
                 }
-            }, IgniteSQLException.class, "Duplicate key");
+            }, TransactionDuplicateKeyException.class, "Duplicate key during INSERT");
 
             tx.rollback();
         }
@@ -708,10 +698,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
             }
         }, 2, "tx-thread");
 
-        IgniteSQLException ex0 = X.cause(ex.get(), IgniteSQLException.class);
-
-        assertNotNull("Exception has not been thrown.", ex0);
-        assertTrue(ex0.getMessage().startsWith("Cannot serialize transaction due to write conflict"));
+        MvccFeatureChecker.assertMvccWriteConflict(ex.get());
     }
 
     /**

@@ -34,21 +34,18 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.internal.util.reflection.Whitebox;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertSame;
-import static junit.framework.TestCase.assertTrue;
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.fail;
 
 /**
  * Tests for {@link GridAffinityAssignment}.
  */
-@RunWith(JUnit4.class)
 public class GridAffinityAssignmentV2Test {
     /**  */
     protected DiscoveryMetricsProvider metrics = new SerializableMetricsProvider();
@@ -57,10 +54,15 @@ public class GridAffinityAssignmentV2Test {
     protected IgniteProductVersion ver = new IgniteProductVersion();
 
     private ClusterNode clusterNode1 = node(metrics, ver, "1");
+
     private ClusterNode clusterNode2 = node(metrics, ver, "2");
+
     private ClusterNode clusterNode3 = node(metrics, ver, "3");
+
     private ClusterNode clusterNode4 = node(metrics, ver, "4");
+
     private ClusterNode clusterNode5 = node(metrics, ver, "5");
+
     private ClusterNode clusterNode6 = node(metrics, ver, "6");
 
     private List<ClusterNode> clusterNodes = new ArrayList<ClusterNode>() {{
@@ -246,7 +248,6 @@ public class GridAffinityAssignmentV2Test {
 
         assertEquals(deserialized.topologyVersion(), gridAffinityAssignment2.topologyVersion());
     }
-
 
     /**
      *

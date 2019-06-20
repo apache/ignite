@@ -26,13 +26,10 @@ import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Statement test.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** SQL query. */
     private static final String SQL = "insert into Person(_key, id, firstName, lastName, age) values " +

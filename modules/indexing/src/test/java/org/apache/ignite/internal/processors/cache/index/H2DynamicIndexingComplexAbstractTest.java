@@ -32,13 +32,10 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Base class for testing work of combinations of DML and DDL operations.
  */
-@RunWith(JUnit4.class)
 public abstract class H2DynamicIndexingComplexAbstractTest extends DynamicIndexAbstractSelfTest {
     /** Cache mode to test with. */
     private final CacheMode cacheMode;

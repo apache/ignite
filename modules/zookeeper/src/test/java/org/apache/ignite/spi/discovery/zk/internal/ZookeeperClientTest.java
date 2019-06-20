@@ -40,13 +40,10 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ZookeeperClientTest extends GridCommonAbstractTest {
     /** */
     private static final int SES_TIMEOUT = 60_000;

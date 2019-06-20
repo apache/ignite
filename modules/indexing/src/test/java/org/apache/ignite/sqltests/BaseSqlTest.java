@@ -59,13 +59,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test base for test for sql features.
  */
-@RunWith(JUnit4.class)
 public class BaseSqlTest extends AbstractIndexingCommonTest {
     /** Number of all employees. */
     public static final long EMP_CNT = 1000L;
@@ -109,10 +106,12 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     /** Node name of first server. */
     public final String SRV1_NAME = "server1";
 
+    /** */
     public static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "DEPIDNOIDX", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
     /** Flag that forces to do explain query in log before performing actual query. */
     public static boolean explain = false;
+
     /** Department table name. */
     protected String DEP_TAB = "Department";
 
@@ -277,20 +276,13 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
         explain = locExp;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Result of sql query. Contains metadata and all values in memory.
      */
     static class Result {
-
         /** Names of columns. */
         private List<String> colNames;
+
         /** Table */
         private List<List<?>> vals;
 

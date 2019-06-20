@@ -44,13 +44,10 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for TcpCommunicationSpi statistics.
  */
-@RunWith(JUnit4.class)
 public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     /** Mutex. */
     private final Object mux = new Object();
@@ -137,7 +134,6 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
         try {
             // Send custom message from node0 to node1.
             grid(0).context().io().sendToGridTopic(grid(1).cluster().localNode(), GridTopic.TOPIC_IO_TEST, new GridTestMessage(), GridIoPolicy.PUBLIC_POOL);
-
 
             latch.await(10, TimeUnit.SECONDS);
 

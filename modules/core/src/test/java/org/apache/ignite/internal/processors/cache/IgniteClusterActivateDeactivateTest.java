@@ -51,12 +51,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -65,13 +62,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest {
     /** */
     static final String CACHE_NAME_PREFIX = "cache-";
 
     /** Non-persistent data region name. */
     private static final String NO_PERSISTENCE_REGION = "no-persistence-region";
+
     /** */
     private static final int DEFAULT_CACHES_COUNT = 2;
 
@@ -349,9 +346,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     @Test
     public void testJoinWhileActivate1_Server() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         joinWhileActivate1(false, false);
     }
 
@@ -360,9 +354,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     @Test
     public void testJoinWhileActivate1_WithCache_Server() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         joinWhileActivate1(false, true);
     }
 
@@ -449,8 +440,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         int minorVer = 1;
 
-        if (initiallyActive && persistenceEnabled()) {
+        if (initiallyActive) {
             ignite(0).cluster().active(true);
+
+            awaitPartitionMapExchange();
 
             minorVer++;
         }
@@ -1399,6 +1392,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param exp {@code True} if expect that cache is started on node.
      */
     void checkCache(Ignite node, String cacheName, boolean exp) throws IgniteCheckedException {
+        GridTestUtils.waitForCondition(
+            () -> ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture() != null,
+            1000
+        );
+
         ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture().get();
 
         ((IgniteEx)node).context().state().publicApiActiveState(true);
@@ -1416,7 +1414,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     final void checkNoCaches(int nodes) {
         for (int i = 0; i < nodes; i++) {
-            grid(i).context().state().publicApiActiveState(true);
+            assertFalse(grid(i).context().state().publicApiActiveState(true));
 
             GridCacheProcessor cache = ((IgniteEx)ignite(i)).context().cache();
 

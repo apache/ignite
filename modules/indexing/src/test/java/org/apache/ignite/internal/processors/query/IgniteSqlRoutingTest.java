@@ -46,14 +46,11 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 
 /** Tests for query partitions derivation. */
-@RunWith(JUnit4.class)
 public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
     /** */
     private static String NODE_CLIENT = "client";

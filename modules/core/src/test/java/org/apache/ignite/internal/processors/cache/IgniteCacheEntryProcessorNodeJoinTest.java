@@ -43,8 +43,6 @@ import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -55,7 +53,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests cache in-place modification logic with iterative value increment.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTest {
     /** Number of nodes to test on. */
     private static final int GRID_CNT = 2;

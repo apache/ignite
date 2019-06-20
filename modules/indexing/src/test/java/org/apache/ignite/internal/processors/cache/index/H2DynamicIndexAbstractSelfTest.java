@@ -35,13 +35,10 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test that checks indexes handling on H2 side.
  */
-@RunWith(JUnit4.class)
 public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private static final int CLIENT = 2;
@@ -126,8 +123,8 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
             + FIELD_NAME_1_ESCAPED + "\" ASC)"));
 
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+        assertSqlException(new Runnable() {
+            @Override public void run() {
                 cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" +
                     TBL_NAME_ESCAPED + "\"(\"id\" ASC)"));
             }
@@ -191,8 +188,8 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
     public void testDropMissingIndex() {
         final IgniteCache<KeyClass, ValueClass> cache = cache();
 
-        assertSqlException(new RunnableX() {
-            @Override public void run() throws Exception {
+        assertSqlException(new Runnable() {
+            @Override public void run() {
                 cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1_ESCAPED + "\""));
             }
         }, IgniteQueryErrorCode.INDEX_NOT_FOUND);

@@ -35,13 +35,10 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests filter chain event processing.
  */
-@RunWith(JUnit4.class)
 public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
     /** Session opened event meta name. */
     private static final int OPENED_META_NAME = 11;

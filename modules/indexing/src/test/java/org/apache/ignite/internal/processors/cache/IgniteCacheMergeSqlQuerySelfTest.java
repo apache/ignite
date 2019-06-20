@@ -17,21 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
-import static org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertSqlQuerySelfTest {
     /**
      *
@@ -128,26 +121,5 @@ public class IgniteCacheMergeSqlQuerySelfTest extends IgniteCacheAbstractInsertS
         assertEquals(2, (int)p.get(1));
 
         assertEquals(4, (int)p.get(3));
-    }
-
-    /**
-     *
-     */
-    @Test
-    public void testNestedFieldsHandling() {
-        IgniteCache<Integer, AllTypes> p = ignite(0).cache("I2AT");
-
-        p.query(new SqlFieldsQuery("merge into AllTypes(_key, innerTypeCol, arrListCol, _val, innerStrCol) " +
-            "values (1, ?, ?, ?, 'sss')") .setArgs(new AllTypes.InnerType(50L),
-            new ArrayList<>(Arrays.asList(3L, 2L, 1L)), new AllTypes(1L)));
-
-        AllTypes res = p.get(1);
-
-        AllTypes.InnerType resInner = new AllTypes.InnerType(50L);
-
-        resInner.innerStrCol = "sss";
-        resInner.arrListCol = new ArrayList<>(Arrays.asList(3L, 2L, 1L));
-
-        assertEquals(resInner, res.innerTypeCol);
     }
 }

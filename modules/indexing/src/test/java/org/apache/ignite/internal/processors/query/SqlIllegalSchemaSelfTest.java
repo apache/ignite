@@ -31,14 +31,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for illegal SQL schemas in node and cache configurations.
  */
 @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
-@RunWith(JUnit4.class)
 public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -61,7 +58,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteException.class, "SQL schema name derived from cache name is reserved (please set explicit SQL " +
-            "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [cacheName=IGNITE, " +
+            "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [cacheName=SYS, " +
             "schemaName=null]");
     }
 
@@ -79,7 +76,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                     assertTrue(hasCause(e, IgniteCheckedException.class,
                         "SQL schema name derived from cache name is reserved (please set explicit SQL " +
                             "schema name through CacheConfiguration.setSqlSchema() or choose another cache name) [" +
-                            "cacheName=IGNITE, schemaName=null]"));
+                            "cacheName=SYS, schemaName=null]"));
 
                     return;
                 }
@@ -110,7 +107,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
-            "schemaName=ignite]");
+            "schemaName=sys]");
     }
 
     /**
@@ -127,7 +124,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 }
                 catch (CacheException e) {
                     assertTrue(hasCause(e, IgniteCheckedException.class,
-                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=ignite]"));
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=sys]"));
 
                     return;
                 }
@@ -158,7 +155,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
-            "schemaName=IGNITE]");
+            "schemaName=SYS]");
     }
 
     /**
@@ -175,7 +172,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 }
                 catch (CacheException e) {
                     assertTrue(hasCause(e, IgniteCheckedException.class,
-                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=IGNITE]"));
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=SYS]"));
 
                     return;
                 }
@@ -206,7 +203,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteException.class, "SQL schema name is reserved (please choose another one) [cacheName=CACHE, " +
-            "schemaName=\"IGNITE\"]");
+            "schemaName=\"SYS\"]");
     }
 
     /**
@@ -224,7 +221,7 @@ public class SqlIllegalSchemaSelfTest extends AbstractIndexingCommonTest {
                 }
                 catch (CacheException e) {
                     assertTrue(hasCause(e, IgniteCheckedException.class,
-                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=\"IGNITE\"]"));
+                        "SQL schema name is reserved (please choose another one) [cacheName=CACHE, schemaName=\"SYS\"]"));
 
                     return;
                 }

@@ -18,11 +18,10 @@
 -->
 
 <xs:schema id="IgniteConfigurationSection"
-    targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    elementFormDefault="qualified"
-    xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+           targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           elementFormDefault="qualified"
+           xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
     <xs:simpleType name="cacheMode" final="restriction">
         <xs:restriction base="xs:string">
@@ -116,6 +115,16 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="Random" />
             <xs:enumeration value="Sequential" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="diskPageCompression" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="SkipGarbage" />
+            <xs:enumeration value="Zstd" />
+            <xs:enumeration value="Lz4" />
+            <xs:enumeration value="Snappy" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -1278,6 +1287,13 @@
                                 </xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="deadlockTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Timeout before starting deadlock detection. TimeSpan.Zero for disabling deadlock detection.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="logger" minOccurs="0">
@@ -1410,7 +1426,7 @@
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
-                </xs:element>                
+                </xs:element>
                 <xs:element name="sqlConnectorConfiguration" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
@@ -1708,6 +1724,13 @@
                                             <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                Enable lazy memory allocation.
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                             <xs:element name="dataRegionConfigurations">
@@ -1781,7 +1804,14 @@
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                            </xs:complexType>                                            
+                                                <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            Enable lazy memory allocation.
+                                                        </xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>
@@ -1927,6 +1957,16 @@
                                 <xs:documentation>
                                     Timeout for checkpoint read lock acquisition.
                                 </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompression" type="diskPageCompression">
+                            <xs:annotation>
+                                <xs:documentation>Compression algorithm for WAL page snapshot records.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompressionLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Compression level for WAL page snapshot records.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -2340,21 +2380,6 @@
               <xs:annotation>
                 <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
               </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="initBaselineAutoAdjustEnabled" type="xs:boolean">
-                <xs:annotation>
-                    <xs:documentation>Initial value of manual baseline control or auto adjusting baseline.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="initBaselineAutoAdjustTimeout" type="xs:long">
-                <xs:annotation>
-                    <xs:documentation>Initial value of time which we would wait before the actual topology change since last discovery event.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="initBaselineAutoAdjustMaxTimeout" type="xs:long">
-                <xs:annotation>
-                    <xs:documentation>Initial value of time which we would wait from the first discovery event in the chain(node join/exit).</xs:documentation>
-                </xs:annotation>
             </xs:attribute>
         </xs:complexType>
     </xs:element>

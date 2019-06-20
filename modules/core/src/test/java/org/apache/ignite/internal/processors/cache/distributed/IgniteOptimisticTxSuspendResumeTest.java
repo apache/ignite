@@ -40,13 +40,12 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -61,7 +60,6 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest {
     /** Transaction timeout. */
     private static final long TX_TIMEOUT = 200;
@@ -154,11 +152,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         }
 
         awaitPartitionMapExchange();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(true);
     }
 
     /** {@inheritDoc} */
@@ -490,6 +483,10 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     }, getTestTimeout()));
 
                     assertEquals(ROLLED_BACK, tx.state());
+
+                    // Here we check that we can start any transactional operation in the same thread after a suspended
+                    // transaction is timed-out.
+                    assertFalse(cache.containsKey(1));
 
                     tx.close();
                 }
@@ -895,28 +892,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         @Override public void apply(T o) {
             try {
                 applyx(o);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /**
-     * Runnable that can throw any exception.
-     */
-    public abstract static class RunnableX implements Runnable {
-        /**
-         * Closure body.
-         *
-         * @throws Exception If failed.
-         */
-        public abstract void runx() throws Exception;
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                runx();
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

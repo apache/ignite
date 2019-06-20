@@ -114,6 +114,7 @@
     <Compile Include="Cache\CacheTimeoutOnPmeTransactionalTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
+    <Compile Include="Cache\PartitionPreloadTest.cs" />
     <Compile Include="Cache\PersistenceTest.cs" />
     <Compile Include="Cache\PersistentStoreTestObsolete.cs" />
     <Compile Include="Cache\Query\CacheQueriesWithRestartServerTest.cs" />
@@ -152,6 +153,7 @@
     <Compile Include="Client\RawSocketTest.cs" />
     <Compile Include="Client\ClientConnectionTest.cs" />
     <Compile Include="Client\IgniteClientConfigurationTest.cs" />
+    <Compile Include="Common\IgniteProductVersionTests.cs" />
     <Compile Include="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="Deployment\CacheGetFunc.cs" />
     <Compile Include="Deployment\GetAddressFunc.cs" />

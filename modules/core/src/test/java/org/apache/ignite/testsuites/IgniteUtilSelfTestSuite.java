@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
 import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
+import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeCompatibilityTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.GridThreadTest;
@@ -70,6 +72,7 @@ import org.junit.runners.Suite;
     GridThreadPoolExecutorServiceSelfTest.class,
     IgniteThreadPoolSizeTest.class,
     IgniteUtilsSelfTest.class,
+    IgniteVersionUtilsSelfTest.class,
     GridSpinReadWriteLockSelfTest.class,
     GridQueueSelfTest.class,
     GridStringBuilderFactorySelfTest.class,
@@ -101,6 +104,7 @@ import org.junit.runners.Suite;
 
     // Metrics.
     ClusterMetricsSnapshotSerializeSelfTest.class,
+    ClusterMetricsSnapshotSerializeCompatibilityTest.class,
 
     // Unsafe.
     GridUnsafeMemorySelfTest.class,

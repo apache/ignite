@@ -25,13 +25,10 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests distributed queries over set of partitions on stable topology.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheDistributedPartitionQuerySelfTest extends IgniteCacheDistributedPartitionQueryAbstractSelfTest {
     /** Tests query within region. */
     @Test

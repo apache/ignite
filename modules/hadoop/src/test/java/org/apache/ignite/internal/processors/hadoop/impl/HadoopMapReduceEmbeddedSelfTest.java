@@ -38,8 +38,6 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopMapReduceEmbeddedSelfTestState.flags;
@@ -47,7 +45,6 @@ import static org.apache.ignite.internal.processors.hadoop.state.HadoopMapReduce
 /**
  * Tests map-reduce execution with embedded mode.
  */
-@RunWith(JUnit4.class)
 public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
     /** {@inheritDoc} */
     @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {

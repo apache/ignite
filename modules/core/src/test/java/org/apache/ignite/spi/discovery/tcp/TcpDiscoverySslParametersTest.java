@@ -24,13 +24,10 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests cases when node connects to cluster with different set of cipher suites.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
 
     /** */
@@ -139,7 +136,8 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
             },
             null,
             IgniteCheckedException.class,
-            "Unsupported ciphersuite"
+            // Java 8 has "Unsupported ciphersuite", Java 11 has "Unsupported CipherSuite"
+            "Unsupported"
         );
     }
 

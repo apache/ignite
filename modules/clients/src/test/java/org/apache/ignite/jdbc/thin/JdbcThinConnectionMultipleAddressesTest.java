@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -43,14 +43,11 @@ import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * JDBC driver reconnect test with multiple addresses.
  */
 @SuppressWarnings("ThrowableNotThrown")
-@RunWith(JUnit4.class)
 public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSelfTest {
     /** Nodes count. */
     private static final int NODES_CNT = 3;
@@ -537,11 +534,16 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
         if (all)
             stopAllGrids();
         else {
-            JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, "cliIo");
 
-            int idx = io.serverIndex();
+            if (affinityAwareness) {
+                for (int i = 0; i < NODES_CNT - 1; i++)
+                    stopGrid(i);
+            }
+            else {
+                int idx = ((JdbcThinConnection)conn).serverIndex();
 
-            stopGrid(idx);
+                stopGrid(idx);
+            }
         }
     }
 

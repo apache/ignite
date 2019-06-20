@@ -23,9 +23,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
@@ -59,10 +58,10 @@ public class RangeStream {
     private final GridKernalContext ctx;
 
     /** Index. */
-    private final GridH2IndexBase idx;
+    private final H2TreeIndex idx;
 
     /** */
-    private final GridH2QueryContext qctx;
+    private final DistributedJoinContext joinCtx;
 
     /** */
     private final ClusterNode node;
@@ -86,14 +85,14 @@ public class RangeStream {
     private int cursorRangeId = -1;
 
     /**
-     * @param qctx Query context.
+     * @param joinCtx Join context.
      * @param node Node.
      */
-    public RangeStream(GridKernalContext ctx, GridH2IndexBase idx, GridH2QueryContext qctx, ClusterNode node) {
+    public RangeStream(GridKernalContext ctx, H2TreeIndex idx, DistributedJoinContext joinCtx, ClusterNode node) {
         this.ctx = ctx;
         this.idx = idx;
         this.node = node;
-        this.qctx = qctx;
+        this.joinCtx = joinCtx;
     }
 
     /**
@@ -137,7 +136,7 @@ public class RangeStream {
         final long start = U.currentTimeMillis();
 
         for (int attempt = 0;; attempt++) {
-            if (qctx.isCleared())
+            if (joinCtx.isCancelled())
                 throw H2Utils.retryException("Query is cancelled.");
 
             if (ctx.isStopping())
@@ -164,7 +163,7 @@ public class RangeStream {
 
                         if (remainingRanges > 0) {
                             if (req.bounds() != null)
-                                req = DistributedLookupBatch.createRequest(qctx, req.batchLookupId(), req.segment());
+                                req = DistributedLookupBatch.createRequest(joinCtx, req.batchLookupId(), req.segment());
 
                             // Prefetch next page.
                             idx.send(singletonList(node), req);

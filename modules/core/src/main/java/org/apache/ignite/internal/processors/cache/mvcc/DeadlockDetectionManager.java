@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 
 import static java.util.Collections.singleton;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DEADLOCK_DETECTION;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.belongToSameTx;
@@ -53,10 +52,12 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.belongT
  */
 public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
     /** */
-    private final long detectionStartDelay = Long.getLong(IGNITE_TX_DEADLOCK_DETECTION_INITIAL_DELAY, 10_000);
+    private long detectionStartDelay;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        detectionStartDelay = cctx.kernalContext().config().getTransactionConfiguration().getDeadlockTimeout();
+
         cctx.gridIO().addMessageListener(TOPIC_DEADLOCK_DETECTION, (nodeId, msg, plc) -> {
             if (msg instanceof DeadlockProbe) {
                 if (log.isDebugEnabled())
@@ -79,14 +80,8 @@ public class DeadlockDetectionManager extends GridCacheSharedManagerAdapter {
      * @return Cancellable computation.
      */
     public DelayedDeadlockComputation initDelayedComputation(MvccVersion waiterVer, MvccVersion blockerVer) {
-        if (detectionStartDelay < 0)
+        if (detectionStartDelay <= 0)
             return null;
-
-        if (detectionStartDelay == 0) {
-            startComputation(waiterVer, blockerVer);
-
-            return null;
-        }
 
         return new DelayedDeadlockComputation(waiterVer, blockerVer, detectionStartDelay);
     }

@@ -47,7 +47,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.processors.query.h2.twostep.GridMergeIndex;
+import org.apache.ignite.internal.processors.query.h2.twostep.ReduceIndex;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -55,15 +55,12 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.util.StringUtils;
 
 /**
  * Tests for correct distributed partitioned queries.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CLIENT = 7;
@@ -306,7 +303,6 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
                             qry.a(" p0.id").a(" = ").a("p").a(j).a(".depId");
                         }
                     }
-
 
                     X.println(" ---> ik: : " + i + " " + k);
                     X.println("\nqry: \n" + qry.toString());
@@ -578,7 +574,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             Integer.class, Value.class));
 
         try {
-            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 8);
+            GridTestUtils.setFieldValue(null, ReduceIndex.class, "PREFETCH_SIZE", 8);
 
             Random rnd = new GridRandom();
 
@@ -628,7 +624,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             }
         }
         finally {
-            GridTestUtils.setFieldValue(null, GridMergeIndex.class, "PREFETCH_SIZE", 1024);
+            GridTestUtils.setFieldValue(null, ReduceIndex.class, "PREFETCH_SIZE", 1024);
 
             c.destroy();
         }
@@ -2153,7 +2149,6 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             assertEquals("min", 3, ((Integer)row.get(5)).intValue());
             assertEquals("max", 3, ((Integer)row.get(6)).intValue());
 
-
             row = result.get(1);
             assertEquals("fst", 2, ((Number)row.get(0)).intValue());
             assertEquals("count", 3L, ((Number)row.get(1)).longValue());
@@ -2162,7 +2157,6 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             assertEquals("avg dbl", 2d, ((Number)row.get(4)).doubleValue(), 0.001);
             assertEquals("min", 1, ((Integer)row.get(5)).intValue());
             assertEquals("max", 3, ((Integer)row.get(6)).intValue());
-
 
             row = result.get(2);
             assertEquals("fst", 3, ((Number)row.get(0)).intValue());

@@ -32,15 +32,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Test for {@link LifecycleAware} support for {@link CacheTmLookup}.
  */
-@RunWith(JUnit4.class)
 public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */
     private static final String CACHE_NAME = "cache";
@@ -149,7 +146,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         // No-op, see anothre tests.
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testCacheLookupLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.CACHE_LOOKUP;
@@ -157,7 +154,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         checkLifecycleAware();
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testGlobalLookupLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.GLOBAL_LOOKUP;
@@ -165,7 +162,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         checkLifecycleAware();
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testFactoryLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.FACTORY;

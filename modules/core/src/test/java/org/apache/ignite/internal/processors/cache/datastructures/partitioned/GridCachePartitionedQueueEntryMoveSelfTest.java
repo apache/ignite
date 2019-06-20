@@ -39,8 +39,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteCollecti
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,7 +46,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Cache queue test with changing topology.
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollectionAbstractTest {
     /** Queue capacity. */
     private static final int QUEUE_CAP = 5;

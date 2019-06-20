@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
@@ -65,7 +66,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.ServiceProcessorAdapter;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
@@ -423,11 +424,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridCollisionManager collision();
 
     /**
-     * Gets authentication processor.
+     * Gets instance of {@link IgniteSecurity}.
      *
-     * @return Authentication processor.
+     * @return Ignite security.
      */
-    public GridSecurityProcessor security();
+    public IgniteSecurity security();
 
     /**
      * Gets load balancing manager.
@@ -463,6 +464,20 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Data structures processor.
      */
     public DataStructuresProcessor dataStructures();
+
+    /**
+     * Gets long JVM pause detector.
+     *
+     * @return Long JVM pause detector.
+     */
+    public LongJVMPauseDetector longJvmPauseDetector();
+
+    /**
+     * Gets diagnostic processor.
+     *
+     * @return Diagnostic processor.
+     */
+    public DiagnosticProcessor diagnostic();
 
     /**
      * Checks whether this node is invalid due to a critical error or not.

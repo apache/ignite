@@ -28,13 +28,10 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for leaks JdbcConnection on SqlFieldsQuery execute.
  */
-@RunWith(JUnit4.class)
 public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -194,7 +191,7 @@ public class H2ConnectionLeaksSelfTest extends AbstractIndexingCommonTest {
                 Map<Thread, ?> conns = perThreadConnections(i);
 
                 for(Thread t : conns.keySet())
-                    log.error("+++ Connection is not closed for thread: " + t.getName());
+                    log.error("Connection is not closed for thread: " + t.getName());
             }
 
             fail("H2 JDBC connections leak detected. See the log above.");

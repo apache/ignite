@@ -84,6 +84,22 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
+    @Override public boolean initialValue(CacheObject val, GridCacheVersion ver, long ttl, long expireTime,
+        boolean preload, AffinityTopologyVersion topVer, GridDrType drType, boolean fromStore) {
+        assert false;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean mvccPreloadEntry(
+        List<GridCacheMvccEntryInfo> entries) {
+        assert false;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isInternal() {
         return key instanceof GridCacheInternal;
     }
@@ -198,7 +214,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
      * @param baseVer Base version.
      */
     void salvageRemote(GridCacheVersion baseVer) {
-        mvcc.salvageRemote(baseVer);
+        mvcc.salvageRemote(baseVer, false);
     }
 
     /**
@@ -485,8 +501,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Override public GridCacheUpdateTxResult mvccSet(@Nullable IgniteInternalTx tx, UUID affNodeId, CacheObject val,
-        EntryProcessor entryProc, Object[] invokeArgs, long ttl0, AffinityTopologyVersion topVer, MvccSnapshot mvccVer, GridCacheOperation op, boolean needHistory,
-        boolean noCreate, boolean needOldVal, CacheEntryPredicate filter, boolean retVal)
+        EntryProcessor entryProc, Object[] invokeArgs, long ttl0, AffinityTopologyVersion topVer, MvccSnapshot mvccVer,
+        GridCacheOperation op, boolean needHistory,
+        boolean noCreate, boolean needOldVal, CacheEntryPredicate filter, boolean retVal, boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         rawPut(val, ttl);
 

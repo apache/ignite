@@ -40,8 +40,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -54,7 +52,6 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
 /**
  * IGFS modes self test.
  */
-@RunWith(JUnit4.class)
 public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
     /** Grid instance hosting primary IGFS. */
     private IgniteEx grid;

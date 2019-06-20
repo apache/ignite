@@ -2117,6 +2117,8 @@ BOOST_AUTO_TEST_CASE(TestManyCursors2)
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+        stmt = NULL;
     }
 }
 

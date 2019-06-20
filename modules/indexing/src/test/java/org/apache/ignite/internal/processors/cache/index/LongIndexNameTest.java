@@ -32,13 +32,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class LongIndexNameTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -98,8 +95,6 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
             assertEquals(cursor1.getAll().size(), cursor1Idx.getAll().size());
             assertEquals(cursor2.getAll().size(), cursor2Idx.getAll().size());
-
-
         }
         finally {
             stopAllGrids();

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop.impl;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 /**
  * Same test as HadoopMapReduceTest, but with enabled Snappy output compression.
  */
@@ -32,5 +35,12 @@ public class HadoopSnappyFullMapReduceTest extends HadoopMapReduceTest {
             { false, false, true },
             { true, true, true },
         };
+    }
+
+    /** {@inheritDoc} */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9920")
+    @Test
+    @Override public void testWholeMapReduceExecution() throws Exception {
+        super.testWholeMapReduceExecution();
     }
 }

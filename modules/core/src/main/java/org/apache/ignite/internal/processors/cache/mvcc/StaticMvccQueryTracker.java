@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 public class StaticMvccQueryTracker implements MvccQueryTracker {
     /** */
     private final MvccSnapshot snapshot;
+
     /** */
     private final GridCacheContext cctx;
 
@@ -65,15 +66,5 @@ public class StaticMvccQueryTracker implements MvccQueryTracker {
     /** {@inheritDoc} */
     @Override public void onDone() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public long onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        return MVCC_TRACKER_ID_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long id() {
-        return MVCC_TRACKER_ID_NA;
     }
 }

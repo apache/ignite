@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastoreDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
@@ -251,6 +252,9 @@ public abstract class PageIO {
     /** */
     public static final short T_TX_LOG_INNER = 31;
 
+    /** */
+    public static final short T_DATA_PART = 32;
+
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
 
@@ -406,6 +410,14 @@ public abstract class PageIO {
     }
 
     /**
+     * @param pageAddr Page address.
+     * @return Compression type.
+     */
+    public static byte getCompressionType(long pageAddr) {
+        return PageUtils.getByte(pageAddr, COMPRESSION_TYPE_OFF);
+    }
+
+    /**
      * @param page Page buffer.
      * @param compressedSize Compressed size.
      */
@@ -422,6 +434,14 @@ public abstract class PageIO {
     }
 
     /**
+     * @param pageAddr Page address.
+     * @return Compressed size.
+     */
+    public static short getCompressedSize(long pageAddr) {
+        return PageUtils.getShort(pageAddr, COMPRESSED_SIZE_OFF);
+    }
+
+    /**
      * @param page Page buffer.
      * @param compactedSize Compacted size.
      */
@@ -435,6 +455,14 @@ public abstract class PageIO {
      */
     public static short getCompactedSize(ByteBuffer page) {
         return page.getShort(COMPACTED_SIZE_OFF);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @return Compacted size.
+     */
+    public static short getCompactedSize(long pageAddr) {
+        return PageUtils.getShort(pageAddr, COMPACTED_SIZE_OFF);
     }
 
     /**
@@ -643,6 +671,9 @@ public abstract class PageIO {
                 return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
             case T_DATA_METASTORAGE:
+                return (Q)MetastoreDataPageIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_PART:
                 return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
 
             default:
@@ -840,9 +871,8 @@ public abstract class PageIO {
         assert pageSize <= out.remaining();
         assert pageSize == page.remaining();
 
-        page.mark();
-        out.put(page).flip();
-        page.reset();
+        PageHandler.copyMemory(page, 0, out, 0, pageSize);
+        out.limit(pageSize);
     }
 
     /**
@@ -858,7 +888,14 @@ public abstract class PageIO {
             .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
             .a("\n],\n");
 
-        io.printPage(addr, pageSize, sb);
+        if (getCompressionType(addr) != 0) {
+            sb.a("CompressedPage[\n\tcompressionType=").a(getCompressionType(addr))
+                .a(",\n\tcompressedSize=").a(getCompressedSize(addr))
+                .a(",\n\tcompactedSize=").a(getCompactedSize(addr))
+                .a("\n]");
+        }
+        else
+            io.printPage(addr, pageSize, sb);
 
         return sb.toString();
     }

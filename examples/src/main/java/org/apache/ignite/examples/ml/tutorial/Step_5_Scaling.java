@@ -21,15 +21,17 @@ import java.io.FileNotFoundException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderTrainer;
 import org.apache.ignite.ml.preprocessing.encoding.EncoderType;
 import org.apache.ignite.ml.preprocessing.imputing.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.selection.scoring.evaluator.BinaryClassificationEvaluator;
-import org.apache.ignite.ml.selection.scoring.metric.Accuracy;
+import org.apache.ignite.ml.selection.scoring.evaluator.Evaluator;
+import org.apache.ignite.ml.selection.scoring.metric.classification.Accuracy;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 
@@ -44,7 +46,7 @@ import org.apache.ignite.ml.tree.DecisionTreeNode;
  * <p>
  * Then, it trains the model based on the processed data using decision tree classification.</p>
  * <p>
- * Finally, this example uses {@link BinaryClassificationEvaluator} functionality to compute metrics from predictions.</p>
+ * Finally, this example uses {@link Evaluator} functionality to compute metrics from predictions.</p>
  */
 public class Step_5_Scaling {
     /** Run example. */
@@ -54,38 +56,35 @@ public class Step_5_Scaling {
 
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             try {
-                IgniteCache<Integer, Object[]> dataCache = TitanicUtils.readPassengers(ignite);
+                IgniteCache<Integer, Vector> dataCache = TitanicUtils.readPassengers(ignite);
 
-                // Defines first preprocessor that extracts features from an upstream data.
                 // Extracts "pclass", "sibsp", "parch", "sex", "embarked", "age", "fare".
-                IgniteBiFunction<Integer, Object[], Object[]> featureExtractor
-                    = (k, v) -> new Object[]{v[0], v[3], v[4], v[5], v[6], v[8], v[10]};
+                final Vectorizer<Integer, Vector, Integer, Double> vectorizer
+                    = new DummyVectorizer<Integer>(0, 3, 4, 5, 6, 8, 10).labeled(1);
 
-                IgniteBiFunction<Integer, Object[], Double> lbExtractor = (k, v) -> (double) v[1];
-
-                IgniteBiFunction<Integer, Object[], Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> strEncoderPreprocessor = new EncoderTrainer<Integer, Vector>()
                     .withEncoderType(EncoderType.STRING_ENCODER)
                     .withEncodedFeature(1)
                     .withEncodedFeature(6) // <--- Changed index here.
                     .fit(ignite,
                         dataCache,
-                        featureExtractor
+                        vectorizer
                 );
 
-                IgniteBiFunction<Integer, Object[], Vector> imputingPreprocessor = new ImputerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> imputingPreprocessor = new ImputerTrainer<Integer, Vector>()
                     .fit(ignite,
                         dataCache,
                         strEncoderPreprocessor
                     );
 
-                IgniteBiFunction<Integer, Object[], Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> minMaxScalerPreprocessor = new MinMaxScalerTrainer<Integer, Vector>()
                     .fit(
                         ignite,
                         dataCache,
                         imputingPreprocessor
                     );
 
-                IgniteBiFunction<Integer, Object[], Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Object[]>()
+                Preprocessor<Integer, Vector> normalizationPreprocessor = new NormalizationTrainer<Integer, Vector>()
                     .withP(1)
                     .fit(
                         ignite,
@@ -99,17 +98,15 @@ public class Step_5_Scaling {
                 DecisionTreeNode mdl = trainer.fit(
                     ignite,
                     dataCache,
-                    normalizationPreprocessor,
-                    lbExtractor
+                    normalizationPreprocessor
                 );
 
                 System.out.println("\n>>> Trained model: " + mdl);
 
-                double accuracy = BinaryClassificationEvaluator.evaluate(
+                double accuracy = Evaluator.evaluate(
                     dataCache,
                     mdl,
                     normalizationPreprocessor,
-                    lbExtractor,
                     new Accuracy<>()
                 );
 

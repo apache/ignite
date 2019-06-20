@@ -1,3 +1,9 @@
+apache-ignite (2.7.5-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.7.5
+
+ -- Petr Ivanov <mr.weider@gmail.com>  Fri, 12 Apr 2019 17:57:44 +0300
+
 apache-ignite (2.7.0-1) unstable; urgency=low
 
   * Updated Apache Ignite to version 2.7.0

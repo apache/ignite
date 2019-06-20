@@ -29,13 +29,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Versioned entry abstract test.
  */
-@RunWith(JUnit4.class)
 public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractSelfTest {
     /** Entries number to store in a cache. */
     private static final int ENTRIES_NUM = 500;

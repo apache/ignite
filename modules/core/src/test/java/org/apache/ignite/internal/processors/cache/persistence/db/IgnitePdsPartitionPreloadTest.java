@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -34,13 +32,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -50,7 +49,6 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  * Test partition preload for varios cache modes.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     /** Test entry count. */
     public static final int ENTRY_CNT = 500;
@@ -559,10 +557,9 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testPreloadLocalTransactionalSyncMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 
         preloadPartition(
@@ -579,10 +576,9 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
     @Test
     public void testPreloadLocalTransactionalAsyncMvcc() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9530");
-
         cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
 
         preloadPartition(
@@ -668,9 +664,18 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
         long c0 = testNode.dataRegionMetrics(DEFAULT_REGION).getPagesRead();
 
         // After partition preloading no pages should be read from store.
-        List<Cache.Entry<Object, Object>> list = U.arrayList(testNode.cache(DEFAULT_CACHE_NAME).localEntries(), 1000);
+        GridIterator<CacheDataRow> cursor = ((IgniteEx)testNode).cachex(DEFAULT_CACHE_NAME).context().offheap().
+            cachePartitionIterator(CU.UNDEFINED_CACHE_ID, preloadPart, null, false);
 
-        assertEquals(ENTRY_CNT, list.size());
+        int realSize = 0;
+
+        while(cursor.hasNext()) {
+            realSize++;
+
+            cursor.next();
+        }
+
+        assertEquals("Partition has missed some entries", ENTRY_CNT, realSize);
 
         assertEquals("Read pages count must be same", c0, testNode.dataRegionMetrics(DEFAULT_REGION).getPagesRead());
     }

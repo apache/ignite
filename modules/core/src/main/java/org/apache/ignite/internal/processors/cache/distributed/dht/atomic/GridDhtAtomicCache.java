@@ -1877,6 +1877,17 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             .binaryContext().descriptorForClass(ex.cls(), false, false);
                     }
                     catch (UnregisteredBinaryTypeException ex) {
+                        if (ex.future() != null) {
+                            // Wait for the future that couldn't be processed because of
+                            // IgniteThread#isForbiddenToRequestBinaryMetadata flag being true. Usually this means
+                            // that awaiting for the future right there would lead to potential deadlock if
+                            // continuous queries are used in parallel with entry processor.
+                            ex.future().get();
+
+                            // Retry and don't update current binary metadata, because it most likely already exists.
+                            continue;
+                        }
+
                         IgniteCacheObjectProcessor cacheObjProc = ctx.cacheObjects();
 
                         assert cacheObjProc instanceof CacheObjectBinaryProcessorImpl;
@@ -2216,10 +2227,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 ctx.validateKeyAndValue(entry.key(), updated);
                         }
                     }
+                    catch (UnregisteredClassException | UnregisteredBinaryTypeException e) {
+                        throw e;
+                    }
                     catch (Exception e) {
-                        if (e instanceof UnregisteredClassException || e instanceof UnregisteredBinaryTypeException)
-                            throw (IgniteException) e;
-
                         curInvokeRes = CacheInvokeResult.fromError(e);
 
                         updated = old;
@@ -2528,7 +2539,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridCacheReturn retVal = dhtUpdRes.returnValue();
         GridDhtAtomicAbstractUpdateFuture dhtFut = dhtUpdRes.dhtFuture();
         Collection<IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion>> deleted = dhtUpdRes.deleted();
-
 
         AffinityTopologyVersion topVer = req.topologyVersion();
 

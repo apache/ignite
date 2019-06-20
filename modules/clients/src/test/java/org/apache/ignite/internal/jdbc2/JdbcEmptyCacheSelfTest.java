@@ -22,8 +22,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.sql.*;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteJdbcDriver.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -32,7 +30,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * Tests for empty cache.
  */
-@RunWith(JUnit4.class)
 public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";

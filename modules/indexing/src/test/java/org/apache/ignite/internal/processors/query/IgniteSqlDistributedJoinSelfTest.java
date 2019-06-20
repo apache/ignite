@@ -27,13 +27,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for correct distributed sql joins.
  */
-@RunWith(JUnit4.class)
 public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest {
     /** */
     private static final int NODES_COUNT = 2;

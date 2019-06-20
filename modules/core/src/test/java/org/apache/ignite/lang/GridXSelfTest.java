@@ -25,14 +25,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for {@link X}.
  */
 @GridCommonTest(group = "Lang")
-@RunWith(JUnit4.class)
 public class GridXSelfTest extends GridCommonAbstractTest {
     /**
      *

@@ -29,8 +29,6 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -38,7 +36,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests .
  */
-@RunWith(JUnit4.class)
 public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 4;
@@ -48,7 +45,7 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         super.beforeTestsStarted();
     }
@@ -67,6 +64,8 @@ public class IgnitePutAllUpdateNonPreloadedPartitionSelfTest extends GridCommonA
      * @return Test cache configuration.
      */
     public CacheConfiguration cacheConfiguration(String igniteInstanceName) {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

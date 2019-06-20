@@ -16,24 +16,21 @@
  */
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import org.apache.zookeeper.client.ZooKeeperSaslClient;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.apache.zookeeper.client.ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
     /**
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = LOGIN_CONTEXT_NAME_KEY, value = "ValidZookeeperClient")
     public void testIgniteNodesWithValidPasswordSuccessfullyJoins() throws Exception {
-        System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
-            "ValidZookeeperClient");
-
         startGrids(3);
 
         waitForTopology(3);

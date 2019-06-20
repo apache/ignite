@@ -17,12 +17,14 @@
 
 package org.apache.ignite.ml;
 
+import java.io.Serializable;
 import java.util.stream.IntStream;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.junit.Assert;
 
@@ -168,6 +170,31 @@ public class TestUtils {
                 // TODO: IGNITE-5824, Check precision here.
                 Assert.assertEquals(eij, aij, 0.0);
             }
+    }
+
+    /**
+     * Verifies that two vectors are equal.
+     *
+     * @param exp Expected vector.
+     * @param observed Actual vector.
+     */
+    public static void assertEquals(Vector exp, Vector observed, double eps) {
+        Assert.assertNotNull("Observed should not be null", observed);
+
+        if (exp.size() != observed.size()) {
+            String msgBuff = "Observed has incorrect dimensions." +
+                "\nobserved is " + observed.size() +
+                " x " + observed.size();
+
+            Assert.fail(msgBuff);
+        }
+
+        for (int i = 0; i < exp.size(); ++i) {
+            double eij = exp.getX(i);
+            double aij = observed.getX(i);
+
+            Assert.assertEquals(eij, aij, eps);
+        }
     }
 
     /**
@@ -334,7 +361,7 @@ public class TestUtils {
     /**
      * Gets test learning environment builder.
      *
-     * @return test learning environment builder.
+     * @return Test learning environment builder.
      */
     public static LearningEnvironmentBuilder testEnvBuilder() {
         return testEnvBuilder(123L);
@@ -344,7 +371,7 @@ public class TestUtils {
      * Gets test learning environment builder with a given seed.
      *
      * @param seed Seed.
-     * @return test learning environment builder.
+     * @return Test learning environment builder.
      */
     public static LearningEnvironmentBuilder testEnvBuilder(long seed) {
         return LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed);
@@ -421,11 +448,14 @@ public class TestUtils {
      */
     public static <I, O, M extends IgniteModel<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
         return new DatasetTrainer<M, L>() {
-            /** {@inheritDoc} */
-            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor,
-                IgniteBiFunction<K, V, L> lbExtractor) {
+            /** */
+            public <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
                 return ml;
+            }
+
+            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+                return null;
             }
 
             /** {@inheritDoc} */
@@ -433,9 +463,14 @@ public class TestUtils {
                 return true;
             }
 
-            /** {@inheritDoc} */
-            @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor) {
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Preprocessor<K, V> preprocessor) {
+                return null;
+            }
+
+            /** */
+            public <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
                 return ml;
             }
         };

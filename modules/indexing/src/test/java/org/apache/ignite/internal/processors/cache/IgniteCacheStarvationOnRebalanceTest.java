@@ -31,8 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -40,7 +38,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Test to reproduce https://issues.apache.org/jira/browse/IGNITE-3073.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 4;

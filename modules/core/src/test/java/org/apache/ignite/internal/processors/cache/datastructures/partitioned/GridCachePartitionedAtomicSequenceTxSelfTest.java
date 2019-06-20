@@ -30,15 +30,12 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Tests {@link IgniteAtomicSequence} operations inside started user transaction.
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionedAtomicSequenceTxSelfTest extends GridCommonAbstractTest {
     /** Number of threads. */
     private static final int THREAD_NUM = 8;

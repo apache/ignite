@@ -28,8 +28,6 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -38,7 +36,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  * Tests for injected resource.
  */
 @SuppressWarnings("unused")
-@RunWith(JUnit4.class)
 public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest {
     /** Bean name. */
     private static final String DUMMY_BEAN = "dummyResourceBean";

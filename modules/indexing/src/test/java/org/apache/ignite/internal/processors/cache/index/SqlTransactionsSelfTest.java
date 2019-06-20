@@ -44,13 +44,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests to check behavior regarding transactions started via SQL.
  */
-@RunWith(JUnit4.class)
 public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -60,13 +57,6 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
 
         super.execute(node(), "CREATE TABLE INTS(k int primary key, v int) WITH \"wrap_value=false,cache_name=ints," +
             "atomicity=transactional_snapshot\"");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -170,8 +160,8 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         try (Transaction ignored = node().transactions().txStart()) {
             node().cache("ints").put(1, 1);
 
-            assertSqlException(new RunnableX() {
-                @Override public void run() throws Exception {
+            assertSqlException(new Runnable() {
+                @Override public void run() {
                     execute(node(), sql);
                 }
             }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
@@ -180,8 +170,8 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         try (Transaction ignored = node().transactions().txStart()) {
             node().cache("ints").put(1, 1);
 
-            assertSqlException(new RunnableX() {
-                @Override public void run() throws Exception {
+            assertSqlException(new Runnable() {
+                @Override public void run() {
                     node().cache("ints").query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
                 }
             }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);

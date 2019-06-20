@@ -56,8 +56,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
 
@@ -65,7 +63,6 @@ import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
  * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public abstract class ClusterGroupAbstractTest extends GridCommonAbstractTest implements Externalizable {
     /** Waiting timeout. */
     private static final int WAIT_TIMEOUT = 30000;

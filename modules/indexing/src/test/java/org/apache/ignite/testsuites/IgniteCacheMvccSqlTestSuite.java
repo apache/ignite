@@ -44,18 +44,18 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccDmlSimpleTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccLocalEntriesWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedBackupsTest;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSelectForUpdateQueryTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlQueriesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlTxQueriesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlTxQueriesWithReducerTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedBackupsTest;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSelectForUpdateQueryTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlQueriesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlTxQueriesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlTxQueriesWithReducerTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentJdbcTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSelectForUpdateQueryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSelectForUpdateQueryBasicTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlConfigurationValidationTest;
@@ -67,12 +67,11 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlUpdateCounte
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccStreamingInsertTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxNodeMappingTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxRecoveryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionConfigTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -94,6 +93,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
     CacheMvccTxNodeMappingTest.class,
 
+    MvccDeadlockDetectionConfigTest.class,
     MvccDeadlockDetectionTest.class,
 
     // SQL vs CacheAPI consistency.
@@ -117,8 +117,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
     CacheMvccPartitionedSqlTxQueriesWithReducerTest.class,
     CacheMvccReplicatedSqlTxQueriesWithReducerTest.class,
-    CacheMvccPartitionedSelectForUpdateQueryTest.class,
-    CacheMvccReplicatedSelectForUpdateQueryTest.class,
+
+    CacheMvccSelectForUpdateQueryBasicTest.class,
+    CacheMvccSelectForUpdateQueryTest.class,
 
     // Failover tests.
     CacheMvccPartitionedBackupsTest.class,
@@ -196,13 +197,6 @@ public class IgniteCacheMvccSqlTestSuite {
         /** {@inheritDoc} */
         @Override protected CacheAtomicityMode atomicityMode() {
             return TRANSACTIONAL_SNAPSHOT;
-        }
-
-        /** {@inheritDoc} */
-        @Ignore("https://issues.apache.org/jira/browse/IGNITE-10765")
-        @Test
-        @Override public void testManyKeysRollback() throws Exception {
-            super.testManyKeysRollback();
         }
     }
 }

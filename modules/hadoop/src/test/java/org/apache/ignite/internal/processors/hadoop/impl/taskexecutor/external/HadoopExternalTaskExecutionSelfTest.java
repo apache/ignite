@@ -43,15 +43,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.createJobInfo;
 
 /**
  * Job tracker self test.
  */
-@RunWith(JUnit4.class)
 @Ignore("https://issues.apache.org/jira/browse/IGNITE-404")
 public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /** {@inheritDoc} */

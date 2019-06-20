@@ -40,6 +40,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -61,18 +62,10 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return Model.
-     */
+    /** {@inheritDoc} */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        Preprocessor<K, V> preprocessor) {
+        return updateModel(null, datasetBuilder, preprocessor);
     }
 
     /** {@inheritDoc} */
@@ -82,14 +75,11 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
     /** {@inheritDoc} */
     @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
+        Preprocessor<K, V> preprocessor) {
         assert datasetBuilder != null;
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor
-        );
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(preprocessor);
 
         Vector[] centers;
 

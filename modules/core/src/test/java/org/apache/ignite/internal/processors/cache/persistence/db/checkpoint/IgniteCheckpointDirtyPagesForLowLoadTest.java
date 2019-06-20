@@ -37,19 +37,18 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test generates low load to grid in having some shared groups. Test checks if pages marked dirty after some time will
  * became reasonable low for 1 put.
  */
-@RunWith(JUnit4.class)
 public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstractTest {
     /** Caches in group. */
     private static final int CACHES_IN_GRP = 1;
+
     /** Groups. */
     private static final int GROUPS = 1;
+
     /** Parts. */
     private static final int PARTS = 1024;
 

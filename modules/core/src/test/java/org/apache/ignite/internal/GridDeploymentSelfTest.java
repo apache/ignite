@@ -41,8 +41,6 @@ import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
@@ -51,7 +49,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  * Task deployment tests.
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
     private TestDeploymentSpi depSpi;

@@ -41,18 +41,18 @@ public class DataRow extends CacheDataRowAdapter {
      * @param link Link.
      * @param part Partition.
      * @param rowData Required row data.
+     * @param skipVer Whether version read should be skipped.
      */
-    protected DataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData) {
+    protected DataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData, boolean skipVer) {
         super(link);
 
         this.hash = hash;
-
         this.part = part;
 
         try {
             // We can not init data row lazily outside of entry lock because underlying buffer can be concurrently cleared.
             if (rowData != RowData.LINK_ONLY)
-                initFromLink(grp, rowData);
+                initFromLink(grp, rowData, skipVer);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -80,6 +80,8 @@ public class DataRow extends CacheDataRowAdapter {
         this.part = part;
         this.expireTime = expireTime;
         this.cacheId = cacheId;
+
+        verReady = true;
     }
 
     /**

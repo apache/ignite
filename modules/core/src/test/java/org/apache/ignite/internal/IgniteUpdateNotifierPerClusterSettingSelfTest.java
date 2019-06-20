@@ -18,34 +18,23 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbstractTest {
-    /** */
-    private String backup;
-
     /** */
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        backup = System.getProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, backup);
-
         stopAllGrids();
     }
 
@@ -62,6 +51,7 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_UPDATE_NOTIFIER, value = "true")
     public void testNotifierEnabledForCluster() throws Exception {
         checkNotifierStatusForCluster(true);
     }
@@ -70,6 +60,7 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_UPDATE_NOTIFIER, value = "false")
     public void testNotifierDisabledForCluster() throws Exception {
         checkNotifierStatusForCluster(false);
     }
@@ -79,13 +70,11 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void checkNotifierStatusForCluster(boolean enabled) throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, String.valueOf(enabled));
-
         IgniteEx grid1 = startGrid(0);
 
         checkNotifier(grid1, enabled);
 
-        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, String.valueOf(!enabled));
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, String.valueOf(!enabled));
 
         IgniteEx grid2 = startGrid(1);
 

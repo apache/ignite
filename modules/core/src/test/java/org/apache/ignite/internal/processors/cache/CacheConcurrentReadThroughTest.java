@@ -33,26 +33,23 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test was added to check fix for IGNITE-4465.
  */
-@RunWith(JUnit4.class)
 public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
     /** */
     private static final int SYS_THREADS = 16;
 
     /** */
-    private boolean client;
+    private static boolean client;
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-
-        super.beforeTestsStarted();
+    /** */
+    @Before
+    public void beforeCacheConcurrentReadThroughTest() {
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
     }
 
     /** {@inheritDoc} */

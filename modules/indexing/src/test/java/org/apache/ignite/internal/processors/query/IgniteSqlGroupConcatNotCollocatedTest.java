@@ -31,14 +31,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for GROUP_CONCAT aggregate function in not collocated mode.
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommonTest {
     /** */
     private static final int CLIENT = 7;
@@ -81,11 +78,6 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends AbstractIndexingCommo
                 k++;
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**

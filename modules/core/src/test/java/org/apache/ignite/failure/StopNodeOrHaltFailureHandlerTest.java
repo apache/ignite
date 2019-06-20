@@ -29,13 +29,10 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * {@link StopNodeOrHaltFailureHandler} tests.
  */
-@RunWith(JUnit4.class)
 public class StopNodeOrHaltFailureHandlerTest extends GridCommonAbstractTest {
     /** Number of grids started for tests. */
     public static final int NODES_CNT = 3;

@@ -172,7 +172,6 @@
 .form-field {
     position: relative;
     width: 100%;
-    font-family: Roboto;
 
     &__label {
         display: flex;
@@ -401,6 +400,7 @@
         float: none;
         width: auto;
         height: auto;
+        position: static;
 
         text-align: left;
         line-height: 14px;

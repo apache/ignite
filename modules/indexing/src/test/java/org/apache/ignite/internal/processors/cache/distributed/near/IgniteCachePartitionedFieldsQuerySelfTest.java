@@ -28,15 +28,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractFieldsQuerySelfTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Tests for fields queries.
  */
-@RunWith(JUnit4.class)
 public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstractFieldsQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

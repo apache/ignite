@@ -30,19 +30,19 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.logging.MLLogger;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTree;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 
 /**
- * Gradient boosting on trees specific learning strategy reusing learning dataset with index between
- * several learning iterations.
+ * Gradient boosting on trees specific learning strategy reusing learning dataset with index between several learning
+ * iterations.
  */
-public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
+public class GDBOnTreesLearningStrategy extends GDBLearningStrategy {
     /** Use index. */
     private boolean useIdx;
 
@@ -57,36 +57,35 @@ public class GDBOnTreesLearningStrategy  extends GDBLearningStrategy {
 
     /** {@inheritDoc} */
     @Override public <K, V> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                                     DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
 
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         assert trainer instanceof DecisionTree;
-        DecisionTree decisionTreeTrainer = (DecisionTree) trainer;
+        DecisionTree decisionTreeTrainer = (DecisionTree)trainer;
 
         List<IgniteModel<Vector, Double>> models = initLearningState(mdlToUpdate);
 
-        ConvergenceChecker<K,V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
-            externalLbToInternalMapping, loss, datasetBuilder, featureExtractor, lbExtractor);
+        ConvergenceChecker<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
+            externalLbToInternalMapping, loss, datasetBuilder, vectorizer);
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor, useIdx)
+            new DecisionTreeDataBuilder<>(vectorizer, useIdx)
         )) {
             for (int i = 0; i < cntOfIterations; i++) {
                 double[] weights = Arrays.copyOf(compositionWeights, models.size());
                 WeightedPredictionsAggregator aggregator = new WeightedPredictionsAggregator(weights, meanLbVal);
                 ModelsComposition currComposition = new ModelsComposition(models, aggregator);
 
-                if(convCheck.isConverged(dataset, currComposition))
+                if (convCheck.isConverged(dataset, currComposition))
                     break;
 
                 dataset.compute(part -> {
                     if (part.getCopiedOriginalLabels() == null)
                         part.setCopiedOriginalLabels(Arrays.copyOf(part.getLabels(), part.getLabels().length));
 
-                    for(int j = 0; j < part.getLabels().length; j++) {
+                    for (int j = 0; j < part.getLabels().length; j++) {
                         double mdlAnswer = currComposition.predict(VectorUtils.of(part.getFeatures()[j]));
                         double originalLbVal = externalLbToInternalMapping.apply(part.getCopiedOriginalLabels()[j]);
                         part.getLabels()[j] = -loss.gradient(sampleSize, originalLbVal, mdlAnswer);

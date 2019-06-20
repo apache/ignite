@@ -439,7 +439,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(TransactionState.MarkedRollback, tx.State);
 
-            var ex = Assert.Throws<TransactionRollbackException>(() => tx.Commit());
+            Assert.Throws<TransactionRollbackException>(() => tx.Commit());
 
             tx.Dispose();
 

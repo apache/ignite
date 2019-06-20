@@ -37,15 +37,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescripto
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractTest {
     /**
      * Start grid with override default configuration via customConfigurator.

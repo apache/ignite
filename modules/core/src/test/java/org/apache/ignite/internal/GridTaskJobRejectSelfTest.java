@@ -36,8 +36,6 @@ import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.events.EventType.EVTS_JOB_EXECUTION;
@@ -50,7 +48,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 /**
  * Test that rejected job is not failed over.
  */
-@RunWith(JUnit4.class)
 public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

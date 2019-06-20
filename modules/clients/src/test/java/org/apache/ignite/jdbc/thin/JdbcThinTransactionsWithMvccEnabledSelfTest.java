@@ -38,13 +38,10 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests to check behavior with transactions on.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinTransactionsWithMvccEnabledSelfTest extends JdbcThinAbstractSelfTest {
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";

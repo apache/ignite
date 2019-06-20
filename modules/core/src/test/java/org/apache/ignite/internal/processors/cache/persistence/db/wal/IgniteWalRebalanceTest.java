@@ -64,15 +64,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  * Historical WAL rebalance base test.
  */
-@RunWith(JUnit4.class)
 public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -625,7 +622,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             if (file.getName().endsWith(".wal") && failRead)
                 return new FileIODecorator(delegateIO) {
                     @Override public int read(ByteBuffer destBuf) throws IOException {
-                        throw new IgniteException("Test exception.");
+                        throw new IOException("Test exception."); // IO exception is required for correct cleanup.
                     }
                 };
 

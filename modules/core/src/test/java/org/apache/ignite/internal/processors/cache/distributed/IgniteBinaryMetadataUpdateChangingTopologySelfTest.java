@@ -49,14 +49,11 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests specific scenario when binary metadata should be updated from a system thread
  * and topology has been already changed since the original transaction start.
  */
-@RunWith(JUnit4.class)
 public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

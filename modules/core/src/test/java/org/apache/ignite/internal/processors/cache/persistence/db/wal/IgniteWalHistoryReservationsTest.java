@@ -41,16 +41,14 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     /** */
     private volatile boolean client;
@@ -113,7 +111,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReservedOnExchange() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
@@ -261,8 +259,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10551");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
 
         int entryCnt = 10_000;
 
@@ -314,8 +311,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeIsClearedIfHistoryIsUnavailable() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10551");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
 
         int entryCnt = 10_000;
 
@@ -378,8 +374,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWalHistoryPartiallyRemoved() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10551");
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
 
         int entryCnt = 10_000;
 
@@ -421,7 +416,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeLeftDuringExchange() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 

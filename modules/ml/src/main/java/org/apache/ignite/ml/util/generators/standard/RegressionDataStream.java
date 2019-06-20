@@ -81,7 +81,7 @@ public class RegressionDataStream implements DataStreamGenerator {
     }
 
     /** {@inheritDoc} */
-    @Override public Stream<LabeledVector<Vector, Double>> labeled() {
+    @Override public Stream<LabeledVector<Double>> labeled() {
         seed *= 2;
         return new UniformRandomProducer(minXVal, maxXVal, seed)
             .vectorize(vectorSize).asDataStream()

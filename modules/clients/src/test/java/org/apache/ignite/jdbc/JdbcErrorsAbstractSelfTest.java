@@ -42,13 +42,10 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test SQLSTATE codes propagation with (any) Ignite JDBC driver.
  */
-@RunWith(JUnit4.class)
 public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     protected static final String CACHE_STORE_TEMPLATE = "cache_store";
@@ -71,6 +68,11 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
         // add cache template for cache with enabled cache interceptor
         grid.addCacheConfiguration(new CacheConfiguration<>(CACHE_INTERCEPTOR_TEMPLATE)
             .setInterceptor(new TestCacheInterceptor()));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean keepSerializedObjects() {
+        return true;
     }
 
     /**
@@ -111,7 +113,7 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             "Value for INSERT, COPY, MERGE, or UPDATE must not be null");
 
         checkErrorState("INSERT INTO \"test\".INTEGER(_key, _val) values(1, 'zzz')", "0700B",
-            "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
+            "Value conversion failed [column=_VAL, from=java.lang.String, to=java.lang.Integer]");
     }
 
     /**

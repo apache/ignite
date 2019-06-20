@@ -22,8 +22,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMultiNodeLockAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -31,7 +29,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Test cases for multi-threaded tests.
  */
-@RunWith(JUnit4.class)
 public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNodeLockAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {

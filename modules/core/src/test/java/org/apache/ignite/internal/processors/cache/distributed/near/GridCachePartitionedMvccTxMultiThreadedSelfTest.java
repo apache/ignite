@@ -22,7 +22,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteMvccTxMultiThreadedAbstractTest;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -31,9 +33,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class GridCachePartitionedMvccTxMultiThreadedSelfTest extends IgniteMvccTxMultiThreadedAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         if (nearEnabled())
-            MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
+            Assume.assumeTrue(MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.NEAR_CACHE));
+
+        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
@@ -42,6 +46,7 @@ public class GridCachePartitionedMvccTxMultiThreadedSelfTest extends IgniteMvccT
 
         CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
 
+        ccfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
 

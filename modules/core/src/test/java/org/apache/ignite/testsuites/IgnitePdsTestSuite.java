@@ -26,11 +26,14 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheCon
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDiscoDataHandlingInNewClusterTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSporadicDataRecordsOnBackupTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest2;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
@@ -41,20 +44,25 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFacto
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryLazyAllocationTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryLazyAllocationWithPDSTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryNoStoreLeakTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSmokeTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTestPersistence;
 import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBufferTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SysPropWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAwareTest;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationPersistentTest;
 import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessorTest;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -83,6 +91,8 @@ public class IgnitePdsTestSuite {
         //GridTestUtils.addTestIfNeeded(suite, PageMemoryNoLoadSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryImplNoLoadTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryNoStoreLeakTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageMemoryLazyAllocationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageMemoryLazyAllocationWithPDSTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IndexStoragePageMemoryImplTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageMemoryImplTest.class, ignoredTests);
         //GridTestUtils.addTestIfNeeded(suite, PageIdDistributionTest.class, ignoredTests);
@@ -97,8 +107,13 @@ public class IgnitePdsTestSuite {
         // Write throttling
         GridTestUtils.addTestIfNeeded(suite, PagesWriteThrottleSmokeTest.class, ignoredTests);
 
+        // Discovery data handling on node join and old cluster abnormal shutdown
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsDiscoDataHandlingInNewClusterTest.class, ignoredTests);
+
         // Metrics
         GridTestUtils.addTestIfNeeded(suite, FillFactorMetricTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, UsedPagesMetricTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, UsedPagesMetricTestPersistence.class, ignoredTests);
 
         // WAL delta consistency
         GridTestUtils.addTestIfNeeded(suite, CpTriggeredWalDeltaConsistencyTest.class, ignoredTests);
@@ -153,6 +168,8 @@ public class IgnitePdsTestSuite {
         // GridTestUtils.addTestIfNeeded(suite, IgnitePdsClientNearCachePutGetTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteDbPutGetWithCacheStoreTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsWithTtlTest2.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgnitePdsSporadicDataRecordsOnBackupTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteClusterActivateDeactivateTestWithPersistence.class, ignoredTests);
 
@@ -169,7 +186,10 @@ public class IgnitePdsTestSuite {
 
         //MetaStorage
         GridTestUtils.addTestIfNeeded(suite, IgniteMetaStorageBasicTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, DistributedMetaStorageTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DistributedMetaStoragePersistentTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DistributedConfigurationPersistentTest.class, ignoredTests);
+
+        //Diagnostic
+        GridTestUtils.addTestIfNeeded(suite, DiagnosticProcessorTest.class, ignoredTests);
     }
 }

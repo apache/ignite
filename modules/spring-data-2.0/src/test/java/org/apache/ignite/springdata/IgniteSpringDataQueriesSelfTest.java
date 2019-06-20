@@ -27,8 +27,6 @@ import org.apache.ignite.springdata.misc.Person;
 import org.apache.ignite.springdata.misc.PersonSecondRepository;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -37,7 +35,6 @@ import org.springframework.data.domain.Sort;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** Repository. */
     private static PersonRepository repo;

@@ -36,14 +36,11 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test verifies that binary metadata of values stored in cache and indexes upon these values
  * is handled correctly on cluster restart when persistent store is enabled and compact footer is turned on.
  */
-@RunWith(JUnit4.class)
 public class IgniteDbSingleNodeWithIndexingWalRestoreTest extends GridCommonAbstractTest {
     /** */
     private static final String BINARY_TYPE_NAME = "BinaryPerson";

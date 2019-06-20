@@ -34,13 +34,10 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest implements Serializable {
     /** Threads number for multi-thread tests. */
     private static final int THREADS = 10;

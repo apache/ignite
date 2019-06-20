@@ -38,10 +38,10 @@ public class GridConsoleAdapter implements GridConsole {
 
     /** Constructor. */
     private GridConsoleAdapter(Console delegate) {
-        this.delegate = System.console();
-
         if (delegate == null)
             throw new NullPointerException("Console is not available.");
+
+        this.delegate = delegate;
     }
 
     /** {@inheritDoc} */

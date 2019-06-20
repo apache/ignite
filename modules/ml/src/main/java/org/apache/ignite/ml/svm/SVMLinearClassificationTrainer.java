@@ -21,12 +21,14 @@ import java.util.Random;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.primitives.vector.impl.SparseVector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.preprocessing.developer.PatchedPreprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -36,8 +38,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Base class for a soft-margin SVM linear classification trainer based on the communication-efficient distributed dual
  * coordinate ascent algorithm (CoCoA) with hinge-loss function. <p> This trainer takes input as Labeled Dataset with 0
- * and 1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
- * here https://arxiv.org/abs/1409.1458.
+ * and 1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found here
+ * https://arxiv.org/abs/1409.1458.
  */
 public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SVMLinearClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
@@ -56,35 +58,35 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param preprocessor Extractor of {@link UpstreamEntry} into {@link LabeledVector}.
      * @return Model.
      */
     @Override public <K, V> SVMLinearClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                             Preprocessor<K, V> preprocessor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, preprocessor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> SVMLinearClassificationModel updateModel(SVMLinearClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                                        DatasetBuilder<K, V> datasetBuilder,
+                                                                        Preprocessor<K, V> preprocessor) {
 
         assert datasetBuilder != null;
 
-        IgniteBiFunction<K, V, Double> patchedLbExtractor = (k, v) ->  {
-            final Double lb = lbExtractor.apply(k, v);
+        IgniteFunction<Double, Double> lbTransformer = lb -> {
             if (lb == 0.0)
                 return -1.0;
             else
                 return lb;
         };
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            patchedLbExtractor
-        );
+        IgniteFunction<LabeledVector<Double>, LabeledVector<Double>> func = lv -> new LabeledVector<>(lv.features(), lbTransformer.apply(lv.label()));
+
+        PatchedPreprocessor<K, V, Double, Double> patchedPreprocessor = new PatchedPreprocessor<>(func, preprocessor);
+
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(patchedPreprocessor);
 
         Vector weights;
 
@@ -136,7 +138,7 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
         int stateVectorSize = weights.size() + 1;
         Vector res = weights.isDense() ?
             new DenseVector(stateVectorSize) :
-            new SparseVector(stateVectorSize, StorageConstants.RANDOM_ACCESS_MODE);
+            new SparseVector(stateVectorSize);
 
         res.set(0, intercept);
         weights.nonZeroes().forEach(ith -> res.set(ith.index(), ith.get()));

@@ -56,13 +56,6 @@ public abstract class AbstractWalDeltaConsistencyTest extends GridCommonAbstract
         return defaultCacheConfiguration().setName(name);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Check page memory on each checkpoint.
      */

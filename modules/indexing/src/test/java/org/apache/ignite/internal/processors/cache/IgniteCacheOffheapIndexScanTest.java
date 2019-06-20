@@ -28,15 +28,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Based scanCount with offheap index issue.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     /** */
     private static IgniteCache<Integer, Object> cache;

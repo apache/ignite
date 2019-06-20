@@ -22,15 +22,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
  * Check DataStreamer with Mvcc enabled.
  */
-@RunWith(JUnit4.class)
 public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

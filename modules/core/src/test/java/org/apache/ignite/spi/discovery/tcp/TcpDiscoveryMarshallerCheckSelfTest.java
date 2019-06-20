@@ -24,13 +24,10 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
-@RunWith(JUnit4.class)
 public class TcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean sameMarsh;

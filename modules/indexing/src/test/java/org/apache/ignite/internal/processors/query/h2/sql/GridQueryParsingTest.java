@@ -47,6 +47,8 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -58,8 +60,6 @@ import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -67,7 +67,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     /** */
     private static Ignite ignite;
@@ -386,24 +385,24 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     public void testParseMerge() throws Exception {
         /* Plain rows w/functions, operators, defaults, and placeholders. */
         checkQuery("merge into Person(old, name) values(5, 'John')");
-        checkQuery("merge into Person(name) values(DEFAULT)");
-        checkQuery("merge into Person(name) values(DEFAULT), (null)");
-        checkQuery("merge into Person(name, parentName) values(DEFAULT, null), (?, ?)");
+        checkQuery("merge into Person(name) values(null)");
+        checkQuery("merge into Person(name) values(null), (null)");
+        checkQuery("merge into Person(name, parentName) values(null, null), (?, ?)");
         checkQuery("merge into Person(old, name) values(5, 'John',), (6, 'Jack')");
-        checkQuery("merge into Person(old, name) values(5 * 3, DEFAULT,)");
+        checkQuery("merge into Person(old, name) values(5 * 3, null,)");
         checkQuery("merge into Person(old, name) values(ABS(-8), 'Max')");
-        checkQuery("merge into Person(old, name) values(5, 'Jane'), (DEFAULT, DEFAULT), (6, 'Jill')");
-        checkQuery("merge into Person(old, name, parentName) values(8 * 7, DEFAULT, 'Unknown')");
+        checkQuery("merge into Person(old, name) values(5, 'Jane'), (null, null), (6, 'Jill')");
+        checkQuery("merge into Person(old, name, parentName) values(8 * 7, null, 'Unknown')");
         checkQuery("merge into Person(old, name, parentName) values" +
             "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
             "(?, 'AlexanderPushkin', null)," +
-            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), DEFAULT)");
+            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null)");
         checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
             "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
         checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
             "(CURRENT_DATE(), RAND(), ASCII('Hi'), INSERT('Leo Tolstoy', 4, 4, 'Max'), ASCII('HI'))");
         checkQuery("merge into Person(date, old, name, parentName, addrId) values " +
-            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, DEFAULT, DEFAULT)");
+            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, NULL, NULL)");
         checkQuery("merge into Person(old, name) select ASCII(parentName), INSERT(parentName, 4, 4, 'Max') from " +
             "Person where date='2011-03-12'");
 
@@ -433,27 +432,26 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     public void testParseInsert() throws Exception {
         /* Plain rows w/functions, operators, defaults, and placeholders. */
         checkQuery("insert into Person(old, name) values(5, 'John')");
-        checkQuery("insert into Person(name) values(DEFAULT)");
-        checkQuery("insert into Person default values");
+        checkQuery("insert into Person(name) values(null)");
         checkQuery("insert into Person() values()");
-        checkQuery("insert into Person(name) values(DEFAULT), (null)");
-        checkQuery("insert into Person(name) values(DEFAULT),");
-        checkQuery("insert into Person(name, parentName) values(DEFAULT, null), (?, ?)");
+        checkQuery("insert into Person(name) values(null), (null)");
+        checkQuery("insert into Person(name) values(null),");
+        checkQuery("insert into Person(name, parentName) values(null, null), (?, ?)");
         checkQuery("insert into Person(old, name) values(5, 'John',), (6, 'Jack')");
-        checkQuery("insert into Person(old, name) values(5 * 3, DEFAULT,)");
+        checkQuery("insert into Person(old, name) values(5 * 3, null,)");
         checkQuery("insert into Person(old, name) values(ABS(-8), 'Max')");
-        checkQuery("insert into Person(old, name) values(5, 'Jane'), (DEFAULT, DEFAULT), (6, 'Jill')");
-        checkQuery("insert into Person(old, name, parentName) values(8 * 7, DEFAULT, 'Unknown')");
+        checkQuery("insert into Person(old, name) values(5, 'Jane'), (null, null), (6, 'Jill')");
+        checkQuery("insert into Person(old, name, parentName) values(8 * 7, null, 'Unknown')");
         checkQuery("insert into Person(old, name, parentName) values" +
             "(2016 - 1828, CONCAT('Leo', 'Tolstoy'), CONCAT(?, 'Tolstoy'))," +
             "(?, 'AlexanderPushkin', null)," +
-            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), DEFAULT),");
+            "(ABS(1821 - 2016), CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), null),");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
             "('20160112', 1233, 'Ivan Ivanov', 'Peter Ivanov', 123)");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
             "(CURRENT_DATE(), RAND(), ASCII('Hi'), INSERT('Leo Tolstoy', 4, 4, 'Max'), ASCII('HI'))");
         checkQuery("insert into Person(date, old, name, parentName, addrId) values " +
-            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, DEFAULT, DEFAULT)");
+            "(TRUNCATE(TIMESTAMP '2015-12-31 23:59:59'), POWER(3,12), NULL, NULL, NULL)");
         checkQuery("insert into Person SET old = 5, name = 'John'");
         checkQuery("insert into Person SET name = CONCAT('Fyodor', null, UPPER(CONCAT(SQRT(?), 'dostoevsky'))), " +
             "old = select (5, 6)");
@@ -490,7 +488,6 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         checkQuery("update Person per set name='Peter', old = 5");
         checkQuery("update Person p set name='Peter' limit 20");
         checkQuery("update Person p set name='Peter', old = length('zzz') limit 20");
-        checkQuery("update Person p set name=DEFAULT, old = null limit ?");
         checkQuery("update Person p set name=? where old >= ? and old < ? limit ?");
         checkQuery("update Person p set name=(select a.Street from sch2.Address a where a.id=p.addrId), old = " +
             "(select 42) where old = sqrt(?)");
@@ -705,9 +702,16 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
         assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists (company varchar, city varchar)",
             DbException.class, null);
 
-        // Both BEFORE and AFTER keywords.
+        // Both BEFORE keyword.
         assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar before addrid",
-            IgniteSQLException.class, "ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported");
+            IgniteSQLException.class, "BEFORE keyword is not supported");
+
+        // Both AFTER keyword.
+        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar after addrid",
+            IgniteSQLException.class, "AFTER keyword is not supported");
+
+        assertParseThrows("ALTER TABLE IF EXISTS SCH2.Person ADD if not exists company varchar first",
+            IgniteSQLException.class, "FIRST keyword is not supported");
 
         // No such schema.
         assertParseThrows("ALTER TABLE SCH5.\"Person\" ADD (city varchar)", DbException.class, null);
@@ -1039,7 +1043,46 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
     private <T extends Prepared> T parse(String sql) throws Exception {
         Session ses = (Session)connection().getSession();
 
-        return (T)ses.prepare(sql);
+        setQueryContext();
+
+        try {
+            return (T)ses.prepare(sql);
+        }
+        finally {
+            clearQueryContext();
+        }
+    }
+
+    /**
+     * Sets thread local query context.
+     */
+    private void setQueryContext() {
+        QueryContextRegistry qryCtxRegistry = indexing().queryContextRegistry();
+
+        QueryContext qctx = new QueryContext(
+            0,
+            null,
+            null,
+            null,
+            null,
+            true
+        );
+
+        qryCtxRegistry.setThreadLocal(qctx);
+    }
+
+    /**
+     * Clears thread local query context.
+     */
+    private void clearQueryContext() {
+        indexing().queryContextRegistry().clearThreadLocal();
+    }
+
+    /**
+     * @return H2 indexing manager.
+     */
+    private IgniteH2Indexing indexing() {
+        return (IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing();
     }
 
     /**

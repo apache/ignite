@@ -19,8 +19,6 @@ package org.apache.ignite.p2p;
 
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -28,7 +26,6 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
  * Shared deployment mode test.
  */
 @GridCommonTest(group = "P2P")
-@RunWith(JUnit4.class)
 public class GridMultinodeRedeploySharedModeSelfTest extends GridAbstractMultinodeRedeployTest {
     /**
      * Test GridDeploymentMode.SHARED mode.

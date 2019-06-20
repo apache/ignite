@@ -43,29 +43,33 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinDatabaseMetadata;
+import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
-import static java.sql.Types.INTEGER;
-import static java.sql.Types.VARCHAR;
-import static java.sql.Types.DECIMAL;
 import static java.sql.Types.DATE;
+import static java.sql.Types.DECIMAL;
+import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
+import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Metadata tests.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** URL. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2");
+    }
 
     /**
      * @param qryEntity Query entity.
@@ -131,8 +135,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        IgniteCache<Integer, Department> departmentCache = jcache(grid(0),
-            defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class), "dep");
+        jcache(grid(0),
+            defaultCacheConfiguration().setIndexedTypes(Integer.class, Department.class),
+            "dep");
 
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
@@ -232,7 +237,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -241,7 +246,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -250,7 +255,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -259,7 +264,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -614,8 +619,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     '.' + rs.getString("COLUMN_NAME"));
             }
 
-            assert expectedPks.equals(actualPks) : "expectedPks=" + expectedPks +
-                ", actualPks" + actualPks;
+            assertEquals("Metadata contains unexpected primary keys info.", expectedPks, actualPks);
         }
     }
 
@@ -624,23 +628,101 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testParametersMetadata() throws Exception {
+        // Perform checks few times due to query/plan caching.
+        for (int i = 0; i < 3; i++) {
+            // No parameters statement.
+            try(Connection conn = DriverManager.getConnection(URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement noParams = conn.prepareStatement("select * from Person;");
+                ParameterMetaData params = noParams.getParameterMetaData();
+
+                assertEquals("Parameters should be empty.", 0, params.getParameterCount());
+            }
+
+            // Selects.
+            try (Connection conn = DriverManager.getConnection(URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement selectStmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = selectStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(2, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
+
+            // Updates.
+            try (Connection conn = DriverManager.getConnection(URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement updateStmt = conn.prepareStatement("update Person p set orgId = 42 where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = updateStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(2, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
+
+            // Multistatement
+            try (Connection conn = DriverManager.getConnection(URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement updateStmt = conn.prepareStatement(
+                    "update Person p set orgId = 42 where p.name > ? and p.orgId > ?;" +
+                        "select orgId from Person p where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = updateStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(4, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(3));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(3));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(3));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(4));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(4));
+            }
+        }
+    }
+
+    /**
+     * Check that parameters metadata throws correct exception on non-parsable statement.
+     */
+    @Test
+    public void testParametersMetadataNegative() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.setSchema("\"pers\"");
 
-            PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+            PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
 
-            ParameterMetaData meta = stmt.getParameterMetaData();
-
-            assert meta != null;
-
-            assert meta.getParameterCount() == 2;
-
-            assert meta.getParameterType(1) == Types.VARCHAR;
-            assert meta.isNullable(1) == ParameterMetaData.parameterNullableUnknown;
-            assert meta.getPrecision(1) == Integer.MAX_VALUE;
-
-            assert meta.getParameterType(2) == Types.INTEGER;
-            assert meta.isNullable(2) == ParameterMetaData.parameterNullableUnknown;
+            GridTestUtils.assertThrows(log(), notCorrect::getParameterMetaData, SQLException.class,
+                "Table \"NOTEXISTINGTABLE\" not found");
         }
     }
 
@@ -652,7 +734,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("PUBLIC", "pers", "org", "dep"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("SYS", "PUBLIC", "pers",
+                "org", "dep", "PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
 
             Set<String> schemas = new HashSet<>();
 
@@ -660,13 +743,14 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 schemas.add(rs.getString(1));
 
                 assertEquals("There is only one possible catalog.",
-                    JdbcThinDatabaseMetadata.CATALOG_NAME, rs.getString(2));
+                    JdbcUtils.CATALOG_NAME, rs.getString(2));
             }
 
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +
                 ". Expected schemas: " + expectedSchemas;
         }
     }
+
     /**
      * Negative scenarios for catalog name.
      * Perform metadata lookups, that use incorrect catalog names.

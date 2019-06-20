@@ -340,7 +340,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
                 Map<String, Object> map = (Map<String, Object>)ser;
 
                 if (map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
-                    flag = (Boolean) map.get(ATTR_UPDATE_NOTIFIER_STATUS);
+                    flag = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
             }
         }
 
@@ -539,8 +539,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Sends diagnostic message closure to remote node. When response received dumps
-     * remote message and local communication info about connection(s) with remote node.
+     * Sends diagnostic message closure to remote node. When response received dumps remote message and local
+     * communication info about connection(s) with remote node.
      *
      * @param nodeId Target node ID.
      * @param c Closure to send.

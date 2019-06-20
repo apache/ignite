@@ -34,8 +34,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -43,7 +41,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Test for configuration property {@link CacheConfiguration#isWriteThrough}.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteCacheNoWriteThroughAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private Integer lastKey = 0;

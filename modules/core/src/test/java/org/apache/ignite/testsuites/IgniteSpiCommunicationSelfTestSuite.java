@@ -39,7 +39,9 @@ import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWa
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientSslTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFreezingClientTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationStatisticsTest;
@@ -80,6 +82,10 @@ import org.junit.runners.Suite;
     TcpCommunicationSpiSkipMessageSendTest.class,
 
     TcpCommunicationSpiFaultyClientTest.class,
+    TcpCommunicationSpiFaultyClientSslTest.class,
+
+    TcpCommunicationSpiFreezingClientTest.class,
+
     TcpCommunicationSpiDropNodesTest.class,
     TcpCommunicationSpiHalfOpenedConnectionTest.class,
 

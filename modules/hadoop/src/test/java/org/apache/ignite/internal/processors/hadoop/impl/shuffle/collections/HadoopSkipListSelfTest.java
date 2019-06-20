@@ -44,13 +44,10 @@ import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Skip list tests.
  */
-@RunWith(JUnit4.class)
 public class HadoopSkipListSelfTest extends HadoopAbstractMapTest {
     /**
      * @throws Exception On error.

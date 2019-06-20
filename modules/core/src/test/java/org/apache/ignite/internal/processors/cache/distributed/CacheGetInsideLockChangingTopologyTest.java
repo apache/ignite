@@ -28,7 +28,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,9 +40,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -56,7 +54,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTest {
 
     /** */
@@ -116,8 +113,6 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
@@ -146,7 +141,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+        stopAllGrids();
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -365,10 +362,9 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-2204")
     @Test
     public void testMultithreaded() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-2204");
-
         final AtomicBoolean finished = new AtomicBoolean();
 
         final int NEW_NODE = SRVS + CLIENTS;

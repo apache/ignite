@@ -95,7 +95,6 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
         super(data, colSize);
     }
 
-
     /**
      * Creates new local Labeled Dataset by matrix and vector of labels.
      *
@@ -189,7 +188,7 @@ public class LabeledVectorSet<L, Row extends LabeledVector> extends Dataset<Row>
      * @param lb The given label.
      */
     public void setLabel(int idx, double lb) {
-        LabeledVector<Vector, Double> labeledVector = data[idx];
+        LabeledVector<Double> labeledVector = data[idx];
 
         if(labeledVector != null)
             labeledVector.setLabel(lb);

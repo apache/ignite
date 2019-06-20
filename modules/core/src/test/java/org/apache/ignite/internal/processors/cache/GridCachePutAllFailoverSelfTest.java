@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobContext;
@@ -61,8 +60,6 @@ import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -72,7 +69,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests putAll() method along with failover and different configurations.
  */
-@RunWith(JUnit4.class)
 public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     /** Size of the test map. */
     private static final int TEST_MAP_SIZE = 30_000;
@@ -116,18 +112,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
     /** Test failover SPI. */
     private MasterFailoverSpi failoverSpi = new MasterFailoverSpi((IgnitePredicate)workerNodesFilter);
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
-    }
 
     /**
      * @throws Exception If failed.
@@ -710,7 +694,6 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             cacheCfg.setNearConfiguration(nearEnabled ? new NearCacheConfiguration() : null);
 
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-
 
             cfg.setCacheConfiguration(cacheCfg);
         }

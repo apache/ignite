@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,17 +30,23 @@ import org.junit.Test;
 public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
+
     /** */
     private static final double LABEL_1 = 1.;
+
     /** */
     private static final double LABEL_2 = 2.;
 
     /** Binary data. */
     private static final Map<Integer, double[]> binarizedData = new HashMap<>();
+
     /** Data. */
     private static final Map<Integer, double[]> data = new HashMap<>();
+
     /** */
     private static final double[][] binarizedDatathresholds = new double[][] {{.5}, {.5}, {.5}, {.5}, {.5}};
+
+    /** */
     private static final double[][] thresholds = new double[][] {{4, 8}, {.5}, {.3, .4, .5}, {250, 500, 750}};
 
     static {
@@ -88,8 +94,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         double[] expectedProbabilities = {6. / binarizedData.size(), 7. / binarizedData.size()};
@@ -105,8 +110,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertArrayEquals(new double[] {.5, .5}, model.getClsProbabilities(), PRECISION);
@@ -122,8 +126,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         Assert.assertArrayEquals(priorProbabilities, model.getClsProbabilities(), PRECISION);
@@ -139,14 +142,12 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
 
         DiscreteNaiveBayesModel model = trainer.fit(
             new LocalDatasetBuilder<>(binarizedData, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[v.length - 1]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
-            for (int j = 0; j < expectedPriorProbabilites[i].length; j++) {
+            for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
                 Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
-            }
         }
     }
 
@@ -170,14 +171,12 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
             .setBucketThresholds(thresholds)
             .fit(
                 new LocalDatasetBuilder<>(data, parts),
-                (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-                (k, v) -> v[v.length - 1]
+                new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
             );
 
         for (int i = 0; i < expectedPriorProbabilites.length; i++) {
-            for (int j = 0; j < expectedPriorProbabilites[i].length; j++) {
+            for (int j = 0; j < expectedPriorProbabilites[i].length; j++)
                 Assert.assertArrayEquals(expectedPriorProbabilites[i][j], model.getProbabilities()[i][j], PRECISION);
-            }
         }
     }
 

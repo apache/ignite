@@ -59,8 +59,6 @@ import org.hibernate.mapping.RootClass;
 import org.hibernate.query.Query;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -83,7 +81,6 @@ import static org.hibernate.cfg.Environment.USE_SECOND_LEVEL_CACHE;
  *
  * Tests Hibernate L2 cache.
  */
-@RunWith(JUnit4.class)
 public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);

@@ -24,8 +24,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTruePredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a node left.
@@ -33,7 +31,6 @@ import org.junit.runners.JUnit4;
  * It uses {@link LongInitializedTestService} with long running #init method to delay requests processing and blocking
  * communication spi to be sure that single deployment message won't be sent by a node at shutdown.
  */
-@RunWith(JUnit4.class)
 public class ServiceDeploymentProcessingOnNodesLeftTest extends ServiceDeploymentProcessAbstractTest {
     /**
      * @throws Exception In case of an error.

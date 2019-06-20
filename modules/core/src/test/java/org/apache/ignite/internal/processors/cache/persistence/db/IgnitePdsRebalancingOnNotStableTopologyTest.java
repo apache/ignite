@@ -33,12 +33,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * We start writing to unstable cluster.
@@ -46,7 +43,6 @@ import org.junit.runners.JUnit4;
  * There will be entries in WAL which belongs to evicted partitions.
  * We should ignore them (not throw exceptions). This point is tested.
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstractTest {
     /** Checkpoint frequency. */
     private static final long CHECKPOINT_FREQUENCY = 2_000_000;
@@ -59,9 +55,6 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
      */
     @Test
     public void test() throws Exception {
-        if (MvccFeatureChecker.forcedMvcc())
-            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
-
         Ignite ex = startGrid(0);
 
         ex.active(true);

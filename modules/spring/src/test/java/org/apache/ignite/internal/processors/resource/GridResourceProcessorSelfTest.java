@@ -43,15 +43,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.util.Assert;
 
 /**
  * Unit tests for grid resource processor.
  */
 @GridCommonTest(group = "Resource Self")
-@RunWith(JUnit4.class)
 public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private GridTestKernalContext ctx;

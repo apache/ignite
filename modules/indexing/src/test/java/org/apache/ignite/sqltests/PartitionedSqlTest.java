@@ -20,13 +20,10 @@ package org.apache.ignite.sqltests;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Includes all base sql test plus tests that make sense in partitioned mode.
  */
-@RunWith(JUnit4.class)
 public class PartitionedSqlTest extends BaseSqlTest {
     /** {@inheritDoc} */
     @Override protected void setupData() {

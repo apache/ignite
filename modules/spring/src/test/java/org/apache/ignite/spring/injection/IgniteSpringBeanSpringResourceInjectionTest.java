@@ -28,20 +28,19 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * Test checking injections of {@link SpringResource} annotated fields.
  */
-@RunWith(JUnit4.class)
 public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstractTest {
     /** */
     private static final String SPRING_CFG_LOCATION = "/org/apache/ignite/spring/injection/spring-bean.xml";
@@ -101,6 +100,7 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
     public static class ServiceWithSpringResourceImpl implements ServiceWithSpringResource, Service {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** */
         @SpringResource(resourceClass = Integer.class)
         private transient Integer injectedSpringFld;
@@ -194,8 +194,8 @@ public class IgniteSpringBeanSpringResourceInjectionTest extends GridCommonAbstr
             new TestSpringResourceInjectedRunnable(SPRING_CFG_LOCATION, BEAN_TO_INJECT_NAME) {
                 /** {@inheritDoc} */
                 @Override Integer getInjectedBean() {
-                    IgniteCacheStoreWithSpringResource cacheStore =
-                        appCtx.getBean(IgniteCacheStoreWithSpringResource.class);
+                    IgniteCacheStoreWithSpringResource cacheStore = (IgniteCacheStoreWithSpringResource)
+                        ((IgniteEx) G.allGrids().get(0)).cachex("cache1").context().store().store();
 
                     return cacheStore.getInjectedSpringField();
                 }

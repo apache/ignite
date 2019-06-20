@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Tests
             TestLogger.Instance.Info("GetTestConfiguration: " + GetTestName());
 
             Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
+            Environment.SetEnvironmentVariable("IGNITE_NET_SUPPRESS_JAVA_ILLEGAL_ACCESS_WARNINGS", "true");
 
             return new IgniteConfiguration
             {

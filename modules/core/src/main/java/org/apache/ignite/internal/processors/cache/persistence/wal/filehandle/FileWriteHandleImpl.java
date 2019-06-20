@@ -70,6 +70,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         MappedByteBuffer.class, "force0",
         java.io.FileDescriptor.class, long.class, long.class
     );
+
     /** {@link FileWriteHandleImpl#written} atomic field updater. */
     private static final AtomicLongFieldUpdater<FileWriteHandleImpl> WRITTEN_UPD =
         AtomicLongFieldUpdater.newUpdater(FileWriteHandleImpl.class, "written");
@@ -147,6 +148,9 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
     /** WAL writer worker. */
     private final FileHandleManagerImpl.WALWriter walWriter;
+
+    /** Switch segment record offset. */
+    private int switchSegmentRecordOffset;
 
     /**
      * @param cctx Context.
@@ -489,8 +493,13 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
                         WALPointer segRecPtr = addRecord(segmentRecord);
 
-                        if (segRecPtr != null)
-                            fsync((FileWALPointer)segRecPtr);
+                        if (segRecPtr != null) {
+                            FileWALPointer filePtr = (FileWALPointer)segRecPtr;
+
+                            fsync(filePtr);
+
+                            switchSegmentRecordOffset = filePtr.fileOffset() + switchSegmentRecSize;
+                        }
                     }
 
                     if (mmap) {
@@ -596,5 +605,10 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
         catch (IOException e) {
             return "{Failed to read channel position: " + e.getMessage() + '}';
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getSwitchSegmentRecordOffset() {
+        return switchSegmentRecordOffset;
     }
 }

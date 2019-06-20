@@ -88,6 +88,10 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
 
+        if (cctx.cache() == null)
+            return new CacheInvalidStateException(
+                "Failed to perform cache operation (cache is stopped): " + cctx.name());
+
         OperationType opType = read ? OperationType.READ : WRITE;
 
         CacheGroupContext grp = cctx.group();
@@ -125,6 +129,14 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
         }
 
         return null;
+    }
+
+    /**
+     * @return {@code true} If any lost partitions was detected.
+     */
+    public boolean hasLostPartitions() {
+        return grpValidRes.values().stream()
+            .anyMatch(CacheGroupValidation::hasLostPartitions);
     }
 
     /**

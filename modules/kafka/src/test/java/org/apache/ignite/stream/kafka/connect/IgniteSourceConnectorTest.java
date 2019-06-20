@@ -56,15 +56,12 @@ import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.ConnectUtils;
 import org.apache.kafka.connect.util.FutureCallback;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests for {@link IgniteSourceConnector}.
  */
-@RunWith(JUnit4.class)
 public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     /** Number of input messages. */
     private static final int EVENT_CNT = 100;

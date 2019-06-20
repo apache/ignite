@@ -27,15 +27,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
  * Cache atomic long api test.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsAbstractTest {
     /** Random number generator. */
     private static final Random RND = new Random();

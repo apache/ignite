@@ -25,12 +25,14 @@ import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -41,7 +43,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
+public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 5103887309729425173L;
 
@@ -162,7 +164,7 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
-        return false;
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */
@@ -176,6 +178,9 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
         CacheObjectContext objCtx = cctx.cacheObjectContext();
+
+        if (!addDepInfo && cctx.deploymentEnabled())
+            addDepInfo = true;
 
         if (keys != null) {
             for (int i = 0; i < keys.size(); i++) {
@@ -196,10 +201,31 @@ public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
                         }
                     }
                     else if (val instanceof GridInvokeValue)
-                        ((GridInvokeValue)val).prepareMarshal(cctx);
+                            prepareInvokeValue(cctx, (GridInvokeValue)val);
                 }
             }
         }
+    }
+
+    /**
+     *
+     * @param cctx Cache context.
+     * @param val0 Invoke value.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void prepareInvokeValue(GridCacheContext cctx, GridInvokeValue val0) throws IgniteCheckedException {
+        assert val0 != null;
+
+        forceAddDepInfo = true;
+
+        prepareObject(val0.entryProcessor(), cctx.shared());
+
+        if (!F.isEmpty(val0.invokeArgs())) {
+            for (Object o : val0.invokeArgs())
+                prepareObject(o, cctx.shared());
+        }
+
+        val0.prepareMarshal(cctx);
     }
 
     /** {@inheritDoc} */

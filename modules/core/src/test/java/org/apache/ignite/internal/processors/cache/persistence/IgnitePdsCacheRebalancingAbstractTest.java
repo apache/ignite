@@ -58,15 +58,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /**
  * Test for rebalancing and persistence integration.
  */
-@RunWith(JUnit4.class)
 public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAbstractTest {
     /** Default cache. */
     private static final String CACHE = "cache";
@@ -140,6 +137,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
             .setCheckpointFrequency(checkpointFrequency())
             .setWalMode(WALMode.LOG_ONLY)
+            .setPageSize(1024)
+            .setWalSegmentSize(8 * 1024 * 1024) // For faster node restarts with enabled persistence.
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")
                 .setPersistenceEnabled(true)
@@ -594,6 +593,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             for (; keys < 10_000; keys++)
                 ds.addData(keys, keys);
         }
+
+        assertPartitionsSame(idleVerify(grid(0), CACHE));
 
         for (int it = 0; it < 10; it++) {
             final int it0 = it;

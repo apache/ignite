@@ -58,18 +58,16 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.lang.Boolean.FALSE;
 
 /**
  */
-@RunWith(JUnit4.class)
 public class QueryDataPageScanTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -216,7 +214,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         assertEquals(accounts * initialBalance,((Number)
             cache.query(new SqlFieldsQuery("select sum(_val) from Long use index()")
-            .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
+                .setDataPageScanEnabled(true)).getAll().get(0).get(0)).longValue());
         assertTrue(CacheDataTree.isLastFindWithDataPageScan());
 
         AtomicBoolean cancel = new AtomicBoolean();
@@ -272,6 +270,8 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (CacheException e) {
+                    MvccFeatureChecker.assertMvccWriteConflict(e);
+
                     if (!e.getMessage().contains(
                         "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))
                         throw new IllegalStateException(e);
@@ -367,7 +367,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
                     .setLazy(true)
                     .setDataPageScanEnabled(DirectPageScanIndexing.expectedDataPageScanEnabled)
                     .setArgs(1, expNestedLoops, DirectPageScanIndexing.expectedDataPageScanEnabled)
-                    .setPageSize(keysCnt / 2) // Must be less than keysCnt.
+                    .setPageSize(keysCnt / 10) // Must be less than keysCnt.
             )
         ) {
             int nestedLoops = 0;
@@ -517,13 +517,14 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
             @Nullable Collection<Object> params,
             int timeoutMillis,
             @Nullable GridQueryCancel cancel,
-            Boolean dataPageScanEnabled
+            Boolean dataPageScanEnabled,
+            final H2QueryInfo qryInfo
         ) throws IgniteCheckedException {
             callsCnt.incrementAndGet();
             assertEquals(expectedDataPageScanEnabled, dataPageScanEnabled);
 
             return super.executeSqlQueryWithTimer(stmt, conn, sql, params, timeoutMillis,
-                cancel, dataPageScanEnabled);
+                cancel, dataPageScanEnabled, qryInfo);
         }
     }
 
@@ -577,6 +578,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      */
     static class Person implements Externalizable {
         String name;
+
         int age;
 
         public Person() {

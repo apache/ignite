@@ -31,13 +31,10 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * TTL manager eviction self test.
  */
-@RunWith(JUnit4.class)
 public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int ENTRIES_TO_PUT = 10_100;
@@ -50,8 +47,8 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
-        MvccFeatureChecker.failIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EXPIRATION);
+        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.EVICTION);
 
         super.beforeTestsStarted();
     }

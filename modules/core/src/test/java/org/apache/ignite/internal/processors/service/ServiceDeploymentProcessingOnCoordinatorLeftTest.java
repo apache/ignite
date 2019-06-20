@@ -23,8 +23,6 @@ import org.apache.ignite.internal.processors.service.inner.LongInitializedTestSe
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a coordinator change.
@@ -32,7 +30,6 @@ import org.junit.runners.JUnit4;
  * It uses {@link LongInitializedTestService} with long running #init method to delay requests processing and blocking
  * discovery spi to be sure that full deployments message won't be sent by a coordinator at shutdown.
  */
-@RunWith(JUnit4.class)
 public class ServiceDeploymentProcessingOnCoordinatorLeftTest extends ServiceDeploymentProcessAbstractTest {
     /**
      * @throws Exception In case of an error.

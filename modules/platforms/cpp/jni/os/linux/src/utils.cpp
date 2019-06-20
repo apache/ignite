@@ -37,7 +37,8 @@ namespace ignite
     namespace jni
     {
         const char* JAVA_HOME = "JAVA_HOME";
-        const char* JAVA_DLL = "/jre/lib/amd64/server/libjvm.so";
+        const char* JAVA_DLL1 = "/jre/lib/amd64/server/libjvm.so";
+        const char* JAVA_DLL2 = "/lib/server/libjvm.so";
 
         const char* IGNITE_HOME = "IGNITE_HOME";
 
@@ -311,7 +312,12 @@ namespace ignite
 
             if (!javaEnv.empty())
             {
-                std::string javaDll = javaEnv + JAVA_DLL;
+                std::string javaDll = javaEnv + JAVA_DLL1;
+
+                if (FileExists(javaDll))
+                    return javaDll;
+
+                javaDll = javaEnv + JAVA_DLL2;
 
                 if (FileExists(javaDll))
                     return javaDll;

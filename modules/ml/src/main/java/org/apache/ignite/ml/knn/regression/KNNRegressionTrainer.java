@@ -19,37 +19,27 @@ package org.apache.ignite.ml.knn.regression;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
  * kNN algorithm trainer to solve regression task.
  */
 public class KNNRegressionTrainer extends SingleLabelDatasetTrainer<KNNRegressionModel> {
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @return Model.
-     */
+    /** {@inheritDoc} */
     @Override public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                   Preprocessor<K, V> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> KNNRegressionModel updateModel(
         KNNRegressionModel mdl,
         DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+        Preprocessor<K, V> extractor) {
 
-        KNNRegressionModel res = new KNNRegressionModel(KNNUtils.buildDataset(envBuilder, datasetBuilder,
-            featureExtractor, lbExtractor));
+        KNNRegressionModel res = new KNNRegressionModel(KNNUtils.buildDataset(envBuilder, datasetBuilder, extractor));
         if (mdl != null)
             res.copyStateFrom(mdl);
         return res;

@@ -36,14 +36,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests multiple parallel jobs execution, accessing services(), while starting new nodes.
  */
 @GridCommonTest(group = "Kernal Self")
-@RunWith(JUnit4.class)
 public class GridJobServicesAddNodeTest extends GridCommonAbstractTest {
     /** */
     private static final int LOG_MOD = 100;

@@ -33,6 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
@@ -47,6 +48,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.store.CacheStore;
@@ -65,16 +67,16 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -93,13 +95,15 @@ import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.C
 /**
  * Continuous queries tests.
  */
-@RunWith(JUnit4.class)
 public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommonAbstractTest implements Serializable {
     /** Latch timeout. */
     protected static final long LATCH_TIMEOUT = 5000;
 
     /** */
     private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
+
+    /** Map of filtered entries. */
+    private static final Map<Object, Object> FILTERED = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -1196,6 +1200,174 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(1, (int)map.get(1));
             assertEquals(2, (int)map.get(2));
         }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testQueryWithRemoteFilterFactory() throws Exception {
+        doQueryWithRemoteFilterFactory(true, true);
+        doQueryWithRemoteFilterFactory(true, false);
+        doQueryWithRemoteFilterFactory(false, true);
+        doQueryWithRemoteFilterFactory(false, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testQueryWithRemoteFilter() throws Exception {
+        doQueryWithRemoteFilter(true, true);
+        doQueryWithRemoteFilter(true, false);
+        doQueryWithRemoteFilter(false, true);
+        doQueryWithRemoteFilter(false, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testQueryWithRemoteTransformer() throws Exception{
+        doQueryWithRemoteTransformer(true, true);
+        doQueryWithRemoteTransformer(true, false);
+        doQueryWithRemoteTransformer(false, true);
+        doQueryWithRemoteTransformer(false, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     * @param bypassFilter Whether remote filter should be bypassed.
+     * @param setLocLsnr Whether local listner should be setted.
+     */
+    private void doQueryWithRemoteFilterFactory(boolean setLocLsnr, boolean bypassFilter) throws Exception {
+        FILTERED.clear();
+
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+        Map<Integer, Integer> listened = new ConcurrentHashMap<>();
+
+        if (setLocLsnr) {
+            qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                    evts.forEach(event -> listened.put(event.getKey(), event.getValue()));
+                }
+            });
+        }
+
+        qry.setRemoteFilterFactory(
+            FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
+                FILTERED.put(evt.getKey(), evt.getValue());
+
+                return bypassFilter;
+            }));
+
+        try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
+            checkLsnrAndFilterResults(setLocLsnr, bypassFilter, listened);
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     * @param bypassFilter Whether remote filter should be bypassed.
+     * @param setLocLsnr Whether local listner should be setted.
+     */
+    private void doQueryWithRemoteFilter(boolean setLocLsnr, boolean bypassFilter) throws Exception {
+        FILTERED.clear();
+
+        ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+        Map<Integer, Integer> listened = new ConcurrentHashMap<>();
+
+        if (setLocLsnr) {
+            qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
+                    evts.forEach(event -> listened.put(event.getKey(), event.getValue()));
+                }
+            });
+        }
+
+        qry.setRemoteFilter(evt -> {
+                FILTERED.put(evt.getKey(), evt.getValue());
+
+                return bypassFilter;
+            });
+
+        try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
+            checkLsnrAndFilterResults(setLocLsnr, bypassFilter, listened);
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     * @param bypassFilter Whether remote filter should be bypassed.
+     * @param setLocLsnr Whether local listner should be setted.
+     */
+    private void doQueryWithRemoteTransformer(boolean setLocLsnr, boolean bypassFilter) throws Exception {
+        FILTERED.clear();
+
+        ContinuousQueryWithTransformer<Integer, Integer, T2<Integer, Integer>> qry =
+            new ContinuousQueryWithTransformer<>();
+
+        Map<Integer, Integer> listened = new ConcurrentHashMap<>();
+
+        if (setLocLsnr) {
+            qry.setLocalListener(evts -> {
+                evts.forEach(event ->
+                    listened.put(event.getKey(), event.getValue()));
+            });
+        }
+
+        qry.setRemoteFilterFactory(
+            FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> {
+                FILTERED.put(evt.getKey(), evt.getValue());
+
+                return bypassFilter;
+            }));
+
+        qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
+            new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, T2<Integer, Integer>>() {
+                @Override public T2<Integer, Integer> apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+                    T2<Integer, Integer> res = new T2<>();
+
+                    res.put(evt.getKey(), evt.getValue());
+
+                    return res;
+                }
+            }));
+
+        try (QueryCursor<Cache.Entry<Integer, Integer>> qryCursor = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
+            checkLsnrAndFilterResults(setLocLsnr, bypassFilter, listened);
+        }
+    }
+
+    /**
+     * @param setLocLsnr Whether local listner was setted.
+     * @param bypassFilter Whether remote filter was bypassed.
+     * @param listened Entries got by listener.
+     * @throws Exception if failed.
+     */
+    private void checkLsnrAndFilterResults(boolean setLocLsnr, boolean bypassFilter, Map<Integer, Integer> listened)
+        throws Exception {
+        Map<Integer, Integer> expected = new HashMap<>();
+
+        expected.put(1, 1);
+        expected.put(2, 2);
+
+        expected.forEach((key, val) ->
+            grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(key, val));
+
+        assertTrue(GridTestUtils.waitForCondition(
+            () -> FILTERED.size() == expected.size() &&
+                FILTERED.equals(expected), getTestTimeout()));
+
+        if (bypassFilter && setLocLsnr) {
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> listened.size() == expected.size() &&
+                    listened.equals(expected), getTestTimeout()));
+        }
+        else
+            assertTrue(listened.isEmpty());
     }
 
     /**

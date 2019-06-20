@@ -37,6 +37,7 @@ import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.util.MapUtil;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -64,39 +65,38 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
      * Trains model based on the specified data.
      *
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param extractor Mapping from upstream entry to {@link LabeledVector}.
      * @return Model.
      */
     @Override public <K, V> ANNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                       Preprocessor<K, V> extractor) {
 
-        return updateModel(null, datasetBuilder, featureExtractor, lbExtractor);
+        return updateModel(null, datasetBuilder, extractor);
     }
 
     /** {@inheritDoc} */
     @Override protected <K, V> ANNClassificationModel updateModel(ANNClassificationModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                                  DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         List<Vector> centers;
         CentroidStat centroidStat;
         if (mdl != null) {
             centers = Arrays.stream(mdl.getCandidates().data()).map(x -> x.features()).collect(Collectors.toList());
-            CentroidStat newStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
-            if(newStat == null)
+            CentroidStat newStat = getCentroidStat(datasetBuilder, extractor, centers);
+            if (newStat == null)
                 return mdl;
             CentroidStat oldStat = mdl.getCentroindsStat();
             centroidStat = newStat.merge(oldStat);
         } else {
-            centers = getCentroids(featureExtractor, lbExtractor, datasetBuilder);
-            centroidStat = getCentroidStat(datasetBuilder, featureExtractor, lbExtractor, centers);
+            centers = getCentroids(extractor, datasetBuilder);
+            centroidStat = getCentroidStat(datasetBuilder, extractor, centers);
         }
 
         final LabeledVectorSet<ProbableLabel, LabeledVector> dataset = buildLabelsForCandidates(centers, centroidStat);
 
         return new ANNClassificationModel(dataset, centroidStat);
     }
+
 
     /** {@inheritDoc} */
     @Override public boolean isUpdateable(ANNClassificationModel mdl) {
@@ -113,7 +113,7 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     @NotNull private LabeledVectorSet<ProbableLabel, LabeledVector> buildLabelsForCandidates(List<Vector> centers,
         CentroidStat centroidStat) {
         // init
-        final LabeledVector<Vector, ProbableLabel>[] arr = new LabeledVector[centers.size()];
+        final LabeledVector<ProbableLabel>[] arr = new LabeledVector[centers.size()];
 
         // fill label for each centroid
         for (int i = 0; i < centers.size(); i++)
@@ -125,27 +125,20 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
     /**
      * Perform KMeans clusterization algorithm to find centroids.
      *
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param vectorizer Upstream vectorizer.
      * @param datasetBuilder The dataset builder.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return The arrays of vectors.
      */
-    private <K, V> List<Vector> getCentroids(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, DatasetBuilder<K, V> datasetBuilder) {
+    private <K, V, C extends Serializable> List<Vector> getCentroids(Preprocessor<K, V> vectorizer, DatasetBuilder<K, V> datasetBuilder) {
         KMeansTrainer trainer = new KMeansTrainer()
             .withAmountOfClusters(k)
             .withMaxIterations(maxIterations)
             .withDistance(distance)
             .withEpsilon(epsilon);
 
-        KMeansModel mdl = trainer.fit(
-            datasetBuilder,
-            featureExtractor,
-            lbExtractor
-        );
-
+        KMeansModel mdl = trainer.fit(datasetBuilder, vectorizer);
         return Arrays.asList(mdl.getCenters());
     }
 
@@ -174,13 +167,10 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
 
     /** */
     private <K, V> CentroidStat getCentroidStat(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, List<Vector> centers) {
+                                                Preprocessor<K, V> vectorizer,
+                                                List<Vector> centers) {
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor
-        );
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
         try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
             envBuilder,

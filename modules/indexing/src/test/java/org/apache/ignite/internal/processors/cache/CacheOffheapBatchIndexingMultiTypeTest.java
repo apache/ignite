@@ -22,14 +22,11 @@ import java.util.TreeMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests various cache operations with indexing enabled.
  * Cache contain multiple types.
  */
-@RunWith(JUnit4.class)
 public class CacheOffheapBatchIndexingMultiTypeTest extends CacheOffheapBatchIndexingBaseTest {
     /**
      * Tests putAll with multiple indexed entities and streamer pre-loading with low off-heap cache size.

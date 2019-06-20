@@ -25,13 +25,10 @@ import org.apache.ignite.session.GridSessionCheckpointSelfTest;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Grid session checkpoint self test using {@link S3CheckpointSpi}.
  */
-@RunWith(JUnit4.class)
 public class S3SessionCheckpointSelfTest extends GridSessionCheckpointAbstractSelfTest {
     /**
      * @throws Exception If failed.

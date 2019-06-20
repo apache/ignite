@@ -64,6 +64,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -105,6 +106,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -204,15 +206,19 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.CacheClassLoaderMarker;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxAlreadyCompletedCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxDuplicateKeyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxSerializationCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -221,7 +227,7 @@ import org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryNativeLoader;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.lang.GridTuple;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -249,10 +255,14 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
+import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -287,7 +297,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 @SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
     /** */
-    private static final long GB = 1024L * 1024 * 1024;
+    public static final long GB = 1024L * 1024 * 1024;
 
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
@@ -954,6 +964,24 @@ public abstract class IgniteUtils {
                     ((IgniteClientDisconnectedCheckedException)e).reconnectFuture(),
                     e.getMessage(),
                     e);
+            }
+        });
+
+        m.put(IgniteTxSerializationCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new TransactionSerializationException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxDuplicateKeyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new TransactionDuplicateKeyException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxAlreadyCompletedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new TransactionAlreadyCompletedException(e.getMessage(), e);
             }
         });
 
@@ -3553,6 +3581,7 @@ public abstract class IgniteUtils {
 
         return e;
     }
+
     /**
      * Deletes file or directory with all sub-directories and files.
      *
@@ -4071,13 +4100,14 @@ public abstract class IgniteUtils {
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable AutoCloseable rsrc, @Nullable IgniteLogger log) {
-        if (rsrc != null)
+        if (rsrc != null) {
             try {
                 rsrc.close();
             }
             catch (Exception e) {
-                warn(log, "Failed to close resource: " + e.getMessage());
+                warn(log, "Failed to close resource: " + e.getMessage(), e);
             }
+        }
     }
 
     /**
@@ -4222,6 +4252,32 @@ public abstract class IgniteUtils {
             catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Quietly closes given {@link Socket} ignoring possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Socket sock) {
+        if (sock == null)
+            return;
+
+        try {
+            // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        try {
+            sock.close();
+        }
+        catch (Exception ignored) {
+            // No-op.
         }
     }
 
@@ -8047,6 +8103,7 @@ public abstract class IgniteUtils {
             return false;
         }
     }
+
     /**
      * Gets object field offset.
      *
@@ -9491,6 +9548,60 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Create a map with single key-value pair.
+     *
+     * @param k Key.
+     * @param v Value.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> map(K k, V v) {
+        GridLeanMap<K, V> map = new GridLeanMap<>(1);
+
+        map.put(k, v);
+
+        return map;
+    }
+
+    /**
+     * Create a map with two key-value pairs.
+     *
+     * @param k1 Key 1.
+     * @param v1 Value 1.
+     * @param k2 Key 2.
+     * @param v2 Value 2.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> map(K k1, V v1, K k2, V v2) {
+        GridLeanMap<K, V> map = new GridLeanMap<>(2);
+
+        map.put(k1, v1);
+        map.put(k2, v2);
+
+        return map;
+    }
+
+    /**
+     * Create a map with three key-value pairs.
+     *
+     * @param k1 Key 1.
+     * @param v1 Value 1.
+     * @param k2 Key 2.
+     * @param v2 Value 2.
+     * @param k3 Key 3.
+     * @param v3 Value 3.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> map(K k1, V v1, K k2, V v2, K k3, V v3) {
+        GridLeanMap<K, V> map = new GridLeanMap<>(3);
+
+        map.put(k1, v1);
+        map.put(k2, v2);
+        map.put(k3, v3);
+
+        return map;
+    }
+
+    /**
      * @param col non-null collection with one element
      * @return a SingletonList containing the element in the original collection
      */
@@ -9671,7 +9782,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return arrayList(c, c.size(), p);
+        return arrayList(c.iterator(), c.size(), p);
     }
 
     /**
@@ -9690,14 +9801,16 @@ public abstract class IgniteUtils {
      * @param p Optional filters.
      * @return Resulting array list.
      */
-    public static <T extends R, R> List<R> arrayList(Iterable<T> c, int cap,
+    public static <T extends R, R> List<R> arrayList(Iterator<T> c, int cap,
         @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
         assert cap >= 0;
 
         List<R> list = new ArrayList<>(cap);
 
-        for (T t : c) {
+        while (c.hasNext()) {
+            T t = c.next();
+
             if (F.isAll(t, p))
                 list.add(t);
         }
@@ -9956,6 +10069,33 @@ public abstract class IgniteUtils {
         }
         catch (IgniteCheckedException e) {
             throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
+    }
+
+    /**
+     * @param zipBytes Zipped bytes.
+     * @return Raw bytes.
+     * @throws IgniteCheckedException If unzip resulted in error.
+     */
+    public static byte[] unzip(byte[] zipBytes) throws IgniteCheckedException {
+        assert zipBytes != null;
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             ZipInputStream in = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+
+            in.getNextEntry();
+
+            byte[] tmp = new byte[4 << 10];
+
+            int size;
+
+            while ((size = in.read(tmp)) != -1)
+                baos.write(tmp, 0, size);
+
+            return baos.toByteArray();
         }
         catch (Exception e) {
             throw new IgniteCheckedException(e);
@@ -10553,7 +10693,6 @@ public abstract class IgniteUtils {
         return ctx.state().clusterState().baselineTopology();
     }
 
-
     /**
      * @param cctx Context.
      *
@@ -10715,7 +10854,7 @@ public abstract class IgniteUtils {
     public static <T, R> Collection<R> doInParallel(
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteThrowableConsumer<T, R> operation
+        IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
         return doInParallel(srcDatas.size(), executorSvc, srcDatas, operation);
     }
@@ -10735,9 +10874,51 @@ public abstract class IgniteUtils {
         int parallelismLvl,
         ExecutorService executorSvc,
         Collection<T> srcDatas,
-        IgniteThrowableConsumer<T, R> operation
+        IgniteThrowableFunction<T, R> operation
     ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
-        if(srcDatas.isEmpty())
+        return doInParallel(parallelismLvl, executorSvc, srcDatas, operation, false);
+    }
+
+    /**
+     * Execute operation on data in parallel uninterruptibly.
+     *
+     * @param parallelismLvl Number of threads on which it should be executed.
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param operation Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @param <R> Type of return value.
+     * @throws IgniteCheckedException if parallel execution was failed.
+     */
+    public static <T, R> Collection<R> doInParallelUninterruptibly(
+        int parallelismLvl,
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteThrowableFunction<T, R> operation
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        return doInParallel(parallelismLvl, executorSvc, srcDatas, operation, true);
+    }
+
+    /**
+     * Execute operation on data in parallel.
+     *
+     * @param parallelismLvl Number of threads on which it should be executed.
+     * @param executorSvc Service for parallel execution.
+     * @param srcDatas List of data for parallelization.
+     * @param operation Logic for execution of on each item of data.
+     * @param <T> Type of data.
+     * @param <R> Type of return value.
+     * @param uninterruptible {@code true} if a result should be awaited in any case.
+     * @throws IgniteCheckedException if parallel execution was failed.
+     */
+    private static <T, R> Collection<R> doInParallel(
+        int parallelismLvl,
+        ExecutorService executorSvc,
+        Collection<T> srcDatas,
+        IgniteThrowableFunction<T, R> operation,
+        boolean uninterruptible
+    ) throws IgniteCheckedException, IgniteInterruptedCheckedException {
+        if (srcDatas.isEmpty())
             return Collections.emptyList();
 
         int[] batchSizes = calculateOptimalBatchSizes(parallelismLvl, srcDatas.size());
@@ -10753,7 +10934,7 @@ public abstract class IgniteUtils {
         for (int idx = 0; idx < batchSizes.length; idx++) {
             int batchSize = batchSizes[idx];
 
-            Batch<T, R> batch = new Batch<>(batchSize);
+            Batch<T, R> batch = new Batch<>(batchSize, uninterruptible);
 
             for (int i = 0; i < batchSize; i++)
                 batch.addTask(iterator.next());
@@ -10766,16 +10947,15 @@ public abstract class IgniteUtils {
             // Add to set only after check that batch is not empty.
             .peek(sharedBatchesSet::add)
             // Setup future in batch for waiting result.
-            .peek(batch -> batch.future = executorSvc.submit(() -> {
+            .peek(batch -> batch.fut = executorSvc.submit(() -> {
                 // Batch was stolen by the main stream.
-                if (!sharedBatchesSet.remove(batch)) {
+                if (!sharedBatchesSet.remove(batch))
                     return null;
-                }
 
                 Collection<R> results = new ArrayList<>(batch.tasks.size());
 
                 for (T item : batch.tasks)
-                    results.add(operation.accept(item));
+                    results.add(operation.apply(item));
 
                 return results;
             }))
@@ -10794,7 +10974,7 @@ public abstract class IgniteUtils {
 
             try {
                 for (T item : batch.tasks)
-                    res.add(operation.accept(item));
+                    res.add(operation.apply(item));
 
                 batch.result(res);
             }
@@ -10806,7 +10986,7 @@ public abstract class IgniteUtils {
         // Final result collection.
         Collection<R> results = new ArrayList<>(srcDatas.size());
 
-        for (Batch<T, R> batch: batches) {
+        for (Batch<T, R> batch : batches) {
             try {
                 Throwable err = batch.error;
 
@@ -10878,6 +11058,20 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return {@code true} if local node is coordinator.
+     */
+    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoMgr) {
+        if (discoMgr.localNode().isClient() || discoMgr.localNode().isDaemon())
+            return false;
+
+        DiscoverySpi spi = discoMgr.getInjectedDiscoverySpi();
+
+        return spi instanceof TcpDiscoverySpi
+            ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
+            : F.eq(discoMgr.localNode(), U.oldest(discoMgr.aliveServerNodes(), null));
+    }
+
+    /**
      * The batch of tasks with a batch index in global array.
      */
     private static class Batch<T,R> {
@@ -10891,13 +11085,19 @@ public abstract class IgniteUtils {
         private Throwable error;
 
         /** */
-        private Future<Collection<R>> future;
+        private Future<Collection<R>> fut;
+
+        /** */
+        private final boolean uninterruptible;
 
         /**
          * @param batchSize Batch size.
+         * @param uninterruptible {@code true} if a result should be awaited in any case.
          */
-        private Batch(int batchSize) {
-            this.tasks = new ArrayList<>(batchSize);
+        private Batch(int batchSize, boolean uninterruptible) {
+            tasks = new ArrayList<>(batchSize);
+
+            this.uninterruptible = uninterruptible;
         }
 
         /**
@@ -10911,7 +11111,7 @@ public abstract class IgniteUtils {
          * @param res Setup results for tasks.
          */
         public void result(Collection<R> res) {
-            this.result = res;
+            result = res;
         }
 
         /**
@@ -10925,9 +11125,12 @@ public abstract class IgniteUtils {
          * Get tasks results.
          */
         public Collection<R> result() throws ExecutionException, InterruptedException {
-            assert future != null;
+            assert fut != null;
 
-            return result != null ? result : future.get();
+            if (result != null)
+                return result;
+
+            return uninterruptible ? getUninterruptibly(fut) : fut.get();
         }
     }
 
@@ -10950,22 +11153,23 @@ public abstract class IgniteUtils {
      * @param fut Future to wait for completion.
      * @throws ExecutionException If the future
      */
-    private static void getUninterruptibly(Future fut) throws ExecutionException {
+    private static <R> R getUninterruptibly(Future<R> fut) throws ExecutionException {
         boolean interrupted = false;
 
-        while (true) {
-            try {
-                fut.get();
-
-                break;
-            }
-            catch (InterruptedException e) {
-                interrupted = true;
+        try {
+            while (true) {
+                try {
+                    return fut.get();
+                }
+                catch (InterruptedException e) {
+                    interrupted = true;
+                }
             }
         }
-
-        if (interrupted)
-            Thread.currentThread().interrupt();
+        finally {
+            if (interrupted)
+                Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -11189,5 +11393,35 @@ public abstract class IgniteUtils {
 
             totalWritten += written;
         }
+    }
+
+    /**
+     * @return New identity hash set.
+     */
+    public static <X> Set<X> newIdentityHashSet() {
+        return Collections.newSetFromMap(new IdentityHashMap<>());
+    }
+
+    /**
+     * @param stripes Number of stripes.
+     * @param grpId Group Id.
+     * @param partId Partition Id.
+     * @return Stripe idx.
+     */
+    public static int stripeIdx(int stripes, int grpId, int partId) {
+        assert partId >= 0;
+
+        return Math.abs((Math.abs(grpId) + partId)) % stripes;
+    }
+
+    /**
+     * Check if flag set.
+     *
+     * @param flags Flags.
+     * @param flag Flag.
+     * @return {@code True} if set.
+     */
+    public static boolean isFlagSet(int flags, int flag) {
+        return (flags & flag) == flag;
     }
 }

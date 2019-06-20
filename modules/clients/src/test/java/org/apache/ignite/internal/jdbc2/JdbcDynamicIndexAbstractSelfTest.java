@@ -31,14 +31,12 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test that checks indexes handling with JDBC.
  */
-@RunWith(JUnit4.class)
 public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** */
     private static final String CREATE_INDEX = "create index idx on Person (id desc)";
@@ -176,7 +174,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
 
         assertSqlException(new RunnableX() {
             /** {@inheritDoc} */
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 jdbcRun(CREATE_INDEX);
             }
         });
@@ -230,7 +228,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
     public void testDropMissingIndex() {
         assertSqlException(new RunnableX() {
             /** {@inheritDoc} */
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 jdbcRun(DROP_INDEX);
             }
         });
@@ -325,7 +323,7 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
         // We expect IgniteSQLException with given code inside CacheException inside JDBC SQLException.
 
         try {
-            r.run();
+            r.runx();
         }
         catch (SQLException e) {
             return;
@@ -335,17 +333,5 @@ public abstract class JdbcDynamicIndexAbstractSelfTest extends JdbcAbstractDmlSt
         }
 
         fail(SQLException.class.getSimpleName() +  " is not thrown.");
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    private interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        public void run() throws Exception;
     }
 }

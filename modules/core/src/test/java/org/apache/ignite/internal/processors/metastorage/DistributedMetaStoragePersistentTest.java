@@ -17,28 +17,35 @@
 
 package org.apache.ignite.internal.processors.metastorage;
 
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
+import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assume.assumeThat;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} with enabled persistence.
  */
-@RunWith(JUnit4.class)
 public class DistributedMetaStoragePersistentTest extends DistributedMetaStorageTest {
     /** {@inheritDoc} */
     @Override protected boolean isPersistent() {
@@ -115,9 +122,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testJoinDirtyNodeFullData() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         IgniteEx ignite = startGrid(0);
 
         startGrid(1);
@@ -185,9 +191,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test @Ignore
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testJoinNodeWithoutEnoughHistory() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         IgniteEx ignite = startGrid(0);
 
         startGrid(1);
@@ -261,78 +266,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
-    public void testUnstableTopology() throws Exception {
-        int cnt = 8;
-
-        startGridsMultiThreaded(cnt);
-
-        grid(0).cluster().active(true);
-
-        stopGrid(0);
-
-        startGrid(0);
-
-        AtomicInteger gridIdxCntr = new AtomicInteger(0);
-
-        AtomicBoolean stop = new AtomicBoolean();
-
-        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            int gridIdx = gridIdxCntr.incrementAndGet();
-
-            try {
-                while (!stop.get()) {
-                    stopGrid(gridIdx, true);
-
-                    Thread.sleep(10L);
-
-                    startGrid(gridIdx);
-
-                    Thread.sleep(10L);
-                }
-            }
-            catch (Exception e) {
-                log.error(e.getMessage(), e);
-            }
-        }, cnt - 1);
-
-        long start = System.currentTimeMillis();
-
-        long duration = GridTestUtils.SF.applyLB(30_000, 5_000);
-
-        try {
-            for (int i = 0; System.currentTimeMillis() < start + duration; i++) {
-                metastorage(0).write(
-                    "key" + i, Integer.toString(ThreadLocalRandom.current().nextInt(1000))
-                );
-            }
-        }
-        finally {
-            stop.set(true);
-
-            fut.get();
-        }
-
-        awaitPartitionMapExchange();
-
-        Thread.sleep(3_000L); // Remove later.
-
-        for (int i = 0; i < cnt; i++) {
-            DistributedMetaStorage distributedMetastorage = metastorage(i);
-
-            assertNull(U.field(distributedMetastorage, "startupExtras"));
-        }
-
-        for (int i = 1; i < cnt; i++)
-            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testWrongStartOrder1() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         int cnt = 4;
 
         startGridsMultiThreaded(cnt);
@@ -355,7 +290,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         stopGrid(3);
 
-
         for (int i = 0; i < cnt; i++)
             startGrid(i);
 
@@ -369,9 +303,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testWrongStartOrder2() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         int cnt = 6;
 
         startGridsMultiThreaded(cnt);
@@ -400,7 +333,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         stopGrid(5);
 
-
         startGrid(1);
 
         startGrid(0);
@@ -420,9 +352,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testWrongStartOrder3() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         int cnt = 5;
 
         startGridsMultiThreaded(cnt);
@@ -447,7 +378,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         stopGrid(4);
 
-
         startGrid(1);
 
         startGrid(0);
@@ -467,9 +397,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testWrongStartOrder4() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         int cnt = 6;
 
         startGridsMultiThreaded(cnt);
@@ -497,7 +426,6 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         metastorage(5).write("key5", "value5");
 
         stopGrid(5);
-
 
         startGrid(2);
 
@@ -538,6 +466,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test @SuppressWarnings("ThrowableNotThrown")
+    @WithSystemProperty(key = IGNITE_BASELINE_AUTO_ADJUST_ENABLED, value = "false")
     public void testConflictingData() throws Exception {
         startGrid(0);
 
@@ -569,9 +498,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testFailover1() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         startGrid(0);
 
         startGrid(1);
@@ -612,9 +540,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testFailover2() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         startGrid(0);
 
         startGrid(1);
@@ -655,9 +582,8 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testFailover3() throws Exception {
-        System.setProperty(IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, "0");
-
         startGrid(0);
 
         startGrid(1);
@@ -694,5 +620,59 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
         assertEquals("val5", metastorage(1).read("key5"));
 
         assertDistributedMetastoragesAreEqual(grid(0), grid(1));
+    }
+
+    /** */
+    @Test
+    @Ignore("This optimization is not implemented yet")
+    public void testVerFromDiscoveryClusterData() throws Exception {
+        startGrid(0);
+
+        assumeThat(grid(0).context().config().getDiscoverySpi(), is(instanceOf(TcpDiscoverySpi.class)));
+
+        startGrid(1).cluster().active(true);
+
+        metastorage(0).write("key0", "value0");
+        metastorage(0).write("key1", "value1");
+
+        stopGrid(0);
+
+        metastorage(1).write("key2", "value2");
+
+        stopGrid(1);
+
+        startGrid(0);
+
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)grid(0).context().config().getDiscoverySpi();
+
+        DiscoverySpiDataExchange exchange = GridTestUtils.getFieldValue(spi, TcpDiscoverySpi.class, "exchange");
+
+        List<Map<Integer, Serializable>> dataBags = new ArrayList<>();
+
+        spi.setDataExchange(new DiscoverySpiDataExchange() {
+            @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                dataBags.add(dataBag.joiningNodeData());
+
+                return exchange.collect(dataBag);
+            }
+
+            @Override public void onExchange(DiscoveryDataBag dataBag) {
+                exchange.onExchange(dataBag);
+            }
+        });
+
+        startGrid(1);
+
+        assertEquals(1, dataBags.size());
+
+        byte[] joiningNodeDataMarshalled = (byte[])dataBags.get(0).get(META_STORAGE.ordinal());
+
+        assertNotNull(joiningNodeDataMarshalled);
+
+        Object joiningNodeData = JdkMarshaller.DEFAULT.unmarshal(joiningNodeDataMarshalled, U.gridClassLoader());
+
+        Object[] hist = GridTestUtils.getFieldValue(joiningNodeData, "hist");
+
+        assertEquals(1, hist.length);
     }
 }

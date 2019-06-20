@@ -49,11 +49,9 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
@@ -142,6 +140,9 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Filter. */
     private final CacheEntryPredicate filter;
 
+    /** Keep binary flag. */
+    protected boolean keepBinary;
+
     /** Timeout object. */
     @GridToStringExclude
     protected LockTimeoutObject timeoutObj;
@@ -197,6 +198,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @param timeout Lock acquisition timeout.
      * @param cctx Cache context.
      * @param filter Filter.
+     * @param keepBinary Keep binary flag.
      */
     protected GridDhtTxAbstractEnlistFuture(UUID nearNodeId,
         GridCacheVersion nearLockVer,
@@ -207,7 +209,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         GridDhtTxLocalAdapter tx,
         long timeout,
         GridCacheContext<?, ?> cctx,
-        @Nullable CacheEntryPredicate filter) {
+        @Nullable CacheEntryPredicate filter,
+        boolean keepBinary) {
         assert tx != null;
         assert timeout >= 0;
         assert nearNodeId != null;
@@ -224,6 +227,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.timeout = timeout;
         this.tx = tx;
         this.filter = filter;
+        this.keepBinary = keepBinary;
 
         lockVer = tx.xidVersion();
 
@@ -288,9 +292,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             else if (fut != null) {
                 // Wait for previous future.
                 assert fut instanceof GridNearTxAbstractEnlistFuture
-                    || fut instanceof GridDhtTxAbstractEnlistFuture
-                    || fut instanceof CompoundLockFuture
-                    || fut instanceof GridNearTxSelectForUpdateFuture : fut;
+                    || fut instanceof GridDhtTxAbstractEnlistFuture : fut;
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
@@ -426,7 +428,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
                     assert entryProc != null || !op.isInvoke();
 
-                    boolean needOldVal = cctx.shared().mvccCaching().continuousQueryListeners(cctx, tx, key) != null;
+                    boolean needOldVal = tx.txState().useMvccCaching(cctx.cacheId());
 
                     GridCacheUpdateTxResult res;
 
@@ -466,7 +468,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                                         op.noCreate(),
                                         needOldVal,
                                         filter,
-                                        needResult());
+                                        needResult(),
+                                        keepBinary);
 
                                     break;
 
@@ -634,7 +637,8 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
 
         assert updRes != null && updRes.updateFuture() == null;
 
-        onEntryProcessed(entry.key(), updRes);
+        if (op != EnlistOperation.LOCK)
+            onEntryProcessed(entry.key(), updRes);
 
         if (!updRes.success()
             || updRes.filtered()
@@ -694,7 +698,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 batches.put(node.id(), batch = new Batch(node));
 
             if (moving && hist0 == null) {
-                assert !F.isEmpty(hist);
+                assert !F.isEmpty(hist) || val == null;
 
                 hist0 = fetchHistoryInfo(key, hist);
             }
@@ -718,8 +722,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
      * @return History entries.
      * @throws IgniteCheckedException, if failed.
      */
-    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist)
-        throws IgniteCheckedException {
+    private CacheEntryInfoCollection fetchHistoryInfo(KeyCacheObject key, List<MvccLinkAwareSearchRow> hist) {
         List<GridCacheEntryInfo> res = new ArrayList<>();
 
         for (int i = 0; i < hist.size(); i++) {
@@ -729,29 +732,32 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
                 row0.hash(),
                 row0.link(),
                 key.partition(),
-                CacheDataRowAdapter.RowData.NO_KEY,
+                CacheDataRowAdapter.RowData.NO_KEY_WITH_HINTS,
                 row0.mvccCoordinatorVersion(),
                 row0.mvccCounter(),
-                row0.mvccOperationCounter());
+                row0.mvccOperationCounter(),
+                false
+            );
 
             GridCacheMvccEntryInfo entry = new GridCacheMvccEntryInfo();
 
+            entry.cacheId(cctx.cacheId());
             entry.version(row.version());
-            entry.mvccVersion(row);
-            entry.newMvccVersion(row);
             entry.value(row.value());
             entry.expireTime(row.expireTime());
 
-            if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0) {
-                entry.mvccTxState(row.mvccTxState() != TxState.NA ? row.mvccTxState() :
-                    MvccUtils.state(cctx, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter()));
-            }
+            // Row should be retrieved with actual hints.
+            entry.mvccVersion(row);
+            entry.newMvccVersion(row);
 
-            if (MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0) {
-                entry.newMvccTxState(row.newMvccTxState() != TxState.NA ? row.newMvccTxState() :
-                    MvccUtils.state(cctx, row.newMvccCoordinatorVersion(), row.newMvccCounter(),
-                    row.newMvccOperationCounter()));
-            }
+            if (MvccUtils.compare(mvccSnapshot, row.mvccCoordinatorVersion(), row.mvccCounter()) != 0)
+                entry.mvccTxState(row.mvccTxState());
+
+            if (row.newMvccCoordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA
+                && MvccUtils.compare(mvccSnapshot, row.newMvccCoordinatorVersion(), row.newMvccCounter()) != 0)
+                entry.newMvccTxState(row.newMvccTxState());
+
+            assert mvccSnapshot.coordinatorVersion() != MvccUtils.MVCC_CRD_COUNTER_NA;
 
             res.add(entry);
         }

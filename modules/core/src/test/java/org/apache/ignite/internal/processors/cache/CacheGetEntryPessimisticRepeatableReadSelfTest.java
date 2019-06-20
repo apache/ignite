@@ -23,8 +23,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -35,7 +33,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test getEntry and getEntries methods.
  */
-@RunWith(JUnit4.class)
 public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntryAbstractTest {
     /** {@inheritDoc} */
     @Override protected TransactionConcurrency concurrency() {

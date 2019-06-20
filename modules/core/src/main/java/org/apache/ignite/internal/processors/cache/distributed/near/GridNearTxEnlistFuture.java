@@ -117,6 +117,9 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
     /** Need previous value flag. */
     private final boolean needRes;
 
+    /** Keep binary flag. */
+    private final boolean keepBinary;
+
     /**
      * @param cctx Cache context.
      * @param tx Transaction.
@@ -126,6 +129,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
      * @param sequential Sequential locking flag.
      * @param filter Filter.
      * @param needRes Need previous value flag.
+     * @param keepBinary Keep binary flag.
      */
     public GridNearTxEnlistFuture(GridCacheContext<?, ?> cctx,
         GridNearTxLocal tx,
@@ -134,7 +138,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         int batchSize,
         boolean sequential,
         @Nullable CacheEntryPredicate filter,
-        boolean needRes) {
+        boolean needRes,
+        boolean keepBinary) {
         super(cctx, tx, timeout, null);
 
         this.it = it;
@@ -142,6 +147,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         this.sequential = sequential;
         this.filter = filter;
         this.needRes = needRes;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -164,10 +170,6 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
                 return;
 
             boolean first = (nodeId != null);
-
-            // Need to unlock topology to avoid deadlock with binary descriptors registration.
-            if (!topLocked && cctx.topology().holdsLock())
-                cctx.topology().readUnlock();
 
             for (Batch batch : next) {
                 ClusterNode node = batch.node();
@@ -454,6 +456,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             batchFut.rows(),
             it.operation(),
             needRes,
+            keepBinary,
             filter
         );
 
@@ -505,7 +508,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
             rows,
             it.operation(),
             filter,
-            needRes);
+            needRes,
+            keepBinary);
 
         updateLocalFuture(fut);
 
@@ -559,13 +563,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
             topEx.retryReadyFuture(cctx.shared().nextAffinityReadyFuture(topVer));
 
-            processFailure(topEx, null);
-
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
-
+            onDone(topEx);
         }
 
         if (log.isDebugEnabled())
@@ -590,14 +588,8 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
         if (res != null)
             tx.mappings().get(nodeId).addBackups(res.newDhtNodes());
 
-        if (err != null)
-            processFailure(err, null);
-
-        if (ex != null) {
-            batches.remove(nodeId);
-
-            if (batches.isEmpty()) // Wait for all pending requests.
-                onDone();
+        if (err != null) {
+            onDone(err);
 
             return false;
         }
@@ -617,7 +609,7 @@ public class GridNearTxEnlistFuture extends GridNearTxAbstractEnlistFuture<GridC
 
         tx.hasRemoteLocks(true);
 
-        return true;
+        return !isDone();
     }
 
     /** {@inheritDoc} */

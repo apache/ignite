@@ -29,13 +29,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests client to be able restore connection to cluster on subsequent attempts after communication problems.
  */
-@RunWith(JUnit4.class)
 public class IgniteClientConnectAfterCommunicationFailureTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */

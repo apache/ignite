@@ -26,13 +26,10 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedDeque8.Node;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link org.jsr166.ConcurrentLinkedDeque8}.
  */
-@RunWith(JUnit4.class)
 public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstractTest {
     /** */
     private static final Random RND = new Random();

@@ -68,13 +68,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests the recovery after a dynamic cache start failure.
  */
-@RunWith(JUnit4.class)
 public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheAbstractSelfTest {
     /** */
     private static final String DYNAMIC_CACHE_NAME = "TestDynamicCache";
@@ -83,7 +80,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
     private static final String CLIENT_GRID_NAME = "client";
 
     /** */
-    protected static final String EXISTING_CACHE_NAME = "existing-cache";;
+    protected static final String EXISTING_CACHE_NAME = "existing-cache";
 
     /** */
     private static final int PARTITION_COUNT = 16;

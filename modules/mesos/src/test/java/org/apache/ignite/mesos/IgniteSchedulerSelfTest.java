@@ -28,7 +28,7 @@ import org.apache.mesos.SchedulerDriver;
 import org.junit.Before;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -80,8 +80,8 @@ public class IgniteSchedulerSelfTest {
 
         Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
 
-        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU));
-        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
+        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU), 0);
+        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM), 0);
     }
 
     /**
@@ -105,8 +105,8 @@ public class IgniteSchedulerSelfTest {
 
         Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
 
-        assertEquals(2.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU));
-        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
+        assertEquals(2.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU), 0);
+        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM), 0);
 
         mock.clear();
 
@@ -140,8 +140,8 @@ public class IgniteSchedulerSelfTest {
 
         Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
 
-        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU));
-        assertEquals(512.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
+        assertEquals(4.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU), 0);
+        assertEquals(512.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM), 0);
 
         mock.clear();
 
@@ -288,8 +288,8 @@ public class IgniteSchedulerSelfTest {
 
         Protos.TaskInfo taskInfo = mock.launchedTask.iterator().next();
 
-        assertEquals(2.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU));
-        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM));
+        assertEquals(2.0, resources(taskInfo.getResourcesList(), IgniteScheduler.CPU), 0);
+        assertEquals(1024.0, resources(taskInfo.getResourcesList(), IgniteScheduler.MEM), 0);
 
         mock.clear();
 

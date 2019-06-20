@@ -26,13 +26,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test added to check for https://issues.apache.org/jira/browse/IGNITE-3326.
  */
-@RunWith(JUnit4.class)
 public class IgniteCacheQueryNoRebalanceSelfTest extends GridCommonAbstractTest {
     /**
      *

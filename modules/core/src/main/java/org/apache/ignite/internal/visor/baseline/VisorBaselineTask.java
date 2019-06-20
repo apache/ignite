@@ -26,7 +26,9 @@ import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.F;
@@ -76,8 +78,22 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
 
             Collection<? extends BaselineNode> srvrs = cluster.forServers().nodes();
 
-            return new VisorBaselineTaskResult(ignite.cluster().active(), cluster.topologyVersion(),
-                F.isEmpty(baseline) ? null : baseline, srvrs);
+            VisorBaselineAutoAdjustSettings autoAdjustSettings = new VisorBaselineAutoAdjustSettings(
+                cluster.isBaselineAutoAdjustEnabled(),
+                cluster.baselineAutoAdjustTimeout()
+            );
+
+            BaselineAutoAdjustStatus adjustStatus = cluster.baselineAutoAdjustStatus();
+
+            return new VisorBaselineTaskResult(
+                ignite.cluster().active(),
+                cluster.topologyVersion(),
+                F.isEmpty(baseline) ? null : baseline,
+                srvrs,
+                autoAdjustSettings,
+                adjustStatus.getTimeUntilAutoAdjust(),
+                adjustStatus.getTaskState() == BaselineAutoAdjustStatus.TaskState.IN_PROGRESS
+            );
         }
 
         /**
@@ -134,10 +150,10 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
             for (String consistentId : consistentIds) {
                 BaselineNode node = srvrs.get(consistentId);
 
-                if (node == null)
-                    throw new IllegalStateException("Node not found for consistent ID: " + consistentId);
-
-                baselineTop.add(node);
+                if (node != null)
+                    baselineTop.add(node);
+                else
+                    baselineTop.add(new DetachedClusterNode(consistentId, null));
             }
 
             return set0(baselineTop);
@@ -175,7 +191,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
             Map<String, BaselineNode> baseline = currentBaseLine();
 
             if (F.isEmpty(baseline))
-                return set0(Collections.EMPTY_LIST);
+                return set0(Collections.emptyList());
 
             for (String consistentId : consistentIds) {
                 BaselineNode node = baseline.remove(consistentId);
@@ -204,6 +220,22 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
             return collect();
         }
 
+        /**
+         * Update baseline autoAdjustment settings.
+         *
+         * @param settings Baseline autoAdjustment settings.
+         * @return New baseline.
+         */
+        private VisorBaselineTaskResult updateAutoAdjustmentSettings(VisorBaselineAutoAdjustSettings settings) {
+            if (settings.getSoftTimeout() != null)
+                ignite.cluster().baselineAutoAdjustTimeout(settings.getSoftTimeout());
+
+            if (settings.getEnabled() != null)
+                ignite.cluster().baselineAutoAdjustEnabled(settings.getEnabled());
+
+            return collect();
+        }
+
         /** {@inheritDoc} */
         @Override protected VisorBaselineTaskResult run(@Nullable VisorBaselineTaskArg arg) throws IgniteException {
             switch (arg.getOperation()) {
@@ -218,6 +250,9 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
 
                 case VERSION:
                     return version(arg.getTopologyVersion());
+
+                case AUTOADJUST:
+                    return updateAutoAdjustmentSettings(arg.getAutoAdjustSettings());
 
                 default:
                     return collect();

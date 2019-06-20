@@ -103,7 +103,7 @@ public class ExchangeContext {
     /**
      * @param grpId Cache group ID.
      */
-    void addGroupAffinityRequestOnJoin(Integer grpId) {
+    synchronized void addGroupAffinityRequestOnJoin(Integer grpId) {
         if (requestGrpsAffOnJoin == null)
             requestGrpsAffOnJoin = new HashSet<>();
 
@@ -113,7 +113,7 @@ public class ExchangeContext {
     /**
      * @return Groups to request affinity for.
      */
-    @Nullable public Set<Integer> groupsAffinityRequestOnJoin() {
+    @Nullable public synchronized Set<Integer> groupsAffinityRequestOnJoin() {
         return requestGrpsAffOnJoin;
     }
 

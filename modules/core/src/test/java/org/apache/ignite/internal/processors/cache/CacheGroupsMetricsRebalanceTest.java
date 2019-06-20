@@ -45,8 +45,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REBALANCE_STATISTICS_TIME_INTERVAL;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -55,7 +53,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1 = "cache1";
@@ -350,7 +347,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
             @Override public boolean apply() {
                 return ig2.cache(CACHE1).localMetrics().getKeysToRebalanceLeft() == 0;
             }
-        }, timeLeft + 10_000L);
+        }, timeLeft + 12_000L);
 
         log.info("[timePassed=" + timePassed + ", timeLeft=" + timeLeft +
                 ", Time to rebalance=" + (finishTime - startTime) +
@@ -365,7 +362,7 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
         long diff = finishTime - currTime;
 
-        assertTrue("Expected less than 10000, but actual: " + diff, Math.abs(diff) < 10_000L);
+        assertTrue("Expected less than 12000, but actual: " + diff, Math.abs(diff) < 12_000L);
     }
 
     /**

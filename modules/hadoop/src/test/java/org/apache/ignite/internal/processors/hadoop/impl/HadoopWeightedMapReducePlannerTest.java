@@ -46,13 +46,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for weighted map-reduce planned.
  */
-@RunWith(JUnit4.class)
 public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
     /** ID 1. */
     private static final UUID ID_1 = new UUID(0, 1);
@@ -235,7 +232,6 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
         if (expectUniformity) {
             // mappers are assigned to all available nodes:
             assertEquals(nodes.size(), plan.mapperNodeIds().size());
-
 
             assertEquals(allIds(nodes), plan.mapperNodeIds());
         }

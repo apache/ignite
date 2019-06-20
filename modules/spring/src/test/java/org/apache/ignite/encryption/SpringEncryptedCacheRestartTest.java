@@ -30,13 +30,10 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
-@RunWith(JUnit4.class)
 public class SpringEncryptedCacheRestartTest extends EncryptedCacheRestartTest {
     /** {@inheritDoc} */
     @Override protected void createEncryptedCache(IgniteEx grid0, IgniteEx grid1, String cacheName, String cacheGroup) {

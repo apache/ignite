@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteMvccTxMultiThreadedAbstractTest;
@@ -34,6 +35,7 @@ public class GridCacheReplicatedMvccTxMultiThreadedSelfTest extends IgniteMvccTx
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT);
         ccfg.setCacheMode(REPLICATED);
         ccfg.setEvictionPolicy(null);
 

@@ -33,13 +33,10 @@ import org.apache.ignite.cache.jta.jndi.CacheJndiTmFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheJndiTmFactorySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TM_JNDI_NAME = "java:/comp/env/tm/testtm1";

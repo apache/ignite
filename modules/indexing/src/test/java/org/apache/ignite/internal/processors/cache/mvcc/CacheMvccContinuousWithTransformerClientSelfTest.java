@@ -20,13 +20,10 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerClientSelfTest;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CacheMvccContinuousWithTransformerClientSelfTest extends CacheContinuousWithTransformerClientSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {

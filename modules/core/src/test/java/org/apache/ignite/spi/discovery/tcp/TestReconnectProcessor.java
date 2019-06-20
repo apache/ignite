@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,20 +33,19 @@ import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
+import org.apache.ignite.plugin.security.SecuritySubjectType;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Updates node attributes on disconnect.
  */
 public class TestReconnectProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
-    /** Enabled flag. */
-    public static boolean enabled;
-
     /**
      * @param ctx Kernal context.
      */
-    protected TestReconnectProcessor(GridKernalContext ctx) {
+    public TestReconnectProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -57,7 +57,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /** {@inheritDoc} */
     @Override public SecurityContext authenticateNode(ClusterNode node,
         SecurityCredentials cred) throws IgniteCheckedException {
-        return new TestSecurityContext();
+        return new TestSecurityContext(new TestSecuritySubject(ctx.localNodeId()));
     }
 
     /** {@inheritDoc} */
@@ -93,7 +93,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
 
     /** {@inheritDoc} */
     @Override public boolean enabled() {
-        return enabled;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -104,13 +104,64 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /**
      *
      */
+    private static class TestSecuritySubject implements SecuritySubject {
+
+        /** Id. */
+        private final UUID id;
+
+        /**
+         * @param id Id.
+         */
+        public TestSecuritySubject(UUID id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecuritySubjectType type() {
+            return SecuritySubjectType.REMOTE_NODE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object login() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public InetSocketAddress address() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet permissions() {
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
     private static class TestSecurityContext implements SecurityContext, Serializable {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
+        /** Subj. */
+        final SecuritySubject subj;
+
+        /**
+         * @param subj Subj.
+         */
+        public TestSecurityContext(SecuritySubject subj) {
+            this.subj = subj;
+        }
+
         /** {@inheritDoc} */
         @Override public SecuritySubject subject() {
-            return null;
+            return subj;
         }
 
         /** {@inheritDoc} */

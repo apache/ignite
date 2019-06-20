@@ -30,15 +30,12 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePessimisticTxSuspendResumeTest extends GridCommonAbstractTest {
     /**
      * Creates new cache configuration.

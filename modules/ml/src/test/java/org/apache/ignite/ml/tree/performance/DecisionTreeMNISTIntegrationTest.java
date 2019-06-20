@@ -17,29 +17,15 @@
 
 package org.apache.ignite.ml.tree.performance;
 
-import java.io.IOException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
-import org.apache.ignite.ml.tree.DecisionTreeNode;
-import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
-import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset that require to start the whole Ignite
  * infrastructure. For manual run.
  */
-@RunWith(JUnit4.class)
 public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -53,11 +39,6 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */
@@ -69,7 +50,7 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** Tests on the MNIST dataset. For manual run. */
-    @Test
+    /*@Test
     public void testMNIST() throws IOException {
         CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheCfg = new CacheConfiguration<>();
         trainingSetCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
@@ -89,8 +70,10 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         DecisionTreeNode mdl = trainer.fit(
             ignite,
             trainingSet,
-            (k, v) -> VectorUtils.of(v.getPixels()),
-            (k, v) -> (double) v.getLabel()
+            FeatureLabelExtractorWrapper.wrap(
+                (k, v) -> VectorUtils.of(v.getPixels()),
+                (k, v) -> (double)v.getLabel()
+            )
         );
 
         int correctAnswers = 0;
@@ -108,5 +91,5 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         double accuracy = 1.0 * correctAnswers / (correctAnswers + incorrectAnswers);
 
         assertTrue(accuracy > 0.8);
-    }
+    }*/
 }

@@ -26,13 +26,10 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for schemas.
  */
-@RunWith(JUnit4.class)
 public class MultipleStatementsSqlQuerySelfTest extends AbstractIndexingCommonTest {
     /** Node. */
     private IgniteEx node;

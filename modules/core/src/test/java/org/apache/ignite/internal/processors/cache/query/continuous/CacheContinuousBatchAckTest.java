@@ -39,8 +39,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -53,7 +51,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 /**
  * Continuous queries tests.
  */
-@RunWith(JUnit4.class)
 public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implements Serializable {
     /** */
     protected static final String CLIENT = "_client";

@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
@@ -35,7 +33,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTI
 /**
  * Sanity test for cache types.
  */
-@RunWith(JUnit4.class)
 public class IgniteInternalCacheTypesTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE1 = "cache1";

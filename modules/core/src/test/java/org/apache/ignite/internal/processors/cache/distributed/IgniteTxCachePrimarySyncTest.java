@@ -64,8 +64,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -75,7 +73,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
     /** */
     private static final int SRVS = 4;

@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -42,8 +43,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -56,7 +55,6 @@ import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
  *
  */
 @SuppressWarnings("unchecked")
-@RunWith(JUnit4.class)
 public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -286,6 +284,11 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         assertCannotStart(
             mvccCacheConfig().setCacheMode(LOCAL),
             "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
+        );
+
+        assertCannotStart(
+            mvccCacheConfig().setRebalanceMode(CacheRebalanceMode.NONE),
+            "Rebalance mode NONE cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
         );
 
         assertCannotStart(

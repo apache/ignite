@@ -23,13 +23,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for cluster wide offheap cache metrics.
  */
-@RunWith(JUnit4.class)
 public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;

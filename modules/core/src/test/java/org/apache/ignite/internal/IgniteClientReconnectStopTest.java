@@ -28,8 +28,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -37,7 +35,6 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstractTest {
     /** {@inheritDoc} */
     @Override protected int serverCount() {

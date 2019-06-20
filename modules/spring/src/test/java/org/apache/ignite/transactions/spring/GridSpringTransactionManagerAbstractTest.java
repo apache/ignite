@@ -21,15 +21,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.InvalidIsolationLevelException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@RunWith(JUnit4.class)
 public abstract class GridSpringTransactionManagerAbstractTest extends GridCommonAbstractTest {
 
     /** */

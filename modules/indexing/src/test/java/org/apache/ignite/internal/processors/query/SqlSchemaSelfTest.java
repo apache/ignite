@@ -35,13 +35,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for schemas.
  */
-@RunWith(JUnit4.class)
 public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
     /** Person cache name. */
     private static final String CACHE_PERSON = "PersonCache";
@@ -328,6 +325,18 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
         SchemaOperationException e = X.cause(th, SchemaOperationException.class);
 
         assertEquals(SchemaOperationException.CODE_TABLE_EXISTS, e.code());
+    }
+
+    /**
+     * Test table creation and data retrieval with implicit schema.
+     */
+    @Test
+    public void testImplicitSchema() {
+        IgniteCache<?, ?> c = node.getOrCreateCache("testCache1");
+
+        c.query(new SqlFieldsQuery("CREATE TABLE TEST1 (ID LONG PRIMARY KEY, VAL LONG)" +
+            " WITH \"template=replicated\";")).getAll();
+        c.query(new SqlFieldsQuery("SELECT * FROM TEST1")).getAll();
     }
 
     /**

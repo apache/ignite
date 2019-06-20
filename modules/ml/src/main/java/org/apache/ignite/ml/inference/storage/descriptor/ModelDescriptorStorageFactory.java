@@ -37,6 +37,9 @@ public class ModelDescriptorStorageFactory {
     public ModelDescriptorStorage getModelDescriptorStorage(Ignite ignite) {
         IgniteCache<String, ModelDescriptor> cache = ignite.cache(MODEL_DESCRIPTOR_STORAGE_CACHE_NAME);
 
+        if (cache == null)
+            throw new IllegalStateException("Model descriptor storage doesn't exists. Enable ML plugin to create it.");
+
         return new IgniteModelDescriptorStorage(cache);
     }
 

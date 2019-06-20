@@ -170,7 +170,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMP
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.SERVICE_PERMISSIONS_SINCE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -571,6 +570,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if (ctx.config().getCommunicationFailureResolver() != null)
             ctx.resource().injectGeneric(ctx.config().getCommunicationFailureResolver());
 
+        // Shared reference between DiscoverySpiListener and DiscoverySpiDataExchange.
+        AtomicReference<IgniteFuture<?>> lastStateChangeEvtLsnrFutRef = new AtomicReference<>();
+
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
 
@@ -603,7 +605,23 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 });
 
-                return new IgniteFutureImpl<>(notificationFut);
+                IgniteFuture<?> fut = new IgniteFutureImpl<>(notificationFut);
+
+                //TODO could be optimized with more specific conditions.
+                switch (type) {
+                    case EVT_NODE_JOINED:
+                    case EVT_NODE_LEFT:
+                    case EVT_NODE_FAILED:
+                        if (!CU.isPersistenceEnabled(ctx.config()))
+                            lastStateChangeEvtLsnrFutRef.set(fut);
+
+                        break;
+
+                    case EVT_DISCOVERY_CUSTOM_EVT:
+                        lastStateChangeEvtLsnrFutRef.set(fut);
+                }
+
+                return fut;
             }
 
             /**
@@ -767,6 +785,31 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     // Current version.
                     discoCache = discoCache();
 
+                if (locJoinEvt || !node.isClient() && !node.isDaemon()) {
+                    if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED || type == EVT_NODE_JOINED) {
+                        boolean discoCacheRecalculationRequired = ctx.state().autoAdjustInMemoryClusterState(
+                            node.id(),
+                            topSnapshot,
+                            discoCache,
+                            topVer,
+                            minorTopVer
+                        );
+
+                        if (discoCacheRecalculationRequired) {
+                            discoCache = createDiscoCache(
+                                nextTopVer,
+                                ctx.state().clusterState(),
+                                locNode,
+                                topSnapshot
+                            );
+
+                            discoCacheHist.put(nextTopVer, discoCache);
+
+                            topSnap.set(new Snapshot(nextTopVer, discoCache));
+                        }
+                    }
+                }
+
                 // If this is a local join event, just save it and do not notify listeners.
                 if (locJoinEvt) {
                     if (gridStartTime == 0)
@@ -855,12 +898,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ctx.service().onLocalJoin(localJoinEvent(), discoCache);
 
+                    DiscoCache discoCache0 = discoCache;
+
                     ctx.cluster().clientReconnectFuture().listen(new CI1<IgniteFuture<?>>() {
                         @Override public void apply(IgniteFuture<?> fut) {
                             try {
                                 fut.get();
 
-                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache, topSnapshot, null);
+                                discoWrk.addEvent(EVT_CLIENT_NODE_RECONNECTED, nextTopVer, node, discoCache0, topSnapshot, null);
                             }
                             catch (IgniteException ignore) {
                                 // No-op.
@@ -889,6 +934,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         c.collectJoiningNodeData(dataBag);
                 }
                 else {
+                    waitForLastStateChangeEventFuture();
+
                     for (GridComponent c : ctx.components())
                         c.collectGridNodeData(dataBag);
                 }
@@ -931,6 +978,34 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (data != null)
                                 c.onJoiningNodeDataReceived(data);
                         }
+                    }
+                }
+            }
+
+            /** */
+            private void waitForLastStateChangeEventFuture() {
+                IgniteFuture<?> lastStateChangeEvtLsnrFut = lastStateChangeEvtLsnrFutRef.get();
+
+                if (lastStateChangeEvtLsnrFut != null) {
+                    Thread currThread = Thread.currentThread();
+
+                    GridWorker worker = currThread instanceof IgniteDiscoveryThread
+                        ? ((IgniteDiscoveryThread)currThread).worker()
+                        : null;
+
+                    if (worker != null)
+                        worker.blockingSectionBegin();
+
+                    try {
+                        lastStateChangeEvtLsnrFut.get();
+                    }
+                    finally {
+                        // Guaranteed to be invoked in the same thread as DiscoverySpiListener#onDiscovery.
+                        // No additional synchronization for reference is required.
+                        lastStateChangeEvtLsnrFutRef.set(null);
+
+                        if (worker != null)
+                            worker.blockingSectionEnd();
                     }
                 }
             }
@@ -1333,9 +1408,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
-            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) >= 0
-                && ctx.security().enabled() // Matters only if security enabled.
-               ) {
+            if (ctx.security().enabled()) {
                 Boolean rmtSecurityCompatibilityEnabled = n.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
                 if (!F.eq(locSecurityCompatibilityEnabled, rmtSecurityCompatibilityEnabled)) {
@@ -1349,19 +1422,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", rmtNodeAddrs=" + U.addressesAsString(n) +
                         ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
                 }
-            }
-
-            if (n.version().compareToIgnoreTimestamp(SERVICE_PERMISSIONS_SINCE) < 0
-                && ctx.security().enabled() // Matters only if security enabled.
-                && (locSecurityCompatibilityEnabled == null || !locSecurityCompatibilityEnabled)) {
-                throw new IgniteCheckedException("Remote node does not support service security permissions. " +
-                    "To be able to join to it, local node must be started with " + IGNITE_SECURITY_COMPATIBILITY_MODE +
-                    " system property set to \"true\". " +
-                    "[locSecurityCompatibilityEnabled=" + locSecurityCompatibilityEnabled +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
-                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ", " +
-                    ", rmtNodeVer" + n.version() + ", rmtNode=" + U.toShortString(n) + "]");
             }
         }
 
@@ -2182,7 +2242,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         this.consistentId = consistentId;
     }
 
-
     /** @return Topology version. */
     public long topologyVersion() {
         return topSnap.get().topVer.topologyVersion();
@@ -2595,7 +2654,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("StatementWithEmptyBody")
         @Override protected void body() throws InterruptedException {
             long lastChk = 0;
 
@@ -2659,9 +2717,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** */
     private class DiscoveryMessageNotifierThread extends IgniteThread implements IgniteDiscoveryThread {
+        /** */
+        private final GridWorker worker;
+
         /** {@inheritDoc} */
         public DiscoveryMessageNotifierThread(GridWorker worker) {
             super(worker);
+
+            this.worker = worker;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridWorker worker() {
+            return worker;
         }
     }
 

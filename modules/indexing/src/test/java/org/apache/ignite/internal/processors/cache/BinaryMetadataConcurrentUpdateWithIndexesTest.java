@@ -61,8 +61,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessa
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -83,7 +81,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *     nodes or tx will fail on commit.</li>
  * </ul>
  */
-@RunWith(JUnit4.class)
 public class BinaryMetadataConcurrentUpdateWithIndexesTest extends GridCommonAbstractTest {
     /** */
     private static final int FIELDS = 2;

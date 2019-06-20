@@ -25,8 +25,6 @@ import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.GridClientPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
@@ -34,7 +32,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * Simple unit test for GridClientComputeImpl which checks method parameters.
  * It tests only those methods that can produce assertion underneath upon incorrect arguments.
  */
-@RunWith(JUnit4.class)
 public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /** Mocked client compute. */
     private GridClientCompute compute = allocateInstance0(GridClientComputeImpl.class);

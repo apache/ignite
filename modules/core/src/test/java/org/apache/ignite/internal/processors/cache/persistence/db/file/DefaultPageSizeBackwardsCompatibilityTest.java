@@ -27,13 +27,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstractTest {
     /** Client mode. */
     private boolean set16kPageSize = true;

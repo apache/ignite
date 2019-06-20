@@ -20,17 +20,12 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test that replicated-only query is executed locally.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinLocalQueriesSelfTest extends JdbcThinAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -68,11 +63,6 @@ public class JdbcThinLocalQueriesSelfTest extends JdbcThinAbstractSelfTest {
                 "p.companyid = c.id");
 
             assertEqualsCollections(F.asList(2, "John", "Apple"), res.get(0));
-
-            Map twoStepCache = U.field(grid(0).context().query().getIndexing(), "twoStepCache");
-
-            // No two step queries cached => local select.
-            assertEquals(0, twoStepCache.size());
         }
     }
 }

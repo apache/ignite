@@ -28,13 +28,10 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Verifies that primary keys in the metadata are valid.
  */
-@RunWith(JUnit4.class)
 public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest {
     /** Url. */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
@@ -149,12 +146,5 @@ public class JdbcThinMetadataPrimaryKeysSelfTest extends GridCommonAbstractTest 
             assertEquals("Field names in the primary key are not correct",
                 Arrays.asList(expPKFields), colNames);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 }

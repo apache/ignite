@@ -33,15 +33,12 @@ import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 
 /**
  * Tests for {@link org.apache.ignite.compute.ComputeTaskName} annotation.
  */
-@RunWith(JUnit4.class)
 public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     /** Task name. */
     private static final String TASK_NAME = "test-task";

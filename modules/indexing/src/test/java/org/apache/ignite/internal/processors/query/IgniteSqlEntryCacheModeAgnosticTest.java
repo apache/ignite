@@ -26,8 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -37,7 +35,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Test different cache modes for query entry
  */
-@RunWith(JUnit4.class)
 public class IgniteSqlEntryCacheModeAgnosticTest extends AbstractIndexingCommonTest {
     /** Host. */
     public static final String HOST = "127.0.0.1";
