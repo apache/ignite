@@ -98,6 +98,12 @@ export const FAKE_CLUSTERS = {
     ]
 };
 
+export const AGENT_DISCONNECTED_GRID = {
+    count: 0,
+    hasDemo: false,
+    clusters: []
+};
+
 export const SIMPLE_QUERY_RESPONSE = {
     error: null,
     result: {

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+const ClientFunction = require('testcafe').ClientFunction;
 const MongoClient = require('mongodb').MongoClient;
 const objectid = require('objectid');
 const { spawn } = require('child_process');
@@ -194,4 +195,9 @@ const resolveUrl = (targetUrl, host = 'http://localhost:9001') => {
     return url.resolve(process.env.APP_URL || host, targetUrl);
 };
 
-module.exports = { startEnv, insertTestUser, dropTestDB, resolveUrl };
+const enableDemoMode = ClientFunction(() => {
+    window.sessionStorage.IgniteDemoMode = 'true';
+    window.location.reload();
+});
+
+module.exports = { startEnv, insertTestUser, dropTestDB, resolveUrl, enableDemoMode };
