@@ -966,7 +966,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * This method should be removed in Ignite 3.0.
      *
+     * @deprecated Metrics calculated via new subsystem.
+     * @see #startedJobsMetric
+     * @see #activeJobsMetric
+     * @see #waitingJobsMetric
+     * @see #canceledJobsMetric
+     * @see #rejectedJobsMetric
+     * @see #finishedJobsMetric
      */
     @Deprecated
     private void updateJobMetrics() {
@@ -981,7 +989,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * This method should be removed in Ignite 3.0.
      *
+     * @deprecated Metrics calculated via new subsystem.
+     * @see #startedJobsMetric
+     * @see #activeJobsMetric
+     * @see #waitingJobsMetric
+     * @see #canceledJobsMetric
+     * @see #rejectedJobsMetric
+     * @see #finishedJobsMetric
      */
     @Deprecated
     private void updateJobMetrics0() {
