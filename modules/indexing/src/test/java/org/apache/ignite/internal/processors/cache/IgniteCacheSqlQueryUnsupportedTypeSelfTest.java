@@ -64,6 +64,9 @@ public class IgniteCacheSqlQueryUnsupportedTypeSelfTest extends GridCommonAbstra
         return grid(0).cache("CACHE").query(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args)).getAll();
     }
 
+    /**
+     * Creates cache configuration with a table that contains indexed field of Instant type.
+     */
     private CacheConfiguration instantCacheConfiguration() {
         return new CacheConfiguration()
             .setName("CACHE")
