@@ -93,6 +93,15 @@ public abstract class LogListener implements Consumer<String> {
     public abstract void reset();
 
     /**
+     * Creates new builder.
+     *
+     * @return new builder.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
      * Creates new listener builder.
      *
      * @param substr Substring to search for in a log message.

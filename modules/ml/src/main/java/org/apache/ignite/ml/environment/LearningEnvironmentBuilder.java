@@ -84,7 +84,6 @@ public interface LearningEnvironmentBuilder extends Serializable {
         return withParallelismStrategyDependency(constant(stgy));
     }
 
-
     /**
      * Specify dependency (partition -> logging factory).
      *

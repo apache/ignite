@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -185,7 +185,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * As rate metrics {@link HitRateMetrics implementation} is tied to absolute time ticks
+     * As rate metrics {@link HitRateMetric implementation} is tied to absolute time ticks
      * (not related to the first hit) all tests need to align start time with this sequence of ticks.
      *
      * @param rateTimeInterval Rate time interval.

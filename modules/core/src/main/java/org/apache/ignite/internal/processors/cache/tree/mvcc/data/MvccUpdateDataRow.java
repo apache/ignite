@@ -81,6 +81,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
     /** */
     private static final int NEED_HISTORY = REMOVE_OR_LOCK << 1;
+
     /**
      * During mvcc transaction processing conflicting row version could be met in storage.
      * Not all such cases should lead to transaction abort.

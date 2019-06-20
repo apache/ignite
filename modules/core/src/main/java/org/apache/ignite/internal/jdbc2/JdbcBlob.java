@@ -86,7 +86,6 @@ public class JdbcBlob implements Blob {
                 "greater than size of underlying byte array. Requested length can't be negative and can't be " +
                 "greater than available bytes from given position [pos=" + pos + ", len=" + len +']');
 
-
         return new ByteArrayInputStream(arr, (int)(pos - 1), (int)len);
     }
 

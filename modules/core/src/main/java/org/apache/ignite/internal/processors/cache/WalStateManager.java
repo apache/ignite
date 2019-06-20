@@ -417,7 +417,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     if (hasNonEmptyOwning)
                         break;
 
-                    if (locPart.updateCounter() > 0) {
+                    if (!locPart.isEmpty()) {
                         hasNonEmptyOwning = true;
 
                         break;
@@ -435,9 +435,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     ", grpId=" + grp.groupId() + ", hasOwning=" + hasOwning + ", hasMoving=" + hasMoving +
                     ", WALState=" + grp.walEnabled() + ", parts=" + parts);
 
-            if (hasOwning && !grp.localWalEnabled()) {
+            if (hasOwning && !grp.localWalEnabled())
                 grpsToEnableWal.add(grp.groupId());
-            }
             else if (hasMoving && !hasOwning && grp.localWalEnabled()) {
                 grpsToDisableWal.add(grp.groupId());
 
@@ -498,10 +497,13 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 tmpDisabledWal = null;
             }
 
+            // Pending updates in groups with disabled WAL are not protected from crash.
+            // Need to trigger checkpoint for attempt to persist them.
             CheckpointFuture cpFut = triggerCheckpoint("wal-local-state-changed-rebalance-finished-" + topVer);
 
             assert cpFut != null;
 
+            // It's safe to switch partitions to owning state only if checkpoint was successfully finished.
             cpFut.finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) {
                     for (Integer grpId0 : session0.disabledGrps) {
@@ -511,12 +513,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                             grp.topology().ownMoving(topVer);
                         else if (log.isDebugEnabled())
                             log.debug("Cache group was destroyed before checkpoint finished, [grpId=" + grpId0 + ']');
-
                     }
 
                     if (log.isDebugEnabled())
                         log.debug("Refresh partitions due to rebalance finished");
 
+                    // Trigger exchange for switching to ideal assignment when all nodes are ready.
                     cctx.exchange().refreshPartitions();
                 }
             });

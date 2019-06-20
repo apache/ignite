@@ -112,7 +112,6 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
         }
     }
 
-
     /** */
     private void populateCache(Ignite client) {
         for (int i = 0; i < NUM_CACHES; i++) {

@@ -31,12 +31,16 @@ import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 class BaselineAutoAdjustExecutor {
     /** */
     private final IgniteLogger log;
+
     /** */
     private final IgniteClusterImpl cluster;
+
     /** Service for execute this task in async. */
     private final ExecutorService executorService;
+
     /** {@code true} if baseline auto-adjust enabled. */
     private final BooleanSupplier isBaselineAutoAdjustEnabled;
+
     /** This protect from execution more than one task at same moment. */
     private final Lock executionGuard = new ReentrantLock();
 

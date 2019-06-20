@@ -652,7 +652,6 @@ public class GridSqlQueryParser {
         return res;
     }
 
-
     /**
      * @param tbl Table.
      */

@@ -914,7 +914,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             onCacheStop(cacheInfo, true);
     }
 
-
     /**
      * @param cacheInfo Cache context info.
      * @param removeIdx If {@code true}, will remove index.
@@ -1468,6 +1467,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridCacheContext cctx = cacheInfo.cacheContext();
 
                     SchemaIndexCacheFilter filter = new TableCacheFilter(cctx, op0.tableName());
+
+                    if (cctx.group().metrics0() != null)
+                        cctx.group().metrics0().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
 
                     visitor = new SchemaIndexCacheVisitorImpl(cctx, filter, cancelTok, op0.parallel());
                 }
@@ -2981,7 +2983,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return new SchemaOperationException("Operation failed, but error cannot be deserialized.");
         }
     }
-
 
     /**
      * @return Value object context.
