@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.junits;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.apache.ignite.internal.visor.diagnostic;
 
 /**
- * {@link Repeatable} for the {@link WithSystemProperty}.<br/>
- * Should not be used direclty, use multiple {@link WithSystemProperty} annotation instead.
+ * Operation type for {@link VisorPageLocksTask}
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD})
-public @interface SystemPropertiesList {
-    /** Array of underlying annotations. */
-    WithSystemProperty[] value();
+public enum Operation {
+    /** Dump page locks to file operation. */
+    DUMP_FILE,
+    /** Dump page locks to log. */
+    DUMP_LOG
 }

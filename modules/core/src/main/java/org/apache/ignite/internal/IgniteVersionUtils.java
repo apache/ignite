@@ -33,7 +33,7 @@ public class IgniteVersionUtils {
     public static final IgniteProductVersion VER;
 
     /** UTC build date formatter. */
-    public static final SimpleDateFormat BUILD_TSTAMP_DATE_FORMATTER;
+    private static final SimpleDateFormat BUILD_TSTAMP_DATE_FORMATTER;
 
     /** Formatted build date. */
     public static final String BUILD_TSTAMP_STR;
@@ -75,7 +75,7 @@ public class IgniteVersionUtils {
 
         BUILD_TSTAMP_DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-        BUILD_TSTAMP_STR = BUILD_TSTAMP_DATE_FORMATTER.format(new Date(BUILD_TSTAMP * 1000));
+        BUILD_TSTAMP_STR = formatBuildTimeStamp(BUILD_TSTAMP * 1000);
 
         COPYRIGHT = BUILD_TSTAMP_STR.substring(0, 4) + " Copyright(C) Apache Software Foundation";
 
@@ -88,6 +88,17 @@ public class IgniteVersionUtils {
         ACK_VER_STR = VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
 
         VER = IgniteProductVersion.fromString(VER_STR + '-' + BUILD_TSTAMP + '-' + REV_HASH_STR);
+    }
+
+    /**
+     * Builds string date representation in "yyyyMMdd" format.
+     * "synchronized" because it uses {@link SimpleDateFormat} which is not threadsafe.
+     *
+     * @param ts Timestamp.
+     * @return Timestamp date in UTC timezone.
+     */
+    public static synchronized String formatBuildTimeStamp(long ts) {
+        return BUILD_TSTAMP_DATE_FORMATTER.format(new Date(ts));
     }
 
     /**
