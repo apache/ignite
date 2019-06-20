@@ -33,6 +33,8 @@ import {
     ADVANCED_SAVE_CACHE,
     ADVANCED_SAVE_CLUSTER,
     ADVANCED_SAVE_COMPLETE_CONFIGURATION,
+    ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK,
+    ADVANCED_SAVE_COMPLETE_CONFIGURATION_ERR,
     ADVANCED_SAVE_MODEL,
     BASIC_SAVE,
     BASIC_SAVE_AND_DOWNLOAD,
@@ -164,12 +166,12 @@ export default class ConfigEffects {
                         switchMap((res) => {
                             return of(
                                 {type: 'EDIT_CLUSTER', cluster: action.changedItems.cluster},
-                                {type: 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK', changedItems: action.changedItems}
+                                {type: ADVANCED_SAVE_COMPLETE_CONFIGURATION_OK, changedItems: action.changedItems}
                             );
                         }),
                         catchError((res) => {
                             return of({
-                                type: 'ADVANCED_SAVE_COMPLETE_CONFIGURATION_ERR',
+                                type: ADVANCED_SAVE_COMPLETE_CONFIGURATION_ERR,
                                 changedItems: action.changedItems,
                                 action,
                                 error: {
