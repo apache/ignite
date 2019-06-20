@@ -43,12 +43,14 @@ public abstract class AbstractPageLockTest {
         }
     }
 
+    /** */
     protected int nextRandomWaitTimeout(int bound) {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         return rnd.nextInt(bound);
     }
 
+    /** */
     protected void checkNextOp(PageLockLogSnapshot lockLog, long nextOpPageId, long nextOp, int nextOpStructureId) {
         assertEquals(nextOpStructureId, lockLog.nextOpStructureId);
         assertEquals(nextOp, lockLog.nextOp);
