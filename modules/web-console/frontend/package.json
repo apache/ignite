@@ -118,7 +118,7 @@
     "bootstrap-sass": "3.3.7",
     "chai": "4.1.0",
     "chalk": "2.1.0",
-    "copy-webpack-plugin": "4.5.4",
+    "copy-webpack-plugin": "4.5.2",
     "css-loader": "0.28.11",
     "eslint": "5.15.3",
     "eslint-formatter-friendly": "6.0.0",
