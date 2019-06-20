@@ -33,7 +33,10 @@ const getLocationPathname = ClientFunction(() => Promise.resolve(location.pathna
  */
 const isVisible = (node) => !!node.getBoundingClientRect().width;
 
-const scrollIntoView = ClientFunction(() => el().scrollIntoView());
+const scrollIntoView = ClientFunction(() => {
+    el().scrollIntoView();
+    document.scrollingElement.scrollTop += document.querySelector('.wrapper > .content').offsetTop;
+});
 
 const scrollToPageBottom = ClientFunction(() => document.scrollingElement.scrollTop = 9999999);
 const scrollBy = ClientFunction(() => document.scrollingElement.scrollTop += amount);

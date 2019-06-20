@@ -23,6 +23,12 @@ export class PageConfigurationAdvancedCluster {
         this.saveButton = Selector('.pc-form-actions-panel .btn-ignite').withText('Save');
 
         this.sections = {
+            general: {
+                panel: new PanelCollapsible('General'),
+                inputs: {
+                    name: new FormField({id: 'clusterNameInput'})
+                }
+            },
             connectorConfiguration: {
                 panel: new PanelCollapsible('Connector configuration'),
                 inputs: {
