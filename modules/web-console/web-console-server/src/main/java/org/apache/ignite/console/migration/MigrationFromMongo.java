@@ -271,7 +271,8 @@ public class MigrationFromMongo {
                     .map(paragraphMongo -> {
                         Notebook.Paragraph paragraph = new Notebook.Paragraph();
 
-                        paragraph.setCacheName(paragraphMongo.getString("name"));
+                        paragraph.setName(paragraphMongo.getString("name"));
+                        paragraph.setCacheName(paragraphMongo.getString("cacheName"));
                         paragraph.setQuery(paragraphMongo.getString("query"));
 
                         Notebook.QueryType qryType = "scan".equalsIgnoreCase(paragraphMongo.getString("qryType"))
