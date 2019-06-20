@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.agent.AgentConfiguration;
@@ -178,13 +177,25 @@ public class WebSocketRouter implements AutoCloseable {
 
         httpClient.start();
 
-        try {
-            connect();
-        }
-        catch (Throwable e) {
-            log.error("Failed to establish websocket connection with server: " + cfg.serverUri());
+        connect();
+    }
+
+    /**
+     * Stop websocket client.
+     */
+    private void stop() {
+        if (client != null) {
+            try {
+                client.stop();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+
+            watcher.stopWatchTask();
         }
     }
+
 
     /** {@inheritDoc} */
     @Override public void close() {
@@ -214,46 +225,39 @@ public class WebSocketRouter implements AutoCloseable {
 
     /**
      * Connect to backend.
-     *
-     * @throws Exception If failed to connect to server.
      */
-    private void connect() throws Exception {
-        if (!isRunning())
-            return;
+    private void connect() {
+        while (true) {
+            if (!isRunning())
+                break;
 
-        if (client != null) {
-            client.stop();
+            stop();
 
-            watcher.stopWatchTask();
-        }
+            try {
+                Thread.sleep(reconnectCnt * 1000);
 
-        client = new WebSocketClient(httpClient);
+                if (!isRunning())
+                    break;
 
-        try {
-            client.start();
-            client.connect(this, new URI(cfg.serverUri()).resolve(AGENTS_PATH)).get(10L, TimeUnit.SECONDS);
+                client = new WebSocketClient(httpClient);
 
-            reconnectCnt = 0;
-        }
-        catch (ConnectException | TimeoutException ignored) {
-            LT.error(log, null, "Failed to connect to the server");
-        }
-    }
+                client.start();
+                client.connect(this, URI.create(cfg.serverUri()).resolve(AGENTS_PATH)).get(10L, TimeUnit.SECONDS);
 
-    /**
-     * Reconnect to backend.
-     */
-    private void reconnect() {
-        if (reconnectCnt < 10)
-            reconnectCnt++;
+                reconnectCnt = 0;
 
-        try {
-            Thread.sleep(reconnectCnt * 1000);
+                break;
+            }
+            catch (InterruptedException e) {
+                closeLatch.countDown();
+            }
+            catch (Exception e) {
+                if (reconnectCnt == 0)
+                    log.error("Failed to establish websocket connection with server: " + cfg.serverUri());
 
-            connect();
-        }
-        catch (Throwable ignore) {
-            // No-op.
+                if (reconnectCnt < 10)
+                    reconnectCnt++;
+            }
         }
     }
 
@@ -450,9 +454,9 @@ public class WebSocketRouter implements AutoCloseable {
     public void onError(Throwable e) {
         // Reconnect only in case of ConnectException.
         if (e instanceof ConnectException) {
-            LT.error(log, e.getCause(), "Failed to connect to the server");
+            LT.error(log, e.getCause(), "Connection to the server was lost");
 
-            reconnect();
+            connect();
         }
     }
 
@@ -465,6 +469,6 @@ public class WebSocketRouter implements AutoCloseable {
         if (statusCode != SERVER_ERROR)
             log.info("Connection closed [code=" + statusCode + ", reason=" + reason + "]");
 
-        reconnect();
+        connect();
     }
 }

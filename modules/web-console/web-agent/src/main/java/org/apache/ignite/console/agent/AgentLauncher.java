@@ -189,8 +189,8 @@ public class AgentLauncher {
 
             websocket.awaitClose();
         }
-        catch (Throwable e) {
-            log.error("Web Console Agent failed to start cluster watch task", e);
+        catch (Throwable ignored) {
+            // No-op.
         }
 
         // Force exit because of known issue with Jetty: HTTP client does not shutdown its threads.
