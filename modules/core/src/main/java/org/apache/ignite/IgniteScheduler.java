@@ -101,11 +101,11 @@ public interface IgniteScheduler {
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.
      *
-     * @param c Job to schedule to run as a background cron-based job.
+     * @param job Job to schedule to run as a background cron-based job.
      * @param ptrn Scheduling pattern in UNIX cron format with optional prefix <tt>{n1, n2}</tt>
      *      where {@code n1} is delay of scheduling in seconds and {@code n2} is the number of execution. Both
      *      parameters are optional.
      * @return Scheduled execution future.
      */
-    public <R> SchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn);
+    public <R> SchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn);
 }
