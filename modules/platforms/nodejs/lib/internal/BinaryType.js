@@ -114,7 +114,7 @@ class BinaryType {
     }
 
     static _calculateId(name) {
-        return BinaryUtils.hashCodeLowerCase(name);
+        return BinaryUtils.strHashCodeLowerCase(name);
     }
 
     async _write(buffer) {
@@ -315,7 +315,7 @@ class BinaryField {
     }
 
     static _calculateId(name) {
-        return BinaryUtils.hashCodeLowerCase(name);
+        return BinaryUtils.strHashCodeLowerCase(name);
     }
 
     async _write(buffer) {

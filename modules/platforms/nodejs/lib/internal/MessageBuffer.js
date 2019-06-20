@@ -183,7 +183,7 @@ class MessageBuffer {
     }
 
     readLong() {
-        const size = BinaryUtils.getSize(BinaryUtils.TYPE_CODE.LONG)
+        const size = BinaryUtils.getSize(BinaryUtils.TYPE_CODE.LONG);
         this._ensureSize(size);
         const value = Long.fromBytesLE([...this._buffer.slice(this._position, this._position + size)]);
         this._position += size;

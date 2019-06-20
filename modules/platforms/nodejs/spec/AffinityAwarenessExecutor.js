@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-'use strict';
+const Jasmine = require('jasmine');
 
-exports.endpoints = process.env.APACHE_IGNITE_CLIENT_ENDPOINTS ?
-                    process.env.APACHE_IGNITE_CLIENT_ENDPOINTS.split(',') : [];
-exports.debug = process.env.APACHE_IGNITE_CLIENT_DEBUG === 'true' ||
-                process.env.APACHE_IGNITE_CLIENT_DEBUG === '1';
-exports.affinityAwareness = process.env.APACHE_IGNITE_CLIENT_AFFINITY_AWARENESS === 'true' ||
-                            process.env.APACHE_IGNITE_CLIENT_AFFINITY_AWARENESS === '1';
-
-
-//exports.endpoints = ['127.0.0.1:10800'];
-//exports.debug = false;
+const jasmine = new Jasmine();
+jasmine.loadConfig({
+    'spec_dir': 'spec',
+    'spec_files': [
+        "affinity_awareness/**/*[sS]pec.js",
+	    "cache/**/*[sS]pec.js",
+	    "query/**/*[sS]pec.js"
+    ],
+    "random": false,
+    // We want to stop immediately if there are not enough nodes in cluster, for example
+    "stopOnSpecFailure": true
+});
+// We exclude the "scan query test suite > scan query settings" spec because sometimes it fails with more than one node cluster
+jasmine.execute(null, "(?!^scan query test suite > scan query settings$)(^.*$)");

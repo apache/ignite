@@ -1,6 +1,6 @@
 {
   "name": "apache-ignite-client",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "NodeJS Client for Apache Ignite",
   "main": "index.js",
   "files": [
@@ -29,7 +29,8 @@
   "scripts": {
     "test": "jasmine",
     "test:examples": "node ./spec/ExamplesExecutor.js Examples",
-    "test:auth_example": "node ./spec/ExamplesExecutor.js AuthExample"
+    "test:auth_example": "node ./spec/ExamplesExecutor.js AuthExample",
+    "test:affinity_awareness": "APACHE_IGNITE_CLIENT_AFFINITY_AWARENESS=true node ./spec/AffinityAwarenessExecutor.js"
   },
   "devDependencies": {
     "jasmine": "latest",
