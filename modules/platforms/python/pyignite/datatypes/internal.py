@@ -17,7 +17,7 @@ from collections import OrderedDict
 import ctypes
 import decimal
 from datetime import date, datetime, timedelta
-from typing import Any, Tuple
+from typing import Any, Tuple, Union
 import uuid
 
 import attr
@@ -28,10 +28,13 @@ from pyignite.utils import is_binary, is_hinted, is_iterable
 from .type_codes import *
 
 
-__all__ = ['AnyDataArray', 'AnyDataObject', 'Struct', 'StructArray', 'tc_map']
+__all__ = [
+    'AnyDataArray', 'AnyDataObject', 'Struct', 'StructArray', 'tc_map',
+    'infer_from_python',
+]
 
 
-def tc_map(key: bytes, _memo_map: dict={}):
+def tc_map(key: bytes, _memo_map: dict = {}):
     """
     Returns a default parser/generator class for the given type code.
 
@@ -185,7 +188,9 @@ class Struct:
     dict_type = attr.ib(default=OrderedDict)
     defaults = attr.ib(type=dict, default={})
 
-    def parse(self, client: 'Client') -> Tuple[type, bytes]:
+    def parse(
+        self, client: 'Client'
+    ) -> Tuple[ctypes.BigEndianStructure, bytes]:
         buffer = b''
         fields = []
 
@@ -206,7 +211,9 @@ class Struct:
 
         return data_class, buffer
 
-    def to_python(self, ctype_object, *args, **kwargs) -> Any:
+    def to_python(
+        self, ctype_object, *args, **kwargs
+    ) -> Union[dict, OrderedDict]:
         result = self.dict_type()
         for name, c_type in self.fields:
             result[name] = c_type.to_python(

@@ -20,7 +20,7 @@ from pyignite.datatypes.binary import (
     body_struct, enum_struct, schema_struct, binary_fields_struct,
 )
 from pyignite.datatypes import String, Int, Bool
-from pyignite.queries import Query, Response
+from pyignite.queries import Query, get_response_class
 from pyignite.queries.op_codes import *
 from pyignite.utils import int_overflow, entity_id
 from .result import APIResult
@@ -53,7 +53,7 @@ def get_binary_type(
     })
     connection.send(send_buffer)
 
-    response_head_struct = Response([
+    response_head_struct = get_response_class(connection)([
         ('type_exists', Bool),
     ])
     response_head_type, recv_buffer = response_head_struct.parse(connection)

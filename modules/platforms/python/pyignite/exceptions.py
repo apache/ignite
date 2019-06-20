@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Tuple
 from socket import error as SocketError
 
 
@@ -30,7 +31,10 @@ class HandshakeError(SocketError):
     as defined in
     https://apacheignite.readme.io/docs/binary-client-protocol#section-handshake
     """
-    pass
+
+    def __init__(self, expected_version: Tuple[int, int, int], message: str):
+        self.expected_version = expected_version
+        self.message = message
 
 
 class ReconnectError(Exception):
@@ -78,3 +82,6 @@ class SQLError(CacheError):
     An error in SQL query.
     """
     pass
+
+
+connection_errors = (IOError, OSError)

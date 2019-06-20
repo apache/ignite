@@ -20,6 +20,7 @@ There can't be null type, because null payload takes exactly 0 bytes.
 """
 
 import ctypes
+from typing import Any
 
 from .base import IgniteDataType
 from .type_codes import TC_NULL
@@ -32,6 +33,11 @@ class Null(IgniteDataType):
     default = None
     pythonic = type(None)
     _object_c_type = None
+
+    @staticmethod
+    def hashcode(value: Any) -> int:
+        # Null object can not be a cache key.
+        return 0
 
     @classmethod
     def build_c_type(cls):

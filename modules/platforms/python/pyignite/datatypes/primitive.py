@@ -17,6 +17,8 @@ import ctypes
 
 from pyignite.constants import *
 from .base import IgniteDataType
+from .type_ids import *
+from .type_names import *
 
 
 __all__ = [
@@ -38,7 +40,8 @@ class Primitive(IgniteDataType):
     - Char,
     - Bool.
     """
-
+    _type_name = None
+    _type_id = None
     c_type = None
 
     @classmethod
@@ -55,30 +58,44 @@ class Primitive(IgniteDataType):
 
 
 class Byte(Primitive):
+    _type_name = NAME_BYTE
+    _type_id = TYPE_BYTE
     c_type = ctypes.c_byte
 
 
 class Short(Primitive):
+    _type_name = NAME_SHORT
+    _type_id = TYPE_SHORT
     c_type = ctypes.c_short
 
 
 class Int(Primitive):
+    _type_name = NAME_INT
+    _type_id = TYPE_INT
     c_type = ctypes.c_int
 
 
 class Long(Primitive):
+    _type_name = NAME_LONG
+    _type_id = TYPE_LONG
     c_type = ctypes.c_longlong
 
 
 class Float(Primitive):
+    _type_name = NAME_FLOAT
+    _type_id = TYPE_FLOAT
     c_type = ctypes.c_float
 
 
 class Double(Primitive):
+    _type_name = NAME_DOUBLE
+    _type_id = TYPE_DOUBLE
     c_type = ctypes.c_double
 
 
 class Char(Primitive):
+    _type_name = NAME_CHAR
+    _type_id = TYPE_CHAR
     c_type = ctypes.c_short
 
     @classmethod
@@ -103,4 +120,6 @@ class Char(Primitive):
 
 
 class Bool(Primitive):
+    _type_name = NAME_BOOLEAN
+    _type_id = TYPE_BOOLEAN
     c_type = ctypes.c_bool

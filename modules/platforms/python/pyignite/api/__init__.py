@@ -23,6 +23,9 @@ When the binary client protocol changes, these functions also change. For
 stable end user API see :mod:`pyignite.client` module.
 """
 
+from .affinity import (
+    cache_get_node_partitions,
+)
 from .cache_config import (
     cache_create,
     cache_get_names,
@@ -54,6 +57,7 @@ from .key_value import (
     cache_remove_keys,
     cache_remove_all,
     cache_get_size,
+    cache_local_peek,
 )
 from .sql import (
     scan,

@@ -13,14 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import ctypes
+import decimal
 from functools import wraps
-from typing import Any, Type, Union
+from typing import Any, Callable, Optional, Type, Tuple, Union
 
 from pyignite.datatypes.base import IgniteDataType
 from .constants import *
 
 
-def is_iterable(value):
+LONG_MASK = 0xffffffff
+DIGITS_PER_INT = 9
+
+
+def is_pow2(value: int) -> bool:
+    """ Check if value is power of two. """
+    return value > 0 and ((value & (value - 1)) == 0)
+
+
+def is_iterable(value: Any) -> bool:
     """ Check if value is iterable. """
     try:
         iter(value)
@@ -71,7 +82,7 @@ def int_overflow(value: int) -> int:
     return ((value ^ 0x80000000) & 0xffffffff) - 0x80000000
 
 
-def unwrap_binary(client: 'Client', wrapped: tuple):
+def unwrap_binary(client: 'Client', wrapped: tuple) -> object:
     """
     Unwrap wrapped BinaryObject and convert it to Python data.
 
@@ -82,13 +93,15 @@ def unwrap_binary(client: 'Client', wrapped: tuple):
     from pyignite.datatypes.complex import BinaryObject
 
     blob, offset = wrapped
-    client_clone = client.clone(prefetch=blob)
-    client_clone.pos = offset
-    data_class, data_bytes = BinaryObject.parse(client_clone)
-    return BinaryObject.to_python(
+    conn_clone = client.random_node.clone(prefetch=blob)
+    conn_clone.pos = offset
+    data_class, data_bytes = BinaryObject.parse(conn_clone)
+    result = BinaryObject.to_python(
         data_class.from_buffer_copy(data_bytes),
         client,
     )
+    conn_clone.close()
+    return result
 
 
 def hashcode(string: Union[str, bytes]) -> int:
@@ -118,13 +131,15 @@ def cache_id(cache: Union[str, int]) -> int:
     return cache if type(cache) is int else hashcode(cache)
 
 
-def entity_id(cache: Union[str, int]) -> int:
+def entity_id(cache: Union[str, int]) -> Optional[int]:
     """
     Create a type ID from type name or field ID from field name.
 
     :param cache: entity name or ID,
     :return: entity ID.
     """
+    if cache is None:
+        return None
     return cache if type(cache) is int else hashcode(cache.lower())
 
 
@@ -153,6 +168,56 @@ def schema_id(schema: Union[int, dict]) -> int:
     return s_id
 
 
+def decimal_hashcode(value: decimal.Decimal) -> int:
+    """
+    This is a translation of `java.math.BigDecimal` class `hashCode()` method
+    to Python.
+
+    :param value: pythonic decimal value,
+    :return: hashcode.
+    """
+    sign, digits, scale = value.normalize().as_tuple()
+    sign = -1 if sign else 1
+    value = int(''.join([str(d) for d in digits]))
+
+    if value < MAX_LONG:
+        # this is the case when Java BigDecimal digits are stored
+        # compactly, in the internal 64-bit integer field
+        int_hash = (
+            (unsigned(value, ctypes.c_ulonglong) >> 32) * 31
+            + (value & LONG_MASK)
+        ) & LONG_MASK
+    else:
+        # digits are not fit in the 64-bit long, so they get split internally
+        # to an array of values within 32-bit integer range each (it is really
+        # a part of `java.math.BigInteger` class internals)
+        magnitude = []
+        order = 0
+        while True:
+            elem = value >> order
+            if elem > 1:
+                magnitude.insert(0, ctypes.c_int(elem).value)
+                order += 32
+            else:
+                break
+
+        int_hash = 0
+        for v in magnitude:
+            int_hash = (31 * int_hash + (v & LONG_MASK)) & LONG_MASK
+
+    return ctypes.c_int(31 * int_hash * sign - scale).value
+
+
+def datetime_hashcode(value: int) -> int:
+    """
+    Calculates hashcode from UNIX epoch.
+
+    :param value: UNIX time,
+    :return: Java hashcode.
+    """
+    return (value & LONG_MASK) ^ (unsigned(value, ctypes.c_ulonglong) >> 32)
+
+
 def status_to_exception(exc: Type[Exception]):
     """
     Converts erroneous status code with error message to an exception
@@ -170,3 +235,47 @@ def status_to_exception(exc: Type[Exception]):
             return result.value
         return ste_wrapper
     return ste_decorator
+
+
+def select_version(func):
+    """
+    This decorator tries to find a method more suitable for a current protocol
+    version, before calling the decorated method. The object which method is
+    being decorated must have `get_protocol_version()` method.
+
+    :param func: decorated method,
+    :return: wrapper.
+    """
+    def wrapper(obj: object, *args, **kwargs) -> Callable:
+        suggested_name = '{}_{}{}{}'.format(
+            func.__name__,
+            *obj.get_protocol_version()
+        )
+        suggested = getattr(obj, suggested_name, None)
+        if suggested is None:
+            return func(obj, *args, **kwargs)
+
+        # this method is bound, do not pass `conn` here
+        return suggested(*args, **kwargs)
+
+    return wrapper
+
+
+def get_field_by_id(
+    obj: 'GenericObjectMeta', field_id: int
+) -> Tuple[Any, IgniteDataType]:
+    """
+    Returns a complex object's field value, given the field's entity ID.
+
+    :param obj: complex object,
+    :param field_id: field ID,
+    :return: complex object field's value and type.
+    """
+    for fname, ftype in obj._schema.items():
+        if entity_id(fname) == field_id:
+            return getattr(obj, fname, getattr(ftype, 'default')), ftype
+
+
+def unsigned(value: int, c_type: ctypes._SimpleCData = ctypes.c_uint) -> int:
+    """ Convert signed integer value to unsigned. """
+    return c_type(value).value
