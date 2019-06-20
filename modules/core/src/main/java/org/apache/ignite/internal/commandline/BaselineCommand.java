@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.internal.commandline;
 
 import java.util.ArrayList;
@@ -22,9 +21,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.baseline.AutoAdjustCommandArg;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
@@ -42,7 +43,7 @@ import static org.apache.ignite.internal.commandline.CommandList.BASELINE;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.baseline.BaselineSubcommands.of;
 
 /**
@@ -80,13 +81,23 @@ public class BaselineCommand implements Command<BaselineArguments> {
     /**
      * Change baseline.
      *
-     *
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute baseline action.
      */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, toVisorArguments(baselineArgs), clientCfg);
+            UUID coordinatorId = client.compute().nodes().stream()
+                .min(Comparator.comparingLong(GridClientNode::order))
+                .map(GridClientNode::nodeId)
+                .orElse(null);
+
+            VisorBaselineTaskResult res = executeTaskByNameOnNode(
+                client,
+                VisorBaselineTask.class.getName(),
+                toVisorArguments(baselineArgs),
+                coordinatorId,
+                clientCfg
+            );
 
             baselinePrint0(res, logger);
         }
