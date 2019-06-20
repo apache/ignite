@@ -31,7 +31,6 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
-import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
@@ -41,8 +40,6 @@ import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -64,143 +61,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
     public static final long TIMEOUT = 10_000;
 
     /** */
-    private static final int THREADS_CNT = 10;
-
-    /** */
-    private GridTestKernalContext ctx;
-
-    /** */
     private static CountDownLatch latch;
-
-    /** */
-    public GridJobMetricsSelfTest() {
-        super(/*start grid*/false);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        ctx = newContext();
-
-        ctx.add(new GridResourceProcessor(ctx));
-        ctx.add(new GridJobMetricsProcessor(ctx));
-
-        ctx.start();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        ctx.stop(true);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testJobMetricsMultiThreaded() throws Exception {
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                try {
-                    int i = 0;
-                    while (i++ < 1000)
-                        ctx.jobMetric().addSnapshot(new GridJobMetricsSnapshot());
-                }
-                catch (Exception e) {
-                    fail(e.getMessage());
-                }
-            }
-        }, THREADS_CNT, "grid-job-metrics-test");
-
-        ctx.jobMetric().getJobMetrics();
-
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                try {
-                    int i = 0;
-                    while (i++ < 100000)
-                        ctx.jobMetric().addSnapshot(new GridJobMetricsSnapshot());
-                }
-                catch (Exception e) {
-                    fail(e.getMessage());
-                }
-            }
-        }, THREADS_CNT, "grid-job-metrics-test");
-
-        ctx.jobMetric().getJobMetrics();
-    }
-
-    /** Test correctness of legacy {@link GridJobProcessor} metrics. */
-    @Test
-    public void testJobMetrics() throws Exception {
-        ctx.jobMetric().reset();
-
-        final int waitTime = 1;
-        final int activeJobs = 2;
-        final int passiveJobs = 3;
-        final int cancelJobs = 4;
-        final int rejectJobs = 5;
-        final int execTime = 6;
-        final int startedJobs = 7;
-        final int maxExecTime = 8;
-        final int maxWaitTime = 9;
-        final int finishedJobs = 10;
-        final double cpuLoad = 11.0;
-
-        GridJobMetricsSnapshot s = new GridJobMetricsSnapshot();
-
-        s.setWaitTime(waitTime);
-        s.setStartedJobs(startedJobs);
-
-        s.setExecutionTime(execTime);
-        s.setFinishedJobs(finishedJobs);
-
-        s.setActiveJobs(activeJobs);
-        s.setPassiveJobs(passiveJobs);
-        s.setCancelJobs(cancelJobs);
-        s.setRejectJobs(rejectJobs);
-        s.setMaximumExecutionTime(maxExecTime);
-        s.setMaximumWaitTime(maxWaitTime);
-        s.setCpuLoad(cpuLoad);
-
-        int cnt = 3;
-
-        for(int i=0; i<cnt; i++)
-            ctx.jobMetric().addSnapshot(s);
-
-        GridJobMetrics m = ctx.jobMetric().getJobMetrics();
-
-        assertEquals(activeJobs, m.getMaximumActiveJobs());
-        assertEquals(activeJobs, m.getCurrentActiveJobs());
-        assertEquals(activeJobs, m.getAverageActiveJobs());
-
-        assertEquals(passiveJobs, m.getMaximumWaitingJobs());
-        assertEquals(passiveJobs, m.getCurrentWaitingJobs());
-        assertEquals(passiveJobs, m.getAverageWaitingJobs());
-
-        assertEquals(cancelJobs, m.getMaximumCancelledJobs());
-        assertEquals(cancelJobs, m.getCurrentCancelledJobs());
-        assertEquals(cancelJobs, m.getAverageCancelledJobs());
-
-        assertEquals(rejectJobs, m.getMaximumRejectedJobs());
-        assertEquals(rejectJobs, m.getCurrentRejectedJobs());
-        assertEquals(rejectJobs, m.getAverageRejectedJobs());
-
-        assertEquals(maxExecTime, m.getMaximumJobExecuteTime());
-        assertEquals(maxExecTime, m.getCurrentJobExecuteTime());
-        assertEquals(1.0*execTime/ finishedJobs, m.getAverageJobExecuteTime());
-
-        assertEquals(maxWaitTime, m.getMaximumJobWaitTime());
-        assertEquals(maxWaitTime, m.getCurrentJobWaitTime());
-        assertEquals(1.0*waitTime/ startedJobs, m.getAverageJobWaitTime());
-
-        assertEquals(cnt* finishedJobs, m.getTotalExecutedJobs());
-        assertEquals(cnt* cancelJobs, m.getTotalCancelledJobs());
-        assertEquals(cnt* rejectJobs, m.getTotalRejectedJobs());
-
-        assertEquals(cpuLoad, m.getAverageCpuLoad());
-
-        assertEquals(cnt* execTime, m.getTotalJobsExecutionTime());
-        assertEquals(0, m.getCurrentIdleTime());
-    }
 
     /** Test correct calculation of rejected and waiting metrics of the {@link GridJobProcessor}. */
     @Test
