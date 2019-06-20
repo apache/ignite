@@ -282,15 +282,20 @@ public class AgentClusterDemo {
                 }
                 finally {
                     if (idx == NODE_CNT) {
-                        Ignite ignite = Ignition.ignite(SRV_NODE_NAME + 0);
+                        try {
+                            Ignite ignite = Ignition.ignite(SRV_NODE_NAME + 0);
 
-                        if (ignite != null) {
-                            ignite.cluster().active(true);
+                            if (ignite != null) {
+                                ignite.cluster().active(true);
 
-                            deployServices(ignite.services(ignite.cluster().forServers()));
+                                deployServices(ignite.services(ignite.cluster().forServers()));
+                            }
+
+                            log.info("DEMO: All embedded nodes for demo successfully started");
                         }
-
-                        log.info("DEMO: All embedded nodes for demo successfully started");
+                        catch (Throwable ignored) {
+                            log.info("DEMO: Failed to launch demo load");
+                        }
 
                         execSrv.shutdown();
                     }
