@@ -2369,65 +2369,72 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readRepair) {
-                            return new GridNearReadRepairFuture(
-                                topVer,
-                                cacheCtx,
-                                keys,
-                                !skipStore,
-                                subjId,
-                                taskName,
-                                deserializeBinary,
-                                recovery,
-                                cacheCtx.cache().expiryPolicy(expiryPlc0),
-                                label(),
-                                mvccSnapshot)
-                                .init()
-                                .chain((fut) -> {
-                                        try {
-                                            // For every fixed entry.
-                                            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                                                EntryGetResult getRes = entry.getValue();
+                            IgniteInternalTx prevTx = cacheCtx.tm().tx(GridNearTxLocal.this); // Within the original tx.
 
-                                                enlistWrite(
-                                                    cacheCtx,
-                                                    entryTopVer,
-                                                    entry.getKey(),
-                                                    getRes.value(),
-                                                    expiryPlc0,
-                                                    null,
-                                                    null,
-                                                    false,
-                                                    false,
-                                                    null,
-                                                    null,
-                                                    skipStore,
-                                                    false,
-                                                    !deserializeBinary,
-                                                    recovery,
-                                                    null);
+                            try {
+                                return new GridNearReadRepairFuture(
+                                    topVer,
+                                    cacheCtx,
+                                    keys,
+                                    !skipStore,
+                                    subjId,
+                                    taskName,
+                                    deserializeBinary,
+                                    recovery,
+                                    cacheCtx.cache().expiryPolicy(expiryPlc0),
+                                    label(),
+                                    mvccSnapshot)
+                                    .init()
+                                    .chain((fut) -> {
+                                            try {
+                                                // For every fixed entry.
+                                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                                                    EntryGetResult getRes = entry.getValue();
 
-                                                // Rewriting fixed, initially filled by explicit lock operation.
-                                                cacheCtx.addResult(retMap,
-                                                    entry.getKey(),
-                                                    getRes.value(),
-                                                    skipVals,
-                                                    keepCacheObjects,
-                                                    deserializeBinary,
-                                                    false,
-                                                    getRes,
-                                                    getRes.version(),
-                                                    0,
-                                                    0,
-                                                    needVer);
+                                                    enlistWrite(
+                                                        cacheCtx,
+                                                        entryTopVer,
+                                                        entry.getKey(),
+                                                        getRes.value(),
+                                                        expiryPlc0,
+                                                        null,
+                                                        null,
+                                                        false,
+                                                        false,
+                                                        null,
+                                                        null,
+                                                        skipStore,
+                                                        false,
+                                                        !deserializeBinary,
+                                                        recovery,
+                                                        null);
+
+                                                    // Rewriting fixed, initially filled by explicit lock operation.
+                                                    cacheCtx.addResult(retMap,
+                                                        entry.getKey(),
+                                                        getRes.value(),
+                                                        skipVals,
+                                                        keepCacheObjects,
+                                                        deserializeBinary,
+                                                        false,
+                                                        getRes,
+                                                        getRes.version(),
+                                                        0,
+                                                        0,
+                                                        needVer);
+                                                }
+
+                                                return Collections.emptyMap();
                                             }
-
-                                            return Collections.emptyMap();
+                                            catch (Exception e) {
+                                                throw new GridClosureException(e);
+                                            }
                                         }
-                                        catch (Exception e) {
-                                            throw new GridClosureException(e);
-                                        }
-                                    }
-                                );
+                                    );
+                            }
+                            finally {
+                                cacheCtx.tm().tx(prevTx);
+                            }
                         }
 
                         return new GridFinishedFuture<>(Collections.emptyMap());
