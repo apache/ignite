@@ -412,7 +412,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             }
 
             try {
+                assert part.state() != GridDhtPartitionState.OWNING : part;
+
                 boolean success = part.tryClear(grpEvictionCtx);
+
+                assert part.state() != GridDhtPartitionState.OWNING : part;
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
