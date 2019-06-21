@@ -357,7 +357,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         GridDhtPartitionsExchangeFuture future = ctx.cache().context().exchange().lastTopologyFuture();
         
         return (future == null || future.isDone()) ?
-            0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - future.getStartTime());
+            0 : TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - future.getInitTime());
     }
 
     /**
