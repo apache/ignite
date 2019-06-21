@@ -372,11 +372,11 @@ public interface Ignite extends AutoCloseable {
     public void destroyCaches(Collection<String> cacheNames) throws CacheException;
 
     /**
-     * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
-     * implementation of {@code JCache (JSR 107)} specification.
+     * Gets an instance of {@link IgniteCache} API for the given name if one is configured or {@code null} otherwise.
+     * {@code IgniteCache} is a fully-compatible implementation of {@code JCache (JSR 107)} specification.
      *
      * @param name Cache name.
-     * @return Instance of the cache for the specified name.
+     * @return Instance of the cache for the specified name or {@code null} if one does not exist.
      * @throws CacheException If error occurs.
      */
     public <K, V> IgniteCache<K, V> cache(String name) throws CacheException;
