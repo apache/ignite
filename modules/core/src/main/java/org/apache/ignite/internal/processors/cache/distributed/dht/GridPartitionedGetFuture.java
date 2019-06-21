@@ -64,8 +64,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     /** */
     protected final MvccSnapshot mvccSnapshot;
 
-    /** Eplicit predefined single mapping instead of calculated . */
-    protected final ClusterNode node;
+    /** Explicit predefined single mapping (backup or primary). */
+    protected final ClusterNode affNode;
 
     /**
      * @param cctx Context.
@@ -99,7 +99,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean keepCacheObjects,
         @Nullable String txLbl,
         @Nullable MvccSnapshot mvccSnapshot,
-        ClusterNode node
+        ClusterNode affNode
     ) {
         super(
             cctx,
@@ -120,7 +120,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         this.mvccSnapshot = mvccSnapshot;
         this.txLbl = txLbl;
-        this.node = node;
+        this.affNode = affNode;
 
         initLogger(GridPartitionedGetFuture.class);
     }
@@ -326,12 +326,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
         Map<K, V> locVals
     ) {
-        if (node != null && !cctx.topology().owners(key.partition()).contains(node)) // Explicit owner left.
-            onDone(Collections.emptyMap());
-
         int part = cctx.affinity().partition(key);
 
-        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
+        List<ClusterNode> affNodes =
+            affNode != null ? Collections.singletonList(affNode) : cctx.affinity().nodesByPartition(part, topVer);
 
         // Failed if none affinity node found.
         if (affNodes.isEmpty()) {
@@ -341,30 +339,29 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         // Try to read key localy if we can.
-        if (node == null && tryLocalGet(key, part, topVer, affNodes, locVals))
+        if (tryLocalGet(key, part, topVer, affNodes, locVals))
             return false;
 
         Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
         // Get remote node for request for this key.
-        ClusterNode mapped =
-            node != null ? node : cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
 
         // Failed if none remote node found.
-        if (mapped == null) {
+        if (node == null) {
             onDone(serverNotFoundError(part, topVer));
 
             return false;
         }
 
         // The node still can be local, see details implementation of #tryLocalGet().
-        boolean remote = !mapped.isLocal();
+        boolean remote = !node.isLocal();
 
         // Check retry counter, bound for avoid inifinit remap.
-        if (!checkRetryPermits(key, mapped, missedNodesToKeysMapping))
+        if (!checkRetryPermits(key, node, missedNodesToKeysMapping))
             return false;
 
-        addNodeMapping(key, mapped, nodesToKeysMapping);
+        addNodeMapping(key, node, nodesToKeysMapping);
 
         return remote;
     }
@@ -405,7 +402,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     ) {
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = !cctx.mvccEnabled() &&
-            (!forcePrimary || affNodes.get(0).isLocal()) &&
+            ((!forcePrimary && affNode == null) || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
