@@ -29,6 +29,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.compute.gridify.GridifyArgument;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * P2P test task.
@@ -46,7 +47,7 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 
