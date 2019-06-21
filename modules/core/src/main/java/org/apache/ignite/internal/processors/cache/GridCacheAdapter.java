@@ -2966,7 +2966,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private boolean isCacheMetricsV2Supported() {
         Collection<ClusterNode> nodes = ctx.discovery().allNodes();
 
-        return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_METRICS_V2);
+        return IgniteFeatures.allNodesSupports(ctx.kernalContext(), nodes, IgniteFeatures.CACHE_METRICS_V2);
     }
 
     /** {@inheritDoc} */

@@ -335,7 +335,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public boolean allNodesSupport(IgniteFeatures feature) {
         // It is ok to see visible node without order here because attributes are available when node is created.
-        return IgniteFeatures.allNodesSupports(upcast(ring.allNodes()), feature);
+        return IgniteFeatures.allNodesSupports(
+            (spi.ignite() instanceof IgniteEx)? ((IgniteEx)spi.ignite()).context(): null,
+            upcast(ring.allNodes()),
+            feature);
     }
 
     /** {@inheritDoc} */

@@ -373,7 +373,10 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public boolean allNodesSupport(IgniteFeatures feature) {
-        return IgniteFeatures.allNodesSupports(upcast(rmtNodes.values()), feature);
+        return IgniteFeatures.allNodesSupports(
+            (spi.ignite() instanceof IgniteEx) ? ((IgniteEx)spi.ignite()).context() : null,
+            upcast(rmtNodes.values()),
+            feature);
     }
 
     /** {@inheritDoc} */

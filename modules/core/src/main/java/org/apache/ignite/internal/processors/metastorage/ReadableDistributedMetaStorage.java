@@ -49,7 +49,7 @@ public interface ReadableDistributedMetaStorage {
         else {
             Collection<ClusterNode> nodes = discoSpi.getRemoteNodes();
 
-            return IgniteFeatures.allNodesSupports(nodes, DISTRIBUTED_METASTORAGE);
+            return IgniteFeatures.allNodesSupports(ctx, nodes, DISTRIBUTED_METASTORAGE);
         }
     }
 
