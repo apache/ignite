@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -29,11 +30,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
@@ -175,6 +179,23 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         assert m.getAverageCpuLoad() >= 0 || m.getAverageCpuLoad() == -1.0;
 
         assert m.getTotalCpus() > 0;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInitTimeAfterStartTime() throws Exception {
+        IgniteEx ig = startGrid(12345);
+        GridKernalContext ctx = ig.context();
+        GridCacheSharedContext cctx = ctx.cache().context();
+
+        List<GridDhtPartitionsExchangeFuture> futs = cctx.exchange().exchangeFutures();
+        for (GridDhtPartitionsExchangeFuture fut : futs) {
+            assertTrue(0 != fut.getInitTime());
+            assertTrue(0 != fut.getStartTime());
+            assertTrue(fut.getInitTime() > fut.getStartTime());
+        }
     }
 
     /**
