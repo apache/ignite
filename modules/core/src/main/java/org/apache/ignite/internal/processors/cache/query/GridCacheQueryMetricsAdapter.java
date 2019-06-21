@@ -21,40 +21,60 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.cache.query.QueryMetrics;
-import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Adapter for {@link QueryMetrics}.
  */
-public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridCacheQueryMetricsAdapter implements QueryMetrics {
     /** Minimum time of execution. */
-    private final GridAtomicLong minTime = new GridAtomicLong(Long.MAX_VALUE);
+    private final LongMetricImpl minTime;
 
     /** Maximum time of execution. */
-    private final GridAtomicLong maxTime = new GridAtomicLong();
+    private final LongMetricImpl maxTime;
 
     /** Sum of execution time for all completed queries. */
-    private final LongAdder sumTime = new LongAdder();
-
-    /** Average time of execution.
-     * If doesn't equal zero then this metrics set is copy from remote node and doesn't actually update.
-     */
-    private double avgTime;
+    private final LongAdderMetricImpl sumTime;
 
     /** Number of executions. */
-    private final LongAdder execs = new LongAdder();
+    private final LongAdderMetricImpl execs;
 
     /** Number of completed executions. */
-    private final LongAdder completed = new LongAdder();
+    private final LongAdderMetricImpl completed;
 
     /** Number of fails. */
-    private final LongAdder fails = new LongAdder();
+    private final LongAdderMetricImpl fails;
+
+    /**
+     * @param mreg Metric registry.
+     * @param cacheName Cache name.
+     */
+    public GridCacheQueryMetricsAdapter(MetricRegistry mreg, String cacheName, @Nullable String suffix) {
+        String prefix;
+
+        if (suffix == null)
+            prefix = metricName(CACHE_METRICS_PREFIX, cacheName, "query");
+        else
+            prefix = metricName(CACHE_METRICS_PREFIX, cacheName, suffix, "query");
+
+        mreg = mreg.withPrefix(prefix);
+
+        minTime = mreg.metric("MinimalTime", null);
+        maxTime = mreg.metric("MaximumTime", null);
+        sumTime = mreg.longAdderMetric("SumTime", null);
+        execs = mreg.longAdderMetric("Executed", null);
+        completed = mreg.longAdderMetric("Completed", null);
+        fails = mreg.longAdderMetric("Failed", null);
+    }
 
     /** {@inheritDoc} */
     @Override public long minimumTime() {
@@ -70,33 +90,19 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
 
     /** {@inheritDoc} */
     @Override public double averageTime() {
-        if (avgTime > 0)
-            return avgTime;
-        else {
-            double val = completed.sum();
+        double val = completed.longValue();
 
-            return val > 0 ? sumTime.sum() / val : 0.0;
-        }
+        return val > 0 ? sumTime.longValue() / val : 0.0;
     }
 
     /** {@inheritDoc} */
     @Override public int executions() {
-        return execs.intValue();
-    }
-
-    /**
-     * Gets total number of completed executions of query.
-     * This value is actual only for local node.
-     *
-     * @return Number of completed executions.
-     */
-    public int completedExecutions() {
-        return completed.intValue();
+        return (int)execs.longValue();
     }
 
     /** {@inheritDoc} */
     @Override public int fails() {
-        return fails.intValue();
+        return (int)fails.longValue();
     }
 
     /**
@@ -114,8 +120,12 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
             execs.increment();
             completed.increment();
 
-            minTime.setIfLess(duration);
-            maxTime.setIfGreater(duration);
+            if (minTime.value() != 0)
+                MetricUtils.setIfLess(minTime, duration);
+            else
+                MetricUtils.compareAndSet(minTime, 0, duration);
+
+            MetricUtils.setIfGreater(maxTime, duration);
 
             sumTime.add(duration);
         }
@@ -126,41 +136,104 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
      *
      * @return Copy.
      */
-    public GridCacheQueryMetricsAdapter copy() {
-        GridCacheQueryMetricsAdapter m = new GridCacheQueryMetricsAdapter();
-
-        // Not synchronized because accuracy isn't critical.
-        m.fails.add(fails.sum());
-        m.minTime.set(minTime.get());
-        m.maxTime.set(maxTime.get());
-        m.execs.add(execs.sum());
-        m.completed.add(completed.sum());
-        m.sumTime.add(sumTime.sum());
-        m.avgTime = avgTime;
-
-        return m;
+    public QueryMetrics snapshot() {
+        return new QueryMetricsSnapshot(
+            minTime.longValue(),
+            maxTime.longValue(),
+            averageTime(),
+            (int)execs.longValue(),
+            (int)fails.longValue());
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(minTime.get());
-        out.writeLong(maxTime.get());
-        out.writeDouble(averageTime());
-        out.writeInt(execs.intValue());
-        out.writeInt(fails.intValue());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        minTime.set(in.readLong());
-        maxTime.set(in.readLong());
-        avgTime = in.readDouble();
-        execs.add(in.readInt());
-        fails.add(in.readInt());
+    /**
+     * Resets query metrics.
+     */
+    public void reset() {
+        minTime.reset();
+        maxTime.reset();
+        sumTime.reset();
+        execs.reset();
+        completed.reset();
+        fails.reset();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheQueryMetricsAdapter.class, this);
+    }
+
+    /**
+     * Query metrics snapshot.
+     */
+    public static class QueryMetricsSnapshot implements QueryMetrics, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private long minTime;
+
+        /** */
+        private long maxTime;
+
+        /** */
+        private double avgTime;
+
+        /** */
+        private int execs;
+
+        /** */
+        private int fails;
+
+        /** */
+        public QueryMetricsSnapshot(long minTime, long maxTime, double avgTime, int execs, int fails) {
+            this.minTime = minTime;
+            this.maxTime = maxTime;
+            this.avgTime = avgTime;
+            this.execs = execs;
+            this.fails = fails;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(minTime);
+            out.writeLong(maxTime);
+            out.writeDouble(avgTime);
+            out.writeInt(execs);
+            out.writeInt(fails);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            minTime = in.readLong();
+            maxTime = in.readLong();
+            avgTime = in.readDouble();
+            execs = in.readInt();
+            fails = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long minimumTime() {
+            return minTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long maximumTime() {
+            return maxTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public double averageTime() {
+            return avgTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int executions() {
+            return execs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int fails() {
+            return fails;
+        }
     }
 }

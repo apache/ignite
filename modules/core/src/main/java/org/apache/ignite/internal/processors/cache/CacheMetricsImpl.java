@@ -60,6 +60,9 @@ public class CacheMetricsImpl implements CacheMetrics {
      */
     public static final String CACHE_METRICS_PREFIX = "cache";
 
+    /** Suffix for near caches. */
+    public static final String NEAR_SUFFIX = "near";
+
     /** Number of reads. */
     private final LongMetricImpl reads;
 
