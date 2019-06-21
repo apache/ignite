@@ -1177,7 +1177,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void checkConsistency() throws IgniteCheckedException {
         Collection<ClusterNode> rmtNodes = ctx.discovery().remoteNodes();
 
-        boolean changeablePoolSize = IgniteFeatures.allNodesSupports(rmtNodes, IgniteFeatures.DIFFERENT_REBALANCE_POOL_SIZE);
+        boolean changeablePoolSize =
+            IgniteFeatures.allNodesSupports(ctx, rmtNodes, IgniteFeatures.DIFFERENT_REBALANCE_POOL_SIZE);
 
         for (ClusterNode n : rmtNodes) {
             if (Boolean.TRUE.equals(n.attribute(ATTR_CONSISTENCY_CHECK_SKIPPED)))
@@ -5931,7 +5932,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ClusterGroup grp = ctx.grid()
             .cluster()
             .forServers()
-            .forPredicate(node -> IgniteFeatures.nodeSupports(node, TRANSACTION_OWNER_THREAD_DUMP_PROVIDING));
+            .forPredicate(node -> IgniteFeatures.nodeSupports(ctx, node, TRANSACTION_OWNER_THREAD_DUMP_PROVIDING));
 
         IgniteCompute compute = ctx.grid().compute(grp);
 

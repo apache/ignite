@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.ru.IgniteRollingUpgradeStatus;
 import org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult;
 import org.apache.ignite.internal.processors.ru.RollingUpgradeStatus;
 import org.apache.ignite.internal.util.typedef.F;
@@ -79,28 +80,27 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
     /** {@inheritDoc} */
     @Override public RollingUpgradeModeChangeResult setMode(boolean enable) {
-            ClusterNode locNode = ctx.discovery().localNode();
+        ClusterNode locNode = ctx.discovery().localNode();
 
-            return new RollingUpgradeModeChangeResult(
-                FAIL,
-                new UnsupportedOperationException("Local node does not support Rolling Upgrade "
-                    + "[locNodeId=" + locNode.id() + ", locNodeAddrs=" + U.addressesAsString(locNode)
-                    + ", locBuildVer=" + locNode.attribute(ATTR_BUILD_VER)
-                ));
+        return new RollingUpgradeModeChangeResult(
+            FAIL,
+            new UnsupportedOperationException("Local node does not support Rolling Upgrade "
+                + "[locNodeId=" + locNode.id() + ", locNodeAddrs=" + U.addressesAsString(locNode)
+                + ", locBuildVer=" + locNode.attribute(ATTR_BUILD_VER) + ']'));
     }
 
     /** {@inheritDoc} */
     @Override public void enableForcedMode() {
-        throw new UnsupportedOperationException("OS nodes do not support Rolling Upgrade.");
+        throw new UnsupportedOperationException("Forced mode of Rolling Upgrade is not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public RollingUpgradeStatus getStatus() {
-        return new RollingUpgradeStatus(
+        return new IgniteRollingUpgradeStatus(
+            false,
             false,
             IgniteProductVersion.fromString(ctx.discovery().localNode().attribute(ATTR_BUILD_VER)),
             null,
-            true,
             new HashSet<>(Arrays.asList(IgniteFeatures.values())));
     }
 }

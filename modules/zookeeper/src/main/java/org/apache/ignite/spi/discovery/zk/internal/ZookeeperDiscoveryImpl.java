@@ -51,7 +51,9 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -565,7 +567,9 @@ public class ZookeeperDiscoveryImpl {
     public boolean allNodesSupport(IgniteFeatures feature) {
         checkState();
 
-        return rtState != null && rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(n, feature));
+        GridKernalContext ctx = (spi.ignite() instanceof IgniteEx) ? ((IgniteEx)spi.ignite()).context() : null;
+
+        return rtState != null && rtState.top.isAllNodes(n -> IgniteFeatures.nodeSupports(ctx, n, feature));
     }
 
     /**

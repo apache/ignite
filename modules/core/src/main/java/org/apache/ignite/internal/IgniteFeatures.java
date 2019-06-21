@@ -18,6 +18,7 @@ package org.apache.ignite.internal;
 
 import java.util.BitSet;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.ru.RollingUpgradeStatus;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
 
@@ -58,7 +59,6 @@ public enum IgniteFeatures {
 
     /** Distributed metastorage. */
     DISTRIBUTED_METASTORAGE(11);
-    ;
 
     /**
      * Unique feature identifier.
@@ -82,17 +82,20 @@ public enum IgniteFeatures {
     /**
      * Checks that feature supported by node.
      *
+     * @param ctx Kernal context.
      * @param clusterNode Cluster node to check.
      * @param feature Feature to check.
      * @return {@code True} if feature is declared to be supported by remote node.
      */
-    public static boolean nodeSupports(ClusterNode clusterNode, IgniteFeatures feature) {
-        final byte[] features = clusterNode.attribute(ATTR_IGNITE_FEATURES);
+    public static boolean nodeSupports(GridKernalContext ctx, ClusterNode clusterNode, IgniteFeatures feature) {
+        if (ctx != null) {
+            RollingUpgradeStatus status = ctx.rollingUpgrade().getStatus();
 
-        if (features == null)
-            return false;
+            if (status.isEnabled() && !status.isForcedModeEnabled())
+                return status.getSupportedFeatures().contains(feature);
+        }
 
-        return nodeSupports(features, feature);
+        return nodeSupports(clusterNode.attribute(ATTR_IGNITE_FEATURES), feature);
     }
 
     /**
@@ -103,6 +106,9 @@ public enum IgniteFeatures {
      * @return {@code True} if feature is declared to be supported by remote node.
      */
     public static boolean nodeSupports(byte[] featuresAttrBytes, IgniteFeatures feature) {
+        if (featuresAttrBytes == null)
+            return false;
+
         int featureId = feature.getFeatureId();
 
         // Same as "BitSet.valueOf(features).get(featureId)"
@@ -120,12 +126,20 @@ public enum IgniteFeatures {
     /**
      * Checks that feature supported by all nodes.
      *
+     * @param ctx Kernal context.
      * @param nodes cluster nodes to check their feature support.
      * @return if feature is declared to be supported by all nodes
      */
-    public static boolean allNodesSupports(Iterable<ClusterNode> nodes, IgniteFeatures feature) {
+    public static boolean allNodesSupports(GridKernalContext ctx, Iterable<ClusterNode> nodes, IgniteFeatures feature) {
+        if (ctx != null && nodes.iterator().hasNext()) {
+            RollingUpgradeStatus status = ctx.rollingUpgrade().getStatus();
+
+            if (status.isEnabled() && !status.isForcedModeEnabled())
+                return status.getSupportedFeatures().contains(feature);
+        }
+
         for (ClusterNode next : nodes) {
-            if (!nodeSupports(next, feature))
+            if (!nodeSupports(next.attribute(ATTR_IGNITE_FEATURES), feature))
                 return false;
         }
 

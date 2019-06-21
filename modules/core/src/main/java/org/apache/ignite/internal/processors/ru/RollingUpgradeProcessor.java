@@ -15,7 +15,12 @@
  */
 package org.apache.ignite.internal.processors.ru;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.processors.GridProcessor;
+
+import static org.apache.ignite.internal.processors.ru.RollingUpgradeModeChangeResult.Status.FAIL;
 
 /**
  * Defines public API for Rolling Upgrade process.
@@ -26,17 +31,32 @@ public interface RollingUpgradeProcessor extends GridProcessor {
      *
      * @param enable {@code true} in order to enable rolling upgrade mode.
      */
-    RollingUpgradeModeChangeResult setMode(boolean enable);
+    public default RollingUpgradeModeChangeResult setMode(boolean enable) {
+        return new RollingUpgradeModeChangeResult(
+            FAIL,
+            new UnsupportedOperationException("Rolling Upgrade is not supported."));
+    }
 
     /**
      * Returns cluster-wide status of Rolling Upgrade process.
      *
      * @return status of Rolling Upgrade process.
      */
-    RollingUpgradeStatus getStatus();
+    public default RollingUpgradeStatus getStatus() {
+        return new IgniteRollingUpgradeStatus(
+            false,
+            false,
+            null,
+            null,
+            new HashSet<>(Arrays.asList(IgniteFeatures.values())));
+    }
 
     /**
-     * Disables strict validation mode.
+     * Enables forced mode of rolling upgrade.
+     * This means that the strict version checking of the node should not be used and therefore
+     * this mode allows to coexist more than two versions of Ignite nodes in the cluster.
      */
-    void enableForcedMode();
+    public default void enableForcedMode() {
+        throw new UnsupportedOperationException("Forced mode of Rolling Upgrade is not supported.");
+    }
 }
