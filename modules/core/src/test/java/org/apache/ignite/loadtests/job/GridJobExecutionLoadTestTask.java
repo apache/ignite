@@ -24,6 +24,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
@@ -33,7 +34,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
  */
 public class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
         return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
     }
 

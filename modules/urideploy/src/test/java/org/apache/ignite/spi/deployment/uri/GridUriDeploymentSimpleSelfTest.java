@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -151,7 +152,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
      */
     private static class TestTask extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -173,7 +174,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     @ComputeTaskName("TestTaskWithName")
     private static class TestTaskWithName extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {

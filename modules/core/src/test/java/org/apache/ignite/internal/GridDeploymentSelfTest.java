@@ -39,6 +39,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
@@ -375,7 +376,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -408,7 +409,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -440,7 +441,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {

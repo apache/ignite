@@ -37,6 +37,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 /**
@@ -102,7 +103,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         private int cnt;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 2;
 
             mapper.send(new TestJob(cnt++), subgrid.get(0));
@@ -158,7 +159,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             mapper.send(new TestJob());
 
             return null;
@@ -236,7 +237,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             try {
                 mapper.send(new TestJob(), null);
 
