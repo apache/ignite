@@ -470,7 +470,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Gets checkpoint frequency.
      *
-     * @return checkpoint frequency in milliseconds.
+     * @return Checkpoint frequency in milliseconds.
      */
     public long getCheckpointFrequency() {
         return checkpointFreq <= 0 ? DFLT_CHECKPOINT_FREQ : checkpointFreq;
@@ -480,7 +480,9 @@ public class DataStorageConfiguration implements Serializable {
      * Sets the checkpoint frequency which is a minimal interval when the dirty pages will be written
      * to the Persistent Store. If the rate is high, checkpoint will be triggered more frequently.
      *
-     * @param checkpointFreq checkpoint frequency in milliseconds.
+     * If value is not positive, {@link #DFLT_CHECKPOINT_FREQ} will be used.
+     *
+     * @param checkpointFreq Checkpoint frequency in milliseconds.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setCheckpointFrequency(long checkpointFreq) {
