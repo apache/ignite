@@ -25,10 +25,11 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryObject;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -307,11 +308,14 @@ import org.jetbrains.annotations.Nullable;
 public interface IgniteBinary {
     /**
      * Gets type ID for given type name.
+     * If no user defined {@link org.apache.ignite.binary.BinaryIdMapper} is configured
+     * via {@link org.apache.ignite.configuration.BinaryConfiguration}, then default mapper will be used.
      *
      * @param typeName Type name.
      * @return Type ID.
+     * @throws IgniteException in case of error.
      */
-    public int typeId(String typeName);
+    public int typeId(@NotNull String typeName);
 
     /**
      * Converts provided object to instance of {@link org.apache.ignite.binary.BinaryObject}.
