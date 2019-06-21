@@ -29,7 +29,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -79,9 +78,7 @@ import org.h2.result.Row;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-import org.h2.util.JdbcUtils;
 import org.h2.util.LocalDateTimeUtils;
-import org.h2.util.Utils;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
@@ -500,7 +497,7 @@ public class H2Utils {
         if (val == null)
             return null;
 
-        int objType = getTypeFromClass(val.getClass());
+        int objType = DataType.getTypeFromClass(val.getClass());
 
         if (objType == type)
             return val;
@@ -644,7 +641,7 @@ public class H2Utils {
                     Object o = arr[i];
 
                     valArr[i] = o == null ? ValueNull.INSTANCE :
-                        wrap(coCtx, o, getTypeFromClass(o.getClass()));
+                        wrap(coCtx, o, DataType.getTypeFromClass(o.getClass()));
                 }
 
                 return ValueArray.get(valArr);
@@ -654,74 +651,6 @@ public class H2Utils {
         }
 
         throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
-    }
-
-    /**
-     * Maps java class on H2's Value type that is supported by Ignite.
-     * <p/> Note that Ignite supports fewer types than H2.
-     *
-     * @param x java class to map on H2's type.
-     * @return H2 type if Ignite supports this type or {@link Value#JAVA_OBJECT} otherwise.
-     * @see Value
-     * @see DataType#getTypeFromClass(Class)
-     */
-    public static int getTypeFromClass(Class <?> x) {
-        if (x == null || Void.TYPE == x)
-            return Value.NULL;
-
-        x = Utils.getNonPrimitiveClass(x);
-
-        if (String.class == x)
-            return Value.STRING;
-        else if (Integer.class == x)
-            return Value.INT;
-        else if (Long.class == x)
-            return Value.LONG;
-        else if (Boolean.class == x)
-            return Value.BOOLEAN;
-        else if (Double.class == x)
-            return Value.DOUBLE;
-        else if (Byte.class == x)
-            return Value.BYTE;
-        else if (Short.class == x)
-            return Value.SHORT;
-        else if (Character.class == x)
-            throw new IgniteSQLException("Character type is not supported.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        else if (Float.class == x)
-            return Value.FLOAT;
-        else if (byte[].class == x)
-            return Value.BYTES;
-        else if (UUID.class == x)
-            return Value.UUID;
-        else if (Void.class == x)
-            return Value.NULL;
-        else if (BigDecimal.class.isAssignableFrom(x))
-            return Value.DECIMAL;
-        else if (Date.class.isAssignableFrom(x))
-            return Value.DATE;
-        else if (Time.class.isAssignableFrom(x))
-            return Value.TIME;
-        else if (Timestamp.class.isAssignableFrom(x))
-            return Value.TIMESTAMP;
-        else if (java.util.Date.class.isAssignableFrom(x))
-            return Value.TIMESTAMP;
-        else if (Object[].class.isAssignableFrom(x)) // Array of any type.
-            return Value.ARRAY;
-        else if (QueryUtils.isGeometryClass(x))
-            return Value.GEOMETRY;
-        else if (LocalDateTimeUtils.LOCAL_DATE == x)
-            return Value.DATE;
-        else if (LocalDateTimeUtils.LOCAL_TIME == x)
-            return Value.TIME;
-        else if (LocalDateTimeUtils.LOCAL_DATE_TIME == x)
-            return Value.TIMESTAMP;
-        else {
-            if (JdbcUtils.customDataTypesHandler != null)
-                return JdbcUtils.customDataTypesHandler.getTypeIdFromClass(x);
-
-            return Value.JAVA_OBJECT;
-        }
     }
 
     /**
@@ -900,8 +829,6 @@ public class H2Utils {
                 stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else if (obj instanceof BigDecimal)
                 stmt.setObject(idx, obj, Types.DECIMAL);
-            else if (obj.getClass() == Instant.class)
-                stmt.setObject(idx, obj, Types.JAVA_OBJECT);
             else
                 stmt.setObject(idx, obj);
         }

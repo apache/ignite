@@ -28,10 +28,10 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.message.DbException;
 import org.h2.result.SearchRow;
+import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,8 +81,8 @@ public class GridH2RowDescriptor {
         this.tbl = tbl;
         this.type = type;
 
-        keyType = H2Utils.getTypeFromClass(type.keyClass());
-        valType = H2Utils.getTypeFromClass(type.valueClass());
+        keyType = DataType.getTypeFromClass(type.keyClass());
+        valType = DataType.getTypeFromClass(type.valueClass());
 
         refreshMetadataFromTypeDescriptor();
     }
@@ -111,7 +111,7 @@ public class GridH2RowDescriptor {
         Class[] classes = allFields.values().toArray(new Class[fields.length]);
 
         for (int i = 0; i < fieldTypes.length; i++)
-            fieldTypes[i] = H2Utils.getTypeFromClass(classes[i]);
+            fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
 
         props = new GridQueryProperty[fields.length];
 
