@@ -299,6 +299,13 @@ public class DataStorageConfiguration implements Serializable {
     private Integer walPageCompressionLevel;
 
     /**
+     * Creates valid durable memory configuration with all default values.
+     */
+    @SuppressWarnings("RedundantNoArgConstructor")
+    public DataStorageConfiguration() {
+    }
+
+    /**
      * Initial size of a data region reserved for system cache.
      *
      * @return Size in bytes.
