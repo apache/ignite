@@ -448,7 +448,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public List<CacheDataRow> storeAll(
+    @Override public Collection<CacheDataRow> storeAll(
         GridDhtLocalPartition part,
         Collection<GridCacheEntryInfo> entries
     ) throws IgniteCheckedException {
@@ -1703,7 +1703,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public List<CacheDataRow> storeAll(
+        @Override public Collection<CacheDataRow> storeAll(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
