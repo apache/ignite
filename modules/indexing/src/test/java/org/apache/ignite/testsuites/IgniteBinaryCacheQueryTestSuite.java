@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithR
 import org.apache.ignite.internal.processors.cache.CacheIteratorScanQueryTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryDetailMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingBaseTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingSingleTypeTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryDetailMetricsDistributedSelfTest;
@@ -80,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCachePrimitiveFieldsQue
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLeakTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryLoadSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheSqlDmlErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlInsertValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUnionDuplicatesTest;
@@ -280,6 +280,7 @@ import org.junit.runners.Suite;
     // Parsing
     GridQueryParsingTest.class,
     IgniteCacheSqlQueryErrorSelfTest.class,
+    IgniteCacheSqlDmlErrorSelfTest.class,
 
     // Config.
     IgniteCacheDuplicateEntityConfigurationSelfTest.class,
