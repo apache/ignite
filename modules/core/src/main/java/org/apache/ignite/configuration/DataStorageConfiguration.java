@@ -573,18 +573,20 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets a max allowed size of WAL archives. In bytes.
+     * Gets a max allowed size(in bytes) of WAL archives.
      *
-     * @return max size of WAL archive directory.
+     * @return max size(in bytes) of WAL archive directory(always greater than 0).
      */
     public long getMaxWalArchiveSize() {
         return maxWalArchiveSize <= 0 ? DFLT_WAL_ARCHIVE_MAX_SIZE : maxWalArchiveSize;
     }
 
     /**
-     * Sets a max allowed size of WAL archives. In bytes
+     * Sets a max allowed size(in bytes) of WAL archives.
      *
-     * @param walArchiveMaxSize max size of WAL archive directory.
+     * If value is not positive, {@link #DFLT_WAL_ARCHIVE_MAX_SIZE} will be used.
+     *
+     * @param walArchiveMaxSize max size(in bytes) of WAL archive directory.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setMaxWalArchiveSize(long walArchiveMaxSize) {
