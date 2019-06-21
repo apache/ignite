@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -117,7 +118,7 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     public static final String DEFAULT_CACHE_NAME = "default";
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) {
         return Collections.singletonMap(new EchoJob(arg), F.first(subgrid));
     }
