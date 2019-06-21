@@ -101,7 +101,7 @@ public class CommandHandler {
     private static final Scanner IN = new Scanner(System.in);
 
     /** Utility name. */
-    public static final String UTILITY_NAME = "control.sh";
+    public static final String UTILITY_NAME = "control.(sh|bat)";
 
     /** */
     public static final String NULL = "null";
@@ -537,7 +537,7 @@ public class CommandHandler {
 
     /** */
     private void printHelp() {
-        logger.info("Control.sh is used to execute admin commands on cluster or get common cluster info. " +
+        logger.info("Control utility script is used to execute admin commands on cluster or get common cluster info. " +
             "The command has the following syntax:");
         logger.info("");
 

@@ -1228,6 +1228,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
                         assertTrue(cmd + " " + arg, output.contains(arg.toString()));
 
             }
+            else {
+                assertContains(log, output, CommandHandler.UTILITY_NAME);
+
+                assertNotContains(log, output, "control.sh");
+            }
         }
     }
 
@@ -1258,6 +1263,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         for (CommandList cmd : CommandList.values())
             assertContains(log, testOutStr, cmd.toString());
+
+        assertContains(log, testOutStr, "Control utility script");
+        assertContains(log, testOutStr, CommandHandler.UTILITY_NAME);
+
+        assertNotContains(log, testOutStr, "Control.sh");
     }
 
     /**
