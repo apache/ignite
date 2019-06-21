@@ -93,7 +93,7 @@ public class AgentConfiguration {
     @Parameter(names = {"-dd", "--disable-demo"}, description = "Disable demo mode on this agent " +
         "                             " +
         "      Default value: false")
-    private Boolean disableDemo = Boolean.FALSE;
+    private boolean disableDemo;
 
     /** */
     @Parameter(names = {"-nks", "--node-key-store"},
@@ -142,7 +142,7 @@ public class AgentConfiguration {
 
     /** */
     @Parameter(names = {"-h", "--help"}, help = true, description = "Print this help message")
-    private Boolean help = Boolean.FALSE;
+    private boolean help;
 
     /**
      * @return Tokens.
@@ -273,15 +273,15 @@ public class AgentConfiguration {
     /**
      * @return Disable demo mode.
      */
-    public Boolean disableDemo() {
-        return disableDemo != null ? disableDemo : Boolean.FALSE;
+    public boolean disableDemo() {
+        return disableDemo;
     }
 
     /**
      * @param disableDemo Disable demo mode.
      * @return {@code this} for chaining.
      */
-    public AgentConfiguration disableDemo(Boolean disableDemo) {
+    public AgentConfiguration disableDemo(boolean disableDemo) {
         this.disableDemo = disableDemo;
 
         return this;
@@ -443,8 +443,8 @@ public class AgentConfiguration {
     /**
      * @return {@code true} If agent options usage should be printed.
      */
-    public Boolean help() {
-        return help != null ? help : Boolean.FALSE;
+    public boolean help() {
+        return help;
     }
 
     /**
@@ -562,8 +562,7 @@ public class AgentConfiguration {
         if (driversFolder == null)
             driversFolder(cfg.driversFolder());
 
-        if (disableDemo == null)
-            disableDemo(cfg.disableDemo());
+        disableDemo(disableDemo || cfg.disableDemo());
 
         if (nodeKeyStore == null)
             nodeKeyStore(cfg.nodeKeyStore());
