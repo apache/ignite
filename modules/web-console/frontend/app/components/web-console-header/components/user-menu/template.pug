@@ -21,5 +21,5 @@ div.user-menu__trigger(
     data-trigger='hover focus'
     data-container='self'
 )
-    span.user-menu__username {{$ctrl.user.firstName}} {{$ctrl.user.lastName}}
+    span.user-menu__username {{($ctrl.user$|async:this).firstName}} {{($ctrl.user$|async:this).lastName}}
     span.caret

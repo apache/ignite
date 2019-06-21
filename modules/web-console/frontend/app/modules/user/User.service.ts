@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-import {ReplaySubject} from 'rxjs';
+import {ReplaySubject, Subject} from 'rxjs';
 import {StateService} from '@uirouter/angularjs';
 import {default as MessagesFactory} from 'app/services/Messages.service';
+import {DemoService} from 'app/modules/demo/Demo.module';
 
 export type User = {
     _id: string,
@@ -31,37 +32,34 @@ export type User = {
     lastLogin: string,
     registered: string,
     token: string
-}
+} | null
 
-User.$inject = ['$q', '$injector', '$rootScope', '$state', '$http', 'IgniteMessages'];
+UserFactory.$inject = ['$q', '$injector', 'Demo', '$state', '$http', 'IgniteMessages'];
 
-export default function User(
+export default function UserFactory(
     $q: ng.IQService,
     $injector: ng.auto.IInjectorService,
-    $root: ng.IRootScopeService,
+    Demo: DemoService,
     $state: StateService,
     $http: ng.IHttpService,
     IgniteMessages: ReturnType<typeof MessagesFactory>
 ) {
     let user: ng.IPromise<User>;
 
-    const current$ = new ReplaySubject(1);
+    const current$ = new ReplaySubject<User>(1);
+    const created$ = new Subject<User>();
 
     return {
         current$,
+        created$,
         /**
          * @returns {ng.IPromise<User>}
          */
         load() {
             return user = $http.get('/api/v1/user')
                 .then(({data}) => {
-                    $root.user = data;
-
-                    $root.$broadcast('user', $root.user);
-
                     current$.next(data);
-
-                    return $root.user;
+                    return data;
                 })
                 .catch(({data}) => {
                     user = null;
@@ -76,9 +74,9 @@ export default function User(
             return this.load();
         },
         clean() {
-            delete $root.user;
+            current$.next(null);
 
-            delete $root.demoMode;
+            delete Demo.enabled;
 
             sessionStorage.removeItem('demoMode');
         },
@@ -88,7 +86,7 @@ export default function User(
                 const {data: updatedUser} = await $http.post<User>('/api/v1/profile/save', user);
                 await this.load();
                 IgniteMessages.showInfo('Profile saved.');
-                $root.$broadcast('user', updatedUser);
+                current$.next(updatedUser);
                 return updatedUser;
             }
             catch (e) {
@@ -97,3 +95,5 @@ export default function User(
         }
     };
 }
+
+export type UserService = ReturnType<typeof UserFactory>

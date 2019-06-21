@@ -25,7 +25,7 @@ export default {
 
         /**
          * @param {import('app/services/Version.service').default} Version
-         * @param {ng.IRootScopeService} $scope
+         * @param {ng.IScope} $scope
          */
         constructor(Version, $scope) {
             this.currentSbj = Version.currentSbj;

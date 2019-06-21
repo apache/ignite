@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- *
+ * 
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * 
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {DemoService} from 'app/modules/demo/Demo.module';
 
-import igniteDialog from './dialog.directive';
-import igniteDialogTitle from './dialog-title.directive';
-import igniteDialogContent from './dialog-content.directive';
-import IgniteDialog from './dialog.factory';
-
-angular
-.module('ignite-console.dialog', [
-
-])
-.factory('IgniteDialog', IgniteDialog)
-.directive('igniteDialog', igniteDialog)
-.directive('igniteDialogTitle', igniteDialogTitle)
-.directive('igniteDialogContent', igniteDialogContent);
+/**
+ * Use this directive along with ng-ref when you can't inject Demo into scope
+ */
+export function directive(): ng.IDirective {
+    return {
+        controller: class DemoStatus {
+            static $inject = ['Demo']
+            constructor(private Demo: DemoService) {}
+            get enabled() {return this.Demo.enabled;}
+        },
+        restrict: 'A'
+    };
+}

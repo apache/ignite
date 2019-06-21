@@ -33,6 +33,7 @@ import {default as LegacyConfirmServiceFactory} from 'app/services/Confirm.servi
 import {default as InputDialog} from 'app/components/input-dialog/input-dialog.service';
 import {QueryActions} from './components/query-actions-button/controller';
 import {CancellationError} from 'app/errors/CancellationError';
+import {DemoService} from 'app/modules/demo/Demo.module';
 
 // Time line X axis descriptor.
 const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
@@ -285,16 +286,16 @@ class Paragraph {
 
 // Controller for SQL notebook screen.
 export class NotebookCtrl {
-    static $inject = ['IgniteInput', '$rootScope', '$scope', '$http', '$q', '$timeout', '$transitions', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', '$window', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
+    static $inject = ['Demo', 'IgniteInput', '$scope', '$http', '$q', '$timeout', '$transitions', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', '$window', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', 'CSV', 'IgniteErrorParser', 'DemoInfo'];
 
     /**
      * @param {CSV} CSV
      */
-    constructor(private IgniteInput: InputDialog, $root, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
+    constructor(private Demo: DemoService, private IgniteInput: InputDialog, private $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, private Messages: ReturnType<typeof MessagesServiceFactory>, private Confirm: ReturnType<typeof LegacyConfirmServiceFactory>, agentMgr, IgniteChartColors, private Notebook: Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, IgniteCopyToClipboard, CSV, errorParser, DemoInfo) {
         const $ctrl = this;
 
         this.CSV = CSV;
-        Object.assign(this, { $root, $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
+        Object.assign(this, { $scope, $http, $q, $timeout, $transitions, $interval, $animate, $location, $anchorScroll, $state, $filter, $modal, $popover, $window, Loading, LegacyUtils, Messages, Confirm, agentMgr, IgniteChartColors, Notebook, Nodes, uiGridExporterConstants, Version, ActivitiesData, JavaTypes, errorParser, DemoInfo });
 
         // Define template urls.
         $ctrl.paragraphRateTemplateUrl = paragraphRateTemplateUrl;
@@ -302,7 +303,7 @@ export class NotebookCtrl {
         $ctrl.chartSettingsTemplateUrl = chartSettingsTemplateUrl;
         $ctrl.demoStarted = false;
 
-        this.isDemo = $root.demoMode;
+        this.isDemo = this.Demo.enabled;
 
         const _tryStopRefresh = function(paragraph) {
             paragraph.cancelRefresh($interval);
@@ -340,7 +341,7 @@ export class NotebookCtrl {
 
         $scope.modes = LegacyUtils.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
 
-        $scope.loadingText = $root.demoMode ? 'Demo grid is starting. Please wait...' : 'Loading query notebook screen...';
+        $scope.loadingText = this.Demo.enabled ? 'Demo grid is starting. Please wait...' : 'Loading query notebook screen...';
 
         $scope.timeUnit = [
             {value: 1000, label: 'seconds', short: 's'},
@@ -933,7 +934,7 @@ export class NotebookCtrl {
                     });
 
                     // Await for demo caches.
-                    if (!$ctrl.demoStarted && $root.demoMode && nonEmpty(cacheNames)) {
+                    if (!$ctrl.demoStarted && this.Demo.enabled && nonEmpty(cacheNames)) {
                         $ctrl.demoStarted = true;
 
                         Loading.finish('sqlLoading');
@@ -948,7 +949,7 @@ export class NotebookCtrl {
 
         const _startWatch = () => {
             const finishLoading$ = defer(() => {
-                if (!$root.demoMode)
+                if (!this.Demo.enabled)
                     Loading.finish('sqlLoading');
             }).pipe(take(1));
 
@@ -1014,7 +1015,7 @@ export class NotebookCtrl {
                     $scope.rebuildScrollParagraphs();
             })
             .then(() => {
-                if ($root.demoMode && sessionStorage.showDemoInfo !== 'true') {
+                if (this.Demo.enabled && sessionStorage.showDemoInfo !== 'true') {
                     sessionStorage.showDemoInfo = 'true';
 
                     this.DemoInfo.show().then(_startWatch);

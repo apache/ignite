@@ -22,6 +22,7 @@ import ConfigurationResource from './ConfigurationResource';
 import SummaryZipper from './SummaryZipper';
 import Version from 'app/services/Version.service';
 import PageConfigure from './PageConfigure';
+import {DemoService} from 'app/modules/demo/Demo.module';
 
 export default class ConfigurationDownload {
     static $inject = [
@@ -31,7 +32,7 @@ export default class ConfigurationDownload {
         'IgniteSummaryZipper',
         'IgniteVersion',
         '$q',
-        '$rootScope',
+        'Demo',
         'PageConfigure'
     ];
 
@@ -42,7 +43,7 @@ export default class ConfigurationDownload {
         private summaryZipper: SummaryZipper,
         private Version: Version,
         private $q: ng.IQService,
-        private $rootScope: ng.IRootScopeService & {demoMode: boolean},
+        private Demo: DemoService,
         private PageConfigure: PageConfigure
     ) {}
 
@@ -51,7 +52,7 @@ export default class ConfigurationDownload {
     downloadClusterConfiguration(cluster: ClusterLike) {
         this.activitiesData.post({action: '/configuration/download'});
 
-        return this.PageConfigure.getClusterConfiguration({clusterID: cluster.id, isDemo: !!this.$rootScope.demoMode})
+        return this.PageConfigure.getClusterConfiguration({clusterID: cluster.id, isDemo: !!this.Demo.enabled})
             .then((data) => this.configuration.populate(data))
             .then(({clusters}) => {
                 return clusters.find(({id}) => id === cluster.id)
@@ -61,7 +62,7 @@ export default class ConfigurationDownload {
                 return this.summaryZipper({
                     cluster,
                     data: {},
-                    demoMode: this.$rootScope.demoMode,
+                    demoMode: this.Demo.enabled,
                     targetVer: this.Version.currentSbj.getValue()
                 });
             })

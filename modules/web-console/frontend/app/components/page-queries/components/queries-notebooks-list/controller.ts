@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+import {DemoService} from 'app/modules/demo/Demo.module';
 import _ from 'lodash';
 
 export class NotebooksListCtrl {
-    static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', 'IgniteInput', '$scope', '$modal'];
+    static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', 'IgniteInput', '$scope', '$modal', 'Demo'];
 
-    constructor(IgniteNotebook, IgniteMessages, IgniteLoading, IgniteInput, $scope, $modal) {
+    constructor(IgniteNotebook, IgniteMessages, IgniteLoading, IgniteInput, $scope, $modal, private Demo: DemoService) {
         Object.assign(this, { IgniteNotebook, IgniteMessages, IgniteLoading, IgniteInput, $scope, $modal });
 
         this.notebooks = [];

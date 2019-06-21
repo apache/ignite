@@ -16,12 +16,14 @@
 
 import {StateService} from '@uirouter/angularjs';
 import {default as LegacyConfirmFactory} from 'app/services/Confirm.service';
+import {UserService} from '../../../../modules/user/User.service';
+import {take} from 'rxjs/operators';
 
 export default class DemoModeButton {
-    static $inject = ['$rootScope', '$state', '$window', 'IgniteConfirm', 'AgentManager', 'IgniteMessages'];
+    static $inject = ['User', '$state', '$window', 'IgniteConfirm', 'AgentManager', 'IgniteMessages'];
 
     constructor(
-        private $root: ng.IRootScopeService,
+        private User: UserService,
         private $state: StateService,
         private $window: ng.IWindowService,
         private Confirm: ReturnType<typeof LegacyConfirmFactory>,
@@ -33,13 +35,14 @@ export default class DemoModeButton {
         this.$window.open(this.$state.href(stateName, {}), '_blank');
     }
 
-    startDemo() {
+    async startDemo() {
         const connectionState = this.agentMgr.connectionSbj.getValue();
         const disconnected = _.get(connectionState, 'state') === 'AGENT_DISCONNECTED';
         const demoEnabled = _.get(connectionState, 'hasDemo');
+        const user = await this.User.current$.pipe(take(1)).toPromise();
 
         if (disconnected || demoEnabled || _.isNil(demoEnabled)) {
-            if (!this.$root.user.demoCreated)
+            if (!user.demoCreated)
                 return this._openTab('demo.reset');
 
             this.Confirm.confirm('Would you like to continue with previous demo session?', true, false)

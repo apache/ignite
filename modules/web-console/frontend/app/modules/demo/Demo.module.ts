@@ -15,17 +15,17 @@
  */
 
 import angular from 'angular';
+import {StateProvider} from '@uirouter/angularjs';
 
 import DEMO_INFO from 'app/data/demo-info.json';
 import templateUrl from 'views/templates/demo-info.tpl.pug';
+import {directive as demoStatus} from './demoStatus.directive';
 
 const DEMO_QUERY_STATE = {state: 'base.sql.notebook', params: {noteId: 'demo'}};
 
-/**
- * @param {import('@uirouter/angularjs').StateProvider} $state
- * @param {ng.IHttpProvider} $http
- */
-export function DemoProvider($state, $http) {
+DemoProvider.$inject = ['$stateProvider', '$httpProvider'];
+
+export function DemoProvider($state: StateProvider, $http: ng.IHttpProvider) {
     if (/(\/demo.*)/ig.test(location.pathname))
         sessionStorage.setItem('demoMode', 'true');
 
@@ -34,18 +34,18 @@ export function DemoProvider($state, $http) {
     if (enabled)
         $http.interceptors.push('demoInterceptor');
 
-    function service($root) {
-        $root.demoMode = enabled;
-
+    function service(): DemoService {
         return {enabled};
     }
-    service.$inject = ['$rootScope'];
 
     this.$get = service;
     return this;
 }
 
-DemoProvider.$inject = ['$stateProvider', '$httpProvider'];
+export interface DemoService {
+    enabled: boolean
+}
+
 
 /**
  * @param {{enabled: boolean}} Demo
@@ -178,4 +178,5 @@ angular
     .provider('Demo', DemoProvider)
     .factory('demoInterceptor', demoInterceptor)
     .provider('igniteDemoInfo', igniteDemoInfoProvider)
-    .service('DemoInfo', DemoInfo);
+    .service('DemoInfo', DemoInfo)
+    .directive('demoStatus', demoStatus);

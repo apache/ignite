@@ -114,10 +114,7 @@ export function service($root, $modal, igniteGettingStarted) {
     };
 
     return {
-        /**
-         * @param {boolean} force
-         */
-        tryShow: (force) => {
+        tryShow: (force = false) => {
             try {
                 scope.ui.dontShowGettingStarted = !(_.isNil(localStorage.showGettingStarted)
                         || localStorage.showGettingStarted === 'true');

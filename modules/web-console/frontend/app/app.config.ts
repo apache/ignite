@@ -20,8 +20,9 @@ import negate from 'lodash/negate';
 import isNil from 'lodash/isNil';
 import isEmpty from 'lodash/isEmpty';
 import mixin from 'lodash/mixin';
+import {UserService} from './modules/user/User.service';
 
-import {user as userAction, register as registerStore} from './store';
+import {user as userAction, register as registerStore, AppStore} from './store';
 const nonNil = negate(isNil);
 const nonEmpty = negate(isEmpty);
 
@@ -136,6 +137,6 @@ igniteConsoleCfg.directive('uiGridSelection', function() {
     };
 });
 
-igniteConsoleCfg.run(['$rootScope', 'Store', ($root, store) => {
-    $root.$on('user', (event, user) => store.dispatch(userAction({...user})));
+igniteConsoleCfg.run(['User', 'Store', (User: UserService, store: AppStore) => {
+    User.current$.subscribe((user) => store.dispatch(userAction({...user})));
 }]);

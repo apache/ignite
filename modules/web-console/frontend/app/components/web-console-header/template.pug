@@ -21,7 +21,7 @@ button.web-console-header__togle-menu-button(
 )
     svg(ignite-icon='menu')
 
-a(ui-sref='{{$ctrl.isAuthorized() ? "default-state" : "landing"}}').wch-logo-anchor
+a(ui-sref='{{($ctrl.userIsAuthorized$|async:this) ? "default-state" : "landing"}}').wch-logo-anchor
     img.wch-logo(src='/images/ignite-logo.svg')
 
 ng-transclude
