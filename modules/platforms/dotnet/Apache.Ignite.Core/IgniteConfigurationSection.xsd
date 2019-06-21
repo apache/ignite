@@ -1513,11 +1513,6 @@
                                 <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
-                        <xs:attribute name="handshakeTimeout" type="xs:string">
-                            <xs:annotation>
-                                <xs:documentation>Handshake timeout for client connections on the server side. If no successful handshake is performed within this timeout upon successful establishment of TCP connection, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
-                            </xs:annotation>
-                        </xs:attribute>
                         <xs:attribute name="thinClientEnabled" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Enables thin client connector.</xs:documentation>

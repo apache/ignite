@@ -805,7 +805,7 @@ public class PlatformConfigurationUtils {
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
         if (in.readBoolean())
-            cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in, ver));
+            cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in));
 
         if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
             cfg.setClientConnectorConfiguration(null);
@@ -1401,7 +1401,7 @@ public class PlatformConfigurationUtils {
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
-        writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration(), ver);
+        writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
 
         w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
 
@@ -1799,12 +1799,10 @@ public class PlatformConfigurationUtils {
      * Reads the client connector configuration.
      *
      * @param in Reader.
-     * @param ver Protocol version.
      * @return Config.
      */
-    private static ClientConnectorConfiguration readClientConnectorConfiguration(BinaryRawReader in,
-        ClientListenerProtocolVersion ver) {
-        ClientConnectorConfiguration cfg = new ClientConnectorConfiguration()
+    private static ClientConnectorConfiguration readClientConnectorConfiguration(BinaryRawReader in) {
+        return new ClientConnectorConfiguration()
                 .setHost(in.readString())
                 .setPort(in.readInt())
                 .setPortRange(in.readInt())
@@ -1817,21 +1815,14 @@ public class PlatformConfigurationUtils {
                 .setThinClientEnabled(in.readBoolean())
                 .setOdbcEnabled(in.readBoolean())
                 .setJdbcEnabled(in.readBoolean());
-
-        if (ver.compareTo(VER_1_3_0) >= 0)
-            cfg.setHandshakeTimeout(in.readLong());
-
-        return cfg;
     }
 
     /**
      * Writes the client connector configuration.
      *
      * @param w Writer.
-     * @param ver Protocol version.
      */
-    private static void writeClientConnectorConfiguration(BinaryRawWriter w, ClientConnectorConfiguration cfg,
-        ClientListenerProtocolVersion ver) {
+    private static void writeClientConnectorConfiguration(BinaryRawWriter w, ClientConnectorConfiguration cfg) {
         assert w != null;
 
         if (cfg != null) {
@@ -1850,9 +1841,6 @@ public class PlatformConfigurationUtils {
             w.writeBoolean(cfg.isThinClientEnabled());
             w.writeBoolean(cfg.isOdbcEnabled());
             w.writeBoolean(cfg.isJdbcEnabled());
-
-            if (ver.compareTo(VER_1_3_0) >= 0)
-                w.writeLong(cfg.getIdleTimeout());
         } else {
             w.writeBoolean(false);
         }

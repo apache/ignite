@@ -538,7 +538,7 @@ namespace Apache.Ignite.Core
             if (ClientConnectorConfiguration != null)
             {
                 writer.WriteBoolean(true);
-                ClientConnectorConfiguration.Write(srvVer, writer);
+                ClientConnectorConfiguration.Write(writer);
             }
             else
             {
@@ -836,7 +836,7 @@ namespace Apache.Ignite.Core
             // Client.
             if (r.ReadBoolean())
             {
-                ClientConnectorConfiguration = new ClientConnectorConfiguration(srvVer, r);
+                ClientConnectorConfiguration = new ClientConnectorConfiguration(r);
             }
 
             ClientConnectorConfigurationEnabled = r.ReadBoolean();
