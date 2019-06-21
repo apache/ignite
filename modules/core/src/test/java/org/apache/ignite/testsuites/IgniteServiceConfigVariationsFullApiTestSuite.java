@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.apache.ignite.testframework.junits.DynamicSuite;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 /**
@@ -38,6 +39,12 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
     private static final ConfigParameter<IgniteConfiguration>[][] PARAMS = new ConfigParameter[][] {
         Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };
+
+    /** Activate service grid for test it. */
+    @BeforeClass
+    public static void init() {
+        System.setProperty("IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED", "true");
+    }
 
     /** */
     public static List<Class<?>> suite() {

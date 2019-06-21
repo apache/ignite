@@ -84,6 +84,7 @@ import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployPrivateModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeploySharedModeSelfTest;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -173,4 +174,9 @@ import org.junit.runners.Suite;
     VisorManagementEventSelfTest.class
 })
 public class IgniteComputeGridTestSuite {
+    /** Activate service grid for test it. */
+    @BeforeClass
+    public static void init() {
+        System.setProperty("IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED", "true");
+    }
 }

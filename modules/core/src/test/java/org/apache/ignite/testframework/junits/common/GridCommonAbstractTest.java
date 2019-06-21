@@ -2082,7 +2082,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * otherwise {@code true}.
      */
     protected static boolean isEventDrivenServiceProcessorEnabled() {
-        return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
+        return getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, false);
     }
 
     /**

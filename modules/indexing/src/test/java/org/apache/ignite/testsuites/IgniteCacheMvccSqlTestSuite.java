@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccDeadlockDetectionTes
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadBulkOpsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccRepeatableReadOperationsTest;
 import org.apache.ignite.internal.processors.query.h2.GridIndexRebuildWithMvccEnabledSelfTest;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -158,6 +159,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
     IgniteCacheMvccSqlTestSuite.MvccReplicatedTxPessimisticOriginatingNodeFailureRecoveryTest.class
 })
 public class IgniteCacheMvccSqlTestSuite {
+    /** Activate service grid for test it. */
+    @BeforeClass
+    public static void init() {
+        System.setProperty("IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED", "true");
+    }
+
     /** */
     public static class MvccPartitionedPrimaryNodeFailureRecoveryTest
         extends IgniteCachePartitionedNearDisabledPrimaryNodeFailureRecoveryTest {

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteClientReconnectServicesTest;
 import org.apache.ignite.internal.IgniteClientReconnectStopTest;
 import org.apache.ignite.internal.IgniteClientReconnectStreamerTest;
 import org.apache.ignite.internal.IgniteClientRejoinTest;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -56,4 +57,9 @@ import org.junit.runners.Suite;
     IgniteClientRejoinTest.class
 })
 public class IgniteClientReconnectTestSuite {
+    /** Activate service grid for test it. */
+    @BeforeClass
+    public static void init() {
+        System.setProperty("IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED", "true");
+    }
 }

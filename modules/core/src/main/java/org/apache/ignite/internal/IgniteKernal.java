@@ -1426,7 +1426,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @return Service processor.
      */
     private GridProcessorAdapter createServiceProcessor() {
-        final boolean srvcProcMode = getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, true);
+        final boolean srvcProcMode = getBoolean(IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED, false);
 
         if (srvcProcMode)
             return new IgniteServiceProcessor(ctx);

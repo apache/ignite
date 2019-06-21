@@ -1110,7 +1110,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Additional JVM args for remote instances.
      */
     protected List<String> additionalRemoteJvmArgs() {
-        return Collections.emptyList();
+        String srvcGridProp = System.getProperty(IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED);
+
+        // Preserve service grid mode on remote nodes if it's enforced via property.
+        return srvcGridProp == null ?
+            Collections.emptyList() :
+            Collections.singletonList(
+                "-D" + IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED + '=' + srvcGridProp);
     }
 
     /**
