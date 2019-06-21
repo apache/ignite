@@ -164,6 +164,16 @@ public class H2Collection extends AbstractMongoCollection<Object> {
     @Override
     protected void handleUpdate(Document document) {
         // noop
+    	//add@byron
+    	final Object key;
+        if (idField != null) {
+            key = Utils.getSubdocumentValue(document, idField);
+        } else {
+            key = UUID.randomUUID();
+        }
+
+        Document previous = dataMap.put(Missing.ofNullable(key), document);
+        
     }
 
 }

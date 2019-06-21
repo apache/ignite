@@ -194,24 +194,12 @@ module.exports = {
              * @param {Object.<String, String>} params
              * @return {Promise.<T>}
              */
-            executeOnNode(agent, token, demo, credentials, params) {
+            executeOnNode(agent, token, demo, credentials, params, router_uri) {
                 return agent
                     .then((agentSock) => agentSock.emitEvent('node:rest',
-                        {uri: 'ignite', token, demo, params: _.merge({}, credentials, params)}));
+                        {uri: router_uri, token, demo, params: _.merge({}, credentials, params)}));
             }
             
-            executeOnRdsNode(agent, token, demo, credentials, params) {
-                return agent
-                    .then((agentSock) => agentSock.emitEvent('node:rest',
-                        {uri: 'rds', token, demo, params: _.merge({}, credentials, params)}));
-            }
-            
-            executeOnFlinkSqlNode(agent, token, demo, credentials, params) {
-                return agent
-                    .then((agentSock) => agentSock.emitEvent('node:rest',
-                        {uri: 'flink_sql', token, demo, params: _.merge({}, credentials, params)}));
-            }
-
             registerVisorTask(taskId, taskCls, ...argCls) {
                 this._visorTasks.set(taskId, {
                     taskCls,
@@ -222,7 +210,7 @@ module.exports = {
             nodeListeners(sock) {
                 // Return command result from grid to browser.
                 sock.on('node:rest', (arg, cb) => {
-                    const {clusterId, params, credentials} = arg || {};
+                    const {clusterId, params, credentials, router_uri} = arg || {};
 
                     if (!_.isFunction(cb))
                         cb = console.log;
@@ -238,10 +226,13 @@ module.exports = {
                     const agent = this._agentHnd.agent(sock.request.user, demo, clusterId);
 
                     const token = sock.request.user.token;
+                    // modify@byron
+                    this.executeOnNode(agent, token, demo, credentials, params, router_uri)
+                       .then((data) => cb(null, data))
+                       .catch((err) => cb(this.errorTransformer(err)));
+                    	
 
-                    this.executeOnNode(agent, token, demo, credentials, params)
-                        .then((data) => cb(null, data))
-                        .catch((err) => cb(this.errorTransformer(err)));
+                    
                 });
 
                 const internalVisor = (postfix) => `org.apache.ignite.internal.visor.${postfix}`;
@@ -271,7 +262,7 @@ module.exports = {
 
                 // Return command result from grid to browser.
                 sock.on('node:visor', (arg, cb) => {
-                    const {clusterId, params, credentials} = arg || {};
+                    const {clusterId, params, credentials, router_uri} = arg || {};
 
                     if (!_.isFunction(cb))
                         cb = console.log;
@@ -304,7 +295,7 @@ module.exports = {
 
                     const token = sock.request.user.token;
 
-                    this.executeOnNode(agent, token, demo, credentials, exeParams)
+                    this.executeOnNode(agent, token, demo, credentials, exeParams, router_uri)
                         .then((data) => {
                             if (data.finished && !data.zipped)
                                 return cb(null, data.result);

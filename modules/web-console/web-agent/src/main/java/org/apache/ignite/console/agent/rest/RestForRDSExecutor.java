@@ -195,7 +195,9 @@ public class RestForRDSExecutor implements AutoCloseable {
     	Properties jdbcInfo = this.dbListener.currentJdbcInfo;
         
     	String nodeUrl = this.dbListener.currentJdbcUrl;
-    	
+    	if(jdbcUrl==null) {
+    		return RestResult.fail(STATUS_FAILED, "Not configure any jdbc connection, Please click Import from Database on configuration/overview");
+    	}
     	
     	Connection conn = null;
     	int  urlsCnt = 2;
@@ -205,7 +207,7 @@ public class RestForRDSExecutor implements AutoCloseable {
             	conn = dbListener.connect(null, jdbcDriverCls, jdbcUrl, jdbcInfo);
             	
             	JdbcQueryExecutor exec = new JdbcQueryExecutor(conn.createStatement(),(String)params.get("p5"));
-            	JSONObject res = exec.call();
+            	JSONObject res = exec.executeSqlVisor(0,(String)params.get("p1"));
 
                 // If first attempt failed then throttling should be cleared.
                 if (i > 0)
@@ -216,21 +218,14 @@ public class RestForRDSExecutor implements AutoCloseable {
                 conn.close();
                
                 return RestResult.success(res.toString(), (String)args.get("token"));
-
-                
-            }
-            catch (ConnectException ignored) {
-            	
-                LT.warn(log, "Failed connect to cluster [url=" + nodeUrl + "]");                
-                return RestResult.fail(STATUS_FAILED, ignored.getMessage());
-                
+           
             } catch (SQLException e) {			
             	
 				LT.warn(log, "Failed connect to db [url=" + nodeUrl + "] "+e.getMessage());
-				return RestResult.fail(e.getErrorCode(), e.getMessage());
+				return RestResult.fail(STATUS_FAILED, e.getMessage());
 			} catch (Exception e) {
 				LT.warn(log, "Failed connect to db [url=" + nodeUrl + "] "+e.getMessage());
-				return RestResult.fail(STATUS_FAILED, e.getMessage());
+				return RestResult.fail(STATUS_FAILED, e.getClass().getName() + ": " + e.getMessage());
 			}
         }
         

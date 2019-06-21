@@ -163,6 +163,7 @@ export default class AgentManager {
 
     /** @type {Set<() => Promise>} */
     switchClusterListeners = new Set();
+   
 
     addClusterSwitchListener(func) {
         this.switchClusterListeners.add(func);
@@ -319,6 +320,7 @@ export default class AgentManager {
                 return Promise.resolve();
             });
     }
+   
 
     /**
      * @param states
@@ -464,7 +466,7 @@ export default class AgentManager {
      * @private
      */
     _executeOnActiveCluster(cluster, credentials, event, params) {
-        return this._sendToAgent(event, {clusterId: cluster.id, params, credentials})
+        return this._sendToAgent(event, {clusterId: cluster.id, params, credentials, router_uri:cluster.router_uri})
             .then((res) => {
                 const {status = SuccessStatus.STATUS_SUCCESS} = res;
 
@@ -480,6 +482,9 @@ export default class AgentManager {
 
                             return this.pool.postMessage({payload: res.data, useBigIntJson});
                         }
+                        // add@byron
+                        // -res.data = JSON.parse(res.data);
+                        // end@
 
                         return res;
 

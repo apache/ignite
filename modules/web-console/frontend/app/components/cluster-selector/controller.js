@@ -37,6 +37,7 @@ export default class {
         this.Messages = Messages;
 
         this.clusters = [];
+        this.db_clusters = [];
         this.isDemo = agentMgr.isDemoMode();
         this._inProgressSubject = new BehaviorSubject(false);
     }
@@ -54,6 +55,20 @@ export default class {
             tap(([{cluster, clusters}]) => {
                 this.cluster = cluster ? {...cluster} : null;
                 this.clusters = _.orderBy(clusters, ['name'], ['asc']);
+                this.db_clusters = angular.copy(this.clusters);
+                let db_clusters2 = angular.copy(this.clusters);
+                let len = this.db_clusters.length;
+                for(var i=0; i<len; i++) {
+                	this.db_clusters[i].active = false;
+                    this.db_clusters[i].name += '->RDS';
+                    this.db_clusters[i].router_uri = 'rds';
+                }
+                for(var i=0; i<len; i++) {
+                	db_clusters2[i].active = false;
+                    db_clusters2[i].name += '->Flink';
+                    db_clusters2[i].router_uri = 'flink_sql';
+                }
+                this.db_clusters = this.db_clusters.concat(db_clusters2);
             })
         )
         .subscribe(() => {});
@@ -72,7 +87,16 @@ export default class {
                     this.Messages.showError('Failed to switch cluster: ', err);
             });
     }
-
+    // add@byron 发送到rdbm或者flink sql
+    changeTo(item,uri) {
+    	this.agentMgr.switchCluster(item)
+          .then(() => this.cluster = item)
+          .catch((err) => {
+              if (!(err instanceof CancellationError))
+                  this.Messages.showError('Failed to switch cluster: ', err);
+           });        
+    }
+    // end@
     isChangeStateAvailable() {
         return !this.isDemo && this.cluster && this.Version.since(this.cluster.clusterVersion, '2.0.0');
     }

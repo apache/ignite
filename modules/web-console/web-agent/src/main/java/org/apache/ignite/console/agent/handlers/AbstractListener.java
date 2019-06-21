@@ -80,8 +80,8 @@ abstract class AbstractListener implements Emitter.Listener {
                     // We can GZip manually for now.
                     if (res instanceof RestResult) {
                         RestResult restRes = (RestResult) res;
-
-                        if (restRes.getData() != null) {
+                        //modify@byron 暂不使用压缩
+                        if (true && restRes.getData() != null) {
                             ByteArrayOutputStream baos = new ByteArrayOutputStream(4096);
                             Base64OutputStream b64os = new Base64OutputStream(baos, true, 0, null);
                             GZIPOutputStream gzip = new GZIPOutputStream(b64os);

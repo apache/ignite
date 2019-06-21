@@ -79,18 +79,18 @@ const config = {
                 ]
             },
             { test: /\.worker\.js$/, use: { loader: 'worker-loader' } },
-            {
-                test: /\.(js|ts)$/,
-                enforce: 'pre',
-                exclude: [/node_modules/],
-                use: [{
-                    loader: 'eslint-loader',
-                    options: {
-                        formatter: eslintFormatter,
-                        context: process.cwd()
-                    }
-                }]
-            },
+//            {
+//                test: /\.(js|ts)$/,
+//                enforce: 'pre',
+//                exclude: [/node_modules/],
+//                use: [{
+//                    loader: 'eslint-loader',
+//                    options: {
+//                        formatter: eslintFormatter,
+//                        context: process.cwd()
+//                    }
+//                }]
+//            },
             {
                 test: /\.(js|ts)$/,
                 exclude: /node_modules/,

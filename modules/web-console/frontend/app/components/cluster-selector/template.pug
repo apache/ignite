@@ -27,12 +27,12 @@ button.btn-ignite.btn-ignite--primary(
     | No clusters available
 
 button.btn-ignite.btn-ignite--primary(
-    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 1'
+    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 1 && false'
 )
     cluster-security-icon(secured='$ctrl.cluster.secured')
     | {{ $ctrl.cluster.name }}
 
-span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
+span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length >= 1')
     div.btn-ignite.btn-ignite--primary(
         bs-dropdown=''
         data-trigger='click'
@@ -55,6 +55,13 @@ span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
                 span.icon-left
                     svg(ignite-icon='{{ item.secured ? "lockClosed" : "lockOpened" }}')
                 | {{ item.name }}
+        li(ng-repeat='item in $ctrl.db_clusters') 
+            button.btn-ignite.bssm-item-button(ng-click='$ctrl.changeTo(item,"rds")')
+                span.icon-left
+                    svg(ignite-icon='lockClosed' )
+                | {{ item.name }}          
+       
+                
 
 svg(
     ng-if='!$ctrl.isDemo'

@@ -94,17 +94,21 @@ public class RestListener extends AbstractListener {
                 return restExecutor.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
             }
             
-            //add@byron support query on backend rds
-            //到配置的关系数据库查询数据
+            //add@byron support query on backend rds or flink
+            
             String cmd = (String)params.get("p2");
-            if ("org.apache.ignite.internal.visor.query.VisorQueryTask".equals(cmd) || "rds".equals(args.get("url"))) {
-            	return rdsExecutor.sendRequest(args, params, headers);
+            if ("org.apache.ignite.internal.visor.query.VisorQueryTask".equals(cmd) 
+            || "_org.apache.ignite.internal.visor.query.CacheNamesCollectorTask".equals(cmd)) {
+            	//到配置的关系数据库查询数据
+            	if("rds".equals(args.get("uri"))) {
+	            	return rdsExecutor.sendRequest(args, params, headers);
+	            }
+	            //到配置的flink sql gateway数据代理查询数据
+            	else if ("flink_sql".equals(args.get("uri"))) {
+	            	return rdsExecutor.sendRequestToFlink(this.cfg.flinkSqlURI(),params, headers);
+	            }
             }
-            //到配置的flink sql gateway数据代理查询数据
-            if ("flink_sql".equals(args.get("url"))) {
-            	return rdsExecutor.sendRequestToFlink(this.cfg.flinkSqlURI(),params, headers);
-            }
-            //end
+	         //end
             return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
         }
         catch (Exception e) {

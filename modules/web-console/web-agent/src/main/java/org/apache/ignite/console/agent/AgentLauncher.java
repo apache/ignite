@@ -258,8 +258,7 @@ public class AgentLauncher {
         System.out.println();
         
         
-        startAgent(cfg);
-        
+        startAgent(cfg);        
     }
     
     public static void startAgent(AgentConfiguration cfg) throws Exception {
