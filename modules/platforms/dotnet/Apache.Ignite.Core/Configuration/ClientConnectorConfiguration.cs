@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Configuration
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Client connector configuration (ODBC, JDBC, Thin Client).
@@ -64,6 +65,11 @@ namespace Apache.Ignite.Core.Configuration
         public static readonly TimeSpan DefaultIdleTimeout = TimeSpan.Zero;
 
         /// <summary>
+        /// Default handshake timeout.
+        /// </summary>
+        public static readonly TimeSpan DefaultHandshakeTimeout = TimeSpan.FromSeconds(10);
+
+        /// <summary>
         /// Default value for <see cref="ThinClientEnabled"/> property.
         /// </summary>
         public const bool DefaultThinClientEnabled = true;
@@ -91,6 +97,7 @@ namespace Apache.Ignite.Core.Configuration
             MaxOpenCursorsPerConnection = DefaultMaxOpenCursorsPerConnection;
             ThreadPoolSize = DefaultThreadPoolSize;
             IdleTimeout = DefaultIdleTimeout;
+            HandshakeTimeout = DefaultHandshakeTimeout;
 
             ThinClientEnabled = DefaultThinClientEnabled;
             OdbcEnabled = DefaultOdbcEnabled;
@@ -100,7 +107,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientConnectorConfiguration"/> class.
         /// </summary>
-        internal ClientConnectorConfiguration(IBinaryRawReader reader)
+        internal ClientConnectorConfiguration(ClientProtocolVersion ver, IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
@@ -117,12 +124,16 @@ namespace Apache.Ignite.Core.Configuration
             ThinClientEnabled = reader.ReadBoolean();
             OdbcEnabled = reader.ReadBoolean();
             JdbcEnabled = reader.ReadBoolean();
+
+            if (ver.CompareTo(ClientSocket.Ver130) >= 0) {
+                HandshakeTimeout = reader.ReadLongAsTimespan();
+            }
         }
 
         /// <summary>
         /// Writes to the specified writer.
         /// </summary>
-        internal void Write(IBinaryRawWriter writer)
+        internal void Write(ClientProtocolVersion ver, IBinaryRawWriter writer)
         {
             Debug.Assert(writer != null);
             
@@ -139,6 +150,10 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteBoolean(ThinClientEnabled);
             writer.WriteBoolean(OdbcEnabled);
             writer.WriteBoolean(JdbcEnabled);
+
+            if (ver.CompareTo(ClientSocket.Ver130) >= 0) {
+                writer.WriteTimeSpanAsLong(HandshakeTimeout);
+            }
         }
 
         /// <summary>
@@ -199,6 +214,13 @@ namespace Apache.Ignite.Core.Configuration
         /// Zero or negative means no timeout.
         /// </summary>
         public TimeSpan IdleTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets handshake timeout for client connections on the server side.
+        /// If no successful handshake is performed within this timeout upon successful establishment of TCP connection
+        /// the connection is closed.
+        /// </summary>
+        public TimeSpan HandshakeTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether thin client connector is enabled.
