@@ -15,34 +15,43 @@
  */
 
 import _ from 'lodash';
+import {default as MessagesFactory} from 'app/services/Messages.service';
+import {default as CountriesFactory} from 'app/services/Countries.service';
+import {User, UserService} from 'app/modules/user/User.service';
+import {UIRouter} from '@uirouter/angularjs';
+import {default as NotebookData} from 'app/components/page-queries/notebook.data';
 
 export default class IgniteAdminData {
-    static $inject = ['$http', 'IgniteMessages', 'IgniteCountries'];
+    static $inject = ['$http', 'IgniteMessages', 'IgniteCountries', 'User', '$uiRouter', 'IgniteNotebookData'];
+
+    constructor(
+        private $http: ng.IHttpService,
+        private Messages: ReturnType<typeof MessagesFactory>,
+        private Countries: ReturnType<typeof CountriesFactory>,
+        private UserService: UserService,
+        private uiRouter: UIRouter,
+        private Notebook: NotebookData
+    ) {}
 
     /**
-     * @param {ng.IHttpService} $http
-     * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
-     * @param {ReturnType<typeof import('app/services/Countries.service').default>} Countries
+     * @param id User ID.
      */
-    constructor($http, Messages, Countries) {
-        this.$http = $http;
-        this.Messages = Messages;
-        this.Countries = Countries;
-    }
-
-    /**
-     * @param user User to become.
-     */
-    becomeUser(user) {
+    becomeUser(id: string) {
         return this.$http
-            .post('/api/v1/admin/become', {id: user.id})
+            .post('/api/v1/admin/become', {id})
             .catch(this.Messages.showError);
     }
 
-    /**
-     * @param user User to remove.
-     */
-    removeUser(user) {
+    revertIdentity() {
+        this.$http.get('/api/v1/admin/revert/identity')
+            .then(() => this.UserService.load())
+            .then(() => this.uiRouter.stateService.go('base.settings.admin'))
+            // TODO GG-19514: separate side effect from main action.
+            .then(() => this.Notebook.load())
+            .catch(this.Messages.showError);
+    }
+
+    removeUser(user: User) {
         return this.$http
             .delete(`/api/v1/admin/users/${user.id}`)
             .then(() => this.Messages.showInfo(`User has been removed: "${user.userName}"`))
@@ -54,10 +63,7 @@ export default class IgniteAdminData {
             });
     }
 
-    /**
-     * @param user User to toggle admin role.
-     */
-    toggleAdmin(user) {
+    toggleAdmin(user: User) {
         const admin = !user.admin;
 
         return this.$http
@@ -72,11 +78,7 @@ export default class IgniteAdminData {
             });
     }
 
-
-    /**
-     * @param {import('app/modules/user/User.service').User} user
-     */
-    prepareUsers(user) {
+    prepareUsers(user: User) {
         const { Countries } = this;
 
         user.userName = user.firstName + ' ' + user.lastName;

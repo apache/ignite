@@ -38,6 +38,7 @@ import * as AgentTypes from 'app/types/Agent';
 import {TransitionService} from '@uirouter/angularjs';
 import VersionService from 'app/services/Version.service';
 import UserNotifications from 'app/components/user-notifications/service';
+import {DemoService} from 'app/modules/demo/Demo.module';
 
 const __dbg = false;
 
@@ -132,7 +133,7 @@ class ConnectionState {
 }
 
 export default class AgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', '$location', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
+    static $inject = ['Demo', '$q', '$transitions', '$location', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterLoginService'];
 
     clusterVersion: string;
 
@@ -171,7 +172,7 @@ export default class AgentManager {
     }
 
     constructor(
-        private $root: ng.IRootScopeService,
+        private Demo: DemoService,
         private $q: ng.IQService,
         private $transitions: TransitionService,
         private $location: ng.ILocationService,
@@ -215,7 +216,7 @@ export default class AgentManager {
     }
 
     isDemoMode() {
-        return !!this.$root.demoMode;
+        return !!this.Demo.enabled;
     }
 
     getClusterVersion(cluster) {

@@ -43,8 +43,8 @@ const mocks = () => new Map([
         }
     }],
     ['$q', Promise],
-    ['$rootScope', {
-        demoMode: true
+    ['Demo', {
+        enabled: true
     }],
     ['PageConfigure', {
         getClusterConfiguration: () => Promise.resolve({clusters: [{id: 1, name: 'An Cluster'}]})

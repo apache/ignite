@@ -18,7 +18,7 @@ import angular from 'angular';
 import aclData from './permissions';
 
 import Auth from './Auth.service';
-import User from './User.service';
+import {default as UserServiceFactory, UserService} from './User.service';
 import {registerInterceptor} from './emailConfirmationInterceptor';
 
 /**
@@ -46,18 +46,18 @@ function sessionRecoverer($injector, $q) {
 
 sessionRecoverer.$inject = ['$injector', '$q'];
 
+run.$inject = ['$transitions', 'AclService', 'User', 'IgniteActivitiesData'];
+
 /**
- * @param {ng.IRootScopeService} $root
  * @param {import('@uirouter/angularjs').TransitionService} $transitions
  * @param {unknown} AclService
- * @param {ReturnType<typeof import('./User.service').default>} User
  * @param {ReturnType<typeof import('app/components/activities-user-dialog/index').default>} Activities
  */
-function run($root, $transitions, AclService, User, Activities) {
+function run($transitions, AclService, User: UserService, Activities) {
     AclService.setAbilities(aclData);
     AclService.attachRole('guest');
 
-    $root.$on('user', (event, user) => {
+    User.current$.subscribe((user) => {
         if (!user)
             return;
 
@@ -92,8 +92,6 @@ function run($root, $transitions, AclService, User, Activities) {
     });
 }
 
-run.$inject = ['$rootScope', '$transitions', 'AclService', 'User', 'IgniteActivitiesData'];
-
 angular
     .module('ignite-console.user', [
         'mm.acl',
@@ -106,5 +104,5 @@ angular
         $httpProvider.interceptors.push('sessionRecoverer');
     }])
     .service('Auth', Auth)
-    .service('User', User)
+    .service('User', UserServiceFactory)
     .run(run);

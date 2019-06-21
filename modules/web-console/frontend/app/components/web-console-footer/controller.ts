@@ -15,15 +15,15 @@
  */
 
 import {default as Version} from '../../services/Version.service';
+import {map} from 'rxjs/operators';
+import {UserService} from '../../modules/user/User.service';
 
 export default class WebConsoleFooter {
-    static $inject = ['IgniteVersion', '$rootScope'];
+    static $inject = ['IgniteVersion', 'User'];
 
-    constructor(private Version: Version, private $root: ng.IRootScopeService) {}
+    constructor(private Version: Version, private User: UserService) {}
 
     year = new Date().getFullYear();
 
-    get userIsAuthorized() {
-        return !!this.$root.user;
-    }
+    userIsAuthorized$ = this.User.current$.pipe(map((user) => !!user))
 }

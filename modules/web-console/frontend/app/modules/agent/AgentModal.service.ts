@@ -17,20 +17,20 @@
 import angular from 'angular';
 import _ from 'lodash';
 import templateUrl from 'views/templates/agent-download.tpl.pug';
+import {User, UserService} from 'app/modules/user/User.service';
+import {tap} from 'rxjs/operators';
 
 export default class AgentModal {
-    static $inject = ['$rootScope', '$state', '$modal', 'IgniteMessages'];
+    static $inject = ['User', '$state', '$modal', 'IgniteMessages'];
 
     /**
-     * @param {ng.IRootScopeService} $root
      * @param {import('@uirouter/angularjs').StateService} $state
      * @param {mgcrea.ngStrap.modal.IModalService} $modal
      * @param {ReturnType<typeof import('app/services/Messages.service').default>} Messages
      */
-    constructor($root, $state, $modal, Messages) {
+    constructor(private User: UserService, $state, $modal, Messages) {
         const self = this;
 
-        this.$root = $root;
         this.$state = $state;
         this.Messages = Messages;
 
@@ -44,8 +44,10 @@ export default class AgentModal {
             controllerAs: 'ctrl'
         });
 
-        $root.$on('user', (event, user) => this.user = user);
+        User.current$.pipe(tap((user) => this.user = user)).subscribe();
     }
+
+    user: User
 
     hide() {
         this.modal.hide();
@@ -92,6 +94,6 @@ export default class AgentModal {
     }
 
     get securityToken() {
-        return this.$root.user.becameToken || this.$root.user.token;
+        return this.user.becameToken || this.user.token;
     }
 }

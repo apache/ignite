@@ -14,42 +14,40 @@
  * limitations under the License.
  */
 
+import {UserService} from 'app/modules/user/User.service';
+import {tap} from 'rxjs/operators';
+
 export default class UserMenu {
-    static $inject = ['$rootScope', 'IgniteUserbar', 'AclService', '$state', 'gettingStarted'];
+    static $inject = ['User', 'IgniteUserbar', 'AclService', '$state', 'gettingStarted'];
 
     constructor(
-        private $root: ng.IRootScopeService,
+        private User: UserService,
         private IgniteUserbar: any,
         private AclService: any,
         private $state: any,
         private gettingStarted: any
     ) {}
 
-    $onInit() {
-        this.items = [
-            {text: 'Profile', sref: 'base.settings.profile'},
-            {text: 'Getting started', click: '$ctrl.gettingStarted.tryShow(true)'}
-        ];
+    items = [
+        {text: 'Profile', sref: 'base.settings.profile'},
+        {text: 'Getting started', click: '$ctrl.gettingStarted.tryShow(true)'}
+    ];
 
-        const _rebuildSettings = () => {
-            this.items.splice(2);
+    user$ = this.User.current$
 
-            if (this.AclService.can('admin_page'))
-                this.items.push({text: 'Admin panel', sref: 'base.settings.admin'});
+    subscriber = this.user$.pipe(tap(() => {
+        this.items.splice(2);
 
-            this.items.push(...this.IgniteUserbar);
+        if (this.AclService.can('admin_page'))
+            this.items.push({text: 'Admin panel', sref: 'base.settings.admin'});
 
-            if (this.AclService.can('logout'))
-                this.items.push({text: 'Log out', sref: 'logout'});
-        };
+        this.items.push(...this.IgniteUserbar);
 
-        if (this.$root.user)
-            _rebuildSettings(null, this.$root.user);
+        if (this.AclService.can('logout'))
+            this.items.push({text: 'Log out', sref: 'logout'});
+    })).subscribe()
 
-        this.$root.$on('user', _rebuildSettings);
-    }
-
-    get user() {
-        return this.$root.user;
+    $onDestroy() {
+        if (this.subscriber) this.subscriber.unsubscribe();
     }
 }

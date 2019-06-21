@@ -18,6 +18,9 @@ import _ from 'lodash';
 
 import columnDefs from './column-defs';
 import categories from './categories';
+import {UserService} from 'app/modules/user/User.service';
+import {Subscription} from 'rxjs';
+import {tap} from 'rxjs/operators';
 
 import headerTemplate from 'app/primitives/ui-grid-header/index.tpl.pug';
 
@@ -36,12 +39,11 @@ const treeAggregationFinalizerFn = function(agg) {
 export default class IgniteListOfRegisteredUsersCtrl {
     static $inject = ['$scope', '$state', '$filter', 'User', 'uiGridGroupingConstants', 'uiGridPinningConstants', 'IgniteAdminData', 'IgniteNotebookData', 'IgniteConfirm', 'IgniteActivitiesUserDialog'];
 
-    constructor($scope, $state, $filter, User, uiGridGroupingConstants, uiGridPinningConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
+    constructor($scope, $state, $filter, private User: UserService, uiGridGroupingConstants, uiGridPinningConstants, AdminData, NotebookData, Confirm, ActivitiesUserDialog) {
         this.$state = $state;
         this.AdminData = AdminData;
         this.ActivitiesDialogFactory = ActivitiesUserDialog;
         this.Confirm = Confirm;
-        this.User = User;
         this.NotebookData = NotebookData;
 
         const dtFilter = $filter('date');
@@ -178,9 +180,15 @@ export default class IgniteListOfRegisteredUsersCtrl {
             reloadUsers({ startDate, endDate });
         }, 250);
 
-        $scope.$on('userCreated', filterDates);
+        this.subscriber = this.User.created$.pipe(tap(() => filterDates())).subscribe();
         $scope.$watch(() => this.params.startDate, filterDates);
         $scope.$watch(() => this.params.endDate, filterDates);
+    }
+
+    subscriber: Subscription
+
+    $onDestroy() {
+        if (this.subscriber) this.subscriber.unsubscribe();
     }
 
     adjustHeight(rows) {
@@ -233,7 +241,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
     becomeUser() {
         const user = this.gridApi.selection.legacyGetSelectedRows()[0];
 
-        this.AdminData.becomeUser(user)
+        this.AdminData.becomeUser(user.id)
             .then(() => this.User.load())
             .then(() => this.$state.go('default-state'))
             .then(() => this.NotebookData.load());

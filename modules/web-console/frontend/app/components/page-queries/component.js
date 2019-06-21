@@ -24,17 +24,15 @@ export default {
         queriesTitle: '?queriesTitle'
     },
     controller: class Ctrl {
-        static $inject = ['$element', '$rootScope', '$state', 'IgniteNotebook'];
+        static $inject = ['$element', '$state', 'IgniteNotebook'];
 
         /**
          * @param {JQLite} $element       
-         * @param {ng.IRootScopeService} $rootScope     
          * @param {import('@uirouter/angularjs').StateService} $state         
          * @param {import('./notebook.service').default} IgniteNotebook
          */
-        constructor($element, $rootScope, $state, IgniteNotebook) {
+        constructor($element, $state, IgniteNotebook) {
             this.$element = $element;
-            this.$rootScope = $rootScope;
             this.$state = $state;
             this.IgniteNotebook = IgniteNotebook;
         }

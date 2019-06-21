@@ -17,7 +17,7 @@
 import {StateService} from '@uirouter/angularjs';
 import MessagesFactory from '../../services/Messages.service';
 import {service as GettingsStartedFactory} from '../../modules/getting-started/GettingStarted.provider';
-import UserServiceFactory from './User.service';
+import {UserService} from './User.service';
 
 type SignupUserInfo = {
     email: string,
@@ -39,16 +39,15 @@ type AuthActions = 'signin' | 'signup' | 'password/forgot';
 type AuthOptions = SigninUserInfo|SignupUserInfo|{email:string};
 
 export default class AuthService {
-    static $inject = ['$http', '$rootScope', '$state', '$window', 'IgniteMessages', 'gettingStarted', 'User'];
+    static $inject = ['$http', '$state', '$window', 'IgniteMessages', 'gettingStarted', 'User'];
 
     constructor(
         private $http: ng.IHttpService,
-        private $root: ng.IRootScopeService,
         private $state: StateService,
         private $window: ng.IWindowService,
         private Messages: ReturnType<typeof MessagesFactory>,
         private gettingStarted: ReturnType<typeof GettingsStartedFactory>,
-        private User: ReturnType<typeof UserServiceFactory>
+        private User: UserService
     ) {}
 
     signup(userInfo: SignupUserInfo, loginAfterSignup: boolean = true) {
@@ -67,7 +66,7 @@ export default class AuthService {
     /**
      * Performs the REST API call.
      */
-    private _auth(action: AuthActions, userInfo: AuthOptions, loginAfterwards: boolean = true) {
+    private _auth(action: AuthActions, userInfo: AuthOptions) {
         return this.$http.post('/api/v1/' + action, userInfo)
             .then(() => {
                 if (action === 'password/forgot')
@@ -75,12 +74,9 @@ export default class AuthService {
 
                 return this.User.read()
                     .then((user) => {
-                        if (loginAfterwards) {
-                            this.$root.$broadcast('user', user);
-                            this.$state.go('default-state');
-                            this.$root.gettingStarted.tryShow();
-                        } else
-                            this.$root.$broadcast('userCreated');
+                        this.User.current$.next(user);
+                        this.$state.go('default-state');
+                        this.gettingStarted.tryShow();
                     });
             });
     }

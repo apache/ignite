@@ -15,6 +15,7 @@
  */
 
 import {ShortCluster} from '../../types';
+import {DemoService} from 'app/modules/demo/Demo.module';
 
 export default class ModalPreviewProject {
     static $inject = ['$modal'];
@@ -28,9 +29,9 @@ export default class ModalPreviewProject {
             locals: {
                 cluster
             },
-            controller: ['cluster', '$rootScope', function(cluster, $rootScope) {
+            controller: ['cluster', 'Demo', function(cluster, Demo: DemoService) {
                 this.cluster = cluster;
-                this.isDemo = !!$rootScope.demoMode;
+                this.isDemo = !!Demo.enabled;
             }],
             controllerAs: '$ctrl',
             template: `

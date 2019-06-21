@@ -18,7 +18,7 @@
     a(
         href="/api/v1/downloads/agent"
         target="_self"
-        ng-if='$ctrl.userIsAuthorized'
+        ng-if='$ctrl.userIsAuthorized$|async:this'
         title='Download Agent'
     )
         svg(ignite-icon='downloadAgent')
@@ -28,4 +28,4 @@
     p © {{::$ctrl.year}} The Apache Software Foundation.
     p.web-console-footer__legal Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.
 
-    a(href="/api/v1/downloads/agent" target="_self" ng-if='$ctrl.userIsAuthorized') Download Agent
+    a(href="/api/v1/downloads/agent" target="_self" ng-if='$ctrl.userIsAuthorized$|async:this') Download Agent

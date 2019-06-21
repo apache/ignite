@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import {DemoService} from 'app/modules/demo/Demo.module';
 import _ from 'lodash';
 
 const DEMO_NOTEBOOK = {
@@ -73,22 +74,14 @@ const DEMO_NOTEBOOK = {
 };
 
 export default class NotebookData {
-    static $inject = ['$rootScope', '$http', '$q'];
+    static $inject = ['Demo', '$http', '$q'];
 
-    /**
-     * @param {ng.IRootScopeService} $root 
-     * @param {ng.IHttpService} $http 
-     * @param {ng.IQService} $q    
-     */
-    constructor($root, $http, $q) {
-        this.demo = $root.demoMode;
-
+    constructor(private Demo: DemoService, private $http: ng.IHttpService, private $q: ng.IQService) {
         this.initLatch = null;
         this.notebooks = null;
-
-        this.$http = $http;
-        this.$q = $q;
     }
+
+    demo = this.Demo.enabled;
 
     load() {
         if (this.demo) {

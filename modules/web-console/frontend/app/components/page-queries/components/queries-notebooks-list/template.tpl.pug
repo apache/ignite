@@ -19,7 +19,7 @@ page-queries-slot(slot-name="'queriesTitle'")
     h1 Queries
 
 page-queries-slot(slot-name="'queriesButtons'")
-    button#createNotebookBtn.btn-ignite.btn-ignite--primary(ng-click='$ctrl.createNotebook()' ng-if='!$root.demoMode')
+    button#createNotebookBtn.btn-ignite.btn-ignite--primary(ng-click='$ctrl.createNotebook()' ng-if='!$ctrl.Demo.enabled')
         svg.icon-left(ignite-icon='plus')
         | Create Notebook
 
@@ -30,7 +30,7 @@ page-queries-slot(slot-name="'queriesButtons'")
             div
                 span Notebooks
 
-            div(ng-if="!$root.demoMode")
+            div(ng-if="!$ctrl.Demo.enabled")
                 +ignite-form-field-bsdropdown({
                     label: 'Actions',
                     model: '$ctrl.action',

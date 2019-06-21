@@ -40,7 +40,6 @@ import './modules/user/user.module';
 import './modules/branding/branding.module';
 import './modules/navbar/navbar.module';
 import './modules/getting-started/GettingStarted.provider';
-import './modules/dialog/dialog.module';
 import './modules/ace.module';
 import './modules/loading/loading.module';
 import servicesModule from './services';
@@ -83,6 +82,7 @@ import {CSV} from './services/CSV';
 import {$exceptionHandler} from './services/exceptionHandler';
 
 import {Store} from './services/store';
+import {UserService} from './modules/user/User.service';
 
 import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
 import AngularStrapSelect from './services/AngularStrapSelect.decorator';
@@ -194,7 +194,6 @@ export default angular
         'ignite-console.states.errors',
         'ignite-console.states.settings',
         // Common modules.
-        'ignite-console.dialog',
         'ignite-console.navbar',
         'ignite-console.getting-started',
         'ignite-console.loading',
@@ -320,27 +319,14 @@ export default angular
             $urlRouterProvider.otherwise('/404');
             $locationProvider.html5Mode(true);
         }])
-    .run(['$rootScope', '$state', 'gettingStarted',
+    .run(['User', 'AgentManager',
         /**
-         * @param {ng.IRootScopeService} $root
-         * @param {import('@uirouter/angularjs').StateService} $state
-         * @param {ReturnType<typeof import('./modules/getting-started/GettingStarted.provider').service>} gettingStarted
-         */
-        ($root, $state, gettingStarted) => {
-            $root._ = _;
-            $root.$state = $state;
-            $root.gettingStarted = gettingStarted;
-        }
-    ])
-    .run(['$rootScope', 'AgentManager',
-        /**
-         * @param {ng.IRootScopeService} $root
          * @param {import('./modules/agent/AgentManager.service').default} agentMgr
          */
-        ($root, agentMgr) => {
+        (User: UserService, agentMgr) => {
             let lastUser;
 
-            $root.$on('user', (e, user) => {
+            User.current$.subscribe((user) => {
                 if (lastUser)
                     return;
 
@@ -369,25 +355,6 @@ export default angular
                     // No-op.
                 }
             });
-        }
-    ])
-    .run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User', 'IgniteNotebookData',
-        /**
-         * @param {ng.IRootScopeService} $root
-         * @param {ng.IHttpService} $http
-         * @param $state
-         * @param {ReturnType<typeof import('./services/Messages.service').default>} Messages
-         * @param User
-         * @param Notebook
-         */
-        ($root, $http, $state, Messages, User, Notebook) => { // eslint-disable-line no-shadow
-            $root.revertIdentity = () => {
-                $http.get('/api/v1/admin/revert/identity')
-                    .then(() => User.load())
-                    .then(() => $state.go('base.settings.admin'))
-                    .then(() => Notebook.load())
-                    .catch(Messages.showError);
-            };
         }
     ])
     .run(['IgniteIcon',
