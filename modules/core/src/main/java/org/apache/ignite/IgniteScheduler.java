@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * Provides functionality for scheduling jobs locally using UNIX cron-based syntax.
  * Instance of {@code GridScheduler} is obtained from grid as follows:
  * <pre name="code" class="java">
- * GridScheduler s = Ignition.ignite().scheduler();
+ * IgniteScheduler s = Ignition.ignite().scheduler();
  * </pre>
  * <p>
  * Scheduler supports standard UNIX {@code cron} format with optional prefix of
@@ -38,12 +38,13 @@ import org.jetbrains.annotations.Nullable;
  * Here's an example of scheduling a closure that broadcasts a message
  * to all nodes five times, once every minute, with initial delay of two seconds:
  * <pre name="code" class="java">
- * Ignition.ignite().scheduler().scheduleLocal(
- *     GridSchedulerFuture&lt;?&gt; = Ignition.ignite().scheduler().scheduleLocal(new Callable&lt;Object&gt;() {
+ * SchedulerFuture&lt;?&gt; s = Ignition.ignite().scheduler().scheduleLocal(
+ *     new Callable&lt;Object&gt;() {
  *         &#64;Override public Object call() throws IgniteCheckedException {
- *             g.broadcast(new GridCallable() {...}).get();
+ *             g.broadcast(new IgniteCallable() {...}).get();
  *         }
- *     }, "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
+ *     },
+ *     "{2, 5} * * * * *" // 2 seconds delay with 5 executions only.
  * );
  * </pre>
  */
