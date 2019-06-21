@@ -423,7 +423,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             page.lock();
 
             try {
-                GridUnsafe.copyMemory(GridUnsafe.bufferAddress(snapshot.pageDataBuffer()), page.address(), pageSize);
+                GridUnsafe.copyHeapOffheap(snapshot.pageData(), GridUnsafe.BYTE_ARR_OFF, page.address(), pageSize);
 
                 page.changeHistory().clear();
 
