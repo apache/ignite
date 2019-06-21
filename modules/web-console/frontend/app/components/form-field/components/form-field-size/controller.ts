@@ -104,9 +104,12 @@ export default class PCFormFieldSizeController<T> implements IInputErrorNotifier
     }
 
     set sizeScale(value: ISizeTypeOption) {
+        const oldScale = this._sizeScale;
         this._sizeScale = value;
         if (this.onScaleChange) this.onScaleChange({$event: this.sizeScale});
-        if (this.ngModel) this.assignValue(this.ngModel.$viewValue);
+
+        if (this.ngModel)
+            this.assignValue(oldScale ? this.ngModel.$viewValue / oldScale.value * value.value : this.ngModel.$viewValue);
     }
 
     get sizeScale() {
@@ -115,6 +118,10 @@ export default class PCFormFieldSizeController<T> implements IInputErrorNotifier
 
     assignValue(rawValue: number) {
         if (!this.sizesMenu) this.setDefaultSizeType();
+
+        if (rawValue && rawValue !== this.ngModel.$viewValue)
+            this.ngModel.$setViewValue(rawValue);
+
         return this.value = rawValue
             ? rawValue / this.sizeScale.value
             : rawValue;

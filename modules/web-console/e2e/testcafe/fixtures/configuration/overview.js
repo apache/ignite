@@ -67,7 +67,6 @@ test('Create cluster basic/advanced clusters amount redirect', async(t) => {
     await overviewPage.removeAllItems();
 });
 
-
 test('Cluster edit basic/advanced redirect based on caches amount', async(t) => {
     const clusterName = 'Seven caches cluster';
     const clusterEditLink = overviewPage.clustersTable.findCell(0, 'Name').find('a');
