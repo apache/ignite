@@ -343,7 +343,7 @@ public class ClientConnectorConfiguration {
 
     /**
      * Gets handshake timeout for client connections.
-     * If no successful handshake is performed within this timeout upon successfull establishment of TCP connection,
+     * If no successful handshake is performed within this timeout upon successful establishment of TCP connection,
      * the connection is closed.
      * Zero or negative means no timeout.
      *
@@ -355,7 +355,7 @@ public class ClientConnectorConfiguration {
 
     /**
      * Sets handshake timeout for client connections.
-     * If no successful handshake is performed within this timeout upon successfull establishment of TCP connection,
+     * If no successful handshake is performed within this timeout upon successful establishment of TCP connection,
      * the connection is closed.
      * Zero or negative means no timeout.
      *
