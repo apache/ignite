@@ -317,7 +317,7 @@ public interface IgniteBinary {
      * Converts provided object to instance of {@link org.apache.ignite.binary.BinaryObject}.
      *
      * @param obj Object to convert.
-     * @return Converted object.
+     * @return Converted object or {@null} if obj is null.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public <T> T toBinary(@Nullable Object obj) throws BinaryObjectException;
