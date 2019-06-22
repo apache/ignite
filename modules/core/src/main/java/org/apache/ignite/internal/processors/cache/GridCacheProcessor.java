@@ -2877,6 +2877,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean persistenceEnabled = recoveryMode || sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
             dataRegion != null && dataRegion.config().isPersistenceEnabled();
+        
+        if (persistenceEnabled && ctx.config().isClientMode()) {
+            U.warn(log, "Persistent Store is not supported on client nodes (Persistent Store's" +
+                    " configuration will be overrided with false flag).");
+            persistenceEnabled = false;
+        }
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
