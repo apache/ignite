@@ -157,4 +157,13 @@ public class PojoFieldAccessor {
     public Class getFieldType() {
         return desc != null ? desc.getPropertyType() : field.getType();
     }
+
+    /**
+     * Return declared class of field.
+     *
+     * @return declared field class.
+     */
+    public Class getDeclaringClass() {
+        return desc != null ? descField.getDeclaringClass() : field.getDeclaringClass();
+    }
 }
