@@ -18,14 +18,16 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
+import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
+import org.w3c.dom.Element;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.List;
-
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
-import org.w3c.dom.Element;
 
 /**
  * Descriptor for particular field in a POJO object, specifying how this field
@@ -49,6 +51,9 @@ public abstract class PojoField implements Serializable {
 
     /** Indicator for calculated field. */
     private Boolean calculated;
+
+    /** Field class. */
+    private Class<?> pojoClass;
 
     /** Field property accessor. */
     private transient PojoFieldAccessor accessor;
@@ -87,8 +92,9 @@ public abstract class PojoField implements Serializable {
                 + NAME_ATTR + "' attribute");
         }
 
-        this.name = el.getAttribute(NAME_ATTR).trim();
-        this.col = el.hasAttribute(COLUMN_ATTR) ? el.getAttribute(COLUMN_ATTR).trim() : name.toLowerCase();
+        name = el.getAttribute(NAME_ATTR).trim();
+        col = el.hasAttribute(COLUMN_ATTR) ? el.getAttribute(COLUMN_ATTR).trim() : name.toLowerCase();
+        pojoClass = pojoCls;
 
         init(PropertyMappingHelper.getPojoFieldAccessor(pojoCls, name));
     }
@@ -99,12 +105,13 @@ public abstract class PojoField implements Serializable {
      * @param accessor field accessor.
      */
     public PojoField(PojoFieldAccessor accessor) {
-        this.name = accessor.getName();
-
         QuerySqlField sqlField = (QuerySqlField)accessor.getAnnotation(QuerySqlField.class);
 
+        name = accessor.getName();
         col = sqlField != null && sqlField.name() != null && !sqlField.name().isEmpty() ?
                 sqlField.name() : name.toLowerCase();
+
+        pojoClass = accessor.getDeclaringClass();
 
         init(accessor);
     }
@@ -218,5 +225,18 @@ public abstract class PojoField implements Serializable {
         this.colDDL = "\"" + col + "\" " + cassandraType.toString();
 
         this.accessor = accessor;
+    }
+
+    /**
+     * Read object from input stream.
+     *
+     * @param ois ObjectInputStream.
+     * @throws IOException if some error in object reading.
+     * @throws ClassNotFoundException throws if class not found.
+     */
+    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        ois.defaultReadObject();
+
+        init(PropertyMappingHelper.getPojoFieldAccessor(pojoClass, name));
     }
 }

@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteException;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.List;
 
 /**
  * Property accessor provides read/write access to POJO object properties defined through:
@@ -157,5 +156,14 @@ public class PojoFieldAccessor {
      */
     public Class getFieldType() {
         return desc != null ? desc.getPropertyType() : field.getType();
+    }
+
+    /**
+     * Return declared class of field.
+     *
+     * @return declared field class.
+     */
+    public Class getDeclaringClass() {
+        return desc != null ? descField.getDeclaringClass() : field.getDeclaringClass();
     }
 }
