@@ -316,7 +316,7 @@ public final class GridTestUtils {
      */
     public static void assertContains(@Nullable IgniteLogger log, String str, String substr) {
         try {
-            assertTrue(str.contains(substr));
+            assertTrue(str != null && str.contains(substr));
         } catch (AssertionError e) {
             U.warn(log, String.format("String does not contain substring: '%s':", substr));
             U.warn(log, "String:");
@@ -1056,6 +1056,31 @@ public final class GridTestUtils {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * Wait for all passed futures to complete even if they fail.
+     *
+     * @param futs Futures.
+     * @throws AssertionError Suppresses underlying exceptions if some futures failed.
+     */
+    public static void waitForAllFutures(IgniteInternalFuture<?>... futs) {
+        AssertionError err = null;
+
+        for (IgniteInternalFuture<?> fut : futs) {
+            try {
+                fut.get();
+            }
+            catch (Throwable t) {
+                if (err == null)
+                    err = new AssertionError("One or several futures threw the exception.");
+
+                err.addSuppressed(t);
+            }
+        }
+
+        if (err != null)
+            throw err;
     }
 
     /**

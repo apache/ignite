@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFre
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -160,7 +161,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
             TestDataRow row = new TestDataRow(keySize, valSize);
 
-            list.insertDataRow(row);
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
             assertTrue(row.link() != 0L);
 
@@ -203,7 +204,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
                         TestDataRow row = new TestDataRow(keySize, valSize);
 
-                        list.insertDataRow(row);
+                        list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
                         assertTrue(row.link() != 0L);
 
@@ -221,7 +222,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
                                 TestDataRow rmvd = stored.remove(row.link);
 
                                 if (rmvd != null) {
-                                    list.removeDataRowByLink(row.link);
+                                    list.removeDataRowByLink(row.link, IoStatisticsHolderNoOp.INSTANCE);
 
                                     break;
                                 }
@@ -251,7 +252,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
             TestDataRow row = new TestDataRow(keySize, valSize);
 
-            list.insertDataRow(row);
+            list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
             assertTrue(row.link() != 0L);
 
@@ -286,7 +287,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
                 TestDataRow row = new TestDataRow(keySize, valSize);
 
-                list.insertDataRow(row);
+                list.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
 
                 assertTrue(row.link() != 0L);
 
@@ -304,7 +305,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
                     assertTrue(rmvd == row);
 
-                    list.removeDataRowByLink(row.link);
+                    list.removeDataRowByLink(row.link, IoStatisticsHolderNoOp.INSTANCE);
                 }
             }
         }
