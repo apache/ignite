@@ -69,6 +69,8 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
         mreg = mreg.withPrefix(prefix);
 
         minTime = mreg.metric("MinimalTime", null);
+        minTime.value(Long.MAX_VALUE);
+
         maxTime = mreg.metric("MaximumTime", null);
         sumTime = mreg.longAdderMetric("SumTime", null);
         execs = mreg.longAdderMetric("Executed", null);
@@ -120,11 +122,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
             execs.increment();
             completed.increment();
 
-            if (minTime.value() != 0)
-                MetricUtils.setIfLess(minTime, duration);
-            else
-                MetricUtils.compareAndSet(minTime, 0, duration);
-
+            MetricUtils.setIfLess(minTime, duration);
             MetricUtils.setIfGreater(maxTime, duration);
 
             sumTime.add(duration);
@@ -137,8 +135,10 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
      * @return Copy.
      */
     public QueryMetrics snapshot() {
+        long minTimeVal = minTime.longValue();
+
         return new QueryMetricsSnapshot(
-            minTime.longValue(),
+            minTimeVal == Long.MAX_VALUE ? 0 : minTimeVal,
             maxTime.longValue(),
             averageTime(),
             (int)execs.longValue(),
@@ -149,7 +149,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
      * Resets query metrics.
      */
     public void reset() {
-        minTime.reset();
+        minTime.value(Long.MAX_VALUE);
         maxTime.reset();
         sumTime.reset();
         execs.reset();
