@@ -119,28 +119,28 @@ public class GridJobProcessor extends GridProcessorAdapter {
     public static final String JOBS = metricName("compute", "jobs");
 
     /** Started jobs metric name. */
-    public static final String STARTED = "started";
+    public static final String STARTED = "Started";
 
     /** Active jobs metric name. */
-    public static final String ACTIVE = "active";
+    public static final String ACTIVE = "Active";
 
     /** Waiting jobs metric name. */
-    public static final String WAITING = "waiting";
+    public static final String WAITING = "Waiting";
 
     /** Canceled jobs metric name. */
-    public static final String CANCELED = "canceled";
+    public static final String CANCELED = "Canceled";
 
     /** Rejected jobs metric name. */
-    public static final String REJECTED = "rejected";
+    public static final String REJECTED = "Rejected";
 
     /** Finished jobs metric name. */
-    public static final String FINISHED = "finished";
+    public static final String FINISHED = "Finished";
 
     /** Total jobs execution time metric name. */
-    public static final String EXECUTION_TIME = "executionTime";
+    public static final String EXECUTION_TIME = "ExecutionTime";
 
     /** Total jobs waiting time metric name. */
-    public static final String WAITING_TIME = "waitingTime";
+    public static final String WAITING_TIME = "WaitingTime";
 
     /** */
     private final Marshaller marsh;
