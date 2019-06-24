@@ -638,7 +638,7 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         /** {@inheritDoc} */
         @Override public Set<Entry<Integer, MappedName>> entrySet() {
-            return null;
+            return Collections.emptySet();
         }
 
         /** {@inheritDoc} */

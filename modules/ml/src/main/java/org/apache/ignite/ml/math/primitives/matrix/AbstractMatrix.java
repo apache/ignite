@@ -52,15 +52,19 @@ public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
     /** */
     private static final double Z95 = 1.959964;
+
     /** */
     private static final double Z80 = 1.281552;
+
     /** */
     private static final int MAX_SAMPLES = 500;
+
     /** */
     private static final int MIN_SAMPLES = 15;
 
     /** Cached minimum element. */
     private Element minElm;
+
     /** Cached maximum element. */
     private Element maxElm = null;
 
@@ -251,18 +255,8 @@ public abstract class AbstractMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return sto.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return sto.isDense();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return sto.isRandomAccess();
     }
 
     /** {@inheritDoc} */

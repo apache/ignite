@@ -17,21 +17,14 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.ObjectHistogram;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.tree.randomforest.data.NodeSplit;
 import org.apache.ignite.ml.tree.randomforest.data.impurity.basic.CountersHistogram;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Class contains implementation of splitting point finding algorithm based on Gini metric (see
@@ -169,7 +162,7 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
      * Returns counters histogram for class-label.
      *
      * @param lbl Label.
-     * @return counters histogram for class-label.
+     * @return Counters histogram for class-label.
      */
     ObjectHistogram<BootstrappedVector> getHistForLabel(Double lbl) {
         return hists.get(lblMapping.get(lbl));

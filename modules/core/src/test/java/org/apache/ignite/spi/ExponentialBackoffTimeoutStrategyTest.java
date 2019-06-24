@@ -19,13 +19,10 @@ package org.apache.ignite.spi;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link ExponentialBackoffTimeoutStrategyTest}.
  */
-@RunWith(JUnit4.class)
 public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTest {
     /** */
     @Test
@@ -96,7 +93,5 @@ public class ExponentialBackoffTimeoutStrategyTest extends GridCommonAbstractTes
                 return;
             }
         }
-
-
     }
 }

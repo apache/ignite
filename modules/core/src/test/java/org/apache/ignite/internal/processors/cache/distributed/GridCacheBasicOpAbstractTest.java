@@ -194,7 +194,6 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
             IgniteFuture<String> f3 = cache3.getAsync("async1");
 
-
             String v2 = f2.get();
             String v3 = f3.get();
 

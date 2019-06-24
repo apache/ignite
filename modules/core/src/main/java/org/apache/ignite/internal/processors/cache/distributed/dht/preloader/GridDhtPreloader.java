@@ -38,9 +38,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -203,7 +203,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut) {
         assert exchFut == null || exchFut.isDone();
 
         // No assignments for disabled preloader.
@@ -218,8 +219,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         assert exchFut == null || exchFut.context().events().topologyVersion().equals(top.readyTopologyVersion()) :
             "Topology version mismatch [exchId=" + exchId +
-            ", grp=" + grp.name() +
-            ", topVer=" + top.readyTopologyVersion() + ']';
+                ", grp=" + grp.name() +
+                ", topVer=" + top.readyTopologyVersion() + ']';
 
         GridDhtPreloaderAssignments assignments = new GridDhtPreloaderAssignments(exchId, topVer);
 
@@ -253,6 +254,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == RENTING) {
                     if (part.reserve()) {
                         part.moving();
+
                         part.clearAsync();
 
                         part.release();
@@ -277,7 +279,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                if (histSupplier != null) {
+                if (histSupplier != null && exchFut.isHistoryPartition(grp, p)) {
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
@@ -291,6 +293,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
+                    // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11790
                     msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {
@@ -311,7 +314,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                             log.debug("Owning partition as there are no other owners: " + part);
                     }
                     else {
-                        ClusterNode n = picked.get(0);
+                        ClusterNode n = picked.get(p % picked.size());
 
                         GridDhtPartitionDemandMessage msg = assignments.get(n);
 
@@ -521,7 +524,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Future for request.
      */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    private GridDhtFuture<Object> request0(GridCacheContext cctx, Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
+    private GridDhtFuture<Object> request0(GridCacheContext cctx, Collection<KeyCacheObject> keys,
+        AffinityTopologyVersion topVer) {
         if (cctx.isNear())
             cctx = cctx.near().dht().context();
 
@@ -587,7 +591,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             paused = true;
         }
         finally {
-           demandLock.writeLock().unlock();
+            demandLock.writeLock().unlock();
         }
     }
 
@@ -597,14 +601,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         try {
             final List<GridTuple3<Integer, UUID, GridDhtPartitionSupplyMessage>> msgToProc =
-                    new ArrayList<>(pausedDemanderQueue);
+                new ArrayList<>(pausedDemanderQueue);
 
             pausedDemanderQueue.clear();
 
             final GridDhtPreloader preloader = this;
 
             ctx.kernalContext().closure().runLocalSafe(() -> msgToProc.forEach(
-                    m -> preloader.handleSupplyMessage(m.get1(), m.get2(), m.get3())
+                m -> preloader.handleSupplyMessage(m.get1(), m.get2(), m.get3())
             ), GridIoPolicy.SYSTEM_POOL);
 
             paused = false;

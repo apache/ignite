@@ -531,8 +531,6 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         httpAdaptors.clear();
 
         spiStartTime = 0;
-
-        tearDown();
     }
 
     /**

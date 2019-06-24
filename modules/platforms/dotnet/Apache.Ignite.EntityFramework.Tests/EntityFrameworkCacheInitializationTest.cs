@@ -104,6 +104,7 @@ namespace Apache.Ignite.EntityFramework.Tests
         /// Checks that specified cache exists and stops all Ignite instances.
         /// </summary>
         // ReSharper disable once UnusedParameter.Local
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private static void CheckCacheAndStop(string gridName, string cacheName, IgniteDbConfiguration cfg,
             CacheMode cacheMode = CacheMode.Partitioned)
         {

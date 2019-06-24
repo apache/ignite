@@ -29,8 +29,8 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.stat.MultivariateGaussianDistribution;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * Partition data for GMM algorithm. Unlike partition data for other algorithms this class aggregate probabilities of
@@ -65,10 +65,20 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * @return all vectors from partition.
+     * Updates P(c|xi) values in partitions and compute dataset likelihood.
+     *
+     * @param dataset Dataset.
+     * @param clusterProbs Component probabilities.
+     * @param components Components.
+     * @return Dataset likelihood.
      */
-    public List<LabeledVector<Double>> getAllXs() {
-        return Collections.unmodifiableList(xs);
+    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
+        List<MultivariateGaussianDistribution> components) {
+
+        return dataset.compute(
+            data -> updatePcxi(data, clusterProbs, components),
+            (left, right) -> asPrimitive(left) + asPrimitive(right)
+        );
     }
 
     /**
@@ -90,10 +100,10 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * @return size of dataset partition.
+     * @return All vectors from partition.
      */
-    public int size() {
-        return pcxi.length;
+    public List<LabeledVector<Double>> getAllXs() {
+        return Collections.unmodifiableList(xs);
     }
 
     /** {@inheritDoc} */
@@ -108,8 +118,8 @@ class GmmPartitionData implements AutoCloseable {
         /** Serial version uid. */
         private static final long serialVersionUID = 1847063348042022561L;
 
-        /** Extractor. */
-        private final FeatureLabelExtractor<K, V, Double> extractor;
+        /** Upsteam vectorizer. */
+        private final Preprocessor<K, V> preprocessor;
 
         /** Count of components of mixture. */
         private final int countOfComponents;
@@ -117,11 +127,11 @@ class GmmPartitionData implements AutoCloseable {
         /**
          * Creates an instance of Builder.
          *
-         * @param extractor Extractor.
+         * @param preprocessor preprocessor.
          * @param countOfComponents Count of components.
          */
-        public Builder(FeatureLabelExtractor<K, V, Double> extractor, int countOfComponents) {
-            this.extractor = extractor;
+        public Builder(Preprocessor<K, V> preprocessor, int countOfComponents) {
+            this.preprocessor = preprocessor;
             this.countOfComponents = countOfComponents;
         }
 
@@ -135,7 +145,7 @@ class GmmPartitionData implements AutoCloseable {
 
             while (upstreamData.hasNext()) {
                 UpstreamEntry<K, V> entry = upstreamData.next();
-                LabeledVector<Double> x = extractor.extract(entry.getKey(), entry.getValue());
+                LabeledVector<Double> x = preprocessor.apply(entry.getKey(), entry.getValue());
                 xs.add(x);
             }
 
@@ -169,20 +179,10 @@ class GmmPartitionData implements AutoCloseable {
     }
 
     /**
-     * Updates P(c|xi) values in partitions and compute dataset likelihood.
-     *
-     * @param dataset Dataset.
-     * @param clusterProbs Component probabilities.
-     * @param components Components.
-     * @return dataset likelihood.
+     * @return Size of dataset partition.
      */
-    static double updatePcxiAndComputeLikelihood(Dataset<EmptyContext, GmmPartitionData> dataset, Vector clusterProbs,
-        List<MultivariateGaussianDistribution> components) {
-
-        return dataset.compute(
-            data -> updatePcxi(data, clusterProbs, components),
-            (left, right) -> asPrimitive(left) + asPrimitive(right)
-        );
+    public int size() {
+        return pcxi.length;
     }
 
     /**

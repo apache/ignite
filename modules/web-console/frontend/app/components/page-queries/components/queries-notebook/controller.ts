@@ -1753,25 +1753,20 @@ export class NotebookCtrl {
 
             from(_chooseNode(paragraph.cacheName, false)).pipe(
                 switchMap((nid) => {
-                    const args = paragraph.queryArgs = {
+                    const qryArg = paragraph.queryArgs = {
+                        nid,
                         cacheName: $scope.cacheNameForSql(paragraph),
                         query: 'EXPLAIN ' + (paragraph.partialQuery || paragraph.query),
-                        pageSize: paragraph.pageSize
-                    };
-
-                    ActivitiesData.post({ group: 'sql', action: '/queries/explain' });
-
-                    const qryArg = {
-                        nid,
-                        cacheName: args.cacheName,
-                        query: args.query,
                         nonCollocatedJoins,
                         enforceJoinOrder,
                         replicatedOnly: false,
                         local: false,
-                        pageSize: args.pageSize,
-                        lazy: false, collocated
+                        pageSize: paragraph.pageSize,
+                        lazy: false,
+                        collocated
                     };
+
+                    ActivitiesData.post({ group: 'sql', action: '/queries/explain' });
 
                     return _executeQuery(
                         paragraph,

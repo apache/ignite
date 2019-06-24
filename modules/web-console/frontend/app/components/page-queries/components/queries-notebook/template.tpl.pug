@@ -199,35 +199,29 @@ mixin table-result-heading-query
                 +result-toolbar
         .col-xs-3
             .pull-right
-                .btn-group.panel-tip-container
-                    button.btn.btn-primary.btn--with-icon(
+                .btn-ignite-group
+                    button.btn-ignite.btn-ignite--primary(
                         ng-click='exportCsv(paragraph)'
-
                         ng-disabled='paragraph.loading'
-
                         bs-tooltip=''
                         ng-attr-title='{{ queryTooltip(paragraph, "export query results") }}'
-
                         data-trigger='hover'
                         data-placement='bottom'
                     )
                         svg(ignite-icon='csv' ng-if='!paragraph.csvIsPreparing')
-                        i.fa.fa-fw.fa-refresh.fa-spin(ng-if='paragraph.csvIsPreparing')
-                        span Export
+                        svg.fa-spin(ignite-icon='refresh' ng-if='paragraph.csvIsPreparing')
+                        |  &nbsp; Export
 
                     -var options = [{ text: 'Export', click: 'exportCsv(paragraph)' }, { text: 'Export all', click: 'exportCsvAll(paragraph)' }, { divider: true }, { text: '<span title="Copy current result page to clipboard">Copy to clipboard</span>', click: 'exportCsvToClipBoard(paragraph)' }]
-                    button.btn.dropdown-toggle.btn-primary(
+                    button.btn-ignite.btn-ignite--primary(
                         ng-disabled='paragraph.loading'
-
                         bs-dropdown=`${JSON.stringify(options)}`
-
                         data-toggle='dropdown'
                         data-container='body'
                         data-placement='bottom-right'
                         data-html='true'
                     )
-                        span.caret
-
+                        span.icon.fa.fa-caret-down
 
 
 mixin table-result-heading-scan

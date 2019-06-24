@@ -109,5 +109,43 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         tip: 'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
                              Note, that either the include event types or the exclude event types can be established'
                     })
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    +form-field__label({label: 'Local event listeners:', name: '"LocalEventListeners"'})
+                        +form-field__tooltip({title: `Local event listeners`})
+
+                    -var items = model + '.localEventListeners'
+                    list-editable.pc-list-editable-with-form-grid(ng-model=items name='LocalEventListeners')
+                        list-editable-item-edit.pc-form-grid-row
+                            - form = '$parent.form'
+                            .pc-form-grid-col-40
+                                +form-field__java-class({
+                                    label: 'Listener class name:',
+                                    model: '$item.className',
+                                    name: '"EventListenerClassName"',
+                                    required: true,
+                                    tip: 'Local event listener implementation class name',
+                                    validationActive: true
+                                })
+                            .pc-form-grid-col-20
+                                +form-field__dropdown({
+                                    label: 'Event types:',
+                                    model: '$item.eventTypes',
+                                    name: '"EventLisneterEventTypes"',
+                                    required: true,
+                                    multiple: true,
+                                    placeholder: 'Choose event types',
+                                    placeholderEmpty: '',
+                                    options: '$ctrl.eventTypes',
+                                    tip: 'Listened event types:'
+                                })
+                        list-editable-no-items
+                            list-editable-add-item-button(
+                                add-item=`$ctrl.Clusters.addLocalEventListener($ctrl.clonedCluster)`
+                                label-single='listener'
+                                label-multiple='listeners'
+                            )
+
+            - form = 'events'
         .pca-form-column-6
             +preview-xml-java(model, 'clusterEvents')

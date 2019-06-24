@@ -74,14 +74,14 @@ public class MultivariateGaussianDistribution implements Distribution {
     }
 
     /**
-     * @return mean vector.
+     * @return Mean vector.
      */
     public Vector mean() {
         return mean.copy();
     }
 
     /**
-     * @return covariance matrix.
+     * @return Covariance matrix.
      */
     public Matrix covariance() {
         return covariance;

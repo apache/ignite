@@ -32,8 +32,6 @@ import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -59,8 +57,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -71,12 +67,13 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class CheckpointFreeListTest extends GridCommonAbstractTest {
     /** Ip finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Cache name. */
     private static final String CACHE_NAME = "cacheOne";
+
     /** Cache size */
     public static final int CACHE_SIZE = 30000;
 
@@ -237,7 +234,9 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         Collections.shuffle(cachedEntry);
 
         //Remove half of entries.
-        Collection<T2<Integer, byte[]>> entriesToRemove = cachedEntry.stream().limit(cachedEntry.size() / 2).collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
+        Collection<T2<Integer, byte[]>> entriesToRemove = cachedEntry.stream()
+            .limit(cachedEntry.size() / 2)
+            .collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
 
         entriesToRemove.forEach(t2 -> cache.remove(t2.get1()));
 
@@ -277,7 +276,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
                 break;
 
             //Notify put thread that node successfully started.
-            nodeStartBarrier.await(20000, TimeUnit.MILLISECONDS);
+            nodeStartBarrier.await();
             nodeStartBarrier.reset();
 
             int awaitSize = entriesToRemove.size() - iterationDataCount;
@@ -305,7 +304,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         GridTestUtils.runAsync(() -> {
             while (true) {
                 try {
-                    nodeStartBarrier.await(10000, TimeUnit.MILLISECONDS);
+                    nodeStartBarrier.await();
 
                     Ignite ignite = ignite(0);
 
@@ -321,7 +320,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
                         iter.remove();
                     }
                 }
-                catch (TimeoutException | InterruptedException | BrokenBarrierException e) {
+                catch (InterruptedException | BrokenBarrierException e) {
                     return;
                 }
                 catch (Exception e) {

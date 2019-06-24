@@ -64,14 +64,10 @@ interface DistributedMetaStorageBridge {
      * (optionally).
      *
      * @param histItem Update data.
-     * @param val Unmarshalled value that needs to be written. This value is ignored if listeners shouldn't be notified.
-     * @param notifyListeners Whether listeners should be notified about update or not.
      * @throws IgniteCheckedException If some IO or unmarshalling errors occured.
      */
     void onUpdateMessage(
-        DistributedMetaStorageHistoryItem histItem,
-        Serializable val,
-        boolean notifyListeners
+        DistributedMetaStorageHistoryItem histItem
     ) throws IgniteCheckedException;
 
     /**
@@ -87,5 +83,5 @@ interface DistributedMetaStorageBridge {
      *
      * @return Array of all keys and values.
      */
-    DistributedMetaStorageHistoryItem[] localFullData() throws IgniteCheckedException;
+    DistributedMetaStorageKeyValuePair[] localFullData() throws IgniteCheckedException;
 }

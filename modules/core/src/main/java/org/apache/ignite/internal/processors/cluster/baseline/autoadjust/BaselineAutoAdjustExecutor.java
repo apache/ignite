@@ -31,12 +31,16 @@ import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 class BaselineAutoAdjustExecutor {
     /** */
     private final IgniteLogger log;
+
     /** */
     private final IgniteClusterImpl cluster;
+
     /** Service for execute this task in async. */
     private final ExecutorService executorService;
+
     /** {@code true} if baseline auto-adjust enabled. */
     private final BooleanSupplier isBaselineAutoAdjustEnabled;
+
     /** This protect from execution more than one task at same moment. */
     private final Lock executionGuard = new ReentrantLock();
 
@@ -62,12 +66,12 @@ class BaselineAutoAdjustExecutor {
     public void execute(BaselineAutoAdjustData data) {
         executorService.submit(() ->
             {
-                if (data.isInvalidated() || !isBaselineAutoAdjustEnabled.getAsBoolean())
+                if (isExecutionExpired(data))
                     return;
 
                 executionGuard.lock();
                 try {
-                    if (data.isInvalidated() || !isBaselineAutoAdjustEnabled.getAsBoolean())
+                    if (isExecutionExpired(data))
                         return;
 
                     cluster.triggerBaselineAutoAdjust(data.getTargetTopologyVersion());
@@ -82,5 +86,13 @@ class BaselineAutoAdjustExecutor {
                 }
             }
         );
+    }
+
+    /**
+     * @param data Baseline data for adjust.
+     * @return {@code true} If baseline auto-adjust shouldn't be executed for given data.
+     */
+    public boolean isExecutionExpired(BaselineAutoAdjustData data) {
+        return data.isInvalidated() || !isBaselineAutoAdjustEnabled.getAsBoolean();
     }
 }

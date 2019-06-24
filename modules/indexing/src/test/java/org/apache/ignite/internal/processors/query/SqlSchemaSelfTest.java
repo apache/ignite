@@ -328,6 +328,18 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Test table creation and data retrieval with implicit schema.
+     */
+    @Test
+    public void testImplicitSchema() {
+        IgniteCache<?, ?> c = node.getOrCreateCache("testCache1");
+
+        c.query(new SqlFieldsQuery("CREATE TABLE TEST1 (ID LONG PRIMARY KEY, VAL LONG)" +
+            " WITH \"template=replicated\";")).getAll();
+        c.query(new SqlFieldsQuery("SELECT * FROM TEST1")).getAll();
+    }
+
+    /**
      * Person key.
      */
     public static class PersonKey {

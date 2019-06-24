@@ -25,8 +25,9 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Part of direct node to node file downloading
@@ -38,18 +39,22 @@ public class FileUploader {
     /** */
     private final Path path;
 
+    /** */
+    private final IgniteLogger log;
+
     /**
      *
      */
-    public FileUploader(Path path) {
+    public FileUploader(Path path, IgniteLogger log) {
         this.path = path;
+        this.log = log;
     }
 
     /**
      *
      */
-    public void upload(SocketChannel writeChannel, GridFutureAdapter<Long> finishFut) {
-        FileChannel readChannel = null;
+    public void upload(SocketChannel writeChan, GridFutureAdapter<Long> finishFut) {
+        FileChannel readChan = null;
 
         try {
             File file = new File(path.toUri().getPath());
@@ -64,14 +69,17 @@ public class FileUploader {
                 return;
             }
 
-            readChannel = FileChannel.open(path, StandardOpenOption.READ);
+            readChan = FileChannel.open(path, StandardOpenOption.READ);
 
             long written = 0;
 
-            long size = readChannel.size();
+            long size = readChan.size();
 
             while (written < size)
-                written += readChannel.transferTo(written, CHUNK_SIZE, writeChannel);
+                written += readChan.transferTo(written, CHUNK_SIZE, writeChan);
+
+            writeChan.shutdownOutput();
+            writeChan.shutdownInput();
 
             finishFut.onDone(written);
         }
@@ -79,22 +87,8 @@ public class FileUploader {
             finishFut.onDone(ex);
         }
         finally {
-            //FIXME: when an error occurs on writeChannel.close() no attempt to close readChannel will happen. Need to be fixed.
-            try {
-                if (writeChannel != null)
-                    writeChannel.close();
-            }
-            catch (IOException ex) {
-                throw new IgniteException("Could not close socket.");
-            }
-
-            try {
-                if (readChannel != null)
-                    readChannel.close();
-            }
-            catch (IOException ex) {
-                throw new IgniteException("Could not close file: " + path);
-            }
+            U.close(writeChan, log);
+            U.close(readChan, log);
         }
     }
 }

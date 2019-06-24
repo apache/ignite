@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.maxabsscaling;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -37,9 +37,12 @@ public class MaxAbsScalerPreprocessorTest {
             {0., 22., 300.}
         };
         double[] maxAbs = new double[] {4, 22, 300};
-        MaxAbsScalerPreprocessor<Integer, Vector> preprocessor = new MaxAbsScalerPreprocessor<>(
+
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<>(0, 1, 2);
+
+        MaxAbsScalerPreprocessor<Integer, double[]> preprocessor = new MaxAbsScalerPreprocessor<>(
             maxAbs,
-            (k, v) -> v
+            vectorizer
         );
 
         double[][] expData = new double[][] {
@@ -50,6 +53,6 @@ public class MaxAbsScalerPreprocessorTest {
         };
 
         for (int i = 0; i < data.length; i++)
-            assertArrayEquals(expData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
+            assertArrayEquals(expData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 }

@@ -17,19 +17,22 @@
 
 package org.apache.ignite.ml.selection.scoring.evaluator;
 
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.selection.scoring.cursor.CacheBasedLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LocalLabelPairCursor;
+import org.apache.ignite.ml.selection.scoring.metric.AbstractMetrics;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
+import org.apache.ignite.ml.selection.scoring.metric.MetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetricValues;
 import org.apache.ignite.ml.selection.scoring.metric.classification.BinaryClassificationMetrics;
-
-import java.util.Map;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetricValues;
+import org.apache.ignite.ml.selection.scoring.metric.regression.RegressionMetrics;
 
 /**
  * Evaluator that computes metrics from predictions and ground truth values.
@@ -38,192 +41,229 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param metric The binary classification metric.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param metric       The binary classification metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <L, K, V> double evaluate(IgniteCache<K, V> dataCache,
-        IgniteModel<Vector, L> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor,
-        Metric<L> metric) {
-        return calculateMetric(dataCache, null, mdl, featureExtractor, lbExtractor, metric);
+                                            IgniteModel<Vector, L> mdl,
+                                            Preprocessor<K, V> preprocessor,
+                                            Metric<L> metric
+    ) {
+
+        return calculateMetric(
+            dataCache,
+            null,
+            mdl,
+            preprocessor,
+            metric
+        );
     }
 
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given local data.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param metric The binary classification metric.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given local data.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param metric       The binary classification metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <L, K, V> double evaluate(Map<K, V> dataCache,
-        IgniteModel<Vector, L> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor,
-        Metric<L> metric) {
-        return calculateMetric(dataCache, null, mdl, featureExtractor, lbExtractor, metric);
+                                            IgniteModel<Vector, L> mdl,
+                                            Preprocessor<K, V> preprocessor,
+                                            Metric<L> metric) {
+        return calculateMetric(dataCache, null, mdl, preprocessor, metric);
     }
 
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param metric The binary classification metric.
-     * @param <L> The type of label.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param metric       The binary classification metric.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
-    public static <L, K, V> double evaluate(IgniteCache<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, L> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor,
-        Metric<L> metric) {
-        return calculateMetric(dataCache, filter, mdl, featureExtractor, lbExtractor, metric);
+    public static <L, K, V> double evaluate(IgniteCache<K, V> dataCache,
+                                            IgniteBiPredicate<K, V> filter,
+                                            IgniteModel<Vector, L> mdl,
+                                            Preprocessor<K, V> preprocessor,
+                                            Metric<L> metric) {
+
+        return calculateMetric(
+            dataCache, filter, mdl,
+            preprocessor,
+            metric
+        );
     }
 
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param metric The binary classification metric.
-     * @param <L> The type of label.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param metric       The binary classification metric.
+     * @param <L>          The type of label.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <L, K, V> double evaluate(Map<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, L> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor,
-        Metric<L> metric) {
-        return calculateMetric(dataCache, filter, mdl, featureExtractor, lbExtractor, metric);
+                                            IgniteModel<Vector, L> mdl,
+                                            Preprocessor<K, V> preprocessor,
+                                            Metric<L> metric) {
+        return calculateMetric(dataCache, filter, mdl, preprocessor, metric);
     }
 
     /**
      * Computes the given metrics on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> BinaryClassificationMetricValues evaluate(IgniteCache<K, V> dataCache,
-        IgniteModel<Vector, Double> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-        return calcMetricValues(dataCache, null, mdl, featureExtractor, lbExtractor);
+                                                                   IgniteModel<Vector, Double> mdl,
+                                                                   Preprocessor<K, V> preprocessor) {
+        return calcMetricValues(dataCache, null, mdl, preprocessor);
     }
 
     /**
      * Computes the given metrics on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> BinaryClassificationMetricValues evaluate(Map<K, V> dataCache,
-        IgniteModel<Vector, Double> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-        return calcMetricValues(dataCache, null, mdl, featureExtractor, lbExtractor);
+                                                                   IgniteModel<Vector, Double> mdl,
+                                                                   Preprocessor<K, V> preprocessor) {
+        return calcMetricValues(dataCache, null, mdl, preprocessor);
     }
 
     /**
      * Computes the given metrics on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> BinaryClassificationMetricValues evaluate(IgniteCache<K, V> dataCache,
-        IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, Double> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-        return calcMetricValues(dataCache, filter, mdl, featureExtractor, lbExtractor);
+                                                                                           IgniteBiPredicate<K, V> filter,
+                                                                                           IgniteModel<Vector, Double> mdl,
+                                                                                           Preprocessor<K, V> preprocessor) {
+        return calcMetricValues(
+            dataCache, filter,
+            mdl,
+            preprocessor
+        );
     }
 
     /**
      * Computes the given metrics on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     public static <K, V> BinaryClassificationMetricValues evaluate(Map<K, V> dataCache, IgniteBiPredicate<K, V> filter,
+                                                                   IgniteModel<Vector, Double> mdl,
+                                                                   Preprocessor<K, V> preprocessor) {
+        return calcMetricValues(dataCache, filter, mdl, preprocessor);
+    }
+
+    /**
+     * Computes the regression metrics on the given cache.
+     *
+     * @param dataCache Data cache.
+     * @param filter Filter.
+     * @param mdl Model.
+     * @param preprocessor Preprocessor.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    public static <K, V> RegressionMetricValues evaluateRegression(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter,
         IgniteModel<Vector, Double> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
-        return calcMetricValues(dataCache, filter, mdl, featureExtractor, lbExtractor);
+        Preprocessor<K, V> preprocessor) {
+        return calcRegressionMetricValues(
+            dataCache,
+            filter,
+            mdl,
+            preprocessor
+        );
+    }
+
+    /**
+     * Computes the regression metrics on the given cache.
+     *
+     * @param dataCache Data cache.
+     * @param filter Filter.
+     * @param mdl Model.
+     * @param preprocessor Preprocessor.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    private static <K, V> RegressionMetricValues calcRegressionMetricValues(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter,
+        IgniteModel<Vector, Double> mdl,
+        Preprocessor<K, V> preprocessor) {
+        return calcMetricValues(dataCache, filter, mdl, preprocessor, new RegressionMetrics());
     }
 
     /**
      * Computes the given metrics on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     private static <K, V> BinaryClassificationMetricValues calcMetricValues(IgniteCache<K, V> dataCache,
-        IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, Double> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                                            IgniteBiPredicate<K, V> filter,
+                                                                            IgniteModel<Vector, Double> mdl,
+                                                                            Preprocessor<K, V> preprocessor) {
         BinaryClassificationMetricValues metricValues;
         BinaryClassificationMetrics binaryMetrics = new BinaryClassificationMetrics();
 
         try (LabelPairCursor<Double> cursor = new CacheBasedLabelPairCursor<>(
             dataCache,
             filter,
-            featureExtractor,
-            lbExtractor,
+            preprocessor,
             mdl
         )) {
             metricValues = binaryMetrics.scoreAll(cursor.iterator());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -233,33 +273,29 @@ public class Evaluator {
     /**
      * Computes the given metrics on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     private static <K, V> BinaryClassificationMetricValues calcMetricValues(Map<K, V> dataCache,
-        IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, Double> mdl,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+                                                                            IgniteBiPredicate<K, V> filter,
+                                                                            IgniteModel<Vector, Double> mdl,
+                                                                            Preprocessor<K, V> preprocessor) {
         BinaryClassificationMetricValues metricValues;
         BinaryClassificationMetrics binaryMetrics = new BinaryClassificationMetrics();
 
         try (LabelPairCursor<Double> cursor = new LocalLabelPairCursor<>(
             dataCache,
             filter,
-            featureExtractor,
-            lbExtractor,
+            preprocessor,
             mdl
         )) {
             metricValues = binaryMetrics.scoreAll(cursor.iterator());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -269,32 +305,28 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param metric The binary classification metric.
-     * @param <L> The type of label.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param metric       The binary classification metric.
+     * @param <L>          The type of label.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     private static <L, K, V> double calculateMetric(IgniteCache<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, L> mdl, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor, Metric<L> metric) {
+                                                    IgniteModel<Vector, L> mdl, Preprocessor<K, V> preprocessor, Metric<L> metric) {
         double metricRes;
 
         try (LabelPairCursor<L> cursor = new CacheBasedLabelPairCursor<>(
             dataCache,
             filter,
-            featureExtractor,
-            lbExtractor,
+            preprocessor,
             mdl
         )) {
             metricRes = metric.score(cursor.iterator());
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -304,35 +336,63 @@ public class Evaluator {
     /**
      * Computes the given metric on the given cache.
      *
-     * @param dataCache The given cache.
-     * @param filter The given filter.
-     * @param mdl The model.
-     * @param featureExtractor The feature extractor.
-     * @param lbExtractor The label extractor.
-     * @param metric The binary classification metric.
-     * @param <L> The type of label.
-     * @param <K> The type of cache entry key.
-     * @param <V> The type of cache entry value.
+     * @param dataCache    The given cache.
+     * @param filter       The given filter.
+     * @param mdl          The model.
+     * @param preprocessor The preprocessor.
+     * @param metric       The binary classification metric.
+     * @param <L>          The type of label.
+     * @param <K>          The type of cache entry key.
+     * @param <V>          The type of cache entry value.
      * @return Computed metric.
      */
     private static <L, K, V> double calculateMetric(Map<K, V> dataCache, IgniteBiPredicate<K, V> filter,
-        IgniteModel<Vector, L> mdl, IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor, Metric<L> metric) {
+                                                    IgniteModel<Vector, L> mdl, Preprocessor<K, V> preprocessor, Metric<L> metric) {
         double metricRes;
 
         try (LabelPairCursor<L> cursor = new LocalLabelPairCursor<>(
             dataCache,
             filter,
-            featureExtractor,
-            lbExtractor,
+            preprocessor,
             mdl
         )) {
             metricRes = metric.score(cursor.iterator());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return metricRes;
+    }
+
+    /**
+     * Computes regression metrics on the given cache.
+     *
+     * @param dataCache The given cache.
+     * @param filter The given filter.
+     * @param mdl The model.
+     * @param preprocessor The preprocessor.
+     * @param <K> The type of cache entry key.
+     * @param <V> The type of cache entry value.
+     * @return Computed metric.
+     */
+    private static <K, V, M extends MetricValues> M calcMetricValues(IgniteCache<K, V> dataCache,
+        IgniteBiPredicate<K, V> filter,
+        IgniteModel<Vector, Double> mdl,
+        Preprocessor<K, V> preprocessor, AbstractMetrics<M> metrics) {
+        M metricValues;
+
+        try (LabelPairCursor<Double> cursor = new CacheBasedLabelPairCursor<>(
+            dataCache,
+            filter,
+            preprocessor,
+            mdl
+        )) {
+            metricValues = metrics.scoreAll(cursor.iterator());
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        return metricRes;
+        return metricValues;
     }
 }

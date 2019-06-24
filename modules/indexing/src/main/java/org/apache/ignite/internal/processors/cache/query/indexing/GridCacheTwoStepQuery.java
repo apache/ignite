@@ -65,15 +65,23 @@ public class GridCacheTwoStepQuery {
     /** */
     private final boolean mvccEnabled;
 
-    /** {@code FOR UPDATE} flag. */
-    private final boolean forUpdate;
-
     /** Number of positional arguments in the sql. */
     private final int paramsCnt;
 
     /**
-     * @param originalSql Original query SQL.
-     * @param tbls Tables in query.
+     *
+     * @param originalSql Original SQL.
+     * @param paramsCnt Parameters count.
+     * @param tbls Tables.
+     * @param rdc Reduce query.
+     * @param mapQrys Map query.
+     * @param skipMergeTbl Skip merge table flag.
+     * @param explain Explain flag.
+     * @param distributedJoins Distributed joins flag.
+     * @param derivedPartitions Derived partitions.
+     * @param cacheIds Cache ids.
+     * @param mvccEnabled Mvcc flag.
+     * @param locSplit Local split flag.
      */
     public GridCacheTwoStepQuery(
         String originalSql,
@@ -84,7 +92,6 @@ public class GridCacheTwoStepQuery {
         boolean skipMergeTbl,
         boolean explain,
         boolean distributedJoins,
-        boolean forUpdate,
         PartitionResult derivedPartitions,
         List<Integer> cacheIds,
         boolean mvccEnabled,
@@ -98,7 +105,6 @@ public class GridCacheTwoStepQuery {
         this.skipMergeTbl = skipMergeTbl;
         this.explain = explain;
         this.distributedJoins = distributedJoins;
-        this.forUpdate = forUpdate;
         this.derivedPartitions = derivedPartitions;
         this.cacheIds = cacheIds;
         this.mvccEnabled = mvccEnabled;
@@ -217,13 +223,6 @@ public class GridCacheTwoStepQuery {
      */
     public boolean mvccEnabled() {
         return mvccEnabled;
-    }
-
-    /**
-     * @return {@code FOR UPDATE} flag.
-     */
-    public boolean forUpdate() {
-        return forUpdate;
     }
 
     /**

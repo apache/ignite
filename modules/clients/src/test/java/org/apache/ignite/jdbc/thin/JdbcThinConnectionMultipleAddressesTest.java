@@ -35,7 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -534,11 +534,16 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
         if (all)
             stopAllGrids();
         else {
-            JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, "cliIo");
 
-            int idx = io.serverIndex();
+            if (affinityAwareness) {
+                for (int i = 0; i < NODES_CNT - 1; i++)
+                    stopGrid(i);
+            }
+            else {
+                int idx = ((JdbcThinConnection)conn).serverIndex();
 
-            stopGrid(idx);
+                stopGrid(idx);
+            }
         }
     }
 

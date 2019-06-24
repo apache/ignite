@@ -21,14 +21,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -52,7 +51,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
     /** {@inheritDoc} */
     @Override public <K, V> DiscreteNaiveBayesModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+                                                        Preprocessor<K, V> extractor) {
         return updateModel(null, datasetBuilder, extractor);
     }
 
@@ -73,7 +72,7 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
 
     /** {@inheritDoc} */
     @Override protected <K, V> DiscreteNaiveBayesModel updateModel(DiscreteNaiveBayesModel mdl,
-        DatasetBuilder<K, V> datasetBuilder, FeatureLabelExtractor<K, V, Double> extractor) {
+                                                                   DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> extractor) {
 
         try (Dataset<EmptyContext, DiscreteNaiveBayesSumsHolder> dataset = datasetBuilder.build(
             envBuilder,
@@ -83,11 +82,9 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
 
-                    IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
-                    IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
-
-                    Vector features = featureExtractor.apply(entity.getKey(), entity.getValue());
-                    Double lb = lbExtractor.apply(entity.getKey(), entity.getValue());
+                    LabeledVector lv = extractor.apply(entity.getKey(), entity.getValue());
+                    Vector features = lv.features();
+                    Double lb = (Double) lv.label();
 
                     long[][] valuesInBucket;
 

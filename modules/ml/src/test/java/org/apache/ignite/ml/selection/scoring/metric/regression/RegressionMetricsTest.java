@@ -17,12 +17,11 @@
 
 package org.apache.ignite.ml.selection.scoring.metric.regression;
 
+import java.util.Arrays;
 import org.apache.ignite.ml.selection.scoring.TestLabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.cursor.LabelPairCursor;
 import org.apache.ignite.ml.selection.scoring.metric.Metric;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -99,5 +98,41 @@ public class RegressionMetricsTest {
 
         // rmse as default metric
         assertEquals(0.5, score, 1e-12);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testR2_1() {
+        RegressionMetrics scoreCalculator = (RegressionMetrics) new RegressionMetrics()
+            .withMetric(RegressionMetricValues::r2);
+
+        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
+            Arrays.asList(2.0, 2.0, 2.0, 2.0),
+            Arrays.asList(2.0, 2.0, 1.0, 2.0)
+        );
+
+        double score = scoreCalculator.score(cursor.iterator());
+
+        assertEquals(0.0, score, 1e-12);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testR2_2() {
+        RegressionMetrics scoreCalculator = (RegressionMetrics) new RegressionMetrics()
+            .withMetric(RegressionMetricValues::r2);
+
+        LabelPairCursor<Double> cursor = new TestLabelPairCursor<>(
+            Arrays.asList(1.0, 2.0, 3.0, 4.0),
+            Arrays.asList(2.0, 2.0, 5.0, 10.0)
+        );
+
+        double score = scoreCalculator.score(cursor.iterator());
+
+        assertEquals(-7.19, score, 0.01);
     }
 }

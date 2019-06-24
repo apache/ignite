@@ -121,6 +121,7 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
@@ -586,7 +587,6 @@ public class IgnitionEx {
             throw U.convertException(e);
         }
     }
-
 
     /**
      * Starts grid with given configuration. Note that this method will throw and exception if grid with the name
@@ -2176,6 +2176,10 @@ public class IgnitionEx {
                     "on start?) [segPlc=" + segPlc + ", wait=false]");
             }
 
+            if (CU.isPersistenceEnabled(cfg) && myCfg.getConsistentId() == null)
+                U.warn(log, "Consistent ID is not set, it is recommended to set consistent ID for production " +
+                    "clusters (use IgniteConfiguration.setConsistentId property)");
+
             myCfg.setTransactionConfiguration(myCfg.getTransactionConfiguration() != null ?
                 new TransactionConfiguration(myCfg.getTransactionConfiguration()) : null);
 
@@ -2410,6 +2414,9 @@ public class IgnitionEx {
 
             if (cfg.getEncryptionSpi() == null)
                 cfg.setEncryptionSpi(new NoopEncryptionSpi());
+
+            if (F.isEmpty(cfg.getMetricExporterSpi()))
+                cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         }
 
         /**

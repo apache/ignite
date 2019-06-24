@@ -85,6 +85,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
 
         return cfg;
     }
+
     /** */
     @Before
     public void beforeCacheNearReaderUpdateTest() {

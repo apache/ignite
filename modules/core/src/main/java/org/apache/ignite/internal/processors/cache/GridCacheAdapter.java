@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImp
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -106,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -340,7 +340,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         log = ctx.logger(getClass());
         txLockMsgLog = ctx.shared().txLockMessageLogger();
 
-        metrics = new CacheMetricsImpl(ctx);
+        metrics = new CacheMetricsImpl(ctx, isNear() ? "near" : null);
 
         locMxBean = new CacheLocalMetricsMXBeanImpl(this);
         clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
@@ -652,6 +652,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         // Nulling thread local reference to ensure values will be eventually GCed
         // no matter what references these futures are holding.
         lastFut = null;
+
+        MetricRegistry mreg = ctx.kernalContext().metric().registry();
+
+        mreg.withPrefix(metrics.metricsPrefix())
+            .getMetrics()
+            .forEach(m -> mreg.remove(m.name()));
     }
 
     /**
@@ -2181,10 +2187,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                                                 entry.unswap();
 
+                                                GridCacheVersion newVer = ctx.versions().next();
+
                                                 EntryGetResult verVal = entry.versionedValue(
                                                     cacheVal,
                                                     res.version(),
-                                                    null,
+                                                    newVer,
                                                     expiry,
                                                     readerArgs);
 
@@ -2204,6 +2212,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                                         deserializeBinary,
                                                         true,
                                                         needVer);
+                                                }
+                                                else {
+                                                    ctx.addResult(
+                                                        map,
+                                                        key,
+                                                        new EntryGetResult(cacheVal, res.version()),
+                                                        skipVals,
+                                                        keepCacheObjects,
+                                                        deserializeBinary,
+                                                        false,
+                                                        needVer
+                                                    );
                                                 }
 
                                                 if (tx0 == null || (!tx0.implicit() &&
@@ -3414,7 +3434,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-
         return isCacheMetricsV2Supported() ? new CacheMetricsSnapshotV2(ctx.cache().localMetrics(), metrics) :
             new CacheMetricsSnapshot(ctx.cache().localMetrics(), metrics);
     }
@@ -3768,9 +3787,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         for (Object key : keys)
             A.notNull(key, "key");
 
-        if (!ctx.store().configured())
-            return new GridFinishedFuture<>();
-
         //TODO IGNITE-7954
         MvccUtils.verifyMvccOperationSupport(ctx, "Load");
 
@@ -3780,21 +3796,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        if (replaceExisting) {
-            if (ctx.store().isLocal())
-                return runLoadKeysCallable(keys, plc, keepBinary, true);
-            else {
-                return ctx.closures().callLocalSafe(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        localLoadAndUpdate(keys);
-
-                        return null;
-                    }
-                });
-            }
-        }
-        else
-            return runLoadKeysCallable(keys, plc, keepBinary, false);
+        return runLoadKeysCallable(keys, plc, keepBinary, replaceExisting);
     }
 
     /**

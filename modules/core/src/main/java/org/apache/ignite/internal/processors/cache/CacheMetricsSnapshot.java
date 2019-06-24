@@ -751,6 +751,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
         return (float) offHeapMisses / offHeapGets * 100.0f;
     }
+
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
         return offHeapEntriesCnt;
@@ -1162,7 +1163,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         }
 
         // 11 long and 5 float values give 108 bytes in total.
-        if (in.available() >= 108) {
+        if (in.available() >= 68) {
             entryProcessorPuts = in.readLong();
             entryProcessorAverageInvocationTime = in.readFloat();
             entryProcessorInvocations = in.readLong();

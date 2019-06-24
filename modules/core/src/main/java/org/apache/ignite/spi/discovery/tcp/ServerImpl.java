@@ -169,6 +169,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -274,9 +275,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
-
-    /** Last listener future. */
-    private IgniteFuture<?> lastCustomEvtLsnrFut;
 
     /**
      * Maximum size of history of IDs of server nodes ever tried to join current topology (ever sent join request).
@@ -498,8 +496,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        U.cancel(tcpSrvr);
-        U.join(tcpSrvr, log);
+        if (tcpSrvr != null)
+            tcpSrvr.stop();
 
         tcpSrvr = null;
 
@@ -568,7 +566,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer,
                         Collections.unmodifiableList(top));
 
-                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null);
+                    lsnr.onDiscovery(EVT_NODE_FAILED, topVer, n, top, hist, null).get();
                 }
             }
         }
@@ -1005,6 +1003,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteSpiException(e);
                 }
 
+                msgWorker.nullifyDiscoData();
+
                 break;
             }
 
@@ -1096,7 +1096,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
             attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, marshalWithSecurityVersion(subj, 1));
 
             locNode.setAttributes(attrs);
 
@@ -1118,8 +1117,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     private boolean sendJoinRequestMessage(DiscoveryDataPacket discoveryData) throws IgniteSpiException {
         TcpDiscoveryAbstractMessage joinReq = new TcpDiscoveryJoinRequestMessage(locNode, discoveryData);
 
-        // Time when it has been detected, that addresses from IP finder do not respond.
-        long noResStart = 0;
+        // Time when join process started.
+        long joinStart = 0;
 
         while (true) {
             Collection<InetSocketAddress> addrs = spi.resolvedAddresses();
@@ -1151,8 +1150,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     noResAddrs.remove(addr);
 
-                    // Address is responsive, reset period start.
-                    noResStart = 0;
+                    //join timeout should not be reset if response was received from another CONNECTING node
+                    //(only CONNECTING node sends back WAIT and CONTINUE_JOIN codes),
+                    //otherwise two CONNECTING nodes can stuck in infinite loop sending join reqs to each other forever
+                    if (res != RES_WAIT && res != RES_CONTINUE_JOIN)
+                        joinStart = 0;
 
                     switch (res) {
                         case RES_WAIT:
@@ -1241,9 +1243,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (spi.joinTimeout > 0) {
-                    if (noResStart == 0)
-                        noResStart = U.currentTimeMillis();
-                    else if (U.currentTimeMillis() - noResStart > spi.joinTimeout)
+                    if (joinStart == 0)
+                        joinStart = U.currentTimeMillis();
+                    else if (U.currentTimeMillis() - joinStart > spi.joinTimeout)
                         throw new IgniteSpiException(
                             "Failed to connect to any address from IP finder within join timeout " +
                                 "(make sure IP finder addresses are correct, and operating system firewalls are disabled " +
@@ -1745,8 +1747,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
-        U.cancel(tcpSrvr);
-        U.join(tcpSrvr, log);
+        if (tcpSrvr != null) {
+            tcpSrvr.stop();
+
+            tcpSrvr = null;
+        }
 
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
@@ -2210,56 +2215,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /**
-     * @param obj Object.
-     * @param ver Security serialize version.
-     * @return Marshaled object.
-     */
-    private byte[] marshalWithSecurityVersion(Object obj, int ver) throws IgniteCheckedException {
-        try {
-            SecurityUtils.serializeVersion(ver);
-
-            return U.marshal(spi.marshaller(), obj);
-        }
-        finally {
-            SecurityUtils.restoreDefaultSerializeVersion();
-        }
-    }
-
-    /**
-     * @param bytes Marshaled object.
-     * @param ver Security serialize version.
-     * @return Unmarshaled object.
-     */
-    private <T> T unmarshalWithSecurityVersion(byte[] bytes, int ver) throws IgniteCheckedException {
-        try {
-            if (ver > 0)
-                SecurityUtils.serializeVersion(ver);
-
-            return spi.marshaller().unmarshal(bytes, U.resolveClassLoader(spi.ignite().configuration()));
-        }
-        finally {
-            SecurityUtils.restoreDefaultSerializeVersion();
-        }
-    }
-
     /** */
     private static WorkersRegistry getWorkerRegistry(TcpDiscoverySpi spi) {
         return spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null;
-    }
-
-    /**
-     * Wait for all the listeners from previous discovery message to be completed.
-     */
-    private void waitForLastCustomEventListenerFuture() {
-        if (lastCustomEvtLsnrFut != null) {
-            try {
-                lastCustomEvtLsnrFut.get();
-            }
-            finally {
-                lastCustomEvtLsnrFut = null;
-            }
-        }
     }
 
     /**
@@ -2781,6 +2739,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
+        /** */
+        private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
+
+        /** */
+        private DiscoveryDataPacket gridDiscoveryData;
+
         /**
          * @param log Logger.
          */
@@ -2907,6 +2871,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
+        /** */
+        private void nullifyDiscoData() {
+            gridDiscoveryData = null;
+            joiningNodesDiscoDataList = null;
+        }
+
         /**
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
          */
@@ -3020,6 +2990,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage)
                 processRingLatencyCheckMessage((TcpDiscoveryRingLatencyCheckMessage)msg);
 
+            else if (msg instanceof TcpDiscoveryAuthFailedMessage)
+                processAuthFailedMessage((TcpDiscoveryAuthFailedMessage)msg);
             else
                 assert false : "Unknown message type: " + msg.getClass().getSimpleName();
 
@@ -3041,6 +3013,23 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             spi.stats.onMessageProcessingFinished(msg);
+        }
+
+        /**
+         * Processes authentication failed message.
+         *
+         * @param authFailedMsg Authentication failed message.
+         */
+        private void processAuthFailedMessage(TcpDiscoveryAuthFailedMessage authFailedMsg) {
+            try {
+                sendDirectlyToClient(authFailedMsg.getTargetNodeId(), authFailedMsg);
+            }
+            catch (IgniteSpiException ex) {
+                log.warning(
+                    "Skipping send auth failed message to client due to some trouble with connection detected: "
+                    + ex.getMessage()
+                );
+            }
         }
 
         /** {@inheritDoc} */
@@ -3650,28 +3639,43 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (debugMode)
                         debugLog(msg, "Pending messages will be resent to local node");
 
-                    for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
-                        prepareNodeAddedMessage(pendingMsg, locNodeId, pendingMsgs.msgs,
-                            pendingMsgs.customDiscardId);
-
-                        pendingMsg.senderNodeId(locNodeId);
-
-                        msgWorker.addMessage(pendingMsg);
-
-                        if (log.isDebugEnabled())
-                            log.debug("Pending message has been sent to local node [msg=" + msg.id() +
-                                ", pendingMsgId=" + pendingMsg + ']');
-
-                        if (debugMode) {
-                            debugLog(msg, "Pending message has been sent to local node [msg=" + msg.id() +
-                                ", pendingMsgId=" + pendingMsg + ']');
-                        }
-                    }
+                    processPendingMessagesLocally(msg);
                 }
 
                 LT.warn(log, "Local node has detected failed nodes and started cluster-wide procedure. " +
                         "To speed up failure detection please see 'Failure Detection' section under javadoc" +
                         " for 'TcpDiscoverySpi'");
+            }
+        }
+
+        /**
+         * Called when local node became the only alive node in topology.
+         *
+         * @param curMsg Currently processed messages. There are three options possible:<ul>
+         *     <li>{@link TcpDiscoveryNodeLeftMessage} from the last node.</li>
+         *     <li>{@link TcpDiscoveryNodeFailedMessage} from the last node.</li>
+         *     <li>Any other message, but all other nodes failed while sending.</li>
+         * </ul>
+         */
+        private void processPendingMessagesLocally(TcpDiscoveryAbstractMessage curMsg) {
+            UUID locNodeId = getLocalNodeId();
+
+            for (TcpDiscoveryAbstractMessage pendingMsg : pendingMsgs) {
+                prepareNodeAddedMessage(pendingMsg, locNodeId, pendingMsgs.msgs,
+                    pendingMsgs.customDiscardId);
+
+                pendingMsg.senderNodeId(locNodeId);
+
+                msgWorker.addMessage(pendingMsg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Pending message has been sent to local node [msg=" + curMsg.id() +
+                        ", pendingMsg=" + pendingMsg + ']');
+
+                if (debugMode) {
+                    debugLog(curMsg, "Pending message has been sent to local node [msg=" + curMsg.id() +
+                        ", pendingMsg=" + pendingMsg + ']');
+                }
             }
         }
 
@@ -3950,8 +3954,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     U.addressesAsString(node));
 
                             try {
-                                trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
-                                    spi.locHost));
+                                trySendMessageDirectly(
+                                    node,
+                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id())
+                                );
                             }
                             catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
@@ -3986,8 +3992,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", addrs=" + U.addressesAsString(node));
 
                                 try {
-                                    trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
-                                        spi.locHost));
+                                    trySendMessageDirectly(
+                                        node,
+                                        new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id())
+                                    );
                                 }
                                 catch (IgniteSpiException e) {
                                     if (log.isDebugEnabled())
@@ -4003,7 +4011,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
                             attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2, U.marshal(spi.marshaller(), subj));
-                            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT, marshalWithSecurityVersion(subj, 1));
 
                             node.setAttributes(attrs);
                         }
@@ -4033,7 +4040,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         spi.marshaller(),
                         U.resolveClassLoader(spi.ignite().configuration()),
                         false,
-                        isDiscoDataPaketCompressed(node),
                         log));
 
                 if (err != null) {
@@ -4349,15 +4355,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @param node Joined node.
-         * @return <code>true</code> if packet is compressed.
-         */
-        private boolean isDiscoDataPaketCompressed(TcpDiscoveryNode node) {
-            return IgniteFeatures.nodeSupports(node, IgniteFeatures.DATA_PACKET_COMPRESSION) &&
-                allNodesSupport(IgniteFeatures.DATA_PACKET_COMPRESSION);
-        }
-
-        /**
          * @param node Node.
          * @param name Attribute name.
          * @param dflt Default value.
@@ -4413,14 +4410,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     throw new IgniteSpiException("Router node is a client node: " + node);
 
                 if (routerNode.id().equals(getLocalNodeId())) {
-                    ClientMessageWorker worker = clientMsgWorkers.get(node.id());
-
-                    if (worker == null)
-                        throw new IgniteSpiException("Client node already disconnected: " + node);
-
-                    msg.verify(getLocalNodeId()); // Client worker require verified messages.
-
-                    worker.addMessage(msg);
+                    sendDirectlyToClient(node.id(), msg);
 
                     return;
                 }
@@ -4454,6 +4444,22 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
+         * @param clientNodeId Client node id.
+         * @param msg Message to send.
+         * @throws IgniteSpiException Last failure if all attempts failed.
+         */
+        private void sendDirectlyToClient(UUID clientNodeId, TcpDiscoveryAbstractMessage msg) {
+            ClientMessageWorker worker = clientMsgWorkers.get(clientNodeId);
+
+            if (worker == null)
+                throw new IgniteSpiException("Client node already disconnected: " + clientNodeId);
+
+            msg.verify(getLocalNodeId()); // Client worker require verified messages.
+
+            worker.addMessage(msg);
+        }
+
+        /**
          * Processes node added message.
          *
          * For coordinator node method marks the messages as verified for rest of nodes to apply the
@@ -4469,15 +4475,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Deprecated
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
-
-            blockingSectionBegin();
-
-            try {
-                waitForLastCustomEventListenerFuture();
-            }
-            finally {
-                blockingSectionEnd();
-            }
 
             TcpDiscoveryNode node = msg.node();
 
@@ -4589,22 +4586,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-                            byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
-
-                            SecurityContext coordSubj;
-
-                            try {
-                                if (subjBytesV2 == null)
-                                    SecurityUtils.serializeVersion(1);
-
-                                coordSubj = U.unmarshal(spi.marshaller(),
-                                    subjBytesV2 != null ? subjBytesV2 : subjBytes,
-                                    U.resolveClassLoader(spi.ignite().configuration()));
-                            }
-                            finally {
-                                SecurityUtils.restoreDefaultSerializeVersion();
-                            }
+                            SecurityContext coordSubj = nodeSecurityContext(
+                                spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
+                            );
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -4621,14 +4605,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 authFailed = false;
                         }
                     }
-                    catch (IgniteException | IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
                     }
                     finally {
                         if (authFailed) {
                             try {
-                                trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
-                                    spi.locHost));
+                                trySendMessageDirectly(
+                                    node,
+                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id())
+                                );
                             }
                             catch (IgniteSpiException e) {
                                 if (log.isDebugEnabled())
@@ -4659,11 +4645,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     dataPacket.joiningNodeClient(msg.client());
 
-                    if (dataPacket.hasJoiningNodeData())
-                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                    if (dataPacket.hasJoiningNodeData()) {
+                        if (spiState == CONNECTED) {
+                            // Node already connected to the cluster can apply joining nodes' disco data immediately
+                            spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                    if (!node.isDaemon())
-                        spi.collectExchangeData(dataPacket);
+                            if (!node.isDaemon())
+                                spi.collectExchangeData(dataPacket);
+                        }
+                        else if (spiState == CONNECTING)
+                            // Node joining to the cluster should postpone applying disco data of other joiners till
+                            // receiving gridDiscoData (when NodeAddFinished message arrives)
+                            joiningNodesDiscoDataList.add(dataPacket);
+                    }
 
                     processMessageFailedNodes(msg);
                 }
@@ -4674,8 +4668,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && locNodeId.equals(node.id())) {
-                DiscoveryDataPacket dataPacket;
-
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
                         // Initialize topology.
@@ -4686,26 +4678,18 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (spi.nodeAuth != null && spi.nodeAuth.isGlobalNodeAuthentication()) {
                                 TcpDiscoveryAbstractMessage authFail =
-                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost);
+                                    new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id());
 
                                 try {
-                                    byte[] rmSubj = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-                                    byte[] locSubj = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+                                    ClassLoader ldr = U.resolveClassLoader(spi.ignite().configuration());
 
-                                    byte[] rmSubjV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
-                                    byte[] locSubjV2 = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+                                    SecurityContext rmCrd = nodeSecurityContext(
+                                        spi.marshaller(), ldr, node
+                                    );
 
-                                    int ver = 1; // Compatible version.
-
-                                    if (rmSubjV2 != null && locSubjV2 != null) {
-                                        rmSubj = rmSubjV2;
-                                        locSubj = locSubjV2;
-
-                                        ver = 0; // Default version.
-                                    }
-
-                                    SecurityContext rmCrd = unmarshalWithSecurityVersion(rmSubj, ver);
-                                    SecurityContext locCrd = unmarshalWithSecurityVersion(locSubj, ver);
+                                    SecurityContext locCrd = nodeSecurityContext(
+                                        spi.marshaller(), ldr, locNode
+                                    );
 
                                     if (!permissionsEqual(locCrd.subject().permissions(),
                                         rmCrd.subject().permissions())) {
@@ -4724,7 +4708,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         return;
                                     }
                                 }
-                                catch (IgniteCheckedException e) {
+                                catch (IgniteException e) {
                                     U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
 
                                     joinRes.set(authFail);
@@ -4757,7 +4741,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 log.debug("Restored topology from node added message: " + ring);
 
-                            dataPacket = msg.gridDiscoveryData();
+                            gridDiscoveryData = msg.gridDiscoveryData();
+
+                            joiningNodesDiscoDataList = new ArrayList<>();
 
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
@@ -4788,10 +4774,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         return;
                     }
                 }
-
-                // Notify outside of synchronized block.
-                if (dataPacket != null)
-                    spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
                 processMessageFailedNodes(msg);
             }
@@ -4932,6 +4914,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     mux.notifyAll();
                 }
+
+                if (gridDiscoveryData != null)
+                    spi.onExchange(gridDiscoveryData, U.resolveClassLoader(spi.ignite().configuration()));
+
+                if (joiningNodesDiscoDataList != null) {
+                    for (DiscoveryDataPacket dataPacket : joiningNodesDiscoDataList)
+                        spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
+                }
+
+                nullifyDiscoData();
 
                 // Discovery manager must create local joined event before spiStart completes.
                 notifyDiscovery(EVT_NODE_JOINED, topVer, locNode);
@@ -5152,6 +5144,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
                 U.closeQuiet(sock);
+
+                processPendingMessagesLocally(msg);
             }
 
             checkPendingCustomMessages();
@@ -5330,6 +5324,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Unable to send message across the ring (topology has no remote nodes): " + msg);
 
                 U.closeQuiet(sock);
+
+                processPendingMessagesLocally(msg);
             }
 
             checkPendingCustomMessages();
@@ -5896,7 +5892,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (joiningEmpty && isLocalNodeCoordinator()) {
                 TcpDiscoveryCustomEventMessage msg;
 
-                while ((msg = pollPendingCustomeMessage()) != null)
+                while ((msg = pollPendingCustomMessage()) != null)
                     processCustomMessage(msg, true);
             }
         }
@@ -5904,7 +5900,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @return Pending custom message.
          */
-        @Nullable private TcpDiscoveryCustomEventMessage pollPendingCustomeMessage() {
+        @Nullable private TcpDiscoveryCustomEventMessage pollPendingCustomMessage() {
             synchronized (mux) {
                 return pendingCustomMsgs.poll();
             }
@@ -5959,8 +5955,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         blockingSectionEnd();
                     }
                 }
-                else
-                    lastCustomEvtLsnrFut = fut;
 
                 if (msgObj.isMutable()) {
                     try {
@@ -6074,13 +6068,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             worker.run();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void interrupt() {
-            super.interrupt();
-
-            worker.onInterruption();
         }
     }
 
@@ -6224,8 +6211,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** */
-        public void onInterruption() {
+        public void stop() {
+            cancel();
+
             U.close(srvrSock, log);
+
+            U.join(TcpServer.this, log);
         }
     }
 
@@ -6664,10 +6655,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Send receipt back.
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
 
-                            boolean ignored = false;
-
-                            TcpDiscoverySpiState state = null;
-
                             synchronized (mux) {
                                 if (spiState == CONNECTING) {
                                     joinRes.set(msg);
@@ -6677,15 +6664,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     mux.notifyAll();
                                 }
                                 else {
-                                    ignored = true;
+                                    UUID targetNode = ((TcpDiscoveryAuthFailedMessage)msg).getTargetNodeId();
 
-                                    state = spiState;
+                                    if (targetNode == null || targetNode.equals(locNodeId)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Auth failed message has been ignored [msg=" + msg +
+                                                ", spiState=" + spiState + ']');
+                                    }
+                                    else
+                                        //It can happen when current node is router node and target node is client.
+                                        msgWorker.addMessage(msg);
                                 }
                             }
-
-                            if (ignored && log.isDebugEnabled())
-                                log.debug("Auth failed message has been ignored [msg=" + msg +
-                                    ", spiState=" + state + ']');
 
                             continue;
                         }
@@ -7467,6 +7457,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         private MessageWorkerDiscoveryThread(GridWorker worker, IgniteLogger log) {
             super(worker, log);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridWorker worker() {
+            return worker;
         }
     }
 

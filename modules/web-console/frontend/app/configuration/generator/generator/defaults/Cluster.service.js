@@ -37,6 +37,9 @@ const DFLT_CLUSTER = {
         ipFinderCleanFrequency: 60000,
         forceServerMode: false,
         clientReconnectDisabled: false,
+        reconnectDelay: 2000,
+        connectionRecoveryTimeout: 10000,
+        soLinger: 5,
         Multicast: {
             multicastGroup: '228.1.2.4',
             multicastPort: 47400,
@@ -87,7 +90,6 @@ const DFLT_CLUSTER = {
     },
     atomics: {
         atomicSequenceReserveSize: 1000,
-        backups: 0,
         cacheMode: {
             clsName: 'org.apache.ignite.cache.CacheMode',
             value: 'PARTITIONED'
@@ -96,7 +98,12 @@ const DFLT_CLUSTER = {
     binary: {
         compactFooter: true,
         typeConfigurations: {
-            enum: false
+            enum: false,
+            enumValues: {
+                keyClsName: 'java.lang.String',
+                valClsName: 'java.lang.Integer',
+                entries: []
+            }
         }
     },
     collision: {
@@ -137,7 +144,11 @@ const DFLT_CLUSTER = {
         tcpNoDelay: true,
         ackSendThreshold: 16,
         unacknowledgedMessagesBufferSize: 0,
-        socketWriteTimeout: 2000
+        socketWriteTimeout: 2000,
+        selectorSpins: 0,
+        connectionsPerNode: 1,
+        usePairedConnections: false,
+        filterReachableAddresses: false
     },
     networkTimeout: 5000,
     networkSendRetryDelay: 1000,
@@ -205,7 +216,10 @@ const DFLT_CLUSTER = {
             value: 'REPEATABLE_READ'
         },
         defaultTxTimeout: 0,
-        pessimisticTxLogLinger: 10000
+        pessimisticTxLogLinger: 10000,
+        useJtaSynchronization: false,
+        txTimeoutOnPartitionMapExchange: 0,
+        deadlockTimeout: 10000
     },
     attributes: {
         keyClsName: 'java.lang.String',
@@ -361,7 +375,9 @@ const DFLT_CLUSTER = {
         lockWaitTime: 10000,
         walThreadLocalBufferSize: 131072,
         metricsSubIntervalCount: 5,
-        metricsRateTimeInterval: 60000
+        metricsRateTimeInterval: 60000,
+        maxWalArchiveSize: 1073741824,
+        walCompactionLevel: 1
     },
     utilityCacheKeepAliveTime: 60000,
     hadoopConfiguration: {
@@ -397,7 +413,12 @@ const DFLT_CLUSTER = {
         lockWaitTime: 10000,
         rateTimeInterval: 60000,
         tlbSize: 131072,
-        subIntervals: 5
+        subIntervals: 5,
+        walMode: {
+            clsName: 'org.apache.ignite.configuration.WALMode',
+            value: 'DEFAULT'
+        },
+        walAutoArchiveAfterInactivity: -1
     },
     sqlConnectorConfiguration: {
         port: 10800,
@@ -421,7 +442,30 @@ const DFLT_CLUSTER = {
         sslEnabled: false,
         useIgniteSslContextFactory: true,
         sslClientAuth: false
-    }
+    },
+    encryptionSpi: {
+        Keystore: {
+            keySize: 256,
+            masterKeyName: 'ignite.master.key'
+        }
+    },
+    failureHandler: {
+        ignoredFailureTypes: {clsName: 'org.apache.ignite.failure.FailureType'}
+    },
+    localEventListeners: {
+        keyClsName: 'org.apache.ignite.lang.IgnitePredicate',
+        keyClsGenericType: 'org.apache.ignite.events.Event',
+        isKeyClsGenericTypeExtended: true,
+        valClsName: 'int[]',
+        valClsNameShow: 'EVENTS',
+        keyField: 'className',
+        valField: 'eventTypes'
+    },
+    authenticationEnabled: false,
+    sqlQueryHistorySize: 1000,
+    allSegmentationResolversPassRequired: true,
+    networkCompressionLevel: 1,
+    autoActivationEnabled: true
 };
 
 export default class IgniteClusterDefaults {

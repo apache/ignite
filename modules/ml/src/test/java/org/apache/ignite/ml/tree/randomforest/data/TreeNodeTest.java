@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 public class TreeNodeTest {
     /** Features 1. */
     private final Vector features1 = VectorUtils.of(0., 1.);
+
     /** Features 2. */
     private final Vector features2 = VectorUtils.of(1., 0.);
 

@@ -37,11 +37,7 @@ public class VectorAttributesTest {
             DenseVector.class),
         new AttrCfg("isArrayBased", Vector::isArrayBased,
             DenseVector.class),
-        new AttrCfg("isSequentialAccess", Vector::isSequentialAccess,
-            DenseVector.class, SparseLocalVectorSequentialAccess.class),
         new AttrCfg("guidNotNull", v -> v.guid() == null), // IMPL NOTE this is somewhat artificial
-        new AttrCfg("isRandomAccess", Vector::isRandomAccess,
-            DenseVector.class, SparseLocalVectorSequentialAccess.class, SparseLocalVectorRandomAccess.class),
         new AttrCfg("isDistributed", Vector::isDistributed));
 
     /** */
@@ -70,20 +66,8 @@ public class VectorAttributesTest {
 
     /** */
     @Test
-    public void isSequentialAccessTest() {
-        assertAttribute("isSequentialAccess");
-    }
-
-    /** */
-    @Test
     public void guidTest() {
         assertAttribute("guidNotNull");
-    }
-
-    /** */
-    @Test
-    public void isRandomAccessTest() {
-        assertAttribute("isRandomAccess");
     }
 
     /** */
@@ -113,10 +97,13 @@ public class VectorAttributesTest {
     private static class Specification {
         /** */
         private final Vector v;
+
         /** */
         private final Class<? extends Vector> underlyingType;
+
         /** */
         private final List<String> attrsFromUnderlying;
+
         /** */
         final String desc;
 
@@ -152,8 +139,10 @@ public class VectorAttributesTest {
     private static class AttrCfg {
         /** */
         final String name;
+
         /** */
         final Function<Vector, Boolean> obtain;
+
         /** */
         final List<Class> trueInTypes;
 
@@ -174,7 +163,7 @@ public class VectorAttributesTest {
 
         /** */
         SparseLocalVectorSequentialAccess(int size) {
-            super(size, SEQUENTIAL_ACCESS_MODE);
+            super(size);
         }
     }
 
@@ -187,7 +176,7 @@ public class VectorAttributesTest {
 
         /** */
         SparseLocalVectorRandomAccess(int size) {
-            super(size, RANDOM_ACCESS_MODE);
+            super(size);
         }
     }
 }

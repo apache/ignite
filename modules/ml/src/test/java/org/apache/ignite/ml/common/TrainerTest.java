@@ -17,12 +17,13 @@
 
 package org.apache.ignite.ml.common;
 
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Basic fields and methods for the trainer tests.
@@ -1175,12 +1176,12 @@ public class TrainerTest {
      * @param vals Values for cache mock.
      * @return Cache mock.
      */
-    protected Map<Integer, Double[]> getCacheMock(double[][] vals) {
-        Map<Integer, Double[]> cacheMock = new HashMap<>();
+    protected Map<Integer, double[]> getCacheMock(double[][] vals) {
+        Map<Integer, double[]> cacheMock = new HashMap<>();
 
         for (int i = 0; i < vals.length; i++) {
             double[] row = vals[i];
-            Double[] convertedRow = new Double[row.length];
+            double[] convertedRow = new double[row.length];
             for (int j = 0; j < row.length; j++)
                 convertedRow[j] = row[j];
             cacheMock.put(i, convertedRow);

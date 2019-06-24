@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
 
 /**
  * Common node of partition tree.
  */
 public interface PartitionNode {
+
     /**
      * Get partitions.
      *
@@ -40,6 +40,13 @@ public interface PartitionNode {
      * @return Join group for the given node.
      */
     int joinGroup();
+
+
+    /**
+     * @return First met cache name of an any <code>PartitionSingleNode</code>
+     * during <code>PartitionNode</code> tree traversal. This method is intended to be used within the Jdbc thin client.
+     */
+    String cacheName();
 
     /**
      * Try optimizing partition nodes into a simpler form.

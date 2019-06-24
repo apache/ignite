@@ -27,4 +27,7 @@ Use 'Run' -> 'Edit Configuration' menu.
 ## Contributing to Examples
 *Notice* When updating classpath of examples and in case any modifications required in [pom.xml](pom.xml)
 please make sure that corresponding changes were applied to
- [pom-standalone.xml](pom-standalone.xml). This pom file is finalized during release and placed to examples folder with these examples code.
+ * [pom-standalone.xml](pom-standalone.xml),
+ * [pom-standalone-lgpl.xml](pom-standalone-lgpl.xml).
+ 
+ These pom files are finalized during release and placed to examples folder with these examples code.

@@ -34,12 +34,16 @@ import static org.junit.Assert.assertEquals;
 public class LUDecompositionTest {
     /** */
     private Matrix testL;
+
     /** */
     private Matrix testU;
+
     /** */
     private Matrix testP;
+
     /** */
     private Matrix testMatrix;
+
     /** */
     private int[] rawPivot;
 

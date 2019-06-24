@@ -51,12 +51,9 @@ import 'file-saver';
 import 'jszip';
 import 'nvd3';
 import 'lodash';
-import 'angular-ui-carousel';
 
 import 'angular-gridster/dist/angular-gridster.min.css';
 import 'angular-tree-control/css/tree-control-attribute.css';
 import 'angular-tree-control/css/tree-control.css';
 import 'angular-ui-grid/ui-grid.css';
-import 'angular-motion/dist/angular-motion.css';
 import 'nvd3/build/nv.d3.css';
-import 'angular-ui-carousel/dist/ui-carousel.css';

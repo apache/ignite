@@ -17,11 +17,12 @@
 
 package org.apache.ignite.ml.naivebayes.discrete;
 
-import java.io.Serializable;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+
+import java.io.Serializable;
 
 /**
  * Discrete naive Bayes model which predicts result value {@code y} belongs to a class {@code C_k, k in [0..K]} as
@@ -31,21 +32,26 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exportable<DiscreteNaiveBayesModel>, Serializable {
     /** */
     private static final long serialVersionUID = -127386523291350345L;
+
     /**
      * Probabilities of features for all classes for each label. {@code labels[c][f][b]} contains a probability for
      * class {@code c} for feature {@code f} for bucket {@code b}.
      */
     private final double[][][] probabilities;
+
     /** Prior probabilities of each class */
     private final double[] clsProbabilities;
+
     /** Labels. */
     private final double[] labels;
+
     /**
      * The bucket thresholds to convert a features to discrete values. {@code bucketThresholds[f][b]} contains the right
      * border for feature {@code f} for bucket {@code b}. Everything which is above the last thresdold goes to the next
      * bucket.
      */
     private final double[][] bucketThresholds;
+
     /** Amount values in each buckek for each feature per label. */
     private final DiscreteNaiveBayesSumsHolder sumsHolder;
 
@@ -72,7 +78,7 @@ public class DiscreteNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
 
     /**
      * @param vector features vector.
-     * @return a label with max probability.
+     * @return A label with max probability.
      */
     @Override public Double predict(Vector vector) {
         double maxProbapilityPower = -Double.MAX_VALUE;

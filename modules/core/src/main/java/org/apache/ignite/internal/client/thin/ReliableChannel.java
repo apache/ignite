@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.HostAndPortRange;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Adds failover abd thread-safety to {@link ClientChannel}.
@@ -81,11 +82,26 @@ final class ReliableChannel implements AutoCloseable {
 
         primary = addrs.get(new Random().nextInt(addrs.size())); // we already verified there is at least one address
 
-        ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
-
-        for (InetSocketAddress a : addrs)
+        for (InetSocketAddress a : addrs) {
             if (a != primary)
                 this.backups.add(a);
+        }
+
+        ClientConnectionException lastEx = null;
+
+        for (int i = 0; i < addrs.size(); i++) {
+            try {
+                ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
+
+                return;
+            } catch (ClientConnectionException e) {
+                lastEx = e;
+
+                changeServer();
+            }
+        }
+
+        throw lastEx;
     }
 
     /** {@inheritDoc} */
@@ -115,9 +131,6 @@ final class ReliableChannel implements AutoCloseable {
         try {
             for (int i = 0; i < totalSrvs; i++) {
                 try {
-                    if (failure != null)
-                        changeServer();
-
                     if (ch == null)
                         ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
 
@@ -134,6 +147,8 @@ final class ReliableChannel implements AutoCloseable {
                         failure = e;
                     else
                         failure.addSuppressed(e);
+
+                    changeServer();
                 }
             }
         }
@@ -173,6 +188,9 @@ final class ReliableChannel implements AutoCloseable {
      * @return host:port_range address lines parsed as {@link InetSocketAddress}.
      */
     private static List<InetSocketAddress> parseAddresses(String[] addrs) throws ClientException {
+        if (F.isEmpty(addrs))
+            throw new ClientException("Empty addresses");
+
         Collection<HostAndPortRange> ranges = new ArrayList<>(addrs.length);
 
         for (String a : addrs) {
@@ -203,14 +221,14 @@ final class ReliableChannel implements AutoCloseable {
             backups.addLast(primary);
 
             primary = backups.removeFirst();
-
-            try {
-                ch.close();
-            }
-            catch (Exception ignored) {
-            }
-
-            ch = null;
         }
+
+        try {
+            ch.close();
+        }
+        catch (Exception ignored) {
+        }
+
+        ch = null;
     }
 }
