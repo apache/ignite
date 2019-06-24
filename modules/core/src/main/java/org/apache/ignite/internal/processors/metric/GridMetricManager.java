@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.metric;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
@@ -25,6 +26,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.processors.metric.list.MonitoringList;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -88,6 +90,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Monitoring registry. */
     private MetricRegistry mreg;
 
+    /** Lists registry. */
+    private ConcurrentHashMap<String, MonitoringList> lreg;
+
     /**
      * @param ctx Kernal context.
      */
@@ -115,6 +120,14 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      */
     public MetricRegistry registry() {
         return mreg;
+    }
+
+    /**
+     * @param name Name of the list.
+     * @return Monitoring list.
+     */
+    public MonitoringList list(String name) {
+        return lreg.computeIfAbsent(name, n -> new MonitoringList(name));
     }
 
     /**
