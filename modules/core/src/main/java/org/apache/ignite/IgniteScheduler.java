@@ -25,7 +25,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.scheduler.SchedulerFuture;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides functionality for scheduling jobs locally using UNIX cron-based syntax.
