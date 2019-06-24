@@ -488,14 +488,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 long pageId = 0L;
 
                 if (freeSpace == MIN_SIZE_FOR_DATA_PAGE)
-                    pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions(), statHolder);
+                    pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions, statHolder);
 
                 boolean reuseBucket = false;
 
                 // TODO: properly handle reuse bucket.
                 if (pageId == 0L) {
                     for (int b = bucket(freeSpace, false) + 1; b < BUCKETS - 1; b++) {
-                        pageId = takeEmptyPage(b, ioVersions(), statHolder);
+                        pageId = takeEmptyPage(b, ioVersions, statHolder);
 
                         if (pageId != 0L) {
                             reuseBucket = isReuseBucket(b);
