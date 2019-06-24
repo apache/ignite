@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -783,21 +782,28 @@ public class GridDhtPartitionDemander {
                         try {
                             Iterator<GridCacheEntryInfo> infos = e.getValue().infos().iterator();
 
-                            if (grp.mvccEnabled())
-                                mvccPreloadEntries(topVer, node, p, infos);
-                            else if (isEnoughSpaceForData(grp.dataRegion(), supplyMsg.messageSize() * 2))
-                                preloadEntriesBatched(topVer, node, p, infos);
-                            else
-                                preloadEntries(topVer, node, p, infos);
-
-                            // If message was last for this partition,
-                            // then we take ownership.
-                            if (last) {
-                                fut.partitionDone(nodeId, p, true);
-
+                            try {
+                                if (grp.mvccEnabled())
+                                    mvccPreloadEntries(topVer, node, p, infos);
+                                else if (isEnoughSpaceForData(grp.dataRegion(), supplyMsg.messageSize() * 2))
+                                    preloadEntriesBatched(topVer, node, p, infos);
+                                else
+                                    preloadEntries(topVer, node, p, infos);
+                            }
+                            catch (GridDhtInvalidPartitionException ignored) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Finished rebalancing partition: " +
-                                        "[" + demandRoutineInfo(topicId, nodeId, supplyMsg) + ", p=" + p + "]");
+                                    log.debug("Partition became invalid during rebalancing (will ignore): " + p);
+                            }
+                            finally {
+                                // If message was last for this partition,
+                                // then we take ownership.
+                                if (last) {
+                                    fut.partitionDone(nodeId, p, true);
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Finished rebalancing partition: " +
+                                            "[" + demandRoutineInfo(topicId, nodeId, supplyMsg) + ", p=" + p + "]");
+                                }
                             }
                         }
                         finally {
@@ -923,14 +929,7 @@ public class GridDhtPartitionDemander {
                         }
 
                         if (cctx != null) {
-                            if (!mvccPreloadEntry(cctx, node, entryHist, topVer, p)) {
-                                if (log.isTraceEnabled())
-                                    log.trace("Got entries for invalid partition during " +
-                                        "preloading (will skip) [p=" + p +
-                                        ", entry=" + entryHist.get(entryHist.size() - 1) + ']');
-
-                                return; // Skip current partition.
-                            }
+                            mvccPreloadEntry(cctx, node, entryHist, topVer, p);
 
                             //TODO: IGNITE-11330: Update metrics for touched cache only.
                             for (GridCacheContext ctx : grp.caches()) {
@@ -987,13 +986,7 @@ public class GridDhtPartitionDemander {
                             cctx = cctx.dhtCache().context();
                     }
 
-                    if (!preloadEntry(node, p, entry, topVer, cctx, null)) {
-                        if (log.isTraceEnabled())
-                            log.trace("Got entries for invalid partition during " +
-                                "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
-
-                        return;
-                    }
+                    preloadEntry(node, p, entry, topVer, cctx, null);
 
                     //TODO: IGNITE-11330: Update metrics for touched cache only.
                     for (GridCacheContext ctx : grp.caches()) {
@@ -1057,8 +1050,11 @@ public class GridDhtPartitionDemander {
                     if (cctx.isNear())
                         cctx = cctx.dhtCache().context();
 
-                    if (!preloadEntry(from, p, info, topVer, cctx, row))
-                        return;
+                    if (!preloadEntry(from, p, info, topVer, cctx, row) && row != null) {
+                        // Remove pre-created data row.
+                        grp.offheap().dataStore(grp.topology().localPartition(row.partition())).rowStore().
+                            removeRow(row.link(), grp.statisticsHolderData());
+                    }
 
                     //TODO: IGNITE-11330: Update metrics for touched cache only.
                     for (GridCacheContext cctx0 : grp.caches()) {
@@ -1069,24 +1065,17 @@ public class GridDhtPartitionDemander {
             }
             finally {
                 // Remove all unprocessed rows on error.
-                while (rowsIter != null && rowsIter.hasNext())
-                    cleanupRow(rowsIter.next());
+                while (rowsIter != null && rowsIter.hasNext()) {
+                    CacheDataRow row = rowsIter.next();
+
+                    // Remove pre-created data row.
+                    grp.offheap().dataStore(grp.topology().localPartition(row.partition())).rowStore().
+                        removeRow(row.link(), grp.statisticsHolderData());
+                }
 
                 ctx.database().checkpointReadUnlock();
             }
         }
-    }
-
-    /**
-     * Remove row from data store.
-     *
-     * @param row Row to remove.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void cleanupRow(CacheDataRow row) throws IgniteCheckedException {
-        RowStore rowStore = grp.offheap().dataStore(grp.topology().localPartition(row.partition())).rowStore();
-
-        rowStore.removeRow(row.link(), grp.statisticsHolderData());
     }
 
     /**
@@ -1098,7 +1087,7 @@ public class GridDhtPartitionDemander {
      * @param topVer Topology version.
      * @param cctx Cache context.
      * @param row Pre-created data row, associated with this cache entry.
-     * @return {@code False} if partition has become invalid during preloading.
+     * @return {@code True} if the initial value was set for the specified cache entry.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private boolean preloadEntry(
@@ -1110,8 +1099,6 @@ public class GridDhtPartitionDemander {
         @Nullable CacheDataRow row
     ) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
-
-        boolean updated = false;
 
         try {
             GridCacheEntryEx cached = null;
@@ -1125,7 +1112,7 @@ public class GridDhtPartitionDemander {
                 }
 
                 if (preloadPred == null || preloadPred.apply(entry)) {
-                    if (updated = cached.initialValue(
+                    if (cached.initialValue(
                         entry.value(),
                         entry.version(),
                         cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccVersion() : null,
@@ -1146,6 +1133,8 @@ public class GridDhtPartitionDemander {
                             cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
                                 null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
                                 false, null, null, null, true);
+
+                        return true;
                     }
                     else {
                         cached.touch(); // Start tracking.
@@ -1161,12 +1150,6 @@ public class GridDhtPartitionDemander {
                     log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
                         cached.key() + ", part=" + p + ']');
             }
-            catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition became invalid during rebalancing (will ignore): " + p);
-
-                return false;
-            }
         }
         catch (IgniteInterruptedCheckedException e) {
             throw e;
@@ -1174,12 +1157,9 @@ public class GridDhtPartitionDemander {
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
                 ctx.localNode() + ", node=" + from.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
-        } finally {
-            if (!updated && row != null)
-                cleanupRow(row);
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -1190,7 +1170,7 @@ public class GridDhtPartitionDemander {
      * @param history Mvcc entry history.
      * @param topVer Topology version.
      * @param p Partition id.
-     * @return {@code False} if partition has become invalid during preloading.
+     * @return {@code True} if the initial value was set for the specified cache entry.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private boolean mvccPreloadEntry(
@@ -1223,6 +1203,8 @@ public class GridDhtPartitionDemander {
                         cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
                             null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, null, true, null,
                             false, null, null, null, true);
+
+                    return true;
                 }
                 else {
                     cached.touch(); // Start tracking.
@@ -1237,12 +1219,6 @@ public class GridDhtPartitionDemander {
                     log.trace("Entry has been concurrently removed while rebalancing (will ignore) [key=" +
                         cached.key() + ", part=" + p + ']');
             }
-            catch (GridDhtInvalidPartitionException ignored) {
-                if (log.isDebugEnabled())
-                    log.debug("Partition became invalid during rebalancing (will ignore): " + p);
-
-                return false;
-            }
         }
         catch (IgniteInterruptedCheckedException | ClusterTopologyCheckedException e) {
             throw e;
@@ -1252,7 +1228,7 @@ public class GridDhtPartitionDemander {
                 ctx.localNode() + ", node=" + from.id() + ", key=" + info.key() + ", part=" + p + ']', e);
         }
 
-        return true;
+        return false;
     }
 
     /**
