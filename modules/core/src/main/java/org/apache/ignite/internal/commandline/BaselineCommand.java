@@ -68,7 +68,7 @@ public class BaselineCommand implements Command<BaselineArguments> {
         Command.usage(logger, "Set baseline topology based on version:", BASELINE,
             BaselineSubcommands.VERSION.text() + " topologyVersion", optional(CMD_AUTO_CONFIRMATION));
         Command.usage(logger, "Set baseline autoadjustment settings:", BASELINE,
-            BaselineSubcommands.AUTO_ADJUST.text(), "disable|enable timeout <timeoutValue>", optional(CMD_AUTO_CONFIRMATION));
+            BaselineSubcommands.AUTO_ADJUST.text(), "[disable|enable] [timeout <timeoutMillis>]", optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
