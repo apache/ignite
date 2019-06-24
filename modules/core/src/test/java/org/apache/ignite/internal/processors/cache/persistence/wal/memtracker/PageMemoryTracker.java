@@ -604,7 +604,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             AbstractDataLeafIO io = (AbstractDataLeafIO)pageIo;
 
-            int cnt = io.getMaxCount(actualPageAddr, pageSize);
+            int cnt = io.getCount(actualPageAddr);
 
             // Reset lock info as there is no sense to log it into WAL.
             for (int i = 0; i < cnt; i++) {
