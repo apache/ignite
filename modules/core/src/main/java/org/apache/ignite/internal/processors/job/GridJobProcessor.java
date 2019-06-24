@@ -136,6 +136,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** Finished jobs metric name. */
     public static final String FINISHED = "finished";
 
+    /** Total jobs execution time metric name. */
+    public static final String EXECUTION_TIME = "executionTime";
+
+    /** Total jobs waiting time metric name. */
+    public static final String WAITING_TIME = "waitingTime";
+
     /** */
     private final Marshaller marsh;
 
@@ -225,6 +231,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** Number of finished jobs. */
     final LongMetricImpl finishedJobsMetric;
 
+    /** Total job execution time. */
+    final LongMetricImpl totalExecutionTimeMetric;
+
+    /** Total time jobs spent on waiting queue. */
+    final LongMetricImpl totalWaitTimeMetric;
+
     /** */
     private boolean stopping;
 
@@ -298,6 +310,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
             "Number of jobs rejected after more recent collision resolution operation.");
 
         finishedJobsMetric = mreg.metric(FINISHED, "Number of finished jobs.");
+
+        totalExecutionTimeMetric = mreg.metric(EXECUTION_TIME, "Total execution time of jobs.");
+
+        totalWaitTimeMetric = mreg.metric(WAITING_TIME, "Total time jobs spent on waiting queue.");
     }
 
     /** {@inheritDoc} */
@@ -782,8 +798,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private boolean removeFromPassive(GridJobWorker job) {
         boolean res = passiveJobs.remove(job.getJobId(), job);
 
-        if (res)
+        if (res) {
             waitingJobsMetric.decrement();
+
+            if (!jobAlwaysActivate)
+                totalWaitTimeMetric.add(job.getQueuedTime());
+        }
 
         return res;
     }
@@ -1925,6 +1945,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 long execTime = worker.getExecuteTime();
 
                 finishedJobsTime.add(execTime);
+
+                totalExecutionTimeMetric.add(execTime);
 
                 maxFinishedJobsTime.setIfGreater(execTime);
 

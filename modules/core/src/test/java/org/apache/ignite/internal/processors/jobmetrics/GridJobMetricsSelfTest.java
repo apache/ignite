@@ -46,11 +46,13 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.ACTIVE;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.CANCELED;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.EXECUTION_TIME;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.FINISHED;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.REJECTED;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.STARTED;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.WAITING;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.WAITING_TIME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -82,6 +84,8 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             LongMetric canceled = (LongMetric)mreg.findMetric(CANCELED);
             LongMetric rejected = (LongMetric)mreg.findMetric(REJECTED);
             LongMetric finished = (LongMetric)mreg.findMetric(FINISHED);
+            LongMetric totalExecutionTime = (LongMetric)mreg.findMetric(EXECUTION_TIME);
+            LongMetric totalWaitingTime = (LongMetric)mreg.findMetric(WAITING_TIME);
 
             assertNotNull(started);
             assertNotNull(active);
@@ -89,6 +93,8 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertNotNull(canceled);
             assertNotNull(rejected);
             assertNotNull(finished);
+            assertNotNull(totalExecutionTime);
+            assertNotNull(totalWaitingTime);
 
             assertEquals(0, started.value());
             assertEquals(0, active.value());
@@ -96,6 +102,8 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, canceled.value());
             assertEquals(0, rejected.value());
             assertEquals(0, finished.value());
+            assertEquals(0, totalExecutionTime.value());
+            assertEquals(0, totalWaitingTime.value());
 
             SimplestTask task1 = new SimplestTask();
             SimplestTask task2 = new SimplestTask();
@@ -124,18 +132,29 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, rejected.value());
 
+            Thread.sleep(100); //Sleeping to make sure totalWaitingTime will become more the zero.
+
             iter.next().activate();
             iter.next().activate();
+
+            boolean res = waitForCondition(() -> active.value() > 0, TIMEOUT);
+
+            assertTrue(res);
+
+            Thread.sleep(100); //Sleeping to make sure totalExecutionTime will become more the zero.
 
             latch.countDown();
 
-            boolean res = waitForCondition(() -> fut1.isDone() && fut2.isDone() && fut3.isDone(), TIMEOUT);
+            res = waitForCondition(() -> fut1.isDone() && fut2.isDone() && fut3.isDone(), TIMEOUT);
 
             assertTrue(res);
 
             res = waitForCondition(() -> finished.value() == 3, TIMEOUT);
 
             assertTrue(res);
+
+            assertTrue("Execution time should be greater then zero.", totalExecutionTime.value() > 0);
+            assertTrue("Waiting time should be greater then zero.", totalWaitingTime.value() > 0);
         }
     }
 
@@ -153,6 +172,8 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             LongMetric canceled = (LongMetric)mreg.findMetric(CANCELED);
             LongMetric rejected = (LongMetric)mreg.findMetric(REJECTED);
             LongMetric finished = (LongMetric)mreg.findMetric(FINISHED);
+            LongMetric totalExecutionTime = (LongMetric)mreg.findMetric(EXECUTION_TIME);
+            LongMetric totalWaitingTime = (LongMetric)mreg.findMetric(WAITING_TIME);
 
             assertNotNull(started);
             assertNotNull(active);
@@ -160,6 +181,8 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertNotNull(canceled);
             assertNotNull(rejected);
             assertNotNull(finished);
+            assertNotNull(totalExecutionTime);
+            assertNotNull(totalWaitingTime);
 
             assertEquals(0, started.value());
             assertEquals(0, active.value());
@@ -167,6 +190,8 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, canceled.value());
             assertEquals(0, rejected.value());
             assertEquals(0, finished.value());
+            assertEquals(0, totalExecutionTime.value());
+            assertEquals(0, totalWaitingTime.value());
 
             SimplestTask task = new SimplestTask();
 
@@ -199,6 +224,11 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, rejected.value());
             assertEquals(1, finished.value());
 
+            res = waitForCondition(() -> active.value() > 0, TIMEOUT);
+            assertTrue(res);
+
+            Thread.sleep(100); //Sleeping to make sure totalExecutionTime will become more the zero.
+
             //After latch is down, task should finish.
             latch.countDown();
 
@@ -207,6 +237,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             res = waitForCondition(() -> active.value() == 0, TIMEOUT);
 
             assertTrue("Active = " + active.value(), res);
+            assertTrue("Execution time should be greater then zero.", totalExecutionTime.value() > 0);
 
             assertEquals(2, finished.value());
 
