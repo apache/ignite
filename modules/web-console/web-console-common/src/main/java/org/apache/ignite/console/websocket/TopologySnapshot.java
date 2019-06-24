@@ -19,6 +19,7 @@ package org.apache.ignite.console.websocket;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -248,6 +249,23 @@ public class TopologySnapshot {
     }
 
     /**
+     * @param other Other topology.
+     * @return {@code true} in case if current topology changed.
+     */
+    public boolean changed(TopologySnapshot other) {
+        if (other == null)
+            return true;
+
+        if (!id.equals(other.getId()))
+            return true;
+
+        if (!Objects.equals(nids(), other.nids()))
+            return true;
+
+        return active != other.active;
+    }
+
+    /**
      * Returns true if the snapshot is expired.
      *
      * @param maxInactiveInterval The maximum inactive interval.
@@ -260,6 +278,7 @@ public class TopologySnapshot {
     /**
      * Node bean.
      */
+    @SuppressWarnings("PublicInnerClass")
     public static class NodeBean {
         /** Is client node. */
         private boolean client;
