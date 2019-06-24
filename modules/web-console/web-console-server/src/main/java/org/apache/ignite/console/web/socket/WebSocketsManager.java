@@ -207,7 +207,8 @@ public class WebSocketsManager {
     protected void updateTopology(WebSocketSession wsAgent, TopologySnapshot oldTop, TopologySnapshot newTop) {
         AgentDescriptor desc = agents.get(wsAgent);
 
-        updateClusterInBrowsers(desc.accIds);
+        if (newTop.changed(oldTop))
+            updateClusterInBrowsers(desc.accIds);
     }
 
     /**
