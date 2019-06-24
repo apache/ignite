@@ -23,7 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
+import java.util.TreeMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -363,6 +367,85 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         awaitPartitionMapExchange();
 
         assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
+    }
+
+    /**
+     *
+     */
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_BlinkingNonBLT() throws Exception {
+        backups = 2;
+
+        Ignite crd = startGridsMultiThreaded(SERVER_NODES);
+
+        crd.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        int threads = 8;
+
+        int keys = 200;
+        int batch = 10;
+
+        CyclicBarrier sync = new CyclicBarrier(threads + 1);
+
+        AtomicBoolean done = new AtomicBoolean();
+
+        Random r = new Random();
+
+        LongAdder puts = new LongAdder();
+        LongAdder restarts = new LongAdder();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                U.awaitQuiet(sync);
+
+                while(!done.get()) {
+                    int batch0 = 1 + r.nextInt(batch - 1);
+                    int start = r.nextInt(keys - batch0);
+
+                    try(Transaction tx = client.transactions().txStart()) {
+                        Map<Integer, Integer> map = new TreeMap<Integer, Integer>();
+
+                        IntStream.range(start, start + batch0).forEach(value -> map.put(value, value));
+
+                        cache.putAll(map);
+
+                        tx.commit();
+
+                        puts.add(batch0);
+                    }
+                }
+            }
+        }, threads, "load-thread");
+
+        IgniteInternalFuture fut2 = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                U.awaitQuiet(sync);
+                while(!done.get()) {
+                    try {
+                        IgniteEx node = startGrid(SERVER_NODES);
+
+                        stopGrid(node.name());
+
+                        restarts.increment();
+                    }
+                    catch (Exception e) {
+                        fail();
+                    }
+                }
+            }
+        });
+
+        doSleep(60_000);
+
+        done.set(true);
+
+        fut.get();
+        fut2.get();
+
+        log.info("TX: puts=" + puts.sum() + ", restarts=" + restarts.sum() + ", size=" + cache.size());
     }
 
     /**
