@@ -193,15 +193,15 @@ import org.junit.runners.Suite;
 
     IgniteCacheDataStructuresBinarySelfTestSuite.class,
 
-    ImplicitTransactionalReadRepairTest.class,
-    SingleBackupImplicitTransactionalReadRepairTest.class,
-    ReplicatedImplicitTransactionalReadRepairTest.class,
-
-    AtomicReadRepairTest.class,
-
-    ExplicitTransactionalReadRepairTest.class,
-    SingleBackupExplicitTransactionalReadRepairTest.class,
-    ReplicatedExplicitTransactionalReadRepairTest.class,
+//    ImplicitTransactionalReadRepairTest.class,
+//    SingleBackupImplicitTransactionalReadRepairTest.class,
+//    ReplicatedImplicitTransactionalReadRepairTest.class,
+//
+//    AtomicReadRepairTest.class,
+//
+//    ExplicitTransactionalReadRepairTest.class,
+//    SingleBackupExplicitTransactionalReadRepairTest.class,
+//    ReplicatedExplicitTransactionalReadRepairTest.class,
 })
 public class IgniteCacheDataStructuresSelfTestSuite {
 }
