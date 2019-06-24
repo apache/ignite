@@ -1068,7 +1068,6 @@ public class GridDhtPartitionDemander {
                 while (rowsIter != null && rowsIter.hasNext()) {
                     CacheDataRow row = rowsIter.next();
 
-                    // Remove pre-created data row.
                     grp.offheap().dataStore(grp.topology().localPartition(row.partition())).rowStore().
                         removeRow(row.link(), grp.statisticsHolderData());
                 }
