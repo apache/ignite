@@ -1033,45 +1033,43 @@ public class GridDhtPartitionDemander {
             try {
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-                // Filter NULL values (this means we need to remove the cache entry).
-                Collection<GridCacheEntryInfo> updates = F.view(batch, info -> info.value() != null);
+                try {
+                    // Filter NULL values (this means we need to remove the cache entry).
+                    Collection<GridCacheEntryInfo> updates = F.view(batch, info -> info.value() != null);
 
-                grp.shared().database().ensureFreeSpace(grp.dataRegion());
+                    grp.shared().database().ensureFreeSpace(grp.dataRegion());
 
-                // Create data rows on data pages before getting locks on cache entries.
-                rowsIter = grp.offheap().insertAll(part, updates).iterator();
+                    // Create data rows on data pages before getting locks on cache entries.
+                    rowsIter = grp.offheap().insertAll(part, updates).iterator();
 
-                for (GridCacheEntryInfo info : batch) {
-                    CacheDataRow row = info.value() == null ? null : rowsIter.next();
+                    for (GridCacheEntryInfo info : batch) {
+                        CacheDataRow row = info.value() == null ? null : rowsIter.next();
 
-                    GridCacheContext cctx =
-                        grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
+                        GridCacheContext cctx =
+                            grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
 
-                    if (cctx.isNear())
-                        cctx = cctx.dhtCache().context();
+                        if (cctx.isNear())
+                            cctx = cctx.dhtCache().context();
 
-                    if (!preloadEntry(from, p, info, topVer, cctx, row) && row != null) {
-                        // Remove pre-created data row.
-                        grp.offheap().dataStore(grp.topology().localPartition(row.partition())).rowStore().
-                            removeRow(row.link(), grp.statisticsHolderData());
+                        if (!preloadEntry(from, p, info, topVer, cctx, row) && row != null) {
+                            // Remove pre-created data row.
+                            part.dataStore().rowStore().removeRow(row.link(), grp.statisticsHolderData());
+                        }
+
+                        //TODO: IGNITE-11330: Update metrics for touched cache only.
+                        for (GridCacheContext cctx0 : grp.caches()) {
+                            if (cctx0.statisticsEnabled())
+                                cctx0.cache().metrics0().onRebalanceKeyReceived();
+                        }
                     }
-
-                    //TODO: IGNITE-11330: Update metrics for touched cache only.
-                    for (GridCacheContext cctx0 : grp.caches()) {
-                        if (cctx0.statisticsEnabled())
-                            cctx0.cache().metrics0().onRebalanceKeyReceived();
-                    }
+                }
+                finally {
+                    // Remove all unprocessed rows.
+                    while (rowsIter != null && rowsIter.hasNext())
+                        part.dataStore().rowStore().removeRow(rowsIter.next().link(), grp.statisticsHolderData());
                 }
             }
             finally {
-                // Remove all unprocessed rows on error.
-                while (rowsIter != null && rowsIter.hasNext()) {
-                    CacheDataRow row = rowsIter.next();
-
-                    grp.offheap().dataStore(grp.topology().localPartition(row.partition())).rowStore().
-                        removeRow(row.link(), grp.statisticsHolderData());
-                }
-
                 ctx.database().checkpointReadUnlock();
             }
         }
