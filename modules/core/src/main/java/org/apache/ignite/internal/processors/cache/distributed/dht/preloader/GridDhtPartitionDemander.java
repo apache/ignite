@@ -1048,7 +1048,7 @@ public class GridDhtPartitionDemander {
                             cctx = cctx.dhtCache().context();
 
                         if ((cctx == null || !preloadEntry(from, p, info, topVer, cctx, row)) && row != null)
-                            part.dataStore().rowStore().removeRow(row.link(), grp.statisticsHolderData());
+                            part.dataStore().removeRow(row);
 
                         if (cctx == null)
                             continue;
