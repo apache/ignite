@@ -107,6 +107,27 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** System metrics prefix. */
     public static final String SYS_METRICS = "sys";
 
+    /** GC CPU load metric name. */
+    public static final String GC_CPU_LOAD = "GcCpuLoad";
+
+    /** CPU load metric name. */
+    public static final String CPU_LOAD = "CpuLoad";
+
+    /** Up time metric name. */
+    public static final String UP_TIME = "UpTime";
+
+    /** Thread count metric name. */
+    public static final String THREAD_CNT = "ThreadCount";
+
+    /** Peak thread count metric name. */
+    public static final String PEAK_THREAD_CNT = "PeakThreadCount";
+
+    /** Total started thread count metric name. */
+    public static final String TOTAL_STARTED_THREAD_CNT = "TotalStartedThreadCount";
+
+    /** Daemon thread count metric name. */
+    public static final String DAEMON_THREAD_CNT = "DaemonThreadCount";
+
     /** JVM interface to memory consumption info */
     private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
 
@@ -155,17 +176,15 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
 
         MetricRegistry sysreg = mreg.withPrefix(SYS_METRICS);
 
-        gcCpuLoad = sysreg.doubleMetric("GcCpuLoad", "GC CPU load.");
-        cpuLoad = sysreg.doubleMetric("CpuLoad", "CPU load.");
+        gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
+        cpuLoad = sysreg.doubleMetric(CPU_LOAD, "CPU load.");
 
         sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
-
-        sysreg.register("UpTime", rt::getUptime, null);
-
-        sysreg.register("ThreadCount", threads::getThreadCount, null);
-        sysreg.register("PeakThreadCount", threads::getPeakThreadCount, null);
-        sysreg.register("TotalStartedThreadCount", threads::getTotalStartedThreadCount, null);
-        sysreg.register("DaemonThreadCount", threads::getDaemonThreadCount, null);
+        sysreg.register(UP_TIME, rt::getUptime, null);
+        sysreg.register(THREAD_CNT, threads::getThreadCount, null);
+        sysreg.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, null);
+        sysreg.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount, null);
+        sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
         sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
         sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
     }

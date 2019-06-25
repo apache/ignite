@@ -35,7 +35,14 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.DAEMON_THREAD_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.PEAK_THREAD_CNT;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.THREAD_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.TOTAL_STARTED_THREAD_CNT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.UP_TIME;
 
 /**
  * Cluster metrics proxy
@@ -132,28 +139,28 @@ public class ClusterMetricsImpl implements ClusterMetrics {
      *
      * @see GridMetricManager
      */
-    private final IntMetric threadCount;
+    private final IntMetric threadCnt;
 
     /**
      * Metric reflecting {@link ThreadMXBean#getPeakThreadCount()}.
      *
      * @see GridMetricManager
      */
-    private final IntMetric peakThreadCount;
+    private final IntMetric peakThreadCnt;
 
     /**
      * Metric reflecting {@link ThreadMXBean#getTotalStartedThreadCount()}.
      *
      * @see GridMetricManager
      */
-    private final LongMetric totalStartedThreadCount;
+    private final LongMetric totalStartedThreadCnt;
 
     /**
      * Metric reflecting {@link ThreadMXBean#getDaemonThreadCount()}}.
      *
      * @see GridMetricManager
      */
-    private final IntMetric daemonThreadCount;
+    private final IntMetric daemonThreadCnt;
 
     /**
      * @param ctx Kernel context.
@@ -166,14 +173,14 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
         MetricRegistry mreg = ctx.metric().registry().withPrefix(SYS_METRICS);
 
-        gcCpuLoad = (DoubleMetric)mreg.findMetric("GcCpuLoad");
-        cpuLoad = (DoubleMetric)mreg.findMetric("CpuLoad");
-        upTime = (LongMetric)mreg.findMetric("UpTime");
+        gcCpuLoad = (DoubleMetric)mreg.findMetric(GC_CPU_LOAD);
+        cpuLoad = (DoubleMetric)mreg.findMetric(CPU_LOAD);
+        upTime = (LongMetric)mreg.findMetric(UP_TIME);
 
-        threadCount = (IntMetric)mreg.findMetric("ThreadCount");
-        peakThreadCount = (IntMetric)mreg.findMetric("PeakThreadCount");
-        totalStartedThreadCount = (LongMetric)mreg.findMetric("TotalStartedThreadCount");
-        daemonThreadCount = (IntMetric)mreg.findMetric("DaemonThreadCount");
+        threadCnt = (IntMetric)mreg.findMetric(THREAD_CNT);
+        peakThreadCnt = (IntMetric)mreg.findMetric(PEAK_THREAD_CNT);
+        totalStartedThreadCnt = (LongMetric)mreg.findMetric(TOTAL_STARTED_THREAD_CNT);
+        daemonThreadCnt = (IntMetric)mreg.findMetric(DAEMON_THREAD_CNT);
 
         availableProcessors = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
@@ -433,22 +440,22 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getCurrentThreadCount() {
-        return threadCount.value();
+        return threadCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumThreadCount() {
-        return peakThreadCount.value();
+        return peakThreadCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalStartedThreadCount() {
-        return totalStartedThreadCount.value();
+        return totalStartedThreadCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getCurrentDaemonThreadCount() {
-        return daemonThreadCount.value();
+        return daemonThreadCnt.value();
     }
 
     /** {@inheritDoc} */

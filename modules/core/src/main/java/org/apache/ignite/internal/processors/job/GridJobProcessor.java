@@ -104,6 +104,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
@@ -243,7 +244,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         MetricRegistry mreg = ctx.metric().registry();
 
-        cpuLoadMetric = (DoubleMetric)mreg.findMetric(metricName(SYS_METRICS, "CpuLoad"));
+        cpuLoadMetric = (DoubleMetric)mreg.findMetric(metricName(SYS_METRICS, CPU_LOAD));
     }
 
     /** {@inheritDoc} */
