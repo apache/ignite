@@ -463,14 +463,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<CacheDataRow> insertAll(
-        GridDhtLocalPartition part,
-        Collection<GridCacheEntryInfo> entries
-    ) throws IgniteCheckedException {
-        return dataStore(part).insertAll(entries);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean mvccInitialValue(
         GridCacheMapEntry entry,
         CacheObject val,
@@ -1722,7 +1714,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     rows.add(row);
                 }
 
-                rowStore().addRows(rows, statHolder);
+                rowStore.addRows(rows, statHolder);
 
                 Iterator<GridCacheEntryInfo> iter = infos.iterator();
 
@@ -1769,6 +1761,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 dataRow.cacheId(cctx.cacheId());
 
             return dataRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeRow(CacheDataRow row) throws IgniteCheckedException {
+            rowStore.removeRow(row.link(), grp.statisticsHolderData());
         }
 
         /**
