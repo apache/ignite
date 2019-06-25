@@ -46,6 +46,8 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -369,10 +371,21 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         assertPartitionsSame(idleVerify(crd, DEFAULT_CACHE_NAME));
     }
 
+    /** */
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME_1() throws Exception {
+        doTestPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME(false);
+    }
+
+    /** */
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME_2() throws Exception {
+        doTestPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME(true);
+    }
+
     /**
      * Tests tx load concurrently with PME not changing tx topology.
+     * @param delayPME {@code True} to delay full messages on PME.
      */
-    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME() throws Exception {
+    private  void doTestPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME(boolean delayPME) throws Exception {
         backups = 2;
 
         Ignite crd = startGridsMultiThreaded(SERVER_NODES);
@@ -382,6 +395,14 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         Ignite client = startGrid("client");
 
         IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        if (delayPME) {
+            for (Ignite ignite : G.allGrids()) {
+                TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite);
+
+                spi.blockMessages((node, message) -> message instanceof GridDhtPartitionsFullMessage);
+            }
+        }
 
         int threads = 8;
 
@@ -397,25 +418,32 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         LongAdder puts = new LongAdder();
         LongAdder restarts = new LongAdder();
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                U.awaitQuiet(sync);
+        IgniteInternalFuture sndFut = delayPME ? GridTestUtils.runAsync(() -> {
+            while (!done.get()) {
+                doSleep(1000);
 
-                while(!done.get()) {
-                    int batch0 = 1 + r.nextInt(batch - 1);
-                    int start = r.nextInt(keys - batch0);
+                for (int i = 0; i < SERVER_NODES; i++)
+                    TestRecordingCommunicationSpi.spi(grid(i)).stopBlock(true, null, false, true);
+            }
+        }) : new GridFinishedFuture<>();
 
-                    try(Transaction tx = client.transactions().txStart()) {
-                        Map<Integer, Integer> map = new TreeMap<Integer, Integer>();
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            U.awaitQuiet(sync);
 
-                        IntStream.range(start, start + batch0).forEach(value -> map.put(value, value));
+            while(!done.get()) {
+                int batch0 = 1 + r.nextInt(batch - 1);
+                int start = r.nextInt(keys - batch0);
 
-                        cache.putAll(map);
+                try(Transaction tx = client.transactions().txStart()) {
+                    Map<Integer, Integer> map = new TreeMap<Integer, Integer>();
 
-                        tx.commit();
+                    IntStream.range(start, start + batch0).forEach(value -> map.put(value, value));
 
-                        puts.add(batch0);
-                    }
+                    cache.putAll(map);
+
+                    tx.commit();
+
+                    puts.add(batch0);
                 }
             }
         }, threads, "load-thread");
@@ -449,6 +477,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         fut.get();
         fut2.get();
+        sndFut.get();
 
         log.info("TX: puts=" + puts.sum() + ", restarts=" + restarts.sum() + ", size=" + cache.size());
     }
