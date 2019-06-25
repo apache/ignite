@@ -140,6 +140,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             boolean res = waitForCondition(() -> active.value() > 0, TIMEOUT);
 
             assertTrue(res);
+            assertTrue("Waiting time should be greater then zero.", totalWaitingTime.value() > 0);
 
             Thread.sleep(100); // Sleeping to make sure totalExecutionTime will become more the zero.
 
@@ -154,7 +155,6 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertTrue(res);
 
             assertTrue("Execution time should be greater then zero.", totalExecutionTime.value() > 0);
-            assertTrue("Waiting time should be greater then zero.", totalWaitingTime.value() > 0);
         }
     }
 
@@ -223,9 +223,6 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, canceled.value());
             assertEquals(0, rejected.value());
             assertEquals(1, finished.value());
-
-            res = waitForCondition(() -> active.value() > 0, TIMEOUT);
-            assertTrue(res);
 
             Thread.sleep(100); // Sleeping to make sure totalExecutionTime will become more the zero.
 
