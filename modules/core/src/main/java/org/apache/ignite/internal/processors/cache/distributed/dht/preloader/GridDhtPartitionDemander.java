@@ -897,7 +897,7 @@ public class GridDhtPartitionDemander {
             ctx.database().checkpointReadLock();
 
             try {
-                for (int i = 0; i < 100; i++) {
+                for (int i = 0; i < CHECKPOINT_THRESHOLD; i++) {
                     boolean hasMore = infos.hasNext();
 
                     assert hasMore || !entryHist.isEmpty();
