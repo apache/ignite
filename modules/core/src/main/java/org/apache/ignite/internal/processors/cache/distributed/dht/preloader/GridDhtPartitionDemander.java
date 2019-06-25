@@ -1051,10 +1051,8 @@ public class GridDhtPartitionDemander {
                         if (cctx.isNear())
                             cctx = cctx.dhtCache().context();
 
-                        if (!preloadEntry(from, p, info, topVer, cctx, row) && row != null) {
-                            // Remove pre-created data row.
+                        if (!preloadEntry(from, p, info, topVer, cctx, row) && row != null)
                             part.dataStore().rowStore().removeRow(row.link(), grp.statisticsHolderData());
-                        }
 
                         //TODO: IGNITE-11330: Update metrics for touched cache only.
                         for (GridCacheContext cctx0 : grp.caches()) {
