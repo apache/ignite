@@ -43,6 +43,7 @@ import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.util.VisorIllegalStateException;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.logger.java.JavaLoggerFormatter;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -90,6 +91,9 @@ public class CommandHandler {
 
     /** */
     public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
+
+    /** */
+    public static final int EXIT_CODE_ILLEGAL_SATE_ERROR = 5;
 
     /** */
     private static final long DFLT_PING_INTERVAL = 5000L;
@@ -302,13 +306,13 @@ public class CommandHandler {
                 return EXIT_CODE_CONNECTION_FAILED;
             }
 
-            if (X.hasCause(e, IllegalArgumentException.class)) {
-                IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
+            if (X.hasCause(e, VisorIllegalStateException.class)) {
+                VisorIllegalStateException vise = X.cause(e, VisorIllegalStateException.class);
 
-                logger.severe("Check arguments. " + CommandLogger.errorMessage(iae));
-                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
+                logger.severe(CommandLogger.errorMessage(vise));
+                logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_ILLEGAL_SATE_ERROR);
 
-                return EXIT_CODE_INVALID_ARGUMENTS;
+                return EXIT_CODE_ILLEGAL_SATE_ERROR;
             }
 
             logger.severe(CommandLogger.errorMessage(e));
