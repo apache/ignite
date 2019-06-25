@@ -1037,8 +1037,6 @@ public class GridDhtPartitionDemander {
                     // Filter NULL values (this means we need to remove the cache entry).
                     Collection<GridCacheEntryInfo> updates = F.view(batch, info -> info.value() != null);
 
-                    grp.shared().database().ensureFreeSpace(grp.dataRegion());
-
                     // Create data rows on data pages before getting locks on cache entries.
                     rowsIter = grp.offheap().insertAll(part, updates).iterator();
 
