@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,6 +49,9 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -69,6 +72,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 
 /**
  *
@@ -171,6 +175,13 @@ public class CacheGroupContext {
     /** Flag indicates that cache group is under recovering and not attached to topology. */
     private final AtomicBoolean recoveryMode;
 
+    /** Statistics holder to track IO operations for PK index pages. */
+    private final IoStatisticsHolder statHolderIdx;
+
+    /** Statistics holder to track IO operations for data pages. */
+    private final IoStatisticsHolder statHolderData;
+
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -233,6 +244,18 @@ public class CacheGroupContext {
         log = ctx.kernalContext().log(getClass());
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+
+        if (systemCache()) {
+            statHolderIdx = IoStatisticsHolderNoOp.INSTANCE;
+            statHolderData = IoStatisticsHolderNoOp.INSTANCE;
+        }
+        else {
+            statHolderIdx = ctx.kernalContext().ioStats().register(IoStatisticsType.HASH_INDEX,
+                cacheOrGroupName(), HASH_PK_IDX_NAME);
+
+            statHolderData = ctx.kernalContext().ioStats().register(IoStatisticsType.CACHE_GROUP,
+                cacheOrGroupName());
+        }
     }
 
     /**
@@ -1236,5 +1259,19 @@ public class CacheGroupContext {
      */
     private void persistLocalWalState(boolean enabled) {
         shared().database().walEnabled(grpId, enabled, true);
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public IoStatisticsHolder statisticsHolderIdx() {
+        return statHolderIdx;
+    }
+
+    /**
+     * @return Statistics holder to track cache IO operations.
+     */
+    public IoStatisticsHolder statisticsHolderData() {
+        return statHolderData;
     }
 }

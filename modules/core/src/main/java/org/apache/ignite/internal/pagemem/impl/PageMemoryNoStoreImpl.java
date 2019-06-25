@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
@@ -292,11 +294,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 relPtr = allocSeg.allocateFreePage(flags);
 
                 if (relPtr != INVALID_REL_PTR) {
-                    if (relPtr != INVALID_REL_PTR) {
-                        absPtr = allocSeg.absolute(PageIdUtils.pageIndex(relPtr));
+                    absPtr = allocSeg.absolute(PageIdUtils.pageIndex(relPtr));
 
-                        break;
-                    }
+                    break;
                 }
                 else
                     allocSeg = addSegment(seg0);
@@ -457,13 +457,22 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long acquirePage(int cacheId, long pageId) {
+        return acquirePage(cacheId, pageId, IoStatisticsHolderNoOp.INSTANCE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long acquirePage(int cacheId, long pageId, IoStatisticsHolder statHolder) {
         assert !stopped;
 
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         Segment seg = segment(pageIdx);
 
-        return seg.acquirePage(pageIdx);
+        long absPtr = seg.acquirePage(pageIdx);
+
+        statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+
+        return absPtr;
     }
 
     /** {@inheritDoc} */

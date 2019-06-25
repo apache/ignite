@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 
 /**
  *
@@ -53,7 +54,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            freeList.removeDataRowByLink(link);
+            freeList.removeDataRowByLink(link, IoStatisticsHolderNoOp.INSTANCE);
         }
         finally {
             db.checkpointReadUnlock();
@@ -68,7 +69,7 @@ public class MetastorageRowStore {
         db.checkpointReadLock();
 
         try {
-            freeList.insertDataRow(row);
+            freeList.insertDataRow(row, IoStatisticsHolderNoOp.INSTANCE);
         }
         finally {
             db.checkpointReadUnlock();
@@ -82,7 +83,7 @@ public class MetastorageRowStore {
      * @throws IgniteCheckedException If failed.
      */
     public boolean updateRow(long link, MetastorageDataRow row) throws IgniteCheckedException {
-        return freeList.updateDataRow(link, row);
+        return freeList.updateDataRow(link, row, IoStatisticsHolderNoOp.INSTANCE);
     }
 
     /**

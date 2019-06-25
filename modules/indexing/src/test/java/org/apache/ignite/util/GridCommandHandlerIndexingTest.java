@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -57,8 +58,6 @@ import org.junit.runners.JUnit4;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -349,7 +348,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
                             new SearchRow(cacheId, ctx.toCacheKeyObject(entry.getKey())));
 
                         if (oldRow != null)
-                            U.invoke(rowStore.getClass(), rowStore, "removeRow", oldRow.link());
+                            U.invoke(rowStore.getClass(), rowStore, "removeRow", oldRow.link(), IoStatisticsHolderNoOp.INSTANCE);
                     }
                     catch (IgniteCheckedException e) {
                         System.out.println("Failed to remove key skipping indexes: " + entry);

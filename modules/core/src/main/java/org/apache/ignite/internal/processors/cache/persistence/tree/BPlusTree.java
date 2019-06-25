@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -60,6 +60,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -641,7 +643,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class CutRoot extends PageHandler<Void, Bool> {
         /** {@inheritDoc} */
-        @Override public Bool run(int cacheId, long metaId, long metaPage, long metaAddr, PageIO iox, Boolean walPlc, Void ignore, int lvl)
+        @Override public Bool run(int cacheId, long metaId, long metaPage, long metaAddr, PageIO iox, Boolean walPlc,
+            Void ignore, int lvl,
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             // Safe cast because we should never recycle meta page until the tree is destroyed.
             BPlusMetaIO io = (BPlusMetaIO)iox;
@@ -671,7 +675,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class AddRoot extends PageHandler<Long, Bool> {
         /** {@inheritDoc} */
-        @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc, Long rootPageId, int lvl)
+        @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc,
+            Long rootPageId, int lvl,
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             assert rootPageId != null;
 
@@ -702,7 +708,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     private class InitRoot extends PageHandler<Long, Bool> {
         /** {@inheritDoc} */
-        @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc, Long rootId, int inlineSize)
+        @Override public Bool run(int cacheId, long metaId, long metaPage, long pageAddr, PageIO iox, Boolean walPlc,
+            Long rootId, int inlineSize,
+            IoStatisticsHolder statHolder)
             throws IgniteCheckedException {
             assert rootId != null;
 
@@ -861,7 +869,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             init(rootId, latestLeafIO());
 
             // Initialize meta page with new root page.
-            Bool res = write(metaPageId, initRoot, BPlusMetaIO.VERSIONS.latest(), rootId, inlineSize, FALSE);
+            Bool res = write(metaPageId, initRoot, BPlusMetaIO.VERSIONS.latest(), rootId, inlineSize, FALSE,
+                statisticsHolder());
 
             assert res == TRUE: res;
 
@@ -3588,7 +3597,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                             releasePage(newRootId, newRootPage);
                         }
 
-                        Bool res = write(metaPageId, addRoot, newRootId, lvl + 1, FALSE);
+                        Bool res = write(metaPageId, addRoot, newRootId, lvl + 1, FALSE, statisticsHolder());
 
                         assert res == TRUE : res;
 
@@ -3628,7 +3637,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 this.fwdId = fwdId;
                 this.pageId = pageId;
 
-                Result res = write(pageId, page, replace, this, lvl, RETRY);
+                Result res = write(pageId, page, replace, this, lvl, RETRY, statisticsHolder());
 
                 // Restore args.
                 this.pageId = oldPageId;
@@ -3658,7 +3667,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.pageId = pageId;
             this.fwdId = fwdId;
 
-            return write(pageId, page, insert, this, lvl, RETRY);
+            return write(pageId, page, insert, this, lvl, RETRY, statisticsHolder());
         }
 
         /**
@@ -3674,7 +3683,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             this.pageId = pageId;
             this.fwdId = fwdId;
 
-            return write(pageId, page, replace, this, lvl, RETRY);
+            return write(pageId, page, replace, this, lvl, RETRY, statisticsHolder());
         }
 
         /** {@inheritDoc} */
@@ -4349,7 +4358,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long backPage = acquirePage(backId);
 
             try {
-                return write(backId, backPage, lockBackAndRmvFromLeaf, this, 0, RETRY);
+                return write(backId, backPage, lockBackAndRmvFromLeaf, this, 0, RETRY, statisticsHolder());
             }
             finally {
                 if (canRelease(backId, 0))
@@ -4364,7 +4373,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private Result doRemoveFromLeaf() throws IgniteCheckedException {
             assert page != 0L;
 
-            return write(pageId, page, rmvFromLeaf, this, 0, RETRY);
+            return write(pageId, page, rmvFromLeaf, this, 0, RETRY, statisticsHolder());
         }
 
         /**
@@ -4375,7 +4384,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private Result doLockTail(int lvl) throws IgniteCheckedException {
             assert page != 0L;
 
-            return write(pageId, page, lockTail, this, lvl, RETRY);
+            return write(pageId, page, lockTail, this, lvl, RETRY, statisticsHolder());
         }
 
         /**
@@ -4403,7 +4412,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long backPage = acquirePage(backId);
 
             try {
-                return write(backId, backPage, lockBackAndTail, this, lvl, RETRY);
+                return write(backId, backPage, lockBackAndTail, this, lvl, RETRY, statisticsHolder());
             }
             finally {
                 if (canRelease(backId, lvl))
@@ -4424,7 +4433,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long fwdPage = acquirePage(fwdId);
 
             try {
-                return write(fwdId, fwdPage, lockTailForward, this, lvl, RETRY);
+                return write(fwdId, fwdPage, lockTailForward, this, lvl, RETRY, statisticsHolder());
             }
             finally {
                 // If we were not able to lock forward page as tail, release the page.
@@ -4667,7 +4676,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         private void cutRoot(int lvl) throws IgniteCheckedException {
-            Bool res = write(metaPageId, cutRoot, lvl, FALSE);
+            Bool res = write(metaPageId, cutRoot, lvl, FALSE, statisticsHolder());
 
             assert res == TRUE : res;
         }
@@ -5522,9 +5531,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private void iterate() throws IgniteCheckedException {
             find();
 
-            if (nextPageId == 0) {
+            if (nextPageId == 0)
                 return;
-            }
 
             for (;;) {
                 L lastRow0 = lastRow;
@@ -5685,7 +5693,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Result run(int cacheId, long pageId, long page, long pageAddr, PageIO iox, Boolean walPlc,
-            G g, int lvl) throws IgniteCheckedException {
+            G g, int lvl, IoStatisticsHolder statHolder) throws IgniteCheckedException {
             assert PageIO.getPageId(pageAddr) == pageId;
 
             // If we've passed the check for correct page ID, we can safely cast.
@@ -5837,6 +5845,60 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     protected int getLockRetries() {
         return LOCK_RETRIES;
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @return Page absolute pointer.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final long acquirePage(long pageId) throws IgniteCheckedException {
+        return acquirePage(pageId, statisticsHolder());
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param h Handler.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R read(
+        long pageId,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return read(pageId, h, arg, intArg, lockFailed, statisticsHolder());
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param page Page pointer.
+     * @param h Handler.
+     * @param arg Argument.
+     * @param intArg Argument of type {@code int}.
+     * @param lockFailed Result in case of lock failure due to page recycling.
+     * @return Handler result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final <X, R> R read(
+        long pageId,
+        long page,
+        PageHandler<X, R> h,
+        X arg,
+        int intArg,
+        R lockFailed) throws IgniteCheckedException {
+        return read(pageId, page, h, arg, intArg, lockFailed, statisticsHolder());
+    }
+
+    /**
+     * @return Statistics holder to track IO operations.
+     */
+    protected IoStatisticsHolder statisticsHolder() {
+        return IoStatisticsHolderNoOp.INSTANCE;
     }
 
     /**
