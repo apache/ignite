@@ -41,7 +41,7 @@ public class GridClientResponse extends GridClientAbstractMessage {
     public static final int STATUS_SECURITY_CHECK_FAILED = 3;
 
     /** */
-    public static final int STATUS_ILLEGAL_ARGUMENT = 4;
+    public static final int STATUS_ILLEGAL_STATE = 4;
 
     /** Success flag */
     private int successStatus;
