@@ -85,6 +85,20 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTe
     }
 
     /**
+     * Test verifies that validate_indexes command finishes successfully when no cache names are specified.
+     */
+    @Test
+    public void testValidateIndexesNoErrorEmptyCacheNameArg() throws Exception {
+        prepareGridForTest();
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes"));
+
+        assertContains(log, testOut.toString(), "no issues found");
+    }
+
+    /**
      * Tests that missing rows in CacheDataTree are detected.
      */
     @Test
