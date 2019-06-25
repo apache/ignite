@@ -23,8 +23,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -66,7 +66,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     private static final byte VERSION = 1;
 
     /** Queue of applied out of order counter updates. */
-    private TreeSet<Item> queue = new TreeSet<>();
+    private NavigableMap<Long, Item> queue = new TreeMap<>();
 
     /** LWM. */
     private final AtomicLong cntr = new AtomicLong();
@@ -99,11 +99,6 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         return cntr.get();
     }
 
-    /** */
-    protected synchronized long highestAppliedCounter() {
-        return queue.isEmpty() ? cntr.get() : queue.last().absolute();
-    }
-
     /**
      * @return Next update counter. For tx mode called by {@link DataStreamerImpl} IsolatedUpdater.
      */
@@ -117,10 +112,12 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
+        Map.Entry<Long, Item> lastEntry = queue.lastEntry();
+
         // Absolute counter should be not less than last applied update.
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
-        if (!gaps().isEmpty() && val < highestAppliedCounter())
+        if (lastEntry != null && val < lastEntry.getValue().absolute())
             throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
         long cur = cntr.get();
@@ -133,79 +130,59 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
         cntr.set(val);
 
-        if (!queue.isEmpty())
-            queue.clear();
+        queue.clear();
     }
 
     /** {@inheritDoc} */
     @Override public synchronized boolean update(long start, long delta) {
-        long cur = cntr.get(), next;
+        long cur = cntr.get();
 
         if (cur > start)
             return false;
-
-        if (cur < start) {
+        else if (cur < start) {
             // Try merge with adjacent gaps in sequence.
-            Item tmp = new Item(start, delta);
-            Item ref = tmp;
+            long next = start + delta;
 
-            NavigableSet<Item> set = queue.headSet(tmp, false);
+            // Merge with next.
+            Item nextItem = queue.remove(next);
+
+            if (nextItem != null)
+                delta += nextItem.delta;
 
             // Merge with previous, possibly modifying previous.
-            if (!set.isEmpty()) {
-                Item last = set.last();
+            Map.Entry<Long, Item> prev = queue.lowerEntry(start);
 
-                if (last.start + last.delta == start) {
-                    tmp = last;
+            if (prev != null) {
+                Item prevItem = prev.getValue();
 
-                    last.delta += delta;
+                if (prevItem.absolute() == start) {
+                    prevItem.delta += delta;
+
+                    return true;
                 }
-                else if (last.within(start) && last.within(start + delta - 1))
+                else if (prevItem.within(next - 1))
                     return false;
             }
 
-            // Merge with next, possibly modifying previous and removing next.
-            if (!(set = queue.tailSet(tmp, false)).isEmpty()) {
-                Item first = set.first();
+            if (queue.size() >= MAX_MISSED_UPDATES) // Should trigger failure handler.
+                throw new IgniteException("Too many gaps [cntr=" + this + ']');
 
-                if (tmp.start + tmp.delta == first.start) {
-                    if (ref != tmp) {
-                        tmp.delta += first.delta;
-
-                        set.pollFirst(); // Merge and remove obsolete head.
-                    }
-                    else {
-                        tmp = first;
-
-                        first.start = start;
-                        first.delta += delta;
-                    }
-                }
-            }
-
-            if (tmp != ref)
-                return true;
-
-            return offer(new Item(start, delta)); // backup node with gaps
+            return queue.putIfAbsent(start, new Item(start, delta)) == null;
         }
+        else { // cur == start
+            long next = start + delta;
 
-        while (true) {
-            boolean res = cntr.compareAndSet(cur, next = start + delta);
+            // There is only one next sequential item possible, all other items will be merged.
+            Item nextItem = queue.remove(next);
+
+            if (nextItem != null)
+                next += nextItem.delta;
+
+            boolean res = cntr.compareAndSet(cur, next);
 
             assert res;
 
-            Item peek = peek();
-
-            if (peek == null || peek.start != next)
-                return true;
-
-            Item item = poll();
-
-            assert peek == item;
-
-            start = item.start;
-            delta = item.delta;
-            cur = next;
+            return true;
         }
     }
 
@@ -216,29 +193,9 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         initCntr = get();
     }
 
-    /** */
-    private Item poll() {
-        return queue.pollFirst();
-    }
-
-    /** */
-    private Item peek() {
-        return queue.isEmpty() ? null : queue.first();
-    }
-
-    /**
-     * @param item Item.
-     */
-    private boolean offer(Item item) {
-        if (queue.size() == MAX_MISSED_UPDATES) // Should trigger failure handler.
-            throw new IgniteException("Too many gaps [cntr=" + this + ']');
-
-        return queue.add(item);
-    }
-
     /** {@inheritDoc} */
     @Override public synchronized GridLongList finalizeUpdateCounters() {
-        Item item = poll();
+        Map.Entry<Long, Item> item = queue.pollFirstEntry();
 
         GridLongList gaps = null;
 
@@ -247,15 +204,15 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
                 gaps = new GridLongList((queue.size() + 1) * 2);
 
             long start = cntr.get() + 1;
-            long end = item.start;
+            long end = item.getValue().start;
 
             gaps.add(start);
             gaps.add(end);
 
             // Close pending ranges.
-            cntr.set(item.start + item.delta);
+            cntr.set(item.getValue().absolute());
 
-            item = poll();
+            item = queue.pollFirstEntry();
         }
 
         return gaps;
@@ -279,7 +236,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public synchronized boolean sequential() {
-        return gaps().isEmpty();
+        return queue.isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -298,7 +255,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
             dos.writeInt(size);
 
-            for (Item item : queue) {
+            for (Item item : queue.values()) {
                 dos.writeLong(item.start);
                 dos.writeLong(item.delta);
             }
@@ -315,11 +272,11 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     /**
      * @param raw Raw bytes.
      */
-    private @Nullable TreeSet<Item> fromBytes(@Nullable byte[] raw) {
-        if (raw == null)
-            return new TreeSet<>();
+    private @Nullable NavigableMap<Long, Item> fromBytes(@Nullable byte[] raw) {
+        NavigableMap<Long, Item> ret = new TreeMap<>();
 
-        TreeSet<Item> ret = new TreeSet<>();
+        if (raw == null)
+            return ret;
 
         try {
             ByteArrayInputStream bis = new ByteArrayInputStream(raw);
@@ -330,8 +287,11 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
             int cnt = dis.readInt(); // Holes count.
 
-            while(cnt-- > 0)
-                ret.add(new Item(dis.readLong(), dis.readLong()));
+            while (cnt-- > 0) {
+                Item item = new Item(dis.readLong(), dis.readLong());
+
+                ret.put(item.start, item);
+            }
 
             return ret;
         }
@@ -340,24 +300,19 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         }
     }
 
-    /** */
-    private TreeSet<Item> gaps() {
-        return queue;
-    }
-
     /** {@inheritDoc} */
     @Override public synchronized void reset() {
         cntr.set(0);
 
         reserveCntr.set(0);
 
-        queue = new TreeSet<>();
+        queue.clear();
     }
 
     /**
      * Update counter task. Update from start value by delta value.
      */
-    private static class Item implements Comparable<Item> {
+    private static class Item {
         /** */
         private long start;
 
@@ -371,11 +326,6 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         private Item(long start, long delta) {
             this.start = start;
             this.delta = delta;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(@NotNull Item o) {
-            return Long.compare(this.start, o.start);
         }
 
         /** {@inheritDoc} */
@@ -449,14 +399,11 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public Iterator<long[]> iterator() {
-        return F.iterator(queue.iterator(), item -> {
-            return new long[] {item.start, item.delta};
-        }, true);
+        return F.iterator(queue.values().iterator(), item -> new long[] {item.start, item.delta}, true);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Counter [lwm=" + get() + ", holes=" + queue +
-            ", maxApplied=" + highestAppliedCounter() + ", hwm=" + reserveCntr.get() + ']';
+        return "Counter [lwm=" + get() + ", holes=" + queue.values() + ", hwm=" + reserveCntr.get() + ']';
     }
 }
