@@ -160,7 +160,6 @@ public class IgniteCacheThreadLocalTxTest extends GridCommonAbstractTest {
         if (write)
             cache.put(ThreadLocalRandom.current().nextInt(100_000), 1);
 
-
         try {
             txs.txStart(concurrency, isolation);
 

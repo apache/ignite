@@ -266,7 +266,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         return false;
     }
 
-
     /**
      * @param cctx1 First cache context.
      * @param key1 Left key to compare.

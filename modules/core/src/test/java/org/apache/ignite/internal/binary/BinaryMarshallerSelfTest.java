@@ -3423,7 +3423,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject binObj = builder.build();
 
-
         Collection<String> fieldsBin =  binObj.type().fieldNames();
 
         assertEquals(fieldNames.length, fieldsBin.size());
@@ -4864,12 +4863,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     private static class CustomCollections {
         public List list = new ArrayList();
+
         public List customList = new CustomArrayList();
     }
 
     @SuppressWarnings("unchecked")
     private static class CustomCollectionsWithFactory implements Binarylizable {
         public List list = new CustomArrayList();
+
         public Map map = new CustomHashMap();
 
         /** {@inheritDoc} */

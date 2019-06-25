@@ -205,7 +205,6 @@ public class LocalModelsTest {
 
             Assert.assertNotNull(load);
 
-
             NNClassificationModel importedMdl = new ANNClassificationModel(load.getCandidates(), new ANNClassificationTrainer.CentroidStat())
                 .withK(load.getK())
                 .withDistanceMeasure(load.getDistanceMeasure())

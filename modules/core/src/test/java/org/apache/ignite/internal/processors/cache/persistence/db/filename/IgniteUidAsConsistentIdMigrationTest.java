@@ -694,7 +694,6 @@ public class IgniteUidAsConsistentIdMigrationTest extends GridCommonAbstractTest
         assertDirectoryExist(curFolder, subFolderNames);
     }
 
-
     /**
      * Checks one folder existence.
      *

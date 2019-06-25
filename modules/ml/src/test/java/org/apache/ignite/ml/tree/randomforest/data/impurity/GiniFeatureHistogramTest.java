@@ -37,8 +37,10 @@ import static org.junit.Assert.assertTrue;
 public class GiniFeatureHistogramTest extends ImpurityHistogramTest {
     /** Feature 1 meta. */
     private BucketMeta feature1Meta = new BucketMeta(new FeatureMeta("", 0, true));
+
     /** Feature 2 meta. */
     private BucketMeta feature2Meta = new BucketMeta(new FeatureMeta("", 1, false));
+
     /** Feature 3 meta. */
     private BucketMeta feature3Meta = new BucketMeta(new FeatureMeta("", 2, true));
 

@@ -301,7 +301,6 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
                assert res == 2 : "Invalid response: " + res;
            }
 
-
            if (byTask) {
                ignite1.compute().localDeployTask(taskCls, ldr1);
 

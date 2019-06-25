@@ -622,6 +622,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
         /** */
         @QuerySqlField
         int amount;
+
         /** */
         @QuerySqlField
         Date updated;

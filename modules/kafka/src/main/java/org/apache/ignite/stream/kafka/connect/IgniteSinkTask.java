@@ -176,6 +176,7 @@ public class IgniteSinkTask extends SinkTask {
         /** Instance holder. */
         private static class Holder {
             private static final Ignite IGNITE = Ignition.start(igniteConfigFile);
+
             private static final IgniteDataStreamer STREAMER = IGNITE.dataStreamer(cacheName);
         }
 
