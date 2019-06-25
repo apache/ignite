@@ -63,7 +63,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
     public static final long TIMEOUT = 10_000;
 
     /** */
-    private static CountDownLatch latch;
+    private static volatile CountDownLatch latch;
 
     /** Test correct calculation of rejected and waiting metrics of the {@link GridJobProcessor}. */
     @Test
@@ -72,7 +72,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
 
         GridTestCollision collisioinSpi = new GridTestCollision();
 
-        IgniteConfiguration cfg = new IgniteConfiguration()
+        IgniteConfiguration cfg = getConfiguration()
             .setCollisionSpi(collisioinSpi);
 
         try (IgniteEx g = startGrid(cfg)) {
@@ -113,7 +113,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             task2.block = true;
             task3.block = true;
 
-            //Task will become "waiting", because of CollisionSpi implementation.
+            // Task will become "waiting", because of CollisionSpi implementation.
             ComputeTaskFuture<?> fut1 = g.compute().executeAsync(task1, 1);
             ComputeTaskFuture<?> fut2 = g.compute().executeAsync(task2, 1);
             ComputeTaskFuture<?> fut3 = g.compute().executeAsync(task3, 1);
@@ -125,14 +125,14 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, rejected.value());
             assertEquals(0, finished.value());
 
-            //Activating 2 of 3 jobs. Rejecting 1 of them.
+            // Activating 2 of 3 jobs. Rejecting 1 of them.
             Iterator<CollisionJobContext> iter = collisioinSpi.jobs.values().iterator();
 
             iter.next().cancel();
 
             assertEquals(1, rejected.value());
 
-            Thread.sleep(100); //Sleeping to make sure totalWaitingTime will become more the zero.
+            Thread.sleep(100); // Sleeping to make sure totalWaitingTime will become more the zero.
 
             iter.next().activate();
             iter.next().activate();
@@ -141,7 +141,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
 
             assertTrue(res);
 
-            Thread.sleep(100); //Sleeping to make sure totalExecutionTime will become more the zero.
+            Thread.sleep(100); // Sleeping to make sure totalExecutionTime will become more the zero.
 
             latch.countDown();
 
@@ -197,7 +197,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
 
             g.compute().execute(task, 1);
 
-            //Waiting task to finish.
+            // Waiting task to finish.
             boolean res = waitForCondition(() -> active.value() == 0, TIMEOUT);
 
             assertTrue("Active = " + active.value(), res);
@@ -208,12 +208,12 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, rejected.value());
             assertEquals(1, finished.value());
 
-            //Task should block until latch is down.
+            // Task should block until latch is down.
             task.block = true;
 
             ComputeTaskFuture<?> fut = g.compute().executeAsync(task, 1);
 
-            //Waiting task to start execution.
+            // Waiting task to start execution.
             res = waitForCondition(() -> active.value() == 1, TIMEOUT);
 
             assertTrue("Active = " + active.value(), res);
@@ -227,9 +227,9 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             res = waitForCondition(() -> active.value() > 0, TIMEOUT);
             assertTrue(res);
 
-            Thread.sleep(100); //Sleeping to make sure totalExecutionTime will become more the zero.
+            Thread.sleep(100); // Sleeping to make sure totalExecutionTime will become more the zero.
 
-            //After latch is down, task should finish.
+            // After latch is down, task should finish.
             latch.countDown();
 
             fut.get(TIMEOUT);
@@ -255,7 +255,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             assertEquals(0, rejected.value());
             assertEquals(2, finished.value());
 
-            //First cancel task, then allow it to finish.
+            // First cancel task, then allow it to finish.
             fut.cancel();
 
             latch.countDown();
@@ -278,7 +278,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static class SimplestJob implements ComputeJob {
         /** */
-        boolean block;
+        private final boolean block;
 
         /** */
         public SimplestJob(boolean block) {
@@ -308,7 +308,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
     /** */
     private static class SimplestTask extends ComputeTaskAdapter<Object, Object> {
         /** */
-        boolean block;
+        volatile boolean block;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
