@@ -109,6 +109,7 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static java.io.File.separatorChar;
 import static java.util.Arrays.asList;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -118,6 +119,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 import static org.apache.ignite.internal.commandline.OutputFormat.MULTI_LINE;
 import static org.apache.ignite.internal.commandline.OutputFormat.SINGLE_LINE;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
+import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -139,6 +141,43 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     @Override public String getTestIgniteInstanceName() {
         return "gridCommandHandlerTest";
     }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        initDiagnosticDir();
+
+        cleanDiagnosticDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanDiagnosticDir();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void initDiagnosticDir() throws IgniteCheckedException {
+        defaultDiagnosticDir = new File(U.defaultWorkDirectory()
+            + separatorChar + DEFAULT_TARGET_FOLDER + separatorChar);
+
+        customDiagnosticDir = new File(U.defaultWorkDirectory()
+            + separatorChar + "diagnostic_test_dir" + separatorChar);
+    }
+
+    /**
+     * Clean diagnostic directories.
+     */
+    private void cleanDiagnosticDir() {
+        U.delete(defaultDiagnosticDir);
+        U.delete(customDiagnosticDir);
+    }
+
+
     /**
      * Test activation works via control.sh
      *
@@ -287,21 +326,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
 
-        assertTrue(testOut.toString().contains("garbage not found"));
+        assertContains(log, testOut.toString(), "garbage not found");
 
         testOut.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
             ignite(0).localNode().id().toString(), "--port", "11212"));
 
-        assertTrue(testOut.toString().contains("garbage not found"));
+        assertContains(log, testOut.toString(), "garbage not found");
 
         testOut.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
             "groupGarbage", "--port", "11212"));
 
-        assertTrue(testOut.toString().contains("garbage not found"));
+        assertContains(log, testOut.toString(), "garbage not found");
     }
 
     /**
@@ -1145,8 +1184,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
-        assertTrue(testOut.toString(), testOut.toString().contains("Node not found for consistent ID:"));
-        assertFalse(testOut.toString(), testOut.toString().contains(getTestIgniteInstanceName() + "1"));
+        String out = testOut.toString();
+
+        assertContains(log, out, "Node not found for consistent ID:");
+        assertNotContains(log, out, getTestIgniteInstanceName() + "1");
     }
 
     /**
@@ -1785,8 +1826,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
 
         String outputStr = testOut.toString();
 
-        assertTrue(outputStr, outputStr.contains("idle_verify failed on 1 node."));
-        assertTrue(outputStr, outputStr.contains("idle_verify check has finished, no conflicts have been found."));
+        assertContains(log, outputStr, "idle_verify failed on 1 node.");
+        assertContains(log, outputStr, "idle_verify check has finished, no conflicts have been found.");
     }
 
     /** */
@@ -1925,8 +1966,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithConflicts, "found 4 conflict partitions: [counterConflicts=2, " +
-                "hashConflicts=2]");
+            assertContains(
+                log,
+                dumpWithConflicts,
+                "found 4 conflict partitions: [counterConflicts=2, hashConflicts=2]"
+            );
         }
         else
             fail("Should be found dump with conflicts");
@@ -1992,8 +2036,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithConflicts, "found 1 conflict partitions: [counterConflicts=0, " +
-                "hashConflicts=1]");
+            assertContains(
+                log,
+                dumpWithConflicts,
+                "found 1 conflict partitions: [counterConflicts=0, hashConflicts=1]"
+            );
         }
         else
             fail("Should be found dump with conflicts");

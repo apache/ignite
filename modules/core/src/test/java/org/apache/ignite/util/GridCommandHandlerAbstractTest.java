@@ -92,7 +92,7 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
 
         sysOut = System.out;
 
-        testOut = new ByteArrayOutputStream(20 * 1024 * 1024);
+        testOut = new ByteArrayOutputStream(1024 * 1024);
 
         checkpointFreq = DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
     }
