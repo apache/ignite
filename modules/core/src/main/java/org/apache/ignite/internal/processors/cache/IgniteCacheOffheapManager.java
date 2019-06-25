@@ -702,7 +702,7 @@ public interface IgniteCacheOffheapManager {
          * @return Created rows.
          * @throws IgniteCheckedException If failed.
          */
-        public Collection<CacheDataRow> createRows(
+        public Collection<? extends CacheDataRow> createRows(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException;
 

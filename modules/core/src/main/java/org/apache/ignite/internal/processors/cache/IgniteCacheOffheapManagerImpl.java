@@ -1726,17 +1726,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheDataRow> createRows(
+        @Override public Collection<? extends CacheDataRow> createRows(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            List<CacheDataRow> rows = new ArrayList<>(infos.size());
+            List<DataRow> rows = new ArrayList<>(infos.size());
 
             try {
-                IoStatisticsHolder statHolder = grp.statisticsHolderData();
-
                 for (GridCacheEntryInfo info : infos) {
                     int cacheId = grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID;
 
@@ -1745,20 +1743,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     rows.add(row);
                 }
 
-                rowStore.addRows(rows, statHolder);
+                rowStore.addRows(rows, grp.statisticsHolderData());
 
                 Iterator<GridCacheEntryInfo> iter = infos.iterator();
 
                 if (grp.sharedGroup() && !grp.storeCacheIdInDataPage()) {
-                    for (CacheDataRow row : rows)
-                        ((DataRow)row).cacheId(iter.next().cacheId());
+                    for (DataRow row : rows)
+                        row.cacheId(iter.next().cacheId());
                 }
             }
             finally {
                 busyLock.leaveBusy();
             }
-
-            assert rows.size() == infos.size();
 
             return rows;
         }

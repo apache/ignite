@@ -123,7 +123,7 @@ public class RowStore {
      * @param statHolder Statistics holder to track IO operations.
      * @throws IgniteCheckedException If failed.
      */
-    public void addRows(Collection<CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
+    public void addRows(Collection<? extends CacheDataRow> rows, IoStatisticsHolder statHolder) throws IgniteCheckedException {
         assert ctx.database().checkpointLockIsHeldByThread();
 
         freeList.insertDataRows(rows, statHolder);

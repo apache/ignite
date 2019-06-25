@@ -1024,7 +1024,7 @@ public class GridDhtPartitionDemander {
             List<GridCacheEntryInfo> batch =
                 infos.subList(batchOff, Math.min(infos.size(), batchOff += CHECKPOINT_THRESHOLD));
 
-            Iterator<CacheDataRow> rowsIter = null;
+            Iterator<? extends CacheDataRow> rowsIter = null;
 
             ctx.database().checkpointReadLock();
 
