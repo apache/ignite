@@ -72,7 +72,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     private final AtomicLong cntr = new AtomicLong();
 
     /** HWM. */
-    private final AtomicLong reserveCntr = new AtomicLong();
+    protected final AtomicLong reserveCntr = new AtomicLong();
 
     /**
      * Initial counter points to last sequential update after WAL recovery.
@@ -117,24 +117,25 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
+        if (val == 0)
+            return; // Could happen when single node is participating in PME.
+
+        // Reserved update counter is updated only on exchange.
+        long v0 = Math.max(get(), val);
+
+        if (v0 > reserveCntr.get())
+            reserveCntr.set(v0); // Adjust counter on new primary.
+
+        if (val != v0) // Proceed if new value is greater than old.
+            return;
+
         // Absolute counter should be not less than last applied update.
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
-        if (!gaps().isEmpty() && val < highestAppliedCounter())
+        if (val < highestAppliedCounter())
             throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
-        long cur = cntr.get();
-
-        // Reserved update counter is updated only on exchange or in non-tx mode.
-        reserveCntr.set(Math.max(cur, val));
-
-        if (val <= cur)
-            return;
-
         cntr.set(val);
-
-        if (!queue.isEmpty())
-            queue.clear();
     }
 
     /** {@inheritDoc} */

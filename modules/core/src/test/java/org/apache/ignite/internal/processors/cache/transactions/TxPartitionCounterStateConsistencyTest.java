@@ -370,9 +370,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
-     *
+     * Tests tx load concurrently with PME not changing tx topology.
      */
-    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_BlinkingNonBLT() throws Exception {
+    public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME() throws Exception {
         backups = 2;
 
         Ignite crd = startGridsMultiThreaded(SERVER_NODES);
@@ -420,20 +420,25 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
             }
         }, threads, "load-thread");
 
-        IgniteInternalFuture fut2 = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                U.awaitQuiet(sync);
-                while(!done.get()) {
-                    try {
-                        IgniteEx node = startGrid(SERVER_NODES);
+        IgniteInternalFuture fut2 = GridTestUtils.runAsync(() -> {
+            U.awaitQuiet(sync);
+            while(!done.get()) {
+                try {
+                    if (r.nextBoolean()) {
+                        IgniteEx node = startGrid(SERVER_NODES); // Non-BLT join.
 
                         stopGrid(node.name());
+                    }
+                    else {
+                        IgniteCache cache1 = client.createCache(cacheConfiguration(DEFAULT_CACHE_NAME + "2"));
 
-                        restarts.increment();
+                        cache1.destroy();
                     }
-                    catch (Exception e) {
-                        fail();
-                    }
+
+                    restarts.increment();
+                }
+                catch (Exception e) {
+                    fail();
                 }
             }
         });

@@ -168,7 +168,14 @@ public class PartitionTxUpdateCounterDebugWrapper extends PartitionTxUpdateCount
             ", before=" + toString());
 
         try {
-            return super.reserve(delta);
+            long cntr = get();
+
+            long reserved = reserveCntr.getAndAdd(delta);
+
+            assert reserved >= cntr : "LWM after HWM: lwm=" + cntr + ", hwm=" + reserved + ", grpId=" + grp.groupId()
+                + ", partId=" + partId + ", cntr=" + super.toString();
+
+            return reserved;
         }
         finally {
             log.debug(sb.a(", after=" + toString() +
