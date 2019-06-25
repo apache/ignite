@@ -463,14 +463,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<CacheDataRow> insertAll(
-        GridDhtLocalPartition part,
-        Collection<GridCacheEntryInfo> entries
-    ) throws IgniteCheckedException {
-        return dataStore(part).insertAll(entries);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean mvccInitialValue(
         GridCacheMapEntry entry,
         CacheObject val,
@@ -1705,55 +1697,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheDataRow> insertAll(
-            Collection<GridCacheEntryInfo> infos
-        ) throws IgniteCheckedException {
-            if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
-
-            List<CacheDataRow> rows = new ArrayList<>(infos.size());
-
-            try {
-                IoStatisticsHolder statHolder = grp.statisticsHolderData();
-
-                for (GridCacheEntryInfo info : infos) {
-                    GridCacheContext cctx =
-                        grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
-
-                    KeyCacheObject key = info.key();
-                    CacheObject val = info.value();
-
-                    CacheObjectContext coCtx = cctx.cacheObjectContext();
-
-                    key.valueBytes(coCtx);
-                    val.valueBytes(coCtx);
-
-                    int cacheId = grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-                    DataRow row = makeDataRow(key, val, info.version(), info.expireTime(), cacheId);
-
-                    rows.add(row);
-                }
-
-                rowStore().addRows(rows, statHolder);
-
-                Iterator<GridCacheEntryInfo> iter = infos.iterator();
-
-                if (grp.sharedGroup() && !grp.storeCacheIdInDataPage()) {
-                    for (CacheDataRow row : rows)
-                        ((DataRow)row).cacheId(iter.next().cacheId());
-                }
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-
-            assert rows.size() == infos.size();
-
-            return rows;
-        }
-
-        /** {@inheritDoc} */
         @Override public CacheDataRow createRow(
             GridCacheContext cctx,
             KeyCacheObject key,
@@ -1782,6 +1725,47 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 dataRow.cacheId(cctx.cacheId());
 
             return dataRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<? extends CacheDataRow> createRows(
+            Collection<GridCacheEntryInfo> infos
+        ) throws IgniteCheckedException {
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
+            List<DataRow> rows = new ArrayList<>(infos.size());
+
+            for (GridCacheEntryInfo info : infos) {
+                rows.add(makeDataRow(info.key(),
+                    info.value(),
+                    info.version(),
+                    info.expireTime(),
+                    grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID));
+            }
+
+            try {
+                rowStore.addRows(rows, grp.statisticsHolderData());
+
+                Iterator<GridCacheEntryInfo> iter = infos.iterator();
+
+                if (grp.sharedGroup() && !grp.storeCacheIdInDataPage()) {
+                    for (DataRow row : rows)
+                        row.cacheId(iter.next().cacheId());
+                }
+            }
+            finally {
+                busyLock.leaveBusy();
+            }
+
+            return rows;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeRow(CacheDataRow row) throws IgniteCheckedException {
+            assert row != null;
+
+            rowStore.removeRow(row.link(), grp.statisticsHolderData());
         }
 
         /**

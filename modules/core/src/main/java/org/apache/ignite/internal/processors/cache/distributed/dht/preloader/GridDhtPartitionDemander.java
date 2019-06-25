@@ -773,7 +773,7 @@ public class GridDhtPartitionDemander {
                             part.beforeApplyBatch(last);
 
                             try {
-                                Iterator<GridCacheEntryInfo> infos = e.getValue().infos().iterator();
+                                List<GridCacheEntryInfo> infos = e.getValue().infos();
 
                                 try {
                                     if (grp.mvccEnabled())
@@ -881,21 +881,23 @@ public class GridDhtPartitionDemander {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private void mvccPreloadEntries(AffinityTopologyVersion topVer, ClusterNode node, int p,
-        Iterator<GridCacheEntryInfo> infos) throws IgniteCheckedException {
-        if (!infos.hasNext())
+        Collection<GridCacheEntryInfo> infos) throws IgniteCheckedException {
+        if (infos.isEmpty())
             return;
 
         List<GridCacheMvccEntryInfo> entryHist = new ArrayList<>();
 
         GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
+        Iterator<GridCacheEntryInfo> iter = infos.iterator();
+
         // Loop through all received entries and try to preload them.
-        while (infos.hasNext() || !entryHist.isEmpty()) {
+        while (iter.hasNext() || !entryHist.isEmpty()) {
             ctx.database().checkpointReadLock();
 
             try {
                 for (int i = 0; i < CHECKPOINT_THRESHOLD; i++) {
-                    boolean hasMore = infos.hasNext();
+                    boolean hasMore = iter.hasNext();
 
                     assert hasMore || !entryHist.isEmpty();
 
@@ -904,7 +906,7 @@ public class GridDhtPartitionDemander {
                     boolean flushHistory;
 
                     if (hasMore) {
-                        entry = (GridCacheMvccEntryInfo)infos.next();
+                        entry = (GridCacheMvccEntryInfo)iter.next();
 
                         GridCacheMvccEntryInfo prev = entryHist.isEmpty() ? null : entryHist.get(0);
 
@@ -960,19 +962,21 @@ public class GridDhtPartitionDemander {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private void preloadEntries(AffinityTopologyVersion topVer, ClusterNode node, int p,
-        Iterator<GridCacheEntryInfo> infos) throws IgniteCheckedException {
+        Iterable<GridCacheEntryInfo> infos) throws IgniteCheckedException {
         GridCacheContext cctx = null;
 
+        Iterator<GridCacheEntryInfo> iter = infos.iterator();
+
         // Loop through all received entries and try to preload them.
-        while (infos.hasNext()) {
+        while (iter.hasNext()) {
             ctx.database().checkpointReadLock();
 
             try {
                 for (int i = 0; i < CHECKPOINT_THRESHOLD; i++) {
-                    if (!infos.hasNext())
+                    if (!iter.hasNext())
                         break;
 
-                    GridCacheEntryInfo entry = infos.next();
+                    GridCacheEntryInfo entry = iter.next();
 
                     if (cctx == null || (grp.sharedGroup() && entry.cacheId() != cctx.cacheId())) {
                         cctx = grp.sharedGroup() ? grp.shared().cacheContext(entry.cacheId()) : grp.singleCacheContext();
@@ -1009,21 +1013,15 @@ public class GridDhtPartitionDemander {
         AffinityTopologyVersion topVer,
         ClusterNode from,
         int p,
-        Iterator<GridCacheEntryInfo> infos
+        List<GridCacheEntryInfo> infos
     ) throws IgniteCheckedException {
-        while (infos.hasNext()) {
-            List<GridCacheEntryInfo> batch = new ArrayList<>(CHECKPOINT_THRESHOLD);
+        int batchOff = 0;
 
-            while (infos.hasNext() && batch.size() < CHECKPOINT_THRESHOLD) {
-                GridCacheEntryInfo info = infos.next();
+        while (batchOff < infos.size()) {
+            List<GridCacheEntryInfo> batch =
+                infos.subList(batchOff, Math.min(infos.size(), batchOff += CHECKPOINT_THRESHOLD));
 
-                GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
-
-                if (cctx != null)
-                    batch.add(info);
-            }
-
-            Iterator<CacheDataRow> rowsIter = null;
+            Iterator<? extends CacheDataRow> rowsIter = null;
 
             ctx.database().checkpointReadLock();
 
@@ -1035,7 +1033,7 @@ public class GridDhtPartitionDemander {
                     Collection<GridCacheEntryInfo> updates = F.view(batch, info -> info.value() != null);
 
                     // Create data rows on data pages before getting locks on cache entries.
-                    rowsIter = grp.offheap().insertAll(part, updates).iterator();
+                    rowsIter = part.dataStore().createRows(updates).iterator();
 
                     for (GridCacheEntryInfo info : batch) {
                         CacheDataRow row = info.value() == null ? null : rowsIter.next();
@@ -1043,11 +1041,14 @@ public class GridDhtPartitionDemander {
                         GridCacheContext cctx =
                             grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
 
-                        if (cctx.isNear())
+                        if (cctx != null && cctx.isNear())
                             cctx = cctx.dhtCache().context();
 
-                        if (!preloadEntry(from, p, info, topVer, cctx, row) && row != null)
-                            part.dataStore().rowStore().removeRow(row.link(), grp.statisticsHolderData());
+                        if ((cctx == null || !preloadEntry(from, p, info, topVer, cctx, row)) && row != null)
+                            part.dataStore().removeRow(row);
+
+                        if (cctx == null)
+                            continue;
 
                         //TODO: IGNITE-11330: Update metrics for touched cache only.
                         for (GridCacheContext cctx0 : grp.caches()) {
@@ -1059,7 +1060,7 @@ public class GridDhtPartitionDemander {
                 finally {
                     // Remove all unprocessed rows.
                     while (rowsIter != null && rowsIter.hasNext())
-                        part.dataStore().rowStore().removeRow(rowsIter.next().link(), grp.statisticsHolderData());
+                        part.dataStore().removeRow(rowsIter.next());
                 }
             }
             finally {

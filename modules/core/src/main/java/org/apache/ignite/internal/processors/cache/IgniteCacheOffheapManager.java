@@ -192,19 +192,6 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
-     * Put entries into the data store.
-     *
-     * @param part Partition.
-     * @param entries Entries.
-     * @return Created rows.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Collection<CacheDataRow> insertAll(
-        GridDhtLocalPartition part,
-        Collection<GridCacheEntryInfo> entries
-    ) throws IgniteCheckedException;
-
-    /**
      * @param cctx Cache context.
      * @param key Key.
      * @param mvccSnapshot MVCC snapshot.
@@ -709,6 +696,22 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
+         * Create data rows.
+         *
+         * @param infos Entry infos.
+         * @return Created rows.
+         * @throws IgniteCheckedException If failed.
+         */
+        public Collection<? extends CacheDataRow> createRows(
+            Collection<GridCacheEntryInfo> infos
+        ) throws IgniteCheckedException;
+
+        /**
+         * @param row Row removed from cache.
+         */
+        public void removeRow(CacheDataRow row) throws IgniteCheckedException;
+
+        /**
          * @param cctx Cache context.
          * @param cleanupRows Rows to cleanup.
          * @throws IgniteCheckedException If failed.
@@ -742,18 +745,6 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
-
-
-        /**
-         * Put entries into the data store.
-         *
-         * @param entries Entries.
-         * @return Created rows.
-         * @throws IgniteCheckedException If failed.
-         */
-        public Collection<CacheDataRow> insertAll(
-            Collection<GridCacheEntryInfo> entries
-        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.
