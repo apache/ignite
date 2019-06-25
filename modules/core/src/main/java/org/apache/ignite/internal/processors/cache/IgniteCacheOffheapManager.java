@@ -696,6 +696,17 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
+         * Create data rows.
+         *
+         * @param infos Entry infos.
+         * @return Created rows.
+         * @throws IgniteCheckedException If failed.
+         */
+        public Collection<CacheDataRow> createRows(
+            Collection<GridCacheEntryInfo> infos
+        ) throws IgniteCheckedException;
+
+        /**
          * @param row Row removed from cache.
          */
         public void removeRow(CacheDataRow row) throws IgniteCheckedException;
@@ -734,17 +745,6 @@ public interface IgniteCacheOffheapManager {
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
-
-        /**
-         * Put entries into the data store.
-         *
-         * @param entries Entries.
-         * @return Created rows.
-         * @throws IgniteCheckedException If failed.
-         */
-        public Collection<CacheDataRow> insertAll(
-            Collection<GridCacheEntryInfo> entries
-        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

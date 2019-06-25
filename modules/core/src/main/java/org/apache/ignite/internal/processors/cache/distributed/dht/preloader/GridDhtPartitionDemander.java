@@ -1036,7 +1036,7 @@ public class GridDhtPartitionDemander {
                     Collection<GridCacheEntryInfo> updates = F.view(batch, info -> info.value() != null);
 
                     // Create data rows on data pages before getting locks on cache entries.
-                    rowsIter = part.dataStore().insertAll(updates).iterator();
+                    rowsIter = part.dataStore().createRows(updates).iterator();
 
                     for (GridCacheEntryInfo info : batch) {
                         CacheDataRow row = info.value() == null ? null : rowsIter.next();

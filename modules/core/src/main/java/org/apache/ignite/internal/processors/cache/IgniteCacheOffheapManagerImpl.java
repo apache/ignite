@@ -1695,7 +1695,38 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheDataRow> insertAll(
+        @Override public CacheDataRow createRow(
+            GridCacheContext cctx,
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
+            int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
+
+            DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
+
+            if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.statisticsHolderData()))
+                dataRow.link(oldRow.link());
+            else {
+                CacheObjectContext coCtx = cctx.cacheObjectContext();
+
+                key.valueBytes(coCtx);
+                val.valueBytes(coCtx);
+
+                rowStore.addRow(dataRow, grp.statisticsHolderData());
+            }
+
+            assert dataRow.link() != 0 : dataRow;
+
+            if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
+                dataRow.cacheId(cctx.cacheId());
+
+            return dataRow;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<CacheDataRow> createRows(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
@@ -1730,37 +1761,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             assert rows.size() == infos.size();
 
             return rows;
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheDataRow createRow(
-            GridCacheContext cctx,
-            KeyCacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            int cacheId = grp.storeCacheIdInDataPage() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-            DataRow dataRow = makeDataRow(key, val, ver, expireTime, cacheId);
-
-            if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow, grp.statisticsHolderData()))
-                dataRow.link(oldRow.link());
-            else {
-                CacheObjectContext coCtx = cctx.cacheObjectContext();
-
-                key.valueBytes(coCtx);
-                val.valueBytes(coCtx);
-
-                rowStore.addRow(dataRow, grp.statisticsHolderData());
-            }
-
-            assert dataRow.link() != 0 : dataRow;
-
-            if (grp.sharedGroup() && dataRow.cacheId() == CU.UNDEFINED_CACHE_ID)
-                dataRow.cacheId(cctx.cacheId());
-
-            return dataRow;
         }
 
         /** {@inheritDoc} */
