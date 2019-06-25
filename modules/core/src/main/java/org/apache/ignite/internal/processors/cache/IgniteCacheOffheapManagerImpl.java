@@ -1715,20 +1715,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 IoStatisticsHolder statHolder = grp.statisticsHolderData();
 
                 for (GridCacheEntryInfo info : infos) {
-                    GridCacheContext cctx =
-                        grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
-
-                    KeyCacheObject key = info.key();
-                    CacheObject val = info.value();
-
-                    CacheObjectContext coCtx = cctx.cacheObjectContext();
-
-                    key.valueBytes(coCtx);
-                    val.valueBytes(coCtx);
-
                     int cacheId = grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-                    DataRow row = makeDataRow(key, val, info.version(), info.expireTime(), cacheId);
+                    DataRow row = makeDataRow(info.key(), info.value(), info.version(), info.expireTime(), cacheId);
 
                     rows.add(row);
                 }
@@ -2421,7 +2410,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             GridCacheQueryManager qryMgr = cctx.queries();
 
             for (int i = 0; i < cleanupRows.size(); i++) {
-                MvccLinkAwareSearchRow cleanupRow = cleanupRows.get(i);
+                SearchRow cleanupRow = cleanupRows.get(i);
 
                 assert cleanupRow.link() != 0 : cleanupRow;
 
