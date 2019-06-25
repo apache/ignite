@@ -150,7 +150,6 @@ public class IgniteProcessProxy implements IgniteEx {
         this(cfg, log, locJvmGrid, discovery, Collections.emptyList());
     }
 
-
     /**
      * @param cfg Configuration.
      * @param log Logger.

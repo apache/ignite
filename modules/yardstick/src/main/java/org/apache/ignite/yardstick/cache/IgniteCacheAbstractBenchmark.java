@@ -348,6 +348,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     static class ThreadRange {
         /** */
         final int min;
+
         /** */
         final int max;
 

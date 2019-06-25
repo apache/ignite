@@ -52,15 +52,19 @@ public abstract class AbstractMatrix implements Matrix {
     // Stochastic sparsity analysis.
     /** */
     private static final double Z95 = 1.959964;
+
     /** */
     private static final double Z80 = 1.281552;
+
     /** */
     private static final int MAX_SAMPLES = 500;
+
     /** */
     private static final int MIN_SAMPLES = 15;
 
     /** Cached minimum element. */
     private Element minElm;
+
     /** Cached maximum element. */
     private Element maxElm = null;
 

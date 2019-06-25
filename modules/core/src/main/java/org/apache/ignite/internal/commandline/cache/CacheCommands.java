@@ -118,7 +118,6 @@ public class CacheCommands implements Command<CacheSubcommands> {
         this.subcommand = cmd;
     }
 
-
     /** */
     private void printCacheHelp() {
         logger.logWithIndent("The '" + CACHE + " subcommand' is used to get information about and perform actions" +
@@ -141,7 +140,6 @@ public class CacheCommands implements Command<CacheSubcommands> {
 
         logger.nl();
     }
-
 
     /**
      * Print cache command usage with default indention.

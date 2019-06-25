@@ -90,7 +90,6 @@ public class TxPartitionCounterStateOnePrimaryOneBackupTest extends TxPartitionC
         doTestPrepareCommitReorder_2(true);
     }
 
-
     /**
      * Tests reproduces the problem: if partition was marked for clear on rebalance, it should never be selected for
      * historical rebalance or only partial data defined by counter range will be loaded.

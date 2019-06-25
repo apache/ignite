@@ -69,7 +69,6 @@ public abstract class IgfsLocalSecondaryFileSystemDualAbstractSelfTest extends I
     private final Boolean PROPERTIES_SUPPORT =
         IgniteSystemProperties.getBoolean("IGFS_LOCAL_FS_PROPERTIES_SUPPORT", false);
 
-
     /**
      * Constructor.
      *

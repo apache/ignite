@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
@@ -27,11 +26,17 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Adapter for cache metrics.
@@ -48,107 +53,114 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
+    /**
+     * Cache metrics prefix.
+     * Full name will contain {@link CacheConfiguration#getName()} also.
+     * {@code "cache.sys-cache"}, for example.
+     */
+    public static final String CACHE_METRICS_PREFIX = "cache";
+
     /** Number of reads. */
-    private AtomicLong reads = new AtomicLong();
+    private final LongMetricImpl reads;
 
     /** Number of invocations caused update. */
-    private AtomicLong entryProcessorPuts = new AtomicLong();
+    private final LongMetricImpl entryProcessorPuts;
 
     /** Number of invocations caused removal. */
-    private AtomicLong entryProcessorRemovals = new AtomicLong();
+    private final LongMetricImpl entryProcessorRemovals;
 
     /** Number of invocations caused update. */
-    private AtomicLong entryProcessorReadOnlyInvocations = new AtomicLong();
+    private final LongMetricImpl entryProcessorReadOnlyInvocations;
 
     /** Entry processor invoke time taken nanos. */
-    private AtomicLong entryProcessorInvokeTimeNanos = new AtomicLong();
+    private final LongMetricImpl entryProcessorInvokeTimeNanos;
 
     /** So far, the minimum time to execute cache invokes. */
-    private AtomicLong entryProcessorMinInvocationTime = new AtomicLong();
+    private final LongMetricImpl entryProcessorMinInvocationTime;
 
     /** So far, the maximum time to execute cache invokes. */
-    private AtomicLong entryProcessorMaxInvocationTime = new AtomicLong();
+    private final LongMetricImpl entryProcessorMaxInvocationTime;
 
     /** Number of entry processor invokes on keys, which exist in cache. */
-    private AtomicLong entryProcessorHits = new AtomicLong();
+    private final LongMetricImpl entryProcessorHits;
 
     /** Number of entry processor invokes on keys, which don't exist in cache. */
-    private AtomicLong entryProcessorMisses = new AtomicLong();
+    private final LongMetricImpl entryProcessorMisses;
 
     /** Number of writes. */
-    private AtomicLong writes = new AtomicLong();
+    private final LongMetricImpl writes;
 
     /** Number of hits. */
-    private AtomicLong hits = new AtomicLong();
+    private final LongMetricImpl hits;
 
     /** Number of misses. */
-    private AtomicLong misses = new AtomicLong();
+    private final LongMetricImpl misses;
 
     /** Number of transaction commits. */
-    private AtomicLong txCommits = new AtomicLong();
+    private final LongMetricImpl txCommits;
 
     /** Number of transaction rollbacks. */
-    private AtomicLong txRollbacks = new AtomicLong();
+    private final LongMetricImpl txRollbacks;
 
     /** Number of evictions. */
-    private AtomicLong evictCnt = new AtomicLong();
+    private final LongMetricImpl evictCnt;
 
     /** Number of removed entries. */
-    private AtomicLong rmCnt = new AtomicLong();
+    private final LongMetricImpl rmCnt;
 
     /** Put time taken nanos. */
-    private AtomicLong putTimeNanos = new AtomicLong();
+    private final LongMetricImpl putTimeNanos;
 
     /** Get time taken nanos. */
-    private AtomicLong getTimeNanos = new AtomicLong();
+    private final LongMetricImpl getTimeNanos;
 
     /** Remove time taken nanos. */
-    private AtomicLong rmvTimeNanos = new AtomicLong();
+    private final LongMetricImpl rmvTimeNanos;
 
     /** Commit transaction time taken nanos. */
-    private AtomicLong commitTimeNanos = new AtomicLong();
+    private final LongMetricImpl commitTimeNanos;
 
     /** Commit transaction time taken nanos. */
-    private AtomicLong rollbackTimeNanos = new AtomicLong();
+    private final LongMetricImpl rollbackTimeNanos;
 
     /** Number of reads from off-heap memory. */
-    private AtomicLong offHeapGets = new AtomicLong();
+    private final LongMetricImpl offHeapGets;
 
     /** Number of writes to off-heap memory. */
-    private AtomicLong offHeapPuts = new AtomicLong();
+    private final LongMetricImpl offHeapPuts;
 
     /** Number of removed entries from off-heap memory. */
-    private AtomicLong offHeapRemoves = new AtomicLong();
+    private final LongMetricImpl offHeapRemoves;
 
     /** Number of evictions from off-heap memory. */
-    private AtomicLong offHeapEvicts = new AtomicLong();
+    private final LongMetricImpl offHeapEvicts;
 
     /** Number of off-heap hits. */
-    private AtomicLong offHeapHits = new AtomicLong();
+    private final LongMetricImpl offHeapHits;
 
     /** Number of off-heap misses. */
-    private AtomicLong offHeapMisses = new AtomicLong();
+    private final LongMetricImpl offHeapMisses;
 
     /** Rebalanced keys count. */
-    private AtomicLong rebalancedKeys = new AtomicLong();
+    private final LongMetricImpl rebalancedKeys;
 
     /** Total rebalanced bytes count. */
-    private AtomicLong totalRebalancedBytes = new AtomicLong();
+    private final LongMetricImpl totalRebalancedBytes;
 
     /** Rebalanced start time. */
-    private AtomicLong rebalanceStartTime = new AtomicLong(-1L);
+    private final LongMetricImpl rebalanceStartTime;
 
     /** Estimated rebalancing keys count. */
-    private AtomicLong estimatedRebalancingKeys = new AtomicLong();
+    private final LongMetricImpl estimatedRebalancingKeys;
 
     /** Rebalancing rate in keys. */
-    private HitRateMetrics rebalancingKeysRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
+    private final HitRateMetric rebalancingKeysRate;
 
     /** Rebalancing rate in bytes. */
-    private HitRateMetrics rebalancingBytesRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
+    private final HitRateMetric rebalancingBytesRate;
 
     /** Number of currently clearing partitions for rebalancing. */
-    private AtomicLong rebalanceClearingPartitions = new AtomicLong();
+    private final LongMetricImpl rebalanceClearingPartitions;
 
     /** Cache metrics. */
     @GridToStringExclude
@@ -163,12 +175,25 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Write-behind store, if configured. */
     private GridCacheWriteBehindStore store;
 
+    /** Prefix for the cache metrics. */
+    private String prefix;
+
     /**
-     * Creates cache metrics;
+     * Creates cache metrics.
      *
      * @param cctx Cache context.
      */
     public CacheMetricsImpl(GridCacheContext<?, ?> cctx) {
+        this(cctx, null);
+    }
+
+    /**
+     * Creates cache metrics.
+     *
+     * @param cctx Cache context.
+     * @param suffix Suffix for the metric set name.
+     */
+    public CacheMetricsImpl(GridCacheContext<?, ?> cctx, @Nullable String suffix) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -180,6 +205,120 @@ public class CacheMetricsImpl implements CacheMetrics {
             store = (GridCacheWriteBehindStore)cctx.store().store();
 
         delegate = null;
+
+        if (suffix == null)
+            prefix = metricName(CACHE_METRICS_PREFIX, cctx.name());
+        else
+            prefix = metricName(CACHE_METRICS_PREFIX, cctx.name(), suffix);
+
+        MetricRegistry mreg = cctx.kernalContext().metric().registry().withPrefix(prefix);
+
+        reads = mreg.metric("CacheGets",
+            "The total number of gets to the cache.");
+
+        entryProcessorPuts = mreg.metric("EntryProcessorPuts",
+            "The total number of cache invocations, caused update.");
+
+        entryProcessorRemovals = mreg.metric("EntryProcessorRemovals",
+            "The total number of cache invocations, caused removals.");
+
+        entryProcessorReadOnlyInvocations = mreg.metric("EntryProcessorReadOnlyInvocations",
+            "The total number of cache invocations, caused no updates.");
+
+        entryProcessorInvokeTimeNanos = mreg.metric("EntryProcessorInvokeTimeNanos",
+            "The total time of cache invocations, in nanoseconds.");
+
+        entryProcessorMinInvocationTime = mreg.metric("EntryProcessorMinInvocationTime",
+            "So far, the minimum time to execute cache invokes.");
+
+        entryProcessorMaxInvocationTime = mreg.metric("EntryProcessorMaxInvocationTime",
+            "So far, the maximum time to execute cache invokes.");
+
+        entryProcessorHits = mreg.metric("EntryProcessorHits",
+            "The total number of invocations on keys, which exist in cache.");
+
+        entryProcessorMisses = mreg.metric("EntryProcessorMisses",
+            "The total number of invocations on keys, which don't exist in cache.");
+
+        writes = mreg.metric("CachePuts",
+            "The total number of puts to the cache.");
+
+        hits = mreg.metric("CacheHits",
+            "The number of get requests that were satisfied by the cache.");
+
+        misses = mreg.metric("CacheMisses",
+            "A miss is a get request that is not satisfied.");
+
+        txCommits = mreg.metric("CacheTxCommits",
+            "Total number of transaction commits.");
+
+        txRollbacks = mreg.metric("CacheTxRollbacks",
+            "Total number of transaction rollbacks.");
+
+        evictCnt = mreg.metric("CacheEvictions",
+            "The total number of evictions from the cache.");
+
+        rmCnt = mreg.metric("CacheRemovals", "The total number of removals from the cache.");
+
+        putTimeNanos = mreg.metric("PutTime",
+            "The total time of cache puts, in nanoseconds.");
+
+        getTimeNanos = mreg.metric("GetTime",
+            "The total time of cache gets, in nanoseconds.");
+
+        rmvTimeNanos = mreg.metric("RemovalTime",
+            "The total time of cache removal, in nanoseconds.");
+
+        commitTimeNanos = mreg.metric("CommitTime",
+            "The total time of commit, in nanoseconds.");
+
+        rollbackTimeNanos = mreg.metric("RollbackTime",
+            "The total time of rollback, in nanoseconds.");
+
+        offHeapGets = mreg.metric("OffHeapGets",
+            "The total number of get requests to the off-heap memory.");
+
+        offHeapPuts = mreg.metric("OffHeapPuts",
+            "The total number of put requests to the off-heap memory.");
+
+        offHeapRemoves = mreg.metric("OffHeapRemovals",
+            "The total number of removals from the off-heap memory.");
+
+        offHeapEvicts = mreg.metric("OffHeapEvictions",
+            "The total number of evictions from the off-heap memory.");
+
+        offHeapHits = mreg.metric("OffHeapHits",
+            "The number of get requests that were satisfied by the off-heap memory.");
+
+        offHeapMisses = mreg.metric("OffHeapMisses",
+            "A miss is a get request that is not satisfied by off-heap memory.");
+
+        rebalancedKeys = mreg.metric("RebalancedKeys",
+            "Number of already rebalanced keys.");
+
+        totalRebalancedBytes = mreg.metric("TotalRebalancedBytes",
+            "Number of already rebalanced bytes.");
+
+        rebalanceStartTime = mreg.metric("RebalanceStartTime",
+            "Rebalance start time");
+
+        rebalanceStartTime.value(-1);
+
+        estimatedRebalancingKeys = mreg.metric("EstimatedRebalancingKeys",
+            "Number estimated to rebalance keys.");
+
+        rebalancingKeysRate = mreg.hitRateMetric("RebalancingKeysRate",
+            "Estimated rebalancing speed in keys",
+            REBALANCE_RATE_INTERVAL,
+            20);
+
+        rebalancingBytesRate = mreg.hitRateMetric("RebalancingBytesRate",
+            "Estimated rebalancing speed in bytes",
+            REBALANCE_RATE_INTERVAL,
+            20);
+
+        rebalanceClearingPartitions = mreg.metric("RebalanceClearingPartitionsLeft",
+            "Number of partitions need to be cleared before actual rebalance start.");
     }
 
     /**
@@ -449,35 +588,35 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Clear metrics.
      */
     public void clear() {
-        reads.set(0);
-        writes.set(0);
-        rmCnt.set(0);
-        hits.set(0);
-        misses.set(0);
-        evictCnt.set(0);
-        txCommits.set(0);
-        txRollbacks.set(0);
-        putTimeNanos.set(0);
-        rmvTimeNanos.set(0);
-        getTimeNanos.set(0);
-        commitTimeNanos.set(0);
-        rollbackTimeNanos.set(0);
+        reads.reset();
+        writes.reset();
+        rmCnt.reset();
+        hits.reset();
+        misses.reset();
+        evictCnt.reset();
+        txCommits.reset();
+        txRollbacks.reset();
+        putTimeNanos.reset();
+        rmvTimeNanos.reset();
+        getTimeNanos.reset();
+        commitTimeNanos.reset();
+        rollbackTimeNanos.reset();
 
-        entryProcessorPuts.set(0);
-        entryProcessorRemovals.set(0);
-        entryProcessorReadOnlyInvocations.set(0);
-        entryProcessorMisses.set(0);
-        entryProcessorHits.set(0);
-        entryProcessorInvokeTimeNanos.set(0);
-        entryProcessorMaxInvocationTime.set(0);
-        entryProcessorMinInvocationTime.set(0);
+        entryProcessorPuts.reset();
+        entryProcessorRemovals.reset();
+        entryProcessorReadOnlyInvocations.reset();
+        entryProcessorMisses.reset();
+        entryProcessorHits.reset();
+        entryProcessorInvokeTimeNanos.reset();
+        entryProcessorMaxInvocationTime.reset();
+        entryProcessorMinInvocationTime.reset();
 
-        offHeapGets.set(0);
-        offHeapPuts.set(0);
-        offHeapRemoves.set(0);
-        offHeapHits.set(0);
-        offHeapMisses.set(0);
-        offHeapEvicts.set(0);
+        offHeapGets.reset();
+        offHeapPuts.reset();
+        offHeapRemoves.reset();
+        offHeapHits.reset();
+        offHeapMisses.reset();
+        offHeapEvicts.reset();
 
         clearRebalanceCounters();
 
@@ -648,12 +787,12 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param isHit Hit or miss flag.
      */
     public void onRead(boolean isHit) {
-        reads.incrementAndGet();
+        reads.increment();
 
         if (isHit)
-            hits.incrementAndGet();
+            hits.increment();
         else
-            misses.incrementAndGet();
+            misses.increment();
 
         if (delegate != null)
             delegate.onRead(isHit);
@@ -665,12 +804,12 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param isHit Hit or miss flag.
      */
     public void onInvokeUpdate(boolean isHit) {
-        entryProcessorPuts.incrementAndGet();
+        entryProcessorPuts.increment();
 
         if (isHit)
-            entryProcessorHits.incrementAndGet();
+            entryProcessorHits.increment();
         else
-            entryProcessorMisses.incrementAndGet();
+            entryProcessorMisses.increment();
 
         if (delegate != null)
             delegate.onInvokeUpdate(isHit);
@@ -682,12 +821,12 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param isHit Hit or miss flag.
      */
     public void onInvokeRemove(boolean isHit) {
-        entryProcessorRemovals.incrementAndGet();
+        entryProcessorRemovals.increment();
 
         if (isHit)
-            entryProcessorHits.incrementAndGet();
+            entryProcessorHits.increment();
         else
-            entryProcessorMisses.incrementAndGet();
+            entryProcessorMisses.increment();
 
         if (delegate != null)
             delegate.onInvokeRemove(isHit);
@@ -699,12 +838,12 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param isHit Hit or miss flag.
      */
     public void onReadOnlyInvoke(boolean isHit) {
-        entryProcessorReadOnlyInvocations.incrementAndGet();
+        entryProcessorReadOnlyInvocations.increment();
 
         if (isHit)
-            entryProcessorHits.incrementAndGet();
+            entryProcessorHits.increment();
         else
-            entryProcessorMisses.incrementAndGet();
+            entryProcessorMisses.increment();
 
         if (delegate != null)
             delegate.onReadOnlyInvoke(isHit);
@@ -716,7 +855,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration Duration.
      */
     public void addInvokeTimeNanos(long duration) {
-        entryProcessorInvokeTimeNanos.addAndGet(duration);
+        entryProcessorInvokeTimeNanos.add(duration);
 
         recalculateInvokeMinTimeNanos(duration);
 
@@ -736,7 +875,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         long minTime = entryProcessorMinInvocationTime.longValue();
 
         while (minTime > duration || minTime == 0) {
-            if (entryProcessorMinInvocationTime.compareAndSet(minTime, duration))
+            if (MetricUtils.compareAndSet(entryProcessorMinInvocationTime, minTime, duration))
                 break;
             else
                 minTime = entryProcessorMinInvocationTime.longValue();
@@ -752,7 +891,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         long maxTime = entryProcessorMaxInvocationTime.longValue();
 
         while (maxTime < duration) {
-            if (entryProcessorMaxInvocationTime.compareAndSet(maxTime, duration))
+            if (MetricUtils.compareAndSet(entryProcessorMaxInvocationTime, maxTime, duration))
                 break;
             else
                 maxTime = entryProcessorMaxInvocationTime.longValue();
@@ -763,7 +902,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Cache write callback.
      */
     public void onWrite() {
-        writes.incrementAndGet();
+        writes.increment();
 
         if (delegate != null)
             delegate.onWrite();
@@ -773,7 +912,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Cache remove callback.
      */
     public void onRemove(){
-        rmCnt.incrementAndGet();
+        rmCnt.increment();
 
         if (delegate != null)
             delegate.onRemove();
@@ -783,7 +922,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Cache remove callback.
      */
     public void onEvict() {
-        evictCnt.incrementAndGet();
+        evictCnt.increment();
 
         if (delegate != null)
             delegate.onEvict();
@@ -795,8 +934,8 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void onTxCommit(long duration) {
-        txCommits.incrementAndGet();
-        commitTimeNanos.addAndGet(duration);
+        txCommits.increment();
+        commitTimeNanos.add(duration);
 
         if (delegate != null)
             delegate.onTxCommit(duration);
@@ -808,8 +947,8 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void onTxRollback(long duration) {
-        txRollbacks.incrementAndGet();
-        rollbackTimeNanos.addAndGet(duration);
+        txRollbacks.increment();
+        rollbackTimeNanos.add(duration);
 
         if (delegate != null)
             delegate.onTxRollback(duration);
@@ -821,7 +960,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addGetTimeNanos(long duration) {
-        getTimeNanos.addAndGet(duration);
+        getTimeNanos.add(duration);
 
         if (delegate != null)
             delegate.addGetTimeNanos(duration);
@@ -833,7 +972,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addPutTimeNanos(long duration) {
-        putTimeNanos.addAndGet(duration);
+        putTimeNanos.add(duration);
 
         if (delegate != null)
             delegate.addPutTimeNanos(duration);
@@ -845,7 +984,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addRemoveTimeNanos(long duration) {
-        rmvTimeNanos.addAndGet(duration);
+        rmvTimeNanos.add(duration);
 
         if (delegate != null)
             delegate.addRemoveTimeNanos(duration);
@@ -857,8 +996,8 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addRemoveAndGetTimeNanos(long duration) {
-        rmvTimeNanos.addAndGet(duration);
-        getTimeNanos.addAndGet(duration);
+        rmvTimeNanos.add(duration);
+        getTimeNanos.add(duration);
 
         if (delegate != null)
             delegate.addRemoveAndGetTimeNanos(duration);
@@ -870,8 +1009,8 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration the time taken in nanoseconds.
      */
     public void addPutAndGetTimeNanos(long duration) {
-        putTimeNanos.addAndGet(duration);
-        getTimeNanos.addAndGet(duration);
+        putTimeNanos.add(duration);
+        getTimeNanos.add(duration);
 
         if (delegate != null)
             delegate.addPutAndGetTimeNanos(duration);
@@ -1075,36 +1214,36 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getRebalancingKeysRate() {
-        return rebalancingKeysRate.getRate();
+        return rebalancingKeysRate.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingBytesRate() {
-        return rebalancingBytesRate.getRate();
+        return rebalancingBytesRate.value();
     }
 
     /**
      * Clear rebalance counters.
      */
     public void clearRebalanceCounters() {
-        estimatedRebalancingKeys.set(0);
+        estimatedRebalancingKeys.reset();
 
-        rebalancedKeys.set(0);
+        rebalancedKeys.reset();
 
-        totalRebalancedBytes.set(0);
+        totalRebalancedBytes.reset();
 
-        rebalancingBytesRate.clear();
+        rebalancingBytesRate.reset();
 
-        rebalancingKeysRate.clear();
+        rebalancingKeysRate.reset();
 
-        rebalanceStartTime.set(-1L);
+        rebalanceStartTime.value(-1L);
     }
 
     /**
      *
      */
     public void startRebalance(long delay){
-        rebalanceStartTime.set(delay + U.currentTimeMillis());
+        rebalanceStartTime.value(delay + U.currentTimeMillis());
     }
 
     /** {@inheritDoc} */
@@ -1119,7 +1258,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingFinishTime() {
-        long rate = rebalancingKeysRate.getRate();
+        long rate = rebalancingKeysRate.value();
 
         return rate <= 0 ? -1L :
             ((getKeysToRebalanceLeft() / rate) * REBALANCE_RATE_INTERVAL) + U.currentTimeMillis();
@@ -1140,7 +1279,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param partitions Partitions number.
      */
     public void rebalanceClearingPartitions(int partitions) {
-        rebalanceClearingPartitions.set(partitions);
+        rebalanceClearingPartitions.value(partitions);
     }
 
     /**
@@ -1151,16 +1290,16 @@ public class CacheMetricsImpl implements CacheMetrics {
         if (keysCnt == null)
             return;
 
-        estimatedRebalancingKeys.addAndGet(keysCnt);
+        estimatedRebalancingKeys.add(keysCnt);
     }
 
     /**
      * Rebalance entry store callback.
      */
     public void onRebalanceKeyReceived() {
-        rebalancedKeys.incrementAndGet();
+        rebalancedKeys.increment();
 
-        rebalancingKeysRate.onHit();
+        rebalancingKeysRate.increment();
     }
 
     /**
@@ -1169,9 +1308,9 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param batchSize Batch size in bytes.
      */
     public void onRebalanceBatchReceived(long batchSize) {
-        totalRebalancedBytes.addAndGet(batchSize);
+        totalRebalancedBytes.add(batchSize);
 
-        rebalancingBytesRate.onHits(batchSize);
+        rebalancingBytesRate.add(batchSize);
     }
 
     /**
@@ -1194,12 +1333,12 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param hit Hit or miss flag.
      */
     public void onOffHeapRead(boolean hit) {
-        offHeapGets.incrementAndGet();
+        offHeapGets.increment();
 
         if (hit)
-            offHeapHits.incrementAndGet();
+            offHeapHits.increment();
         else
-            offHeapMisses.incrementAndGet();
+            offHeapMisses.increment();
 
         if (delegate != null)
             delegate.onOffHeapRead(hit);
@@ -1209,7 +1348,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Off-heap write callback.
      */
     public void onOffHeapWrite() {
-        offHeapPuts.incrementAndGet();
+        offHeapPuts.increment();
 
         if (delegate != null)
             delegate.onOffHeapWrite();
@@ -1219,7 +1358,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Off-heap remove callback.
      */
     public void onOffHeapRemove() {
-        offHeapRemoves.incrementAndGet();
+        offHeapRemoves.increment();
 
         if (delegate != null)
             delegate.onOffHeapRemove();
@@ -1229,10 +1368,15 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Off-heap evict callback.
      */
     public void onOffHeapEvict() {
-        offHeapEvicts.incrementAndGet();
+        offHeapEvicts.increment();
 
         if (delegate != null)
             delegate.onOffHeapEvict();
+    }
+
+    /** @return Prefix for the cache metrics. */
+    public String metricsPrefix() {
+        return prefix;
     }
 
     /** {@inheritDoc} */

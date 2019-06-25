@@ -180,7 +180,6 @@ public class AdaptableDatasetTrainer<I, O, IW, OW, M extends IgniteModel<IW, OW>
                 )));
             }
 
-
             /** {@inheritDoc} */
             @Override public boolean isUpdateable(M mdl) {
                 return false;
