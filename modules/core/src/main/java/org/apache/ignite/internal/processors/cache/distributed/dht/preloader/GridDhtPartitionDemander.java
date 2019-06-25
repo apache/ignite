@@ -1063,7 +1063,7 @@ public class GridDhtPartitionDemander {
                 finally {
                     // Remove all unprocessed rows.
                     while (rowsIter != null && rowsIter.hasNext())
-                        part.dataStore().rowStore().removeRow(rowsIter.next().link(), grp.statisticsHolderData());
+                        part.dataStore().removeRow(rowsIter.next());
                 }
             }
             finally {
