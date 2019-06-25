@@ -146,8 +146,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        initDiagnosticDir();
-
         cleanDiagnosticDir();
     }
 
@@ -156,6 +154,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerAbstractTest {
         super.beforeTest();
 
         cleanDiagnosticDir();
+
+        initDiagnosticDir();
     }
 
     /**
