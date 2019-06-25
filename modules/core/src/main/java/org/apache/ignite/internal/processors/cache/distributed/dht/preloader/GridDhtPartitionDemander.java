@@ -1039,7 +1039,7 @@ public class GridDhtPartitionDemander {
                 grp.shared().database().ensureFreeSpace(grp.dataRegion());
 
                 // Create data rows on data pages before getting locks on cache entries.
-                rowsIter = grp.offheap().storeAll(part, updates).iterator();
+                rowsIter = grp.offheap().insertAll(part, updates).iterator();
 
                 for (GridCacheEntryInfo info : batch) {
                     CacheDataRow row = info.value() == null ? null : rowsIter.next();

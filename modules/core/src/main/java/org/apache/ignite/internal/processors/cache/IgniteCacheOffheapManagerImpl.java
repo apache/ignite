@@ -448,14 +448,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<CacheDataRow> storeAll(
-        GridDhtLocalPartition part,
-        Collection<GridCacheEntryInfo> entries
-    ) throws IgniteCheckedException {
-        return dataStore(part).storeAll(entries);
-    }
-
-    /** {@inheritDoc} */
     @Override public void update(
         GridCacheContext cctx,
         KeyCacheObject key,
@@ -468,6 +460,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         assert expireTime >= 0;
 
         dataStore(part).update(cctx, key, val, ver, expireTime, oldRow);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<CacheDataRow> insertAll(
+        GridDhtLocalPartition part,
+        Collection<GridCacheEntryInfo> entries
+    ) throws IgniteCheckedException {
+        return dataStore(part).insertAll(entries);
     }
 
     /** {@inheritDoc} */
@@ -1703,7 +1703,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheDataRow> storeAll(
+        @Override public Collection<CacheDataRow> insertAll(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())

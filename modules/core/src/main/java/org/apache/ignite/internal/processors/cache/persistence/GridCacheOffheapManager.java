@@ -2402,14 +2402,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheDataRow> storeAll(
+        @Override public Collection<CacheDataRow> insertAll(
             Collection<GridCacheEntryInfo> entries
         ) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
-            return delegate.storeAll(entries);
+            return delegate.insertAll(entries);
         }
 
         /** {@inheritDoc} */

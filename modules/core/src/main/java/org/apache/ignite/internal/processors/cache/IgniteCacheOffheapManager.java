@@ -199,7 +199,7 @@ public interface IgniteCacheOffheapManager {
      * @return Created rows.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<CacheDataRow> storeAll(
+    public Collection<CacheDataRow> insertAll(
         GridDhtLocalPartition part,
         Collection<GridCacheEntryInfo> entries
     ) throws IgniteCheckedException;
@@ -751,7 +751,7 @@ public interface IgniteCacheOffheapManager {
          * @return Created rows.
          * @throws IgniteCheckedException If failed.
          */
-        public Collection<CacheDataRow> storeAll(
+        public Collection<CacheDataRow> insertAll(
             Collection<GridCacheEntryInfo> entries
         ) throws IgniteCheckedException;
 
