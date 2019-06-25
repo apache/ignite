@@ -185,6 +185,10 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
         private int fails;
 
         /** */
+        public QueryMetricsSnapshot() {
+        }
+
+        /** */
         public QueryMetricsSnapshot(long minTime, long maxTime, double avgTime, int execs, int fails) {
             this.minTime = minTime;
             this.maxTime = maxTime;
