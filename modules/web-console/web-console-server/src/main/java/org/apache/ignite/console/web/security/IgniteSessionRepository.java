@@ -18,7 +18,6 @@ package org.apache.ignite.console.web.security;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.springframework.session.ExpiringSession;
