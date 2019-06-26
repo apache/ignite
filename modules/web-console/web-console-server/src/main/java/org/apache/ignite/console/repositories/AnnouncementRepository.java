@@ -21,7 +21,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.console.db.Table;
 import org.apache.ignite.console.dto.Announcement;
 import org.apache.ignite.console.tx.TransactionManager;
-import org.apache.ignite.transactions.Transaction;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -36,7 +35,7 @@ public class AnnouncementRepository {
     private final TransactionManager txMgr;
 
     /** */
-    private final Table<Announcement> announcementTbl;
+    private Table<Announcement> announcementTbl;
 
     /**
      * @param ignite Ignite.
@@ -45,14 +44,14 @@ public class AnnouncementRepository {
     public AnnouncementRepository(Ignite ignite, TransactionManager txMgr) {
         this.txMgr = txMgr;
 
-        announcementTbl = new Table<>(ignite, "wc_announcement");
+        txMgr.registerStarter("announcement", () -> announcementTbl = new Table<>(ignite, "wc_announcement"));
     }
 
     /**
      * @return Announcement.
      */
     public Announcement load() {
-        try (Transaction tx = txMgr.txStart()) {
+        return txMgr.doInTransaction(() -> {
             Announcement ann = announcementTbl.load(ID);
 
             if (ann == null) {
@@ -61,10 +60,8 @@ public class AnnouncementRepository {
                 announcementTbl.save(ann);
             }
 
-            tx.commit();
-
             return ann;
-        }
+        });
     }
 
     /**
@@ -73,12 +70,10 @@ public class AnnouncementRepository {
      * @param ann Announcement.
      */
     public void save(Announcement ann) {
-        try (Transaction tx = txMgr.txStart()) {
+        txMgr.doInTransaction(() -> {
             ann.setId(ID);
 
             announcementTbl.save(ann);
-
-            tx.commit();
-        }
+        });
     }
 }

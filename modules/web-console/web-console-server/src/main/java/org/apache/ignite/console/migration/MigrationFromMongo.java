@@ -42,7 +42,6 @@ import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.web.model.ConfigurationKey;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.transactions.Transaction;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
@@ -124,15 +123,7 @@ public class MigrationFromMongo {
             return;
         }
 
-        boolean migrationNeeded;
-
-        try(Transaction tx = txMgr.txStart()) {
-            migrationNeeded = accRepo.ensureFirstUser();
-
-            tx.rollback();
-        }
-
-        if (!migrationNeeded) {
+        if (txMgr.doInTransaction(accRepo::hasUsers)) {
             log.warn("Database was already migrated. Consider to disable migration in application settings.");
 
             return;
@@ -185,19 +176,19 @@ public class MigrationFromMongo {
      * Migrate accounts.
      */
     protected void migrateAccounts() {
-        MongoCollection<Document> accountsCollection = mongoDb.getCollection("accounts");
-        MongoCollection<Document> spacesCollection = mongoDb.getCollection("spaces");
+        MongoCollection<Document> accountsCol = mongoDb.getCollection("accounts");
+        MongoCollection<Document> spacesCol = mongoDb.getCollection("spaces");
 
-        log.info("Accounts to migrate: {}", accountsCollection.countDocuments());
+        log.info("Accounts to migrate: {}", accountsCol.countDocuments());
 
-        try (MongoCursor<Document> cursor = accountsCollection.find().iterator()) {
+        try (MongoCursor<Document> cursor = accountsCol.find().iterator()) {
             while (cursor.hasNext()) {
                 Document accMongo = cursor.next();
 
                 ObjectId mongoAccId = accMongo.getObjectId("_id");
                 String email = accMongo.getString("email");
 
-                Document space = spacesCollection.find(
+                Document space = spacesCol.find(
                     Filters.and(
                         Filters.eq("owner", mongoAccId),
                         Filters.eq("demo", false)
@@ -212,16 +203,13 @@ public class MigrationFromMongo {
 
                 log.info("Migrating account [_id={}, email={}]", mongoAccId, email);
 
-                try (Transaction tx = txMgr.txStart()) {
+                txMgr.doInTransaction(() -> {
                     Account acc = createAccount(accMongo);
 
-                    accRepo.ensureFirstUser();
-                    accRepo.save(acc);
+                    accRepo.create(acc);
 
                     migrateAccountObjects(accMongo, space, acc.getId());
-
-                    tx.commit();
-                }
+                });
             }
         }
     }
@@ -244,15 +232,15 @@ public class MigrationFromMongo {
      * @param accId Account ID.
      */
     private void migrateNotebooks(Document space, UUID accId) {
-        MongoCollection<Document> notebooksCollection = mongoDb.getCollection("notebooks");
+        MongoCollection<Document> notebooksCol = mongoDb.getCollection("notebooks");
 
         ObjectId spaceId = space.getObjectId("_id");
 
-        long cnt = notebooksCollection.countDocuments(Filters.eq("space", spaceId));
+        long cnt = notebooksCol.countDocuments(Filters.eq("space", spaceId));
 
         log.info("Migrating notebooks: {}", cnt);
 
-        try (MongoCursor<Document> cursor = notebooksCollection.find(Filters.eq("space", spaceId)).iterator()) {
+        try (MongoCursor<Document> cursor = notebooksCol.find(Filters.eq("space", spaceId)).iterator()) {
             while (cursor.hasNext()) {
                 Document notebookMongo = cursor.next();
 
@@ -368,25 +356,25 @@ public class MigrationFromMongo {
 
         clusterMongo.put("caches", asStrings(cacheIds.values()));
 
-        Map<ObjectId, UUID> modelIds = new HashMap<>();
+        Map<ObjectId, UUID> mdlIds = new HashMap<>();
 
         List<ObjectId> modelsMongo = asListOfObjectIds(clusterMongo, "models");
 
         if (!F.isEmpty(modelsMongo))
-            modelsMongo.forEach(oid -> modelIds.put(oid, UUID.randomUUID()));
+            modelsMongo.forEach(oid -> mdlIds.put(oid, UUID.randomUUID()));
 
         clusterMongo.remove("space");
         clusterMongo.remove("igfss");
 
         clusterMongo.put("id", clusterId.toString());
-        clusterMongo.put("models", asStrings(modelIds.values()));
+        clusterMongo.put("models", asStrings(mdlIds.values()));
 
         JsonObject cfg = new JsonObject()
             .add("cluster", fromJson(mongoToJson(clusterMongo)));
 
-        migrateCaches(cfg, cacheIds, modelIds);
+        migrateCaches(cfg, cacheIds, mdlIds);
 
-        migrateModels(cfg, modelIds, cacheIds);
+        migrateModels(cfg, mdlIds, cacheIds);
 
         cfgsRepo.saveAdvancedCluster(accKey, cfg);
     }
@@ -394,21 +382,21 @@ public class MigrationFromMongo {
     /**
      * @param cfg Configuration.
      * @param cacheIds Links from cache Mongo ID to UUID.
-     * @param modelIds Links from model Mongo ID to UUID.
+     * @param mdlIds Links from model Mongo ID to UUID.
      */
     private void migrateCaches(
         JsonObject cfg,
         Map<ObjectId, UUID> cacheIds,
-        Map<ObjectId, UUID> modelIds
+        Map<ObjectId, UUID> mdlIds
     ) {
         log.info("Migrating cluster caches: {}", cacheIds.size());
 
-        MongoCollection<Document> cachesCollection = mongoDb.getCollection("caches");
+        MongoCollection<Document> cachesCol = mongoDb.getCollection("caches");
 
         JsonArray caches = new JsonArray();
 
         cacheIds.forEach((mongoId, cacheId) -> {
-            try (MongoCursor<Document> cursor = cachesCollection.find(Filters.eq("_id", mongoId)).iterator()) {
+            try (MongoCursor<Document> cursor = cachesCol.find(Filters.eq("_id", mongoId)).iterator()) {
                 while(cursor.hasNext()) {
                     Document cacheMongo = cursor.next();
 
@@ -421,7 +409,7 @@ public class MigrationFromMongo {
                     List<ObjectId> cacheDomains = asListOfObjectIds(cacheMongo, "domains");
 
                     cacheMongo.put("id", cacheId.toString());
-                    cacheMongo.put("domains", mongoIdsToNewIds(cacheDomains, modelIds));
+                    cacheMongo.put("domains", mongoIdsToNewIds(cacheDomains, mdlIds));
 
                     caches.add(fromJson(mongoToJson(cacheMongo)));
                 }
@@ -433,38 +421,38 @@ public class MigrationFromMongo {
 
     /**
      * @param cfg Configuration.
-     * @param modelIds Links from model Mongo ID to UUID.
+     * @param mdlIds Links from model Mongo ID to UUID.
      * @param cacheIds Links from cache Mongo ID to UUID.
      */
     private void migrateModels(
         JsonObject cfg,
-        Map<ObjectId, UUID> modelIds,
+        Map<ObjectId, UUID> mdlIds,
         Map<ObjectId, UUID> cacheIds
     ) {
-        log.info("Migrating cluster models: {}", modelIds.size());
+        log.info("Migrating cluster models: {}", mdlIds.size());
 
-        MongoCollection<Document> modelsCollection = mongoDb.getCollection("domainmodels");
+        MongoCollection<Document> modelsCol = mongoDb.getCollection("domainmodels");
 
         JsonArray models = new JsonArray();
 
-        modelIds.forEach((mongoId, modelId) -> {
-            try (MongoCursor<Document> cursor = modelsCollection.find(Filters.eq("_id", mongoId)).iterator()) {
+        mdlIds.forEach((mongoId, modelId) -> {
+            try (MongoCursor<Document> cursor = modelsCol.find(Filters.eq("_id", mongoId)).iterator()) {
                 while(cursor.hasNext()) {
-                    Document modelMongo = cursor.next();
+                    Document mdlMongo = cursor.next();
 
                     log.info("Migrating model: [_id={}, keyType={}, valueType={}]",
                         mongoId,
-                        modelMongo.getString("keyType"),
-                        modelMongo.getString("valueType"));
+                        mdlMongo.getString("keyType"),
+                        mdlMongo.getString("valueType"));
 
-                    modelMongo.remove("clusters");
+                    mdlMongo.remove("clusters");
 
-                    List<ObjectId> modelCaches = asListOfObjectIds(modelMongo, "caches");
+                    List<ObjectId> mdlCaches = asListOfObjectIds(mdlMongo, "caches");
 
-                    modelMongo.put("id", modelId.toString());
-                    modelMongo.put("caches",  mongoIdsToNewIds(modelCaches, cacheIds));
+                    mdlMongo.put("id", modelId.toString());
+                    mdlMongo.put("caches",  mongoIdsToNewIds(mdlCaches, cacheIds));
 
-                    models.add(fromJson(mongoToJson(modelMongo)));
+                    models.add(fromJson(mongoToJson(mdlMongo)));
                 }
             }
         });
@@ -477,32 +465,32 @@ public class MigrationFromMongo {
      * @param accId Account ID.
      */
     private void migrateActivities(Document space, UUID accId) {
-        MongoCollection<Document> activitiesCollection = mongoDb.getCollection("activities");
+        MongoCollection<Document> activitiesCol = mongoDb.getCollection("activities");
 
-        long cnt = activitiesCollection.countDocuments(Filters.eq("owner", space.getObjectId("owner")));
+        long cnt = activitiesCol.countDocuments(Filters.eq("owner", space.getObjectId("owner")));
 
         log.info("Migrating activities: {}", cnt);
 
-        try (MongoCursor<Document> cursor = activitiesCollection.find(Filters.eq("owner", space.getObjectId("owner"))).iterator()) {
+        try (MongoCursor<Document> cursor = activitiesCol.find(Filters.eq("owner", space.getObjectId("owner"))).iterator()) {
             while (cursor.hasNext()) {
                 Document activityMongo = cursor.next();
 
-                String action = activityMongo.getString("action");
+                String act = activityMongo.getString("action");
 
-                if (action.contains("/igfs"))
+                if (act.contains("/igfs"))
                     continue;
 
                 Date date = activityMongo.getDate("date");
 
                 log.info("Migrating activity: [_id={}, action={}, date={}]",
-                    activityMongo.getObjectId("_id"), action, date);
+                    activityMongo.getObjectId("_id"), act, date);
 
                 Number amount = (Number)activityMongo.get("amount");
 
                 Activity activity = new Activity(
                     UUID.randomUUID(),
                     activityMongo.getString("group"),
-                    action,
+                    act,
                     amount != null ? amount.intValue() : 0
                 );
 

@@ -30,7 +30,7 @@ export default class PermanentNotifications {
         private AdminData: AdminData
     ) {}
 
-    user$ = this.User.current$
+    user$ = this.User.current$;
 
     closeDemo() {
         this.$window.close();

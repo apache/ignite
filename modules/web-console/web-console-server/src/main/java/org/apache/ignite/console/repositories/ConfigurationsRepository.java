@@ -33,7 +33,6 @@ import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.console.web.model.ConfigurationKey;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.transactions.Transaction;
 import org.springframework.stereotype.Repository;
 
 import static java.util.stream.Collectors.toMap;
@@ -53,25 +52,25 @@ public class ConfigurationsRepository {
     protected final TransactionManager txMgr;
 
     /** */
-    private final Table<Cluster> clustersTbl;
+    private Table<Cluster> clustersTbl;
 
     /** */
-    private final Table<Cache> cachesTbl;
+    private Table<Cache> cachesTbl;
 
     /** */
-    private final Table<Model> modelsTbl;
+    private Table<Model> modelsTbl;
 
     /** */
-    private final OneToManyIndex<UUID> cachesIdx;
+    private OneToManyIndex<UUID> cachesIdx;
 
     /** */
-    private final OneToManyIndex<UUID> modelsIdx;
+    private OneToManyIndex<UUID> modelsIdx;
 
     /** */
-    protected final OneToManyIndex<ConfigurationKey> clustersIdx;
+    protected OneToManyIndex<ConfigurationKey> clustersIdx;
 
     /** */
-    private final OneToManyIndex<ConfigurationKey> cfgIdx;
+    private OneToManyIndex<ConfigurationKey> cfgIdx;
 
     /**
      * @param ignite Ignite.
@@ -80,15 +79,17 @@ public class ConfigurationsRepository {
     public ConfigurationsRepository(Ignite ignite, TransactionManager txMgr) {
         this.txMgr = txMgr;
 
-        clustersTbl = new Table<>(ignite, "wc_account_clusters");
-        cachesTbl = new Table<>(ignite, "wc_cluster_caches");
-        modelsTbl = new Table<>(ignite, "wc_cluster_models");
+        txMgr.registerStarter("configurations", () -> {
+            clustersTbl = new Table<>(ignite, "wc_account_clusters");
+            cachesTbl = new Table<>(ignite, "wc_cluster_caches");
+            modelsTbl = new Table<>(ignite, "wc_cluster_models");
 
-        cachesIdx = new OneToManyIndex<>(ignite, "wc_cluster_caches_idx");
-        modelsIdx = new OneToManyIndex<>(ignite, "wc_cluster_models_idx");
+            cachesIdx = new OneToManyIndex<>(ignite, "wc_cluster_caches_idx");
+            modelsIdx = new OneToManyIndex<>(ignite, "wc_cluster_models_idx");
 
-        clustersIdx = new OneToManyIndex<>(ignite, "wc_account_clusters_idx");
-        cfgIdx = new OneToManyIndex<>(ignite, "wc_account_configs_idx");
+            clustersIdx = new OneToManyIndex<>(ignite, "wc_account_clusters_idx");
+            cfgIdx = new OneToManyIndex<>(ignite, "wc_account_configs_idx");
+        });
     }
 
     /**
@@ -97,7 +98,7 @@ public class ConfigurationsRepository {
      * @return Configuration in JSON format.
      */
     public JsonObject loadConfiguration(ConfigurationKey key, UUID clusterId) {
-        try (Transaction ignored = txMgr.txStart()) {
+        return txMgr.doInTransaction(() -> {
             Cluster cluster = clustersTbl.load(clusterId);
 
             if (cluster == null)
@@ -112,7 +113,7 @@ public class ConfigurationsRepository {
                 .add("cluster", fromJson(cluster.json()))
                 .add("caches", toJsonArray(caches))
                 .add("models", toJsonArray(models));
-        }
+        });
     }
 
     /**
@@ -138,7 +139,7 @@ public class ConfigurationsRepository {
      * @return List of user clusters.
      */
     public JsonArray loadClusters(ConfigurationKey key) {
-        try (Transaction ignored = txMgr.txStart()) {
+        return txMgr.doInTransaction(() -> {
             Set<UUID> clusterIds = clustersIdx.load(key);
 
             Collection<Cluster> clusters = clustersTbl.loadAll(clusterIds);
@@ -148,7 +149,7 @@ public class ConfigurationsRepository {
             clusters.forEach(cluster -> shortList.add(shortCluster(cluster)));
 
             return shortList;
-        }
+        });
     }
 
     /**
@@ -157,7 +158,7 @@ public class ConfigurationsRepository {
      * @return Cluster.
      */
     public Cluster loadCluster(ConfigurationKey key, UUID clusterId) {
-        try (Transaction ignored = txMgr.txStart()) {
+        return txMgr.doInTransaction(() -> {
             Cluster cluster = clustersTbl.load(clusterId);
 
             if (cluster == null)
@@ -166,7 +167,7 @@ public class ConfigurationsRepository {
             clustersIdx.validate(key, clusterId);
 
             return cluster;
-        }
+        });
     }
 
     /**
@@ -175,7 +176,7 @@ public class ConfigurationsRepository {
      * @return Cache.
      */
     public Cache loadCache(ConfigurationKey key, UUID cacheId) {
-        try (Transaction ignored = txMgr.txStart()) {
+        return txMgr.doInTransaction(() -> {
             Cache cache = cachesTbl.load(cacheId);
 
             if (cache == null)
@@ -184,7 +185,7 @@ public class ConfigurationsRepository {
             cfgIdx.validate(key, cacheId);
 
             return cache;
-        }
+        });
     }
 
     /**
@@ -193,7 +194,7 @@ public class ConfigurationsRepository {
      * @return Model.
      */
     public Model loadModel(ConfigurationKey key, UUID mdlId) {
-        try (Transaction ignored = txMgr.txStart()) {
+        return txMgr.doInTransaction(() -> {
             Model mdl = modelsTbl.load(mdlId);
 
             if (mdl == null)
@@ -202,7 +203,7 @@ public class ConfigurationsRepository {
             cfgIdx.validate(key, mdlId);
 
             return mdl;
-        }
+        });
     }
 
     /**
@@ -211,7 +212,7 @@ public class ConfigurationsRepository {
      * @return Collection of cluster caches.
      */
     public Collection<Cache> loadCaches(ConfigurationKey key, UUID clusterId) {
-        try (Transaction ignored = txMgr.txStart()) {
+        return txMgr.doInTransaction(() -> {
             clustersIdx.validate(key, clusterId);
 
             Set<UUID> cachesIds = cachesIdx.load(clusterId);
@@ -219,7 +220,7 @@ public class ConfigurationsRepository {
             cfgIdx.validateAll(key, cachesIds);
 
             return cachesTbl.loadAll(cachesIds);
-        }
+        });
     }
 
     /**
@@ -228,7 +229,7 @@ public class ConfigurationsRepository {
      * @return Collection of cluster models.
      */
     public Collection<Model> loadModels(ConfigurationKey key, UUID clusterId) {
-        try (Transaction ignored = txMgr.txStart()) {
+        return txMgr.doInTransaction(() -> {
             clustersIdx.validate(key, clusterId);
 
             Set<UUID> modelsIds = modelsIdx.load(clusterId);
@@ -236,7 +237,7 @@ public class ConfigurationsRepository {
             cfgIdx.validateAll(key, modelsIds);
 
             return modelsTbl.loadAll(modelsIds);
-        }
+        });
     }
 
     /**
@@ -377,14 +378,12 @@ public class ConfigurationsRepository {
      * @param json Configuration in JSON format.
      */
     public void saveAdvancedCluster(ConfigurationKey key, JsonObject json) {
-        try (Transaction tx = txMgr.txStart()) {
+        txMgr.doInTransaction(() -> {
             Cluster cluster = saveCluster(key, json);
 
             saveCaches(key, cluster, json, false);
             saveModels(key, cluster, json);
-
-            tx.commit();
-        }
+        });
     }
 
     /**
@@ -394,13 +393,11 @@ public class ConfigurationsRepository {
      * @param json Configuration in JSON format.
      */
     public void saveBasicCluster(ConfigurationKey key, JsonObject json) {
-        try (Transaction tx = txMgr.txStart()) {
+        txMgr.doInTransaction(() -> {
             Cluster cluster = saveCluster(key, json);
 
             saveCaches(key, cluster, json, true);
-
-            tx.commit();
-        }
+        });
     }
 
     /**
@@ -410,6 +407,7 @@ public class ConfigurationsRepository {
      * @param fkIdx Foreign key.
      * @param tbl Table with children.
      */
+    @SuppressWarnings("unchecked")
     private void deleteClusterObjects(ConfigurationKey key, UUID clusterId, OneToManyIndex fkIdx, Table<? extends DataObject> tbl) {
         Set<UUID> ids = fkIdx.delete(clusterId);
 
@@ -436,16 +434,14 @@ public class ConfigurationsRepository {
      * @param clusterIds Cluster IDs to delete.
      */
     public void deleteClusters(ConfigurationKey key, TreeSet<UUID> clusterIds) {
-        try (Transaction tx = txMgr.txStart()) {
+        txMgr.doInTransaction(() -> {
             clustersIdx.validateAll(key, clusterIds);
 
             clusterIds.forEach(clusterId -> deleteAllClusterObjects(key, clusterId));
 
             clustersTbl.deleteAll(clusterIds);
             clustersIdx.removeAll(key, clusterIds);
-
-            tx.commit();
-        }
+        });
     }
 
     /**
@@ -454,14 +450,12 @@ public class ConfigurationsRepository {
      * @param key Configuration key.
      */
     public void deleteByAccountId(ConfigurationKey key) {
-        try (Transaction tx = txMgr.txStart()) {
+        txMgr.doInTransaction(() -> {
             Set<UUID> clusterIds = clustersIdx.delete(key);
 
             clusterIds.forEach(clusterId -> deleteAllClusterObjects(key, clusterId));
 
             clustersTbl.deleteAll(clusterIds);
-
-            tx.commit();
-        }
+        });
     }
 }

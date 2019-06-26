@@ -32,9 +32,9 @@ export default class WebConsoleHeaderContent {
         '403', '404', 'signin'
     ];
 
-    user: User
+    user: User;
 
-    _subscriber = this.User.current$.pipe(tap((user) => this.user = user)).subscribe()
+    _subscriber = this.User.current$.pipe(tap((user) => this.user = user)).subscribe();
 
     get showConnectedClusters(): boolean {
         return this.user &&

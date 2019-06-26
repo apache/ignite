@@ -33,7 +33,7 @@ export default class UserMenu {
         {text: 'Getting started', click: '$ctrl.gettingStarted.tryShow(true)'}
     ];
 
-    user$ = this.User.current$
+    user$ = this.User.current$;
 
     subscriber = this.user$.pipe(tap(() => {
         this.items.splice(2);
@@ -45,7 +45,7 @@ export default class UserMenu {
 
         if (this.AclService.can('logout'))
             this.items.push({text: 'Log out', sref: 'logout'});
-    })).subscribe()
+    })).subscribe();
 
     $onDestroy() {
         if (this.subscriber) this.subscriber.unsubscribe();

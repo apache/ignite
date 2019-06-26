@@ -27,6 +27,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import static org.apache.ignite.console.common.Utils.errorMessage;
+import static org.apache.ignite.console.web.errors.Errors.ERR_EMAIL_NOT_CONFIRMED;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
@@ -35,9 +36,6 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
  */
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
-    /** */
-    private static final int EMAIL_NOT_CONFIRMED = 10104;
-
     /**
      * Handles account disabled exceptions.
      *
@@ -47,8 +45,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler(value = {MissingConfirmRegistrationException.class})
     protected ResponseEntity<Object> handleDisabledAccountException(MissingConfirmRegistrationException ex, WebRequest req) {
-        return handleExceptionInternal(ex,
-            new ErrorWithEmailResponse(EMAIL_NOT_CONFIRMED, errorMessage(ex), ex.getUsername()), null, FORBIDDEN, req);
+        return handleExceptionInternal(ex, new ErrorWithEmailResponse(ERR_EMAIL_NOT_CONFIRMED, errorMessage(ex), ex.getUsername()), null, FORBIDDEN, req);
     }
 
     /**
@@ -64,7 +61,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * Handles all exception.
+     * Handles all other exceptions.
      *
      * @param ex Service exception.
      * @param req Web request.
