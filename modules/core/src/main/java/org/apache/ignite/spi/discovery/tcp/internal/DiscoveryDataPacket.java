@@ -134,11 +134,11 @@ public class DiscoveryDataPacket implements Serializable {
         ClassLoader clsLdr,
         boolean clientNode,
         IgniteLogger log
-    ) {
+    ) throws IgniteCheckedException {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (commonData != null && !commonData.isEmpty())
-            dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log));
+            dataBag.commonData(unmarshalData(commonData, marsh, clsLdr, clientNode, log, true));
 
         if (nodeSpecificData != null && !nodeSpecificData.isEmpty()) {
             Map<UUID, Map<Integer, Serializable>> unmarshNodeSpecData = U.newLinkedHashMap(nodeSpecificData.size());
@@ -151,7 +151,7 @@ public class DiscoveryDataPacket implements Serializable {
 
                 unmarshNodeSpecData.put(
                     nodeBinEntry.getKey(),
-                    unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log)
+                    unmarshalData(nodeBinData, marsh, clsLdr, clientNode, log, true)
                 );
             }
 
@@ -166,17 +166,20 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clsLdr Class loader.
      * @param clientNode Client node.
      * @param log Logger.
+     * @param panic Throw unmarshalling if {@code true}.
+     * @throws IgniteCheckedException If {@code panic} is {@true} and unmarshalling failed.
      */
     public DiscoveryDataBag unmarshalJoiningNodeData(
         Marshaller marsh,
         ClassLoader clsLdr,
         boolean clientNode,
-        IgniteLogger log
-    ) {
+        IgniteLogger log,
+        boolean panic
+    ) throws IgniteCheckedException {
         DiscoveryDataBag dataBag = new DiscoveryDataBag(joiningNodeId, joiningNodeClient);
 
         if (joiningNodeData != null && !joiningNodeData.isEmpty()) {
-            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log);
+            unmarshalledJoiningNodeData = unmarshalData(joiningNodeData, marsh, clsLdr, clientNode, log, panic);
 
             dataBag.joiningNodeData(unmarshalledJoiningNodeData);
         }
@@ -275,15 +278,19 @@ public class DiscoveryDataPacket implements Serializable {
      * @param src Source.
      * @param marsh Marsh.
      * @param clsLdr Class loader.
+     * @param clientNode Client node.
      * @param log Logger.
+     * @param panic Throw unmarshalling if {@code true}.
+     * @throws IgniteCheckedException If {@code panic} is {@true} and unmarshalling failed.
      */
     private Map<Integer, Serializable> unmarshalData(
         Map<Integer, byte[]> src,
         Marshaller marsh,
         ClassLoader clsLdr,
         boolean clientNode,
-        IgniteLogger log
-    ) {
+        IgniteLogger log,
+        boolean panic
+    ) throws IgniteCheckedException {
         Map<Integer, Serializable> res = U.newHashMap(src.size());
 
         for (Map.Entry<Integer, byte[]> binEntry : src.entrySet()) {
@@ -295,14 +302,23 @@ public class DiscoveryDataPacket implements Serializable {
             }
             catch (IgniteCheckedException e) {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
-                    X.hasCause(e, ClassNotFoundException.class) && clientNode)
+                    X.hasCause(e, ClassNotFoundException.class) && clientNode
+                )
                     U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
-                else if (binEntry.getKey() < GridComponent.DiscoveryDataExchangeType.VALUES.length)
-                    U.error(log, "Failed to unmarshal discovery data for component: " + binEntry.getKey(), e);
+                else if (binEntry.getKey() < GridComponent.DiscoveryDataExchangeType.VALUES.length) {
+                    U.error(log,
+                        "Failed to unmarshal discovery data for component: " +
+                            GridComponent.DiscoveryDataExchangeType.VALUES[binEntry.getKey()],
+                        e
+                    );
+                }
                 else {
                     U.warn(log, "Failed to unmarshal discovery data." +
                         " Component " + binEntry.getKey() + " is not found.");
                 }
+
+                if (panic)
+                    throw e;
             }
         }
 

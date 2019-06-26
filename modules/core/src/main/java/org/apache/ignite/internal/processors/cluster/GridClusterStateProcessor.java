@@ -1026,7 +1026,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 String msg = "Node not supporting BaselineTopology" +
                     " is not allowed to join the cluster with BaselineTopology";
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
 
             return null;
@@ -1041,7 +1041,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 "from node " + node.consistentId() + ": " + e.getMessage() +
                 "; node is not allowed to join";
 
-            return new IgniteNodeValidationResult(node.id(), msg , msg);
+            return new IgniteNodeValidationResult(node.id(), msg);
         }
 
         if (joiningNodeState == null || joiningNodeState.baselineTopology() == null)
@@ -1051,7 +1051,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
                 String msg = "Node with set up BaselineTopology is not allowed to join cluster without one: " + node.consistentId();
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
         }
 
@@ -1062,7 +1062,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             String msg = "Node with set up BaselineTopology is not allowed " +
                 "to join cluster in the process of first activation: " + node.consistentId();
 
-            return new IgniteNodeValidationResult(node.id(), msg, msg);
+            return new IgniteNodeValidationResult(node.id(), msg);
         }
 
         BaselineTopology clusterBlt;
@@ -1085,7 +1085,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 + " New BaselineTopology was set on joining node with set-baseline command."
                 + recommendation;
 
-            return new IgniteNodeValidationResult(node.id(), msg, msg);
+            return new IgniteNodeValidationResult(node.id(), msg);
         }
 
         if (joiningNodeBlt.id() == clusterBlt.id()) {
@@ -1098,7 +1098,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     + joiningNodeBlt.branchingPointHash()
                     + ")." + recommendation;
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
         }
         else if (joiningNodeBlt.id() < clusterBlt.id()) {
@@ -1112,7 +1112,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     + joiningNodeBlt.branchingPointHash()
                     + ")." + recommendation;
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
         }
 
