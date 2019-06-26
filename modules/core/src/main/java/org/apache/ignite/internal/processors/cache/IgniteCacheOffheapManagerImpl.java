@@ -23,9 +23,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1726,23 +1728,29 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends CacheDataRow> createRows(
+        @Override public Map<GridCacheEntryInfo, ? extends CacheDataRow> createRows(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            List<DataRow> rows = new ArrayList<>(infos.size());
+            // todo check hashmap
+            Map<GridCacheEntryInfo, DataRow> map = new LinkedHashMap<>(U.capacity(infos.size()));
 
             for (GridCacheEntryInfo info : infos) {
-                rows.add(makeDataRow(info.key(),
-                    info.value(),
-                    info.version(),
-                    info.expireTime(),
-                    grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID));
+                DataRow row = info.value() == null ? null :
+                    makeDataRow(info.key(),
+                        info.value(),
+                        info.version(),
+                        info.expireTime(),
+                        grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID);
+
+                map.put(info, row);
             }
 
             try {
+                Collection<DataRow> rows = F.view(map.values(), Objects::nonNull);
+
                 rowStore.addRows(rows, grp.statisticsHolderData());
 
                 Iterator<GridCacheEntryInfo> iter = infos.iterator();
@@ -1756,7 +1764,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 busyLock.leaveBusy();
             }
 
-            return rows;
+            return map;
         }
 
         /** {@inheritDoc} */

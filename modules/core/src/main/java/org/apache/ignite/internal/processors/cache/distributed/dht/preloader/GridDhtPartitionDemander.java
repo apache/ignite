@@ -1024,7 +1024,7 @@ public class GridDhtPartitionDemander {
             List<GridCacheEntryInfo> batch =
                 infos.subList(batchOff, Math.min(infos.size(), batchOff += CHECKPOINT_THRESHOLD));
 
-            Iterator<? extends CacheDataRow> rowsIter = null;
+            Iterator<? extends Map.Entry<GridCacheEntryInfo, ? extends CacheDataRow>> iter = null;
 
             ctx.database().checkpointReadLock();
 
@@ -1032,14 +1032,15 @@ public class GridDhtPartitionDemander {
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
                 try {
-                    // Filter NULL values (this means we need to remove the cache entry).
-                    Collection<GridCacheEntryInfo> updates = F.view(batch, info -> info.value() != null);
-
                     // Create data rows on data pages before getting locks on cache entries.
-                    rowsIter = part.dataStore().createRows(updates).iterator();
+                    iter = part.dataStore().createRows(batch).entrySet().iterator();
 
-                    for (GridCacheEntryInfo info : batch) {
-                        CacheDataRow row = info.value() == null ? null : rowsIter.next();
+                    while (iter.hasNext()) {
+                        Map.Entry<GridCacheEntryInfo, ? extends CacheDataRow> e = iter.next();
+
+                        GridCacheEntryInfo info = e.getKey();
+
+                        CacheDataRow row = e.getValue();
 
                         GridCacheContext cctx =
                             grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
@@ -1062,8 +1063,12 @@ public class GridDhtPartitionDemander {
                 }
                 finally {
                     // Remove all unprocessed rows.
-                    while (rowsIter != null && rowsIter.hasNext())
-                        part.dataStore().removeRow(rowsIter.next());
+                    while (iter != null && iter.hasNext()) {
+                        CacheDataRow row = iter.next().getValue();
+
+                        if (row != null)
+                            part.dataStore().removeRow(row);
+                    }
                 }
             }
             finally {

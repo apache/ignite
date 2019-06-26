@@ -2411,7 +2411,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends CacheDataRow> createRows(
+        @Override public Map<GridCacheEntryInfo, ? extends CacheDataRow> createRows(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
