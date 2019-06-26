@@ -135,6 +135,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
      * @param retVal Need return value flag.
+     * @param updCntrs Update counters. Null is possible due to compatibility issues.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -153,7 +154,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean addDepInfo,
         boolean storeWriteThrough,
         boolean retVal,
-        Collection<PartitionUpdateCountersMessage> updCntrs) {
+        @Nullable Collection<PartitionUpdateCountersMessage> updCntrs) {
         super(tx,
             timeout,
             null,

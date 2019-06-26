@@ -101,7 +101,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param addDepInfo Deployment info flag.
-     * @param updCntrs Update counters for mvcc Tx.
+     * @param updCntrs Update counters. Null is possible due to compatibility issues.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -128,7 +128,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean addDepInfo,
         boolean retVal,
         boolean waitRemoteTxs,
-        Collection<PartitionUpdateCountersMessage> updCntrs
+        @Nullable Collection<PartitionUpdateCountersMessage> updCntrs
     ) {
         super(
             xidVer,
@@ -243,6 +243,13 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             retVal,
             waitRemoteTxs,
             updCntrs);
+
+        if (updateIdxs != null && !updateIdxs.isEmpty()) {
+            partUpdateCnt = new GridLongList(updateIdxs.size());
+
+            for (Long idx : updateIdxs)
+                partUpdateCnt.add(idx);
+        }
     }
 
     /**

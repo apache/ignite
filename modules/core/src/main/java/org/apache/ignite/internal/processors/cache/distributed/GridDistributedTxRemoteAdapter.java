@@ -50,6 +50,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -758,6 +760,17 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             // Apply update counters.
                             if (txCntrs != null)
                                 cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
+                            else if (!near()){
+                                for (IgniteTxEntry entry : writeMap.values()) {
+                                    GridCacheContext ctx0 = cctx.cacheContext(entry.cacheId());
+
+                                    GridDhtPartitionTopology top = ctx0.topology();
+
+                                    GridDhtLocalPartition locPart = top.localPartition(entry.cached().partition());
+
+                                    locPart.updateCounter(entry.updateCounter() - 1, 1);
+                                }
+                            }
 
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                                 // Set new update counters for data entries received from persisted tx entries.

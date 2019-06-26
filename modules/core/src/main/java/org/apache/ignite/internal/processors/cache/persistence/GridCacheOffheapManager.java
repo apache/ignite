@@ -580,7 +580,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     ctx.database().checkpointReadUnlock();
                 }
             }
-            else if (recoverState != null && recoverState >= 0) { // Pre-create partition if having valid state.
+            else if (recoverState != null) { // Pre-create partition if having valid state.
                 GridDhtLocalPartition part = grp.topology().forceCreatePartition(p);
 
                 updateState(part, recoverState);
@@ -1431,8 +1431,20 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
                 }
 
-                assert entryIt != null || doneParts.size() == partMap.size() :
-                    "Reached end of WAL but not all partitions are done";
+                if (entryIt == null && doneParts.size() != partMap.size()) {
+                    for (int i = 0; i < partMap.size(); i++) {
+                        int p = partMap.partitionAt(i);
+
+                        if (!doneParts.contains(p)) {
+                            log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
+                                (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+
+                            doneParts.add(p);
+                        }
+                    }
+
+                    return;
+                }
             }
         }
     }

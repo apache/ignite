@@ -1409,6 +1409,9 @@ public class IgniteTxHandler {
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
 
+                tx.setPartitionUpdateCounters(
+                    req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
+
                 tx.commitRemoteTx();
             }
             else {

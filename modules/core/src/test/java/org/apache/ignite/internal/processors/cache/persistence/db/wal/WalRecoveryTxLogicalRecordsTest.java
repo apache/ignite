@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -46,12 +48,19 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -63,12 +72,14 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.Abstract
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
 /**
@@ -513,6 +524,81 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             File[] cpFiles = cpDir.listFiles();
 
             assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2 + 1); // starts & ends + node_start
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Test historical iterator works over WAL with reordered or missed data entries.
+     *
+     * @throws Exception if failed.
+     */
+    public void testHistoricalRebalanceIteratorOverBrokenWAL() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        try {
+            ignite.cluster().active(true);
+
+            forceCheckpoint();
+
+            GridCacheSharedContext<Object, Object> cctx = ignite.context().cache().context();
+
+            int cacheId = CU.cacheId(CACHE_NAME);
+
+            int partId1 = 0;
+            int partId2 = 1;
+            int partId3 = 2;
+
+            List<DataRecord> recs = new ArrayList<>();
+
+            for (int k = 0; k < 100; k++)
+                recs.add(new DataRecord(entryOp(cctx, CU.cacheId(CACHE_NAME), cacheId, partId1,
+                    GridCacheOperation.CREATE, k + 1, k)));
+
+            for (int k = 0; k < 200; k++)
+                recs.add(new DataRecord(entryOp(cctx, CU.cacheId(CACHE_NAME), cacheId, partId2,
+                    GridCacheOperation.CREATE, k + 1, k)));
+
+            for (int k = 0; k < 300; k++)
+                recs.add(new DataRecord(entryOp(cctx, CU.cacheId(CACHE_NAME), cacheId, partId3,
+                    GridCacheOperation.CREATE, k + 1, k)));
+
+            recs.remove(599);
+            recs.remove(299);
+            recs.remove(99);
+
+            Collections.shuffle(recs);
+
+            for (int i = 0; i < 20; i++)
+                recs.remove(ThreadLocalRandom.current().nextInt(recs.size()));
+
+            for (DataRecord rec : recs)
+                cctx.wal().log(rec);
+
+            CacheGroupContext grp = ignite.context().cache().cacheGroup(CU.cacheId(CACHE_NAME));
+            IgniteCacheOffheapManager offh = grp.offheap();
+            AffinityTopologyVersion topVer = grp.affinity().lastVersion();
+
+            IgniteDhtDemandedPartitionsMap parts = new IgniteDhtDemandedPartitionsMap();
+            parts.addHistorical(partId1, 0, 100, PARTS);
+            parts.addHistorical(partId2, 0, 200, PARTS);
+            parts.addHistorical(partId3, 0, 300, PARTS);
+
+            IgniteRebalanceIterator iter = offh.rebalanceIterator(parts, topVer);
+
+            int exp = 0;
+            while (iter.hasNext()) {
+                iter.next();
+
+                exp++;
+            }
+
+            assertEquals(100 + 200 + 300 - 20 - 3, exp);
+            assertTrue(iter.isPartitionDone(partId1));
+            assertTrue(iter.isPartitionDone(partId2));
+            assertTrue(iter.isPartitionDone(partId3));
         }
         finally {
             stopAllGrids();
@@ -1121,6 +1207,32 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         assertTrue(foundTails);
 
         return res;
+    }
+
+    /**
+     * @param cctx
+     * @param key
+     * @param cacheId
+     * @param partId
+     * @param op
+     * @param cntr
+     * @param val
+     * @return Data entry.
+     */
+    private DataEntry entryOp(GridCacheSharedContext cctx, int key, int cacheId, int partId, GridCacheOperation op,
+        int cntr, @Nullable Object val) {
+        KeyCacheObject key0 = new KeyCacheObjectImpl(Integer.valueOf(key), null, 0);
+
+        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+        if (cacheCtx == null)
+            throw new IgniteException("Failed to find cache context for the given cache ID: " + cacheId);
+
+        IgniteCacheObjectProcessor co = cctx.kernalContext().cacheObjects();
+
+        CacheObject val0 = co.toCacheObject(cacheCtx.cacheObjectContext(), val, true);
+
+        return new DataEntry(cacheId, key0, val0, op, cctx.versions().next(), cctx.versions().next(), 0, partId, cntr);
     }
 
     /**

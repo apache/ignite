@@ -69,9 +69,15 @@ public class PartitionAtomicUpdateCounterImpl implements PartitionUpdateCounter 
 
     /** {@inheritDoc} */
     @Override public boolean update(long start, long delta) {
-        update(start + delta);
+        long cur, val = start + delta;
 
-        return false; // Prevents RollbackRecord in mixed tx-atomic mode.
+        while(true) {
+            if (val <= (cur = cntr.get()))
+                return false;
+
+            if (cntr.compareAndSet(cur, val))
+                return true;
+        }
     }
 
     /** {@inheritDoc} */
