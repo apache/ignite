@@ -34,7 +34,7 @@ use Apache\Ignite\Type\ObjectType;
  * Additionally, SqlFieldsCursorInterface includes
  * getAll() method to get all the results at once,
  * getFieldNames() method to return names of the fields,
- * setFieldTypes() method to specify Ignite types of the fields,
+ * setFieldTypes() method to specify GridGain types of the fields,
  * and close() method (defined in CursorInterface) to prematurely close the cursor.
  *
  */
@@ -62,13 +62,13 @@ interface SqlFieldsCursorInterface extends CursorInterface
     public function getFieldNames(): array;
 
     /**
-     * Specifies Ignite types of the fields returned by the SQL Fields query.
+     * Specifies GridGain types of the fields returned by the SQL Fields query.
      *
-     * By default, an Ignite type of every field is not specified that means during operations Ignite client
-     * tries to make automatic mapping between PHP types and Ignite object types -
+     * By default, a GridGain type of every field is not specified that means during operations GridGain client
+     * tries to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
      *
-     * @param int|ObjectType|null ...$fieldTypes Ignite types of the returned fields.
+     * @param int|ObjectType|null ...$fieldTypes GridGain types of the returned fields.
      *   The order of types must correspond the order of field values returned in the results of the query.
      *   A type of every field can be:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)

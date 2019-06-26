@@ -21,13 +21,13 @@ use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Internal\Binary\BinaryUtils;
 
 /**
- * Class representing a complex type of Ignite object.
+ * Class representing a complex type of GridGain object.
  *
- * It corresponds to the ObjectType::COMPLEX_OBJECT Ignite type code.
+ * It corresponds to the ObjectType::COMPLEX_OBJECT GridGain type code.
  *
- * This class may be needed to help Ignite client to:
- *   - deserialize an Ignite complex object to a PHP object when reading data,
- *   - serialize a PHP object to an Ignite complex object when writing data.
+ * This class may be needed to help GridGain client to:
+ *   - deserialize a GridGain complex object to a PHP object when reading data,
+ *   - serialize a PHP object to a GridGain complex object when writing data.
  *
  * Note: only public properties of PHP objects can be serialized/deserialized.
  */
@@ -40,7 +40,7 @@ class ComplexObjectType extends ObjectType
     /**
      * Public constructor.
      *
-     * Creates a default representation of Ignite complex object type.
+     * Creates a default representation of GridGain complex object type.
      * setPhpClassName(), setIgniteTypeName(), setFieldType() methods may be used
      * to change the default representation.
      */
@@ -58,9 +58,9 @@ class ComplexObjectType extends ObjectType
      * Affects data reading operations only.
      *
      * The specified name will be used as PHP class name to instantiate a PHP object
-     * the received Ignite complex object is deserialized to.
+     * the received GridGain complex object is deserialized to.
      *
-     * By default (if the name is not specified), the Ignite complex type name of the received complex object
+     * By default (if the name is not specified), the GridGain complex type name of the received complex object
      * is used as PHP class name to instantiate a PHP object during deserialization.
      *
      * The PHP Class must have a constructor without parameters or with optional parameters only.
@@ -86,16 +86,16 @@ class ComplexObjectType extends ObjectType
     }
     
     /**
-     * Sets the name of the Ignite complex type.
+     * Sets the name of the GridGain complex type.
      *
      * Affects data writing operations only.
      *
-     * The specified name will be used as the Ignite complex type name during the complex object's writing operations.
+     * The specified name will be used as the GridGain complex type name during the complex object's writing operations.
      *
-     * By default (if the name is not specified), the Ignite complex type name of the serialized complex object
+     * By default (if the name is not specified), the GridGain complex type name of the serialized complex object
      * is taken from the name of the PHP class which instance is provided in a data writing operation.
      *
-     * @param string|null $typeName name of the Ignite complex type or null (the name is not specified).
+     * @param string|null $typeName name of the GridGain complex type or null (the name is not specified).
      * 
      * @return ComplexObjectType the same instance of the ComplexObjectType.
      */
@@ -106,9 +106,9 @@ class ComplexObjectType extends ObjectType
     }
 
     /**
-     * Gets the name of the Ignite complex type.
+     * Gets the name of the GridGain complex type.
      * 
-     * @return string|null name of the Ignite complex type or null (the name is not specified).
+     * @return string|null name of the GridGain complex type or null (the name is not specified).
      */
     public function getIgniteTypeName(): ?string
     {
@@ -116,19 +116,19 @@ class ComplexObjectType extends ObjectType
     }
 
     /**
-     * Specifies Ignite type of the indicated field in the complex type.
+     * Specifies GridGain type of the indicated field in the complex type.
      *
      * Affects data writing operations only.
      *
-     * During data serialization Ignite client will assume that the indicated field
-     * has the Ignite type specified by this method.
+     * During data serialization GridGain client will assume that the indicated field
+     * has the GridGain type specified by this method.
      *
      * By default (if the type of the field is not specified),
-     * Ignite client tries to make automatic mapping between PHP types and Ignite object types -
+     * GridGain client tries to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param string $fieldName name of the field.
-     * @param int|ObjectType|null $fieldType Ignite type of the field:
+     * @param int|ObjectType|null $fieldType GridGain type of the field:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -145,11 +145,11 @@ class ComplexObjectType extends ObjectType
     }
 
     /**
-     * Gets Ignite type of the indicated field in the complex type.
+     * Gets GridGain type of the indicated field in the complex type.
      *
      * @param string $fieldName name of the field.
      *
-     * @return int|ObjectType|null Ignite type of the field:
+     * @return int|ObjectType|null GridGain type of the field:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null that means the type is not specified

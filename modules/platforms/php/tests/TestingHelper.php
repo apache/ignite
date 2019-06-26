@@ -32,7 +32,7 @@ use Apache\Ignite\Data\Timestamp;
 use Apache\Ignite\Data\BinaryObject;
 
 /**
- * Helper class for testing apache-ignite-client library.
+ * Helper class for testing gridgain-client library.
  * Contains common methods for testing environment initialization and cleanup.
  */
 class TestingHelper

@@ -1,10 +1,10 @@
 {
-    "name": "apache/apache-ignite-client",
+    "name": "gridgain/gridgain-client",
     "type": "library",
-    "description": "PHP Client for Apache Ignite",
-    "keywords": ["apache", "ignite", "client"],
-    "homepage": "https://github.com/apache/ignite",
-    "license": "Apache-2.0",
+    "description": "PHP Client for GridGain Community Edition",
+    "keywords": ["gridgain", "community", "client"],
+    "homepage": "https://github.com/gridgain/gridgain",
+    "license": "GridGain Community",
     "authors": [
     ],
     "require": {

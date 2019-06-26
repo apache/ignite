@@ -21,17 +21,17 @@ use Apache\Ignite\Internal\Utils\ArgumentChecker;
 use Apache\Ignite\Exception\ClientException;
 
 /**
- * Class representing an item of Ignite enum type.
+ * Class representing an item of GridGain enum type.
  *
  * The item is defined by:
- *   - type Id (mandatory) - Id of the Ignite enum type.
- *   - ordinal (optional) - ordinal of the item in the Ignite enum type.
- *   - name (optional) - name of the item (field name in the Ignite enum type).
+ *   - type Id (mandatory) - Id of the GridGain enum type.
+ *   - ordinal (optional) - ordinal of the item in the GridGain enum type.
+ *   - name (optional) - name of the item (field name in the GridGain enum type).
  *   - value (optional) - value of the item.
  * Usually, at least one from the optional ordinal, name or value must be specified
- * in order to use an instance of this class in Ignite operations.
+ * in order to use an instance of this class in GridGain operations.
  *
- * To distinguish one item from another, the Ignite client analyzes the optional fields in the following order:
+ * To distinguish one item from another, the GridGain client analyzes the optional fields in the following order:
  * ordinal, name, value.
  */
 class EnumItem
@@ -44,7 +44,7 @@ class EnumItem
     /**
      * Public constructor.
      * 
-     * @param int $typeId Id of the Ignite enum type.
+     * @param int $typeId Id of the GridGain enum type.
      */
     public function __construct(int $typeId)
     {
@@ -55,7 +55,7 @@ class EnumItem
     }
 
     /**
-     * Returns Id of the Ignite enum type.
+     * Returns Id of the GridGain enum type.
      *
      * @return int Id of the enum type.
      */
@@ -65,9 +65,9 @@ class EnumItem
     }
 
     /**
-     * Updates Id of the Ignite enum type.
+     * Updates Id of the GridGain enum type.
      * 
-     * @param int $typeId new Id of the Ignite enum type.
+     * @param int $typeId new Id of the GridGain enum type.
      * 
      * @return EnumItem the same instance of EnumItem.
      */
@@ -78,10 +78,10 @@ class EnumItem
     }
 
     /**
-     * Returns ordinal of the item in the Ignite enum type
+     * Returns ordinal of the item in the GridGain enum type
      * or null if ordinal is not set.
      *
-     * @return int|null ordinal of the item in the Ignite enum type or null (if ordinal is not set).
+     * @return int|null ordinal of the item in the GridGain enum type or null (if ordinal is not set).
      */
     public function getOrdinal(): ?int
     {
@@ -89,9 +89,9 @@ class EnumItem
     }
 
     /**
-     * Sets or updates ordinal of the item in the Ignite enum type.
+     * Sets or updates ordinal of the item in the GridGain enum type.
      *
-     * @param int $ordinal ordinal of the item in the Ignite enum type.
+     * @param int $ordinal ordinal of the item in the GridGain enum type.
      *
      * @return EnumItem the same instance of EnumItem.
      */

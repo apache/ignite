@@ -30,7 +30,7 @@ use Apache\Ignite\Internal\Cache;
 
 /**
  * @mainpage Public API specification
- * The thin client allows your PHP applications to work with Apache Ignite clusters via Binary %Client Protocol.
+ * The thin client allows your PHP applications to work with GridGain clusters via Binary %Client Protocol.
  *
  * This is the public API specification of the client.
  *
@@ -40,7 +40,7 @@ use Apache\Ignite\Internal\Cache;
  */
 
 /**
- * Class representing Ignite client.
+ * Class representing GridGain client.
  */
 class Client
 {
@@ -218,7 +218,7 @@ class Client
     }
     
     /**
-     * Enables/disables the Ignite client's debug output (including errors logging).
+     * Enables/disables the GridGain client's debug output (including errors logging).
      * Disabled by default.
      * 
      * @param bool $value true to enable, false to disable.

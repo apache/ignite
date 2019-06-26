@@ -23,7 +23,7 @@ use Apache\Ignite\Internal\Binary\MessageBuffer;
 use Apache\Ignite\Type\ObjectType;
 
 /**
- * Class representing one Query Field element of QueryEntity of Ignite CacheConfiguration.
+ * Class representing one Query Field element of QueryEntity of GridGain CacheConfiguration.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *

@@ -18,7 +18,7 @@
 namespace Apache\Ignite\Data;
 
 /** 
- * Class representing Ignite Time type
+ * Class representing GridGain Time type
  * (number of milliseconds elapsed since midnight, i.e. 00:00:00 UTC).
  */
 class Time

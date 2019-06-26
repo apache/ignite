@@ -21,10 +21,10 @@ use Apache\Ignite\Exception\ClientException;
 use Apache\Ignite\Internal\Utils\ArgumentChecker;
 
 /**
- * Class representing Ignite client configuration.
+ * Class representing GridGain client configuration.
  *
  * The configuration includes:
- *   - (mandatory) Ignite node endpoint(s)
+ *   - (mandatory) GridGain node endpoint(s)
  *   - (optional) user credentials for authentication
  *   - (optional) TLS options for secure connection
  *   - (optional) connection options
@@ -43,12 +43,12 @@ class ClientConfiguration
     const ENDPOINT_PORT_DEFAULT = 10800;
 
     /**
-     * Creates an instance of Ignite client configuration
+     * Creates an instance of GridGain client configuration
      * with the provided mandatory settings and default optional settings.
      *
      * By default, the client does not use authentication and secure connection.
      *
-     * @param string ...$endpoints Ignite node endpoint(s). The client randomly connects/reconnects
+     * @param string ...$endpoints GridGain node endpoint(s). The client randomly connects/reconnects
      * to one of the specified node.
      *
      * @throws ClientException if error.
@@ -67,7 +67,7 @@ class ClientConfiguration
     }
     
     /**
-     * Returns Ignite node endpoints specified in the constructor.
+     * Returns GridGain node endpoints specified in the constructor.
      * 
      * @return string[] endpoints
      */
