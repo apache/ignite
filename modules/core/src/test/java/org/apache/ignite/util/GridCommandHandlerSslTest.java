@@ -27,33 +27,19 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
  * Command line handler test with SSL.
  */
-public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
+public class GridCommandHandlerSslTest extends GridCommandHandlerAbstractTest {
     /** */
     private volatile String[] cipherSuites;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        cleanPersistenceDir();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-    }
 
     /**
      * @return SSL factory.
@@ -108,7 +94,7 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
             params.add(utilityCipherSuite);
         }
 
-        assertEquals(expRes, cmd.execute(params));
+        assertEquals(expRes, execute(params));
 
         if (expRes == EXIT_CODE_OK)
             assertTrue(ignite.cluster().active());
@@ -164,6 +150,10 @@ public class GridCommandHandlerSslTest extends GridCommonAbstractTest {
         String utilityCipherSuites = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256," +
             "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256";
 
+        injectTestSystemOut();
+
         activate(nodeCipherSuites, utilityCipherSuites, EXIT_CODE_CONNECTION_FAILED);
+
+        assertContains(log, testOut.toString(), "SSL handshake failed (connection closed).");
     }
 }
