@@ -247,8 +247,8 @@ class SqlFieldsCursor extends Cursor {
     /**
      * Specifies types of the fields returned by the SQL Fields query.
      *
-     * By default, a type of every field is not specified that means during operations the Ignite client
-     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * By default, a type of every field is not specified that means during operations the GridGain client
+     * will try to make automatic mapping between JavaScript types and GridGain object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
      * @param {...ObjectType.PRIMITIVE_TYPE | CompositeType} fieldTypes - types of the returned fields.

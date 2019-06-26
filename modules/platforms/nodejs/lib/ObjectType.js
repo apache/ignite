@@ -21,7 +21,7 @@ const Errors = require('./Errors');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
- * Supported Ignite type codes for primitive (simple) types.
+ * Supported GridGain type codes for primitive (simple) types.
  * @typedef ObjectType.PRIMITIVE_TYPE
  * @enum
  * @readonly
@@ -90,7 +90,7 @@ const PRIMITIVE_TYPE = Object.freeze({
 });
 
 /**
- * Supported Ignite type codes for non-primitive (composite) types.
+ * Supported GridGain type codes for non-primitive (composite) types.
  * @typedef ObjectType.COMPOSITE_TYPE
  * @enum
  * @readonly
@@ -109,35 +109,35 @@ const COMPOSITE_TYPE = Object.freeze({
 });
 
 /**
- * Base class representing a type of Ignite object.
+ * Base class representing a type of GridGain object.
  *
  * The class has no public constructor. Only subclasses may be instantiated.
  *
- * There are two groups of Ignite object types:
+ * There are two groups of GridGain object types:
  *
  * - Primitive (simple) types. To fully describe such a type it is enough to specify
- * Ignite type code {@link ObjectType.PRIMITIVE_TYPE} only.
+ * GridGain type code {@link ObjectType.PRIMITIVE_TYPE} only.
  *
  * - Non-primitive (composite) types. To fully describe such a type
- * Ignite type code {@link ObjectType.COMPOSITE_TYPE} with additional information should be specified.
+ * GridGain type code {@link ObjectType.COMPOSITE_TYPE} with additional information should be specified.
  * Eg. a kind of map or a kind of collection.
  *
- * This class helps the Ignite client to make a mapping between JavaScript types
- * and types used by Ignite.
+ * This class helps the GridGain client to make a mapping between JavaScript types
+ * and types used by GridGain.
  *
- * In many methods the Ignite client does not require to directly specify a type of Ignite object.
- * In this case the Ignite client tries to make automatic mapping between JavaScript types
- * and Ignite object types according to the following mapping tables:
+ * In many methods the GridGain client does not require to directly specify a type of GridGain object.
+ * In this case the GridGain client tries to make automatic mapping between JavaScript types
+ * and GridGain object types according to the following mapping tables:
  *
  * ----------------------------------------------------------------------------
  *
- * DEFAULT MAPPING FROM JavaScript type TO Ignite type code.
+ * DEFAULT MAPPING FROM JavaScript type TO GridGain type code.
  *
- * This mapping is used when an application does not explicitly specify an Ignite type
+ * This mapping is used when an application does not explicitly specify a GridGain type
  * for a field and is writing data to that field.
  *
  * <pre>
- * | JavaScript type           | Ignite type code      |
+ * | JavaScript type           | GridGain type code    |
  * | ------------------------- | ----------------------|
  * | number                    | DOUBLE                |
  * | boolean                   | BOOLEAN               |
@@ -168,13 +168,13 @@ const COMPOSITE_TYPE = Object.freeze({
  *
  * ----------------------------------------------------------------------------
  *
- * DEFAULT MAPPING FROM Ignite type code TO JavaScript type.
+ * DEFAULT MAPPING FROM GridGain type code TO JavaScript type.
  *
- * This mapping is used when an application does not explicitly specify an Ignite type
+ * This mapping is used when an application does not explicitly specify a GridGain type
  * for a field and is reading data from that field.
  *
  * <pre>
- * | Ignite type code             | JavaScript type                       |
+ * | GridGain type code           | JavaScript type                       |
  * | ---------------------------- | --------------------------------------|
  * | BYTE                         | number                                |
  * | SHORT                        | number                                |
@@ -222,15 +222,15 @@ const COMPOSITE_TYPE = Object.freeze({
  *
  * ----------------------------------------------------------------------------
  *
- * RETURNED JavaScript types WHEN READING DATA OF THE SPECIFIED Ignite type code.
+ * RETURNED JavaScript types WHEN READING DATA OF THE SPECIFIED GridGain type code.
  *
- * When an application explicitly specifies an Ignite type for a field
+ * When an application explicitly specifies a GridGain type for a field
  * and is reading data from that field - the following JavaScript types
- * are returned for every concrete Ignite type code -
+ * are returned for every concrete GridGain type code -
  *
  * SEE THE PREVIOUS TABLE with the following additional comments:
  *
- * - for COMPLEX_OBJECT the Ignite Client returns a JavaScript Object
+ * - for COMPLEX_OBJECT the GridGain Client returns a JavaScript Object
  * which is defined by the specified {@link ComplexObjectType}.
  *
  * - the returned Map for MAP is defined by the specified {@link MapObjectType}.
@@ -244,15 +244,15 @@ const COMPOSITE_TYPE = Object.freeze({
  *
  * ----------------------------------------------------------------------------
  *
- * ALLOWED JavaScript types WHEN WRITING DATA OF THE SPECIFIED Ignite type code.
+ * ALLOWED JavaScript types WHEN WRITING DATA OF THE SPECIFIED GridGain type code.
  *
- * When an application explicitly specifies an Ignite type for a field
+ * When an application explicitly specifies a GridGain type for a field
  * and is writing data to that field - the following JavaScript types
- * are allowed for every concrete Ignite type code -
+ * are allowed for every concrete GridGain type code -
  *
  * SEE THE PREVIOUS TABLE with the following additional comments:
  *
- * - for COMPLEX_OBJECT the Ignite Client allows a JavaScript Object
+ * - for COMPLEX_OBJECT the GridGain Client allows a JavaScript Object
  * which is defined by the specified {@link ComplexObjectType}.
  *
  * - the allowed Map for MAP is defined by the specified {@link MapObjectType}.
@@ -263,9 +263,9 @@ const COMPOSITE_TYPE = Object.freeze({
  *
  * - NULL cannot be specified as a type of a field but JavaScript null is allowed
  * as value of a field (but not as a key/value in a cache) or as a value of Array/Set/Map element
- * for all Ignite types, except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.
+ * for all GridGain types, except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.
  *
- * - for all *_ARRAY Ignite types an empty JavaScript Array is allowed.
+ * - for all *_ARRAY GridGain types an empty JavaScript Array is allowed.
  *
  * ----------------------------------------------------------------------------
  *
@@ -274,13 +274,13 @@ const COMPOSITE_TYPE = Object.freeze({
  * JavaScript type - is a JavaScript primitive or a JavaScript Object
  * ({@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures})
  *
- * (*) Timestamp, EnumItem and BinaryObject - are JavaScript Objects introduced by the Ignite client.
+ * (*) Timestamp, EnumItem and BinaryObject - are JavaScript Objects introduced by the GridGain client.
  *
- * (**) Decimal - is an external JavaScript Object exported into the Ignite client
+ * (**) Decimal - is an external JavaScript Object exported into the GridGain client
  * ({@link https://github.com/MikeMcl/decimal.js})
  *
- * Ignite type code - is the type code of an Ignite primitive type ({@link ObjectType.PRIMITIVE_TYPE})
- * or an Ignite composite type ({@link ObjectType.COMPOSITE_TYPE}).
+ * GridGain type code - is the type code of a GridGain primitive type ({@link ObjectType.PRIMITIVE_TYPE})
+ * or a GridGain composite type ({@link ObjectType.COMPOSITE_TYPE}).
  *
  * ----------------------------------------------------------------------------
  *
@@ -304,7 +304,7 @@ class ObjectType {
 }
 
 /**
- * Base class representing a non-primitive (composite) type of Ignite object.
+ * Base class representing a non-primitive (composite) type of GridGain object.
  *
  * The class has no public constructor. Only subclasses may be instantiated.
  *
@@ -328,7 +328,7 @@ const MAP_SUBTYPE = Object.freeze({
 });
 
 /**
- * Class representing a map type of Ignite object.
+ * Class representing a map type of GridGain object.
  *
  * It is described by COMPOSITE_TYPE.MAP {@link ObjectType.COMPOSITE_TYPE}
  * and one of {@link MapObjectType.MAP_SUBTYPE}.
@@ -347,8 +347,8 @@ class MapObjectType extends CompositeType {
      *
      * If a kind of map is not specified, MAP_SUBTYPE.HASH_MAP is assumed.
      *
-     * If key and/or value type is not specified then during operations the Ignite client
-     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * If key and/or value type is not specified then during operations the GridGain client
+     * will try to make automatic mapping between JavaScript types and GridGain object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
      * @param {MapObjectType.MAP_SUBTYPE} [mapSubType=MAP_SUBTYPE.HASH_MAP] - map subtype, one of the
@@ -402,7 +402,7 @@ const COLLECTION_SUBTYPE = Object.freeze({
 });
 
 /**
- * Class representing a collection type of Ignite object.
+ * Class representing a collection type of GridGain object.
  *
  * It is described by COMPOSITE_TYPE.COLLECTION {@link ObjectType.COMPOSITE_TYPE}
  * and one of {@link CollectionObjectType.COLLECTION_SUBTYPE}.
@@ -420,8 +420,8 @@ class CollectionObjectType extends CompositeType {
      * Specifies a kind of collection
      * and optionally specifies a type of elements in the collection.
      *
-     * If the type of elements is not specified then during operations the Ignite client
-     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * If the type of elements is not specified then during operations the GridGain client
+     * will try to make automatic mapping between JavaScript types and GridGain object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
      * @param {CollectionObjectType.COLLECTION_SUBTYPE} collectionSubType - collection subtype, one of the
@@ -465,7 +465,7 @@ class CollectionObjectType extends CompositeType {
 }
 
 /**
- * Class representing an array type of Ignite objects.
+ * Class representing an array type of GridGain objects.
  *
  * It is described by COMPOSITE_TYPE.OBJECT_ARRAY {@link ObjectType.COMPOSITE_TYPE}.
  *
@@ -478,8 +478,8 @@ class ObjectArrayType extends CompositeType {
      *
      * Optionally specifies a type of elements in the array.
      *
-     * If the type of elements is not specified then during operations the Ignite client
-     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * If the type of elements is not specified then during operations the GridGain client
+     * will try to make automatic mapping between JavaScript types and GridGain object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [elementType=null] - type of the array element:
@@ -500,10 +500,10 @@ class ObjectArrayType extends CompositeType {
 }
 
 /**
- * Class representing a complex type of Ignite object.
+ * Class representing a complex type of GridGain object.
  *
  * It is described by COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
- * by a name of the complex type and by a JavaScript Object which is mapped to/from the Ignite complex type.
+ * by a name of the complex type and by a JavaScript Object which is mapped to/from the GridGain complex type.
  *
  * @extends CompositeType
  */
@@ -520,8 +520,8 @@ class ComplexObjectType extends CompositeType {
      *
      * The JavaScript Object defines a set of fields of the complex type.
      *
-     * By default, the fields have no types specified. It means during operations the Ignite client
-     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * By default, the fields have no types specified. It means during operations the GridGain client
+     * will try to make automatic mapping between JavaScript types and GridGain object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
      * A type of any field may be specified later by setFieldType() method.
@@ -556,8 +556,8 @@ class ComplexObjectType extends CompositeType {
     /**
      * Specifies a type of the field in the complex type.
      *
-     * If the type is not specified then during operations the Ignite client
-     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * If the type is not specified then during operations the GridGain client
+     * will try to make automatic mapping between JavaScript types and GridGain object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
      * @param {string} fieldName - name of the field.

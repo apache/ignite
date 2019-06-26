@@ -40,11 +40,11 @@ const PEEK_MODE = Object.freeze({
 });
 
 /**
- * Class representing and providing access to Ignite cache.
+ * Class representing and providing access to GridGain cache.
  *
  * The class has no public constructor. An instance of this class should be obtained
  * via the methods of {@link IgniteClient} objects.
- * One instance of this class provides access to one Ignite cache which is specified
+ * One instance of this class provides access to one GridGain cache which is specified
  * during the instance obtaining and cannot be changed after that.
  *
  * There are three groups of methods in the cache client:

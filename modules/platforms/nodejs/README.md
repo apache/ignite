@@ -11,22 +11,22 @@ Once `node` and `npm` are installed, you can use one of the following installati
 Execute the following command to install the Node.js Thin Client package:
 
 ```
-npm install -g apache-ignite-client
+npm install -g gridgain-client
 ```
 
 ### Installation from Sources ###
 
-If you want to install the Thin Client library from Ignite sources, please follow the steps:
+If you want to install the Thin Client library from GridGain sources, please follow the steps:
 
-1. Download Ignite sources to `local_ignite_path`
-2. Go to `local_ignite_path/modules/platforms/nodejs` folder
+1. Download GridGain sources to `local_gridgain_path`
+2. Go to `local_gridgain_path/modules/platforms/nodejs` folder
 3. Execute `npm link` command
-4. Execute `npm link apache-ignite-client` command (needed only for examples)
+4. Execute `npm link gridgain-client` command (needed only for examples)
 
 ```bash
-cd local_ignite_path/modules/platforms/nodejs
+cd local_gridgain_path/modules/platforms/nodejs
 npm link
-npm link apache-ignite-client #linking examples (optional)
+npm link gridgain-client #linking examples (optional)
 ```
 
 For more information, see [GridGain Node.JS Thin Client documentation](https://apacheignite.readme.io/docs/nodejs-thin-client).

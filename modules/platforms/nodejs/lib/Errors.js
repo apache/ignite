@@ -19,7 +19,7 @@
 const Util = require('util');
 
 /**
- * Base Ignite client error class.
+ * Base GridGain client error class.
  */
 class IgniteClientError extends Error {
     constructor(message) {
@@ -27,7 +27,7 @@ class IgniteClientError extends Error {
     }
 
     /**
-     * Ignite client does not support one of the specified or received data types.
+     * GridGain client does not support one of the specified or received data types.
      * @ignore
      */
     static unsupportedTypeError(type) {
@@ -64,7 +64,7 @@ class IgniteClientError extends Error {
     }
 
     /**
-     * Ignite client internal error.
+     * GridGain client internal error.
      * @ignore
      */
     static internalError(message = null) {
@@ -97,7 +97,7 @@ class IgniteClientError extends Error {
 }
 
 /**
- * Ignite server returns error for the requested operation.
+ * GridGain server returns error for the requested operation.
  * @extends IgniteClientError
  */
 class OperationError extends IgniteClientError {
@@ -107,12 +107,12 @@ class OperationError extends IgniteClientError {
 }
 
 /**
- * Ignite client is not in an appropriate state for the requested operation.
+ * GridGain client is not in an appropriate state for the requested operation.
  * @extends IgniteClientError
  */
 class IllegalStateError extends IgniteClientError {
     constructor(message = null) {
-        super(message || 'Ignite client is not in an appropriate state for the requested operation');
+        super(message || 'GridGain client is not in an appropriate state for the requested operation');
     }
 }
 

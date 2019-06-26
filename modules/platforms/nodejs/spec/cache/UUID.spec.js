@@ -19,7 +19,7 @@
 require('jasmine-expect');
 
 const TestingHelper = require('../TestingHelper');
-const IgniteClient = require('apache-ignite-client');
+const IgniteClient = require('gridgain-client');
 const CacheConfiguration = IgniteClient.CacheConfiguration;
 const SqlFieldsQuery = IgniteClient.SqlFieldsQuery;
 const ObjectType = IgniteClient.ObjectType;
