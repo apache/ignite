@@ -22,7 +22,7 @@ use Apache\Ignite\Internal\Utils\ArgumentChecker;
 use Apache\Ignite\Internal\Binary\BinaryUtils;
 
 /** 
- * Class representing a collection type of Ignite object.
+ * Class representing a collection type of GridGain object.
  *
  * It is described by ObjectType::COLLECTION and one of @ref CollectionSubType.
  */
@@ -76,14 +76,14 @@ class CollectionObjectType extends ObjectType
     /**
      * Public constructor.
      *
-     * Specifies the collection subtype and optionally specifies Ignite type of elements in the collection.
+     * Specifies the collection subtype and optionally specifies GridGain type of elements in the collection.
      *
-     * If Ignite type of elements is not specified then during operations the Ignite client
-     * tries to make automatic mapping between PHP types and Ignite object types -
+     * If GridGain type of elements is not specified then during operations the GridGain client
+     * tries to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param int $subType collection subtype, one of @ref CollectionSubType constants.
-     * @param int|ObjectType|null $elementType Ignite type of elements in the collection:
+     * @param int|ObjectType|null $elementType GridGain type of elements in the collection:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -120,7 +120,7 @@ class CollectionObjectType extends ObjectType
     }
     
     /**
-     * Returns Ignite type of elements in the collection.
+     * Returns GridGain type of elements in the collection.
      * 
      * @return int|ObjectType|null type of elements in the collection:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)

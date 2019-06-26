@@ -22,7 +22,7 @@ use Apache\Ignite\Internal\Binary\BinaryCommunicator;
 use Apache\Ignite\Internal\Binary\MessageBuffer;
 
 /**
- * Class representing one Query Entity element of Ignite CacheConfiguration.
+ * Class representing one Query Entity element of GridGain CacheConfiguration.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *

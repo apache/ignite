@@ -23,14 +23,14 @@ use Apache\Ignite\Query\Query;
 use Apache\Ignite\Query\CursorInterface;
 
 /**
- * Interface representing and providing access to Ignite cache.
+ * Interface representing and providing access to GridGain cache.
  *
- * An instance of the class with this interface should be obtained via the methods of Ignite Client.
- * One instance of such a class provides access to one Ignite cache which is specified
+ * An instance of the class with this interface should be obtained via the methods of GridGain Client.
+ * One instance of such a class provides access to one GridGain cache which is specified
  * during the instance obtaining and cannot be changed after that.
  *
  * There are three groups of methods in the cache interface:
- *   - methods to configure the interface itself (optionally specify Ignite type for cache key and/or value)
+ *   - methods to configure the interface itself (optionally specify GridGain type for cache key and/or value)
  *   - methods to operate with the cache using Key-Value Queries
  *   - methods to operate with the cache using SQL and Scan Queries
  *
@@ -68,15 +68,15 @@ interface CacheInterface
     /**
      * Specifies a type of the cache key.
      *
-     * Ignite client assumes that keys in all further operations with the cache
-     * will have the Ignite type specified by this method.
+     * GridGain client assumes that keys in all further operations with the cache
+     * will have the GridGain type specified by this method.
      * Eg. the client will convert keys provided as input parameters of the Key-Value or SQL operations
-     * to the specified Ignite object type before sending the keys to a server.
+     * to the specified GridGain object type before sending the keys to a server.
      *
      * By default a type of the cache key is not specified (null).
      *
-     * If the type is not specified then during operations Ignite client
-     * will do automatic mapping between some of the PHP types and Ignite object types -
+     * If the type is not specified then during operations GridGain client
+     * will do automatic mapping between some of the PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
      *
      * @param int|ObjectType|null $type type of the keys in the cache:
@@ -93,15 +93,15 @@ interface CacheInterface
     /**
      * Specifies a type of the cache value.
      *
-     * Ignite client assumes that values in all further operations with the cache
-     * will have the Ignite type specified by this method.
+     * GridGain client assumes that values in all further operations with the cache
+     * will have the GridGain type specified by this method.
      * Eg. the client will convert values provided as input parameters of the Key-Value or SQL operations
-     * to the specified Ignite object type before sending the values to a server.
+     * to the specified GridGain object type before sending the values to a server.
      *
      * By default a type of the cache value is not specified (null).
      *
-     * If the type is not specified then during operations Ignite client
-     * will do automatic mapping between some of the PHP types and Ignite object types -
+     * If the type is not specified then during operations GridGain client
+     * will do automatic mapping between some of the PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
      *
      * @param int|ObjectType|null $type type of the values in the cache:

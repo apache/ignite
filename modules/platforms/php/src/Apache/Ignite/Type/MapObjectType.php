@@ -22,7 +22,7 @@ use Apache\Ignite\Internal\Utils\ArgumentChecker;
 use Apache\Ignite\Internal\Binary\BinaryUtils;
 
 /** 
- * Class representing a map type of Ignite object.
+ * Class representing a map type of GridGain object.
  *
  * It is described by ObjectType::MAP and one of @ref MapSubType.
  */
@@ -52,20 +52,20 @@ class MapObjectType extends ObjectType
     /**
      * Public constructor.
      *
-     * Optionally specifies the map subtype and Ignite types of keys and values in the map.
+     * Optionally specifies the map subtype and GridGain types of keys and values in the map.
      *
      * If the map subtype is not specified, MapObjectType::HASH_MAP is assumed.
      *
-     * If Ignite type is not specified for the key and/or value then during operations the Ignite client
-     * tries to make automatic mapping between PHP types and Ignite object types -
+     * If GridGain type is not specified for the key and/or value then during operations the GridGain client
+     * tries to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param int $subType map subtype, one of @ref MapSubType constants.
-     * @param int|ObjectType|null $keyType Ignite type of the keys in the map:
+     * @param int|ObjectType|null $keyType GridGain type of the keys in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
-     * @param int|ObjectType|null $valueType Ignite type of the values in the map:
+     * @param int|ObjectType|null $valueType GridGain type of the values in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
@@ -95,7 +95,7 @@ class MapObjectType extends ObjectType
     }
     
     /**
-     * Returns Ignite type of the keys in the map.
+     * Returns GridGain type of the keys in the map.
      * 
      * @return int|ObjectType|null type of the keys in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)
@@ -108,7 +108,7 @@ class MapObjectType extends ObjectType
     }
 
     /**
-     * Returns Ignite type of the values in the map.
+     * Returns GridGain type of the values in the map.
      * 
      * @return int|ObjectType|null type of the values in the map:
      *   - either a type code of primitive (simple) type (@ref PrimitiveTypeCodes)

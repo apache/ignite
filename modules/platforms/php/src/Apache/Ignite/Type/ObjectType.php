@@ -18,21 +18,21 @@
 namespace Apache\Ignite\Type;
 
 /** 
- * Base class representing a type of Ignite object.
+ * Base class representing a type of GridGain object.
  *
  * The class is abstract and has no public constructor. Only subclasses may be instantiated.
  *
- * There are two groups of Ignite object types:
+ * There are two groups of GridGain object types:
  *
  * - Primitive (simple) types. To fully describe such a type:
- * it is enough to specify Ignite type code @ref PrimitiveTypeCodes only.
+ * it is enough to specify GridGain type code @ref PrimitiveTypeCodes only.
  *
  * - Non-primitive (composite) types. To fully describe such a type:
- * Ignite type code @ref CompositeTypeCodes with additional information
+ * GridGain type code @ref CompositeTypeCodes with additional information
  * (eg. a kind of map or a kind of collection) should be specified.
  *
- * This class helps the Ignite client to make a mapping between PHP types
- * and types used by Ignite according to the following mapping tables:
+ * This class helps the GridGain client to make a mapping between PHP types
+ * and types used by GridGain according to the following mapping tables:
  *
  * ----------------------------------------------------------------------------
  *
@@ -49,19 +49,19 @@ namespace Apache\Ignite\Type;
  *   - Ds\\Set, Ds\\Map - PHP Data Structures extension classes: http://php.net/manual/en/book.ds.php
  *   - Brick\\Math\\BigDecimal - PHP class from the extension library
  *                               to work with arbitrary precision numbers: https://github.com/brick/math
- *   - Date, Time, Timestamp, EnumItem, BinaryObject - PHP classes introduced by the Ignite client.
+ *   - Date, Time, Timestamp, EnumItem, BinaryObject - PHP classes introduced by the GridGain client.
  *
- * Ignite type code
+ * GridGain type code
  * ----------------
- * It is a type code of Ignite primitive type (@ref PrimitiveTypeCodes)
- * or Ignite composite type (@ref CompositeTypeCodes).
+ * It is a type code of GridGain primitive type (@ref PrimitiveTypeCodes)
+ * or GridGain composite type (@ref CompositeTypeCodes).
  *
  * ----------------------------------------------------------------------------
  *
- * MAPPING FROM IGNITE TYPE CODE TO PHP TYPE WHEN READING DATA
+ * MAPPING FROM GRIDGAIN TYPE CODE TO PHP TYPE WHEN READING DATA
  * ----------------
  *
- * | Ignite type code             | PHP type                                      |
+ * | GridGain type code           | PHP type                                      |
  * | ---------------------------- | ----------------------------------------------|
  * | BYTE                         | integer                                       |
  * | SHORT                        | integer                                       |
@@ -106,24 +106,24 @@ namespace Apache\Ignite\Type;
  * | MAP (LINKED_HASH_MAP)        | Ds\\Map                                       |
  * | NULL                         | null**                                        |
  *
- * (*) If an application does not explicitly specify an Ignite type for a field and
- * COMPLEX_OBJECT is received, the Ignite client returns BinaryObject to the application.
+ * (*) If an application does not explicitly specify a GridGain type for a field and
+ * COMPLEX_OBJECT is received, the GridGain client returns BinaryObject to the application.
  * If an application explicitly specifies ComplexObjectType for a field,
- * the Ignite client deserializes the received COMPLEX_OBJECT into PHP object
+ * the GridGain client deserializes the received COMPLEX_OBJECT into PHP object
  * specified by the ComplexObjectType.
  *
- * (**) NULL cannot be specified as an Ignite type of a field but PHP null may be returned
+ * (**) NULL cannot be specified as a GridGain type of a field but PHP null may be returned
  * as a value of a field.
  *
  * ----------------------------------------------------------------------------
  *
- * DEFAULT MAPPING FROM PHP TYPE TO IGNITE TYPE CODE WHEN WRITING DATA
+ * DEFAULT MAPPING FROM PHP TYPE TO GRIDGAIN TYPE CODE WHEN WRITING DATA
  * ----------------
  *
- * This mapping is used when an application does not explicitly specify an Ignite type
+ * This mapping is used when an application does not explicitly specify a GridGain type
  * for a field and it is writing data to that field.
  *
- * | PHP type                                    | Ignite type code      |
+ * | PHP type                                    | GridGain type code    |
  * | ------------------------------------------- | ----------------------|
  * | boolean                                     | BOOLEAN               |
  * | integer                                     | INTEGER               |
@@ -151,7 +151,7 @@ namespace Apache\Ignite\Type;
  * | Ds\\Set                                     | COLLECTION (HASH_SET) |
  * | Ds\\Map                                     | MAP (HASH_MAP)        |
  *
- * All other PHP types have no default mapping to Ignite type codes.
+ * All other PHP types have no default mapping to GridGain type codes.
  *
  * (*) Any other PHP Object - is any PHP class, not explicitly mentioned in the table.
  *
@@ -162,14 +162,14 @@ namespace Apache\Ignite\Type;
  *
  * ----------------------------------------------------------------------------
  *
- * ALLOWED PHP TYPES WHEN WRITING DATA OF THE SPECIFIED IGNITE TYPE CODE
+ * ALLOWED PHP TYPES WHEN WRITING DATA OF THE SPECIFIED GRIDGAIN TYPE CODE
  * ----------------
  *
- * When an application explicitly specifies an Ignite type for a field
+ * When an application explicitly specifies a GridGain type for a field
  * and it is writing data to that field, the following PHP types
- * are allowed for every concrete Ignite type code.
+ * are allowed for every concrete GridGain type code.
  *
- * | Specified Ignite type code   | Allowed PHP types                             |
+ * | Specified GridGain type code | Allowed PHP types                             |
  * | ---------------------------- | ----------------------------------------------|
  * | BYTE                         | integer                                       |
  * | SHORT                        | integer                                       |
@@ -213,10 +213,10 @@ namespace Apache\Ignite\Type;
  * | MAP (HASH_MAP)               | Ds\\Map, associative array                    |
  * | MAP (LINKED_HASH_MAP)        | Ds\\Map, associative array                    |
  *
- * (*) For all *_ARRAY Ignite types an empty PHP indexed array is allowed.
+ * (*) For all *_ARRAY GridGain types an empty PHP indexed array is allowed.
  *
  * PHP null is allowed as value of a field (but not as a key/value in a cache)
- * or as a value of Array/Set/Map element for all Ignite types,
+ * or as a value of Array/Set/Map element for all GridGain types,
  * except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.
  *
  * ----------------------------------------------------------------------------
@@ -424,9 +424,9 @@ abstract class ObjectType
     private $typeCode;
     
     /**
-     * Gets Ignite type code of this Ignite object type.
+     * Gets GridGain type code of this GridGain object type.
      * 
-     * @return int Ignite type code
+     * @return int GridGain type code
      */
     public function getTypeCode(): int
     {

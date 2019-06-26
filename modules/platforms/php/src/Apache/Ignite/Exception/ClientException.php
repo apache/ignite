@@ -18,7 +18,7 @@
 namespace Apache\Ignite\Exception;
 
 /**
- * Ignite client general exception.
+ * GridGain client general exception.
  */
 class ClientException extends \Exception
 {

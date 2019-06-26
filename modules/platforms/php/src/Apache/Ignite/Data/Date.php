@@ -20,7 +20,7 @@ namespace Apache\Ignite\Data;
 use \DateTime;
 
 /** 
- * Class representing Ignite Date type
+ * Class representing GridGain Date type
  * (number of milliseconds elapsed since January 1, 1970, 00:00:00 UTC).
  */
 class Date

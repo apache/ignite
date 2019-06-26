@@ -32,7 +32,7 @@ const CACHE_NAME = 'test_cache';
 // This example demonstrates failover behavior of the client
 // - configures the client to connect to a set of nodes
 // - connects to a node
-// - executes an operation with Ignite server in a cycle (10 operations with 5 seconds pause) and finishes
+// - executes an operation with GridGain server in a cycle (10 operations with 5 seconds pause) and finishes
 // - if connection is broken, the client automatically tries to reconnect to another node
 // - if not possible to connect to any nodes, the example finishes
 function connectClient() {
@@ -40,7 +40,7 @@ function connectClient() {
     $client->setDebug(true);
     try {
         $clientConfiguration = new ClientConfiguration(ENDPOINT1, ENDPOINT2, ENDPOINT3);
-        // connect to Ignite node
+        // connect to GridGain node
         $client->connect($clientConfiguration);
         echo("Client connected successfully" . PHP_EOL);
         for ($i = 0; $i < 10; $i++) {
@@ -53,8 +53,8 @@ function connectClient() {
             }
         }
     } catch (NoConnectionException $e) {
-        // The client is disconnected, all further operation with Ignite server fail till the client is connected again.
-        // A real application may recall $client->connect() with the same or different list of Ignite nodes.
+        // The client is disconnected, all further operation with GridGain server fail till the client is connected again.
+        // A real application may recall $client->connect() with the same or different list of GridGain nodes.
         echo('ERROR: ' . $e->getMessage() . PHP_EOL);
     } catch (ClientException $e) {
         echo('ERROR: ' . $e->getMessage() . PHP_EOL);

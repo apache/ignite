@@ -18,7 +18,7 @@
 namespace Apache\Ignite\Query;
 
 /**
- * Base class representing an Ignite SQL or Scan query.
+ * Base class representing an GridGain SQL or Scan query.
  *
  * The class is abstract, only subclasses may be instantiated.
  */

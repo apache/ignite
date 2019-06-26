@@ -18,7 +18,7 @@
 namespace Apache\Ignite\Exception;
 
 /**
- * Ignite client is not connected.
+ * GridGain client is not connected.
  */
 class NoConnectionException extends ClientException
 {

@@ -20,8 +20,8 @@ namespace Apache\Ignite\Data;
 use \DateTime;
 
 /** 
- * Class representing Ignite Timestamp type
- * (Ignite Date with additional nanoseconds fraction of the last millisecond).
+ * Class representing GridGain Timestamp type
+ * (GridGain Date with additional nanoseconds fraction of the last millisecond).
  */
 class Timestamp extends Date
 {

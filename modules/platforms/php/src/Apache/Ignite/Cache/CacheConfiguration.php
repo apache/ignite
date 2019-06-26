@@ -27,7 +27,7 @@ use Apache\Ignite\Internal\Binary\BinaryCommunicator;
 use Apache\Ignite\Internal\Utils\ArgumentChecker;
 
 /**
- * Class representing Ignite cache configuration on a server.
+ * Class representing GridGain cache configuration on a server.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *

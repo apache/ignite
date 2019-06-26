@@ -107,8 +107,8 @@ class SqlQuery extends Query
      * Set query arguments.
      *
      * Type of any argument may be specified using setArgTypes() method.
-     * If type of an argument is not specified then during operations the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
+     * If type of an argument is not specified then during operations the GridGain client
+     * will try to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param mixed ...$args Query arguments.
@@ -125,8 +125,8 @@ class SqlQuery extends Query
      * Specifies types of query arguments.
      *
      * Query arguments itself are set using setArgs() method.
-     * By default, a type of every argument is not specified that means during operations the Ignite client
-     * will try to make automatic mapping between PHP types and Ignite object types -
+     * By default, a type of every argument is not specified that means during operations the GridGain client
+     * will try to make automatic mapping between PHP types and GridGain object types -
      * according to the mapping table defined in the description of the ObjectType class.
      * 
      * @param int|ObjectType|null ...$argTypes types of Query arguments.
