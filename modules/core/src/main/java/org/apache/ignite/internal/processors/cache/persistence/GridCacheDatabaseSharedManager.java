@@ -4642,7 +4642,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         ForkJoinPool forkJoinPool = new ForkJoinPool(PARALLEL_SORT_THREADS + 1, factory, null, false);
 
-        ForkJoinTask sortTask = forkJoinPool.submit(() -> Arrays.parallelSort(pagesArr, cmp));
+        ForkJoinTask sortTask = forkJoinPool.submit((Runnable)() -> Arrays.parallelSort(pagesArr, cmp));
 
         try {
             sortTask.get();
