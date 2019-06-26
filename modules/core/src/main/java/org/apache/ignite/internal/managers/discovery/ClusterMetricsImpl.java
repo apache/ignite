@@ -165,7 +165,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
     /**
      * @param ctx Kernel context.
      * @param vmMetrics VM metrics.
-     * @param nodeStartTime Node start time;
+     * @param nodeStartTime Node start time.
      */
     public ClusterMetricsImpl(GridKernalContext ctx, long nodeStartTime) {
         this.ctx = ctx;
