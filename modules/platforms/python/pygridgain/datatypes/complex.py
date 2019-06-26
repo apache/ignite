@@ -113,11 +113,11 @@ class ObjectArrayObject(GridGainDataType):
             length = 1
         header.length = length
         setattr(header, cls.type_or_id_name, type_or_id)
-        buffer = bytes(header)
+        buffer = bytearray(header)
 
         for x in value:
             buffer += infer_from_python(x)
-        return buffer
+        return bytes(buffer)
 
 
 class WrappedDataObject(GridGainDataType):
@@ -294,12 +294,12 @@ class Map(GridGainDataType):
             )
         if hasattr(header, 'type'):
             header.type = type_id
-        buffer = bytes(header)
+        buffer = bytearray(header)
 
         for k, v in value.items():
             buffer += infer_from_python(k)
             buffer += infer_from_python(v)
-        return buffer
+        return bytes(buffer)
 
 
 class MapObject(Map):

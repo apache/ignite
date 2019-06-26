@@ -97,11 +97,11 @@ class PrimitiveArray(GridGainDataType):
             )
         length = len(value)
         header.length = length
-        buffer = bytes(header)
+        buffer = bytearray(header)
 
         for x in value:
             buffer += cls.primitive_type.from_python(x)
-        return buffer
+        return bytes(buffer)
 
 
 class ByteArray(PrimitiveArray):
