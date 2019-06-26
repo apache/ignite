@@ -1734,15 +1734,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             List<DataRow> rows = new ArrayList<>(infos.size());
 
+            for (GridCacheEntryInfo info : infos) {
+                rows.add(makeDataRow(info.key(),
+                    info.value(),
+                    info.version(),
+                    info.expireTime(),
+                    grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID));
+            }
+
             try {
-                for (GridCacheEntryInfo info : infos) {
-                    int cacheId = grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID;
-
-                    DataRow row = makeDataRow(info.key(), info.value(), info.version(), info.expireTime(), cacheId);
-
-                    rows.add(row);
-                }
-
                 rowStore.addRows(rows, grp.statisticsHolderData());
 
                 Iterator<GridCacheEntryInfo> iter = infos.iterator();
@@ -1761,6 +1761,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void removeRow(CacheDataRow row) throws IgniteCheckedException {
+            assert row != null;
+
             rowStore.removeRow(row.link(), grp.statisticsHolderData());
         }
 
