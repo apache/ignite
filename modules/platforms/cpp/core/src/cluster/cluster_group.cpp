@@ -25,7 +25,7 @@ namespace ignite
 {
     namespace cluster
     {
-        ClusterGroup::ClusterGroup(impl::cluster::SP_ClusterGroupImpl impl) :
+        ClusterGroup::ClusterGroup(SP_ClusterGroupImpl impl) :
             impl(impl)
         {
             // No-op.
@@ -36,9 +36,64 @@ namespace ignite
             return ClusterGroup(impl.Get()->ForAttribute(name, val));
         }
 
+        ClusterGroup ClusterGroup::ForCacheNodes(std::string cacheName)
+        {
+            return ClusterGroup(impl.Get()->ForCacheNodes(cacheName));
+        }
+
+        ClusterGroup ClusterGroup::ForClientNodes(std::string cacheName)
+        {
+            return ClusterGroup(impl.Get()->ForClientNodes(cacheName));
+        }
+
+        ClusterGroup ClusterGroup::ForDaemons()
+        {
+            return ClusterGroup(impl.Get()->ForDaemons());
+        }
+
         ClusterGroup ClusterGroup::ForDataNodes(std::string cacheName)
         {
             return ClusterGroup(impl.Get()->ForDataNodes(cacheName));
+        }
+
+        ClusterGroup ClusterGroup::ForHost(ClusterNode node)
+        {
+            return ClusterGroup(impl.Get()->ForHost(node));
+        }
+
+        ClusterGroup ClusterGroup::ForNode(ClusterNode node)
+        {
+            return ClusterGroup(impl.Get()->ForNode(node));
+        }
+
+        ClusterGroup ClusterGroup::ForNodeId(Guid id)
+        {
+            return ClusterGroup(impl.Get()->ForNodeId(id));
+        }
+
+        ClusterGroup ClusterGroup::ForNodeIds(std::vector<Guid> ids)
+        {
+            return ClusterGroup(impl.Get()->ForNodeIds(ids));
+        }
+
+        ClusterGroup ClusterGroup::ForNodes(std::vector<ClusterNode> nodes)
+        {
+            return ClusterGroup(impl.Get()->ForNodes(nodes));
+        }
+
+        ClusterGroup ClusterGroup::ForOldest()
+        {
+            return ClusterGroup(impl.Get()->ForOldest());
+        }
+
+        ClusterGroup ClusterGroup::ForRandom()
+        {
+            return ClusterGroup(impl.Get()->ForRandom());
+        }
+
+        ClusterGroup ClusterGroup::ForRemotes()
+        {
+            return ClusterGroup(impl.Get()->ForRemotes());
         }
 
         ClusterGroup ClusterGroup::ForServers()
@@ -46,9 +101,24 @@ namespace ignite
             return ClusterGroup(impl.Get()->ForServers());
         }
 
+        ClusterGroup ClusterGroup::ForYoungest()
+        {
+            return ClusterGroup(impl.Get()->ForYoungest());
+        }
+
         ClusterGroup ClusterGroup::ForCpp()
         {
             return ClusterGroup(impl.Get()->ForCpp());
+        }
+
+        ClusterNode ClusterGroup::GetNode()
+        {
+            return impl.Get()->GetNode();
+        }
+
+        ClusterNode ClusterGroup::GetNode(Guid nid)
+        {
+            return impl.Get()->GetNode(nid);
         }
 
         std::vector<ClusterNode> ClusterGroup::GetNodes()
@@ -56,7 +126,7 @@ namespace ignite
             return impl.Get()->GetNodes();
         }
 
-        impl::cluster::SP_ClusterGroupImpl ClusterGroup::GetImpl()
+        SP_ClusterGroupImpl ClusterGroup::GetImpl()
         {
             return impl;
         }

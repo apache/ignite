@@ -91,11 +91,11 @@ BOOST_AUTO_TEST_CASE(TestStartWithpersistence)
     }
     catch (...)
     {
-        // Stop all
         Ignition::StopAll(true);
-
         throw;
     }
+
+    Ignition::StopAll(true);
 }
 
 BOOST_AUTO_TEST_CASE(GracefulDeathOnInvalidConfig)

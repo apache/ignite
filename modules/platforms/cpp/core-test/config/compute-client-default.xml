@@ -28,6 +28,18 @@
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
+        <property name="includeEventTypes">
+            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
+        </property>
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="CacheName2"/>
+                </bean>
+            </list>
+        </property>
+
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
