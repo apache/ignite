@@ -355,9 +355,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Partitions scheduled for historical reblanace for this topology version. */
     private Map<Integer, Set<Integer>> histPartitions;
 
-    /** */
-    private volatile boolean isDetectLostPartitionsPerformed = false;
-
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -2210,7 +2207,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
 
-                if (!isDetectLostPartitionsPerformed && (serverNodeDiscoveryEvent() || localJoinExchange())) {
+                if (!U.isLocalNodeCoordinator(cctx.discovery()) && (serverNodeDiscoveryEvent() || localJoinExchange())) {
                     U.log(log, "Called detectLostPartitions inside of onDone of future " + exchId.toString().hashCode());
 
                     detectLostPartitions(res);
@@ -3196,8 +3193,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void detectLostPartitions(AffinityTopologyVersion resTopVer) {
         AtomicInteger detected = new AtomicInteger();
 
-        isDetectLostPartitionsPerformed = true;
-
         try {
             // Reserve at least 2 threads for system operations.
             doInParallelUninterruptibly(
@@ -3487,13 +3482,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             else {
                 if (exchCtx.events().hasServerJoin())
                     assignPartitionsStates();
-
-                if (!isDetectLostPartitionsPerformed && exchCtx.events().hasServerLeft()) {
-                    U.log(log, "Called detectLostPartitions inside of finishExchangeOnCoordinator of future " +
-                        exchId.toString().hashCode());
-
-                    detectLostPartitions(resTopVer);
-                }
             }
 
             // Recalculate new affinity based on partitions availability.
@@ -3522,8 +3510,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Lost partition detection should be done after full message is prepared otherwise in case of IGNORE policy
             // lost partitions will be moved to OWNING state and after what send to other nodes resulting in
             // wrong lost state calculation (another possibility to consider - calculate lost state only on coordinator).
-            if (firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && exchCtx.events().hasServerLeft())
+            if (firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && exchCtx.events().hasServerLeft()) {
+                U.log(log, "Called detectLostPartitions inside of finishExchangeOnCoordinator of future " +
+                    exchId.toString().hashCode());
+
                 detectLostPartitions(resTopVer);
+            }
 
             if (exchCtx.mergeExchanges()) {
                 assert !centralizedAff;
