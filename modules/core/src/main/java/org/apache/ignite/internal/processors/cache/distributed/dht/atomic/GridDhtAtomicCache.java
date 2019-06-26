@@ -473,7 +473,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
         final boolean skipStore = opCtx != null && opCtx.skipStore();
         final boolean recovery = opCtx != null && opCtx.recovery();
-        final boolean readRepair = ctx.config().getBackups() > 0 && !ctx.isNear() && !ctx.mvccEnabled() /* TODO replace with "opCtx != null && opCtx.readRepair()" */;
+        final boolean readRepair = !ctx.readThrough() && ctx.config().getBackups() > 0 && !ctx.isNear() && !ctx.mvccEnabled() /* TODO replace with "opCtx != null && opCtx.readRepair()" */;
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
