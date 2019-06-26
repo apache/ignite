@@ -326,26 +326,31 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> missedNodesToKeysMapping,
         Map<K, V> locVals
     ) {
+        ClusterNode node;
+
         int part = cctx.affinity().partition(key);
-
-        List<ClusterNode> affNodes =
-            affNode != null ? Collections.singletonList(affNode) : cctx.affinity().nodesByPartition(part, topVer);
-
-        // Failed if none affinity node found.
-        if (affNodes.isEmpty()) {
-            onDone(serverNotFoundError(part, topVer));
-
-            return false;
-        }
-
-        // Try to read key localy if we can.
-        if (tryLocalGet(key, part, topVer, affNodes, locVals))
-            return false;
 
         Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
-        // Get remote node for request for this key.
-        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+        if (affNode != null) {
+            node = invalidNodeSet.contains(affNode) ? null : affNode;
+        }
+        else {
+            List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
+
+            // Failed if none affinity node found.
+            if (affNodes.isEmpty()) {
+                onDone(serverNotFoundError(part, topVer));
+
+                return false;
+            }
+
+            // Try to read key localy if we can.
+            if (tryLocalGet(key, part, topVer, affNodes, locVals))
+                return false;
+
+            node = cctx.selectAffinityNodeBalanced(affNodes, invalidNodeSet, part, canRemap);
+        }
 
         // Failed if none remote node found.
         if (node == null) {
@@ -402,7 +407,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     ) {
         // Local get cannot be used with MVCC as local node can contain some visible version which is not latest.
         boolean fastLocGet = !cctx.mvccEnabled() &&
-            ((!forcePrimary && affNode == null) || affNodes.get(0).isLocal()) &&
+            (!forcePrimary || affNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
