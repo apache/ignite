@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains exceptions for kNN algorithms.
  */
+
 package org.apache.ignite.ml.math.exceptions.knn;

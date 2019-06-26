@@ -18,4 +18,5 @@
 /**
  * Contains implementation of Kafka Streamer Serializer.
  */
+
 package org.apache.ignite.stream.kafka.connect.serialization;
