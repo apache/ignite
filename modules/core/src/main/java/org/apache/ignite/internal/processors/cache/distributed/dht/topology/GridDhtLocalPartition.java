@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -379,9 +380,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         // Make sure to remove exactly this entry.
         removeEntry(entry);
-
-        // Attempt to evict.
-        tryContinueClearing();
     }
 
     /**
@@ -518,14 +516,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             // Decrement reservations.
             if (this.state.compareAndSet(state, newState)) {
-                // If no more reservations try to continue delayed renting or clearing process.
-                if (reservations == 0) {
-                    if (delayedRenting)
-                        rent(true);
-                    else
-                        tryContinueClearing();
-                }
+                // If no more reservations try to continue delayed renting.
+                if (reservations == 0 && delayedRenting)
+                    rent(true);
 
+                // Partition could be only reserved in OWNING state so no further actions
+                // are required.
                 break;
             }
         }
@@ -697,6 +693,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param updateSeq Update sequence.
      */
     private void clearAsync0(boolean updateSeq) {
+        // Method expected to be called  from exchange worker or rebalancing thread when rebalancing is done.
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);
@@ -747,7 +744,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         clear = true;
 
-        clearAsync0(false);
+        GridDhtPartitionDemander.RebalanceFuture rebFut =
+            (GridDhtPartitionDemander.RebalanceFuture)grp.preloader().rebalanceFuture();
+
+        // Make sure current rebalance future finishes before clearing
+        // to avoid clearing currently rebalancing partition.
+        // NOTE: this invariant is not true for initial rebalance future.
+        if (rebFut.topologyVersion() != null && state0 == MOVING && !rebFut.isDone())
+            rebFut.listen(fut -> clearAsync0(false));
+        else
+            clearAsync0(false);
     }
 
     /**
@@ -907,6 +913,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Only one thread is allowed to do such process concurrently.
      * At the end of clearing method completes {@code clearFuture}.
      *
+     * @param evictionCtx Eviction context.
+     *
      * @return {@code false} if clearing is not started due to existing reservations.
      * @throws NodeStoppingException If node is stopping.
      */
@@ -961,7 +969,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Tries to continue delayed partition clearing.
      */
     public void onUnlock() {
-        tryContinueClearing();
+        // No-op.
     }
 
     /**
@@ -1144,7 +1152,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     CacheDataRow row = it0.next();
 
                     // Do not clear fresh rows in case of partition reloading.
-                    // This is required because updates are possible to moving partition which is currently cleared.
+                    // This is required because normal updates are possible to moving partition which is currently cleared.
                     if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
                         continue;
 
@@ -1451,6 +1459,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Called before next batch is about to be applied during rebalance. Currently used for tests.
+     *
+     * @param last {@code True} if last batch for partition.
+     */
+    public void beforeApplyBatch(boolean last) {
+        // No-op.
+    }
+
+    /**
      * Removed entry holder.
      */
     private static class RemovedEntryHolder {
@@ -1598,7 +1615,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         public void finish() {
             synchronized (this) {
                 onDone();
-                finished = true;
+                finished = true; // Marks state when all future listeners are finished.
             }
         }
 
