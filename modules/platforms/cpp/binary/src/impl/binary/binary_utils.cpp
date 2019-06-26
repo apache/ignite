@@ -89,7 +89,7 @@ namespace ignite
                     int32_t hash = 1;
                     const int8_t* bytes = static_cast<const int8_t*>(data);
 
-                    for (int i = 0; i < size; ++i)
+                    for (size_t i = 0; i < size; ++i)
                         hash = 31 * hash + bytes[i];
 
                     return hash;
