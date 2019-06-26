@@ -377,7 +377,7 @@ namespace ignite
             }
 
             bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg,
-				int* errMsgLen, char** stackTrace, int* stackTraceLen) {
+                int* errMsgLen, char** stackTrace, int* stackTraceLen) {
                 if (env && env->ExceptionCheck()) {
                     if (m_Class_getName && m_Throwable_getMessage) {
                         jthrowable err = env->ExceptionOccurred();
@@ -508,7 +508,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[5];
+                    JNINativeMethod methods[5];
 
                     int idx = 0;
 
@@ -625,7 +625,7 @@ namespace ignite
                     if (JVM.GetJvm())
                         ctx = new JniContext(&JVM, hnds);
                 }
-                catch (JvmException)
+                catch (const JvmException&)
                 {
                     char* errClsNameChars = NULL;
                     char* errMsgChars = NULL;
@@ -633,7 +633,7 @@ namespace ignite
 
                     // Read error info if possible.
                     javaMembers.WriteErrorInfo(env, &errClsNameChars, &errClsNameLen, &errMsgChars, &errMsgLen,
-						&stackTraceChars, &stackTraceLen);
+                        &stackTraceChars, &stackTraceLen);
 
                     if (errClsNameChars) {
                         errClsName = errClsNameChars;
@@ -905,7 +905,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-			jobject JniContext::Acquire(jobject obj)
+            jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {
 
@@ -1050,7 +1050,7 @@ namespace ignite
 
                         if (hnds.error)
                             hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(),
-								msgLen, trace0.c_str(), traceLen, errBytesNative, errBytesLen);
+                                msgLen, trace0.c_str(), traceLen, errBytesNative, errBytesLen);
 
                         env->ReleaseByteArrayElements(errData, errBytesNative, JNI_ABORT);
                     }
@@ -1058,7 +1058,7 @@ namespace ignite
                     {
                         if (hnds.error)
                             hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(),
-								msgLen, trace0.c_str(), traceLen, NULL, 0);
+                                msgLen, trace0.c_str(), traceLen, NULL, 0);
                     }
 
                     env->DeleteLocalRef(err);

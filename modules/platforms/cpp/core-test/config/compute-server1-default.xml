@@ -28,6 +28,76 @@
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
+        <!-- Cache configuragtion. -->
+        <property name="cacheConfiguration">
+            <list>
+                <bean parent="cache-template">
+                    <property name="name" value="local"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="local_atomic"/>
+                    <property name="cacheMode" value="LOCAL"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="onheapCacheEnabled" value="true"/>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned2"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_atomic"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_near"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration" />
+                    </property>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="partitioned_atomic_near"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                    <property name="nearConfiguration">
+                        <bean class="org.apache.ignite.configuration.NearCacheConfiguration" />
+                    </property>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="replicated"/>
+                    <property name="cacheMode" value="REPLICATED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
+
+                <bean parent="cache-template">
+                    <property name="name" value="replicated_atomic"/>
+                    <property name="cacheMode" value="REPLICATED"/>
+                    <property name="atomicityMode" value="ATOMIC"/>
+                </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="CacheName1"/>
+                </bean>
+            </list>
+        </property>
+
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -57,5 +127,12 @@
                 <entry key="TestAttribute" value="Value1"/>
             </map>
         </property>
+    </bean>
+
+    <bean id="cache-template" abstract="true" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="rebalanceMode" value="SYNC"/>
+        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+        <property name="backups" value="1"/>
+        <property name="eagerTtl" value="true"/>
     </bean>
 </beans>

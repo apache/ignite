@@ -56,7 +56,7 @@ namespace ignite
                     if (it != snapshots->end())
                         return SharedPointer<BinaryTypeHandler>(new BinaryTypeHandler(it->second));
 
-                    for (int32_t i = 0; i < pending->size(); ++i)
+                    for (size_t i = 0; i < pending->size(); ++i)
                     {
                         SPSnap& snap = (*pending)[i];
 
@@ -166,7 +166,7 @@ namespace ignite
                 if (it != snapshots->end() && it->second.Get())
                     return it->second;
 
-                for (int32_t i = 0; i < pending->size(); ++i)
+                for (size_t i = 0; i < pending->size(); ++i)
                 {
                     SPSnap& snap = (*pending)[i];
 

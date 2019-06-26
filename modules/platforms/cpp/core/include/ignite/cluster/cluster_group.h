@@ -57,12 +57,97 @@ namespace ignite
             ClusterGroup ForAttribute(std::string name, std::string val);
 
             /**
+             * Get cluster group for all nodes that have cache with specified name, either in client or server modes.
+             *
+             * @param cacheName Cache name.
+             * @return Cluster group over nodes that have the cache with the specified name running.
+             */
+            ClusterGroup ForCacheNodes(std::string cacheName);
+
+            /**
+             * Get cluster group for all client nodes that access cache with the specified name.
+             *
+             * @param cacheName Cache name.
+             * @return Cluster group over nodes that have the cache with the specified name running.
+             */
+            ClusterGroup ForClientNodes(std::string cacheName);
+
+            /**
+             * Get cluster group consisting from the daemon nodes.
+             *
+             * @return Cluster group consisting from the daemon nodes.
+             */
+            ClusterGroup ForDaemons();
+
+            /**
              * Get ClusterGroup for all data nodes that have the cache with the specified name running.
              *
              * @param cacheName Cache name.
              * @return Cluster group over nodes that have the cache with the specified name running.
              */
             ClusterGroup ForDataNodes(std::string cacheName);
+
+            /**
+             * Get cluster group consisting from the nodes in this cluster group residing on the same host as the given node.
+             *
+             * @param node Cluster node.
+             * @return Cluster group residing on the same host as the given node.
+             */
+            ClusterGroup ForHost(ignite::cluster::ClusterNode node);
+
+            /**
+             * Get cluster group for the given node.
+             *
+             * @param node Cluster node.
+             * @return Cluster group for the given node.
+             */
+            ClusterGroup ForNode(ignite::cluster::ClusterNode node);
+
+            /**
+             * Get cluster group for a node with the specified ID.
+             *
+             * @param id Cluster node ID.
+             * @return Cluster group for a node with the specified ID.
+             */
+            ClusterGroup ForNodeId(Guid id);
+
+            /**
+             * Get cluster group over nodes with specified node IDs.
+             *
+             * @param ids Cluster node IDs.
+             * @return Cluster group over nodes with specified node IDs.
+             */
+            ClusterGroup ForNodeIds(std::vector<Guid> ids);
+
+            /**
+             * Get cluster group over a given set of nodes.
+             *
+             * @param nodes Cluster nodes.
+             * @return Cluster group over a given set of nodes.
+             */
+            ClusterGroup ForNodes(std::vector<ignite::cluster::ClusterNode> nodes);
+
+            /**
+             * Get cluster group with one oldest node from the current cluster group.
+             *
+             * @param nodes Cluster nodes.
+             * @return Cluster group with one oldest node from the current cluster group.
+             */
+            ClusterGroup ForOldest();
+
+            /**
+             * Get cluster group with one random node from the current cluster group.
+             *
+             * @return Cluster group with one random node from the current cluster group.
+             */
+            ClusterGroup ForRandom();
+
+            /**
+             * Get cluster group consisting from the nodes in this cluster group excluding the local node.
+             *
+             * @return Cluster group consisting from the nodes in this cluster group excluding the local node.
+             */
+            ClusterGroup ForRemotes();
 
             /**
              * Creates a cluster group of nodes started in server mode.
@@ -72,11 +157,37 @@ namespace ignite
             ClusterGroup ForServers();
 
             /**
+             * Get cluster group with one youngest node in the current cluster group.
+             *
+             * @return Cluster group with one youngest node in the current cluster group.
+             */
+            ClusterGroup ForYoungest();
+
+            /**
              * Creates a cluster group of cpp nodes.
              *
              * @return Cluster group of cpp nodes.
              */
             ClusterGroup ForCpp();
+
+            /**
+             * Get first node from the list of nodes in this cluster group.
+             *
+             * @return Cluster node in this cluster group.
+             *
+             * @throw IgniteError if there are no nodes in the cluster group.
+             */
+            ignite::cluster::ClusterNode GetNode();
+
+            /**
+             * Get node for given ID from this cluster group.
+             *
+             * @param nid Cluster node ID.
+             * @return Cluster node in this cluster group.
+             *
+             * @throw IgniteError if there is no node with specified ID.
+             */
+            ignite::cluster::ClusterNode GetNode(Guid nid);
 
             /**
              * Gets the vector of nodes in this cluster group.
