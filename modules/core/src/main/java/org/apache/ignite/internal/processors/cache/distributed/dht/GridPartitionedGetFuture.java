@@ -332,12 +332,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
         Set<ClusterNode> invalidNodeSet = getInvalidNodes(part, topVer);
 
+        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
+
         if (affNode != null) {
-            node = invalidNodeSet.contains(affNode) ? null : affNode;
+            node = !invalidNodeSet.contains(affNode) && affNodes.contains(affNode) ? affNode : null;
         }
         else {
-            List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
-
             // Failed if none affinity node found.
             if (affNodes.isEmpty()) {
                 onDone(serverNotFoundError(part, topVer));
