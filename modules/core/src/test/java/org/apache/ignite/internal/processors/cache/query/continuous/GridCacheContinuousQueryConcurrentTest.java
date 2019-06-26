@@ -345,18 +345,23 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         // Assumption: When the call returns, the listener is guaranteed to have been registered.
         cache.registerCacheEntryListener(cfg);
 
-        // Now must check the cache again, to make sure that we didn't miss the key insert while we
-        // were busy setting up the cache listener.
-        // Check asynchronously.
-        // Complete the promise if the key was inserted concurrently.
-        cache.getAsync(key).listen(new IgniteInClosure<IgniteFuture<String>>() {
-            @Override public void apply(IgniteFuture<String> f) {
-                String val = f.get();
+        // Some notifications might be missed when listener is registered between tx prepare and commit.
+        // TODO https://issues.apache.org/jira/browse/IGNITE-11797
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                String v;
 
-                if (val != null) {
-                    log.info("Completed by get: " + id);
+                while (!Thread.currentThread().isInterrupted()) {
+                    v = cache.get(key);
 
-                    (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by get");
+                    if (v == null)
+                        doSleep(100);
+                    else {
+                        if (!promise.isDone())
+                            (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by get");
+
+                        break;
+                    }
                 }
             }
         });

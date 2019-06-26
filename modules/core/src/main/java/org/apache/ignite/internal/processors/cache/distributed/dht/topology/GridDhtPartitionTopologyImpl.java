@@ -443,7 +443,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
                 else
-                    createPartitions(affVer, affAssignment, updateSeq, exchFut);
+                    createPartitions(affVer, affAssignment, updateSeq);
             }
             else {
                 // If preloader is disabled, then we simply clear out
@@ -493,10 +493,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param affVer Affinity version.
      * @param aff Affinity assignments.
      * @param updateSeq Update sequence.
-     * @param exchFut Exchange future for this version.
      */
-    private void createPartitions(AffinityTopologyVersion affVer, List<List<ClusterNode>> aff, long updateSeq,
-        GridDhtPartitionsExchangeFuture exchFut) {
+    private void createPartitions(AffinityTopologyVersion affVer, List<List<ClusterNode>> aff, long updateSeq) {
         if (!grp.affinityNode())
             return;
 

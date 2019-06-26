@@ -277,6 +277,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             }
         }
 
+        awaitPartitionMapExchange();
+
         for (Map.Entry<Integer, String> e : map.entrySet()) {
             for (Ignite g : G.allGrids())
                 assertEquals(fullFailure ? initVal : e.getValue(), g.cache(DEFAULT_CACHE_NAME).get(e.getKey()));
@@ -423,6 +425,8 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                 });
             }
         }
+
+        awaitPartitionMapExchange();
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
             for (Ignite g : G.allGrids())

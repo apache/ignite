@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -393,7 +392,6 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
         /**
          * @param part Partition.
          * @param grpEvictionCtx Eviction context.
-         * @param startVer Topology version when clearing was started.
          */
         private PartitionEvictionTask(
             GridDhtLocalPartition part,
@@ -414,7 +412,11 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             }
 
             try {
+                assert part.state() != GridDhtPartitionState.OWNING : part;
+
                 boolean success = part.tryClear(grpEvictionCtx);
+
+                assert part.state() != GridDhtPartitionState.OWNING : part;
 
                 if (success) {
                     if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())

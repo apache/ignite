@@ -266,6 +266,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     part.awaitDestroy();
 
                     part = top.localPartition(p, topVer, true);
+
+                    assert part != null : "Partition was not created [grp=" + grp.name() + ", topVer=" + topVer + ", p=" + p + ']';
                 }
 
                 assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;

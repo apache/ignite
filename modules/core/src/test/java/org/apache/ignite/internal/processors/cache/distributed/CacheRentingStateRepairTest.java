@@ -34,9 +34,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -181,16 +183,10 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             final GridDhtLocalPartition finalPart = part;
 
-            CountDownLatch clearLatch = new CountDownLatch(1);
-
-            part.onClearFinished(fut -> {
-                assertEquals(GridDhtPartitionState.EVICTED, finalPart.state());
-
-                clearLatch.countDown();
-            });
-
+            // Can't use onClearFinish here because EVICTED state is set inside listener callback and call order is not
+            // determined.
             assertTrue("Failed to wait for partition eviction after restart",
-                clearLatch.await(5_000, TimeUnit.MILLISECONDS));
+                GridTestUtils.waitForCondition(() -> finalPart.state() == GridDhtPartitionState.EVICTED, 10_000));
         }
         finally {
             stopAllGrids();
