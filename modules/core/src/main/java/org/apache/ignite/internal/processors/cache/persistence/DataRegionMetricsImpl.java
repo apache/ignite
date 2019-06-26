@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /**
  *
  */
@@ -39,7 +41,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
      * Full name will contain {@link DataRegionConfiguration#getName()} also.
      * {@code "io.dataregion.default"}, for example.
      */
-    public static final String DATAREGION_METRICS_PREFIX = "io.dataregion";
+    public static final String DATAREGION_METRICS_PREFIX = metricName("io", "dataregion");
 
     /** */
     private final DataRegionMetricsProvider dataRegionMetricsProvider;

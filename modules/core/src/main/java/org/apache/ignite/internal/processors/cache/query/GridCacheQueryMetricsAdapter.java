@@ -57,6 +57,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
     /**
      * @param mreg Metric registry.
      * @param cacheName Cache name.
+     * @param suffix Suffix for the metrics group name.
      */
     public GridCacheQueryMetricsAdapter(MetricRegistry mreg, String cacheName, @Nullable String suffix) {
         String prefix;
@@ -145,9 +146,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
             (int)fails.longValue());
     }
 
-    /**
-     * Resets query metrics.
-     */
+    /** Resets query metrics. */
     public void reset() {
         minTime.value(Long.MAX_VALUE);
         maxTime.reset();
@@ -162,9 +161,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
         return S.toString(GridCacheQueryMetricsAdapter.class, this);
     }
 
-    /**
-     * Query metrics snapshot.
-     */
+    /** Query metrics snapshot. */
     public static class QueryMetricsSnapshot implements QueryMetrics, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
