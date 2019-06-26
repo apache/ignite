@@ -46,5 +46,17 @@ angular
                     title: 'Not authorized'
                 },
                 unsaved: true
+            })
+            .state('base.503', {
+                url: '/503',
+                component: 'timedRedirection',
+                resolve: {
+                    headerText: () => '503',
+                    subHeaderText: () => 'Web Console not available'
+                },
+                tfMetaTags: {
+                    title: 'Not available'
+                },
+                unsaved: true
             });
     }]);

@@ -33,9 +33,9 @@ suite('Angular form-field component', () => {
     @Directive({selector: '[popper]'}) class PopperStub {}
     @Component({selector: 'form-field-errors', template: ''}) class ErrorsStub {
         @Input()
-        errorStyle: any
+        errorStyle: any;
         @Input()
-        errorType: any
+        errorType: any;
         @Input()
         extraErrorMessages: any
     }
@@ -82,10 +82,10 @@ suite('Angular form-field component', () => {
             one: new FormControl(null, []),
             two: new FormControl(null, [Validators.required]),
             three: new FormControl(null, [Validators.required])
-        })
-        requiredMarkerStyle = FormFieldRequiredMarkerStyles.REQUIRED
-        inlineError = FormFieldErrorStyles.INLINE
-        iconError = FormFieldErrorStyles.ICON
+        });
+        requiredMarkerStyle = FormFieldRequiredMarkerStyles.REQUIRED;
+        inlineError = FormFieldErrorStyles.INLINE;
+        iconError = FormFieldErrorStyles.ICON;
         extraMessages = {required: 'Foo'}
     }
 

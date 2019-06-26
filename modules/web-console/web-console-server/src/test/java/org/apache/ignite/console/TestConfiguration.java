@@ -19,8 +19,9 @@ package org.apache.ignite.console;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.repositories.AnnouncementRepository;
-import org.apache.ignite.console.tx.TransactionManager;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteFuture;
@@ -51,28 +52,33 @@ public class TestConfiguration {
         return mock(AnnouncementRepository.class);
     }
 
-    /** Tx manager mock. */
-    @Bean
-    public TransactionManager transactionManager() {
-        TransactionManager txMgr = mock(TransactionManager.class);
-
-        when(txMgr.txStart(any(TransactionConcurrency.class), any(TransactionIsolation.class)))
-            .thenReturn(new TransactionMock());
-
-        when(txMgr.txStart())
-            .thenReturn(new TestConfiguration.TransactionMock());
-
-        return txMgr;
-    }
-
     /** Ignite mock. */
     @Bean
     public Ignite igniteInstance() {
-        return new IgniteMock("testGrid", null, null, null, null, null, null);
+        IgniteConfiguration cfg = new IgniteConfiguration();
+        cfg.setClientMode(false);
+
+        IgniteTransactions txs = mock(IgniteTransactions.class);
+
+        when(txs.txStart(any(TransactionConcurrency.class), any(TransactionIsolation.class)))
+            .thenReturn(new TransactionMock());
+
+        when(txs.txStart())
+            .thenReturn(new TransactionMock());
+
+        return new IgniteMock("testGrid", null, null, null, null, null, null) {
+            @Override public IgniteConfiguration configuration() {
+                return cfg;
+            }
+
+            @Override public IgniteTransactions transactions() {
+                return txs;
+            }
+        };
     }
 
     /**
-     * Transaction mock.
+     * Transaction mock that do nothing.
      */
     private static class TransactionMock implements Transaction {
         /** {@inheritDoc} */
@@ -142,7 +148,7 @@ public class TestConfiguration {
 
         /** {@inheritDoc} */
         @Override public void commit() throws IgniteException {
-            // transaction do nothing.
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -152,12 +158,12 @@ public class TestConfiguration {
 
         /** {@inheritDoc} */
         @Override public void close() throws IgniteException {
-            // transaction do nothing.
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void rollback() throws IgniteException {
-            // transaction do nothing.
+            //No-op.
         }
 
         /** {@inheritDoc} */

@@ -185,7 +185,7 @@ export default class IgniteListOfRegisteredUsersCtrl {
         $scope.$watch(() => this.params.endDate, filterDates);
     }
 
-    subscriber: Subscription
+    subscriber: Subscription;
 
     $onDestroy() {
         if (this.subscriber) this.subscriber.unsubscribe();

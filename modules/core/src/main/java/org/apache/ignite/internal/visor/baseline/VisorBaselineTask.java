@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.util.VisorIllegalStateException;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -172,7 +173,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                 BaselineNode node = srvrs.get(consistentId);
 
                 if (node == null)
-                    throw new IllegalArgumentException("Node not found for consistent ID: " + consistentId);
+                    throw new VisorIllegalStateException("Check arguments. Node not found for consistent ID: " + consistentId);
 
                 baseline.put(consistentId, node);
             }
@@ -196,7 +197,7 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
                 BaselineNode node = baseline.remove(consistentId);
 
                 if (node == null)
-                    throw new IllegalArgumentException("Node not found for consistent ID: " + consistentId);
+                    throw new VisorIllegalStateException("Check arguments. Node not found for consistent ID: " + consistentId);
             }
 
             return set0(baseline.values());
@@ -212,9 +213,14 @@ public class VisorBaselineTask extends VisorOneNodeTask<VisorBaselineTaskArg, Vi
             IgniteClusterEx cluster = ignite.cluster();
 
             if (targetVer > cluster.topologyVersion())
-                throw new IllegalArgumentException("Topology version is ahead of time: " + targetVer);
+                throw new VisorIllegalStateException("Check arguments. Topology version is ahead of time: " + targetVer);
 
-            cluster.setBaselineTopology(targetVer);
+            try {
+                cluster.setBaselineTopology(targetVer);
+            }
+            catch (Throwable e) {
+                throw new VisorIllegalStateException(e.getMessage());
+            }
 
             return collect();
         }

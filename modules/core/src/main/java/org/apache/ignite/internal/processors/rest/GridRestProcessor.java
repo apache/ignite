@@ -77,6 +77,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
+import org.apache.ignite.internal.visor.util.VisorIllegalStateException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -91,7 +92,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIE
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_ILLEGAL_ARGUMENT;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_ILLEGAL_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
@@ -335,10 +336,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 catch (Exception e) {
                     failed = true;
 
-                    if (X.hasCause(e, IllegalArgumentException.class)) {
-                        IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
+                    if (X.hasCause(e, VisorIllegalStateException.class)) {
+                        VisorIllegalStateException iae = X.cause(e, VisorIllegalStateException.class);
 
-                        res = new GridRestResponse(STATUS_ILLEGAL_ARGUMENT, iae.getMessage());
+                        res = new GridRestResponse(STATUS_ILLEGAL_STATE, iae.getMessage());
                     }
                     else {
                         if (!X.hasCause(e, VisorClusterGroupEmptyException.class))

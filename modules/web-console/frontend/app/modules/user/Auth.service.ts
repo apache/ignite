@@ -80,14 +80,15 @@ export default class AuthService {
                     });
             });
     }
+
     logout() {
         return this.$http.post('/api/v1/logout')
-            .then(() => {
+            .catch((e) => this.Messages.showError(e))
+            .finally(() => {
                 this.User.clean();
 
                 this.$window.open(this.$state.href('signin'), '_self');
-            })
-            .catch((e) => this.Messages.showError(e));
+            });
     }
 
     async resendSignupConfirmation(email: string) {

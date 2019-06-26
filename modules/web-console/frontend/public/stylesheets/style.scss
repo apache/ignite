@@ -1802,51 +1802,6 @@ treecontrol.tree-classic {
     min-height: 100px;
 }
 
-.carousel-caption {
-    position: relative;
-    left: auto;
-    right: auto;
-
-    margin-top: 10px;
-
-    h3 {
-        margin-bottom: 10px;
-    }
-}
-
-.carousel-control {
-    font-size: 20px;
-    z-index: 16;
-
-    // Toggles
-    .fa-chevron-left,.fa-chevron-right {
-        position: absolute;
-        bottom: 28px;
-        margin-top: -10px;
-        z-index: 16;
-        display: inline-block;
-        margin-left: -10px;
-    }
-
-    .fa-chevron-left {
-        left: 90%;
-        margin-left: -10px;
-    }
-
-    .fa-chevron-right {
-        right: 90%;
-        margin-right: -10px;
-    }
-}
-
-.carousel-control.left {
-    background-image: none;
-}
-
-.carousel-control.right {
-    background-image: none;
-}
-
 .getting-started-puzzle {
     margin-left: 20px;
 }

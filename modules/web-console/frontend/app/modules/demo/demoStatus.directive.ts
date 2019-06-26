@@ -22,7 +22,7 @@ import {DemoService} from 'app/modules/demo/Demo.module';
 export function directive(): ng.IDirective {
     return {
         controller: class DemoStatus {
-            static $inject = ['Demo']
+            static $inject = ['Demo'];
             constructor(private Demo: DemoService) {}
             get enabled() {return this.Demo.enabled;}
         },

@@ -47,7 +47,7 @@ export default class AgentModal {
         User.current$.pipe(tap((user) => this.user = user)).subscribe();
     }
 
-    user: User
+    user: User;
 
     hide() {
         this.modal.hide();
