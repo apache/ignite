@@ -19,7 +19,7 @@
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
- * Class representing an Ignite timestamp type.
+ * Class representing a GridGain timestamp type.
  *
  * The timestamp extends the standard JavaScript {@link Date} Object and consists of:
  *   - time  - the number of milliseconds since January 1, 1970, 00:00:00 UTC,

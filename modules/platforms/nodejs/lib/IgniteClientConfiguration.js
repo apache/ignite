@@ -22,10 +22,10 @@ const Errors = require('./Errors');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
- * Class representing Ignite client configuration.
+ * Class representing GridGain client configuration.
  *
  * The configuration includes:
- *   - (mandatory) Ignite node endpoint(s)
+ *   - (mandatory) GridGain node endpoint(s)
  *   - (optional) user credentials for authentication
  *   - (optional) TLS enabling
  *   - (optional) connection options
@@ -33,13 +33,13 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
 class IgniteClientConfiguration {
 
     /**
-     * Creates an instance of Ignite client configuration
+     * Creates an instance of GridGain client configuration
      * with the provided mandatory settings and default optional settings.
      *
      * By default, the client does not use authentication and secure connection.
      * The Affinity Awareness feature is disabled by default.
      *
-     * @param {...string} endpoints - Ignite node endpoint(s).
+     * @param {...string} endpoints - GridGain node endpoint(s).
      *  The client randomly connects/reconnects to one of the specified node.
      *
      * @return {IgniteClientConfiguration} - new client configuration instance.

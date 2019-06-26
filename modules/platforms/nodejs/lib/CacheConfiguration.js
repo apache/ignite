@@ -24,7 +24,7 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
 const Errors = require('./Errors');
 
 /**
- * Class representing Cache Key part of Ignite {@link CacheConfiguration}.
+ * Class representing Cache Key part of GridGain {@link CacheConfiguration}.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
@@ -107,7 +107,7 @@ class CacheKeyConfiguration {
 }
 
 /**
- * Class representing one Query Entity element of Ignite {@link CacheConfiguration}.
+ * Class representing one Query Entity element of GridGain {@link CacheConfiguration}.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
@@ -389,7 +389,7 @@ class QueryEntity {
 }
 
 /**
- * Class representing one Query Field element of {@link QueryEntity} of Ignite {@link CacheConfiguration}.
+ * Class representing one Query Field element of {@link QueryEntity} of GridGain {@link CacheConfiguration}.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
@@ -643,7 +643,7 @@ class QueryField {
 });
 
 /**
- * Class representing one Query Index element of {@link QueryEntity} of Ignite {@link CacheConfiguration}.
+ * Class representing one Query Index element of {@link QueryEntity} of GridGain {@link CacheConfiguration}.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *
@@ -938,7 +938,7 @@ const WRITE_SYNCHRONIZATION_MODE = Object.freeze({
 });
 
 /**
- * Class representing Ignite cache configuration on a server.
+ * Class representing GridGain cache configuration on a server.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
  *

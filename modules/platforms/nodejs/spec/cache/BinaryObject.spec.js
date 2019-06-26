@@ -20,7 +20,7 @@ require('jasmine-expect');
 
 const Util = require('util');
 const TestingHelper = require('../TestingHelper');
-const IgniteClient = require('apache-ignite-client');
+const IgniteClient = require('gridgain-client');
 const ObjectType = IgniteClient.ObjectType;
 const MapObjectType = IgniteClient.MapObjectType;
 const ComplexObjectType = IgniteClient.ComplexObjectType;

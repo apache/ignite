@@ -15,7 +15,7 @@
  */
 
 const FS = require('fs');
-const IgniteClient = require('apache-ignite-client');
+const IgniteClient = require('gridgain-client');
 const ObjectType = IgniteClient.ObjectType;
 const ComplexObjectType = IgniteClient.ComplexObjectType;
 const BinaryObject = IgniteClient.BinaryObject;
@@ -33,7 +33,7 @@ const TLS_CA_FILE_NAME = __dirname + '/certs/ca.crt';
 
 const CACHE_NAME = 'AuthTlsExample_cache';
 
-// This example demonstrates how to establish a secure connection to an Ignite node and use username/password authentication,
+// This example demonstrates how to establish a secure connection to a GridGain node and use username/password authentication,
 // as well as basic Key-Value Queries operations for primitive types:
 // - connects to a node using TLS and providing username/password
 // - creates a cache, if it doesn't exist

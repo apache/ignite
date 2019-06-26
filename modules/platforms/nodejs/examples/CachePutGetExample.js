@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const IgniteClient = require('apache-ignite-client');
+const IgniteClient = require('gridgain-client');
 const ObjectType = IgniteClient.ObjectType;
 const ComplexObjectType = IgniteClient.ComplexObjectType;
 const BinaryObject = IgniteClient.BinaryObject;

@@ -1,7 +1,7 @@
 {
-  "name": "apache-ignite-client",
+  "name": "gridgain-client",
   "version": "1.1.0",
-  "description": "NodeJS Client for Apache Ignite",
+  "description": "NodeJS Client for Gridgain Community Edition",
   "main": "index.js",
   "files": [
     "/examples",
@@ -10,15 +10,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/apache/ignite/tree/master/modules/platforms/nodejs"
+    "url": "https://github.com/gridgain/gridgain/tree/master/modules/platforms/nodejs"
   },
   "keywords": [
-    "apache",
-    "ignite",
+    "gridgain",
+    "community",
     "client"
   ],
   "author": "",
-  "license": "Apache-2.0",
+  "license": "GridGain Community",
   "engines": {
     "node": ">=8.0.0"
   },

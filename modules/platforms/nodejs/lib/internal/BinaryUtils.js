@@ -633,7 +633,7 @@ class BinaryUtils {
     }
 
     static strHashCode(str) {
-        // This method calcuates hash code for the String Ignite type
+        // This method calcuates hash code for the String GridGain type
         // bool must be a js 'string'
         let hash = 0, char;
         if (str && str.length > 0) {
@@ -651,32 +651,32 @@ class BinaryUtils {
     }
 
     static charHashCode(char) {
-        // This method calcuates hash code for the Char Ignite type
+        // This method calcuates hash code for the Char GridGain type
         // char must be a js 'string' of length 1
         return char.charCodeAt(0);
     }
 
     static intHashCode(int) {
-        // This method calcuates hash code for Byte, Short or Integer Ignite types
+        // This method calcuates hash code for Byte, Short or Integer GridGain types
         // int must be a js 'number'
         return int;
     }
 
     static longHashCode(long) {
-        // This method calcuates hash code for the Long Ignite type
+        // This method calcuates hash code for the Long GridGain type
         // long must be a js 'number'
         const longObj = Long.fromNumber(long);
         return longObj.getLowBits() ^ longObj.getHighBits();
     }
 
     static boolHashCode(bool) {
-        // This method calcuates hash code for the Boolean Ignite type
+        // This method calcuates hash code for the Boolean GridGain type
         // bool must be a js 'boolean'
         return bool ? 1231 : 1237;
     }
 
     static floatHashCode(float) {
-        // This method calcuates hash code for the Float Ignite type
+        // This method calcuates hash code for the Float GridGain type
         // float must be a js 'number'
         const buf = new ArrayBuffer(4);
         (new Float32Array(buf))[0] = float;
@@ -685,7 +685,7 @@ class BinaryUtils {
     }
 
     static doubleHashCode(double) {
-        // This method calcuates hash code for the Double Ignite type
+        // This method calcuates hash code for the Double GridGain type
         // double must be a js 'number'
         const buf = new ArrayBuffer(8);
         (new Float64Array(buf))[0] = double;
@@ -694,7 +694,7 @@ class BinaryUtils {
     }
 
     static uuidHashCode(uuid) {
-        // This method calcuates hash code for the UUID Ignite type
+        // This method calcuates hash code for the UUID GridGain type
         // uuid must be a js Array of 'number' of length 16
         const buf = Buffer.from(uuid);
         let xor = 0;
@@ -707,7 +707,7 @@ class BinaryUtils {
     }
 
     static timeHashCode(time) {
-        // This method calcuates hash code for the Time Ignite type
+        // This method calcuates hash code for the Time GridGain type
         // time must be an instance of Date
         const midnight = new Date(time);
         midnight.setHours(0, 0, 0, 0);
@@ -716,7 +716,7 @@ class BinaryUtils {
     }
 
     static datetimeHashCode(date) {
-        // This method calcuates hash code for the Timestamp and Date Ignite types
+        // This method calcuates hash code for the Timestamp and Date GridGain types
         // date must be an instance of Date or Timestamp
         return BinaryUtils.longHashCode(date.getTime());
     }
