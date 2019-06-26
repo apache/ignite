@@ -413,8 +413,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     }
 
     /**
-     * Returns the current memory usage of the heap
-     * @return memory usage or fake value with zero in case there was exception during take of metrics
+     * Returns the current memory usage of the heap.
+     * @return Memory usage or fake value with zero in case there was exception during take of metrics.
      */
     public MemoryUsage heapMemoryUsage() {
         // Catch exception here to allow discovery proceed even if metrics are not available
@@ -440,9 +440,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private class MetricsUpdater implements Runnable {
         /** */
         private long prevGcTime = -1;
