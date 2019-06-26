@@ -86,8 +86,8 @@ function run($transitions, AclService, User: UserService, Activities) {
                 if (!AclService.can(permission))
                     throw new Error('Illegal access error');
             })
-            .catch(() => {
-                return $state.target(trans.to().failState || 'base.403');
+            .catch((err) => {
+                return $state.target(trans.to().failState || (err.status === 503 ? 'base.503' : 'base.403'));
             });
     });
 }

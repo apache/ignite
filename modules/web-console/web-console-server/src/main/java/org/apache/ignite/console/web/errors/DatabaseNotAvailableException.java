@@ -1,12 +1,12 @@
 /*
  * Copyright 2019 GridGain Systems, Inc. and Contributors.
- * 
+ *
  * Licensed under the GridGain Community Edition License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-import {DemoService} from 'app/modules/demo/Demo.module';
+package org.apache.ignite.console.web.errors;
+
+import org.eclipse.jetty.http.BadMessageException;
+
+import static org.apache.ignite.console.web.errors.Errors.ERR_DB_NOT_AVAILABLE;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 /**
- * Use this directive along with ng-ref when you can't inject Demo into scope
+ * Special exception to handle database errors.
  */
-export function directive(): ng.IDirective {
-    return {
-        controller: class DemoStatus {
-            static $inject = ['Demo'];
-            constructor(private Demo: DemoService) {}
-            get enabled() {return this.Demo.enabled;}
-        },
-        restrict: 'A'
-    };
+public class DatabaseNotAvailableException extends BadMessageException {
+    /**
+     * Default constructor.
+     */
+    public DatabaseNotAvailableException() {
+        super(SERVICE_UNAVAILABLE.value(), ERR_DB_NOT_AVAILABLE);
+    }
 }
