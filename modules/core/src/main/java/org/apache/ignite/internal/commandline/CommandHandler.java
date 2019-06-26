@@ -300,6 +300,11 @@ public class CommandHandler {
             }
 
             if (isConnectionError(e)) {
+                IgniteCheckedException cause = X.cause(e, IgniteCheckedException.class);
+
+                if (cause != null && cause.getMessage() != null && cause.getMessage().contains("SSL"))
+                    e = cause;
+
                 logger.severe("Connection to cluster failed. " + CommandLogger.errorMessage(e));
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
