@@ -263,7 +263,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     }
 
     /** {@inheritDoc} */
-    @Override public long reserve(long delta) {
+    @Override public synchronized long reserve(long delta) {
         long cntr = get();
 
         long reserved = reserveCntr.getAndAdd(delta);
