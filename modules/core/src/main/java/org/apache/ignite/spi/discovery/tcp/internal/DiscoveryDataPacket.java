@@ -167,7 +167,7 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clientNode Client node.
      * @param log Logger.
      * @param panic Throw unmarshalling if {@code true}.
-     * @throws IgniteCheckedException If {@code panic} is {@true} and unmarshalling failed.
+     * @throws IgniteCheckedException If {@code panic} is {@code true} and unmarshalling failed.
      */
     public DiscoveryDataBag unmarshalJoiningNodeData(
         Marshaller marsh,
@@ -303,8 +303,11 @@ public class DiscoveryDataPacket implements Serializable {
             catch (IgniteCheckedException e) {
                 if (CONTINUOUS_PROC.ordinal() == binEntry.getKey() &&
                     X.hasCause(e, ClassNotFoundException.class) && clientNode
-                )
+                ) {
                     U.warn(log, "Failed to unmarshal continuous query remote filter on client node. Can be ignored.");
+
+                    continue;
+                }
                 else if (binEntry.getKey() < GridComponent.DiscoveryDataExchangeType.VALUES.length) {
                     U.error(log,
                         "Failed to unmarshal discovery data for component: " +
