@@ -28,7 +28,7 @@ import java.util.List;
  */
 public class Person implements Externalizable {
     /** */
-    private long personNum;
+    private long personNumber;
 
     /** */
     private String firstName;
@@ -63,9 +63,9 @@ public class Person implements Externalizable {
     }
 
     /** */
-    public Person(long personNum, String firstName, String lastName, short age, boolean married,
-        long height, float weight, Date birthDate, List<String> phones) {
-        this.personNum = personNum;
+    public Person(long personNumber, String firstName, String lastName, short age, boolean married,
+                  long height, float weight, Date birthDate, List<String> phones) {
+        this.personNumber = personNumber;
         this.firstName = firstName;
         this.lastName = lastName;
         this.age = age;
@@ -79,7 +79,7 @@ public class Person implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(personNum);
+        out.writeLong(personNumber);
         out.writeObject(firstName);
         out.writeObject(lastName);
         out.writeShort(age);
@@ -93,7 +93,7 @@ public class Person implements Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        personNum = in.readLong();
+        personNumber = in.readLong();
         firstName = (String)in.readObject();
         lastName = (String)in.readObject();
         age = in.readShort();
@@ -112,7 +112,7 @@ public class Person implements Externalizable {
 
         Person person = (Person)obj;
 
-        if (personNum != person.personNum)
+        if (personNumber != person.personNumber)
             return false;
 
         if ((firstName != null && !firstName.equals(person.firstName)) ||
@@ -143,7 +143,7 @@ public class Person implements Externalizable {
 
         Person person = (Person)obj;
 
-        if (personNum != person.personNum)
+        if (personNumber != person.personNumber)
             return false;
 
         if ((firstName != null && !firstName.equals(person.firstName)) ||
@@ -165,13 +165,13 @@ public class Person implements Externalizable {
     /** */
     @SuppressWarnings("UnusedDeclaration")
     public void setPersonNumber(long personNum) {
-        this.personNum = personNum;
+        this.personNumber = personNum;
     }
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
     public long getPersonNumber() {
-        return personNum;
+        return personNumber;
     }
 
     /** */
