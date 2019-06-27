@@ -453,6 +453,19 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * Pre-create cache data rows.
+     *
+     * @param part Partition number.
+     * @param infos Entry infos.
+     * @return Closeable iterator that removes unprocessed rows from page memory on close.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> preloadRows(
+        int part,
+        Collection<GridCacheEntryInfo> infos
+    ) throws IgniteCheckedException;
+
+    /**
      * @param parts Partitions.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.

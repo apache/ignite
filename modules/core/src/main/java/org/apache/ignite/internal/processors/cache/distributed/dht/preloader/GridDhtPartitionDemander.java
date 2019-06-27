@@ -65,11 +65,11 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1018,33 +1018,27 @@ public class GridDhtPartitionDemander {
         int batchOff = 0;
 
         while (batchOff < infos.size()) {
-            List<GridCacheEntryInfo> batch =
+            Collection<GridCacheEntryInfo> batch =
                 infos.subList(batchOff, Math.min(infos.size(), batchOff += CHECKPOINT_THRESHOLD));
-
-            Iterator<? extends CacheDataRow> rowsIter = null;
 
             ctx.database().checkpointReadLock();
 
             try {
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
-                try {
-                    // Filter NULL values (this means we need to remove the cache entry).
-                    Collection<GridCacheEntryInfo> updates = F.view(batch, info -> info.value() != null);
+                // Create data rows on data pages before getting locks on cache entries.
+                try (GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> iter =
+                         grp.offheap().preloadRows(p, batch)) {
 
-                    // Create data rows on data pages before getting locks on cache entries.
-                    rowsIter = part.dataStore().createRows(updates).iterator();
+                    while (iter.hasNext()) {
+                        Map.Entry<GridCacheEntryInfo, CacheDataRow> e = iter.next();
 
-                    for (GridCacheEntryInfo info : batch) {
-                        CacheDataRow row = info.value() == null ? null : rowsIter.next();
+                        GridCacheEntryInfo info = e.getKey();
+                        CacheDataRow row = e.getValue();
 
-                        GridCacheContext cctx =
-                            grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
+                        GridCacheContext cctx = resolveCacheContext(info);
 
-                        if (cctx != null && cctx.isNear())
-                            cctx = cctx.dhtCache().context();
-
-                        if ((cctx == null || !preloadEntry(from, p, info, topVer, cctx, row)) && row != null)
+                        if (cctx == null || !preloadEntry(from, p, info, topVer, cctx, row))
                             part.dataStore().removeRow(row);
 
                         if (cctx == null)
@@ -1056,11 +1050,6 @@ public class GridDhtPartitionDemander {
                                 cctx0.cache().metrics0().onRebalanceKeyReceived();
                         }
                     }
-                }
-                finally {
-                    // Remove all unprocessed rows.
-                    while (rowsIter != null && rowsIter.hasNext())
-                        part.dataStore().removeRow(rowsIter.next());
                 }
             }
             finally {
@@ -1229,6 +1218,21 @@ public class GridDhtPartitionDemander {
      */
     private String demandRoutineInfo(int topicId, UUID supplier, GridDhtPartitionSupplyMessage supplyMsg) {
         return "grp=" + grp.cacheOrGroupName() + ", topVer=" + supplyMsg.topologyVersion() + ", supplier=" + supplier + ", topic=" + topicId;
+    }
+
+    /**
+     * Get cache context.
+     *
+     * @param info Preloading entry.
+     * @return Cache context or {@code null} if context does not exists..
+     */
+    private GridCacheContext resolveCacheContext(GridCacheEntryInfo info) {
+        GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
+
+        if (cctx != null && cctx.isNear())
+            cctx = cctx.dhtCache().context();
+
+        return cctx;
     }
 
     /** {@inheritDoc} */

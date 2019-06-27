@@ -1178,6 +1178,37 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
+    @Override public GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> preloadRows(
+        int partId,
+        Collection<GridCacheEntryInfo> infos
+    ) throws IgniteCheckedException {
+        CacheDataStore dataStore = dataStore(partId);
+
+        Collection<? extends CacheDataRow> rows = dataStore.createRows(F.view(infos, info -> info.value() != null));
+
+        return new GridCloseableIteratorAdapter<Map.Entry<GridCacheEntryInfo, CacheDataRow>>() {
+            private final Iterator<? extends CacheDataRow> rowsIter = rows.iterator();
+            private final Iterator<GridCacheEntryInfo> infosIter = infos.iterator();
+
+            @Override protected IgniteBiTuple<GridCacheEntryInfo, CacheDataRow> onNext() {
+                GridCacheEntryInfo info = infosIter.next();
+
+                return new IgniteBiTuple<>(info, info.value() == null ? null : rowsIter.next());
+            }
+
+            @Override protected boolean onHasNext() {
+                return infosIter.hasNext();
+            }
+
+            @Override protected void onClose() throws IgniteCheckedException {
+                while (rowsIter.hasNext())
+                    dataStore.removeRow(rowsIter.next());
+
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts,
         final AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
@@ -1763,7 +1794,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void removeRow(CacheDataRow row) throws IgniteCheckedException {
-            assert row != null;
+            if (row == null)
+                return;
 
             rowStore.removeRow(row.link(), grp.statisticsHolderData());
         }
