@@ -36,6 +36,10 @@ public class UserResponse extends User {
     @ApiModelProperty(value = "Admin flag.")
     private boolean admin;
 
+    /** Switch user used flag. */
+    @ApiModelProperty(value = "Switch user used flag.")
+    private boolean becomeUsed;
+
     /**
      * Default constructor for serialization.
      */
@@ -47,12 +51,14 @@ public class UserResponse extends User {
      * Full constructor.
      *
      * @param acc Account DTO.
+     * @param becomeUsed Switch user used flag.
      */
-    public UserResponse(Account acc) {
+    public UserResponse(Account acc, boolean becomeUsed) {
         super(acc);
 
         this.tok = acc.getToken();
         this.admin = acc.isAdmin();
+        this.becomeUsed = becomeUsed;
     }
 
     /**
@@ -81,6 +87,20 @@ public class UserResponse extends User {
      */
     public void setAdmin(boolean admin) {
         this.admin = admin;
+    }
+
+    /**
+     * @return Switch user used flag
+     */
+    public boolean isBecomeUsed() {
+        return becomeUsed;
+    }
+
+    /**
+     * @param becomeUsed Switch user used flag.
+     */
+    public void setBecomeUsed(boolean becomeUsed) {
+        this.becomeUsed = becomeUsed;
     }
 
     /** {@inheritDoc} */
