@@ -3059,14 +3059,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
         }
 
-        connectGate.enter();
+        final long start = System.currentTimeMillis();
 
-        try {
-            final long start = System.currentTimeMillis();
+        GridCommunicationClient client = createTcpClient(node, connIdx);
 
-            GridCommunicationClient client = createTcpClient(node, connIdx);
-
-            final long time = System.currentTimeMillis() - start;
+        final long time = System.currentTimeMillis() - start;
 
             if (time > CONNECTION_ESTABLISH_THRESHOLD_MS) {
                 if (log.isInfoEnabled())
@@ -3075,11 +3072,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             else if (log.isDebugEnabled())
                 log.debug("TCP client created [client=" + clientString(client, node) + ", duration=" + time + "ms]");
 
-            return client;
-        }
-        finally {
-            connectGate.leave();
-        }
+        return client;
     }
 
     /**
@@ -3402,6 +3395,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 long timeout = 0;
 
+                connectGate.enter();
+
                 try {
                     if (getSpiContext().node(node.id()) == null)
                         throw new ClusterTopologyCheckedException("Failed to send message (node left topology): " + node);
@@ -3621,6 +3616,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         break;
                     }
+                }
+                finally {
+                    connectGate.leave();
                 }
 
                 CommunicationWorker commWorker0 = commWorker;
