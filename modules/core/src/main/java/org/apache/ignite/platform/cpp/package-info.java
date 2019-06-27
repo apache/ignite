@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains C++ platform-related classes.
  */
+
 package org.apache.ignite.platform.cpp;

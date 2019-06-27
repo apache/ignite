@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Ignite Hadoop Accelerator planner classes.
  */
+
 package org.apache.ignite.hadoop.planner;

@@ -30,7 +30,6 @@ import org.jetbrains.annotations.Nullable;
  * @author Raul Kripalani
  */
 public interface MessageTransformer<T extends Message, K, V> {
-
     /**
      * Transformation function.
      *
