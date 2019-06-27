@@ -1428,18 +1428,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (readRepair) {
             return new GridNearReadRepairCheckOnlyFuture(
-                topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
                 !skipStore,
-                subjId,
                 taskName,
                 deserializeBinary,
                 recovery,
                 expiry,
                 skipVals,
                 needVer,
-                null,
                 null).single();
         }
 
@@ -1498,18 +1495,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (readRepair) {
             return new GridNearReadRepairCheckOnlyFuture(
-                topVer,
                 ctx,
                 ctx.cacheKeysView(keys),
                 !skipStore,
-                subjId,
                 taskName,
                 deserializeBinary,
                 recovery,
                 expiry,
                 skipVals,
                 needVer,
-                null,
                 null).multi();
         }
 

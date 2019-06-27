@@ -2369,72 +2369,62 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         }
 
                         if (readRepair) {
-                            IgniteInternalTx prevTx = cacheCtx.tm().tx(GridNearTxLocal.this); // Within the original tx.
+                            return new GridNearReadRepairFuture(
+                                topVer != null ? topVer : topologyVersion(),
+                                cacheCtx,
+                                keys,
+                                !skipStore,
+                                taskName,
+                                deserializeBinary,
+                                recovery,
+                                cacheCtx.cache().expiryPolicy(expiryPlc0),
+                                GridNearTxLocal.this)
+                                .chain((fut) -> {
+                                        try {
+                                            // For every fixed entry.
+                                            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                                                EntryGetResult getRes = entry.getValue();
 
-                            try {
-                                return new GridNearReadRepairFuture(
-                                    topVer,
-                                    cacheCtx,
-                                    keys,
-                                    !skipStore,
-                                    subjId,
-                                    taskName,
-                                    deserializeBinary,
-                                    recovery,
-                                    cacheCtx.cache().expiryPolicy(expiryPlc0),
-                                    label(),
-                                    mvccSnapshot)
-                                    .init()
-                                    .chain((fut) -> {
-                                            try {
-                                                // For every fixed entry.
-                                                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                                                    EntryGetResult getRes = entry.getValue();
+                                                enlistWrite(
+                                                    cacheCtx,
+                                                    entryTopVer,
+                                                    entry.getKey(),
+                                                    getRes.value(),
+                                                    expiryPlc0,
+                                                    null,
+                                                    null,
+                                                    false,
+                                                    false,
+                                                    null,
+                                                    null,
+                                                    skipStore,
+                                                    false,
+                                                    !deserializeBinary,
+                                                    recovery,
+                                                    null);
 
-                                                    enlistWrite(
-                                                        cacheCtx,
-                                                        entryTopVer,
-                                                        entry.getKey(),
-                                                        getRes.value(),
-                                                        expiryPlc0,
-                                                        null,
-                                                        null,
-                                                        false,
-                                                        false,
-                                                        null,
-                                                        null,
-                                                        skipStore,
-                                                        false,
-                                                        !deserializeBinary,
-                                                        recovery,
-                                                        null);
-
-                                                    // Rewriting fixed, initially filled by explicit lock operation.
-                                                    cacheCtx.addResult(retMap,
-                                                        entry.getKey(),
-                                                        getRes.value(),
-                                                        skipVals,
-                                                        keepCacheObjects,
-                                                        deserializeBinary,
-                                                        false,
-                                                        getRes,
-                                                        getRes.version(),
-                                                        0,
-                                                        0,
-                                                        needVer);
-                                                }
-
-                                                return Collections.emptyMap();
+                                                // Rewriting fixed, initially filled by explicit lock operation.
+                                                cacheCtx.addResult(retMap,
+                                                    entry.getKey(),
+                                                    getRes.value(),
+                                                    skipVals,
+                                                    keepCacheObjects,
+                                                    deserializeBinary,
+                                                    false,
+                                                    getRes,
+                                                    getRes.version(),
+                                                    0,
+                                                    0,
+                                                    needVer);
                                             }
-                                            catch (Exception e) {
-                                                throw new GridClosureException(e);
-                                            }
+
+                                            return Collections.emptyMap();
                                         }
-                                    );
-                            }
-                            finally {
-                                cacheCtx.tm().tx(prevTx);
-                            }
+                                        catch (Exception e) {
+                                            throw new GridClosureException(e);
+                                        }
+                                    }
+                                );
                         }
 
                         return new GridFinishedFuture<>(Collections.emptyMap());
@@ -3087,20 +3077,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         else if (cacheCtx.isColocated()) {
             if (readRepair) {
                 return new GridNearReadRepairCheckOnlyFuture(
-                    topVer,
                     cacheCtx,
                     keys,
                     readThrough,
-                    subjId,
                     taskName,
                     false,
                     recovery,
                     expiryPlc0,
                     skipVals,
                     needVer,
-                    lb,
-                    mvccSnapshot)
-                    .init()
+                    this)
                     .chain((fut) -> {
                         try {
                             for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet())

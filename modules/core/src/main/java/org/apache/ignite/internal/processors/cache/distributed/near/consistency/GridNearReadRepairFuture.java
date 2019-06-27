@@ -31,16 +31,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 
 /**
  * Checks data consistency. Checks that each affinity node's value equals other's. Prepares recovery data. Records
  * consistency violation event.
  */
 public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
-    /** Context. */
-    GridCacheContext ctx;
-
     /**
      *
      */
@@ -49,26 +46,20 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,
         boolean readThrough,
-        UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
-        String txLbl,
-        MvccSnapshot mvccSnapshot) {
+        IgniteInternalTx tx) {
         super(topVer,
             ctx,
             keys,
             readThrough,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,
             expiryPlc,
-            txLbl,
-            mvccSnapshot);
-
-        this.ctx = ctx;
+            tx);
     }
 
     /** {@inheritDoc} */

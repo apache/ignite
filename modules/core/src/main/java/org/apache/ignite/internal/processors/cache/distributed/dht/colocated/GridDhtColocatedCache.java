@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFu
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
-import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
@@ -60,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -265,19 +265,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (readRepair) {
             return new GridNearReadRepairCheckOnlyFuture(
-                topVer,
                 ctx,
                 Collections.singleton(ctx.toCacheKeyObject(key)),
                 opCtx == null || !opCtx.skipStore(),
-                subjId,
                 taskName,
                 deserializeBinary,
                 recovery,
                 skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
                 skipVals,
                 needVer,
-                null,
-                mvccSnapshot).single();
+                tx).single();
         }
 
         GridPartitionedSingleGetFuture fut = new GridPartitionedSingleGetFuture(ctx,
@@ -389,19 +386,16 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (readRepair) {
             return new GridNearReadRepairCheckOnlyFuture(
-                topVer,
                 ctx,
                 ctx.cacheKeysView(keys),
                 opCtx == null || !opCtx.skipStore(),
-                subjId,
                 taskName,
                 deserializeBinary,
                 recovery,
                 skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
                 skipVals,
                 needVer,
-                null,
-                mvccSnapshot).multi();
+                tx).multi();
         }
 
         IgniteInternalFuture<Map<K, V>> fut = loadAsync(
