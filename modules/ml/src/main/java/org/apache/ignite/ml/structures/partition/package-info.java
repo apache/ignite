@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains internal APIs for dataset partitioned labeled datasets.
  */
+
 package org.apache.ignite.ml.structures.partition;

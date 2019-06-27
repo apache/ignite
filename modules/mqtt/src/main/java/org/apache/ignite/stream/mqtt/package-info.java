@@ -18,4 +18,5 @@
 /**
  * Contains implementation of MQTT topic messages consumer.
  */
+
 package org.apache.ignite.stream.mqtt;
