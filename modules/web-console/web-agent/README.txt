@@ -11,7 +11,7 @@ Two main functions of Ignite Web Agent:
    You may need to copy JDBC driver into "./jdbc-drivers" subfolder or specify path via "-d" option.
 
 Usage example:
-  ignite-web-console-agent.sh
+  Start "ignite-web-console-agent.{bat|sh}" executable for you platform.
 
 Configuration file:
   Should be a file with simple line-oriented format as described here: http://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
