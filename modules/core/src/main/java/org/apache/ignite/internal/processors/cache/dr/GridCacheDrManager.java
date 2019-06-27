@@ -59,10 +59,9 @@ public interface GridCacheDrManager extends GridCacheManager {
      *
      * @param topVer Topology version.
      * @param left {@code True} if exchange has been caused by node leave.
-     * @param activate {@code True} if exchange has been caused by cluster activation.
      * @throws IgniteCheckedException If failed.
      */
-    public void onExchange(AffinityTopologyVersion topVer, boolean left, boolean activate) throws IgniteCheckedException;
+    public void onExchange(AffinityTopologyVersion topVer, boolean left) throws IgniteCheckedException;
 
     /**
      * @return {@code True} is DR is enabled.
