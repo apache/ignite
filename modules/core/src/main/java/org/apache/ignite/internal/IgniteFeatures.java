@@ -57,7 +57,6 @@ public enum IgniteFeatures {
 
     /** Supports tracking update counter for transactions. */
     TX_TRACKING_UPDATE_COUNTER(12);
-    ;
 
     /**
      * Unique feature identifier.
