@@ -1241,7 +1241,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Enable hash join (create hash index on the fly) for query optimizer.
-     * When disabled hash join may be enabled only by index hint.
+     * When disabled hash join may be enabled only by index hint.203
      * e.g.: SELECT * from A, B USE INDEX (HASH_JOIN_IDX) WHERE A.jid = B.jid
      * hash index will be created for B.jid on the fly.
      *
