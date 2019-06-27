@@ -198,18 +198,21 @@ public class FileHandleManagerImpl implements FileHandleManager {
     @Override public void onDeactivate() throws IgniteCheckedException {
         FileWriteHandleImpl currHnd = currentHandle();
 
-        if (mode == WALMode.BACKGROUND) {
+        try {
+            if (mode == WALMode.BACKGROUND) {
+                if (currHnd != null)
+                    currHnd.flush(null);
+            }
+
             if (currHnd != null)
-                currHnd.flush(null);
+                currHnd.close(false);
         }
+        finally {
+            if (walSegmentSyncWorker != null)
+                walSegmentSyncWorker.shutdown();
 
-        if (currHnd != null)
-            currHnd.close(false);
-
-        if (walSegmentSyncWorker != null)
-            walSegmentSyncWorker.shutdown();
-
-        walWriter.shutdown();
+            walWriter.shutdown();
+        }
     }
 
     /** {@inheritDoc} */
