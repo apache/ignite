@@ -119,7 +119,7 @@ suite('Configuration store effects', () => {
                 stateMarbles: 'AB',
                 mocks: {
                     ...mocks,
-                    Clusters: {getCluster: () => throwError({data: 'Error'})}
+                    Clusters: {getCluster: () => throwError({data: {message: 'Error'}})}
                 }
             });
 
