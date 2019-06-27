@@ -301,8 +301,8 @@ public final class GridTestUtils {
 //    }
 
     /**
-     * Checks that string {@param str} doesn't contains substring {@param substr}. Logs both strings
-     * and throws {@link java.lang.AssertionError}, if contains.
+     * Checks that string {@param str} doesn't contains substring {@param substr}. Logs both strings and throws {@link
+     * java.lang.AssertionError}, if contains.
      *
      * @param log Logger (optional).
      * @param str String.
@@ -311,7 +311,8 @@ public final class GridTestUtils {
     public static void assertNotContains(@Nullable IgniteLogger log, String str, String substr) {
         try {
             assertFalse(str.contains(substr));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("String contain substring: '%s', but shouldn't:", substr));
             U.warn(log, "String:");
             U.warn(log, str);
@@ -331,7 +332,8 @@ public final class GridTestUtils {
     public static void assertContains(@Nullable IgniteLogger log, String str, String substr) {
         try {
             assertTrue(str.contains(substr));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("String does not contain substring: '%s':", substr));
             U.warn(log, "String:");
             U.warn(log, str);
@@ -348,10 +350,11 @@ public final class GridTestUtils {
      * @param col Collection.
      * @param str String.
      */
-    public static  <C extends Collection<String>> void assertContains(@Nullable IgniteLogger log, C col, String str) {
+    public static void assertContains(@Nullable IgniteLogger log, Collection<String> col, String str) {
         try {
             assertTrue(col.contains(str));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("Collection does not contain string: '%s':", str));
             U.warn(log, "Collection:");
             U.warn(log, col);
@@ -368,10 +371,11 @@ public final class GridTestUtils {
      * @param col Collection.
      * @param str String.
      */
-    public static <C extends Collection<String>> void assertNotContains(@Nullable IgniteLogger log, C col, String str) {
+    public static void assertNotContains(@Nullable IgniteLogger log, Collection<String> col, String str) {
         try {
             assertFalse(col.contains(str));
-        } catch (AssertionError e) {
+        }
+        catch (AssertionError e) {
             U.warn(log, String.format("Collection contain string: '%s' but shouldn't:", str));
             U.warn(log, "Collection:");
             U.warn(log, col);
