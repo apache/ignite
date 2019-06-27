@@ -34,16 +34,17 @@ export default class IgniteAdminData {
     ) {}
 
     /**
-     * @param id User ID.
+     * @param email User email.
      */
-    becomeUser(id: string) {
-        return this.$http
-            .post('/api/v1/admin/become', {id})
+    becomeUser(email: string) {
+        return this.$http.get('/api/v1/admin/login/impersonate', {
+            params: {email}
+        })
             .catch(this.Messages.showError);
     }
 
     revertIdentity() {
-        this.$http.get('/api/v1/admin/revert/identity')
+        this.$http.get('/api/v1/logout/impersonate')
             .then(() => this.UserService.load())
             .then(() => this.uiRouter.stateService.go('base.settings.admin'))
             // TODO GG-19514: separate side effect from main action.

@@ -110,17 +110,6 @@ public class AdminController {
     }
 
     /**
-     * @param params Parameters.
-     */
-    @ApiIgnore
-    @PostMapping(path = "/become", consumes = APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> become(@RequestBody JsonObject params) {
-        adminSrv.become(params.getUuid("id"));
-
-        return ResponseEntity.ok().build();
-    }
-
-    /**
      * @param ann Update announcement to be shown for all users.
      */
     @ApiOperation(value = "Update announcement for all connected users.")

@@ -35,8 +35,10 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.session.ExpiringSession;
@@ -76,6 +78,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     /** Resend activation token. */
     private static final String ACTIVATION_RESEND = "/api/v1/activation/resend";
+
+    /** Switch user url. */
+    private static final String SWITCH_USER_URL = "/api/v1/admin/login/impersonate";
+
+    /** Exit user url. */
+    private static final String EXIT_USER_URL = "/api/v1/logout/impersonate";
 
     /** Public routes. */
     private static final String[] PUBLIC_ROUTES = new String[] {
@@ -127,8 +135,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .antMatchers(PUBLIC_ROUTES).anonymous()
             .antMatchers("/api/v1/admin/**").hasAuthority(ROLE_ADMIN)
             .antMatchers("/api/v1/**", BROWSERS_PATH).hasAuthority(ROLE_USER)
+            .antMatchers(EXIT_USER_URL).authenticated()
             .and()
             .addFilterAt(authenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(switchUserFilter(), FilterSecurityInterceptor.class)
             .logout()
             .logoutUrl(LOGOUT_ROUTE)
             .deleteCookies("SESSION")
@@ -169,7 +179,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
      * @param res Response.
      * @param authentication Authentication.
      */
-    private void loginSuccessHandler(
+    private void successHandler(
         HttpServletRequest req,
         HttpServletResponse res,
         Authentication authentication
@@ -196,8 +206,23 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
         authenticationFilter.setAuthenticationManager(authenticationManagerBean());
         authenticationFilter.setRequiresAuthenticationRequestMatcher(new AntPathRequestMatcher(SIGN_IN_ROUTE, "POST"));
-        authenticationFilter.setAuthenticationSuccessHandler(this::loginSuccessHandler);
+        authenticationFilter.setAuthenticationSuccessHandler(this::successHandler);
 
         return authenticationFilter;
+    }
+
+    /**
+     * Switch User processing filter.
+     */
+    public SwitchUserFilter switchUserFilter() {
+        SwitchUserFilter filter = new SwitchUserFilter();
+
+        filter.setUserDetailsService(accountsSrv);
+        filter.setSuccessHandler(this::successHandler);
+        filter.setUsernameParameter("email");
+        filter.setSwitchUserUrl(SWITCH_USER_URL);
+        filter.setExitUserUrl(EXIT_USER_URL);
+
+        return filter;
     }
 }
