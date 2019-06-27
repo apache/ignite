@@ -342,7 +342,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             });
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            var ex = Assert.Throws<IgniteException>(() =>
+            var ex = Assert.Throws<CacheException>(() =>
                 persons.SelectMany(p => GetRoleCache().AsCacheQueryable()).ToArray());
 
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
