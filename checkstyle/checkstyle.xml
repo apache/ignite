@@ -29,8 +29,12 @@
         <property name="eachLine" value="true"/>
     </module>
 
+    <!-- Misc Checks. See: http://checkstyle.sourceforge.net/config_misc.html -->
+    <module name="NewlineAtEndOfFile"/>
+
     <module name="TreeWalker">
         <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
+        <module name="RedundantImport"/>
         <module name="UnusedImports"/>
 
         <!--Modifiers Checks. See: http://checkstyle.sourceforge.net/config_modifier.html-->

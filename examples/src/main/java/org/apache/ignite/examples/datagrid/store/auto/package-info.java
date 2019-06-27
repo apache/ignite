@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains automatic JDBC store example.
  */
+
 package org.apache.ignite.examples.datagrid.store.auto;

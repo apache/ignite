@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for decision trees.
  */
+
 package org.apache.ignite.ml.tree;
