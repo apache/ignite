@@ -58,10 +58,4 @@ public interface WebSocketEvents {
 
     /** */
     public static final String CLUSTER_TOPOLOGY = "cluster:topology";
-
-    /** */
-    public static final String CLUSTER_DISCONNECTED = "cluster:disconnected";
-
-    /** */
-    public static final String EVENT_LOG_WARNING = "log:warn";
 }
