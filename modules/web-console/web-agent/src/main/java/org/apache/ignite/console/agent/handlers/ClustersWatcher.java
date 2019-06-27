@@ -129,7 +129,7 @@ public class ClustersWatcher implements Closeable {
      */
     void startWatchTask(Session ses) {
         if (refreshTask != null && !refreshTask.isCancelled()) {
-            log.warning("Trying to start second cluster watch task ");
+            log.warning("Detected that watch task already running");
 
             refreshTask.cancel(true);
         }
