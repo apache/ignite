@@ -113,7 +113,7 @@ Attributes:
                   POJO field name will be used.
                3) sort   [optional] - specifies sort order (**asc** or **desc**)
             -->
-            <field name="personNumber" column="number" sort="desc"/>
+            <field name="personNum" column="number" sort="desc"/>
         </clusterKey>
     </keyPersistence>
 

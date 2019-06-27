@@ -47,7 +47,7 @@ public class SimplePersonId implements Serializable {
     public SimplePersonId(PersonId personId) {
         this.companyCode = personId.getCompanyCode();
         this.departmentCode = personId.getDepartmentCode();
-        this.personNum = personId.getPersonNumber();
+        this.personNum = personId.getPersonNum();
     }
 
     /** */

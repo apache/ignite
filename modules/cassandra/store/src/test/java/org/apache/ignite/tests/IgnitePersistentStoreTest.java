@@ -17,9 +17,6 @@
 package org.apache.ignite.tests;
 
 import com.datastax.driver.core.SimpleStatement;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
@@ -31,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.tests.pojos.*;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
@@ -44,12 +42,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import org.apache.ignite.tests.pojos.Product;
-import org.apache.ignite.tests.pojos.ProductOrder;
-import org.apache.ignite.tests.pojos.Person;
-import org.apache.ignite.tests.pojos.SimplePerson;
-import org.apache.ignite.tests.pojos.PersonId;
-import org.apache.ignite.tests.pojos.SimplePersonId;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Map;
 
 /**
  * Unit tests for Ignite caches which utilizing {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}
@@ -305,11 +300,11 @@ public class IgnitePersistentStoreTest {
             personCache1.put(1L, TestsHelper.generateRandomPerson(1L));
 
             PersonId id = TestsHelper.generateRandomPersonId();
-            personCache2.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
+            personCache2.put(id, TestsHelper.generateRandomPerson(id.getPersonNum()));
 
             id = TestsHelper.generateRandomPersonId();
-            personCache3.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
-            personCache4.put(id, TestsHelper.generateRandomPerson(id.getPersonNumber()));
+            personCache3.put(id, TestsHelper.generateRandomPerson(id.getPersonNum()));
+            personCache4.put(id, TestsHelper.generateRandomPerson(id.getPersonNum()));
 
             productCache.put(product.getId(), product);
             orderCache.put(order.getId(), order);

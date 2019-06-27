@@ -91,12 +91,12 @@ public class PersonId implements Serializable {
     }
 
     /** */
-    public void setPersonNumber(long personNum) {
+    public void setPersonNum(long personNum) {
         this.personNum = personNum;
     }
 
     /** */
-    public long getPersonNumber() {
+    public long getPersonNum() {
         return personNum;
     }
 }
