@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for model inference builders.
  */
+
 package org.apache.ignite.ml.inference.builder;

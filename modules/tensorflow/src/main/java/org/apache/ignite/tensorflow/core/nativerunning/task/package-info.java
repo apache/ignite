@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains native process task that encapsulates the logic of starting native process.
  */
+
 package org.apache.ignite.tensorflow.core.nativerunning.task;

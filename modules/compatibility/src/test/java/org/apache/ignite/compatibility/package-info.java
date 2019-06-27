@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains compatibility tests or compatibility test related classes and interfaces.
  */
+
 package org.apache.ignite.compatibility;
