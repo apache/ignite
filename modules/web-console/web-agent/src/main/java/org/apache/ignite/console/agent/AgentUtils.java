@@ -300,4 +300,14 @@ public class AgentUtils {
     public static void send(Session ses, WebSocketEvent evt) throws Exception {
         ses.getRemote().sendStringByFuture(toJson(evt)).get();
     }
+
+    /**
+     * Trim all elements in list and return new list.
+     *
+     * @param lst List of elements to trim.
+     * @return List with trimmed values.
+     */
+    public static List<String> trim(List<String> lst) {
+        return F.isEmpty(lst) ? lst : lst.stream().map(String::trim).collect(toList());
+    }
 }
