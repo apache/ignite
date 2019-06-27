@@ -18,12 +18,12 @@ from decimal import Decimal
 
 import pytest
 
-from pyignite import GenericObjectMeta
-from pyignite.datatypes import (
+from pygridgain import GenericObjectMeta
+from pygridgain.datatypes import (
     BoolObject, DecimalObject, FloatObject, IntObject, String,
 )
-from pyignite.datatypes.prop_codes import *
-from pyignite.exceptions import CacheError
+from pygridgain.datatypes.prop_codes import *
+from pygridgain.exceptions import CacheError
 
 
 def test_cache_create(client):

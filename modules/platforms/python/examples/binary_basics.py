@@ -15,8 +15,8 @@
 #
 from collections import OrderedDict
 
-from pyignite import Client, GenericObjectMeta
-from pyignite.datatypes import *
+from pygridgain import Client, GenericObjectMeta
+from pygridgain.datatypes import *
 
 
 class Person(metaclass=GenericObjectMeta, schema=OrderedDict([

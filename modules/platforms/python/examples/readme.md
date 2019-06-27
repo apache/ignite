@@ -13,5 +13,5 @@ This directory contains the following example files:
 - `type_hints.py` − type hints.
 
 For the explanation of the examples please refer to the
-[Examples of usage](https://apache-ignite-binary-protocol-client.readthedocs.io/en/latest/examples.html)
+[Examples of usage](https://pygridgain.readthedocs.io/en/latest/examples.html)
 section of the `pyignite` documentation.

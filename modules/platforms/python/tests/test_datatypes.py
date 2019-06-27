@@ -18,8 +18,8 @@ import decimal
 import pytest
 import uuid
 
-from pyignite.api.key_value import cache_get, cache_put
-from pyignite.datatypes import *
+from pygridgain.api.key_value import cache_get, cache_put
+from pygridgain.datatypes import *
 
 
 @pytest.mark.parametrize(

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from pyignite.api import cache_create, cache_get_names
+from pygridgain.api import cache_create, cache_get_names
 
 
 def test_get_names(client):

@@ -15,9 +15,9 @@
 #
 from collections import OrderedDict
 
-from pyignite import Client, GenericObjectMeta
-from pyignite.datatypes import DoubleObject, IntObject, String
-from pyignite.datatypes.prop_codes import *
+from pygridgain import Client, GenericObjectMeta
+from pygridgain.datatypes import DoubleObject, IntObject, String
+from pygridgain.datatypes.prop_codes import *
 
 client = Client()
 client.connect('127.0.0.1', 10800)
@@ -95,7 +95,7 @@ print(*result)
 # DROP_QUERY = 'DROP TABLE Student'
 # client.sql(DROP_QUERY)
 #
-# pyignite.exceptions.SQLError: class org.apache.ignite.IgniteCheckedException:
+# pygridgain.exceptions.SQLError: class org.apache.ignite.IgniteCheckedException:
 # Only cache created with CREATE TABLE may be removed with DROP TABLE
 # [cacheName=SQL_PUBLIC_STUDENT]
 

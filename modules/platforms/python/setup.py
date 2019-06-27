@@ -24,7 +24,7 @@ PYTHON_INSTALLED = sys.version_info[:2]
 if PYTHON_INSTALLED < PYTHON_REQUIRED:
     sys.stderr.write('''
 
-`pyignite` is not compatible with Python {}.{}!
+`pygridgain is not compatible with Python {}.{}!
 Use Python {}.{} or above.
 
 
@@ -69,16 +69,16 @@ with open('README.md', 'r', encoding='utf-8') as readme_file:
     long_description = readme_file.read()
 
 setuptools.setup(
-    name='pyignite',
+    name='pygridgain',
     version='0.3.4',
     python_requires='>={}.{}'.format(*PYTHON_REQUIRED),
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',
-    description='Apache Ignite binary client Python API',
+    description='GridGain CE binary client Python API',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url=(
-        'https://github.com/apache/ignite/tree/master'
+        'https://github.com/gridgain/gridgain/tree/master'
         '/modules/platforms/python'
     ),
     packages=setuptools.find_packages(),
@@ -94,11 +94,12 @@ setuptools.setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3 :: Only',
         'Intended Audience :: Developers',
         'Topic :: Database :: Front-Ends',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'License :: OSI Approved :: Apache Software License',
+        'License :: Free for non-commercial use',
         'Operating System :: OS Independent',
     ],
 )

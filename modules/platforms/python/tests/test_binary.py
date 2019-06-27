@@ -16,11 +16,11 @@
 from collections import OrderedDict
 from decimal import Decimal
 
-from pyignite import GenericObjectMeta
-from pyignite.datatypes import (
+from pygridgain import GenericObjectMeta
+from pygridgain.datatypes import (
     BinaryObject, BoolObject, IntObject, DecimalObject, LongObject, String,
 )
-from pyignite.datatypes.prop_codes import *
+from pygridgain.datatypes.prop_codes import *
 
 
 insert_data = [

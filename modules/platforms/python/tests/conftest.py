@@ -19,9 +19,9 @@ import ssl
 
 import pytest
 
-from pyignite import Client
-from pyignite.constants import *
-from pyignite.api import cache_create, cache_get_names, cache_destroy
+from pygridgain import Client
+from pygridgain.constants import *
+from pygridgain.api import cache_create, cache_get_names, cache_destroy
 
 
 class BoolParser(argparse.Action):
@@ -66,7 +66,7 @@ class SSLVersionParser(argparse.Action):
 
 @pytest.fixture(scope='module')
 def client(
-    ignite_node, timeout, affinity_aware, use_ssl, ssl_keyfile, ssl_certfile,
+    node, timeout, affinity_aware, use_ssl, ssl_keyfile, ssl_certfile,
     ssl_ca_certfile, ssl_cert_reqs, ssl_ciphers, ssl_version,
     username, password,
 ):
@@ -84,8 +84,8 @@ def client(
         password=password,
     )
     nodes = []
-    for node in ignite_node:
-        host, port = node.split(':')
+    for n in node:
+        host, port = n.split(':')
         port = int(port)
         nodes.append((host, port))
     client.connect(nodes)
@@ -108,11 +108,11 @@ def cache(client):
 
 def pytest_addoption(parser):
     parser.addoption(
-        '--ignite-node',
+        '--node',
         action='append',
         default=None,
         help=(
-            'Ignite binary protocol test server connection string '
+            'GridGain binary protocol test server connection string '
             '(default: "localhost:10800")'
         )
     )
@@ -206,10 +206,7 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     session_parameters = {
-        'ignite_node': ['{host}:{port}'.format(
-            host=IGNITE_DEFAULT_HOST,
-            port=IGNITE_DEFAULT_PORT,
-        )],
+        'node': ['{host}:{port}'.format(host=DEFAULT_HOST, port=DEFAULT_PORT)],
         'timeout': None,
         'affinity_aware': False,
         'use_ssl': False,
@@ -228,6 +225,6 @@ def pytest_generate_tests(metafunc):
             param = metafunc.config.getoption(param_name)
             if param is None:
                 param = session_parameters[param_name]
-            if param_name == 'ignite_node' or type(param) is not list:
+            if param_name == 'node' or type(param) is not list:
                 param = [param]
             metafunc.parametrize(param_name, param, scope='session')

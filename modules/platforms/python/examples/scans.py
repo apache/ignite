@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from pyignite import Client
+from pygridgain import Client
 
 client = Client()
 client.connect('127.0.0.1', 10800)

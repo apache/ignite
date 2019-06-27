@@ -15,7 +15,7 @@
 #
 from decimal import Decimal
 
-from pyignite import Client
+from pygridgain import Client
 
 
 COUNTRY_TABLE_NAME = 'Country'

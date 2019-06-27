@@ -13,10 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from pyignite import Client
-from pyignite.datatypes.cache_config import CacheMode
-from pyignite.datatypes.prop_codes import *
-from pyignite.exceptions import SocketError
+from pygridgain import Client
+from pygridgain.datatypes.cache_config import CacheMode
+from pygridgain.datatypes.prop_codes import *
+from pygridgain.exceptions import SocketError
 
 
 nodes = [
@@ -62,4 +62,4 @@ while True:
 # Reconnecting
 # Traceback (most recent call last):
 #   ...
-# pyignite.exceptions.ReconnectError: Can not reconnect: out of nodes.
+# pygridgain.exceptions.ReconnectError: Can not reconnect: out of nodes.

@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'Apache Ignite binary client Python API'
-copyright = '2018, Apache Software Foundation (ASF)'
+project = 'GridGain binary client Python API'
+copyright = '2018-2019, GridGain Community Edition License'
 author = 'Dmitry Melnichuk'
 
 # The short X.Y version
@@ -104,7 +104,7 @@ html_static_path = []
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'ApacheIgnitebinaryclientPythonAPIdoc'
+htmlhelp_basename = 'GridGainbinaryclientPythonAPIdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -131,8 +131,13 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'ApacheIgnitebinaryclientPythonAPI.tex', 'Apache Ignite binary client Python API Documentation',
-     'Apache Software Foundation (ASF)', 'manual'),
+    (
+        master_doc,
+        'GridGainbinaryclientPythonAPI.tex',
+        'GridGain binary client Python API Documentation',
+        'GridGain Community Edition License',
+        'manual'
+    ),
 ]
 
 
@@ -141,8 +146,13 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'apacheignitebinaryclientpythonapi', 'Apache Ignite binary client Python API Documentation',
-     [author], 1)
+    (
+        master_doc,
+        'gridgainbinaryclientpythonapi',
+        'GridGain binary client Python API Documentation',
+        [author],
+        1
+    )
 ]
 
 
@@ -152,9 +162,15 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'ApacheIgnitebinaryclientPythonAPI', 'Apache Ignite binary client Python API Documentation',
-     author, 'ApacheIgnitebinaryclientPythonAPI', 'One line description of project.',
-     'Miscellaneous'),
+    (
+        master_doc,
+        'GridGainbinaryclientPythonAPI',
+        'GridGain binary client Python API Documentation',
+        author,
+        'GridGainbinaryclientPythonAPI',
+        'GridGain binary client Python API',
+        'Miscellaneous'
+    ),
 ]
 
 

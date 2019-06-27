@@ -15,8 +15,8 @@
 #
 from datetime import datetime
 
-from pyignite.api import *
-from pyignite.datatypes import (
+from pygridgain.api import *
+from pygridgain.datatypes import (
     CollectionObject, IntObject, MapObject, TimestampObject,
 )
 
