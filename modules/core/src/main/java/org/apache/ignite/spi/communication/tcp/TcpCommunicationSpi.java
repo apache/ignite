@@ -2984,14 +2984,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
         }
 
-        connectGate.enter();
+        final long start = System.currentTimeMillis();
 
-        try {
-            final long start = System.currentTimeMillis();
+        GridCommunicationClient client = createTcpClient(node, connIdx);
 
-            GridCommunicationClient client = createTcpClient(node, connIdx);
-
-            final long time = System.currentTimeMillis() - start;
+        final long time = System.currentTimeMillis() - start;
 
             if (time > CONNECTION_ESTABLISH_THRESHOLD_MS) {
                 if (log.isInfoEnabled())
@@ -3000,11 +2997,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             else if (log.isDebugEnabled())
                 log.debug("TCP client created [client=" + client + ", duration=" + time + "ms]");
 
-            return client;
-        }
-        finally {
-            connectGate.leave();
-        }
+        return client;
     }
 
     /**
@@ -3261,6 +3254,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 boolean needWait = false;
 
+                connectGate.enter();
+
                 try {
                     SocketChannel ch = SocketChannel.open();
 
@@ -3482,9 +3477,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         continue;
                     }
 
-                    break;
+                        break;
+                    }
+                    finally {
+                        connectGate.leave();
+                    }
                 }
-            }
 
             if (client != null)
                 break;
