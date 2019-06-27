@@ -20,16 +20,14 @@ package org.apache.ignite.internal.processors.cache.distributed.near.consistency
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,55 +37,38 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * Checks data consistency. Checks that each backup value equals to primary value.
  */
 public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstractFuture {
-    /** Context. */
-    private GridCacheContext ctx;
-
-    /** Deserialize binary. */
-    private boolean deserializeBinary;
-
     /** Skip values. */
-    private boolean skipVals;
+    private final boolean skipVals;
 
     /** Need version. */
-    private boolean needVer;
-
-    /** Keys. */
-    private Collection<KeyCacheObject> keys;
+    private final boolean needVer;
 
     /**
      *
      */
     public GridNearReadRepairCheckOnlyFuture(
-        AffinityTopologyVersion topVer,
         GridCacheContext ctx,
         Collection<KeyCacheObject> keys,
         boolean readThrough,
-        UUID subjId,
         String taskName,
         boolean deserializeBinary,
         boolean recovery,
         IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
-        String txLbl,
-        MvccSnapshot mvccSnapshot) {
-        super(topVer,
+        IgniteInternalTx tx) {
+        super(null,
             ctx,
             keys,
             readThrough,
-            subjId,
             taskName,
             deserializeBinary,
             recovery,
             expiryPlc,
-            txLbl,
-            mvccSnapshot);
+            tx);
 
-        this.ctx = ctx;
-        this.deserializeBinary = deserializeBinary;
         this.skipVals = skipVals;
         this.needVer = needVer;
-        this.keys = keys;
     }
 
     /** {@inheritDoc} */
@@ -117,73 +98,71 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
      * Produces 1 entry's value.
      */
     public <K, V> IgniteInternalFuture<V> single() {
-        return init().chain(
-            (fut) -> {
-                try {
-                    final Map<K, V> map = new IgniteBiTuple<>();
+        return chain((fut) -> {
+            try {
+                final Map<K, V> map = new IgniteBiTuple<>();
 
-                    for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                        EntryGetResult getRes = entry.getValue();
+                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                    EntryGetResult getRes = entry.getValue();
 
-                        ctx.addResult(map,
-                            entry.getKey(),
-                            getRes.value(),
-                            skipVals,
-                            false,
-                            deserializeBinary,
-                            false,
-                            getRes,
-                            getRes.version(),
-                            0,
-                            0,
-                            needVer);
-                    }
-
-                    if (skipVals) {
-                        Boolean val = map.isEmpty() ? false : (Boolean)F.firstValue(map);
-
-                        return (V)(val);
-                    }
-                    else
-                        return F.firstValue(map);
+                    ctx.addResult(map,
+                        entry.getKey(),
+                        getRes.value(),
+                        skipVals,
+                        false,
+                        deserializeBinary,
+                        false,
+                        getRes,
+                        getRes.version(),
+                        0,
+                        0,
+                        needVer);
                 }
-                catch (IgniteCheckedException e) {
-                    throw new GridClosureException(e);
+
+                if (skipVals) {
+                    Boolean val = map.isEmpty() ? false : (Boolean)F.firstValue(map);
+
+                    return (V)(val);
                 }
-            });
+                else
+                    return F.firstValue(map);
+            }
+            catch (IgniteCheckedException e) {
+                throw new GridClosureException(e);
+            }
+        });
     }
 
     /**
      * Produces entry map.
      */
     public <K, V> IgniteInternalFuture<Map<K, V>> multi() {
-        return init().chain(
-            (fut) -> {
-                try {
-                    final Map<K, V> map = U.newHashMap(keys.size());
+        return chain((fut) -> {
+            try {
+                final Map<K, V> map = U.newHashMap(keys.size());
 
-                    for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
-                        EntryGetResult getRes = entry.getValue();
+                for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet()) {
+                    EntryGetResult getRes = entry.getValue();
 
-                        ctx.addResult(map,
-                            entry.getKey(),
-                            getRes.value(),
-                            skipVals,
-                            false,
-                            deserializeBinary,
-                            false,
-                            getRes,
-                            getRes.version(),
-                            0,
-                            0,
-                            needVer);
-                    }
-
-                    return map;
+                    ctx.addResult(map,
+                        entry.getKey(),
+                        getRes.value(),
+                        skipVals,
+                        false,
+                        deserializeBinary,
+                        false,
+                        getRes,
+                        getRes.version(),
+                        0,
+                        0,
+                        needVer);
                 }
-                catch (Exception e) {
-                    throw new GridClosureException(e);
-                }
-            });
+
+                return map;
+            }
+            catch (Exception e) {
+                throw new GridClosureException(e);
+            }
+        });
     }
 }
