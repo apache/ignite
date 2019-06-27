@@ -1,11 +1,10 @@
-..  Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    (the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
+..  Copyright 2019 GridGain Systems, Inc. and Contributors.
 
-..      http://www.apache.org/licenses/LICENSE-2.0
+..  Licensed under the GridGain Community Edition License (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+..      https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
 
 ..  Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +18,10 @@
 Cache Properties
 ================
 
-The :mod:`~pyignite.datatypes.prop_codes` module contains a list of ordinal
+The :mod:`~pygridgain.datatypes.prop_codes` module contains a list of ordinal
 values, that represent various cache settings.
 
-Please refer to the `Apache Ignite Data Grid`_ documentation on cache
+Please refer to the `GridGain Data Grid`_ documentation on cache
 synchronization, rebalance, affinity and other cache configuration-related
 matters.
 
@@ -30,8 +29,8 @@ matters.
 | Property                              | Ordinal  | Property | Description                                           |
 | name                                  | value    | type     |                                                       |
 +=======================================+==========+==========+=======================================================+
-| Read/write cache properties, used to configure cache via :py:meth:`~pyignite.client.Client.create_cache` or         |
-| :py:meth:`~pyignite.client.Client.get_or_create_cache`                                                              |
+| Read/write cache properties, used to configure cache via :py:meth:`~pygridgain.client.Client.create_cache` or       |
+| :py:meth:`~pygridgain.client.Client.get_or_create_cache`                                                            |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | PROP_NAME                             |        0 | str      | Cache name. This is the only *required* property.     |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
@@ -96,7 +95,7 @@ matters.
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | PROP_STATISTICS_ENABLED               |      406 | bool     | Statistics enabled                                    |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
-| Read-only cache properties. Can not be set, but only retrieved via :py:meth:`~pyignite.cache.Cache.settings`        |
+| Read-only cache properties. Can not be set, but only retrieved via :py:meth:`~pygridgain.cache.Cache.settings`      |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
 | PROP_INVALIDATE                       |       -1 | bool     | Invalidate                                            |
 +---------------------------------------+----------+----------+-------------------------------------------------------+
@@ -130,7 +129,7 @@ Query field
 - `is_key_field`: (optional) boolean value, `False` by default,
 - `is_notnull_constraint_field`: boolean value,
 - `default_value`: (optional) anything that can be converted to `type_name`
-  type. `None` (:py:class:`~pyignite.datatypes.null_object.Null`) by default,
+  type. `None` (:py:class:`~pygridgain.datatypes.null_object.Null`) by default,
 - `precision` − (optional) decimal precision: total number of digits
   in decimal value. Defaults to -1 (use cluster default). Ignored for
   non-decimal SQL types (other than `java.math.BigDecimal`),
@@ -160,4 +159,4 @@ A dict of the following format:
 - `type_name`: name of the complex object,
 - `affinity_key_field_name`: name of the affinity key field.
 
-.. _Apache Ignite Data Grid: https://apacheignite.readme.io/docs/data-grid
+.. _GridGain Data Grid: https://www.gridgain.com/technology/in-memory-computing-platform/data-grid

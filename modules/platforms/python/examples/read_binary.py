@@ -15,8 +15,8 @@
 #
 from decimal import Decimal
 
-from pyignite import Client
-from pyignite.datatypes.prop_codes import *
+from pygridgain import Client
+from pygridgain.datatypes.prop_codes import *
 
 
 COUNTRY_TABLE_NAME = 'Country'

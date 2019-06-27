@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from pyignite.api import *
-from pyignite.datatypes.prop_codes import *
+from pygridgain.api import *
+from pygridgain.datatypes.prop_codes import *
 
 
 def test_get_configuration(client):

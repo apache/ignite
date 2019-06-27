@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from pyignite.api import (
+from pygridgain.api import (
     sql_fields, sql_fields_cursor_get_page,
     cache_get_or_create, sql, sql_cursor_get_page,
     cache_get_configuration,
 )
-from pyignite.datatypes.prop_codes import *
-from pyignite.utils import entity_id, unwrap_binary
+from pygridgain.datatypes.prop_codes import *
+from pygridgain.utils import entity_id, unwrap_binary
 
 initial_data = [
         ('John', 'Doe', 5),

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from pyignite.api import (
+from pygridgain.api import (
     scan, scan_cursor_get_page, resource_close, cache_put_all,
 )
 

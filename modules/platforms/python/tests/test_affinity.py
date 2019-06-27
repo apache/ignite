@@ -20,12 +20,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from pyignite import GenericObjectMeta
-from pyignite.api import *
-from pyignite.constants import *
-from pyignite.datatypes import *
-from pyignite.datatypes.cache_config import CacheMode
-from pyignite.datatypes.prop_codes import *
+from pygridgain import GenericObjectMeta
+from pygridgain.api import *
+from pygridgain.constants import *
+from pygridgain.datatypes import *
+from pygridgain.datatypes.cache_config import CacheMode
+from pygridgain.datatypes.prop_codes import *
 
 
 def test_get_node_partitions(client):

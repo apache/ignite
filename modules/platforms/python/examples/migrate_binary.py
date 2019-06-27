@@ -17,8 +17,8 @@ from collections import OrderedDict
 from datetime import date
 from decimal import Decimal
 
-from pyignite import Client, GenericObjectMeta
-from pyignite.datatypes import (
+from pygridgain import Client, GenericObjectMeta
+from pygridgain.datatypes import (
     BoolObject, DateObject, DecimalObject, LongObject, String,
 )
 
