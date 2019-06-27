@@ -47,6 +47,8 @@ import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import static java.util.stream.Collectors.toList;
+
 /**
  * Utility methods.
  */
@@ -329,5 +331,15 @@ public class AgentUtils {
                 // No-op.
             }
         };
+    }
+
+    /**
+     * Trim all elements in list and return new list.
+     *
+     * @param lst List of elements to trim.
+     * @return List with trimmed values.
+     */
+    public static List<String> trim(List<String> lst) {
+        return F.isEmpty(lst) ? lst : lst.stream().map(String::trim).collect(toList());
     }
 }
