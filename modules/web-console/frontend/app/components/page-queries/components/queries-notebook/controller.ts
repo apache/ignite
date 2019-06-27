@@ -160,15 +160,19 @@ class Paragraph {
         };
 
         this.setError = (err) => {
+            const parsedErr = errorParser.parse(err);
+
             this.error.root = err;
-            this.error.message = errorParser.extractMessage(err);
+            this.error.message = parsedErr.message;
 
             let cause = err;
 
             while (nonNil(cause)) {
                 if (nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
-                    this.error.message = errorParser.extractMessage(cause.message || cause.className);
+                    const parsedCause = errorParser.parse(cause.message || cause.className);
+
+                    this.error.message = parsedCause.message;
 
                     break;
                 }
