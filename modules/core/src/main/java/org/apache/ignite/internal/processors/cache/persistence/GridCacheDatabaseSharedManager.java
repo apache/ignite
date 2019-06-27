@@ -400,7 +400,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Flag allows to log additional information about partitions during recovery phases. */
     private final boolean recoveryVerboseLogging =
-        getBoolean(IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, true);
+        getBoolean(IgniteSystemProperties.IGNITE_RECOVERY_VERBOSE_LOGGING, false);
 
     /** Pointer to a memory recovery record that should be included into the next checkpoint record. */
     private volatile WALPointer memoryRecoveryRecordPtr;
