@@ -20,7 +20,6 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import org.apache.ignite.jdbc.thin.JdbcThinComplexDmlDdlSelfTest;
 
 /**
  * Base class for complex SQL tests based on JDBC driver.

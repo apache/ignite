@@ -750,5 +750,4 @@ public abstract class PageLockStackTest extends AbstractPageLockTest {
 
         System.out.println(">>> Avarage time dump creation:" + (totalExecutionTime / cntDumps) + " ns");
     }
-
 }

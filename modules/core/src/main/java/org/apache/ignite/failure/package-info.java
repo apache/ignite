@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains <b>Failure handling public API</b> with standard FailureHandler implementations.
  */
+
 package org.apache.ignite.failure;

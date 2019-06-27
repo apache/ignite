@@ -18,4 +18,5 @@
 /**
  * Contains implementation of Twitter Streamer.
  */
+
 package org.apache.ignite.stream.twitter;
