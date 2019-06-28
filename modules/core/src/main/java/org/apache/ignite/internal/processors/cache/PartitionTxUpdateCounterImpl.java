@@ -117,16 +117,14 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
-        if (val == 0)
-            return; // Could happen when single node is participating in PME.
-
         // Reserved update counter is updated only on exchange.
-        long v0 = Math.max(get(), val);
+        long cur = get();
 
-        if (v0 > reserveCntr.get())
-            reserveCntr.set(v0); // Adjust counter on new primary.
+        // Special case: single node in topology.
+        if (val == 0)
+            reserveCntr.set(cur);
 
-        if (val != v0) // Proceed if new value is greater than old.
+        if (val < cur) // Outdated counter (txs are possible before current topology future is finished).
             return;
 
         // Absolute counter should be not less than last applied update.
@@ -135,7 +133,15 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         if (val < highestAppliedCounter())
             throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
+        if (reserveCntr.get() < val)
+            reserveCntr.set(val); // Adjust counter on new primary.
+
         cntr.set(val);
+
+        // If some holes are present at this point, that means some update were missed on recovery and will be restored
+        // during rebalance. All gaps are safe to "forget".
+        if (!queue.isEmpty())
+            queue.clear();
     }
 
     /** {@inheritDoc} */
@@ -214,7 +220,7 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
     @Override public void updateInitial(long start, long delta) {
         update(start, delta);
 
-        initCntr = get();
+        reserveCntr.set(initCntr = get());
     }
 
     /** */
@@ -258,6 +264,8 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
             item = poll();
         }
+
+        reserveCntr.set(get());
 
         return gaps;
     }

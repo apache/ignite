@@ -398,6 +398,9 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         if (delayPME) {
             for (Ignite ignite : G.allGrids()) {
+                if (ignite.configuration().isClientMode())
+                    continue;
+
                 TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite);
 
                 spi.blockMessages((node, message) -> message instanceof GridDhtPartitionsFullMessage);
@@ -430,11 +433,11 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
             U.awaitQuiet(sync);
 
-            while(!done.get()) {
+            while (!done.get()) {
                 int batch0 = 1 + r.nextInt(batch - 1);
                 int start = r.nextInt(keys - batch0);
 
-                try(Transaction tx = client.transactions().txStart()) {
+                try (Transaction tx = client.transactions().txStart()) {
                     Map<Integer, Integer> map = new TreeMap<Integer, Integer>();
 
                     IntStream.range(start, start + batch0).forEach(value -> map.put(value, value));
@@ -475,9 +478,12 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         done.set(true);
 
+        sndFut.get();
+        for (int i = 0; i < SERVER_NODES; i++)
+            TestRecordingCommunicationSpi.spi(grid(i)).stopBlock(true, null, false, true);
+
         fut.get();
         fut2.get();
-        sndFut.get();
 
         log.info("TX: puts=" + puts.sum() + ", restarts=" + restarts.sum() + ", size=" + cache.size());
     }
