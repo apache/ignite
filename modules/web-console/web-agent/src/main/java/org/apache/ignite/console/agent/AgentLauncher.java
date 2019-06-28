@@ -165,6 +165,24 @@ public class AgentLauncher {
     };
 
     /**
+     * On error listener.
+     */
+    private static final Emitter.Listener onConnectionError = args -> {
+        Throwable e = (Throwable)args[0];
+
+        IOException ioCause = X.cause(e, IOException.class);
+
+        if (ioCause != null && "404".equals(ioCause.getMessage())) {
+            log.error("You are using outdated version of Web agent. Please download latest version of Web agent from Web console");
+
+            System.exit(1);
+        }
+
+        onError.call(args);
+    };
+
+
+    /**
      * On disconnect listener.
      */
     private static final Emitter.Listener onDisconnect = args -> log.error("Connection closed: {}", args);
@@ -483,7 +501,7 @@ public class AgentLauncher {
 
             client
                 .on(EVENT_CONNECT, onConnect)
-                .on(EVENT_CONNECT_ERROR, onError)
+                .on(EVENT_CONNECT_ERROR, onConnectionError)
                 .on(EVENT_ERROR, onError)
                 .on(EVENT_DISCONNECT, onDisconnect)
                 .on(EVENT_LOG_WARNING, onLogWarning)
