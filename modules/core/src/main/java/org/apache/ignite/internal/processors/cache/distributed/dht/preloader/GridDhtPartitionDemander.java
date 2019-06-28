@@ -1028,7 +1028,7 @@ public class GridDhtPartitionDemander {
 
                 // Create data rows on data pages before getting locks on cache entries.
                 try (GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> iter =
-                         grp.offheap().preloadRows(p, batch)) {
+                         grp.offheap().allocateRows(p, batch)) {
 
                     while (iter.hasNext()) {
                         Map.Entry<GridCacheEntryInfo, CacheDataRow> e = iter.next();

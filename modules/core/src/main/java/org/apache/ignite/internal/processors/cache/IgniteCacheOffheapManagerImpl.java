@@ -1178,7 +1178,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> preloadRows(
+    @Override public GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> allocateRows(
         int partId,
         Collection<GridCacheEntryInfo> infos
     ) throws IgniteCheckedException {
