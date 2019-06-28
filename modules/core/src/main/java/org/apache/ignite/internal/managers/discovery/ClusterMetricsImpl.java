@@ -28,6 +28,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntGauge;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -46,7 +49,7 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.UP_
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
- * Cluster metrics proxy
+ * Cluster metrics proxy.
  */
 public class ClusterMetricsImpl implements ClusterMetrics {
     /** */
@@ -66,6 +69,9 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** Node start time. */
     private final long nodeStartTime;
+
+    /** Total executed tasks metric. */
+    private final LongMetric executedTasks;
 
     /** GC CPU load. */
     private final DoubleMetric gcCpuLoad;
@@ -142,6 +148,24 @@ public class ClusterMetricsImpl implements ClusterMetrics {
      */
     private final IntMetric threadCnt;
 
+    /** Last data version metric. */
+    private final AtomicLongMetric lastDataVer;
+
+    /** Sent messages count metric. */
+    private final IntGauge sentMessagesCnt;
+
+    /** Sent bytes count metric. */
+    private final LongGauge sentBytesCnt;
+
+    /** Received messages count metric. */
+    private final IntGauge rcvdMessagesCnt;
+
+    /** Received bytes count metric. */
+    private final LongGauge rcvdBytesCnt;
+
+    /** Outbound message queue size metric. */
+    private final IntGauge outboundMsgCnt;
+
     /**
      * Metric reflecting {@link ThreadMXBean#getPeakThreadCount()}.
      *
@@ -184,6 +208,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         peakThreadCnt = mreg.findMetric(PEAK_THREAD_CNT);
         totalStartedThreadCnt = mreg.findMetric(TOTAL_STARTED_THREAD_CNT);
         daemonThreadCnt = mreg.findMetric(DAEMON_THREAD_CNT);
+        executedTasks = mreg.findMetric("TotalExecutedTasks");
 
         availableProcessors = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 
@@ -200,6 +225,18 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         MetricRegistry pmeReg = ctx.metric().registry(PME_METRICS);
 
         pmeDuration = pmeReg.findMetric(PME_DURATION);
+
+        MetricRegistry cacheReg = ctx.metric().registry("cache");
+
+        lastDataVer = cacheReg.findMetric("LastDataVersion");
+
+        MetricRegistry ioReg = ctx.metric().registry("io");
+
+        sentMessagesCnt = ioReg.findMetric("SentMessagesCount");
+        sentBytesCnt = ioReg.findMetric("SentBytesCount");
+        rcvdMessagesCnt = ioReg.findMetric("ReceivedMessagesCount");
+        rcvdBytesCnt = ioReg.findMetric("ReceivedBytesCount");
+        outboundMsgCnt = ioReg.findMetric("OutboundMessagesQueueSize");
     }
 
     /** {@inheritDoc} */
@@ -319,7 +356,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTotalExecutedTasks() {
-        return ctx.task().getTotalExecutedTasks();
+        return (int)executedTasks.value();
     }
 
     /** {@inheritDoc} */
@@ -463,32 +500,32 @@ public class ClusterMetricsImpl implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public long getLastDataVersion() {
-        return ctx.cache().lastDataVersion();
+        return lastDataVer.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
-        return ctx.io().getSentMessagesCount();
+        return sentMessagesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getSentBytesCount() {
-        return ctx.io().getSentBytesCount();
+        return sentBytesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getReceivedMessagesCount() {
-        return ctx.io().getReceivedMessagesCount();
+        return rcvdMessagesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public long getReceivedBytesCount() {
-        return ctx.io().getReceivedBytesCount();
+        return rcvdBytesCnt.value();
     }
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        return ctx.io().getOutboundMessagesQueueSize();
+        return outboundMsgCnt.value();
     }
 
     /** {@inheritDoc} */

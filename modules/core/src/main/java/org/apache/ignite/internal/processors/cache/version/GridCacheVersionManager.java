@@ -86,6 +86,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     @Override public void start0() throws IgniteCheckedException {
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
 
+        lastDataVer.value(last.order());
+
         startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
@@ -105,6 +107,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         this.dataCenterId = dataCenterId;
 
         last = new GridCacheVersion(0, order.get(), 0, dataCenterId);
+
+        lastDataVer.value(last.order());
 
         startVer = new GridCacheVersion(0, 0, 0, dataCenterId);
     }
@@ -292,6 +296,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
             dataCenterId);
 
         last = next;
+        lastDataVer.value(last.order());
 
         return next;
     }

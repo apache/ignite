@@ -68,6 +68,9 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccMessage;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.IntGauge;
+import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
@@ -138,6 +141,21 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Direct protocol version. */
     public static final byte DIRECT_PROTO_VER = 3;
+
+    /** Sent messages count metric. */
+    private final IntGauge sentMessagesCnt;
+
+    /** Sent bytes count metric. */
+    private final LongGauge sentBytesCnt;
+
+    /** Received messages count metric. */
+    private final IntGauge rcvdMessagesCnt;
+
+    /** Received bytes count metric. */
+    private final LongGauge rcvdBytesCnt;
+
+    /** Outbound messages queue size metric. */
+    private final IntGauge outBoundMsg;
 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
@@ -216,6 +234,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
 
+        CommunicationSpi spi = ctx.config().getCommunicationSpi();
+
         pools = ctx.pools();
 
         assert pools != null;
@@ -226,6 +246,31 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         synchronized (sysLsnrsMux) {
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
+        }
+
+        outBoundMsg = new IntGauge("OutboundMessagesQueueSize", null,
+            spi::getOutboundMessagesQueueSize);
+
+        sentMessagesCnt = new IntGauge("SentMessagesCount", null,
+            spi::getSentMessagesCount);
+
+        sentBytesCnt = new LongGauge("SentBytesCount", null,
+            spi::getSentBytesCount);
+
+        rcvdMessagesCnt = new IntGauge("ReceivedMessagesCount", null,
+            spi::getReceivedMessagesCount);
+
+        rcvdBytesCnt = new LongGauge("ReceivedBytesCount", null,
+            spi::getReceivedBytesCount);
+
+        if (ctx.metric() != null) { // In case of StandaloneGridKernalContext usage.
+            MetricRegistry ioMetric = ctx.metric().registry("io");
+
+            ioMetric.register(outBoundMsg);
+            ioMetric.register(sentMessagesCnt);
+            ioMetric.register(sentBytesCnt);
+            ioMetric.register(rcvdMessagesCnt);
+            ioMetric.register(rcvdBytesCnt);
         }
     }
 

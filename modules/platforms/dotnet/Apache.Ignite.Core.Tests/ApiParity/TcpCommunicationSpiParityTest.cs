@@ -61,7 +61,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "endTime",
             "id",
             "connectionIndex",
-            "NodeFilter"
+            "NodeFilter",
+            "AsInt"
         };
 
         /** Properties that are missing on .NET side. */

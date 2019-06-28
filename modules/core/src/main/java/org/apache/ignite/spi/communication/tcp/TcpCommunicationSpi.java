@@ -49,6 +49,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntSupplier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.Ignite;
@@ -74,6 +75,8 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -405,6 +408,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** */
     private boolean enableTroubleshootingLog = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
+
+    /** Io metric. */
+    private MetricRegistry ioMetric;
 
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
@@ -1142,6 +1148,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** NIO server. */
     private GridNioServer<Message> nioSrvr;
+
+    /** Outbound messages queue size metric. */
+    private final IntGauge outBoundMsg = new IntGauge("OutboundMessagesQueueSize", null,
+        new IntSupplier() {
+            @Override public int getAsInt() {
+                return nioSrvr != null ? nioSrvr.outboundMessagesQueueSize() : 0;
+            }
+        });
 
     /** Shared memory server. */
     private IpcSharedMemoryServerEndpoint shmemSrv;
@@ -1961,9 +1975,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
-        GridNioServer<Message> srv = nioSrvr;
-
-        return srv != null ? srv.outboundMessagesQueueSize() : 0;
+        return outBoundMsg.value();
     }
 
     /** {@inheritDoc} */

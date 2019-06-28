@@ -20,8 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
+
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
 /**
  * Convenience adapter for cache managers.
@@ -32,6 +36,9 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
     /** Context. */
     protected GridCacheSharedContext<K, V> cctx;
+
+    /** Last version metric. */
+    protected AtomicLongMetric lastDataVer;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -57,6 +64,9 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         log = cctx.logger(getClass());
 
         diagnosticLog = cctx.logger(DIAGNOSTIC_LOG_CATEGORY);
+
+        MetricRegistry sysreg = cctx.kernalContext().metric().registry(CACHE_METRICS);
+        lastDataVer = sysreg.longMetric("LastDataVersion", "Node start time.");
 
         start0();
 
