@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 /**
  * Cache group JMX metrics test.
  */
-public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implements Serializable {
+public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Serializable {
     /** */
     protected boolean pds = false;
 
@@ -194,7 +194,7 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
      *
      * @param nodeIdx Node index.
      * @param cacheOrGrpName Cache group name.
-     * @return MBean instance.
+     * @return MBean instance and MetricRegistry for the specified group.
      */
     protected T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean(int nodeIdx, String cacheOrGrpName) throws MalformedObjectNameException {
         ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "Cache groups", cacheOrGrpName);
@@ -280,26 +280,15 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
 
         assertEquals(10, mxBean0Grp1.get1().getPartitions());
 
-        assertEquals(1, mxBean0Grp1.get1().getMinimumNumberOfPartitionCopies());
-        assertEquals(3, mxBean0Grp1.get1().getMaximumNumberOfPartitionCopies());
-
         assertEquals(1, ((IntMetric)mxBean0Grp1.get2().findMetric("MinimumNumberOfPartitionCopies")).value());
         assertEquals(3, ((IntMetric)mxBean0Grp1.get2().findMetric("MaximumNumberOfPartitionCopies")).value());
 
         assertEquals(0, mxBean0Grp1.get1().getClusterMovingPartitionsCount());
         assertEquals(19, mxBean0Grp1.get1().getClusterOwningPartitionsCount());
 
-        assertEquals(7, mxBean0Grp1.get1().getLocalNodeOwningPartitionsCount());
-        assertEquals(6, mxBean1Grp1.get1().getLocalNodeOwningPartitionsCount());
-        assertEquals(6, mxBean2Grp1.get1().getLocalNodeOwningPartitionsCount());
-
         assertEquals(7, ((IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeOwningPartitionsCount")).value());
         assertEquals(6, ((IntMetric)mxBean1Grp1.get2().findMetric("LocalNodeOwningPartitionsCount")).value());
         assertEquals(6, ((IntMetric)mxBean2Grp1.get2().findMetric("LocalNodeOwningPartitionsCount")).value());
-
-        assertEquals(F.asList("cache1"), mxBean0Grp1.get1().getCaches());
-        assertEquals(F.asList("cache2", "cache3"), mxBean0Grp2.get1().getCaches());
-        assertEquals(F.asList("cache4"), mxBean0Grp3.get1().getCaches());
 
         assertEquals(F.asList("cache1"),
             ((ObjectMetric<List<String>>)mxBean0Grp1.get2().findMetric("Caches")).value());
@@ -308,16 +297,15 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         assertEquals(F.asList("cache4"),
             ((ObjectMetric<List<String>>)mxBean0Grp3.get2().findMetric("Caches")).value());
 
-        assertEquals(arrayToAssignmentMap(assignmentMapArr), mxBean0Grp1.get1().getAffinityPartitionsAssignmentMap());
-        assertEquals(arrayToAllocationMap(assignmentMapArr), mxBean0Grp1.get1().getOwningPartitionsAllocationMap());
-        assertEquals(arrayToAllocationMap(new int[10][]), mxBean0Grp1.get1().getMovingPartitionsAllocationMap());
-
         assertEquals(arrayToAssignmentMap(assignmentMapArr), ((ObjectMetric<Map<Integer, List<String>>>)
             mxBean0Grp1.get2().findMetric("AffinityPartitionsAssignmentMap")).value());
         assertEquals(arrayToAllocationMap(assignmentMapArr), ((ObjectMetric<Map<Integer, List<String>>>)
             mxBean0Grp1.get2().findMetric("OwningPartitionsAllocationMap")).value());
-        assertEquals(arrayToAllocationMap(new int[10][]), ((ObjectMetric<Map<Integer, List<String>>>)
-            mxBean0Grp1.get2().findMetric("MovingPartitionsAllocationMap")).value());
+
+        ObjectMetric<Map<Integer, List<String>>> movingPartitionsAllocationMap =
+            (ObjectMetric<Map<Integer, List<String>>>)mxBean0Grp1.get2().findMetric("MovingPartitionsAllocationMap");
+
+        assertEquals(arrayToAllocationMap(new int[10][]), movingPartitionsAllocationMap.value());
 
         try (IgniteDataStreamer<Integer, Integer> st = grid(0).dataStreamer("cache1")) {
             for (int i = 0; i < 50_000; i++)
@@ -331,13 +319,11 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         stopGrid(2);
 
         // Check moving partitions while rebalancing.
-        assertFalse(arrayToAllocationMap(new int[10][]).equals(mxBean0Grp1.get1().getMovingPartitionsAllocationMap()));
+        assertFalse(arrayToAllocationMap(new int[10][]).equals(movingPartitionsAllocationMap.value()));
 
-        int movingCnt1 = mxBean0Grp1.get1().getLocalNodeMovingPartitionsCount();
-        int movingCnt2 = ((IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeMovingPartitionsCount")).value();
+        int movingCnt = ((IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeMovingPartitionsCount")).value();
 
-        assertTrue(movingCnt1 > 0);
-        assertTrue(movingCnt2 > 0);
+        assertTrue(movingCnt > 0);
         assertTrue(mxBean0Grp1.get1().getClusterMovingPartitionsCount() > 0);
 
         final CountDownLatch evictLatch = new CountDownLatch(1);
@@ -365,15 +351,21 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
             assertTrue("Renting partitions count when node returns not equals to moved partitions when node left",
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        log.info("Renting partitions count: " + mxBean0Grp1.get1().getLocalNodeRentingPartitionsCount());
-                        log.info("Renting entries count: " + mxBean0Grp1.get1().getLocalNodeRentingEntriesCount());
+                        IntMetric localNodeRentingPartitionsCount =
+                            (IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeRentingPartitionsCount");
 
-                        return mxBean0Grp1.get1().getLocalNodeRentingPartitionsCount() == movingCnt1;
+                        log.info("Renting partitions count: " +
+                            localNodeRentingPartitionsCount.value());
+                        log.info("Renting entries count: " +
+                            mxBean0Grp1.get2().findMetric("LocalNodeRentingEntriesCount").getAsString());
+
+                        return localNodeRentingPartitionsCount.value() == movingCnt;
                     }
                 }, 10_000L)
             );
 
-            assertTrue("Renting entries count is 0", mxBean0Grp1.get1().getLocalNodeRentingEntriesCount() > 0);
+            assertTrue("Renting entries count is 0",
+                ((IntMetric)mxBean0Grp1.get2().findMetric("LocalNodeRentingPartitionsCount")).value() > 0);
         }
         finally {
             evictLatch.countDown();
@@ -397,16 +389,10 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp2 = mxBean(0, "group2");
         T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp3 = mxBean(0, "cache4");
 
-        long totalPages1 = ignite.dataRegionMetrics("default").getTotalAllocatedPages();
-        long totalPages2 = ((LongMetric)ignite.context().metric().registry().findMetric(
+        long totalPages = ((LongMetric)ignite.context().metric().registry().findMetric(
             metricName(DATAREGION_METRICS_PREFIX, "default", "TotalAllocatedPages"))).value();
 
-        assertEquals(totalPages1,
-            mxBean0Grp1.get1().getTotalAllocatedPages() +
-            mxBean0Grp2.get1().getTotalAllocatedPages() +
-            mxBean0Grp3.get1().getTotalAllocatedPages());
-
-        assertEquals(totalPages2,
+        assertEquals(totalPages,
             ((LongMetric)mxBean0Grp1.get2().findMetric("TotalAllocatedPages")).value() +
             ((LongMetric)mxBean0Grp2.get2().findMetric("TotalAllocatedPages")).value() +
             ((LongMetric)mxBean0Grp3.get2().findMetric("TotalAllocatedPages")).value());
@@ -418,16 +404,10 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
                 cache.put(i, new byte[100]);
         }
 
-        totalPages1 = ignite.dataRegionMetrics("default").getTotalAllocatedPages();
-        totalPages2 = ((LongMetric)ignite.context().metric().registry().findMetric(
+        totalPages = ((LongMetric)ignite.context().metric().registry().findMetric(
             metricName(DATAREGION_METRICS_PREFIX, "default", "TotalAllocatedPages"))).value();
 
-        assertEquals(totalPages1,
-            mxBean0Grp1.get1().getTotalAllocatedPages() +
-            mxBean0Grp2.get1().getTotalAllocatedPages() +
-            mxBean0Grp3.get1().getTotalAllocatedPages());
-
-        assertEquals(totalPages2,
+        assertEquals(totalPages,
             ((LongMetric)mxBean0Grp1.get2().findMetric("TotalAllocatedPages")).value() +
             ((LongMetric)mxBean0Grp2.get2().findMetric("TotalAllocatedPages")).value() +
             ((LongMetric)mxBean0Grp3.get2().findMetric("TotalAllocatedPages")).value());

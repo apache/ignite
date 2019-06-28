@@ -36,62 +36,44 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Cache group JMX metrics test.
  */
-public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanTest {
-    /**
-     *
-     */
+public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
+    /** */
     private static final String GROUP_NAME = "group1";
 
-    /**
-     *
-     */
+    /** */
     private static final String CACHE_NAME = "cache1";
 
-    /**
-     *
-     */
+    /** */
     private static final String OBJECT_NAME = "MyObject";
 
-    /**
-     *
-     */
+    /** */
     private static final String TABLE = "\"" + CACHE_NAME + "\"." + OBJECT_NAME;
 
-    /**
-     *
-     */
+    /** */
     private static final String KEY_NAME = "id";
 
-    /**
-     *
-     */
+    /** */
     private static final String COLUMN1_NAME = "col1";
 
-    /**
-     *
-     */
+    /** */
     private static final String COLUMN2_NAME = "col2";
 
-    /**
-     *
-     */
+    /** */
     private static final String COLUMN3_NAME = "col3";
 
-    /**
-     *
-     */
+    /** */
     private static final String INDEX_NAME = "testindex001";
 
     /** {@inheritDoc} */
@@ -181,15 +163,16 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
 
         ignite.cluster().active(true);
 
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp1 = mxBean(0, GROUP_NAME);
+        MetricRegistry grpMreg = mxBean(0, GROUP_NAME).get2();
+
+        LongMetric indexBuildCountPartitionsLeft =
+            (LongMetric)grpMreg.findMetric("IndexBuildCountPartitionsLeft");
 
         Assert.assertTrue("Timeout wait start rebuild index",
-            GridTestUtils.waitForCondition(() -> mxBean0Grp1.get1().getIndexBuildCountPartitionsLeft() > 0, 30_000)
-        );
+            waitForCondition(() -> indexBuildCountPartitionsLeft.value() > 0, 30_000));
 
         Assert.assertTrue("Timeout wait finished rebuild index",
-            GridTestUtils.waitForCondition(() -> mxBean0Grp1.get1().getIndexBuildCountPartitionsLeft() == 0, 30_000)
-        );
+            GridTestUtils.waitForCondition(() -> indexBuildCountPartitionsLeft.value() == 0, 30_000));
     }
 
     /**
@@ -221,7 +204,7 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
             cache1.put(id, o.build());
         }
 
-        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp1 = mxBean(0, GROUP_NAME);
+        MetricRegistry grpMreg = mxBean(0, GROUP_NAME).get2();
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -235,12 +218,13 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
             Assert.assertEquals("Index not found", 1, all.size());
         });
 
+        LongMetric indexBuildCountPartitionsLeft =
+            (LongMetric)grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+
         Assert.assertTrue("Timeout wait start rebuild index",
-            GridTestUtils.waitForCondition(() -> mxBean0Grp1.get1().getIndexBuildCountPartitionsLeft() > 0, 30_000)
-        );
+            waitForCondition(() -> indexBuildCountPartitionsLeft.value() > 0, 30_000));
 
         Assert.assertTrue("Timeout wait finished rebuild index",
-            GridTestUtils.waitForCondition(() -> mxBean0Grp1.get1().getIndexBuildCountPartitionsLeft() == 0, 30_000)
-        );
+            waitForCondition(() -> indexBuildCountPartitionsLeft.value() == 0, 30_000));
     }
 }
