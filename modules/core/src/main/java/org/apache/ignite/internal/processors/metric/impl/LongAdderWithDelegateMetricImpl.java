@@ -15,19 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.metric.impl;
+
+import java.util.function.LongConsumer;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Tracks allocated pages.
+ * Long metric implementation based on {@link LongAdder} with {@link #delegate}.
  */
-public interface AllocatedPageTracker {
-    /** No-op instance. */
-    public AllocatedPageTracker NO_OP = delta -> {};
+public class LongAdderWithDelegateMetricImpl extends LongAdderMetricImpl {
+    /** Delegate. */
+    private LongConsumer delegate;
 
     /**
-     * Updates totalAllocatedPages counter.
-     *
-     * @param delta Value to increment by.
+     * @param name Name.
+     * @param delegate Delegate to which all updates from new metric will be delegated to.
+     * @param descr Description.
      */
-    public void updateTotalAllocatedPages(long delta);
+    public LongAdderWithDelegateMetricImpl(String name, LongConsumer delegate, @Nullable String descr) {
+        super(name, descr);
+
+        this.delegate = delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void add(long x) {
+        super.add(x);
+
+        delegate.accept(x);
+    }
 }

@@ -25,12 +25,14 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
+import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
 import org.apache.ignite.internal.processors.metric.impl.DoubleGauge;
 import org.apache.ignite.internal.processors.metric.impl.IntGauge;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -151,6 +153,11 @@ public class MetricRegistryImpl implements MetricRegistry {
     /** {@inheritDoc} */
     @Override public LongAdderMetricImpl longAdderMetric(String name, @Nullable String description) {
         return addMetric(name, new LongAdderMetricImpl(name, description));
+    }
+
+    @Override public LongAdderMetricImpl longAdderMetric(String name, LongConsumer delegate,
+        @Nullable String description) {
+        return addMetric(name, new LongAdderWithDelegateMetricImpl(name, delegate, description));
     }
 
     /** {@inheritDoc} */

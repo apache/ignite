@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metric;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
+import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
@@ -149,6 +150,17 @@ public interface MetricRegistry extends ReadOnlyMetricRegistry {
      * @return Metric
      */
     public LongAdderMetricImpl longAdderMetric(String name, @Nullable String description);
+
+    /**
+     * Creates and register named metric.
+     * Returned instance are thread safe.
+     *
+     * @param name Name.
+     * @param delegate Delegate to which all updates from new metric will be delegated to.
+     * @param description Description.
+     * @return Metric
+     */
+    public LongAdderMetricImpl longAdderMetric(String name, LongConsumer delegate, @Nullable String description);
 
     /**
      * Creates and register hit rate metric.

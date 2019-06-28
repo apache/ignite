@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -36,11 +35,11 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.spi.metric.Metric;
 
@@ -60,7 +59,7 @@ public class CacheGroupMetricsImpl {
     private final CacheGroupContext ctx;
 
     /** */
-    private final GroupAllocationTracker groupPageAllocationTracker;
+    private final LongAdderMetricImpl groupPageAllocationTracker;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -71,36 +70,6 @@ public class CacheGroupMetricsImpl {
          * @param nextVal Next comparable value.
          */
         boolean apply(int targetVal, int nextVal);
-    }
-
-    /** */
-    public static class GroupAllocationTracker implements AllocatedPageTracker {
-        /** */
-        private final LongAdder totalAllocatedPages = new LongAdder();
-
-        /** */
-        private final AllocatedPageTracker delegate;
-
-        /**
-         * @param delegate Delegate allocation tracker.
-         */
-        public GroupAllocationTracker(AllocatedPageTracker delegate) {
-            this.delegate = delegate;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void updateTotalAllocatedPages(long delta) {
-            totalAllocatedPages.add(delta);
-
-            delegate.updateTotalAllocatedPages(delta);
-        }
-
-        /**
-         * Resets count of allocated pages to zero.
-         */
-        public void reset() {
-            totalAllocatedPages.reset();
-        }
     }
 
     /** */
@@ -156,10 +125,6 @@ public class CacheGroupMetricsImpl {
             List.class,
             "Local partition ids.");
 
-        mreg.register("TotalAllocatedPages",
-            this::getTotalAllocatedPages,
-            "Cache group total allocated pages.");
-
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
@@ -181,10 +146,11 @@ public class CacheGroupMetricsImpl {
         if (region != null) {
             DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
 
-            this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
+            this.groupPageAllocationTracker =
+                dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId(), ctx.cacheOrGroupName());
         }
         else
-            this.groupPageAllocationTracker = new GroupAllocationTracker(AllocatedPageTracker.NO_OP);
+            this.groupPageAllocationTracker = new LongAdderMetricImpl("NO_OP", null);
     }
 
     /** */
@@ -452,7 +418,7 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
-        return groupPageAllocationTracker.totalAllocatedPages.longValue();
+        return groupPageAllocationTracker.longValue();
     }
 
     /** */

@@ -22,6 +22,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.function.IntSupplier;
+import java.util.function.LongConsumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.util.typedef.F;
@@ -144,6 +145,12 @@ public class MetricRegistryPrefixProxy implements MetricRegistry {
     /** {@inheritDoc} */
     @Override public LongAdderMetricImpl longAdderMetric(String name, @Nullable String description) {
         return reg.longAdderMetric(fullName(name), description);
+    }
+
+    /** {@inheritDoc} */
+    @Override public LongAdderMetricImpl longAdderMetric(String name, LongConsumer delegate,
+        @Nullable String description) {
+        return reg.longAdderMetric(fullName(name), delegate, description);
     }
 
     /** {@inheritDoc} */
