@@ -174,6 +174,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         heap = new MemoryUsageMetrics(metricName(SYS_METRICS, "memory", "heap"));
         nonHeap = new MemoryUsageMetrics(metricName(SYS_METRICS, "memory", "nonheap"));
 
+        heap.update(mem.getHeapMemoryUsage());
+        nonHeap.update(mem.getNonHeapMemoryUsage());
+
         MetricRegistry sysreg = mreg.withPrefix(SYS_METRICS);
 
         gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
