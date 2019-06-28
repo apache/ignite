@@ -125,13 +125,13 @@ public class TransactionManager {
 
             return res;
         }
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         catch (Exception e) {
-            if (e instanceof IgniteException)
-                throw (IgniteException)e;
-
-            if (e instanceof IgniteCheckedException)
-                throw U.convertException((IgniteCheckedException)e);
-
             throw new IgniteException(e);
         }
     }

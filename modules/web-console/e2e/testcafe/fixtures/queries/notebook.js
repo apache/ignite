@@ -28,14 +28,16 @@ const user = createRegularUser();
 
 fixture('Notebook')
     .beforeEach(async(t) => {
-        await t.addRequestHooks(
-            t.ctx.ws = new WebSocketHook()
-            .use(agentStat(FAKE_CLUSTERS))
-            .use(cacheNamesCollectorTask(FAKE_CACHES))
-            .use(simeplFakeSQLQuery(FAKE_CLUSTERS.clusters[0].nids[0], SIMPLE_QUERY_RESPONSE))
-        );
         await dropTestDB();
         await insertTestUser();
+        await t.addRequestHooks(
+            t.ctx.ws = new WebSocketHook()
+                .use(
+                    agentStat(FAKE_CLUSTERS),
+                    cacheNamesCollectorTask(FAKE_CACHES),
+                    simeplFakeSQLQuery(FAKE_CLUSTERS.clusters[0].nids[0], SIMPLE_QUERY_RESPONSE)
+                )
+        );
     })
     .afterEach(async(t) => {
         t.ctx.ws.destroy();

@@ -80,5 +80,22 @@
                 <exclude>*-sources.jar</exclude>
             </excludes>
         </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/bin</directory>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>*.sh</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${basedir}/bin</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.bat</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>

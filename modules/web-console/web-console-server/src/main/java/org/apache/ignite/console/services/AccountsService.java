@@ -224,7 +224,9 @@ public class AccountsService implements UserDetailsService {
 
             acc0.resetActivationToken();
 
-            return accountsRepo.save(acc0);
+            accountsRepo.save(acc0);
+
+            return acc0;
         });
 
         notificationSrv.sendEmail(ACTIVATION_LINK, acc);
@@ -247,7 +249,9 @@ public class AccountsService implements UserDetailsService {
             if (!F.isEmpty(pwd))
                 acc0.setPassword(encoder.encode(pwd));
 
-            return accountsRepo.save(acc0);
+            accountsRepo.save(acc0);
+            
+            return acc0;
         });
 
         String oldTok = acc.getToken();
@@ -269,7 +273,9 @@ public class AccountsService implements UserDetailsService {
 
             acc0.setResetPasswordToken(UUID.randomUUID().toString());
 
-            return accountsRepo.save(acc0);
+            accountsRepo.save(acc0);
+
+            return acc0;
         });
 
         notificationSrv.sendEmail(PASSWORD_RESET, acc);

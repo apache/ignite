@@ -45,7 +45,7 @@ test('Testing setting notifications', async(t) => {
         .click('.ace_content')
         .pressKey('ctrl+a delete')
         .pressKey('t e s t space m e s s a g e')
-        .click(AngularJSSelector.byModel('$ctrl.isShown'))
+        .click(AngularJSSelector.byModel('$ctrl.visible'))
         .click('#btn-submit');
 
     await t
@@ -57,7 +57,7 @@ test('Testing setting notifications', async(t) => {
     await t
         .click('.ace_content')
         .pressKey('ctrl+a delete')
-        .click(AngularJSSelector.byModel('$ctrl.isShown'))
+        .click(AngularJSSelector.byModel('$ctrl.visible'))
         .click('#btn-submit');
 
     await t

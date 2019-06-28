@@ -15,7 +15,6 @@
  */
 
 import { dropTestDB, resolveUrl, insertTestUser } from '../../environment/envtools';
-import {PageSignIn} from '../../page-models/pageSignin';
 import {errorNotification} from '../../components/notifications';
 import {pageForgotPassword as page} from '../../page-models/pageForgotPassword';
 
@@ -37,16 +36,16 @@ test('Incorrect email', async(t) => {
 
 test('Unknown email', async(t) => {
     await t
-        .typeText(page.email.control, 'nonexisting@mail.com', {replace: true})
+        .typeText(page.email.control, 'nonexisting@example.com', {replace: true})
         .click(page.remindPasswordButton)
-        .expect(errorNotification.withText('Account with that email address does not exists!').exists).ok('Shows global error notification')
+        .expect(errorNotification.withText('Account with email does not exists: nonexisting@example.com').exists).ok('Shows global error notification')
         .expect(page.email.getError('server').exists).ok('Marks input as server-invalid');
 });
 
 // TODO: IGNITE-8028 Implement this test as unit test.
 test.skip('Successful reset', async(t) => {
     await t
-        .typeText(page.email.control, 'a@a', {replace: true})
+        .typeText(page.email.control, 'a@example.com', {replace: true})
         .click(page.remindPasswordButton)
         .expect(page.email.getError('server').exists).notOk('No errors happen');
 });

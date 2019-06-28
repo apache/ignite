@@ -36,7 +36,7 @@ fixture('Checking user profile')
 test('Testing user data change', async(t) => {
     const firstName = 'Richard';
     const lastName = 'Roe';
-    const email = 'r.roe@mail.com';
+    const email = 'r.roe@example.com';
     const company = 'New Company';
     const country = 'Israel';
 

@@ -68,7 +68,7 @@ export default class PageForgotPassword {
 
         return this.Auth.remindPassword(this.data.email).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
-            this.setServerError(res.data);
+            this.setServerError(res.data.message);
         });
     }
 }

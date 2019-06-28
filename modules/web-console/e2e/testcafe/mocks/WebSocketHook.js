@@ -14,60 +14,80 @@
  * limitations under the License.
  */
 
-import Server from 'socket.io';
+import { Server } from 'ws';
 import {RequestHook} from 'testcafe';
-import PortPool from 'port-pool';
+import getPort from 'get-port';
+import uuidv4 from 'uuid/v4';
 
-const portPool = new PortPool(3000, 3100);
-const getPort = () => new Promise((resolve, reject) => {
-    portPool.getNext((port) => {
-        if (port === null) reject(new Error('No free ports available'));
-        resolve(port);
-    });
-});
+export class WebSocket {
+    constructor(socket) {
+        this.socket = socket;
+    }
+
+    /**
+     * @param {string} eventType
+     * @param {(any)=>any} listener
+     */
+    on(eventType, listener) {
+        this.socket.on('message', (msg) => {
+            const e = JSON.parse(msg);
+
+            if (e.eventType === eventType) {
+                const res = listener(JSON.parse(e.payload));
+
+                if (res)
+                    this.emit(e.eventType, res, e.requestId);
+            }
+        });
+
+        return this;
+    }
+
+    /**
+     * @param {string} eventType
+     * @param {any} payload
+     * @param {string} requestId
+     */
+    emit(eventType, payload, requestId = uuidv4()) {
+        this.socket.send(JSON.stringify({requestId, eventType, payload: JSON.stringify(payload)}));
+
+        return this;
+    }
+}
 
 export class WebSocketHook extends RequestHook {
     constructor() {
-        super(([/socket\.io/]));
+        super(([/browsers/]));
+
         this._port = getPort();
-        this._io = Server();
-        this._port.then((port) => this._io.listen(port));
     }
 
     async onRequest(e) {
-    	e.requestOptions.host = `localhost:${await this._port}`;
+        e.requestOptions.host = `localhost:${await this._port}`;
         e.requestOptions.hostname = 'localhost';
-    	e.requestOptions.port = await this._port;
+        e.requestOptions.port = await this._port;
     }
 
     async onResponse() {}
 
     destroy() {
-    	this._io.close();
+        this._io.close();
     }
 
     /**
-     * @param {string} event
-     * @param {()=>void} listener
-     */
-    on(event, listener) {
-    	this._io.on(event, listener);
-    	return this;
-    }
-
-    /**
-     * @param {string} event
-     * @param {any} data
-     */
-    emit(event, data) {
-    	this._io.emit(event, data);
-    }
-
-    /**
-     * @param {Array<(hook: WebSocketHook) => any>} hooks
+     * @param {Array<(ws: WebSocket) => any>} hooks
      */
     use(...hooks) {
-        hooks.forEach((hook) => hook(this));
+        this._port.then((port) => {
+            this._io = new Server({port});
+
+            this._io.on('connection', (socket) => {
+                const ws = new WebSocket(socket);
+
+                hooks.forEach((hook) => hook(ws));
+            });
+        });
+
         return this;
     }
 }

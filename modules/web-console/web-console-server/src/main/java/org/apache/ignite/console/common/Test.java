@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-import { Role, t } from 'testcafe';
-import { resolveUrl } from './environment/envtools';
-import {pageSignin as page} from './page-models/pageSignin';
+package org.apache.ignite.console.common;
 
-export const createRegularUser = (login = 'a@example.com', password = 'a') => {
-    return Role(resolveUrl('/signin'), async() => {
-        await t.eval(() => window.localStorage.clear());
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
-        // Disable "Getting started" modal.
-        await t.eval(() => window.localStorage.showGettingStarted = 'false');
-        await page.login(login, password);
-    });
-};
+/**
+ * Marker interface that indicates that component should be activated in test profile.
+ */
+@Target({ElementType.TYPE, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Primary
+@Profile("test")
+public @interface Test {
+}

@@ -58,7 +58,7 @@ public class AccountsRepository {
         txMgr.registerStarter("accounts", () ->
             accountsTbl = new Table<Account>(ignite, "wc_accounts")
                 .addUniqueIndex(a -> a.getUsername().trim().toLowerCase(),
-                    (acc) -> "Account with email '" + acc.getUsername() + "' already registered")
+                    (acc) -> "The email address you have entered is already registered: " + acc.getUsername())
                 .addUniqueIndex(Account::getToken,
                     (acc) -> "Account with token '" + acc.getToken() + "' already exists")
         );
@@ -126,16 +126,16 @@ public class AccountsRepository {
     /**
      * Save account.
      *
-     * @param account Account to save.
+     * @param acc Account to save.
      * @return Saved account.
      * @throws IgniteException if failed to save account.
      */
     @SuppressWarnings("unchecked")
-    public Account create(Account account) throws AuthenticationServiceException {
+    public Account create(Account acc) throws AuthenticationServiceException {
         return txMgr.doInTransaction(() -> {
             boolean firstUser = !hasUsers();
 
-            account.setAdmin(firstUser);
+            acc.setAdmin(firstUser);
 
             if (firstUser) {
                 IgniteCache cache = accountsTbl.cache();
@@ -143,7 +143,9 @@ public class AccountsRepository {
                 cache.put(FIRST_USER_MARKER_KEY, FIRST_USER_MARKER_KEY);
             }
 
-            return save(account);
+            save(acc);
+
+            return acc;
         });
     }
 
