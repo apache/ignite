@@ -120,7 +120,7 @@ public class ClustersWatcher implements Closeable {
             send(ses, new WebSocketEvent(CLUSTER_TOPOLOGY, tops));
         }
         catch (Throwable e) {
-            log.error("Failed to send topology to server", e);
+            log.error("Failed to send topology to server");
         }
     }
 
@@ -180,7 +180,7 @@ public class ClustersWatcher implements Closeable {
     /**
      * Stop cluster watch.
      */
-    void stopWatchTask() {
+    void stop() {
         if (refreshTask != null) {
             refreshTask.cancel(true);
 
