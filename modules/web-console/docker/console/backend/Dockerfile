@@ -13,20 +13,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FROM node:8-alpine
 
-ENV NPM_CONFIG_LOGLEVEL error
+# Extend jre image
+FROM openjdk:11-jre
+# Set the location of the application
+ENV WEB_CONSOLE_HOME /opt/ignite-web-console-server
 
-RUN apk --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ add \
- chromium xwininfo xvfb dbus eudev ttf-freefont fluxbox
+WORKDIR $WEB_CONSOLE_HOME
 
-ENV CHROME_BIN /usr/bin/chromium-browser
+# Copy your verticle to the container
+COPY ./ignite-web-console-*/*.jar ./
+COPY ./ignite-web-console-*/web-console.sh ./
+COPY ./ignite-web-console-*/libs ./libs
+COPY ./ignite-web-console-*/agent_dists ./agent_dists
 
-WORKDIR /opt/web-console/frontend
+EXPOSE 3000
 
-COPY ./package*.json ./
-RUN npm install
-
-COPY . .
-
-ENTRYPOINT ["npm", "test"]
+CMD ./web-console.sh

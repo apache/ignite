@@ -27,9 +27,8 @@ Build image
 
         docker build . -t apacheignite/web-agent[:<version>]
 
-   Prepared image will be available in local docker registry (can be seen
-   issuing `docker images` command)
-
 5) Clean up
 
         rm -rf ignite-web-console-agent*
+
+The image will be available in local docker registry (can be seen by calling the `docker images` command)

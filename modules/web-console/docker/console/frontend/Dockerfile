@@ -13,20 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FROM node:8-alpine
 
-ENV NPM_CONFIG_LOGLEVEL error
+# Extend nginx image
+FROM nginx:1-alpine
 
-RUN apk --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ add \
- chromium xwininfo xvfb dbus eudev ttf-freefont fluxbox
+COPY ./ignite-web-console-*/frontend /data/www
+COPY ./frontend/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./frontend/nginx/web-console.conf /etc/nginx/web-console.conf
 
-ENV CHROME_BIN /usr/bin/chromium-browser
-
-WORKDIR /opt/web-console/frontend
-
-COPY ./package*.json ./
-RUN npm install
-
-COPY . .
-
-ENTRYPOINT ["npm", "test"]
+EXPOSE 80

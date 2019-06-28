@@ -22,7 +22,6 @@ import javax.validation.Valid;
 import org.apache.ignite.console.dto.Account;
 import org.apache.ignite.console.dto.Announcement;
 import org.apache.ignite.console.json.JsonArray;
-import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.services.AdminService;
 import org.apache.ignite.console.web.model.PeriodFilterRequest;
 import org.apache.ignite.console.web.model.SignUpRequest;

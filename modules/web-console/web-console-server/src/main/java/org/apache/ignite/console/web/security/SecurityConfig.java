@@ -25,6 +25,7 @@ import org.apache.ignite.console.services.AccountsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -57,6 +58,7 @@ import static org.apache.ignite.console.websocket.WebSocketEvents.BROWSERS_PATH;
 @Configuration
 @EnableWebSecurity
 @EnableSpringHttpSession
+@Profile("!test")
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     /** The number of seconds that the {@link Session} should be kept alive between client requests. */
     private static final int MAX_INACTIVE_INTERVAL_SECONDS = 60 * 60 * 24 * 30;
@@ -94,6 +96,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     /** */
     private final AccountsService accountsSrv;
+    
     /** */
     private final PasswordEncoder encoder;
 

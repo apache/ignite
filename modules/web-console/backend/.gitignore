@@ -1,3 +1,0 @@
-agent_dists/*.zip
-config/*.json
-!package-lock.json

@@ -5,8 +5,8 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "env": "node environment/launch-env.js",
-    "test": "node index.js --env=true"
+    "test": "node index.js",
+    "test-debug": "node --inspect-brk index.js"
   },
   "license": "Apache-2.0",
   "keywords": [
@@ -23,26 +23,19 @@
     "win32"
   ],
   "dependencies": {
-    "app-module-path": "2.2.0",
-    "cross-env": "5.2.0",
+    "get-port": "^5.0.0",
     "glob": "7.1.3",
     "lodash": "4.17.11",
-    "minimist": "1.2.0",
-    "mongodb": "2.2.33",
-    "node-cmd": "3.0.0",
-    "objectid": "3.2.1",
-    "path": "0.12.7",
-    "port-pool": "^1.0.1",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.7",
     "sinon": "2.3.8",
-    "socket.io": "^2.2.0",
     "testcafe": "1.1.4",
     "testcafe-angular-selectors": "0.3.0",
     "testcafe-reporter-teamcity": "1.0.9",
-    "type-detect": "4.0.3",
-    "util": "0.10.3"
+    "uuid": "3.3.2",
+    "ws": "^7.0.1"
   },
   "devDependencies": {
-    "@types/socket.io": "^2.1.2",
     "@typescript-eslint/eslint-plugin": "^1.7.0",
     "@typescript-eslint/parser": "^1.7.0",
     "eslint": "^5.16.0",

@@ -47,7 +47,7 @@
 
     <profiles>
         <profile>
-            <id>direct-install</id>
+            <id>release</id>
 
             <build>
                 <pluginManagement>
@@ -85,7 +85,7 @@
 
                                 <configuration>
                                     <workingDirectory>frontend</workingDirectory>
-                                    <arguments>install --no-optional</arguments>
+                                    <arguments>ci</arguments>
                                 </configuration>
                             </execution>
 

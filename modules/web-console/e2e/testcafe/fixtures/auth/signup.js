@@ -46,7 +46,7 @@ test('Local validation', async(t) => {
 });
 test('Server validation', async(t) => {
     await page.fillSignupForm({
-        email: 'a@a',
+        email: 'a@example.com',
         password: '1',
         passwordConfirm: '1',
         firstName: 'John',
@@ -56,7 +56,7 @@ test('Server validation', async(t) => {
     });
     await t
         .click(page.signupButton)
-        .expect(errorNotification.withText('A user with the given email is already registered').exists).ok('Shows global error')
+        .expect(errorNotification.withText('The email address you have entered is already registered: a@example.com').exists).ok('Shows global error')
         .expect(page.email.getError('server').exists).ok('Marks email input as server-invalid');
 });
 test('Successful signup', async(t) => {

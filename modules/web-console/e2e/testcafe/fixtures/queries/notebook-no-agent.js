@@ -24,12 +24,12 @@ const user = createRegularUser();
 
 fixture('Notebook')
     .beforeEach(async(t) => {
+        await dropTestDB();
+        await insertTestUser();
         await t.addRequestHooks(
             t.ctx.ws = new WebSocketHook()
                 .use(agentStat(AGENT_DISCONNECTED_GRID))
         );
-        await dropTestDB();
-        await insertTestUser();
     })
     .afterEach(async(t) => {
         t.ctx.ws.destroy();

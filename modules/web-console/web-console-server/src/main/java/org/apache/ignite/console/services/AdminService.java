@@ -153,10 +153,12 @@ public class AdminService {
     /**
      * @param params SignUp params.
      */
-    public void registerUser(SignUpRequest params) {
+    public Account registerUser(SignUpRequest params) {
         Account acc = accountsSrv.create(params);
 
         notificationSrv.sendEmail(ADMIN_WELCOME_LETTER, acc);
+
+        return acc;
     }
 
     /** */
