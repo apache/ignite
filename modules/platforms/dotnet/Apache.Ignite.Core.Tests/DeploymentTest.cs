@@ -141,6 +141,7 @@ namespace Apache.Ignite.Core.Tests
             var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\modules\spring\"};
 
             var jars = Directory.GetFiles(home, "*.jar", SearchOption.AllDirectories)
+                .Where(jarPath => !jarPath.Contains("web-console"))
                 .Where(jarPath => jarNames.Any(jarPath.Contains)).ToArray();
 
             Assert.Greater(jars.Length, 3);
