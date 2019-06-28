@@ -25,24 +25,24 @@ nuget pack Apache.Ignite.Schema.nuspec -Version 1.6.1
 
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
     <metadata>
-        <id>Apache.Ignite.Schema</id>
-        <title>Apache Ignite Configuration XML Schema</title>
+        <id>GridGain.Ignite.Schema</id>
+        <title>GridGain Ignite Configuration XML Schema</title>
         <!-- -->
         <version>$version$</version>
-        <authors>Apache Ignite</authors>
-        <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
-        <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <authors>GridGain</authors>
+        <owners>GridGain</owners>
+        <licenseUrl>https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license</licenseUrl>
+        <projectUrl>https://gridgain.com/</projectUrl>
+        <iconUrl>https://www.gridgain.com/sites/default/files/GG-logo64-01.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 XSD file describes the structure of IgniteConfigurationSection and enables Intellisense(TM) when editing IgniteConfigurationSection in app.config and web.config in Visual Studio.
 
-More info on Apache Ignite.NET: https://apacheignite-net.readme.io/
+More info on GridGain Ignite.NET: https://docs.gridgain.com/
         </description>
         <releaseNotes></releaseNotes>
         <copyright>Copyright 2019</copyright>
-        <tags>Apache Ignite XSD Intellisense</tags>
+        <tags>GridGain Ignite XSD Intellisense</tags>
     </metadata>
     <files>
         <!-- Other files should go to Content folder to be automatically included in project. -->

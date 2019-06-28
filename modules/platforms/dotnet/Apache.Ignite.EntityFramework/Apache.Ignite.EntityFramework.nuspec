@@ -27,29 +27,28 @@ Creating NuGet package:
 
 <package >
     <metadata>
-        <id>Apache.Ignite.EntityFramework</id>
-        <title>Apache Ignite Entity Framework Integration</title>
+        <id>GridGain.Ignite.EntityFramework</id>
+        <title>GridGain Ignite Entity Framework Integration</title>
         <!-- -->
         <version>$version$</version>
-        <authors>Apache Ignite</authors>
-        <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
-        <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <authors>GridGain</authors>
+        <owners>GridGain</owners>
+        <licenseUrl>https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license</licenseUrl>
+        <projectUrl>https://gridgain.com/</projectUrl>
+        <iconUrl>https://www.gridgain.com/sites/default/files/GG-logo64-01.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-Apache Ignite EntityFramework Second Level Cache: caches EF query results in a distributed in-memory cache.
+GridGain Ignite EntityFramework Second Level Cache: caches EF query results in a distributed in-memory cache.
             
-More info: https://apacheignite-net.readme.io/
+More info: https://docs.gridgain.com/
         </description>
         <summary>
-            Apache Ignite EntityFramework Integration
+            GridGain Ignite EntityFramework Integration
         </summary>
-        <releaseNotes></releaseNotes>
         <copyright>Copyright 2019</copyright>
-        <tags>EntityFramework Second-Level Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
+        <tags>EntityFramework Second-Level GridGain Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
         <dependencies>
-            <dependency id="Apache.Ignite" version="[$version$]" />
+            <dependency id="GridGain.Ignite" version="[$version$]" />
             <dependency id="EntityFramework" version="[6.1.0,7.0.0)" />
         </dependencies>    
     </metadata>

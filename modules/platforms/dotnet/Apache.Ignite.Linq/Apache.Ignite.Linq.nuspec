@@ -27,31 +27,30 @@ Creating NuGet package:
 
 <package >
     <metadata>
-        <id>Apache.Ignite.Linq</id>
-        <title>Apache Ignite LINQ Provider</title>
+        <id>GridGain.Ignite.Linq</id>
+        <title>GridGain Ignite LINQ Provider</title>
         <!-- -->
         <version>$version$</version>
-        <authors>Apache Ignite</authors>
-        <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
-        <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <authors>GridGain</authors>
+        <owners>GridGain</owners>
+        <licenseUrl>https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license</licenseUrl>
+        <projectUrl>https://gridgain.com/</projectUrl>
+        <iconUrl>https://www.gridgain.com/sites/default/files/GG-logo64-01.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-LINQ Provider for Apache Ignite
+LINQ Provider for GridGain Ignite
 
 Query distributed in-memory data in a strongly-typed manner and with IDE support!
 All Ignite SQL features are supported: distributed joins, groupings, aggregates, field queries, and more.
 
 Supports .NET 4+ and .NET Core 2.0+.
-            
-More info: https://apacheignite-net.readme.io/
+
+More info: https://docs.gridgain.com/
         </description>
-        <releaseNotes></releaseNotes>
         <copyright>Copyright 2019</copyright>
-        <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
+        <tags>GridGain Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
         <dependencies>
-            <dependency id="Apache.Ignite" version="[$version$]" />
+            <dependency id="GridGain.Ignite" version="[$version$]" />
             <dependency id="Remotion.Linq" version="[2.0.1]" />
         </dependencies>    
     </metadata>

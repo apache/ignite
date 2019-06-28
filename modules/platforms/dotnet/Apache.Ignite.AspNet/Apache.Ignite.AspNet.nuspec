@@ -27,27 +27,27 @@ Creating NuGet package:
 
 <package >
     <metadata>
-        <id>Apache.Ignite.AspNet</id>
-        <title>Apache Ignite ASP.NET Integration</title>
+        <id>GridGain.Ignite.AspNet</id>
+        <title>GridGain Ignite ASP.NET Integration</title>
         <!-- -->
         <version>$version$</version>
-        <authors>Apache Ignite</authors>
-        <owners>Apache Software Foundation</owners>
-        <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
-        <projectUrl>https://ignite.apache.org/</projectUrl>
-        <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
+        <authors>GridGain</authors>
+        <owners>GridGain</owners>
+        <licenseUrl>https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license</licenseUrl>
+        <projectUrl>https://gridgain.com/</projectUrl>
+        <iconUrl>https://www.gridgain.com/sites/default/files/GG-logo64-01.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 Output Cache Provider: caches page output in a distributed in-memory cache.
 Session State Store Provider: stores session state data in a distributed in-memory cache.
-            
-More info: https://apacheignite-net.readme.io/
+
+More info: https://docs.gridgain.com/
         </description>
         <releaseNotes></releaseNotes>
         <copyright>Copyright 2019</copyright>
-        <tags>OutputCacheProvider Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
+        <tags>OutputCacheProvider GridGain Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
         <dependencies>
-            <dependency id="Apache.Ignite" version="[$version$]" />
+            <dependency id="GridGain.Ignite" version="[$version$]" />
         </dependencies>    
     </metadata>
     <files>
