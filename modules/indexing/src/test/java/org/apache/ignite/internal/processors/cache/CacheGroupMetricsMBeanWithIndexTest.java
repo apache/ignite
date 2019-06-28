@@ -35,6 +35,8 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -179,14 +181,14 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
 
         ignite.cluster().active(true);
 
-        CacheGroupMetricsMXBean mxBean0Grp1 = mxBean(0, GROUP_NAME);
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp1 = mxBean(0, GROUP_NAME);
 
         Assert.assertTrue("Timeout wait start rebuild index",
-            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() > 0, 30_000)
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.get1().getIndexBuildCountPartitionsLeft() > 0, 30_000)
         );
 
         Assert.assertTrue("Timeout wait finished rebuild index",
-            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() == 0, 30_000)
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.get1().getIndexBuildCountPartitionsLeft() == 0, 30_000)
         );
     }
 
@@ -219,7 +221,7 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
             cache1.put(id, o.build());
         }
 
-        CacheGroupMetricsMXBean mxBean0Grp1 = mxBean(0, GROUP_NAME);
+        T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp1 = mxBean(0, GROUP_NAME);
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -234,11 +236,11 @@ public class CacheGroupMetricsMBeanWithIndexTest extends CacheGroupMetricsMBeanT
         });
 
         Assert.assertTrue("Timeout wait start rebuild index",
-            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() > 0, 30_000)
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.get1().getIndexBuildCountPartitionsLeft() > 0, 30_000)
         );
 
         Assert.assertTrue("Timeout wait finished rebuild index",
-            GridTestUtils.waitForCondition(() -> mxBean0Grp1.getIndexBuildCountPartitionsLeft() == 0, 30_000)
+            GridTestUtils.waitForCondition(() -> mxBean0Grp1.get1().getIndexBuildCountPartitionsLeft() == 0, 30_000)
         );
     }
 }
