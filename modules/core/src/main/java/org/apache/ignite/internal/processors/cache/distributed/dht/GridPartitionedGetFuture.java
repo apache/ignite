@@ -335,7 +335,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
 
         if (affNode != null) {
-            if (invalidNodeSet.contains(affNode)) {
+            if (invalidNodeSet.contains(affNode) || !cctx.discovery().alive(affNode)) {
                 onDone(Collections.emptyMap());
 
                 return false;
