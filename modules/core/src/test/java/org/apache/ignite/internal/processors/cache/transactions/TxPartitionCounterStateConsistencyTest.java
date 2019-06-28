@@ -453,10 +453,13 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         IgniteInternalFuture fut2 = GridTestUtils.runAsync(() -> {
             U.awaitQuiet(sync);
+
             while(!done.get()) {
                 try {
                     if (r.nextBoolean()) {
                         IgniteEx node = startGrid(SERVER_NODES); // Non-BLT join.
+
+                        assertNotNull(node.cache(DEFAULT_CACHE_NAME));
 
                         stopGrid(node.name());
                     }
@@ -479,8 +482,10 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         done.set(true);
 
         sndFut.get();
-        for (int i = 0; i < SERVER_NODES; i++)
-            TestRecordingCommunicationSpi.spi(grid(i)).stopBlock(true, null, false, true);
+        if (delayPME) {
+            for (int i = 0; i < SERVER_NODES; i++)
+                TestRecordingCommunicationSpi.spi(grid(i)).stopBlock(true, null, false, true);
+        }
 
         fut.get();
         fut2.get();

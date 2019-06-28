@@ -2829,7 +2829,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     *
+     * Tracks rebalance state on coordinator.
+     * After all partitions are rebalanced the current affinity is switched to ideal.
      */
     class WaitRebalanceInfo {
         /** */
@@ -2867,6 +2868,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         /**
+         * Adds a partition to wait set.
+         *
          * @param grpId Group ID.
          * @param part Partition.
          * @param waitNode Node rebalancing data.
