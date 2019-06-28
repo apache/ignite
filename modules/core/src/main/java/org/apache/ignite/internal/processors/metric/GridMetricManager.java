@@ -559,4 +559,3 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         }
     }
 }
-
