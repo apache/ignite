@@ -33,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 
+import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
+
 /**
  * Checks data consistency. Checks that each affinity node's value equals other's. Prepares recovery data. Records
  * consistency violation event.
@@ -98,6 +100,9 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
     private void recordConsistencyViolation(Map<KeyCacheObject, EntryGetResult> fixedRaw) {
         GridEventStorageManager evtMgr = ctx.gridEvents();
 
+        if (!evtMgr.isRecordable(EVT_CONSISTENCY_VIOLATION))
+            return;
+
         if (fixedRaw.isEmpty())
             return;
 
@@ -113,7 +118,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                 val,
                 false,
                 false,
-                true,
+                deserializeBinary,
                 false,
                 null,
                 0,
@@ -143,7 +148,7 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                         val,
                         false,
                         false,
-                        true,
+                        deserializeBinary,
                         false,
                         null,
                         0,
