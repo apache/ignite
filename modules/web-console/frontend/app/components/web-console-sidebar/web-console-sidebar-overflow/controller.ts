@@ -26,7 +26,7 @@ export default class WebCOnsoleSidebarOverflow {
     resizeObserver: ResizeObserver;
 
     $onInit() {
-        this.el.css('--scrollbar-width', this.gridUtil.getScrollbarWidth());
+        this.el.css('--scrollbar-width', `${this.gridUtil.getScrollbarWidth()}px`);
     }
 
     $postLink() {
