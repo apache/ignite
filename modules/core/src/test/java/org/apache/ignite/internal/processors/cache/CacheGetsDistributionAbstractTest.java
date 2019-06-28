@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -260,6 +261,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @see #runTestSameHostDistribution(UUID, boolean)
      */
     @Test
+    @Ignore("Counts messages")
     public void testGetRequestsDistribution() throws Exception {
         UUID destId = grid(0).localNode().id();
 
@@ -273,6 +275,7 @@ public abstract class CacheGetsDistributionAbstractTest extends GridCommonAbstra
      * @see #runTestSameHostDistribution(UUID, boolean)
      */
     @Test
+    @Ignore("Counts messages")
     public void testGetAllRequestsDistribution() throws Exception {
         UUID destId = grid(gridCount() - 1).localNode().id();
 
