@@ -123,6 +123,9 @@ namespace ignite
 
                 this->hasOldValue = reader.TryReadObject(this->oldVal);
                 this->hasValue = reader.TryReadObject(this->val);
+                
+                //java send an event type, we need to fetch it from the buffer
+                reader.ReadInt8();
             }
 
         private:
