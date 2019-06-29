@@ -86,6 +86,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.metric.DoubleMetric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -104,6 +105,8 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -205,6 +208,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
     @Deprecated
     private final LongAdder finishedJobsTime = new LongAdder();
 
+    /** Cpu load metric */
+    private final DoubleMetric cpuLoadMetric;
+
     /** Maximum job execution time for finished jobs. */
     @Deprecated
     private final GridAtomicLong maxFinishedJobsTime = new GridAtomicLong();
@@ -295,6 +301,8 @@ public class GridJobProcessor extends GridProcessorAdapter {
         cancelLsnr = new JobCancelListener();
         jobExecLsnr = new JobExecutionListener();
         discoLsnr = new JobDiscoveryListener();
+
+        cpuLoadMetric = (DoubleMetric)ctx.metric().registry().findMetric(metricName(SYS_METRICS, CPU_LOAD));
 
         MetricRegistry mreg = ctx.metric().registry().withPrefix(JOBS);
 
@@ -1079,7 +1087,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             m.setMaximumExecutionTime(maxFinishedTime);
 
         // CPU load.
-        m.setCpuLoad(ctx.discovery().metrics().getCurrentCpuLoad());
+        m.setCpuLoad(cpuLoadMetric.value());
 
         ctx.jobMetric().addSnapshot(m);
     }
