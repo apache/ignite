@@ -16,6 +16,14 @@
 
 package org.apache.ignite.internal.processors.metric;
 
+import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.RuntimeMXBean;
+import java.lang.management.ThreadMXBean;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -23,14 +31,22 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.IntSupplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * This manager should provide {@link MetricRegistry} for each configured {@link MetricExporterSpi}.
@@ -85,8 +101,65 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** Group for a thread pools. */
     public static final String THREAD_POOLS = "threadPools";
 
+    /** Metrics update frequency. */
+    private static final long METRICS_UPDATE_FREQ = 3000;
+
+    /** System metrics prefix. */
+    public static final String SYS_METRICS = "sys";
+
+    /** GC CPU load metric name. */
+    public static final String GC_CPU_LOAD = "GcCpuLoad";
+
+    /** CPU load metric name. */
+    public static final String CPU_LOAD = "CpuLoad";
+
+    /** Up time metric name. */
+    public static final String UP_TIME = "UpTime";
+
+    /** Thread count metric name. */
+    public static final String THREAD_CNT = "ThreadCount";
+
+    /** Peak thread count metric name. */
+    public static final String PEAK_THREAD_CNT = "PeakThreadCount";
+
+    /** Total started thread count metric name. */
+    public static final String TOTAL_STARTED_THREAD_CNT = "TotalStartedThreadCount";
+
+    /** Daemon thread count metric name. */
+    public static final String DAEMON_THREAD_CNT = "DaemonThreadCount";
+
+    /** JVM interface to memory consumption info */
+    private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
+
+    /** */
+    private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
+
+    /** */
+    private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
+
+    /** */
+    private static final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
+
+    /** */
+    private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
+
     /** Monitoring registry. */
     private MetricRegistry mreg;
+
+    /** Metrics update worker. */
+    private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
+
+    /** GC CPU load. */
+    private final DoubleMetricImpl gcCpuLoad;
+
+    /** CPU load. */
+    private final DoubleMetricImpl cpuLoad;
+
+    /** Heap memory metrics. */
+    private final MemoryUsageMetrics heap;
+
+    /** Nonheap memory metrics. */
+    private final MemoryUsageMetrics nonHeap;
 
     /**
      * @param ctx Kernal context.
@@ -95,6 +168,33 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         super(ctx, ctx.config().getMetricExporterSpi());
 
         mreg = new MetricRegistryImpl(ctx.log(MetricRegistryImpl.class));
+
+        ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
+
+        heap = new MemoryUsageMetrics(metricName(SYS_METRICS, "memory", "heap"));
+        nonHeap = new MemoryUsageMetrics(metricName(SYS_METRICS, "memory", "nonheap"));
+
+        heap.update(mem.getHeapMemoryUsage());
+        nonHeap.update(mem.getNonHeapMemoryUsage());
+
+        MetricRegistry sysreg = mreg.withPrefix(SYS_METRICS);
+
+        gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
+        cpuLoad = sysreg.doubleMetric(CPU_LOAD, "CPU load.");
+
+        sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
+        sysreg.register(UP_TIME, rt::getUptime, null);
+        sysreg.register(THREAD_CNT, threads::getThreadCount, null);
+        sysreg.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, null);
+        sysreg.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount, null);
+        sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
+        sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
+        sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        metricsUpdateTask = ctx.timeout().schedule(new MetricsUpdater(), METRICS_UPDATE_FREQ, METRICS_UPDATE_FREQ);
     }
 
     /** {@inheritDoc} */
@@ -108,6 +208,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         stopSpi();
+
+        // Stop discovery worker and metrics updater.
+        U.closeQuiet(metricsUpdateTask);
     }
 
     /**
@@ -286,5 +389,170 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
             svc::stripesQueueSizes,
             int[].class,
             "Size of queue per stripe.");
+    }
+
+    /**
+     * @return Memory usage of non-heap memory.
+     */
+    public MemoryUsage nonHeapMemoryUsage() {
+        // Workaround of exception in WebSphere.
+        // We received the following exception:
+        // java.lang.IllegalArgumentException: used value cannot be larger than the committed value
+        // at java.lang.management.MemoryUsage.<init>(MemoryUsage.java:105)
+        // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsageImpl(Native Method)
+        // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsage(MemoryMXBeanImpl.java:143)
+        // at org.apache.ignite.spi.metrics.jdk.GridJdkLocalMetricsSpi.getMetrics(GridJdkLocalMetricsSpi.java:242)
+        //
+        // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
+        try {
+            return mem.getNonHeapMemoryUsage();
+        }
+        catch (IllegalArgumentException ignored) {
+            return new MemoryUsage(0, 0, 0, 0);
+        }
+    }
+
+    /**
+     * Returns the current memory usage of the heap.
+     * @return Memory usage or fake value with zero in case there was exception during take of metrics.
+     */
+    public MemoryUsage heapMemoryUsage() {
+        // Catch exception here to allow discovery proceed even if metrics are not available
+        // java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616
+        // at java.lang.management.MemoryUsage.<init>(Unknown Source)
+        try {
+            return mem.getHeapMemoryUsage();
+        }
+        catch (IllegalArgumentException ignored) {
+            return new MemoryUsage(0, 0, 0, 0);
+        }
+    }
+
+    /**
+     * @return Total system memory.
+     */
+    private long totalSysMemory() {
+        try {
+            return U.<Long>property(os, "totalPhysicalMemorySize");
+        }
+        catch (RuntimeException ignored) {
+            return -1;
+        }
+    }
+
+    /** */
+    private class MetricsUpdater implements Runnable {
+        /** */
+        private long prevGcTime = -1;
+
+        /** */
+        private long prevCpuTime = -1;
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            heap.update(heapMemoryUsage());
+            nonHeap.update(nonHeapMemoryUsage());
+
+            gcCpuLoad.value(getGcCpuLoad());
+            cpuLoad.value(getCpuLoad());
+        }
+
+        /**
+         * @return GC CPU load.
+         */
+        private double getGcCpuLoad() {
+            long gcTime = 0;
+
+            for (GarbageCollectorMXBean bean : gc) {
+                long colTime = bean.getCollectionTime();
+
+                if (colTime > 0)
+                    gcTime += colTime;
+            }
+
+            gcTime /= os.getAvailableProcessors();
+
+            double gc = 0;
+
+            if (prevGcTime > 0) {
+                long gcTimeDiff = gcTime - prevGcTime;
+
+                gc = (double)gcTimeDiff / METRICS_UPDATE_FREQ;
+            }
+
+            prevGcTime = gcTime;
+
+            return gc;
+        }
+
+        /**
+         * @return CPU load.
+         */
+        private double getCpuLoad() {
+            long cpuTime;
+
+            try {
+                cpuTime = U.<Long>property(os, "processCpuTime");
+            }
+            catch (IgniteException ignored) {
+                return -1;
+            }
+
+            // Method reports time in nanoseconds across all processors.
+            cpuTime /= 1000000 * os.getAvailableProcessors();
+
+            double cpu = 0;
+
+            if (prevCpuTime > 0) {
+                long cpuTimeDiff = cpuTime - prevCpuTime;
+
+                // CPU load could go higher than 100% because calculating of cpuTimeDiff also takes some time.
+                cpu = Math.min(1.0, (double)cpuTimeDiff / METRICS_UPDATE_FREQ);
+            }
+
+            prevCpuTime = cpuTime;
+
+            return cpu;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MetricsUpdater.class, this, super.toString());
+        }
+    }
+
+    /** Memory usage metrics. */
+    public class MemoryUsageMetrics {
+        /** @see MemoryUsage#getInit() */
+        private final LongMetricImpl init;
+
+        /** @see MemoryUsage#getUsed() */
+        private final LongMetricImpl used;
+
+        /** @see MemoryUsage#getCommitted() */
+        private final LongMetricImpl committed;
+
+        /** @see MemoryUsage#getMax() */
+        private final LongMetricImpl max;
+
+        /**
+         * @param prefix Metric prefix.
+         */
+        public MemoryUsageMetrics(String prefix) {
+            MetricRegistry mreg = GridMetricManager.this.mreg.withPrefix(prefix);
+
+            this.init = mreg.metric("init", null);
+            this.used = mreg.metric("used", null);
+            this.committed = mreg.metric("committed", null);
+            this.max = mreg.metric("max", null);
+        }
+
+        /** Updates metric to the provided values. */
+        public void update(MemoryUsage usage) {
+            init.value(usage.getInit());
+            used.value(usage.getUsed());
+            committed.value(usage.getCommitted());
+            max.value(usage.getMax());
+        }
     }
 }

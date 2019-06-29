@@ -17,13 +17,6 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.io.Serializable;
-import java.lang.management.GarbageCollectorMXBean;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.RuntimeMXBean;
-import java.lang.management.ThreadMXBean;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -92,7 +85,6 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -165,7 +157,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_US
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
@@ -177,24 +168,6 @@ import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
  * Discovery SPI manager.
  */
 public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
-    /** Metrics update frequency. */
-    private static final long METRICS_UPDATE_FREQ = 3000;
-
-    /** JVM interface to memory consumption info */
-    private static final MemoryMXBean mem = ManagementFactory.getMemoryMXBean();
-
-    /** */
-    private static final OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
-
-    /** */
-    private static final RuntimeMXBean rt = ManagementFactory.getRuntimeMXBean();
-
-    /** */
-    private static final ThreadMXBean threads = ManagementFactory.getThreadMXBean();
-
-    /** */
-    private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
-
     /** */
     private static final String PREFIX = "Topology snapshot";
 
@@ -271,18 +244,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node join to topology event. */
     private GridFutureAdapter<DiscoveryLocalJoinData> locJoin = new GridFutureAdapter<>();
 
-    /** GC CPU load. */
-    private volatile double gcCpuLoad;
-
-    /** CPU load. */
-    private volatile double cpuLoad;
-
-    /** Metrics. */
-    private final GridLocalMetrics metrics = createMetrics();
-
-    /** Metrics update worker. */
-    private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
-
     /** Custom event listener. */
     private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs =
         new ConcurrentHashMap<>();
@@ -314,43 +275,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
-    }
-
-    /**
-     * @return Memory usage of non-heap memory.
-     */
-    private MemoryUsage nonHeapMemoryUsage() {
-        // Workaround of exception in WebSphere.
-        // We received the following exception:
-        // java.lang.IllegalArgumentException: used value cannot be larger than the committed value
-        // at java.lang.management.MemoryUsage.<init>(MemoryUsage.java:105)
-        // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsageImpl(Native Method)
-        // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsage(MemoryMXBeanImpl.java:143)
-        // at org.apache.ignite.spi.metrics.jdk.GridJdkLocalMetricsSpi.getMetrics(GridJdkLocalMetricsSpi.java:242)
-        //
-        // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
-        try {
-            return mem.getNonHeapMemoryUsage();
-        }
-        catch (IllegalArgumentException ignored) {
-            return new MemoryUsage(0, 0, 0, 0);
-        }
-    }
-
-    /**
-     * Returns the current memory usage of the heap
-     * @return memory usage or fake value with zero in case there was exception during take of metrics
-     */
-    private MemoryUsage getHeapMemoryUsage() {
-        // Catch exception here to allow discovery proceed even if metrics are not available
-        // java.lang.IllegalArgumentException: committed = 5274103808 should be < max = 5274095616
-        // at java.lang.management.MemoryUsage.<init>(Unknown Source)
-        try {
-            return mem.getHeapMemoryUsage();
-        }
-        catch (IllegalArgumentException ignored) {
-            return new MemoryUsage(0, 0, 0, 0);
-        }
     }
 
     /** {@inheritDoc} */
@@ -501,16 +425,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        long totSysMemory = -1;
-
-        try {
-            totSysMemory = U.<Long>property(os, "totalPhysicalMemorySize");
-        }
-        catch (RuntimeException ignored) {
-            // No-op.
-        }
-
-        ctx.addNodeAttribute(ATTR_PHY_RAM, totSysMemory);
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
 
@@ -542,8 +456,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             checkSegmentOnStart();
         }
-
-        metricsUpdateTask = ctx.timeout().schedule(new MetricsUpdater(), METRICS_UPDATE_FREQ, METRICS_UPDATE_FREQ);
 
         spi.setMetricsProvider(createMetricsProvider());
 
@@ -1096,81 +1008,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
-     * @return Metrics.
-     */
-    private GridLocalMetrics createMetrics() {
-        return new GridLocalMetrics() {
-            @Override public int getAvailableProcessors() {
-                return os.getAvailableProcessors();
-            }
-
-            @Override public double getCurrentCpuLoad() {
-                return cpuLoad;
-            }
-
-            @Override public double getCurrentGcCpuLoad() {
-                return gcCpuLoad;
-            }
-
-            @Override public long getHeapMemoryInitialized() {
-                return getHeapMemoryUsage().getInit();
-            }
-
-            @Override public long getHeapMemoryUsed() {
-                return getHeapMemoryUsage().getUsed();
-            }
-
-            @Override public long getHeapMemoryCommitted() {
-                return getHeapMemoryUsage().getCommitted();
-            }
-
-            @Override public long getHeapMemoryMaximum() {
-                return getHeapMemoryUsage().getMax();
-            }
-
-            @Override public long getNonHeapMemoryInitialized() {
-                return nonHeapMemoryUsage().getInit();
-            }
-
-            @Override public long getNonHeapMemoryUsed() {
-                return nonHeapMemoryUsage().getUsed();
-            }
-
-            @Override public long getNonHeapMemoryCommitted() {
-                return nonHeapMemoryUsage().getCommitted();
-            }
-
-            @Override public long getNonHeapMemoryMaximum() {
-                return nonHeapMemoryUsage().getMax();
-            }
-
-            @Override public long getUptime() {
-                return rt.getUptime();
-            }
-
-            @Override public long getStartTime() {
-                return rt.getStartTime();
-            }
-
-            @Override public int getThreadCount() {
-                return threads.getThreadCount();
-            }
-
-            @Override public int getPeakThreadCount() {
-                return threads.getPeakThreadCount();
-            }
-
-            @Override public long getTotalStartedThreadCount() {
-                return threads.getTotalStartedThreadCount();
-            }
-
-            @Override public int getDaemonThreadCount() {
-                return threads.getDaemonThreadCount();
-            }
-        };
-    }
-
-    /**
      * @return Metrics provider.
      */
     public DiscoveryMetricsProvider createMetricsProvider() {
@@ -1184,7 +1021,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             /** {@inheritDoc} */
             @Override public ClusterMetrics metrics() {
-                return new ClusterMetricsImpl(ctx, metrics, startTime);
+                return new ClusterMetricsImpl(ctx, startTime);
             }
 
             /** {@inheritDoc} */
@@ -1218,13 +1055,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 return Collections.emptyMap();
             }
         };
-    }
-
-    /**
-     * @return Local metrics.
-     */
-    public GridLocalMetrics metrics() {
-        return metrics;
     }
 
     /** @return {@code True} if ordering is supported. */
@@ -1727,9 +1557,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         // Stop receiving notifications.
         getSpi().setListener(null);
-
-        // Stop discovery worker and metrics updater.
-        U.closeQuiet(metricsUpdateTask);
 
         U.cancel(discoWrk);
 
@@ -3176,86 +3003,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DiscoveryWorker.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private class MetricsUpdater implements Runnable {
-        /** */
-        private long prevGcTime = -1;
-
-        /** */
-        private long prevCpuTime = -1;
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            gcCpuLoad = getGcCpuLoad();
-            cpuLoad = getCpuLoad();
-        }
-
-        /**
-         * @return GC CPU load.
-         */
-        private double getGcCpuLoad() {
-            long gcTime = 0;
-
-            for (GarbageCollectorMXBean bean : gc) {
-                long colTime = bean.getCollectionTime();
-
-                if (colTime > 0)
-                    gcTime += colTime;
-            }
-
-            gcTime /= metrics.getAvailableProcessors();
-
-            double gc = 0;
-
-            if (prevGcTime > 0) {
-                long gcTimeDiff = gcTime - prevGcTime;
-
-                gc = (double)gcTimeDiff / METRICS_UPDATE_FREQ;
-            }
-
-            prevGcTime = gcTime;
-
-            return gc;
-        }
-
-        /**
-         * @return CPU load.
-         */
-        private double getCpuLoad() {
-            long cpuTime;
-
-            try {
-                cpuTime = U.<Long>property(os, "processCpuTime");
-            }
-            catch (IgniteException ignored) {
-                return -1;
-            }
-
-            // Method reports time in nanoseconds across all processors.
-            cpuTime /= 1000000 * metrics.getAvailableProcessors();
-
-            double cpu = 0;
-
-            if (prevCpuTime > 0) {
-                long cpuTimeDiff = cpuTime - prevCpuTime;
-
-                // CPU load could go higher than 100% because calculating of cpuTimeDiff also takes some time.
-                cpu = Math.min(1.0, (double)cpuTimeDiff / METRICS_UPDATE_FREQ);
-            }
-
-            prevCpuTime = cpuTime;
-
-            return cpu;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(MetricsUpdater.class, this, super.toString());
         }
     }
 
