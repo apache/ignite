@@ -34,6 +34,7 @@
 
     <module name="TreeWalker">
         <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
+        <module name="RedundantImport"/>
         <module name="UnusedImports"/>
 
         <!--Modifiers Checks. See: http://checkstyle.sourceforge.net/config_modifier.html-->
