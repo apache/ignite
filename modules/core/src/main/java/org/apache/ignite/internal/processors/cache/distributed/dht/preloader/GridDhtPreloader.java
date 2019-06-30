@@ -258,6 +258,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == RENTING) {
                     if (part.reserve()) {
                         part.moving();
+
                         part.clearAsync();
 
                         part.release();
@@ -269,6 +270,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     part.awaitDestroy();
 
                     part = top.localPartition(p, topVer, true);
+
+                    assert part != null : "Partition was not created [grp=" + grp.name() + ", topVer=" + topVer + ", p=" + p + ']';
                 }
 
                 assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
@@ -282,7 +285,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                if (histSupplier != null) {
+                if (histSupplier != null && exchFut.isHistoryPartition(grp, p)) {
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
@@ -296,6 +299,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
+                    // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11790
                     msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partitions);
                 }
                 else {

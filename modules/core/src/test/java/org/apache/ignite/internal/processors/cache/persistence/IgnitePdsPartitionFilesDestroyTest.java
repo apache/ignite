@@ -279,6 +279,10 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        // Need to explicitly wait for checkpoint completion or no guarantee what filled on recovery destroyQueue is
+        // actually cleared.
+        forceCheckpoint(problemNode);
+
         // After recovery all evicted partition files should be deleted from disk.
         checkPartitionFiles(problemNode, false);
 
@@ -341,6 +345,10 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         problemNode = startGrid(1);
 
         awaitPartitionMapExchange();
+
+        // Need to explicitly wait for checkpoint completion or no guarantee what filled on recovery destroyQueue is
+        // actually cleared.
+        forceCheckpoint(problemNode);
 
         // After recovery all evicted partition files should be deleted from disk.
         checkPartitionFiles(problemNode, false);

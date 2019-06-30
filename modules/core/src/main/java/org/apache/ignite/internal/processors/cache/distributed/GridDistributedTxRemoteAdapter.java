@@ -49,6 +49,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -766,6 +768,18 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         // Apply update counters.
                         if (txCntrs != null)
                             cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
+                        else if (!near()){
+                            // Apply counters from
+                            for (IgniteTxEntry entry : writeMap.values()) {
+                                GridCacheContext ctx0 = cctx.cacheContext(entry.cacheId());
+
+                                GridDhtPartitionTopology top = ctx0.topology();
+
+                                GridDhtLocalPartition locPart = top.localPartition(entry.cached().partition());
+
+                                locPart.updateCounter(entry.updateCounter() - 1, 1);
+                            }
+                        }
 
                         cctx.mvccCaching().onTxFinished(this, true);
 
@@ -937,12 +951,11 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                 TxCounters counters = txCounters(false);
 
                 if (counters != null)
-                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters());
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters(), true, false);
 
                 state(ROLLED_BACK);
 
                 cctx.mvccCaching().onTxFinished(this, false);
-
             }
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {

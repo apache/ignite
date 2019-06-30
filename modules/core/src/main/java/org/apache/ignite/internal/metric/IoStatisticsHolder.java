@@ -20,7 +20,6 @@ package org.apache.ignite.internal.metric;
  * Holder of IO statistics.
  */
 public interface IoStatisticsHolder {
-
     /**
      * Track logical read of given page.
      *

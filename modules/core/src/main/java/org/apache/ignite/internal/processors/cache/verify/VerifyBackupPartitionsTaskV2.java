@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -503,7 +504,12 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
 
             CacheConfiguration cc = desc.cacheConfiguration();
 
-            switch (arg.cacheFilterEnum()) {
+            CacheFilterEnum cacheFilter = arg.cacheFilterEnum();
+
+            if (cacheFilter == null)
+                cacheFilter = CacheFilterEnum.DEFAULT;
+
+            switch (cacheFilter) {
                 case DEFAULT:
                     return desc.cacheType().userCache() || !F.isEmpty(arg.caches());
 

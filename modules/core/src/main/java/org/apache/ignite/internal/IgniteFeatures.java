@@ -58,7 +58,10 @@ public enum IgniteFeatures {
     FIND_AND_DELETE_GARBAGE_COMMAND(8),
 
     /** Distributed metastorage. */
-    DISTRIBUTED_METASTORAGE(11);
+    DISTRIBUTED_METASTORAGE(11),
+
+    /** Supports tracking update counter for transactions. */
+    TX_TRACKING_UPDATE_COUNTER(12);
 
     /**
      * Unique feature identifier.

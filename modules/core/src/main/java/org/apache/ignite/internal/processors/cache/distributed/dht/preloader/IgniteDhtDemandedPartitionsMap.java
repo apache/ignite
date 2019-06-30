@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +35,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     private CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that will be preloaded from all it's current data. */
+    @GridToStringInclude
     private Set<Integer> full;
 
     public IgniteDhtDemandedPartitionsMap(
@@ -45,6 +47,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     }
 
     public IgniteDhtDemandedPartitionsMap() {
+        // No-op.
     }
 
     /**

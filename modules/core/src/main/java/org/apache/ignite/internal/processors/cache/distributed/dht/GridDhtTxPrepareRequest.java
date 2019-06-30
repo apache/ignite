@@ -139,7 +139,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param storeWriteThrough Cache store write through flag.
      * @param retVal Need return value flag
      * @param mvccSnapshot Mvcc snapshot.
-     * @param updCntrs Update counters for mvcc Tx.
+     * @param updCntrs Update counters. Null is possible due to compatibility issues.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -159,7 +159,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean storeWriteThrough,
         boolean retVal,
         MvccSnapshot mvccSnapshot,
-        Collection<PartitionUpdateCountersMessage> updCntrs) {
+        @Nullable Collection<PartitionUpdateCountersMessage> updCntrs) {
         super(tx,
             timeout,
             null,

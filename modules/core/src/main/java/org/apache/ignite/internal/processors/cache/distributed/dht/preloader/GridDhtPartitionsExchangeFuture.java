@@ -300,7 +300,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private volatile IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
-    /** */
+    /** Reserved max available history for calculation of history supplier on coordinator. */
     private volatile Map<Integer, Map<Integer, Long>> partHistReserved;
 
     /** */
@@ -356,6 +356,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** Discovery lag / Clocks discrepancy, calculated on coordinator when all single messages are received. */
     private T2<Long, UUID> discoveryLag;
+
+    /** Partitions scheduled for historical reblanace for this topology version. */
+    private Map<Integer, Set<Integer>> histPartitions;
 
     /**
      * @param cctx Cache context.
@@ -655,7 +658,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @return First event discovery event.
-     *
      */
     public DiscoveryEvent firstEvent() {
         return firstDiscoEvt;
@@ -1078,6 +1080,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             clientTop.fullUpdateCounters(),
                             Collections.emptySet(),
                             null,
+                            null,
                             null);
                     }
                     finally {
@@ -1463,6 +1466,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionEnd();
         }
 
+        histPartitions = new HashMap();
+
         timeBag.finishGlobalStage("WAL history reservation");
 
         // Skipping wait on local join is available when all cluster nodes have the same protocol.
@@ -1701,7 +1706,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.exchange().exchangerBlockingSectionBegin();
 
             try {
-                // This avoids unnessesary waiting for rollback.
+                // This avoids unnecessary waiting for rollback.
                 partReleaseFut.get(curTimeout > 0 && !txRolledBack ?
                         Math.min(curTimeout, waitTimeout) : waitTimeout, TimeUnit.MILLISECONDS);
 
@@ -1858,11 +1863,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void dumpPendingObjects(IgniteInternalFuture<?> partReleaseFut, boolean txTimeoutNotifyFlag) {
         U.warn(cctx.kernalContext().cluster().diagnosticLog(),
             "Failed to wait for partition release future [topVer=" + initialVersion() +
-            ", node=" + cctx.localNodeId() + "]");
+                ", node=" + cctx.localNodeId() + "]");
 
         if (txTimeoutNotifyFlag)
             U.warn(cctx.kernalContext().cluster().diagnosticLog(), "Consider changing TransactionConfiguration." +
-                    "txTimeoutOnPartitionMapExchange to non default value to avoid this message.");
+                "txTimeoutOnPartitionMapExchange to non default value to avoid this message.");
 
         U.warn(log, "Partition release future: " + partReleaseFut);
 
@@ -3170,10 +3175,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 continue;
 
             if (localReserved != null) {
-                Long localCntr = localReserved.get(p);
+                Long localHistCntr = localReserved.get(p);
 
-                if (localCntr != null && localCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                    partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localCntr);
+                if (localHistCntr != null && localHistCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                    partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localHistCntr);
 
                     haveHistory.add(p);
 
@@ -3216,7 +3221,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(
-            ownersByUpdCounters, haveHistory, joinedNodes, skipResetOwners);
+            ownersByUpdCounters, haveHistory, joinedNodes, skipResetOwners, this);
 
         for (Map.Entry<UUID, Set<Integer>> e : partitionsToRebalance.entrySet()) {
             UUID nodeId = e.getKey();
@@ -3228,7 +3233,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Detect lost partitions.
+     * Detect lost partitions in case of node left or failed. For topology coordinator is called when all {@link
+     * GridDhtPartitionsSingleMessage} were received. For other nodes is called when exchange future is completed by
+     * {@link GridDhtPartitionsFullMessage}.
      *
      * @param resTopVer Result topology version.
      */
@@ -3355,7 +3362,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             return;
         }
-        catch (IgniteCheckedException  e) {
+        catch (IgniteCheckedException e) {
             if (reconnectOnError(e))
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
@@ -3467,7 +3474,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 else
                     cctx.affinity().onServerJoinWithExchangeMergeProtocol(this, true);
 
-
                 doInParallel(
                     parallelismLvl,
                     cctx.kernalContext().getSystemExecutorService(),
@@ -3532,13 +3538,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
                     assignPartitionsStates();
             }
-            else {
-                if (exchCtx.events().hasServerJoin())
-                    assignPartitionsStates();
-
-                if (exchCtx.events().hasServerLeft())
-                    detectLostPartitions(resTopVer);
-            }
+            else if (exchCtx.events().hasServerJoin())
+                assignPartitionsStates();
 
             // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment) {
@@ -3564,6 +3565,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             GridDhtPartitionsFullMessage msg = createPartitionsMessage(true,
                 minVer.compareToIgnoreTimestamp(PARTIAL_COUNTERS_MAP_SINCE) >= 0);
+
+            // Lost partition detection should be done after full message is prepared otherwise in case of IGNORE policy
+            // lost partitions will be moved to OWNING state and after what send to other nodes resulting in
+            // wrong lost state calculation (another possibility to consider - calculate lost state only on coordinator).
+            if (firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT && exchCtx.events().hasServerLeft())
+                detectLostPartitions(resTopVer);
 
             if (exchCtx.mergeExchanges()) {
                 assert !centralizedAff;
@@ -3857,7 +3864,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         try {
-            U.<CacheGroupContext, Void>doInParallel(
+            U.<CacheGroupContext, Void>doInParallelUninterruptibly(
                 parallelismLvl,
                 cctx.kernalContext().getSystemExecutorService(),
                 nonLocalCacheGroups(),
@@ -3893,7 +3900,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         GridDhtPartitionsFullMessage fullMsg = finishState.msg.copy();
 
         Collection<Integer> affReq = msg.cacheGroupsAffinityRequest();
-
 
         if (affReq != null) {
             Map<Integer, CacheGroupAffinityMessage> cachesAff = U.newHashMap(affReq.size());
@@ -4301,7 +4307,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             cntrMap,
                             msg.partsToReload(cctx.localNodeId(), grpId),
                             partsSizes.getOrDefault(grpId, Collections.emptyMap()),
-                            null);
+                            null,
+                            this);
                     }
                     else {
                         GridDhtPartitionTopology top = cctx.exchange().clientTopology(grpId, events().discoveryCache());
@@ -4314,7 +4321,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             cntrMap,
                             Collections.emptySet(),
                             null,
-                            null);
+                            null,
+                            this);
                     }
 
                     return null;
@@ -5003,7 +5011,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 newCrdFut = this.newCrdFut;
             }
 
-            if(newCrdFut != null)
+            if (newCrdFut != null)
                 newCrdFut.addDiagnosticRequest(diagCtx);
 
             if (crd != null) {
@@ -5011,7 +5019,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     diagCtx.exchangeInfo(crd.id(), initialVersion(), "Exchange future waiting for coordinator " +
                         "response [crd=" + crd.id() + ", topVer=" + initialVersion() + ']');
                 }
-                else if (!remaining.isEmpty()){
+                else if (!remaining.isEmpty()) {
                     UUID nodeId = remaining.iterator().next();
 
                     diagCtx.exchangeInfo(nodeId, initialVersion(), "Exchange future on coordinator waiting for " +
@@ -5103,6 +5111,42 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return limit;
 
         return nextTimeout <= limit ? nextTimeout : limit;
+    }
+
+    /**
+     * Checks if a partition switched to moving state due to outdated counter (for historical rebalance).
+     *
+     * @param grp Group.
+     * @param part Partition.
+     * @return {@code True} if partition is historical.
+     */
+    public boolean isHistoryPartition(CacheGroupContext grp, int part) {
+        if (!grp.persistenceEnabled())
+            return false;
+
+        synchronized (mux) {
+            if (histPartitions == null)
+                return false;
+
+            Set<Integer> parts = histPartitions.get(grp.groupId());
+
+            return parts != null && parts.contains(part);
+        }
+    }
+
+    /**
+     * Marks a partition for historical rebalance.
+     *
+     * @param grp Group.
+     * @param part Partition.
+     */
+    public void addHistoryPartition(CacheGroupContext grp, int part) {
+        if (!grp.persistenceEnabled())
+            return;
+
+        synchronized (mux) {
+            histPartitions.computeIfAbsent(grp.groupId(), k -> new HashSet()).add(part);
+        }
     }
 
     /**

@@ -39,7 +39,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -362,48 +361,30 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
         // Assumption: When the call returns, the listener is guaranteed to have been registered.
         cache.registerCacheEntryListener(cfg);
 
-        // Now must check the cache again, to make sure that we didn't miss the key insert while we
-        // were busy setting up the cache listener.
-        // Check asynchronously.
-        // Complete the promise if the key was inserted concurrently.
-        if (!((IgniteCacheProxy)cache).context().mvccEnabled()) {
-            cache.getAsync(key).listen(new IgniteInClosure<IgniteFuture<String>>() {
-                @Override public void apply(IgniteFuture<String> f) {
-                    String val = f.get();
+        // Some notifications might be missed when listener is registered between tx prepare and commit.
+        // TODO https://issues.apache.org/jira/browse/IGNITE-11797
+        // For MVCC caches we need to wait until updated value becomes visible for consequent readers.
+        // When MVCC transaction completes, it's updates are not visible immediately for the new transactions.
+        // This is caused by the lag between transaction completes on the node and mvcc coordinator
+        // removes this transaction from the active list.
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                String v;
 
-                    if (val != null) {
-                        log.info("Completed by get: " + id);
+                while (!Thread.currentThread().isInterrupted()) {
+                    v = cache.get(key);
 
-                        (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by async get");
-                    }
-                }
-            });
-        }
-        else {
-            // For MVCC caches we need to wait until updated value becomes visible for consequent readers.
-            // When MVCC transaction completes, it's updates are not visible immediately for the new transactions.
-            // This is caused by the lag between transaction completes on the node and mvcc coordinator
-            // removes this transaction from the active list.
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    String v;
-
-                    while (!Thread.currentThread().isInterrupted()) {
-                        v = cache.get(key);
-
-                        if (v == null)
-                            doSleep(100);
-                        else {
-                            log.info("Completed by async mvcc get: " + id);
-
+                    if (v == null)
+                        doSleep(100);
+                    else {
+                        if (!promise.isDone())
                             (((GridFutureAdapter)((IgniteFutureImpl)promise).internalFuture())).onDone("by get");
 
-                            break;
-                        }
+                        break;
                     }
                 }
-            });
-        }
+            }
+        });
 
         return promise;
     }

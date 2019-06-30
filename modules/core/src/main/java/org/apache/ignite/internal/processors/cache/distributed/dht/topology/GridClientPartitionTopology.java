@@ -728,7 +728,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         @Nullable CachePartitionFullCountersMap cntrMap,
         Set<Integer> partsToReload,
         @Nullable Map<Integer, Long> partSizes,
-        @Nullable AffinityTopologyVersion msgTopVer) {
+        @Nullable AffinityTopologyVersion msgTopVer,
+        @Nullable GridDhtPartitionsExchangeFuture exchFut) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + ']');
 
@@ -1165,7 +1166,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         Map<Integer, Set<UUID>> ownersByUpdCounters,
         Set<Integer> haveHistory,
         Set<UUID> joinedNodes,
-        boolean skipResetOwners
+        boolean skipResetOwners,
+        GridDhtPartitionsExchangeFuture exchFut
     ) {
         Map<UUID, Set<Integer>> result = new HashMap<>();
 

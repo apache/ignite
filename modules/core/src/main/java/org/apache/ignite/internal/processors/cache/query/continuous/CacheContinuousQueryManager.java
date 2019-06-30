@@ -247,6 +247,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param part Partition number.
      * @param cntr Update counter.
      * @param topVer Topology version.
+     * @param primary {@code True} if called on primary node.
      * @return Context.
      */
     @Nullable public CounterSkipContext skipUpdateCounter(@Nullable CounterSkipContext skipCtx,
