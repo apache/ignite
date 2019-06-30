@@ -72,32 +72,32 @@
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Apache.Ignite.1.8.0\lib\net40\Apache.Ignite.Core.dll</HintPath>
+      <HintPath>packages\GridGain.Ignite.9.0.0\lib\net40\Apache.Ignite.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Apache.Ignite.Linq">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Apache.Ignite.Linq.1.8.0\lib\net40\Apache.Ignite.Linq.dll</HintPath>
+      <HintPath>packages\GridGain.Ignite.Linq.9.0.0\lib\net40\Apache.Ignite.Linq.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Apache.Ignite.AspNet">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Apache.Ignite.AspNet.1.8.0\lib\net40\Apache.Ignite.AspNet.dll</HintPath>
+      <HintPath>packages\GridGain.Ignite.AspNet.9.0.0\lib\net40\Apache.Ignite.AspNet.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Apache.Ignite.NLog">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Apache.Ignite.NLog.1.8.0\lib\net40\Apache.Ignite.NLog.dll</HintPath>
+      <HintPath>packages\GridGain.Ignite.NLog.9.0.0\lib\net40\Apache.Ignite.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Apache.Ignite.Log4Net">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Apache.Ignite.Log4Net.1.8.0\lib\net40\Apache.Ignite.Log4Net.dll</HintPath>
+      <HintPath>packages\GridGain.Ignite.Log4Net.9.0.0\lib\net40\Apache.Ignite.Log4Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Apache.Ignite.EntityFramework">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>packages\Apache.Ignite.EntityFramework.1.8.0\lib\net40\Apache.Ignite.EntityFramework.dll</HintPath>
+      <HintPath>packages\GridGain.Ignite.EntityFramework.9.0.0\lib\net40\Apache.Ignite.EntityFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
@@ -164,7 +164,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if not exist "$(TargetDir)libs" md "$(TargetDir)libs"
-xcopy /s /y "$(SolutionDir)packages\Apache.Ignite.1.8.0\libs\*.*" "$(TargetDir)libs"</PostBuildEvent>
+xcopy /s /y "$(SolutionDir)packages\GridGain.Ignite.9.0.0\libs\*.*" "$(TargetDir)libs"</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>

@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
         {
             var asm = GetType().Assembly;
             var version = asm.GetName().Version.ToString(3);
-            var packageDirName = "Apache.Ignite." + version + "*";
+            var packageDirName = "GridGain.Ignite." + version + "*";
             
             var asmDir = Path.GetDirectoryName(asm.Location);
             Assert.IsNotNull(asmDir, asmDir);
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
             var packagesDir = Path.GetFullPath(Path.Combine(asmDir, @"..\..\packages"));
             Assert.IsTrue(Directory.Exists(packagesDir), packagesDir);
 
-            var packageDir = Directory.GetDirectories(packagesDir, packageDirName).Single();
+            var packageDir = Directory.GetDirectories(packagesDir, packageDirName).SingleOrDefault();
             Assert.IsTrue(Directory.Exists(packageDir), packageDir);
 
             var exePath = Path.Combine(packageDir, @"lib\net40\Apache.Ignite.exe");
