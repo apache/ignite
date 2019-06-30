@@ -4,11 +4,11 @@ rmdir packages -Force -Recurse
 
 # Replace versions in project files
 (Get-Content packages.config) `
-    -replace 'id="Apache.Ignite(.*?)" version=".*?"', ('id="Apache.Ignite$1" version="' + $ver + '"') `
+    -replace 'id="GridGain.Ignite(.*?)" version=".*?"', ('id="GridGain.Ignite$1" version="' + $ver + '"') `
     | Out-File packages.config -Encoding utf8
 
 (Get-Content Apache.Ignite.Core.Tests.NuGet.csproj) `
-    -replace 'packages\\Apache.Ignite(.*?)\.\d.*?\\', ('packages\Apache.Ignite$1.' + "$ver\") `
+    -replace 'packages\\GridGain.Ignite(.*?)\.\d.*?\\', ('packages\GridGain.Ignite$1.' + "$ver\") `
     | Out-File Apache.Ignite.Core.Tests.NuGet.csproj  -Encoding utf8
 	
 # Detect NuGet
