@@ -82,7 +82,10 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                 EntryGetResult old = map.get(key);
 
                 if (old != null && old.version().compareTo(candidate.version()) != 0) {
-                    onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
+                    if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT)
+                        onDone(new IgniteConsistencyViolationException("Distributed cache consistency violation detected."));
+                    else
+                        map(ctx.affinity().affinityTopologyVersion()); // Rechecking possible "false positive" case.
 
                     return;
                 }
