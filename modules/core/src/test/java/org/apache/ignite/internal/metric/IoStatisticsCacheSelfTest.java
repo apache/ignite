@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,9 +31,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -254,10 +256,12 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     public Set<String> deriveStatisticNames(IoStatisticsType statType) {
         assert statType != null;
 
-        MetricRegistry msets =
-            ignite.context().metric().registry().withPrefix(statType.metricGroupName());
+        MetricRegistry registry = ignite.context().metric().registry();
 
-        return msets.getMetrics().stream()
+        Stream<MetricGroup> grpsStream = StreamSupport.stream(registry.spliterator(), false)
+                .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
+
+        return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))
             .filter(m -> m.name().endsWith("name"))
             .map(Metric::getAsString)
             .collect(Collectors.toSet());
@@ -299,13 +303,13 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * @return Logical reads count.
      */
     public static long logicalReads(MetricRegistry mreg, IoStatisticsType type, String id) {
-        MetricRegistry mset = mreg.withPrefix(type.metricGroupName(), id);
+        MetricGroup mgrp = mreg.group(metricName(type.metricGroupName(), id));
 
         if (type == CACHE_GROUP)
-            return ((LongMetric)mset.findMetric(LOGICAL_READS)).value();
+            return ((LongMetric)mgrp.findMetric(LOGICAL_READS)).value();
         else {
-            long leaf = ((LongMetric)mset.findMetric(LOGICAL_READS_LEAF)).value();
-            long inner = ((LongMetric)mset.findMetric(LOGICAL_READS_INNER)).value();
+            long leaf = ((LongMetric)mgrp.findMetric(LOGICAL_READS_LEAF)).value();
+            long inner = ((LongMetric)mgrp.findMetric(LOGICAL_READS_INNER)).value();
 
             return leaf + inner;
         }

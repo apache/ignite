@@ -101,17 +101,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         /** {@inheritDoc} */
         @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-            SqlSystemViewColumnCondition nameCond = conditionForColumn("NAME", first, last);
-
-            Collection<Metric> metrics;
-
-            if (nameCond.isEquality()) {
-                Metric metric = mreg.findMetric(nameCond.valueForEquality().getString());
-
-                metrics = metric == null ? Collections.emptySet() : Collections.singleton(metric);
-            }
-            else
-                metrics = mreg.getMetrics();
+            Collection<Metric> metrics = mreg.getMetrics();
 
             return F.iterator(metrics,
                 m -> createRow(ses,

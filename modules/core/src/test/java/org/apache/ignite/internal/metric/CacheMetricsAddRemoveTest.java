@@ -22,6 +22,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -108,14 +109,16 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         for (int i=0; i<2; i++) {
             MetricRegistry mreg = metricRegistry(i);
 
-            assertNotNull(mreg.findMetric(metricName(cachePrefix, CACHE_GETS)));
-            assertNotNull(mreg.findMetric(metricName(cachePrefix, CACHE_PUTS)));
+            MetricGroup mgrp = mreg.group(cachePrefix);
+
+            assertNotNull(mgrp.findMetric(CACHE_GETS));
+            assertNotNull(mgrp.findMetric(CACHE_PUTS));
 
             if (nearEnabled) {
-                String nearCachePreifx = metricName("cache", DEFAULT_CACHE_NAME, "near");
+                mgrp = mreg.group(metricName("cache", DEFAULT_CACHE_NAME, "near"));
 
-                assertNotNull(mreg.findMetric(metricName(nearCachePreifx, CACHE_GETS)));
-                assertNotNull(mreg.findMetric(metricName(nearCachePreifx, CACHE_PUTS)));
+                assertNotNull(mgrp.findMetric(CACHE_GETS));
+                assertNotNull(mgrp.findMetric(CACHE_PUTS));
             }
         }
     }
@@ -125,14 +128,16 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         for (int i=0; i<3; i++) {
             MetricRegistry mreg = metricRegistry(i);
 
-            assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_GETS)));
-            assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_PUTS)));
+            MetricGroup mgrp = mreg.group(cachePrefix);
+
+            assertNull(mgrp.findMetric(metricName(cachePrefix, CACHE_GETS)));
+            assertNull(mgrp.findMetric(metricName(cachePrefix, CACHE_PUTS)));
 
             if (nearEnabled) {
-                String nearCachePreifx = metricName("cache", DEFAULT_CACHE_NAME, "near");
+                mgrp = mreg.group(metricName("cache", DEFAULT_CACHE_NAME, "near"));
 
-                assertNull(mreg.findMetric(metricName(nearCachePreifx, CACHE_GETS)));
-                assertNull(mreg.findMetric(metricName(nearCachePreifx, CACHE_PUTS)));
+                assertNull(mgrp.findMetric(CACHE_GETS));
+                assertNull(mgrp.findMetric(CACHE_PUTS));
             }
         }
     }

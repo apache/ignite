@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.benchmarks.jol;
 
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
@@ -111,24 +112,24 @@ public class GridMetricsJolBenchmark {
      * Calculates and prints the size of metric registry of {@code TOTAL} size;
      */
     private static void measureMetricRegistry() {
-        MetricRegistryImpl mreg = new MetricRegistryImpl();
+        MetricGroup mgrp = new MetricRegistry().group("test");
 
         for(int i=0; i<BOOLEAN_CNT; i++)
-            mreg.booleanMetric(BOOLEAN_METRIC + i, null);
+            mgrp.booleanMetric(BOOLEAN_METRIC + i, null);
 
         for(int i=0; i<DOUBLE_CNT; i++)
-            mreg.doubleMetric(DOUBLE_METRIC + i, null);
+            mgrp.doubleMetric(DOUBLE_METRIC + i, null);
 
         for(int i=0; i<INT_CNT; i++)
-            mreg.doubleMetric(INT_METRIC + i, null);
+            mgrp.doubleMetric(INT_METRIC + i, null);
 
         for(int i=0; i<LONG_CNT; i++)
-            mreg.metric(LONG_METRIC + i, null);
+            mgrp.metric(LONG_METRIC + i, null);
 
         for(int i=0; i<LONG_ADDER_CNT; i++)
-            mreg.metric(LONG_ADDER_METRIC + i, null);
+            mgrp.metric(LONG_ADDER_METRIC + i, null);
 
-        long sz = GraphLayout.parseInstance(mreg).totalSize();
+        long sz = GraphLayout.parseInstance(mgrp).totalSize();
 
         System.out.println("Total size of " + TOTAL + " metric registry is " + (sz/1024) + "KiB, " + sz + " bytes.");
     }

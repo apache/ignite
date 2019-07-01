@@ -19,10 +19,13 @@
 package org.apache.ignite.internal.metric;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Index statistics holder to gather statistics related to concrete index.
@@ -77,16 +80,16 @@ public class IoStatisticsHolderIndex implements IoStatisticsHolder {
         this.cacheName = cacheName;
         this.idxName = idxName;
 
-        MetricRegistry mset = mreg.withPrefix(type.metricGroupName(), cacheName, idxName);
+        MetricGroup mgrp = mreg.group(metricName(type.metricGroupName(), cacheName, idxName));
 
-        mset.metric("startTime", null).value(U.currentTimeMillis());
-        mset.objectMetric("name", String.class, null).value(cacheName);
-        mset.objectMetric("indexName", String.class, null).value(idxName);
+        mgrp.metric("startTime", null).value(U.currentTimeMillis());
+        mgrp.objectMetric("name", String.class, null).value(cacheName);
+        mgrp.objectMetric("indexName", String.class, null).value(idxName);
 
-        logicalReadLeafCtr = mset.longAdderMetric(LOGICAL_READS_LEAF, null);
-        logicalReadInnerCtr = mset.longAdderMetric(LOGICAL_READS_INNER, null);
-        physicalReadLeafCtr = mset.longAdderMetric(PHYSICAL_READS_LEAF, null);
-        physicalReadInnerCtr = mset.longAdderMetric(PHYSICAL_READS_INNER, null);
+        logicalReadLeafCtr = mgrp.longAdderMetric(LOGICAL_READS_LEAF, null);
+        logicalReadInnerCtr = mgrp.longAdderMetric(LOGICAL_READS_INNER, null);
+        physicalReadLeafCtr = mgrp.longAdderMetric(PHYSICAL_READS_LEAF, null);
+        physicalReadInnerCtr = mgrp.longAdderMetric(PHYSICAL_READS_INNER, null);
     }
 
     /** {@inheritDoc} */

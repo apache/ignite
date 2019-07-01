@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.metric.impl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS_PREFIX;
+
 /**
  * Utility class to build or parse metric name in dot notation.
  *
@@ -31,25 +33,23 @@ public class MetricUtils {
     public static final String SEPARATOR = ".";
 
     /**
-     * Example - metric name - "io.statistics.PRIMARY_KEY_IDX.pagesCount".
+     * Example - metric group name - "io.statistics.PRIMARY_KEY_IDX".
      * root = io - JMX tree root.
      * subName = statistics.PRIMARY_KEY_IDX - bean name.
-     * msetName = io.statistics.PRIMARY_KEY_IDX - prefix to search metrics for a bean.
-     * mname = pagesCount - metric name.
      *
-     * @param name Metric name.
+     * @param grpName Group metric name.
      * @return Parsed names parts.
      */
-    public static MetricName parse(String name) {
-        int firstDot = name.indexOf('.');
-        int lastDot = name.lastIndexOf('.');
+    public static MetricName parse(String grpName) {
+        int firstDot = grpName.indexOf('.');
 
-        String grp = name.substring(0, firstDot);
-        String beanName = name.substring(firstDot + 1, lastDot);
-        String msetName = name.substring(0, lastDot);
-        String mname = name.substring(lastDot + 1);
+        if (firstDot == -1)
+            return new MetricName(null, grpName);
 
-        return new MetricName(grp, beanName, msetName, mname);
+        String grp = grpName.substring(0, firstDot);
+        String beanName = grpName.substring(firstDot + 1);
+
+        return new MetricName(grp, beanName);
     }
 
     /**
@@ -66,7 +66,18 @@ public class MetricUtils {
             return names[0];
 
         return String.join(SEPARATOR, names);
+    }
 
+    /**
+     * @param cacheName Cache name.
+     * @param isNear Is near flag.
+     * @return Cache metrics group name.
+     */
+    public static String cacheMetricsGroupName(String cacheName, boolean isNear) {
+        if (isNear)
+            return metricName(CACHE_METRICS_PREFIX, cacheName, "near");
+
+        return metricName(CACHE_METRICS_PREFIX, cacheName);
     }
 
     /**
@@ -90,20 +101,18 @@ public class MetricUtils {
      * @return True.
      */
     private static boolean ensureAllNamesNotEmpty(String... names) {
-        for (int i=0; i<names.length; i++)
+        for (int i = 0; i < names.length; i++)
             assert names[i] != null && !names[i].isEmpty() : i + " element is empty [" + String.join(".", names) + "]";
 
         return true;
     }
 
     /**
-     * Parsed metric name parts.
+     * Parsed metric group name parts.
      *
-     * Example - metric name - "io.statistics.PRIMARY_KEY_IDX.pagesCount".
+     * Example - metric group name - "io.statistics.PRIMARY_KEY_IDX".
      * root = io - JMX tree root.
      * subName = statistics.PRIMARY_KEY_IDX - bean name.
-     * msetName = io.statistics.PRIMARY_KEY_IDX - prefix to search metrics for a bean.
-     * mname = pagesCount - metric name.
      */
     public static class MetricName {
         /** JMX group name. */
@@ -112,18 +121,10 @@ public class MetricUtils {
         /** JMX bean name. */
         private String subName;
 
-        /** Prefix to search metrics that belongs to metric set. */
-        private String msetName;
-
-        /** Metric name. */
-        private String mname;
-
         /** */
-        MetricName(String root, String subName, String msetName, String mname) {
+        MetricName(String root, String subName) {
             this.root = root;
             this.subName = subName;
-            this.msetName = msetName;
-            this.mname = mname;
         }
 
         /**
@@ -138,20 +139,6 @@ public class MetricUtils {
          */
         public String subName() {
             return subName;
-        }
-
-        /**
-         * @return Prefix to search other metrics for metric set represented by this prefix.
-         */
-        public String msetName() {
-            return msetName;
-        }
-
-        /**
-         * @return Metric name.
-         */
-        public String mname() {
-            return mname;
         }
     }
 }

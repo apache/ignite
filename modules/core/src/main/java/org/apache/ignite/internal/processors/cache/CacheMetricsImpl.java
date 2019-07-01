@@ -27,16 +27,15 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
-import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsGroupName;
 
 /**
  * Adapter for cache metrics.
@@ -54,7 +53,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
     /**
-     * Cache metrics prefix.
+     * Cache metrics grpName.
      * Full name will contain {@link CacheConfiguration#getName()} also.
      * {@code "cache.sys-cache"}, for example.
      */
@@ -175,8 +174,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Write-behind store, if configured. */
     private GridCacheWriteBehindStore store;
 
-    /** Prefix for the cache metrics. */
-    private String prefix;
+    /** Group name for the cache metrics. */
+    private String grpName;
 
     /**
      * Creates cache metrics.
@@ -184,16 +183,16 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param cctx Cache context.
      */
     public CacheMetricsImpl(GridCacheContext<?, ?> cctx) {
-        this(cctx, null);
+        this(cctx, false);
     }
 
     /**
      * Creates cache metrics.
      *
      * @param cctx Cache context.
-     * @param suffix Suffix for the metric set name.
+     * @param isNear Is near flag.
      */
-    public CacheMetricsImpl(GridCacheContext<?, ?> cctx, @Nullable String suffix) {
+    public CacheMetricsImpl(GridCacheContext<?, ?> cctx, boolean isNear) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -206,118 +205,115 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        if (suffix == null)
-            prefix = metricName(CACHE_METRICS_PREFIX, cctx.name());
-        else
-            prefix = metricName(CACHE_METRICS_PREFIX, cctx.name(), suffix);
+        grpName = cacheMetricsGroupName(cctx.name(), isNear);
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry().withPrefix(prefix);
+        MetricGroup mgrp = cctx.kernalContext().metric().registry().group(grpName);
 
-        reads = mreg.metric("CacheGets",
+        reads = mgrp.metric("CacheGets",
             "The total number of gets to the cache.");
 
-        entryProcessorPuts = mreg.metric("EntryProcessorPuts",
+        entryProcessorPuts = mgrp.metric("EntryProcessorPuts",
             "The total number of cache invocations, caused update.");
 
-        entryProcessorRemovals = mreg.metric("EntryProcessorRemovals",
+        entryProcessorRemovals = mgrp.metric("EntryProcessorRemovals",
             "The total number of cache invocations, caused removals.");
 
-        entryProcessorReadOnlyInvocations = mreg.metric("EntryProcessorReadOnlyInvocations",
+        entryProcessorReadOnlyInvocations = mgrp.metric("EntryProcessorReadOnlyInvocations",
             "The total number of cache invocations, caused no updates.");
 
-        entryProcessorInvokeTimeNanos = mreg.metric("EntryProcessorInvokeTimeNanos",
+        entryProcessorInvokeTimeNanos = mgrp.metric("EntryProcessorInvokeTimeNanos",
             "The total time of cache invocations, in nanoseconds.");
 
-        entryProcessorMinInvocationTime = mreg.metric("EntryProcessorMinInvocationTime",
+        entryProcessorMinInvocationTime = mgrp.metric("EntryProcessorMinInvocationTime",
             "So far, the minimum time to execute cache invokes.");
 
-        entryProcessorMaxInvocationTime = mreg.metric("EntryProcessorMaxInvocationTime",
+        entryProcessorMaxInvocationTime = mgrp.metric("EntryProcessorMaxInvocationTime",
             "So far, the maximum time to execute cache invokes.");
 
-        entryProcessorHits = mreg.metric("EntryProcessorHits",
+        entryProcessorHits = mgrp.metric("EntryProcessorHits",
             "The total number of invocations on keys, which exist in cache.");
 
-        entryProcessorMisses = mreg.metric("EntryProcessorMisses",
+        entryProcessorMisses = mgrp.metric("EntryProcessorMisses",
             "The total number of invocations on keys, which don't exist in cache.");
 
-        writes = mreg.metric("CachePuts",
+        writes = mgrp.metric("CachePuts",
             "The total number of puts to the cache.");
 
-        hits = mreg.metric("CacheHits",
+        hits = mgrp.metric("CacheHits",
             "The number of get requests that were satisfied by the cache.");
 
-        misses = mreg.metric("CacheMisses",
+        misses = mgrp.metric("CacheMisses",
             "A miss is a get request that is not satisfied.");
 
-        txCommits = mreg.metric("CacheTxCommits",
+        txCommits = mgrp.metric("CacheTxCommits",
             "Total number of transaction commits.");
 
-        txRollbacks = mreg.metric("CacheTxRollbacks",
+        txRollbacks = mgrp.metric("CacheTxRollbacks",
             "Total number of transaction rollbacks.");
 
-        evictCnt = mreg.metric("CacheEvictions",
+        evictCnt = mgrp.metric("CacheEvictions",
             "The total number of evictions from the cache.");
 
-        rmCnt = mreg.metric("CacheRemovals", "The total number of removals from the cache.");
+        rmCnt = mgrp.metric("CacheRemovals", "The total number of removals from the cache.");
 
-        putTimeNanos = mreg.metric("PutTime",
+        putTimeNanos = mgrp.metric("PutTime",
             "The total time of cache puts, in nanoseconds.");
 
-        getTimeNanos = mreg.metric("GetTime",
+        getTimeNanos = mgrp.metric("GetTime",
             "The total time of cache gets, in nanoseconds.");
 
-        rmvTimeNanos = mreg.metric("RemovalTime",
+        rmvTimeNanos = mgrp.metric("RemovalTime",
             "The total time of cache removal, in nanoseconds.");
 
-        commitTimeNanos = mreg.metric("CommitTime",
+        commitTimeNanos = mgrp.metric("CommitTime",
             "The total time of commit, in nanoseconds.");
 
-        rollbackTimeNanos = mreg.metric("RollbackTime",
+        rollbackTimeNanos = mgrp.metric("RollbackTime",
             "The total time of rollback, in nanoseconds.");
 
-        offHeapGets = mreg.metric("OffHeapGets",
+        offHeapGets = mgrp.metric("OffHeapGets",
             "The total number of get requests to the off-heap memory.");
 
-        offHeapPuts = mreg.metric("OffHeapPuts",
+        offHeapPuts = mgrp.metric("OffHeapPuts",
             "The total number of put requests to the off-heap memory.");
 
-        offHeapRemoves = mreg.metric("OffHeapRemovals",
+        offHeapRemoves = mgrp.metric("OffHeapRemovals",
             "The total number of removals from the off-heap memory.");
 
-        offHeapEvicts = mreg.metric("OffHeapEvictions",
+        offHeapEvicts = mgrp.metric("OffHeapEvictions",
             "The total number of evictions from the off-heap memory.");
 
-        offHeapHits = mreg.metric("OffHeapHits",
+        offHeapHits = mgrp.metric("OffHeapHits",
             "The number of get requests that were satisfied by the off-heap memory.");
 
-        offHeapMisses = mreg.metric("OffHeapMisses",
+        offHeapMisses = mgrp.metric("OffHeapMisses",
             "A miss is a get request that is not satisfied by off-heap memory.");
 
-        rebalancedKeys = mreg.metric("RebalancedKeys",
+        rebalancedKeys = mgrp.metric("RebalancedKeys",
             "Number of already rebalanced keys.");
 
-        totalRebalancedBytes = mreg.metric("TotalRebalancedBytes",
+        totalRebalancedBytes = mgrp.metric("TotalRebalancedBytes",
             "Number of already rebalanced bytes.");
 
-        rebalanceStartTime = mreg.metric("RebalanceStartTime",
+        rebalanceStartTime = mgrp.metric("RebalanceStartTime",
             "Rebalance start time");
 
         rebalanceStartTime.value(-1);
 
-        estimatedRebalancingKeys = mreg.metric("EstimatedRebalancingKeys",
+        estimatedRebalancingKeys = mgrp.metric("EstimatedRebalancingKeys",
             "Number estimated to rebalance keys.");
 
-        rebalancingKeysRate = mreg.hitRateMetric("RebalancingKeysRate",
+        rebalancingKeysRate = mgrp.hitRateMetric("RebalancingKeysRate",
             "Estimated rebalancing speed in keys",
             REBALANCE_RATE_INTERVAL,
             20);
 
-        rebalancingBytesRate = mreg.hitRateMetric("RebalancingBytesRate",
+        rebalancingBytesRate = mgrp.hitRateMetric("RebalancingBytesRate",
             "Estimated rebalancing speed in bytes",
             REBALANCE_RATE_INTERVAL,
             20);
 
-        rebalanceClearingPartitions = mreg.metric("RebalanceClearingPartitionsLeft",
+        rebalanceClearingPartitions = mgrp.metric("RebalanceClearingPartitionsLeft",
             "Number of partitions need to be cleared before actual rebalance start.");
     }
 
@@ -1376,7 +1372,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** @return Prefix for the cache metrics. */
     public String metricsPrefix() {
-        return prefix;
+        return grpName;
     }
 
     /** {@inheritDoc} */

@@ -69,7 +69,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSnapshot;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -302,26 +302,26 @@ public class GridJobProcessor extends GridProcessorAdapter {
         jobExecLsnr = new JobExecutionListener();
         discoLsnr = new JobDiscoveryListener();
 
-        cpuLoadMetric = (DoubleMetric)ctx.metric().registry().findMetric(metricName(SYS_METRICS, CPU_LOAD));
+        cpuLoadMetric = (DoubleMetric)ctx.metric().registry().group(SYS_METRICS).findMetric(CPU_LOAD);
 
-        MetricRegistry mreg = ctx.metric().registry().withPrefix(JOBS);
+        MetricGroup mgrp = ctx.metric().registry().group(JOBS);
 
-        startedJobsMetric = mreg.metric(STARTED, "Number of started jobs.");
+        startedJobsMetric = mgrp.metric(STARTED, "Number of started jobs.");
 
-        activeJobsMetric = mreg.metric(ACTIVE, "Number of active jobs currently executing.");
+        activeJobsMetric = mgrp.metric(ACTIVE, "Number of active jobs currently executing.");
 
-        waitingJobsMetric = mreg.metric(WAITING, "Number of currently queued jobs waiting to be executed.");
+        waitingJobsMetric = mgrp.metric(WAITING, "Number of currently queued jobs waiting to be executed.");
 
-        canceledJobsMetric = mreg.metric(CANCELED, "Number of cancelled jobs that are still running.");
+        canceledJobsMetric = mgrp.metric(CANCELED, "Number of cancelled jobs that are still running.");
 
-        rejectedJobsMetric = mreg.metric(REJECTED,
+        rejectedJobsMetric = mgrp.metric(REJECTED,
             "Number of jobs rejected after more recent collision resolution operation.");
 
-        finishedJobsMetric = mreg.metric(FINISHED, "Number of finished jobs.");
+        finishedJobsMetric = mgrp.metric(FINISHED, "Number of finished jobs.");
 
-        totalExecutionTimeMetric = mreg.metric(EXECUTION_TIME, "Total execution time of jobs.");
+        totalExecutionTimeMetric = mgrp.metric(EXECUTION_TIME, "Total execution time of jobs.");
 
-        totalWaitTimeMetric = mreg.metric(WAITING_TIME, "Total time jobs spent on waiting queue.");
+        totalWaitTimeMetric = mgrp.metric(WAITING_TIME, "Total time jobs spent on waiting queue.");
     }
 
     /** {@inheritDoc} */

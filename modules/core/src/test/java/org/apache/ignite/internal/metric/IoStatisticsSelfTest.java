@@ -18,7 +18,7 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.util.Map;
+import com.google.common.collect.Iterators;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -26,8 +26,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -79,49 +80,35 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         MetricRegistry mreg = ign.context().metric().registry();
 
-        checkEmptyStat(mreg.withPrefix(CACHE_GROUP.metricGroupName()),
-            DEFAULT_CACHE_NAME,
-            null,
-            CACHE_GROUP);
+        checkEmptyStat(mreg.group(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME)), CACHE_GROUP);
 
-        checkEmptyStat(mreg.withPrefix(HASH_INDEX.metricGroupName()),
-            DEFAULT_CACHE_NAME,
-            HASH_PK_IDX_NAME,
+        checkEmptyStat(mreg.group(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME)),
             HASH_INDEX);
     }
 
     /**
-     * @param stat Statistics map.
-     * @param name Name of statistics.
-     * @param subName Subname of statistics.
+     * @param mgrp Metric Group.
      */
-    private void checkEmptyStat(MetricRegistry mset, String name, String subName, IoStatisticsType type) {
-        MetricRegistry cacheIoStatHolder;
-
-        if (subName == null)
-            cacheIoStatHolder = mset.withPrefix(name);
-        else
-            cacheIoStatHolder = mset.withPrefix(name, subName);
-
-        assertNotNull(cacheIoStatHolder);
+    private void checkEmptyStat(MetricGroup mgrp, IoStatisticsType type) {
+        assertNotNull(mgrp);
 
         if (type == CACHE_GROUP) {
-            assertEquals(5, mset.getMetrics().size());
+            assertEquals(5, Iterators.size(mgrp.iterator()));
 
-            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(LOGICAL_READS)).longValue());
+            assertEquals(0, ((LongMetric)mgrp.findMetric(LOGICAL_READS)).longValue());
 
-            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(PHYSICAL_READS)).longValue());
+            assertEquals(0, ((LongMetric)mgrp.findMetric(PHYSICAL_READS)).longValue());
         }
         else {
-            assertEquals(7, mset.getMetrics().size());
+            assertEquals(7, Iterators.size(mgrp.iterator()));
 
-            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(LOGICAL_READS_LEAF)).longValue());
+            assertEquals(0, ((LongMetric)mgrp.findMetric(LOGICAL_READS_LEAF)).longValue());
 
-            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(LOGICAL_READS_INNER)).longValue());
+            assertEquals(0, ((LongMetric)mgrp.findMetric(LOGICAL_READS_INNER)).longValue());
 
-            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(PHYSICAL_READS_LEAF)).longValue());
+            assertEquals(0, ((LongMetric)mgrp.findMetric(PHYSICAL_READS_LEAF)).longValue());
 
-            assertEquals(0, ((LongMetric)cacheIoStatHolder.findMetric(PHYSICAL_READS_INNER)).longValue());
+            assertEquals(0, ((LongMetric)mgrp.findMetric(PHYSICAL_READS_INNER)).longValue());
         }
     }
 
@@ -240,21 +227,19 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     public Long physicalReads(MetricRegistry mreg, IoStatisticsType statType, String name, String subName) {
         String fullName = subName == null ? name : metricName(name, subName);
 
-        MetricRegistry mset = mreg.withPrefix(statType.metricGroupName(), fullName);
+        MetricGroup mgrp = mreg.group(metricName(statType.metricGroupName(), fullName));
 
-        if (mset == null)
+        if (mgrp == null)
             return null;
-
-        Map<String, Long> res;
 
         switch (statType) {
             case CACHE_GROUP:
-                return ((LongMetric)mset.findMetric(PHYSICAL_READS)).value();
+                return ((LongMetric)mgrp.findMetric(PHYSICAL_READS)).value();
 
             case HASH_INDEX:
             case SORTED_INDEX:
-                long leaf = ((LongMetric)mset.findMetric(PHYSICAL_READS_LEAF)).value();
-                long inner = ((LongMetric)mset.findMetric(PHYSICAL_READS_INNER)).value();
+                long leaf = ((LongMetric)mgrp.findMetric(PHYSICAL_READS_LEAF)).value();
+                long inner = ((LongMetric)mgrp.findMetric(PHYSICAL_READS_INNER)).value();
 
                 return leaf + inner;
 

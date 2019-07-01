@@ -19,6 +19,7 @@ package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
@@ -55,9 +56,9 @@ public interface MetricExporterSpi extends IgniteSpi {
 
     /**
      * Sets export filter.
-     * Metrics that not satisfy {@code filter} shouldn't be exported by this filter.
+     * Metric group that not satisfy {@code filter} shouldn't be exported by this filter.
      *
      * @param filter Filter.
      */
-    public void setExportFilter(Predicate<Metric> filter);
+    public void setExportFilter(Predicate<MetricGroup> filter);
 }

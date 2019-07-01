@@ -155,7 +155,7 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -4498,12 +4498,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void resetMetrics(String prefix) {
-        assert prefix != null;
+    @Override public void resetMetrics(String groupName) {
+        assert groupName != null;
 
-        MetricRegistry mreg = ctx.metric().registry().withPrefix(prefix);
+        MetricGroup mgrp = ctx.metric().registry().group(groupName);
 
-        mreg.reset();
+        if (mgrp != null)
+            mgrp.reset();
+        else if (log.isInfoEnabled())
+            log.info("\"" + groupName + "\" not found.");
     }
 
     /** {@inheritDoc} */

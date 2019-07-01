@@ -497,12 +497,12 @@ public interface IgniteMXBean {
     void clearNodeLocalMap();
 
     /**
-     * Resets metrics for a given prefix.
+     * Resets metrics for of a given group.
      *
-     * @param prefix Prefix for a metrics.
+     * @param groupName Metric group name.
      */
-    @MXBeanDescription("Resets metrics for a given prefix.")
-    @MXBeanParametersNames("prefix")
-    @MXBeanParametersDescriptions("Metric prefix.")
-    public void resetMetrics(String prefix);
+    @MXBeanDescription("Resets metrics of a given group.")
+    @MXBeanParametersNames("groupName")
+    @MXBeanParametersDescriptions("Metric group.")
+    public void resetMetrics(String groupName);
 }

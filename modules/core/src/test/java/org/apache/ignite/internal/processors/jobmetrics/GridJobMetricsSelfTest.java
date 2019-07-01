@@ -31,6 +31,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
@@ -39,7 +40,6 @@ import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -76,16 +76,16 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             .setCollisionSpi(collisioinSpi);
 
         try (IgniteEx g = startGrid(cfg)) {
-            ReadOnlyMetricRegistry mreg = g.context().metric().registry().withPrefix(JOBS);
+            MetricGroup mgrp = g.context().metric().registry().group(JOBS);
 
-            LongMetric started = (LongMetric)mreg.findMetric(STARTED);
-            LongMetric active = (LongMetric)mreg.findMetric(ACTIVE);
-            LongMetric waiting = (LongMetric)mreg.findMetric(WAITING);
-            LongMetric canceled = (LongMetric)mreg.findMetric(CANCELED);
-            LongMetric rejected = (LongMetric)mreg.findMetric(REJECTED);
-            LongMetric finished = (LongMetric)mreg.findMetric(FINISHED);
-            LongMetric totalExecutionTime = (LongMetric)mreg.findMetric(EXECUTION_TIME);
-            LongMetric totalWaitingTime = (LongMetric)mreg.findMetric(WAITING_TIME);
+            LongMetric started = (LongMetric)mgrp.findMetric(STARTED);
+            LongMetric active = (LongMetric)mgrp.findMetric(ACTIVE);
+            LongMetric waiting = (LongMetric)mgrp.findMetric(WAITING);
+            LongMetric canceled = (LongMetric)mgrp.findMetric(CANCELED);
+            LongMetric rejected = (LongMetric)mgrp.findMetric(REJECTED);
+            LongMetric finished = (LongMetric)mgrp.findMetric(FINISHED);
+            LongMetric totalExecutionTime = (LongMetric)mgrp.findMetric(EXECUTION_TIME);
+            LongMetric totalWaitingTime = (LongMetric)mgrp.findMetric(WAITING_TIME);
 
             assertNotNull(started);
             assertNotNull(active);
@@ -164,16 +164,16 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
         latch = new CountDownLatch(1);
 
         try(IgniteEx g = startGrid(0)) {
-            ReadOnlyMetricRegistry mreg = g.context().metric().registry().withPrefix(JOBS);
+            MetricGroup mgrp = g.context().metric().registry().group(JOBS);
 
-            LongMetric started = (LongMetric)mreg.findMetric(STARTED);
-            LongMetric active = (LongMetric)mreg.findMetric(ACTIVE);
-            LongMetric waiting = (LongMetric)mreg.findMetric(WAITING);
-            LongMetric canceled = (LongMetric)mreg.findMetric(CANCELED);
-            LongMetric rejected = (LongMetric)mreg.findMetric(REJECTED);
-            LongMetric finished = (LongMetric)mreg.findMetric(FINISHED);
-            LongMetric totalExecutionTime = (LongMetric)mreg.findMetric(EXECUTION_TIME);
-            LongMetric totalWaitingTime = (LongMetric)mreg.findMetric(WAITING_TIME);
+            LongMetric started = (LongMetric)mgrp.findMetric(STARTED);
+            LongMetric active = (LongMetric)mgrp.findMetric(ACTIVE);
+            LongMetric waiting = (LongMetric)mgrp.findMetric(WAITING);
+            LongMetric canceled = (LongMetric)mgrp.findMetric(CANCELED);
+            LongMetric rejected = (LongMetric)mgrp.findMetric(REJECTED);
+            LongMetric finished = (LongMetric)mgrp.findMetric(FINISHED);
+            LongMetric totalExecutionTime = (LongMetric)mgrp.findMetric(EXECUTION_TIME);
+            LongMetric totalWaitingTime = (LongMetric)mgrp.findMetric(WAITING_TIME);
 
             assertNotNull(started);
             assertNotNull(active);

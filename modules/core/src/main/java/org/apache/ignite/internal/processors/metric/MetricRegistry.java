@@ -17,180 +17,89 @@
 
 package org.apache.ignite.internal.processors.metric;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.IntSupplier;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
-import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
-import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
-import org.apache.ignite.spi.metric.BooleanMetric;
-import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.spi.metric.Metric;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Metrics registry.
  * Provide methods to register required metrics, gauges for Ignite internals.
  * Provide the way to obtain all registered metrics for exporters.
  */
-public interface MetricRegistry extends ReadOnlyMetricRegistry {
-    /**
-     * Register existing metrics in this group with the specified name.
-     *
-     * @param metric Metric.
-     */
-    public void register(Metric metric);
+public class MetricRegistry implements ReadOnlyMetricRegistry {
+    /** Registered metrics. */
+    private final ConcurrentHashMap<String, MetricGroup> metrics = new ConcurrentHashMap<>();
 
-    /**
-     * Removes metrics with the {@code name} from registry.
-     *
-     * @param name Metric name.
-     */
-    public void remove(String name);
+    /** Metric group creation listeners. */
+    private final List<Consumer<MetricGroup>> metricGrpCreationLsnrs = new CopyOnWriteArrayList<>();
 
-    /**
-     * Resets state of this metric set.
-     */
-    public default void reset() {
-        getMetrics().forEach(Metric::reset);
+    /** Logger. */
+    private IgniteLogger log;
+
+    /** For test usages only. */
+    public MetricRegistry() {
+        this(null);
+    }
+
+    /** @param log Logger. */
+    public MetricRegistry(IgniteLogger log) {
+        this.log = log;
     }
 
     /**
-     * Registers {@link BooleanMetric} which value will be queried from the specified supplier.
+     * Gets or creates metric group.
      *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param description Description.
+     * @param name Group name.
+     * @return Group of metrics.
      */
-    public void register(String name, BooleanSupplier supplier, @Nullable String description);
+    public MetricGroup group(String name) {
+        return metrics.computeIfAbsent(name, n -> {
+            MetricGroup grp = new MetricGroup(name, log);
+
+            notifyListeners(grp, metricGrpCreationLsnrs);
+
+            return grp;
+        });
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public Iterator<MetricGroup> iterator() {
+        return metrics.values().iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetricGroupCreationListener(Consumer<MetricGroup> lsnr) {
+        metricGrpCreationLsnrs.add(lsnr);
+    }
 
     /**
-     * Registers {@link BooleanMetric} which value will be queried from the specified supplier.
+     * Removes group.
      *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param description Description.
+     * @param grpName Group name.
      */
-    public void register(String name, DoubleSupplier supplier, @Nullable String description);
+    public void remove(String grpName) {
+        metrics.remove(grpName);
+    }
 
     /**
-     * Registers {@link IntMetric} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param description Description.
+     * @param t Consumed object.
+     * @param lsnrs Listeners.
+     * @param <T> Type of consumed object.
      */
-    public void register(String name, IntSupplier supplier, @Nullable String description);
-
-    /**
-     * Registers {@link LongMetric} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param description Description.
-     */
-    public void register(String name, LongSupplier supplier, @Nullable String description);
-
-    /**
-     * Registers {@code ObjectMetric} which value will be queried from the specified supplier.
-     *
-     * @param name Name.
-     * @param supplier Supplier.
-     * @param type Type.
-     * @param description Description.
-     */
-    public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description);
-
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @return Metric
-     */
-    public DoubleMetricImpl doubleMetric(String name, @Nullable String description);
-
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @return Metric.
-     */
-    public IntMetricImpl intMetric(String name, @Nullable String description);
-
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @return Metric.
-     */
-    public LongMetricImpl metric(String name, @Nullable String description);
-
-    /**
-     * Creates and register named metric.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @return Metric
-     */
-    public LongAdderMetricImpl longAdderMetric(String name, @Nullable String description);
-
-    /**
-     * Creates and register hit rate metric.
-     *
-     * It will accumulates approximate hit rate statistics.
-     * Calculates number of hits in last rateTimeInterval milliseconds.
-     *
-     * @param rateTimeInterval Rate time interval.
-     * @param size Array size for underlying calculations.
-     * @return Metric.
-     * @see HitRateMetric
-     */
-    public HitRateMetric hitRateMetric(String name, @Nullable String description, long rateTimeInterval, int size);
-
-    /**
-     * Creates and register named gauge.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param description Description.
-     * @return Gauge.
-     */
-    public BooleanMetricImpl booleanMetric(String name, @Nullable String description);
-
-    /**
-     * Creates and register named gauge.
-     * Returned instance are thread safe.
-     *
-     * @param name Name.
-     * @param type Type.
-     * @param description Description.
-     * @return Gauge.
-     */
-    public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String description);
-
-    /**
-     * Creates and registre named histogram gauge.
-     *
-     * @param name Name
-     * @param bounds Bounds of measurements.
-     * @param description Description.
-     * @return HistogramGauge.
-     */
-    public HistogramMetric histogram(String name, long[] bounds, @Nullable String description);
+    private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
+        for (Consumer<T> lsnr : lsnrs) {
+            try {
+                lsnr.accept(t);
+            }
+            catch (Exception e) {
+                U.warn(log, "Metric listener error", e);
+            }
+        }
+    }
 }

@@ -129,60 +129,62 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         try (Scope globalScope = tagScope()) {
             MeasureMap mmap = recorder.newMeasureMap();
 
-            for (Metric metric : mreg.getMetrics()) {
-                if (filter != null && !filter.test(metric))
-                    continue;
+            mreg.forEach(grp -> {
+                if (filter != null && !filter.test(grp))
+                    return;
 
-                if (metric instanceof LongMetric ||
-                    metric instanceof IntMetric ||
-                    metric instanceof BooleanMetric ||
-                    (metric instanceof ObjectMetric && ((ObjectMetric)metric).type() == Date.class) ||
-                    (metric instanceof ObjectMetric && ((ObjectMetric)metric).type() == OffsetDateTime.class)) {
-                    long val;
+                grp.forEach(metric -> {
+                    if (metric instanceof LongMetric ||
+                        metric instanceof IntMetric ||
+                        metric instanceof BooleanMetric ||
+                        (metric instanceof ObjectMetric && ((ObjectMetric)metric).type() == Date.class) ||
+                        (metric instanceof ObjectMetric && ((ObjectMetric)metric).type() == OffsetDateTime.class)) {
+                        long val;
 
-                    if (metric instanceof LongMetric)
-                        val = ((LongMetric)metric).value();
-                    else if (metric instanceof IntMetric)
-                        val = ((IntMetric)metric).value();
-                    else if (metric instanceof BooleanMetric)
-                        val = ((BooleanMetric)metric).value() ? 1 : 0;
-                    else if (metric instanceof ObjectMetric && ((ObjectMetric)metric).type() == Date.class)
-                        val = ((ObjectMetric<Date>)metric).value().getTime();
-                    else
-                        val = ((ObjectMetric<OffsetDateTime>)metric).value().toInstant().toEpochMilli();
+                        if (metric instanceof LongMetric)
+                            val = ((LongMetric)metric).value();
+                        else if (metric instanceof IntMetric)
+                            val = ((IntMetric)metric).value();
+                        else if (metric instanceof BooleanMetric)
+                            val = ((BooleanMetric)metric).value() ? 1 : 0;
+                        else if (metric instanceof ObjectMetric && ((ObjectMetric)metric).type() == Date.class)
+                            val = ((ObjectMetric<Date>)metric).value().getTime();
+                        else
+                            val = ((ObjectMetric<OffsetDateTime>)metric).value().toInstant().toEpochMilli();
 
-                    if (val < 0) {
-                        if (log.isDebugEnabled())
-                            log.debug("OpenCensus doesn't support negative values. Skip record of " + metric.name());
+                        if (val < 0) {
+                            if (log.isDebugEnabled())
+                                log.debug("OpenCensus doesn't support negative values. Skip record of " + metric.name());
 
-                        continue;
+                            return;
+                        }
+
+                        MeasureLong msr = (MeasureLong)measures.computeIfAbsent(metric.name(),
+                            k -> createMeasure(metric, CREATE_LONG));
+
+                        mmap.put(msr, val);
                     }
+                    else if (metric instanceof DoubleMetric) {
+                        double val = ((DoubleMetric)metric).value();
 
-                    MeasureLong msr = (MeasureLong)measures.computeIfAbsent(metric.name(),
-                        k -> createMeasure(metric, CREATE_LONG));
+                        if (val < 0) {
+                            if (log.isDebugEnabled())
+                                log.debug("OpenCensus doesn't support negative values. Skip record of " + metric.name());
 
-                    mmap.put(msr, val);
-                }
-                else if (metric instanceof DoubleMetric) {
-                    double val = ((DoubleMetric)metric).value();
+                            return;
+                        }
 
-                    if (val < 0) {
-                        if (log.isDebugEnabled())
-                            log.debug("OpenCensus doesn't support negative values. Skip record of " + metric.name());
+                        MeasureDouble msr = (MeasureDouble)measures.computeIfAbsent(metric.name(),
+                            k -> createMeasure(metric, CREATE_DOUBLE));
 
-                        continue;
+                        mmap.put(msr, val);
                     }
-
-                    MeasureDouble msr = (MeasureDouble)measures.computeIfAbsent(metric.name(),
-                        k -> createMeasure(metric, CREATE_DOUBLE));
-
-                    mmap.put(msr, val);
-                }
-                else if (log.isDebugEnabled()) {
-                    log.debug(metric.name() +
-                        "[" + metric.getClass() + "] not supported by Opencensus exporter");
-                }
-            }
+                    else if (log.isDebugEnabled()) {
+                        log.debug(metric.name() +
+                            "[" + metric.getClass() + "] not supported by Opencensus exporter");
+                    }
+                });
+            });
 
             mmap.record();
         }

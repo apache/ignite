@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Collection;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -119,78 +120,78 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         this.rateTimeInterval = rateTimeInterval;
         this.subInts = subInts;
 
-        MetricRegistry mset = mreg.withPrefix(DATASTORAGE_METRIC_PREFIX);
+        MetricGroup mgrp = mreg.group(DATASTORAGE_METRIC_PREFIX);
 
-        walLoggingRate = mset.hitRateMetric("WalLoggingRate",
+        walLoggingRate = mgrp.hitRateMetric("WalLoggingRate",
             "Average number of WAL records per second written during the last time interval.",
             rateTimeInterval,
             subInts);
 
-        walWritingRate = mset.hitRateMetric(
+        walWritingRate = mgrp.hitRateMetric(
             "WalWritingRate",
             "Average number of bytes per second written during the last time interval.",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeDuration = mset.hitRateMetric(
+        walFsyncTimeDuration = mgrp.hitRateMetric(
             "WalFsyncTimeDuration",
             "Total duration of fsync",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeNum = mset.hitRateMetric(
+        walFsyncTimeNum = mgrp.hitRateMetric(
             "WalFsyncTimeNum",
             "Total count of fsync",
             rateTimeInterval,
             subInts);
 
-        walBuffPollSpinsNum = mset.hitRateMetric(
+        walBuffPollSpinsNum = mgrp.hitRateMetric(
             "WalBuffPollSpinsRate",
             "WAL buffer poll spins number over the last time interval.",
             rateTimeInterval,
             subInts);
 
-        lastCpLockWaitDuration = mset.metric("LastCheckpointLockWaitDuration",
+        lastCpLockWaitDuration = mgrp.metric("LastCheckpointLockWaitDuration",
             "Duration of the checkpoint lock wait in milliseconds.");
 
-        lastCpMarkDuration = mset.metric("LastCheckpointMarkDuration",
+        lastCpMarkDuration = mgrp.metric("LastCheckpointMarkDuration",
             "Duration of the checkpoint lock wait in milliseconds.");
 
-        lastCpPagesWriteDuration = mset.metric("LastCheckpointPagesWriteDuration",
+        lastCpPagesWriteDuration = mgrp.metric("LastCheckpointPagesWriteDuration",
             "Duration of the checkpoint pages write in milliseconds.");
 
-        lastCpDuration = mset.metric("LastCheckpointDuration",
+        lastCpDuration = mgrp.metric("LastCheckpointDuration",
             "Duration of the last checkpoint in milliseconds.");
 
-        lastCpFsyncDuration = mset.metric("LastCheckpointFsyncDuration",
+        lastCpFsyncDuration = mgrp.metric("LastCheckpointFsyncDuration",
             "Duration of the sync phase of the last checkpoint in milliseconds.");
 
-        lastCpTotalPages = mset.metric("LastCheckpointTotalPagesNumber",
+        lastCpTotalPages = mgrp.metric("LastCheckpointTotalPagesNumber",
             "Total number of pages written during the last checkpoint.");
 
-        lastCpDataPages = mset.metric("LastCheckpointDataPagesNumber",
+        lastCpDataPages = mgrp.metric("LastCheckpointDataPagesNumber",
             "Total number of data pages written during the last checkpoint.");
 
-        lastCpCowPages = mset.metric("LastCheckpointCopiedOnWritePagesNumber",
+        lastCpCowPages = mgrp.metric("LastCheckpointCopiedOnWritePagesNumber",
             "Number of pages copied to a temporary checkpoint buffer during the last checkpoint.");
 
-        lastWalSegmentRollOverTime = mset.metric("WalLastRollOverTime",
+        lastWalSegmentRollOverTime = mgrp.metric("WalLastRollOverTime",
             "Time of the last WAL segment rollover.");
 
-        totalCheckpointTime = mset.metric("CheckpointTotalTime",
+        totalCheckpointTime = mgrp.metric("CheckpointTotalTime",
             "Total duration of checkpoint");
 
-        storageSize = mset.metric("StorageSize",
+        storageSize = mgrp.metric("StorageSize",
             "Storage space allocated, in bytes.");
 
-        sparseStorageSize = mset.metric("SparseStorageSize",
+        sparseStorageSize = mgrp.metric("SparseStorageSize",
             "Storage space allocated adjusted for possible sparsity, in bytes.");
 
-        mset.register("WalArchiveSegments",
+        mgrp.register("WalArchiveSegments",
             this::getWalArchiveSegments,
             "Current number of WAL segments in the WAL archive.");
 
-        mset.register("WalTotalSize",
+        mgrp.register("WalTotalSize",
             this::getWalTotalSize,
             "Total size in bytes for storage wal files.");
     }

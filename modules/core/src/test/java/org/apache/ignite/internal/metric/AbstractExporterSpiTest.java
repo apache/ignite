@@ -24,8 +24,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-
 /** */
 public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
     /** */
@@ -64,16 +62,12 @@ public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
     protected void createAdditionalMetrics(IgniteEx ignite) {
         MetricRegistry mreg = ignite.context().metric().registry();
 
-        mreg.metric(metricName(FILTERED_PREFIX, "test"), "")
-            .add(2);
+        mreg.group(FILTERED_PREFIX).metric("test", "").add(2);
 
-        mreg.metric(metricName("other.prefix", "test"), "")
-            .add(42);
+        mreg.group("other.prefix").metric("test", "").add(42);
 
-        mreg.metric(metricName("other.prefix", "test2"), "")
-            .add(43);
+        mreg.group("other.prefix").metric("test2", "").add(43);
 
-        mreg.metric(metricName("other.prefix2", "test3"), "")
-            .add(44);
+        mreg.group("other.prefix2").metric("test3", "").add(44);
     }
 }
