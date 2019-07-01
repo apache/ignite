@@ -62,7 +62,7 @@ public class OpenCensusMetricExporterSpiTest extends AbstractExporterSpiTest {
 
         OpenCensusMetricExporterSpi ocSpi = new OpenCensusMetricExporterSpi();
 
-        ocSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
+        ocSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
         ocSpi.setPeriod(EXPORT_TIMEOUT);
         ocSpi.setSendConsistentId(true);
         ocSpi.setSendInstanceName(true);

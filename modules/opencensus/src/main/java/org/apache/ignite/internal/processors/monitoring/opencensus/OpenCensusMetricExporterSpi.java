@@ -116,11 +116,11 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
 
     /** */
     private static final Function<Metric, Measure> CREATE_LONG = m ->
-        MeasureLong.create(m.name(), m.description(), "");
+        MeasureLong.create(m.name(), m.description() == null ? m.name() : m.description(), "");
 
     /** */
     private static final Function<Metric, Measure> CREATE_DOUBLE = m ->
-        MeasureDouble.create(m.name(), m.description(), "");
+        MeasureDouble.create(m.name(), m.description() == null ? m.name() : m.description(), "");
 
     /** {@inheritDoc} */
     @Override public void export() {
@@ -129,11 +129,11 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         try (Scope globalScope = tagScope()) {
             MeasureMap mmap = recorder.newMeasureMap();
 
-            mreg.forEach(grp -> {
-                if (filter != null && !filter.test(grp))
+            mreg.forEach(mgrp -> {
+                if (filter != null && !filter.test(mgrp))
                     return;
 
-                grp.forEach(metric -> {
+                mgrp.forEach(metric -> {
                     if (metric instanceof LongMetric ||
                         metric instanceof IntMetric ||
                         metric instanceof BooleanMetric ||

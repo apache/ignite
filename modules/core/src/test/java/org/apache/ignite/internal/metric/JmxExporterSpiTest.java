@@ -55,7 +55,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         JmxExporterSpi jmxSpi = new JmxExporterSpi();
 
-        jmxSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
+        jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
 
