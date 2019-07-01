@@ -3,37 +3,31 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
-
-insert into test values(1, 'Hello');
-> update count: 1
-
-select bit_length(null) en, bit_length('') e0, bit_length('ab') e32 from test;
+select bit_length(null) en, bit_length('') e0, bit_length('ab') e32;
 > EN   E0 E32
 > ---- -- ---
 > null 0  32
 > rows: 1
 
-select length(null) en, length('') e0, length('ab') e2 from test;
+select length(null) en, length('') e0, length('ab') e2;
 > EN   E0 E2
 > ---- -- --
 > null 0  2
 > rows: 1
 
-select char_length(null) en, char_length('') e0, char_length('ab') e2 from test;
+select char_length(null) en, char_length('') e0, char_length('ab') e2;
 > EN   E0 E2
 > ---- -- --
 > null 0  2
 > rows: 1
 
-select character_length(null) en, character_length('') e0, character_length('ab') e2 from test;
+select character_length(null) en, character_length('') e0, character_length('ab') e2;
 > EN   E0 E2
 > ---- -- --
 > null 0  2
 > rows: 1
 
-select octet_length(null) en, octet_length('') e0, octet_length('ab') e4 from test;
+select octet_length(null) en, octet_length('') e0, octet_length('ab') e4;
 > EN   E0 E4
 > ---- -- --
 > null 0  4

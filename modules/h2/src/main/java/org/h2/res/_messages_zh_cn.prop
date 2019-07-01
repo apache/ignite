@@ -178,6 +178,7 @@
 90144=#Authenticator not enabled on database {0}
 90145=#FOR UPDATE is not allowed in DISTINCT or grouped select
 90146=#Database {0} not found, and IFEXISTS=true, so we can't auto-create it
+90147=#Method {0} is not allowed when connection is in auto-commit mode
 HY000=常规错误: {0}
 HY004=位置数据类型: {0}
 HYC00=不支持的特性: {0}

@@ -198,6 +198,7 @@ import org.h2.expression.condition.ConditionIn;
 import org.h2.expression.condition.ConditionInParameter;
 import org.h2.expression.condition.ConditionInSelect;
 import org.h2.expression.condition.ConditionNot;
+import org.h2.expression.condition.TypePredicate;
 import org.h2.expression.function.Function;
 import org.h2.expression.function.FunctionCall;
 import org.h2.expression.function.JavaFunction;
@@ -264,7 +265,7 @@ public class Parser {
     private static final int CHAR_STRING = 7, CHAR_DOT = 8,
             CHAR_DOLLAR_QUOTED_STRING = 9;
 
-    // this are token types, see also types in ParserUtil
+    // these are token types, see also types in ParserUtil
 
     /**
      * Token with parameter.
@@ -2905,6 +2906,8 @@ public class Parser {
                         read(FROM);
                         r = new Comparison(session, Comparison.EQUAL_NULL_SAFE,
                                 r, readConcat());
+                    } else if (readIf("OF")) {
+                        r = readTypePredicate(r, true);
                     } else {
                         r = new Comparison(session,
                                 Comparison.NOT_EQUAL_NULL_SAFE, r, readConcat());
@@ -2915,6 +2918,8 @@ public class Parser {
                     read(FROM);
                     r = new Comparison(session, Comparison.NOT_EQUAL_NULL_SAFE,
                             r, readConcat());
+                } else if (readIf("OF")) {
+                    r = readTypePredicate(r, false);
                 } else {
                     r = new Comparison(session, Comparison.EQUAL_NULL_SAFE, r,
                             readConcat());
@@ -3003,6 +3008,15 @@ public class Parser {
             }
         }
         return r;
+    }
+
+    private TypePredicate readTypePredicate(Expression r, boolean not) {
+        read(OPEN_PAREN);
+        ArrayList<TypeInfo> typeList = Utils.newSmallArrayList();
+        do {
+            typeList.add(parseColumnWithType(null, false).getType());
+        } while (readIfMore(true));
+        return new TypePredicate(r, not, typeList.toArray(new TypeInfo[0]));
     }
 
     private Expression readConcat() {

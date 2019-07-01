@@ -3,19 +3,13 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
-
-insert into test values(1, 'Hello');
-> update count: 1
-
-select length(curtime())>=8 c1, length(current_time())>=8 c2, substring(curtime(), 3, 1) c3 from test;
+select length(curtime())>=8 c1, length(current_time())>=8 c2, substring(curtime(), 3, 1) c3;
 > C1   C2   C3
 > ---- ---- --
 > TRUE TRUE :
 > rows: 1
 
-select length(now())>18 c1, length(current_timestamp())>18 c2, length(now(0))>18 c3, length(now(2))>18 c4 from test;
+select length(now())>18 c1, length(current_timestamp())>18 c2, length(now(0))>18 c3, length(now(2))>18 c4;
 > C1   C2   C3   C4
 > ---- ---- ---- ----
 > TRUE TRUE TRUE TRUE

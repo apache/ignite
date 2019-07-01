@@ -2,13 +2,8 @@
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
-create memory table test(id int primary key, name varchar(255));
-> ok
 
-insert into test values(1, 'Hello');
-> update count: 1
-
-select concat(null, null) en, concat(null, 'a') ea, concat('b', null) eb, concat('ab', 'c') abc from test;
+select concat(null, null) en, concat(null, 'a') ea, concat('b', null) eb, concat('ab', 'c') abc;
 > EN   EA EB ABC
 > ---- -- -- ---
 > null a  b  abc

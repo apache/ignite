@@ -3,13 +3,7 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
-
-insert into test values(1, 'Hello');
-> update count: 1
-
-select char(null) en, char(65) ea from test;
+select char(null) en, char(65) ea;
 > EN   EA
 > ---- --
 > null A

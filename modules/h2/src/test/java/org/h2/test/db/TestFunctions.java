@@ -85,7 +85,7 @@ public class TestFunctions extends TestDb implements AggregateFunction {
     public void test() throws Exception {
         deleteDb("functions");
         testOverrideAlias();
-        testIfNull();
+        deleteDb("functions");
         if (!config.networked) {
             JdbcConnection conn = (JdbcConnection) getConnection("functions");
             Session session = (Session) conn.getSession();
@@ -93,7 +93,6 @@ public class TestFunctions extends TestDb implements AggregateFunction {
             testToDateException(session);
             conn.close();
         }
-        testDataType();
         testVersion();
         testFunctionTable();
         testFunctionTableVarArgs();
@@ -109,7 +108,6 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         testDeterministic();
         testTransactionId();
         testPrecision();
-        testMathFunctions();
         testVarArgs();
         testAggregate();
         testAggregateType();
@@ -118,36 +116,18 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         testValue();
         testNvl2();
         testConcatWs();
-        testTruncate();
-        testDateTrunc();
-        testExtract();
         testToCharFromDateTime();
         testToCharFromNumber();
         testToCharFromText();
         testTranslate();
-        testGenerateSeries();
         testFileWrite();
         testThatCurrentTimestampIsSane();
         testThatCurrentTimestampStaysTheSameWithinATransaction();
         testThatCurrentTimestampUpdatesOutsideATransaction();
 //        testAnnotationProcessorsOutput();
-        testRound();
         testSignal();
 
         deleteDb("functions");
-    }
-
-    private void testDataType() throws SQLException {
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement();
-        assertEquals(Types.DOUBLE, stat.executeQuery(
-                "select radians(x) from dual").
-                getMetaData().getColumnType(1));
-        assertEquals(Types.DOUBLE, stat.executeQuery(
-                "select power(10, 2*x) from dual").
-                getMetaData().getColumnType(1));
-        stat.close();
-        conn.close();
     }
 
     private void testVersion() throws SQLException {
@@ -550,21 +530,6 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         assertEquals(Integer.MAX_VALUE, rs.getMetaData().getScale(2));
         assertEquals(Integer.MAX_VALUE, rs.getMetaData().getScale(1));
         stat.executeQuery("select * from information_schema.function_aliases");
-        conn.close();
-    }
-
-    private void testMathFunctions() throws SQLException {
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement();
-        ResultSet rs = stat.executeQuery("CALL SINH(50)");
-        assertTrue(rs.next());
-        assertEquals(Math.sinh(50), rs.getDouble(1));
-        rs = stat.executeQuery("CALL COSH(50)");
-        assertTrue(rs.next());
-        assertEquals(Math.cosh(50), rs.getDouble(1));
-        rs = stat.executeQuery("CALL TANH(50)");
-        assertTrue(rs.next());
-        assertEquals(Math.tanh(50), rs.getDouble(1));
         conn.close();
     }
 
@@ -1230,70 +1195,6 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         conn.close();
     }
 
-    private void testTruncate() throws SQLException {
-        deleteDb("functions");
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement();
-
-        ResultSet rs = stat.executeQuery("SELECT TRUNCATE(1.234, 2) FROM dual");
-        rs.next();
-        assertEquals(1.23d, rs.getDouble(1));
-
-        rs = stat.executeQuery(
-                "SELECT CURRENT_TIMESTAMP(), " +
-                "TRUNCATE(CURRENT_TIMESTAMP()) FROM dual");
-        rs.next();
-        Calendar c = DateTimeUtils.createGregorianCalendar();
-        c.setTime(rs.getTimestamp(1));
-        c.set(Calendar.HOUR_OF_DAY, 0);
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-        c.set(Calendar.MILLISECOND, 0);
-        java.util.Date nowDate = c.getTime();
-        assertEquals(nowDate, rs.getTimestamp(2));
-
-        assertThrows(SQLException.class, stat).executeQuery("SELECT TRUNCATE('bad', 1) FROM dual");
-
-        // check for passing wrong data type
-        rs = assertThrows(SQLException.class, stat).executeQuery("SELECT TRUNCATE('bad') FROM dual");
-
-        // check for too many parameters
-        rs = assertThrows(SQLException.class, stat).executeQuery("SELECT TRUNCATE(1,2,3) FROM dual");
-
-        conn.close();
-    }
-
-    private void testDateTrunc() throws SQLException {
-        deleteDb("functions");
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement();
-        stat.execute("CREATE TABLE TEST(S VARCHAR, TS TIMESTAMP, D DATE, T TIME, TZ TIMESTAMP WITH TIME ZONE)");
-        stat.execute("INSERT INTO TEST VALUES ('2010-01-01 10:11:12', '2010-01-01 10:11:12',"
-                + " '2010-01-01', '10:11:12', '2010-01-01 10:11:12Z')");
-        ResultSetMetaData md = stat.executeQuery("SELECT DATE_TRUNC('HOUR', S), DATE_TRUNC('HOUR', TS),"
-                + " DATE_TRUNC('HOUR', D), DATE_TRUNC('HOUR', T), DATE_TRUNC('HOUR', TZ) FROM TEST")
-                .getMetaData();
-        assertEquals(Types.TIMESTAMP, md.getColumnType(1));
-        assertEquals(Types.TIMESTAMP, md.getColumnType(2));
-        assertEquals(Types.TIMESTAMP, md.getColumnType(3));
-        assertEquals(Types.TIMESTAMP, md.getColumnType(4));
-        assertEquals(/* TODO use Types.TIMESTAMP_WITH_TIMEZONE on Java 8 */ 2014, md.getColumnType(5));
-        conn.close();
-    }
-
-    private void testExtract() throws SQLException {
-        deleteDb("functions");
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement();
-        stat.execute("CREATE TABLE TEST(TS TIMESTAMP)");
-        stat.execute("INSERT INTO TEST VALUES ('2010-01-01 10:11:12')");
-        assertEquals(Types.INTEGER, stat.executeQuery("SELECT EXTRACT(DAY FROM TS) FROM TEST")
-                .getMetaData().getColumnType(1));
-        assertEquals(Types.DECIMAL, stat.executeQuery("SELECT EXTRACT(EPOCH FROM TS) FROM TEST")
-                .getMetaData().getColumnType(1));
-        conn.close();
-    }
-
     private void testTranslate() throws SQLException {
         Connection conn = getConnection("functions");
         Statement stat = conn.createStatement();
@@ -1350,7 +1251,7 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         }
     }
 
-    private void testToDate(Session session) throws ParseException {
+    private void testToDate(Session session) {
         GregorianCalendar calendar = DateTimeUtils.createGregorianCalendar();
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH) + 1;
@@ -1711,24 +1612,6 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         return expected;
     }
 
-    private void testIfNull() throws SQLException {
-        deleteDb("functions");
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement(
-                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-        stat.execute("CREATE TABLE T(f1 double)");
-        stat.executeUpdate("INSERT INTO T VALUES( 1.2 )");
-        stat.executeUpdate("INSERT INTO T VALUES( null )");
-        ResultSet rs = stat.executeQuery("SELECT IFNULL(f1, 0.0) FROM T");
-        ResultSetMetaData metaData = rs.getMetaData();
-        assertEquals("java.lang.Double", metaData.getColumnClassName(1));
-        rs.next();
-        assertEquals("java.lang.Double", rs.getObject(1).getClass().getName());
-        rs.next();
-        assertEquals("java.lang.Double", rs.getObject(1).getClass().getName());
-        conn.close();
-    }
-
     private void testToCharFromNumber() throws SQLException {
         Locale.setDefault(Locale.US);
 
@@ -1999,56 +1882,6 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         conn.close();
     }
 
-    private void testGenerateSeries() throws SQLException {
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement();
-
-        ResultSet rs = stat.executeQuery("select * from system_range(1,3)");
-        rs.next();
-        assertEquals(1, rs.getInt(1));
-        rs.next();
-        assertEquals(2, rs.getInt(1));
-        rs.next();
-        assertEquals(3, rs.getInt(1));
-
-        rs = stat.executeQuery("select * from system_range(2,2)");
-        assertTrue(rs.next());
-        assertEquals(2, rs.getInt(1));
-
-        rs = stat.executeQuery("select * from system_range(2,1)");
-        assertFalse(rs.next());
-
-        rs = stat.executeQuery("select * from system_range(1,2,-1)");
-        assertFalse(rs.next());
-
-        assertThrows(ErrorCode.STEP_SIZE_MUST_NOT_BE_ZERO, stat).executeQuery(
-                "select * from system_range(1,2,0)");
-
-        rs = stat.executeQuery("select * from system_range(2,1,-1)");
-        assertTrue(rs.next());
-        assertEquals(2, rs.getInt(1));
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt(1));
-
-        rs = stat.executeQuery("select * from system_range(1,5,2)");
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt(1));
-        assertTrue(rs.next());
-        assertEquals(3, rs.getInt(1));
-        assertTrue(rs.next());
-        assertEquals(5, rs.getInt(1));
-
-        rs = stat.executeQuery("select * from system_range(1,6,2)");
-        assertTrue(rs.next());
-        assertEquals(1, rs.getInt(1));
-        assertTrue(rs.next());
-        assertEquals(3, rs.getInt(1));
-        assertTrue(rs.next());
-        assertEquals(5, rs.getInt(1));
-
-        conn.close();
-    }
-
     private void testAnnotationProcessorsOutput() {
         try {
             System.setProperty(TestAnnotationProcessor.MESSAGES_KEY, "WARNING,foo1|ERROR,foo2");
@@ -2061,29 +1894,6 @@ public class TestFunctions extends TestDb implements AggregateFunction {
         } finally {
             System.clearProperty(TestAnnotationProcessor.MESSAGES_KEY);
         }
-    }
-
-    private void testRound() throws SQLException {
-        deleteDb("functions");
-
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement();
-
-        final ResultSet rs = stat.executeQuery(
-                "select ROUND(-1.2), ROUND(-1.5), ROUND(-1.6), " +
-                "ROUND(2), ROUND(1.5), ROUND(1.8), ROUND(1.1) from dual");
-
-        rs.next();
-        assertEquals(-1, rs.getInt(1));
-        assertEquals(-2, rs.getInt(2));
-        assertEquals(-2, rs.getInt(3));
-        assertEquals(2, rs.getInt(4));
-        assertEquals(2, rs.getInt(5));
-        assertEquals(2, rs.getInt(6));
-        assertEquals(1, rs.getInt(7));
-
-        rs.close();
-        conn.close();
     }
 
     private void testSignal() throws SQLException {
