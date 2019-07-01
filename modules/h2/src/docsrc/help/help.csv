@@ -2503,6 +2503,7 @@ ID<>2
 compare { { { ALL | ANY | SOME } ( select ) } | operand }
     | IS [ NOT ] NULL
     | IS [ NOT ] [ DISTINCT FROM ] operand
+    | IS [ NOT ] OF (dataType [, dataType])
     | BETWEEN operand AND operand
     | IN ( { select | expression [,...] } )
     | [ NOT ] [ LIKE | ILIKE ] operand [ ESCAPE string ]
@@ -2521,6 +2522,13 @@ ANY and SOME predicates return FALSE if all such comparisons return FALSE.
 Otherwise it returns NULL.
 Note that these predicates have priority over ANY and SOME aggregate functions with subquery on the right side.
 Use parentheses around aggregate function.
+
+The conditions ""IS [ NOT ] OF"" check whether the data type of the specified operand
+is one of the specified data types.
+Some data types have multiple names, these names are considered as equal here.
+Domains and their base data types are currently not distinguished from each other.
+Precision and scale are also ignored.
+If operand is NULL, the result is NULL.
 
 The conditions ""IS [ NOT ]"" and ""IS [ NOT ] DISTINCT FROM"" are null-safe, meaning
 NULL is considered the same as NULL, and the condition never evaluates to NULL.
@@ -2541,6 +2549,7 @@ See Java ""Matcher.find"" for details.
 ","
 VALUE > 10
 A IS NOT DISTINCT FROM B
+T IS OF (DATE, TIMESTAMP, TIMESTAMP WITH TIME ZONE)
 LIKE 'Jo%'
 "
 
@@ -4064,8 +4073,8 @@ MOD(A, B)
 "Functions (Numeric)","CEILING","
 { CEILING | CEIL } (numeric)
 ","
-See also Java ""Math.ceil"".
-This method returns a double.
+Returns the smallest integer value that is greater than or equal to the argument.
+This method returns a double, float, or numeric value depending on type of the argument.
 ","
 CEIL(A)
 "
@@ -4091,8 +4100,8 @@ EXP(A)
 "Functions (Numeric)","FLOOR","
 FLOOR(numeric)
 ","
-See also Java ""Math.floor"".
-This method returns a double.
+Returns the largest integer value that is less than or equal to the argument.
+This method returns a double, float, or numeric value depending on type of the argument.
 ","
 FLOOR(A)
 "
@@ -4191,8 +4200,8 @@ RANDOM_UUID()
 "Functions (Numeric)","ROUND","
 ROUND(numeric [, digitsInt])
 ","
-Rounds to a number of digits, or to the nearest long if the number of digits if not set.
-This method returns a numeric (the same type as the input).
+Rounds to a number of fractional digits.
+This method returns a double, float, or numeric value depending on type of the argument.
 ","
 ROUND(VALUE, 2)
 "
@@ -4261,14 +4270,16 @@ CALL HASH('SHA256', STRINGTOUTF8('Password'), 1000)
 "
 
 "Functions (Numeric)","TRUNCATE","
-{ TRUNC | TRUNCATE } ( { {numeric, digitsInt}
+{ TRUNC | TRUNCATE } ( { {numeric [, digitsInt] }
     | timestamp | timestampWithTimeZone | date | timestampString } )
 ","
-Truncates to a number of digits (to the next value closer to 0).
-This method returns a double.
-When used with a timestamp, truncates a timestamp to a date (day) value.
-When used with a date, truncates a date to a date (day) value less time part.
-When used with a timestamp as string, truncates a timestamp to a date (day) value.
+When a numeric argument is specified, truncates it to a number of digits (to the next value closer to 0)
+and returns a double, float, or numeric value depending on type of the argument.
+When used with a timestamp, truncates the timestamp to a date (day) value
+and returns a timestamp with or without time zone depending on type of the argument.
+When used with a date, returns a timestamp at start of this date.
+When used with a timestamp as string, truncates the timestamp to a date (day) value
+and returns a timestamp without time zone.
 ","
 TRUNCATE(VALUE, 2)
 "

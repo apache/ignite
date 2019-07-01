@@ -3,17 +3,8 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
-
-insert into test values(1, 'Hello');
-> update count: 1
-
-select dayofmonth(date '2005-09-12') from test;
+select dayofmonth(date '2005-09-12');
 >> 12
-
-drop table test;
-> ok
 
 create table test(ts timestamp with time zone);
 > ok

@@ -2,3 +2,9 @@
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
+
+CALL TANH(1);
+>> 0.7615941559557649
+
+CALL TANH(50);
+>> 1.0

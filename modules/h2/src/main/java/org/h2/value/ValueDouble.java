@@ -5,6 +5,7 @@
  */
 package org.h2.value;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -128,6 +129,15 @@ public class ValueDouble extends Value {
     @Override
     public double getDouble() {
         return value;
+    }
+
+    @Override
+    public BigDecimal getBigDecimal() {
+        if (Math.abs(value) <= Double.MAX_VALUE) {
+            return BigDecimal.valueOf(value);
+        }
+        // Infinite or NaN
+        throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, Double.toString(value));
     }
 
     @Override

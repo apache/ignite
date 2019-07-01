@@ -2,3 +2,9 @@
 -- and the EPL 1.0 (http://h2database.com/html/license.html).
 -- Initial Developer: H2 Group
 --
+
+CALL COSH(1);
+>> 1.543080634815244
+
+CALL COSH(50);
+>> 2.592352764293536E21

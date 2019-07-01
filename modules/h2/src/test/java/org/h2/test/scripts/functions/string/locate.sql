@@ -3,19 +3,13 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
-
-insert into test values(1, 'Hello');
-> update count: 1
-
-select locate(null, null) en, locate(null, null, null) en1 from test;
+select locate(null, null) en, locate(null, null, null) en1;
 > EN   EN1
 > ---- ----
 > null null
 > rows: 1
 
-select locate('World', 'Hello World') e7, locate('hi', 'abchihihi', 2) e3 from test;
+select locate('World', 'Hello World') e7, locate('hi', 'abchihihi', 2) e3;
 > E7 E3
 > -- --
 > 7  4
@@ -27,7 +21,7 @@ SELECT CHARINDEX('test', 'test');
 SET MODE MSSQLServer;
 > ok
 
-select charindex('World', 'Hello World') e7, charindex('hi', 'abchihihi', 2) e3 from test;
+select charindex('World', 'Hello World') e7, charindex('hi', 'abchihihi', 2) e3;
 > E7 E3
 > -- --
 > 7  4

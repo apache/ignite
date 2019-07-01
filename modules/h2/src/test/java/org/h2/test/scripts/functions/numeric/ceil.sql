@@ -3,14 +3,26 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
+select ceil(null) vn, ceil(1) v1, ceiling(1.1) v2, ceil(-1.1) v3, ceiling(1.9) v4, ceiling(-1.9) v5;
+> VN   V1 V2 V3 V4 V5
+> ---- -- -- -- -- --
+> null 1  2  -1 2  -1
+> rows: 1
 
-insert into test values(1, 'Hello');
-> update count: 1
+SELECT CEIL(1.5), CEIL(-1.5), CEIL(1.5) IS OF (NUMERIC);
+> 2 -1 TRUE
+> - -- ----
+> 2 -1 TRUE
+> rows: 1
 
-select ceil(null) vn, ceil(1) v1, ceiling(1.1) v2, ceil(-1.1) v3, ceiling(1.9) v4, ceiling(-1.9) v5 from test;
-> VN   V1  V2  V3   V4  V5
-> ---- --- --- ---- --- ----
-> null 1.0 2.0 -1.0 2.0 -1.0
+SELECT CEIL(1.5::DOUBLE), CEIL(-1.5::DOUBLE), CEIL(1.5::DOUBLE) IS OF (DOUBLE);
+> 2.0 -1.0 TRUE
+> --- ---- ----
+> 2.0 -1.0 TRUE
+> rows: 1
+
+SELECT CEIL(1.5::REAL), CEIL(-1.5::REAL), CEIL(1.5::REAL) IS OF (REAL);
+> 2.0 -1.0 TRUE
+> --- ---- ----
+> 2.0 -1.0 TRUE
 > rows: 1

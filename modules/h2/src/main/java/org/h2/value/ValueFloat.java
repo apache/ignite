@@ -5,6 +5,7 @@
  */
 package org.h2.value;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -133,6 +134,16 @@ public class ValueFloat extends Value {
     @Override
     public double getDouble() {
         return value;
+    }
+
+    @Override
+    public BigDecimal getBigDecimal() {
+        if (Math.abs(value) <= Float.MAX_VALUE) {
+            // better rounding behavior than BigDecimal.valueOf(f)
+            return new BigDecimal(Float.toString(value));
+        }
+        // Infinite or NaN
+        throw DbException.get(ErrorCode.DATA_CONVERSION_ERROR_1, Float.toString(value));
     }
 
     @Override

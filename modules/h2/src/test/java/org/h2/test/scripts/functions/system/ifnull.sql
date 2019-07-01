@@ -3,20 +3,26 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
+select ifnull(null, '1') x1, ifnull(null, null) xn, ifnull('a', 'b') xa;
+> X1 XN   XA
+> -- ---- --
+> 1  null a
+> rows: 1
+
+select isnull(null, '1') x1, isnull(null, null) xn, isnull('a', 'b') xa;
+> X1 XN   XA
+> -- ---- --
+> 1  null a
+> rows: 1
+
+CREATE MEMORY TABLE S(D DOUBLE) AS VALUES NULL;
 > ok
 
-insert into test values(1, 'Hello');
-> update count: 1
+CREATE MEMORY TABLE T AS SELECT IFNULL(D, D) FROM S;
+> ok
 
-select ifnull(null, '1') x1, ifnull(null, null) xn, ifnull('a', 'b') xa from test;
-> X1 XN   XA
-> -- ---- --
-> 1  null a
-> rows: 1
+SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'T';
+>> DOUBLE
 
-select isnull(null, '1') x1, isnull(null, null) xn, isnull('a', 'b') xa from test;
-> X1 XN   XA
-> -- ---- --
-> 1  null a
-> rows: 1
+DROP TABLE S, T;
+> ok

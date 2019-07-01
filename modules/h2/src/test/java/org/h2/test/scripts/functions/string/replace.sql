@@ -3,19 +3,13 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
-
-insert into test values(1, 'Hello');
-> update count: 1
-
-select replace(null, null) en, replace(null, null, null) en1 from test;
+select replace(null, null) en, replace(null, null, null) en1;
 > EN   EN1
 > ---- ----
 > null null
 > rows: 1
 
-select replace('abchihihi', 'i', 'o') abcehohoho, replace('that is tom', 'i') abcethstom from test;
+select replace('abchihihi', 'i', 'o') abcehohoho, replace('that is tom', 'i') abcethstom;
 > ABCEHOHOHO ABCETHSTOM
 > ---------- ----------
 > abchohoho  that s tom

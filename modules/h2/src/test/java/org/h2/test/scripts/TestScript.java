@@ -165,7 +165,7 @@ public class TestScript extends TestDb {
                 "replace", "script", "select", "show", "table", "update", "values", "with" }) {
             testScript("dml/" + s + ".sql");
         }
-        for (String s : new String[] { "help" }) {
+        for (String s : new String[] { "help", "type-predicate" }) {
             testScript("other/" + s + ".sql");
         }
         for (String s : new String[] { "any", "array-agg", "avg", "bit-and", "bit-or", "count", "envelope",

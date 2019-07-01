@@ -3,11 +3,5 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
-
-insert into test values(1, 'Hello');
-> update count: 1
-
-select monthname(date '2005-09-12') from test;
+select monthname(date '2005-09-12');
 >> September

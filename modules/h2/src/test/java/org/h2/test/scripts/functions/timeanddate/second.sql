@@ -3,11 +3,5 @@
 -- Initial Developer: H2 Group
 --
 
-create memory table test(id int primary key, name varchar(255));
-> ok
-
-insert into test values(1, 'Hello');
-> update count: 1
-
-select second(timestamp '2005-01-01 23:10:59') from test;
+select second(timestamp '2005-01-01 23:10:59');
 >> 59
