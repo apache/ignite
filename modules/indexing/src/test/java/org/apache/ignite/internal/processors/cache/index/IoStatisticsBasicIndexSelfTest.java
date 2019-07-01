@@ -265,7 +265,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     private void checkSelectStringEqual(IgniteCache<Key, Val> cache) {
         final String STR = key(11).keyStr;
 
-        final long LONG = key(11).keyLong;
+        final long LONG = 11;
 
         List<List<?>> data = cache.query(new SqlFieldsQuery("select _key, _val from Val where keyStr = ?")
             .setArgs(STR))
@@ -303,7 +303,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
      * @param cache Cache.
      */
     private void checkSelectStringRange(IgniteCache<Key, Val> cache) {
-        final String PREFIX = "foo06";
+        final String PREFIX = key(6).keyStr;
 
         List<List<?>> data = cache.query(new SqlFieldsQuery("select _key, _val from Val where keyStr like ?")
             .setArgs(PREFIX + "%"))
