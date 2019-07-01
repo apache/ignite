@@ -24,6 +24,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteLockAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -31,6 +34,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteLocalLockSelfTest extends IgniteLockAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
@@ -43,6 +47,7 @@ public class IgniteLocalLockSelfTest extends IgniteLockAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
+    @Test
     @Override public void testReentrantLock() throws Exception {
         // Test main functionality.
         IgniteLock lock = grid(0).reentrantLock("lock", true, false, true);

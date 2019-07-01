@@ -30,6 +30,7 @@ export default {
         gridHeight: '<?',
         tabName: '<?',
         tableTitle: '<?',
+        maxRowsToShow: '<?',
 
         // Input Events.
         items: '<',

@@ -3,11 +3,12 @@
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * (the "License");
+  you may not use this file except in compliance with* the License.
+  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,8 +49,8 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      */
     public static final int CMD_FINISHED_EOF = 2;
 
-    /** QueryID of the original COPY command request. */
-    private long qryId;
+    /** CursorId of the original COPY command request. */
+    private long cursorId;
 
     /** Batch index starting from 0. */
     private int batchIdx;
@@ -66,7 +67,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     public JdbcBulkLoadBatchRequest() {
         super(BULK_LOAD_BATCH);
 
-        qryId = -1;
+        cursorId = -1;
         batchIdx = -1;
         cmd = CMD_UNKNOWN;
         data = null;
@@ -76,28 +77,28 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * Creates the request with specified parameters and zero-length data.
      * Typically used with {@link #CMD_FINISHED_ERROR} and {@link #CMD_FINISHED_EOF}.
      *
-     * @param qryId The query ID from the {@link JdbcBulkLoadAckResult}.
+     * @param cursorId The cursor ID from the {@link JdbcBulkLoadAckResult}.
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd) {
-        this(qryId, batchIdx, cmd, new byte[0]);
+    public JdbcBulkLoadBatchRequest(long cursorId, int batchIdx, int cmd) {
+        this(cursorId, batchIdx, cmd, new byte[0]);
     }
 
     /**
      * Creates the request with the specified parameters.
      *
-     * @param qryId The query ID from the {@link JdbcBulkLoadAckResult}.
+     * @param cursorId The cursor ID from the {@link JdbcBulkLoadAckResult}.
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      * @param data The data block (zero length is acceptable).
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd, @NotNull byte[] data) {
+    public JdbcBulkLoadBatchRequest(long cursorId, int batchIdx, int cmd, @NotNull byte[] data) {
         super(BULK_LOAD_BATCH);
 
-        this.qryId = qryId;
+        this.cursorId = cursorId;
         this.batchIdx = batchIdx;
 
         assert isCmdValid(cmd) : "Invalid command value: " + cmd;
@@ -107,12 +108,12 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     }
 
     /**
-     * Returns the original query ID.
+     * Returns the original cursor ID.
      *
-     * @return The original query ID.
+     * @return The original cursor ID.
      */
-    public long queryId() {
-        return qryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**
@@ -148,7 +149,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        writer.writeLong(qryId);
+        writer.writeLong(cursorId);
         writer.writeInt(batchIdx);
         writer.writeInt(cmd);
         writer.writeByteArray(data);
@@ -159,7 +160,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
-        qryId = reader.readLong();
+        cursorId = reader.readLong();
         batchIdx = reader.readInt();
 
         int c = reader.readInt();

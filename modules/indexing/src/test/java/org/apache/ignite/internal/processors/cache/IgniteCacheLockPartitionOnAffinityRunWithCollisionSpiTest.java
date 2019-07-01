@@ -35,10 +35,14 @@ import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
 
@@ -58,6 +62,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testPartitionReservation() throws Exception {
         int orgId = 0;
         cancelAllJobs = true;
@@ -81,6 +86,7 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobFinishing() throws Exception {
         final AtomicInteger jobNum = new AtomicInteger(0);
 

@@ -51,7 +51,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
             .pc-form-grid-col-60
                 +form-field__text({
                     label: 'Key store file:',
-                    model: `${secondaryFileSystem}.keyStoreFilePath`,
+                    model: `${model}.keyStoreFilePath`,
                     name: '"keyStoreFilePath"',
                     disabled: `!(${enabled})`,
                     required: enabled,

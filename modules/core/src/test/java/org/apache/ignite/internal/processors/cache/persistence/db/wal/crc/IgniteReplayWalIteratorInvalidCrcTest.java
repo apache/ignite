@@ -22,10 +22,14 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteReplayWalIteratorInvalidCrcTest extends IgniteAbstractWalIteratorInvalidCrcTest {
     /** {@inheritDoc} */
     @NotNull @Override protected WALMode getWalMode() {
@@ -49,6 +53,7 @@ public class IgniteReplayWalIteratorInvalidCrcTest extends IgniteAbstractWalIter
      * {@inheritDoc}
      * Case is not relevant to the replay iterator.
      */
+    @Test
     @Override public void testNotTailCorruptedPtr() {
     }
 }

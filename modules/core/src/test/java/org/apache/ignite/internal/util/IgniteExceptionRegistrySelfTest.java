@@ -24,11 +24,15 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
     /** */
     private IgniteExceptionRegistry registry = IgniteExceptionRegistry.get();
@@ -36,6 +40,7 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testOnException() throws Exception {
         awaitPartitionMapExchange();
 
@@ -90,6 +95,7 @@ public class IgniteExceptionRegistrySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testMultiThreadedMaxSize() throws Exception {
         final int maxSize = 10;
 

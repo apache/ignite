@@ -18,11 +18,15 @@
 package org.apache.ignite.spi;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base SPI start-stop test class.
  * @param <T> SPI implementation class.
  */
+@RunWith(JUnit4.class)
 public abstract class GridSpiStartStopAbstractTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
     public static final int COUNT = 5;
@@ -42,6 +46,7 @@ public abstract class GridSpiStartStopAbstractTest<T extends IgniteSpi> extends 
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testStartStop() throws Exception {
         info("Spi start-stop test [count=" + getCount() + ", spi=" + getSpiClass().getSimpleName() + ']');
 
@@ -67,6 +72,7 @@ public abstract class GridSpiStartStopAbstractTest<T extends IgniteSpi> extends 
     /**
      * @throws Exception If test failed.
      */
+    @Test
     public void testStop() throws Exception {
         IgniteSpi spi = getSpiClass().newInstance();
 

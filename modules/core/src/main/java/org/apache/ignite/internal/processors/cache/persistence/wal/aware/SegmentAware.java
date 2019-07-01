@@ -27,8 +27,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.aware.
  * Holder of actual information of latest manipulation on WAL segments.
  */
 public class SegmentAware {
-    /** Latest truncated segment. */
-    private volatile long lastTruncatedArchiveIdx = -1L;
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
     private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
     /** Lock on segment protects from archiving segment. */
@@ -36,15 +34,17 @@ public class SegmentAware {
     /** Manages last archived index, emulates archivation in no-archiver mode. */
     private final SegmentArchivedStorage segmentArchivedStorage = buildArchivedStorage(segmentLockStorage);
     /** Storage of actual information about current index of compressed segments. */
-    private final SegmentCompressStorage segmentCompressStorage = buildCompressStorage(segmentArchivedStorage);
+    private final SegmentCompressStorage segmentCompressStorage;
     /** Storage of absolute current segment index. */
     private final SegmentCurrentStateStorage segmentCurrStateStorage;
 
     /**
      * @param walSegmentsCnt Total WAL segments count.
+     * @param compactionEnabled Is wal compaction enabled.
      */
-    public SegmentAware(int walSegmentsCnt) {
+    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled) {
         segmentCurrStateStorage = buildCurrentStateStorage(walSegmentsCnt, segmentArchivedStorage);
+        segmentCompressStorage = buildCompressStorage(segmentArchivedStorage, compactionEnabled);
     }
 
     /**
@@ -104,16 +104,21 @@ public class SegmentAware {
      * there's no segment to archive right now.
      */
     public long waitNextSegmentToCompress() throws IgniteInterruptedCheckedException {
-        return Math.max(segmentCompressStorage.nextSegmentToCompressOrWait(), lastTruncatedArchiveIdx + 1);
+        long idx;
+
+        while ((idx = segmentCompressStorage.nextSegmentToCompressOrWait()) <= lastTruncatedArchiveIdx())
+            onSegmentCompressed(idx);
+
+        return idx;
     }
 
     /**
-     * Force set last compressed segment.
+     * Callback after segment compression finish.
      *
-     * @param lastCompressedIdx Segment which was last compressed.
+     * @param compressedIdx Index of compressed segment.
      */
-    public void lastCompressedIdx(long lastCompressedIdx) {
-        segmentCompressStorage.lastCompressedIdx(lastCompressedIdx);
+    public void onSegmentCompressed(long compressedIdx) {
+        segmentCompressStorage.onSegmentCompressed(compressedIdx);
     }
 
     /**
@@ -121,6 +126,20 @@ public class SegmentAware {
      */
     public long lastCompressedIdx() {
         return segmentCompressStorage.lastCompressedIdx();
+    }
+
+    /**
+     * @param idx Minimum raw segment index that should be preserved from deletion.
+     */
+    public void keepUncompressedIdxFrom(long idx) {
+        segmentCompressStorage.keepUncompressedIdxFrom(idx);
+    }
+
+    /**
+     * @return  Minimum raw segment index that should be preserved from deletion.
+     */
+    public long keepUncompressedIdxFrom() {
+        return segmentCompressStorage.keepUncompressedIdxFrom();
     }
 
     /**
@@ -136,14 +155,14 @@ public class SegmentAware {
      * @param lastTruncatedArchiveIdx Last truncated segment;
      */
     public void lastTruncatedArchiveIdx(long lastTruncatedArchiveIdx) {
-        this.lastTruncatedArchiveIdx = lastTruncatedArchiveIdx;
+        segmentArchivedStorage.lastTruncatedArchiveIdx(lastTruncatedArchiveIdx);
     }
 
     /**
      * @return Last truncated segment.
      */
     public long lastTruncatedArchiveIdx() {
-        return lastTruncatedArchiveIdx;
+        return segmentArchivedStorage.lastTruncatedArchiveIdx();
     }
 
     /**
@@ -217,6 +236,17 @@ public class SegmentAware {
      */
     public void releaseWorkSegment(long absIdx) {
         segmentLockStorage.releaseWorkSegment(absIdx);
+    }
+
+    /**
+     * Reset interrupted flag.
+     */
+    public void reset() {
+        segmentArchivedStorage.reset();
+
+        segmentCompressStorage.reset();
+
+        segmentCurrStateStorage.reset();
     }
 
     /**

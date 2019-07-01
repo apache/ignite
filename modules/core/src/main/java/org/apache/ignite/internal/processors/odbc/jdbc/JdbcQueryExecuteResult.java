@@ -28,8 +28,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC query execute result.
  */
 public class JdbcQueryExecuteResult extends JdbcResult {
-    /** Query ID. */
-    private long queryId;
+    /** Cursor ID. */
+    private long cursorId;
 
     /** Query result rows. */
     private List<List<Object>> items;
@@ -44,44 +44,44 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     private long updateCnt;
 
     /**
-     * Condtructor.
+     * Constructor.
      */
     JdbcQueryExecuteResult() {
         super(QRY_EXEC);
     }
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
      */
-    JdbcQueryExecuteResult(long queryId, List<List<Object>> items, boolean last) {
+    JdbcQueryExecuteResult(long cursorId, List<List<Object>> items, boolean last) {
         super(QRY_EXEC);
 
-        this.queryId = queryId;
+        this.cursorId = cursorId;
         this.items = items;
         this.last = last;
         this.isQuery = true;
     }
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      * @param updateCnt Update count for DML queries.
      */
-    public JdbcQueryExecuteResult(long queryId, long updateCnt) {
+    public JdbcQueryExecuteResult(long cursorId, long updateCnt) {
         super(QRY_EXEC);
 
-        this.queryId = queryId;
+        this.cursorId = cursorId;
         this.last = true;
         this.isQuery = false;
         this.updateCnt = updateCnt;
     }
 
     /**
-     * @return Query ID.
+     * @return Cursor ID.
      */
-    public long getQueryId() {
-        return queryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**
@@ -117,7 +117,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.writeBinary(writer, ver);
 
-        writer.writeLong(queryId);
+        writer.writeLong(cursorId);
         writer.writeBoolean(isQuery);
 
         if (isQuery) {
@@ -137,7 +137,7 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         ClientListenerProtocolVersion ver) throws BinaryObjectException {
         super.readBinary(reader, ver);
 
-        queryId = reader.readLong();
+        cursorId = reader.readLong();
         isQuery = reader.readBoolean();
 
         if (isQuery) {

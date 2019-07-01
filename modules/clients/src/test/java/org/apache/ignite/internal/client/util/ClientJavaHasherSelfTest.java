@@ -21,14 +21,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for Java hash codes calculations - SHOULD BE PORTED to other languages.
  */
+@RunWith(JUnit4.class)
 public class ClientJavaHasherSelfTest extends GridCommonAbstractTest {
     /**
      * Validate known Java hash codes.
      */
+    @Test
     public void testPredefined() {
         Map<Object, Integer> map = new LinkedHashMap<>();
 

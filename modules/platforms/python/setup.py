@@ -70,7 +70,7 @@ with open('README.md', 'r', encoding='utf-8') as readme_file:
 
 setuptools.setup(
     name='pyignite',
-    version='0.3.1',
+    version='0.3.4',
     python_requires='>={}.{}'.format(*PYTHON_REQUIRED),
     author='Dmitry Melnichuk',
     author_email='dmitry.melnichuk@nobitlost.com',

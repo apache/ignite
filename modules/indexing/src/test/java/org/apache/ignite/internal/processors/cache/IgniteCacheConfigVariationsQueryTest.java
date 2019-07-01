@@ -38,6 +38,9 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -49,6 +52,7 @@ import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.S
 /**
  * Config Variations query tests.
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
     public static final int CNT = 50;
@@ -75,6 +79,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
+    @Test
     public void testScanQuery() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -106,6 +111,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testScanPartitionQuery() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -164,7 +170,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SubtractionInCompareTo")
+    @Test
     public void testScanFilters() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -208,7 +214,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SubtractionInCompareTo")
+    @Test
     public void testLocalScanQuery() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -246,7 +252,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SubtractionInCompareTo")
+    @Test
     public void testScanQueryLocalFilter() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -293,7 +299,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("SubtractionInCompareTo")
+    @Test
     public void testScanQueryPartitionFilter() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {

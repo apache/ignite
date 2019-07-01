@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-import {Subject} from 'rxjs/Subject';
-import {Observable} from 'rxjs/Observable';
-import {combineLatest} from 'rxjs/observable/combineLatest';
-import {merge} from 'rxjs/observable/merge';
+import {Subject, Observable, combineLatest, merge} from 'rxjs';
+import {pluck, tap, publishReplay, refCount, distinctUntilChanged, switchMap, map} from 'rxjs/operators';
+
 import get from 'lodash/get';
 
 import hasIndexTemplate from './hasIndex.template.pug';
@@ -100,25 +99,33 @@ export default class PageConfigureAdvancedModels {
         ];
 
         /** @type {Observable<string>} */
-        this.itemID$ = this.$uiRouter.globals.params$.pluck('modelID');
+        this.itemID$ = this.$uiRouter.globals.params$.pipe(pluck('modelID'));
 
         /** @type {Observable<Array<ig.config.model.ShortDomainModel>>} */
-        this.shortItems$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectCurrentShortModels)
-            .do((shortModels = []) => {
+        this.shortItems$ = this.ConfigureState.state$.pipe(
+            this.ConfigSelectors.selectCurrentShortModels,
+            tap((shortModels = []) => {
                 const value = shortModels.every((m) => m.hasIndex);
                 this.columnDefs[0].visible = !value;
-            })
-            .publishReplay(1)
-            .refCount();
+            }),
+            publishReplay(1),
+            refCount()
+        );
 
-        this.shortCaches$ = this.ConfigureState.state$.let(this.ConfigSelectors.selectCurrentShortCaches);
+        this.shortCaches$ = this.ConfigureState.state$.pipe(this.ConfigSelectors.selectCurrentShortCaches);
 
         /** @type {Observable<ig.config.model.DomainModel>} */
-        this.originalItem$ = this.itemID$.distinctUntilChanged().switchMap((id) => {
-            return this.ConfigureState.state$.let(this.ConfigSelectors.selectModelToEdit(id));
-        }).distinctUntilChanged().publishReplay(1).refCount();
+        this.originalItem$ = this.itemID$.pipe(
+            distinctUntilChanged(),
+            switchMap((id) => {
+                return this.ConfigureState.state$.pipe(this.ConfigSelectors.selectModelToEdit(id));
+            }),
+            distinctUntilChanged(),
+            publishReplay(1),
+            refCount()
+        );
 
-        this.isNew$ = this.itemID$.map((id) => id === 'new');
+        this.isNew$ = this.itemID$.pipe(map((id) => id === 'new'));
 
         this.itemEditTitle$ = combineLatest(this.isNew$, this.originalItem$, (isNew, item) => {
             return `${isNew ? 'Create' : 'Edit'} model ${!isNew && get(item, 'valueType') ? `‘${get(item, 'valueType')}’` : ''}`;
@@ -131,7 +138,7 @@ export default class PageConfigureAdvancedModels {
             loadedItems$: this.shortItems$
         });
 
-        this.tableActions$ = this.selectionManager.selectedItemIDs$.map((selectedItems) => [
+        this.tableActions$ = this.selectionManager.selectedItemIDs$.pipe(map((selectedItems) => [
             {
                 action: 'Clone',
                 click: () => this.clone(selectedItems),
@@ -144,12 +151,12 @@ export default class PageConfigureAdvancedModels {
                 },
                 available: true
             }
-        ]);
+        ]));
 
         this.subscription = merge(
             this.originalItem$,
-            this.selectionManager.editGoes$.do((id) => this.edit(id)),
-            this.selectionManager.editLeaves$.do((options) => this.$state.go('base.configuration.edit.advanced.models', null, options))
+            this.selectionManager.editGoes$.pipe(tap((id) => this.edit(id))),
+            this.selectionManager.editLeaves$.pipe(tap((options) => this.$state.go('base.configuration.edit.advanced.models', null, options)))
         ).subscribe();
     }
 

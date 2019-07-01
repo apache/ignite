@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
@@ -33,12 +34,17 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurr
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTxFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCachePeekTest;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUnsupportedTxModesTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorMvccSelfTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  *
  */
+@RunWith(AllTests.class)
 public class IgniteCacheMvccTestSuite extends TestSuite {
     /**
      * @return Test suite.
@@ -47,29 +53,33 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("IgniteCache MVCC Test Suite");
 
         // Basic tests.
-        suite.addTestSuite(CacheMvccTransactionsTest.class);
-        suite.addTestSuite(CacheMvccProcessorTest.class);
-        suite.addTestSuite(CacheMvccVacuumTest.class);
-        suite.addTestSuite(CacheMvccConfigurationValidationTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccTransactionsTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccProcessorTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccVacuumTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccConfigurationValidationTest.class));
 
-        suite.addTestSuite(DataStreamProcessorMvccSelfTest.class);
-        suite.addTestSuite(DataStreamProcessorMvccPersistenceSelfTest.class);
-        suite.addTestSuite(CacheMvccOperationChecksTest.class);
+        suite.addTest(new JUnit4TestAdapter(DataStreamProcessorMvccSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(DataStreamProcessorMvccPersistenceSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccOperationChecksTest.class));
 
-        suite.addTestSuite(CacheMvccRemoteTxOnNearNodeStartTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccRemoteTxOnNearNodeStartTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(MvccUnsupportedTxModesTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(MvccCachePeekTest.class));
 
         // Concurrent ops tests.
-        suite.addTestSuite(CacheMvccIteratorWithConcurrentTransactionTest.class);
-        suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentTransactionTest.class);
-        suite.addTestSuite(CacheMvccScanQueryWithConcurrentTransactionTest.class);
-        suite.addTestSuite(CacheMvccSizeWithConcurrentTransactionTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccIteratorWithConcurrentTransactionTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccLocalEntriesWithConcurrentTransactionTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccScanQueryWithConcurrentTransactionTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccSizeWithConcurrentTransactionTest.class));
 
         // Failover tests.
-        suite.addTestSuite(CacheMvccTxFailoverTest.class);
-        suite.addTestSuite(CacheMvccClusterRestartTest.class);
-        suite.addTestSuite(CacheMvccPartitionedCoordinatorFailoverTest.class);
-        suite.addTestSuite(CacheMvccReplicatedCoordinatorFailoverTest.class);
-        suite.addTestSuite(CacheMvccProcessorLazyStartTest.class);
+        suite.addTest(new JUnit4TestAdapter(CacheMvccTxFailoverTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccClusterRestartTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccPartitionedCoordinatorFailoverTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccReplicatedCoordinatorFailoverTest.class));
+        suite.addTest(new JUnit4TestAdapter(CacheMvccProcessorLazyStartTest.class));
 
         return suite;
     }

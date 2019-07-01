@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.odbc.ClientConnectableNodePartition
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cluster node list request.
@@ -46,12 +45,10 @@ public class ClientCacheNodePartitionsRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_READ);
         IgniteCache cache = cache(ctx);
 
         GridDiscoveryManager discovery = ctx.kernalContext().discovery();
-        Collection<ClusterNode> nodes = discovery.cacheNodes(cache.getName(),
-            new AffinityTopologyVersion(discovery.topologyVersion()));
+        Collection<ClusterNode> nodes = discovery.discoCache().cacheNodes(cache.getName());
 
         Affinity aff = ctx.kernalContext().affinity().affinityProxy(cache.getName());
 

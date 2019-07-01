@@ -18,22 +18,23 @@
 package org.apache.ignite.testframework.test;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  *
  */
-public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDefaults() throws Exception {
+public class ConfigVariationsTestSuiteBuilderTest {
+    /** */
+    @Test
+    public void testDefaults() {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
         assertEquals(4, dfltSuite.countTestCases());
@@ -55,11 +56,10 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
         assertEquals(4 * 4 * 2 * 3, dfltCacheSuite.countTestCases());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @SuppressWarnings("serial")
-    public void testIgniteConfigFilter() throws Exception {
+    @Test
+    public void testIgniteConfigFilter() {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
         final AtomicInteger cnt = new AtomicInteger();
@@ -75,11 +75,10 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
         assertEquals(dfltSuite.countTestCases() / 2, filteredSuite.countTestCases());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @SuppressWarnings("serial")
-    public void testCacheConfigFilter() throws Exception {
+    @Test
+    public void testCacheConfigFilter() {
         TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams()
             .build();
@@ -98,14 +97,11 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
         assertEquals(dfltSuite.countTestCases() / 2, filteredSuite.countTestCases());
     }
 
-    /**
-     *
-     */
-    private static class NoopTest extends IgniteConfigVariationsAbstractTest {
-        /**
-         * @throws Exception If failed.
-         */
-        public void test1() throws Exception {
+    /** */
+    public static class NoopTest extends IgniteConfigVariationsAbstractTest {
+        /** */
+        @Test
+        public void test1() {
             // No-op.
         }
     }

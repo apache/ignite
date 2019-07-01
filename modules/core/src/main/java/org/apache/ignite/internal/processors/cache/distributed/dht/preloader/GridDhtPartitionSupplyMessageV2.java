@@ -36,7 +36,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
     private static final long serialVersionUID = 0L;
 
     /** Available since. */
-    public static final IgniteProductVersion AVAILABLE_SINCE = IgniteProductVersion.fromString("2.7.0");
+    public static final IgniteProductVersion AVAILABLE_SINCE = IgniteProductVersion.fromString("2.5.3");
 
     /** Supplying process error. */
     @GridDirectTransient
@@ -101,7 +101,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
         }
 
         switch (writer.state()) {
-            case 12:
+            case 13:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
@@ -123,7 +123,7 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
             return false;
 
         switch (reader.state()) {
-            case 12:
+            case 13:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -148,6 +148,6 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 14;
     }
 }

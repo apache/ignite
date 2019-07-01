@@ -26,6 +26,9 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.context.support.AbstractApplicationContext;
@@ -43,6 +46,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * Tests for injected service.
  */
+@RunWith(JUnit4.class)
 public class GridServiceInjectionSpringResourceTest extends GridCommonAbstractTest {
     /** Service name. */
     private static final String SERVICE_NAME = "testService";
@@ -78,6 +82,7 @@ public class GridServiceInjectionSpringResourceTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeployServiceWithSpring() throws Exception {
         generateConfigXmls(NODES);
 

@@ -741,7 +741,25 @@ public class GridDhtPartitionDemander {
                 int p = e.getKey();
 
                 if (aff.get(p).contains(ctx.localNode())) {
-                    GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+                    GridDhtLocalPartition part;
+
+                    try {
+                        part = top.localPartition(p, topVer, true);
+                    }
+                    catch (GridDhtInvalidPartitionException err) {
+                        assert !topVer.equals(top.lastTopologyChangeVersion());
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Failed to get partition for rebalancing [" +
+                                "grp=" + grp.cacheOrGroupName() +
+                                ", err=" + err +
+                                ", p=" + p +
+                                ", topVer=" + topVer +
+                                ", lastTopVer=" + top.lastTopologyChangeVersion() + ']');
+                        }
+
+                        continue;
+                    }
 
                     assert part != null;
 
@@ -890,6 +908,9 @@ public class GridDhtPartitionDemander {
             try {
                 GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
+                if (cctx == null)
+                    return true;
+
                 if (cctx.isNear())
                     cctx = cctx.dhtCache().context();
 
@@ -913,15 +934,15 @@ public class GridDhtPartitionDemander {
                         cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
                         false
                     )) {
-                        cached.touch(topVer); // Start tracking.
+                        cached.touch(); // Start tracking.
 
                         if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
-                                (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
+                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(), null,
+                                null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
                                 false, null, null, null, true);
                     }
                     else {
-                        cached.touch(topVer); // Start tracking.
+                        cached.touch(); // Start tracking.
 
                         if (log.isTraceEnabled())
                             log.trace("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +

@@ -17,21 +17,23 @@
 
 package org.apache.ignite.stream.storm;
 
+import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Apache Storm streamer tests.
  */
-public class IgniteStormStreamerSelfTestSuite extends TestSuite {
-
+@RunWith(AllTests.class)
+public class IgniteStormStreamerSelfTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("Apache Storm streamer Test Suite");
 
-        suite.addTest(new TestSuite(StormIgniteStreamerSelfTest.class));
+        suite.addTest(new JUnit4TestAdapter(StormIgniteStreamerSelfTest.class));
 
         return suite;
     }

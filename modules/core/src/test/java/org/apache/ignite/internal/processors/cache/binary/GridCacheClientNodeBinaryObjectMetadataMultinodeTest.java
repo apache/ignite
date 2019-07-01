@@ -31,27 +31,26 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private boolean client;
 
@@ -61,7 +60,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -86,12 +85,13 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientMetadataInitialization() throws Exception {
         startGrids(2);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        final ConcurrentHashSet<String> allTypes = new ConcurrentHashSet<>();
+        final GridConcurrentHashSet<String> allTypes = new GridConcurrentHashSet<>();
 
         IgniteInternalFuture<?> fut;
 
@@ -181,6 +181,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testFailoverOnStart() throws Exception {
         startGrids(4);
 
@@ -267,6 +268,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClientStartsFirst() throws Exception {
         client = true;
 

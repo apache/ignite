@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { BehaviorSubject } from 'rxjs';
 import _ from 'lodash';
 
 /**

@@ -22,10 +22,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.worker.WorkersControlMXBeanImpl;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * {@link WorkersControlMXBean} test.
  */
+@RunWith(JUnit4.class)
 public class WorkersControlMXBeanTest extends GridCommonAbstractTest {
     /** Test thread name. */
     private static final String TEST_THREAD_NAME = "test-thread";
@@ -33,6 +37,7 @@ public class WorkersControlMXBeanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testStopThreadByUniqueName() throws Exception {
         WorkersControlMXBean workersCtrlMXBean = new WorkersControlMXBeanImpl(null);
 
@@ -56,6 +61,7 @@ public class WorkersControlMXBeanTest extends GridCommonAbstractTest {
     /**
      * @throws Exception Thrown if test fails.
      */
+    @Test
     public void testStopThreadById() throws Exception {
         WorkersControlMXBean workersCtrlMXBean = new WorkersControlMXBeanImpl(null);
 

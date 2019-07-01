@@ -1317,7 +1317,7 @@ public class GridCacheUtils {
 
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
-        else if (e instanceof ClusterTopologyServerNotFoundException)
+        else if (e.hasCause(ClusterTopologyServerNotFoundException.class))
             return new CacheServerNotFoundException(e.getMessage(), e);
         else if (e instanceof SchemaOperationException)
             return new CacheException(e.getMessage(), e);
@@ -1796,7 +1796,7 @@ public class GridCacheUtils {
                     }
                     finally {
                         if (entry != null)
-                            entry.touch(topVer);
+                            entry.touch();
 
                         cctx.shared().database().checkpointReadUnlock();
                     }

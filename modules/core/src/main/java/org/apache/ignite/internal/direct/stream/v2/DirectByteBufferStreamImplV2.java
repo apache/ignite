@@ -29,6 +29,7 @@ import java.util.RandomAccess;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -298,7 +299,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     private long uuidLocId;
 
     /** */
-    private boolean lastFinished;
+    protected boolean lastFinished;
 
     /**
      * @param msgFactory Message factory.
@@ -655,6 +656,11 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
                 uuidState = 0;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
@@ -1153,6 +1159,11 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
+    @Override public AffinityTopologyVersion readAffinityTopologyVersion() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
@@ -1587,7 +1598,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param val Value.
      * @param writer Writer.
      */
-    private void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
+    protected void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
                 writeByte((Byte)val);
@@ -1689,6 +1700,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
                 break;
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 try {
                     if (val != null)
@@ -1713,7 +1725,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
      * @param reader Reader.
      * @return Value.
      */
-    private Object read(MessageCollectionItemType type, MessageReader reader) {
+    protected Object read(MessageCollectionItemType type, MessageReader reader) {
         switch (type) {
             case BYTE:
                 return readByte();
@@ -1775,6 +1787,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
             case IGNITE_UUID:
                 return readIgniteUuid();
 
+            case AFFINITY_TOPOLOGY_VERSION:
             case MSG:
                 return readMessage(reader);
 

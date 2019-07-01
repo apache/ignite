@@ -34,10 +34,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNodePutGetTest {
     /** {@inheritDoc} */
     @Override protected boolean indexingEnabled() {
@@ -46,6 +50,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
 
     /**
      */
+    @Test
     public void testGroupIndexes() {
         IgniteEx ig = grid(0);
 
@@ -74,6 +79,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
 
     /**
      */
+    @Test
     public void testGroupIndexes2() {
         IgniteEx ig = grid(0);
 

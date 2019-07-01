@@ -249,7 +249,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         if (encryptionDisabled)
             return false;
 
-        return encMgr.groupKey(grpId) != null;
+        return encMgr != null && encMgr.groupKey(grpId) != null;
     }
 
     /**
@@ -556,7 +556,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long msb = in.readLong();
                 long lsb = in.readLong();
                 boolean hasPtr = in.readByte() != 0;
-                int idx = hasPtr ? in.readInt() : 0;
+                long idx = hasPtr ? in.readLong() : 0;
                 int off = hasPtr ? in.readInt() : 0;
                 int len = hasPtr ? in.readInt() : 0;
 
@@ -1948,7 +1948,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             return false;
 
         for (DataEntry e : rec.writeEntries()) {
-            if(needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
+            if (cctx.cacheContext(e.cacheId()) != null && needEncryption(cctx.cacheContext(e.cacheId()).groupId()))
                 return true;
         }
 

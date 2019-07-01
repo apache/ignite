@@ -21,11 +21,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for {@link org.apache.ignite.thread.IgniteThread}.
  */
 @GridCommonTest(group = "Utils")
+@RunWith(JUnit4.class)
 public class GridThreadTest extends GridCommonAbstractTest {
     /** Thread count. */
     private static final int THREAD_CNT = 3;
@@ -33,6 +37,7 @@ public class GridThreadTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAssertion() throws Exception {
         Collection<IgniteThread> ts = new ArrayList<>();
 

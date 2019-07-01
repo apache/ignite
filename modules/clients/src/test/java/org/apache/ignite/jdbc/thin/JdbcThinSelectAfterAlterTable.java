@@ -27,19 +27,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Base class for complex SQL tests based on JDBC driver.
  */
+@RunWith(JUnit4.class)
 public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
     /** Client connection port. */
     private int cliPort = ClientConnectorConfiguration.DFLT_PORT;
 
@@ -54,12 +52,6 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME));
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPort(cliPort++));
 
@@ -119,7 +111,7 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    @Test
     public void testSelectAfterAlterTableSingleNode() throws Exception {
         stmt.executeUpdate("alter table person add age int");
 
@@ -129,7 +121,7 @@ public class JdbcThinSelectAfterAlterTable extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
+    @Test
     public void testSelectAfterAlterTableMultiNode() throws Exception {
         try (Connection conn2 = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:"
             + (ClientConnectorConfiguration.DFLT_PORT + 1))) {

@@ -265,8 +265,10 @@ class BinaryCommunicator
         $ordinal = $buffer->readInteger();
         $enumItem->setOrdinal($ordinal);
         $type = $this->typeStorage->getType($enumItem->getTypeId());
-        if (!$type->isEnum() || !$type->getEnumValues() || count($type->getEnumValues()) <= $ordinal) {
-            BinaryUtils::serializationError(false, 'EnumItem can not be deserialized: type mismatch');
+        if (!$type || !$type->isEnum()) {
+            BinaryUtils::enumSerializationError(false, sprintf('enum type id "%d" is not registered', $enumItem->getTypeId()));
+        } elseif (!$type->getEnumValues() || count($type->getEnumValues()) <= $ordinal) {
+            BinaryUtils::enumSerializationError(false, 'type mismatch');
         }
         $enumValues = $type->getEnumValues();
         $enumItem->setName($enumValues[$ordinal][0]);
@@ -396,21 +398,22 @@ class BinaryCommunicator
 
     private function writeEnum(MessageBuffer $buffer, EnumItem $enumValue): void
     {
+        $type = $this->typeStorage->getType($enumValue->getTypeId());
+        if (!$type || !$type->isEnum()) {
+            BinaryUtils::enumSerializationError(true, sprintf('enum type id "%d" is not registered', $enumValue->getTypeId()));
+        }
         $buffer->writeInteger($enumValue->getTypeId());
         if ($enumValue->getOrdinal() !== null) {
             $buffer->writeInteger($enumValue->getOrdinal());
             return;
         } elseif ($enumValue->getName() !== null || $enumValue->getValue() !== null) {
-            $type = $this->typeStorage->getType($enumValue->getTypeId());
-            if ($type && $type->isEnum()) {
-                $enumValues = $type->getEnumValues();
-                if ($enumValues) {
-                    for ($i = 0; $i < count($enumValues); $i++) {
-                        if ($enumValue->getName() === $enumValues[$i][0] ||
-                            $enumValue->getValue() === $enumValues[$i][1]) {
-                            $buffer->writeInteger($i);
-                            return;
-                        }
+            $enumValues = $type->getEnumValues();
+            if ($enumValues) {
+                for ($i = 0; $i < count($enumValues); $i++) {
+                    if ($enumValue->getName() === $enumValues[$i][0] ||
+                        $enumValue->getValue() === $enumValues[$i][1]) {
+                        $buffer->writeInteger($i);
+                        return;
                     }
                 }
             }

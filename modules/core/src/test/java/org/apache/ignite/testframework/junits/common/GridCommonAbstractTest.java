@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -316,7 +317,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return DHT cache.
      */
     protected <K, V> GridDhtCacheAdapter<K, V> dht() {
-        return this.<K, V>near().dht();
+        GridCacheAdapter<K, V> internalCache = ((IgniteKernal)grid()).internalCache(DEFAULT_CACHE_NAME);
+
+        return internalCache.isNear() ? internalCache.context().near().dht() : internalCache.context().dht();
     }
 
     /**
@@ -324,7 +327,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return DHT cache.
      */
     protected <K, V> GridDhtCacheAdapter<K, V> dht(int idx) {
-        return this.<K, V>near(idx).dht();
+        GridCacheAdapter<K, V> internalCache = ((IgniteKernal)grid(idx)).internalCache(DEFAULT_CACHE_NAME);
+
+        return internalCache.isNear() ? internalCache.context().near().dht() : internalCache.context().dht();
     }
 
     /**
@@ -333,7 +338,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return DHT cache.
      */
     protected <K, V> GridDhtCacheAdapter<K, V> dht(int idx, String cache) {
-        return this.<K, V>near(idx, cache).dht();
+        GridCacheAdapter<K, V> internalCache = ((IgniteKernal)grid(idx)).internalCache(cache);
+
+        return internalCache.isNear() ? internalCache.context().near().dht() : internalCache.context().dht();
     }
 
     /**
@@ -392,6 +399,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected static <K, V> GridDhtColocatedCache<K, V> colocated(IgniteCache<K, V> cache) {
         return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().colocated();
+    }
+
+    /**
+     * @param cache Ignite cache.
+     * @return CacheAtomicityMode for given cache.
+     */
+    public static CacheAtomicityMode atomicityMode(IgniteCache cache) {
+        return ((CacheConfiguration)cache.getConfiguration(CacheConfiguration.class)).getAtomicityMode();
     }
 
     /**
@@ -481,7 +496,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void setUp() throws Exception {
+    @Override public void setUp() throws Exception {
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
             @Override public boolean verify(String s, SSLSession sslSes) {
@@ -495,7 +510,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void tearDown() throws Exception {
+    @Override public void tearDown() throws Exception {
         getTestCounters().incrementStopped();
 
         super.tearDown();
@@ -670,7 +685,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
-                                Collection<ClusterNode> affNodes =
+                                List<ClusterNode> affNodes =
                                     dht.context().affinity().assignment(readyVer).idealAssignment().get(p);
 
                                 int affNodesCnt = affNodes.size();
@@ -684,8 +699,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
+                                boolean notPrimary = !affNodes.isEmpty() &&
+                                    !exchMgr.rebalanceTopologyVersion().equals(AffinityTopologyVersion.NONE) &&
+                                    !affNodes.get(0).equals(dht.context().affinity().primaryByPartition(p, readyVer));
+
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
-                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
+                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING) ||
+                                    notPrimary) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
                                             "igniteInstanceName=" + g.name() +
@@ -1384,7 +1404,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeek(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, null, null);
+        return cache.localPeek(key, null);
     }
 
     /**
@@ -1392,7 +1412,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param key Key.
      */
     protected static <K, V> V localPeekOnHeap(GridCacheAdapter<K, V> cache, K key) throws IgniteCheckedException {
-        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP}, null);
+        return cache.localPeek(key, new CachePeekMode[] {CachePeekMode.ONHEAP});
     }
 
     /**
@@ -1996,17 +2016,26 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
 
-            for (GridCacheFuture<?> fut : futs)
-                log.info("Waiting for future: " + fut);
+            boolean hasFutures = false;
 
-            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+            for (GridCacheFuture<?> fut : futs) {
+                if (!fut.isDone()) {
+                    log.error("Expecting no active future [node=" + ig.localNode().id() + ", fut=" + fut + ']');
+
+                    hasFutures = true;
+                }
+            }
+
+            if (hasFutures)
+                fail("Some mvcc futures are not finished");
 
             Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
 
             for (IgniteInternalTx tx : txs)
-                log.info("Waiting for tx: " + tx);
+                log.error("Expecting no active transaction [node=" + ig.localNode().id() + ", tx=" + tx + ']');
 
-            assertTrue("Expecting no active transactions: node=" + ig.localNode().id(), txs.isEmpty());
+            if (!txs.isEmpty())
+                fail("Some transaction are not finished");
         }
     }
 }

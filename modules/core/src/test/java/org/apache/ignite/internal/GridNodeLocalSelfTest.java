@@ -26,11 +26,15 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * This test will test node local storage.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
     /** Create test. */
     public GridNodeLocalSelfTest() {
@@ -42,6 +46,7 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If test failed.
      */
+    @Test
     public void testNodeLocal() throws Exception {
         Ignite g = G.ignite(getTestIgniteInstanceName());
 
@@ -70,6 +75,7 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception if test failed.
      */
+    @Test
     public void testClearNodeLocalMap() throws Exception {
         final String key = "key";
         final String value = "value";

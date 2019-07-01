@@ -48,9 +48,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.command.Prepared;
@@ -60,6 +57,9 @@ import org.h2.message.DbException;
 import org.h2.table.Column;
 import org.h2.value.Value;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -67,10 +67,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridQueryParsingTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** */
     private static Ignite ignite;
 
@@ -78,12 +76,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(disco);
 
         c.setCacheConfiguration(
             cacheConfiguration(DEFAULT_CACHE_NAME, "SCH1", String.class, Person.class),
@@ -135,6 +127,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testParseSelectAndUnion() throws Exception {
         checkQuery("select 1 from Person p where addrIds in ((1,2,3), (3,4,5))");
         checkQuery("select 1 from Person p where addrId in ((1,))");
@@ -328,6 +321,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUseIndexHints() throws Exception {
         checkQuery("select * from Person use index (\"PERSON_NAME_IDX\")");
         checkQuery("select * from Person use index (\"PERSON_PARENTNAME_IDX\")");
@@ -345,6 +339,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testParseTableFilter() throws Exception {
         Prepared prepared = parse("select Person.old, p1.old, p1.addrId from Person, Person p1 " +
             "where exists(select 1 from sch2.Address a where a.id = p1.addrId)");
@@ -388,6 +383,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseMerge() throws Exception {
         /* Plain rows w/functions, operators, defaults, and placeholders. */
         checkQuery("merge into Person(old, name) values(5, 'John')");
@@ -434,6 +430,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseInsert() throws Exception {
         /* Plain rows w/functions, operators, defaults, and placeholders. */
         checkQuery("insert into Person(old, name) values(5, 'John')");
@@ -476,6 +473,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseDelete() throws Exception {
         checkQuery("delete from Person");
         checkQuery("delete from Person p where p.old > ?");
@@ -487,6 +485,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseUpdate() throws Exception {
         checkQuery("update Person set name='Peter'");
         checkQuery("update Person per set name='Peter', old = 5");
@@ -503,6 +502,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testParseCreateIndex() throws Exception {
         assertCreateIndexEquals(
             buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED,
@@ -561,6 +561,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testParseDropIndex() throws Exception {
         // Schema that is not set defaults to default schema of connection which is sch1
         assertDropIndexEquals(buildDropIndex("idx", "sch1", false), "drop index idx");
@@ -578,6 +579,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testParseDropTable() throws Exception {
         // Schema that is not set defaults to default schema of connection which is sch1
         assertDropTableEquals(buildDropTable("sch1", "tbl", false), "drop table tbl");
@@ -593,6 +595,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseCreateTable() throws Exception {
         assertCreateTableEquals(
             buildCreateTable("sch1", "Person", "cache", F.asList("id", "city"),
@@ -636,6 +639,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseCreateTableWithDefaults() {
         assertParseThrows("create table Person (id int primary key, age int, " +
                 "ts TIMESTAMP default CURRENT_TIMESTAMP()) WITH \"template=cache\"",
@@ -653,6 +657,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
     public void testParseAlterTableAddColumn() throws Exception {
         assertAlterTableAddColumnEquals(buildAlterTableAddColumn("SCH2", "Person", false, false,
             c("COMPANY", Value.STRING)), "ALTER TABLE SCH2.Person ADD company varchar");

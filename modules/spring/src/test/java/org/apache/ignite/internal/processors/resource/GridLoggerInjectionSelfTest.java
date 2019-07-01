@@ -28,10 +28,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for injected logger category.
  */
+@RunWith(JUnit4.class)
 public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implements Externalizable {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -45,6 +49,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureField() throws Exception {
         Ignite ignite = grid(0);
 
@@ -72,6 +77,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testClosureMethod() throws Exception {
         Ignite ignite = grid(0);
 
@@ -99,6 +105,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testStringCategory() throws Exception {
         Ignite ignite = grid(0);
 

@@ -13,8 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
+
 from pyignite.api import *
-from pyignite.datatypes import IntObject
+from pyignite.datatypes import (
+    CollectionObject, IntObject, MapObject, TimestampObject,
+)
 
 
 def test_put_get(client, cache):
@@ -325,3 +329,72 @@ def test_cache_get_size(client, cache):
     result = cache_get_size(client, cache)
     assert result.status == 0
     assert result.value == 1
+
+
+def test_put_get_collection(client):
+
+    test_datetime = datetime(year=1996, month=3, day=1)
+
+    cache = client.get_or_create_cache('test_coll_cache')
+    cache.put(
+        'simple',
+        (
+            1,
+            [
+                (123, IntObject),
+                678,
+                None,
+                55.2,
+                ((test_datetime, 0), TimestampObject),
+            ]
+        ),
+        value_hint=CollectionObject
+    )
+    value = cache.get('simple')
+    assert value == (1, [123, 678, None, 55.2, (test_datetime, 0)])
+
+    cache.put(
+        'nested',
+        (
+            1,
+            [
+                123,
+                ((1, [456, 'inner_test_string', 789]), CollectionObject),
+                'outer_test_string',
+            ]
+        ),
+        value_hint=CollectionObject
+    )
+    value = cache.get('nested')
+    assert value == (
+        1,
+        [
+            123,
+            (1, [456, 'inner_test_string', 789]),
+            'outer_test_string'
+        ]
+    )
+
+
+def test_put_get_map(client):
+
+    cache = client.get_or_create_cache('test_map_cache')
+
+    cache.put(
+        'test_map',
+        (
+            MapObject.HASH_MAP,
+            {
+                (123, IntObject): 'test_data',
+                456: ((1, [456, 'inner_test_string', 789]), CollectionObject),
+                'test_key': 32.4,
+            }
+        ),
+        value_hint=MapObject
+    )
+    value = cache.get('test_map')
+    assert value == (MapObject.HASH_MAP, {
+        123: 'test_data',
+        456: (1, [456, 'inner_test_string', 789]),
+        'test_key': 32.4,
+    })

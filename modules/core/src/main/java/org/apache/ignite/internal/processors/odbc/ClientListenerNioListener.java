@@ -27,11 +27,14 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -59,7 +62,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
 
     /** Connection-related metadata key. */
-    static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    public static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Next connection id. */
     private static AtomicInteger nextConnId = new AtomicInteger(1);
@@ -140,6 +143,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             req = parser.decode(msg);
         }
         catch (Exception e) {
+            try {
+                handler.unregisterRequest(parser.decodeRequestId(msg));
+            }
+            catch (Exception e1) {
+                U.error(log, "Failed to unregister request.", e1);
+            }
+
             U.error(log, "Failed to parse client request.", e);
 
             ses.close();
@@ -159,7 +169,23 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                     ses.remoteAddress() + ", req=" + req + ']');
             }
 
-            ClientListenerResponse resp = handler.handle(req);
+            ClientListenerResponse resp;
+
+            AuthorizationContext authCtx = connCtx.authorizationContext();
+            SecurityContext oldSecCtx = SecurityContextHolder.push(connCtx.securityContext());
+
+            if (authCtx != null)
+                AuthorizationContext.context(authCtx);
+
+            try {
+                resp = handler.handle(req);
+            }
+            finally {
+                SecurityContextHolder.pop(oldSecCtx);
+
+                if (authCtx != null)
+                    AuthorizationContext.clear();
+            }
 
             if (resp != null) {
                 if (log.isDebugEnabled()) {
@@ -175,6 +201,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             }
         }
         catch (Exception e) {
+            handler.unregisterRequest(req.requestId());
+
             U.error(log, "Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e, req)));

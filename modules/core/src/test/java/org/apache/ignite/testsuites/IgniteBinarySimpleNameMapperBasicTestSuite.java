@@ -21,11 +21,14 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Basic test suite.
  */
-public class IgniteBinarySimpleNameMapperBasicTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteBinarySimpleNameMapperBasicTestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

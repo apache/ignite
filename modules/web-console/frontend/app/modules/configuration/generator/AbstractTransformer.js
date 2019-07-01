@@ -154,6 +154,11 @@ export default class AbstractTransformer {
     }
 
     // Generate marshaller group.
+    static clusterMvcc(cluster, available) {
+        return this.toSection(this.generator.clusterMvcc(cluster, available));
+    }
+
+    // Generate marshaller group.
     static clusterMarshaller(cluster, available) {
         return this.toSection(this.generator.clusterMarshaller(cluster, available));
     }

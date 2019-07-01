@@ -18,11 +18,8 @@
 import {suite, test} from 'mocha';
 import {assert} from 'chai';
 import {spy} from 'sinon';
-import {TestScheduler} from 'rxjs/testing/TestScheduler';
-import {Observable} from 'rxjs/Observable';
-
-import 'rxjs/add/observable/of';
-import 'rxjs/add/observable/throw';
+import {of, throwError} from 'rxjs';
+import {TestScheduler} from 'rxjs/testing';
 
 const mocks = () => new Map([
     ['IgniteConfigurationResource', {}],
@@ -79,7 +76,7 @@ suite.skip('PageConfigure service', () => {
 
             const deps = mocks()
             .set('Clusters', {
-                saveCluster$: (c) => Observable.of({data: 99})
+                saveCluster$: (c) => of({data: 99})
             })
             .set('ConfigureState', {
                 actions$: testScheduler.createHotObservable(actions, values),
@@ -135,8 +132,8 @@ suite.skip('PageConfigure service', () => {
             const deps = mocks()
             .set('Clusters', {
                 saveCluster$: (c) => c.name === values.b.clusters[0].name
-                    ? Observable.of({data: 99})
-                    : Observable.throw()
+                    ? of({data: 99})
+                    : throwError()
             })
             .set('ConfigureState', {
                 actions$: testScheduler.createHotObservable(actions, values),
@@ -188,7 +185,7 @@ suite.skip('PageConfigure service', () => {
                 dispatchAction: spy()
             })
             .set('Clusters', {
-                removeCluster$: (v) => Observable.of(v)
+                removeCluster$: (v) => of(v)
             });
             const s = new PageConfigure(...deps.values());
 
@@ -232,7 +229,7 @@ suite.skip('PageConfigure service', () => {
                 dispatchAction: spy()
             })
             .set('Clusters', {
-                removeCluster$: (v) => v._id % 2 ? Observable.of(v) : Observable.throw()
+                removeCluster$: (v) => v._id % 2 ? of(v) : throwError()
             });
             const s = new PageConfigure(...deps.values());
 

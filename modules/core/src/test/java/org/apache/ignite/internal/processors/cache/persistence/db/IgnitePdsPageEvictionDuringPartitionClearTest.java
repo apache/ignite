@@ -34,11 +34,16 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "cache";
@@ -85,7 +90,11 @@ public class IgnitePdsPageEvictionDuringPartitionClearTest extends GridCommonAbs
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testPageEvictionOnNodeStart() throws Exception {
+        if (MvccFeatureChecker.forcedMvcc())
+            fail("https://issues.apache.org/jira/browse/IGNITE-10421");
+
         for (int r = 0; r < 3; r++) {
             cleanPersistenceDir();
 

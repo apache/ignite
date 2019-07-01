@@ -30,15 +30,16 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests for GROUP_CONCAT aggregate function in collocated mode.
  */
 @SuppressWarnings("unchecked")
+@RunWith(JUnit4.class)
 public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
     /** */
     private static final int CLIENT = 7;
@@ -49,18 +50,9 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(CACHE_NAME)
@@ -115,6 +107,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testGroupConcatSimple() {
         IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
 
@@ -139,6 +132,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testGroupConcatOrderBy() {
         IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
 
@@ -164,6 +158,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testGroupConcatWithDistinct() {
         IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
 

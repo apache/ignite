@@ -52,6 +52,9 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.cancelledTasks;
 import static org.apache.ignite.internal.processors.hadoop.state.HadoopTaskExecutionSelfTestValues.executedTasks;
@@ -64,6 +67,7 @@ import static org.apache.ignite.internal.processors.hadoop.impl.HadoopUtils.crea
 /**
  * Tests map-reduce task execution basics.
  */
+@RunWith(JUnit4.class)
 public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /** Test param. */
     private static final String MAP_WRITE = "test.map.write";
@@ -107,6 +111,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapRun() throws Exception {
         int lineCnt = 10000;
         String fileName = "/testFile";
@@ -148,6 +153,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapCombineRun() throws Exception {
         int lineCnt = 10001;
         String fileName = "/testFile";
@@ -196,6 +202,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMapperException() throws Exception {
         prepareFile("/testFile", 1000);
 
@@ -301,6 +308,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testTaskCancelling() throws Exception {
         Configuration cfg = prepareJobForCancelling();
 
@@ -345,6 +353,7 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testJobKill() throws Exception {
         Configuration cfg = prepareJobForCancelling();
 

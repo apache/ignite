@@ -87,7 +87,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
      */
     @Nullable public V peek() {
         try {
-            CacheObject val = cached.peek(null);
+            CacheObject val = cached.peek();
 
             return val != null ? val.<V>value(cached.context().cacheObjectContext(), false) : null;
         }
@@ -151,7 +151,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
                     return null;
 
                 try {
-                    CacheObject val = e.peek(null);
+                    CacheObject val = e.peek();
 
                     return val != null ? val.<V>value(cached.context().cacheObjectContext(), false) : null;
                 }

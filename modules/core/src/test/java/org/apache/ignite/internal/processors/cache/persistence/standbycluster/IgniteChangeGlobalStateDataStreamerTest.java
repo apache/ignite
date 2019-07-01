@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalStateAbstractTest {
     /** {@inheritDoc} */
     @Override protected int backUpNodes() {
@@ -38,6 +42,7 @@ public class IgniteChangeGlobalStateDataStreamerTest extends IgniteChangeGlobalS
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDeActivateAndActivateDataStreamer() throws Exception {
         Ignite ig1 = primary(0);
         Ignite ig2 = primary(1);

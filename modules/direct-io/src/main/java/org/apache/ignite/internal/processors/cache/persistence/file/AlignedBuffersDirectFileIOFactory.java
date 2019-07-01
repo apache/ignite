@@ -145,11 +145,6 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public FileIO create(File file) throws IOException {
-        return create(file, CREATE, READ, WRITE);
-    }
-
-    /** {@inheritDoc} */
     @Override public FileIO create(File file, OpenOption... modes) throws IOException {
         if (useBackupFactory)
             return backupFactory.create(file, modes);

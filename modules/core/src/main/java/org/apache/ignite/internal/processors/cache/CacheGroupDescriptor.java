@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -310,5 +311,23 @@ public class CacheGroupDescriptor {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheGroupDescriptor.class, this, "cacheName", cacheCfg.getName());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        CacheGroupDescriptor that = (CacheGroupDescriptor) o;
+
+        return grpId == that.grpId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(grpId);
     }
 }

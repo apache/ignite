@@ -256,6 +256,15 @@ panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.lo
                     min: '1',
                     tip: 'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store'
                 })
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.7.0")')
+                +form-field__number({
+                    label: 'Checkpoint read lock timeout:',
+                    model: `${model}.checkpointReadLockTimeout`,
+                    name: '"DataStorageCheckpointReadLockTimeout"',
+                    placeholder: 'System workers blocked timeout',
+                    min: '1',
+                    tip: 'Timeout for checkpoint read lock acquisition'
+                })
             .pc-form-grid-col-20
                 +form-field__number({
                     label: 'Checkpoint threads:',

@@ -26,6 +26,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.util.Collection;
 import java.util.List;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tries to execute dummy gridified task. It should fail because grid is not started.
@@ -33,10 +36,12 @@ import java.util.List;
  * The main purpose of this test is to check that AOP is properly configured. It should
  * be included in all suites that require AOP.
  */
+@RunWith(JUnit4.class)
 public class BasicAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAop() throws Exception {
         try {
             gridify();

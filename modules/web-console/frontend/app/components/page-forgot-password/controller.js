@@ -24,22 +24,26 @@ export default class PageForgotPassword {
     data = {email: null};
     /** @type {string} */
     serverError = null;
+    /** @type {JQLite} */
+    el;
 
-    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils'];
+    static $inject = ['Auth', 'IgniteMessages', 'IgniteFormUtils', '$element'];
 
     /**
      * @param {import('app/modules/user/Auth.service').default} Auth
      */
-    constructor(Auth, IgniteMessages, IgniteFormUtils) {
+    constructor(Auth, IgniteMessages, IgniteFormUtils, el) {
         this.Auth = Auth;
         this.IgniteMessages = IgniteMessages;
         this.IgniteFormUtils = IgniteFormUtils;
+        this.el = el;
     }
     /** @param {import('./types').IForgotPasswordFormController} form */
     canSubmitForm(form) {
         return form.$error.server ? true : !form.$invalid;
     }
     $postLink() {
+        this.el.addClass('public-page');
         this.form.email.$validators.server = () => !this.serverError;
     }
 

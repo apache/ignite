@@ -21,10 +21,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /** */
     private static final String VALID_DEFAULT_MEM_PLC_NAME = "valid_dlft_mem_plc";
@@ -240,6 +244,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * 'sysMemPlc' name is reserved for MemoryPolicyConfiguration for system caches.
      */
+    @Test
     public void testReservedMemoryPolicyMisuse() throws Exception {
         violationType = ValidationViolationType.SYSTEM_MEMORY_POLICY_NAME_MISUSE;
 
@@ -249,6 +254,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * If user defines default is must be presented among configured memory policies.
      */
+    @Test
     public void testMissingUserDefinedDefault() throws Exception {
         violationType = ValidationViolationType.MISSING_USER_DEFINED_DEFAULT;
 
@@ -258,6 +264,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * Names of all MemoryPolicies must be distinct.
      */
+    @Test
     public void testNamesConflict() throws Exception {
         violationType = ValidationViolationType.NAMES_CONFLICT;
 
@@ -267,6 +274,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * User-defined policy must have a non-null non-empty name.
      */
+    @Test
     public void testNullNameOnUserDefinedPolicy() throws Exception {
         violationType = ValidationViolationType.NULL_NAME_ON_USER_DEFINED_POLICY;
 
@@ -276,6 +284,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * MemoryPolicy must be configured with size of at least 1MB.
      */
+    @Test
     public void testMemoryTooSmall() throws Exception {
         violationType = ValidationViolationType.TOO_SMALL_MEMORY_SIZE;
 
@@ -285,6 +294,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * MemoryPolicy must be configured with size of at least 1MB.
      */
+    @Test
     public void testMaxSizeSmallerThanInitialSize() throws Exception {
         violationType = ValidationViolationType.MAX_SIZE_IS_SMALLER_THAN_INITIAL_SIZE;
 
@@ -294,6 +304,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      * User-defined size of default MemoryPolicy must be at least 1MB.
      */
+    @Test
     public void testUserDefinedDefaultMemoryTooSmall() throws Exception {
         violationType = ValidationViolationType.TOO_SMALL_USER_DEFINED_DFLT_MEM_PLC_SIZE;
 
@@ -304,6 +315,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
      * Defining size of default MemoryPolicy twice with and through <b>defaultMemoryPolicySize</b> property
      * and using <b>MemoryPolicyConfiguration</b> description is prohibited.
      */
+    @Test
     public void testDefaultMemoryPolicySizeDefinedTwice() throws Exception {
         violationType = ValidationViolationType.DEFAULT_SIZE_IS_DEFINED_TWICE;
 
@@ -313,6 +325,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testRateTimeIntervalPropertyIsNegative() throws Exception {
         violationType = ValidationViolationType.LTE_ZERO_RATE_TIME_INTERVAL;
 
@@ -322,6 +335,7 @@ public class MemoryPolicyConfigValidationTest extends GridCommonAbstractTest {
     /**
      *
      */
+    @Test
     public void testSubIntervalsPropertyIsNegative() throws Exception {
         violationType = ValidationViolationType.LTE_ZERO_SUB_INTERVALS;
 

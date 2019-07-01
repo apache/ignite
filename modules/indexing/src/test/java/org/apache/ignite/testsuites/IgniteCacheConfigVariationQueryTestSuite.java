@@ -20,16 +20,18 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsQueryTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.junit.runner.RunWith;
+import org.junit.runners.AllTests;
 
 /**
  * Test suite for cache queries.
  */
-public class IgniteCacheConfigVariationQueryTestSuite extends TestSuite {
+@RunWith(AllTests.class)
+public class IgniteCacheConfigVariationQueryTestSuite {
     /**
      * @return Test suite.
-     * @throws Exception If failed.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         return new ConfigVariationsTestSuiteBuilder(
             "Cache Config Variations Query Test Suite",
             IgniteCacheConfigVariationsQueryTest.class)

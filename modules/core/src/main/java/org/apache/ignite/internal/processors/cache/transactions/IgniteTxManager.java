@@ -267,7 +267,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     // Wait some time in case there are some unprocessed messages from failed node.
                     cctx.time().addTimeoutObject(
-                        new NodeFailureTimeoutObject(evt.eventNode(), discoCache.mvccCoordinator()));
+                        new NodeFailureTimeoutObject(evt.eventNode(), cctx.coordinators().currentCoordinator()));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
@@ -323,7 +323,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void rollbackMvccTxOnCoordinatorChange() {
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx.mvccSnapshot() != null)
+            if (tx.mvccSnapshot() != null && tx instanceof GridNearTxLocal)
                 ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
         }
     }
@@ -895,7 +895,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             throw new IgniteCheckedException("Transaction is marked for rollback: " + tx);
         }
 
-        if (tx.remainingTime() == -1) {
+        // One-phase commit tx cannot timeout on prepare because it is expected to be committed.
+        if (tx.remainingTime() == -1 && !tx.onePhaseCommit()) {
             tx.setRollbackOnly();
 
             throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);

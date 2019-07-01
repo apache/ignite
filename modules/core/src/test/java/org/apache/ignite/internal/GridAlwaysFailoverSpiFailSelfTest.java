@@ -36,11 +36,15 @@ import org.apache.ignite.spi.failover.FailoverContext;
 import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Always failover SPI test.
  */
 @GridCommonTest(group = "Kernal Self")
+@RunWith(JUnit4.class)
 public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean isFailoverCalled;
@@ -62,7 +66,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedCatchParameter", "ThrowableInstanceNeverThrown"})
+    @Test
     public void testFailoverTask() throws Exception {
         isFailoverCalled = false;
 
@@ -86,7 +90,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"UnusedCatchParameter", "ThrowableInstanceNeverThrown"})
+    @Test
     public void testNoneFailoverTask() throws Exception {
         isFailoverCalled = false;
 

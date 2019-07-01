@@ -48,6 +48,9 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -58,6 +61,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Cache count down latch self test.
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomicsAbstractTest
     implements Externalizable {
     /** */
@@ -77,6 +81,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatch() throws Exception {
         checkLatch();
     }
@@ -87,6 +92,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      *
      * @throws Exception If failed.
      */
+    @Test
     public void testIsolation() throws Exception {
         Ignite ignite = grid(0);
 
@@ -325,6 +331,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchMultinode1() throws Exception {
         if (gridCount() == 1)
             return;
@@ -382,6 +389,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchBroadcast() throws Exception {
         Ignite ignite = grid(0);
         ClusterGroup srvsGrp = ignite.cluster().forServers();
@@ -434,6 +442,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLatchMultinode2() throws Exception {
         if (gridCount() == 1)
             return;

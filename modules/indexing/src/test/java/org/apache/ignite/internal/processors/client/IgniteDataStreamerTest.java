@@ -28,11 +28,15 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CachePeekMode.ALL;
 
 /**
  */
+@RunWith(JUnit4.class)
 public class IgniteDataStreamerTest extends GridCommonAbstractTest {
     public static final String CACHE_NAME = "UUID_CACHE";
 
@@ -83,6 +87,7 @@ public class IgniteDataStreamerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStreamerIgniteUuid() throws Exception {
         Ignite client = grid("client");
 

@@ -34,10 +34,14 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test to validate https://issues.apache.org/jira/browse/IGNITE-2310
  */
+@RunWith(JUnit4.class)
 public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
     /** Atomic cache. */
     private static final String ATOMIC_CACHE = "atomic";
@@ -137,6 +141,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotReservedAtomicCacheOp() throws Exception {
         notReservedCacheOp(ATOMIC_CACHE);
     }
@@ -144,6 +149,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNotReservedTxCacheOp() throws Exception {
         notReservedCacheOp(TRANSACT_CACHE);
     }
@@ -202,6 +208,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testReservedPartitionCacheOp() throws Exception {
         // Workaround for initial update job metadata.
         grid(0).cache(Person.class.getSimpleName()).clear();

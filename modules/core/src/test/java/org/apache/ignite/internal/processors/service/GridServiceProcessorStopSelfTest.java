@@ -37,10 +37,14 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests that {@link GridServiceProcessor} completes deploy/undeploy futures during node stop.
  */
+@RunWith(JUnit4.class)
 public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -52,6 +56,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopDuringDeployment() throws Exception {
         final CountDownLatch depLatch = new CountDownLatch(1);
 
@@ -98,6 +103,7 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStopDuringHangedDeployment() throws Exception {
         final CountDownLatch depLatch = new CountDownLatch(1);
 

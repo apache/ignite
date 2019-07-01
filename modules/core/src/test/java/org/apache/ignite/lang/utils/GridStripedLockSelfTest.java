@@ -24,10 +24,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridStripedLockSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int STRIPE_COUNT = 16;
@@ -54,6 +58,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testIntLocking() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -87,6 +92,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLongLocking() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -120,6 +126,7 @@ public class GridStripedLockSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testObjectLocking() throws Exception {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {

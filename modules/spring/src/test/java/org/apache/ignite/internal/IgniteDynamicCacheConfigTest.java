@@ -28,10 +28,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Test for dynamic cache start from config file.
  */
+@RunWith(JUnit4.class)
 public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "TestDynamicCache";
@@ -86,6 +90,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheStartFromConfig() throws Exception {
         IgniteCache cache = ignite(0).createCache(load(
             "modules/spring/src/test/java/org/apache/ignite/internal/cache.xml"));
@@ -101,6 +106,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicNearCacheStartFromConfig() throws Exception {
         testAttribute = false;
 
@@ -130,6 +136,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testCreateNearCache() throws Exception {
         testAttribute = false;
 
@@ -162,6 +169,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testGetOrCreateNearCache() throws Exception {
         testAttribute = false;
 
@@ -197,6 +205,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testDynamicCacheStartFromNotExistConfig() throws Exception {
         try {
             ignite(0).getOrCreateCache(load("config/cache.xml"));
@@ -211,6 +220,7 @@ public class IgniteDynamicCacheConfigTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testStartCachedWithConfigUrlString() throws Exception {
         GridEmbeddedHttpServer srv = null;
 

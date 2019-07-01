@@ -24,6 +24,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.junit.Assume;
 
 /**
  * Tests the recovery after a dynamic cache start failure, with enabled persistence.
@@ -34,6 +36,7 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
         return 5 * 60 * 1000;
     }
 
+    /** {@inheritDoc} */
     @Override protected boolean persistenceEnabled() {
         return true;
     }
@@ -56,6 +59,8 @@ public class IgniteDynamicCacheStartFailWithPersistenceTest extends IgniteAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10421", MvccFeatureChecker.forcedMvcc());
+
         cleanPersistenceDir();
 
         startGrids(gridCount());

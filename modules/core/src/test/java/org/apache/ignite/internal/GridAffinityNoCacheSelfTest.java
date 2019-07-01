@@ -34,10 +34,14 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Tests usage of affinity in case when cache doesn't exist.
  */
+@RunWith(JUnit4.class)
 public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String EXPECTED_MSG = "Failed to find cache";
@@ -52,6 +56,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityProxyNoCache() throws Exception {
         checkAffinityProxyNoCache(new Object());
     }
@@ -59,6 +64,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityProxyNoCacheCacheObject() throws Exception {
         checkAffinityProxyNoCache(new TestCacheObject(new Object()));
     }
@@ -81,6 +87,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityImplCacheDeleted() throws Exception {
         checkAffinityImplCacheDeleted(new Object());
     }
@@ -88,6 +95,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testAffinityImplCacheDeletedCacheObject() throws Exception {
         checkAffinityImplCacheDeleted(new TestCacheObject(new Object()));
     }

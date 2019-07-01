@@ -22,10 +22,14 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Atomic cache metrics test.
  */
+@RunWith(JUnit4.class)
 public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
@@ -39,6 +43,7 @@ public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelf
     /**
      * Checks that enabled near cache does not affect metrics.
      */
+    @Test
     public void testNearCachePutRemoveGetMetrics() {
         IgniteEx initiator = grid(0);
 

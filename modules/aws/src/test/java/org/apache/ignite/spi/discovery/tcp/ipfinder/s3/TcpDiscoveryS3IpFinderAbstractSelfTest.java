@@ -27,10 +27,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstract
 import org.apache.ignite.testsuites.IgniteIgnore;
 import org.apache.ignite.testsuites.IgniteS3TestSuite;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Abstract TcpDiscoveryS3IpFinder to test with different ways of setting AWS credentials.
  */
+@RunWith(JUnit4.class)
 abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
     extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
     /** Bucket endpoint */
@@ -83,6 +87,7 @@ abstract class TcpDiscoveryS3IpFinderAbstractSelfTest
 
     /** {@inheritDoc} */
     @IgniteIgnore("https://issues.apache.org/jira/browse/IGNITE-2420")
+    @Test
     @Override public void testIpFinder() throws Exception {
         super.testIpFinder();
     }

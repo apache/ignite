@@ -25,10 +25,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCacheAbstractTest {
     /** */
     public static final String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
@@ -62,6 +66,7 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testUsersClassLoader() throws Exception {
         UsersClassLoader testClassLdr = (UsersClassLoader)grid(0).configuration().getClassLoader();
 

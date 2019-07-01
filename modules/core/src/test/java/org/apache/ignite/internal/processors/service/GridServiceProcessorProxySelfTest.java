@@ -29,10 +29,14 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  * Service proxy test.
  */
+@RunWith(JUnit4.class)
 public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
@@ -42,6 +46,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonProxy() throws Exception {
         String name = "testNodeSingletonProxy";
 
@@ -74,6 +79,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
      * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableNotThrown")
+    @Test
     public void testException() throws Exception {
         String name = "errorService";
 
@@ -96,6 +102,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testClusterSingletonProxy() throws Exception {
         String name = "testClusterSingletonProxy";
 
@@ -114,6 +121,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testMultiNodeProxy() throws Exception {
         Ignite ignite = randomGrid();
 
@@ -139,6 +147,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonRemoteNotStickyProxy() throws Exception {
         String name = "testNodeSingletonRemoteNotStickyProxy";
 
@@ -177,6 +186,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testNodeSingletonRemoteStickyProxy() throws Exception {
         String name = "testNodeSingletonRemoteStickyProxy";
 
@@ -212,6 +222,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testSingletonProxyInvocation() throws Exception {
         final String name = "testProxyInvocationFromSeveralNodes";
 
@@ -234,6 +245,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testLocalProxyInvocation() throws Exception {
         final String name = "testLocalProxyInvocation";
 
@@ -274,6 +286,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteNotStickProxyInvocation() throws Exception {
         final String name = "testRemoteNotStickProxyInvocation";
 
@@ -309,6 +322,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
     /**
      * @throws Exception If failed.
      */
+    @Test
     public void testRemoteStickyProxyInvocation() throws Exception {
         final String name = "testRemoteStickyProxyInvocation";
 

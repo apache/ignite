@@ -21,14 +21,13 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -70,16 +69,13 @@ public interface GridQueryIndexing {
     public void onClientDisconnect() throws IgniteCheckedException;
 
     /**
-     * Parses SQL query into two step query and executes it.
+     * Generate SqlFieldsQuery from SqlQuery.
      *
-     * @param schemaName Schema name.
      * @param cacheName Cache name.
      * @param qry Query.
-     * @param keepBinary Keep binary flag.
-     * @throws IgniteCheckedException If failed.
+     * @return Fields query.
      */
-    public <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(String schemaName, String cacheName, SqlQuery qry,
-        boolean keepBinary) throws IgniteCheckedException;
+    public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry);
 
     /**
      * Detect whether SQL query should be executed in distributed or local manner and execute it.
@@ -119,18 +115,6 @@ public interface GridQueryIndexing {
      */
     public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
         SqlClientContext cliCtx) throws IgniteCheckedException;
-
-    /**
-     * Executes regular query.
-     *
-     * @param schemaName Schema name.
-     * @param cacheName Cache name.
-     * @param qry Query.
-     * @param filter Cache name and key filter.
-     * @param keepBinary Keep binary flag.    @return Cursor.
-     */
-    public <K, V> QueryCursor<Cache.Entry<K,V>> queryLocalSql(String schemaName, String cacheName, SqlQuery qry,
-        IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
@@ -293,19 +277,12 @@ public interface GridQueryIndexing {
         throws IgniteCheckedException;
 
     /**
-     * Rebuilds all indexes of given type from hash index.
+     * Rebuild indexes for the given cache if necessary.
      *
-     * @param cacheName Cache name.
-     * @throws IgniteCheckedException If failed.
+     * @param cctx Cache context.
+     * @return Future completed when index rebuild finished.
      */
-    public void rebuildIndexesFromHash(String cacheName) throws IgniteCheckedException;
-
-    /**
-     * Marks all indexes of given type for rebuild from hash index, making them unusable until rebuild finishes.
-     *
-     * @param cacheName Cache name.
-     */
-    public void markForRebuildFromHash(String cacheName);
+    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
 
     /**
      * Returns backup filter.

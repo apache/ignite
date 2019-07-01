@@ -27,10 +27,14 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 /**
  *
  */
+@RunWith(JUnit4.class)
 public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -56,6 +60,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testSqlFieldsQuery() throws IgniteCheckedException {
         // Should not throw despite the cache not having QueryEntities.
         jcache().query(new SqlFieldsQuery("select * from dual")).getAll();
@@ -64,6 +69,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testTextQuery() throws IgniteCheckedException {
         doTest(new Callable<Object>() {
             @Override public Object call() throws IgniteCheckedException {
@@ -75,6 +81,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testSqlQuery() throws IgniteCheckedException {
         // Failure occurs not on validation stage, hence specific error message.
         doTest(new Callable<Object>() {
@@ -87,6 +94,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     /**
      * @throws IgniteCheckedException If failed.
      */
+    @Test
     public void testScanQuery() throws IgniteCheckedException {
         jcache().query(new ScanQuery<>(null)).getAll();
     }

@@ -17,11 +17,14 @@
 
 package org.apache.ignite.examples;
 
+import org.junit.Ignore;
+
 /**
  * Deployment examples multi-node self test.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-711")
 public class DeploymentExamplesMultiNodeSelfTest extends DeploymentExamplesSelfTest {
-    // TODO: IGNITE-711 next example(s) should be implemented for java 8 
+    // TODO: IGNITE-711 next example(s) should be implemented for java 8
     // or testing method(s) should be removed if example(s) does not applicable for java 8.
     /** {@inheritDoc} */
 //    @Override public void testDeploymentExample() throws Exception {

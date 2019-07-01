@@ -388,4 +388,18 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         return outStream.arrayCopy();
     }
+
+    /** {@inheritDoc} */
+    @Override public int decodeCommandType(byte[] msg) {
+        assert msg != null;
+
+        BinaryInputStream inStream = new BinaryHeapInputStream(msg);
+
+        return inStream.readShort();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long decodeRequestId(byte[] msg) {
+        return 0;
+    }
 }
