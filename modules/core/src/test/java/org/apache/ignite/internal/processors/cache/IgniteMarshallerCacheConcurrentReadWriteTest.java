@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -69,6 +70,7 @@ public class IgniteMarshallerCacheConcurrentReadWriteTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Atomic updates multithread")
     public void testConcurrentReadWrite() throws Exception {
         Ignite ignite = startGrid(0);
 
