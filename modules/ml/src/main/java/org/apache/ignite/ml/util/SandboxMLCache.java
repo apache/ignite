@@ -16,8 +16,8 @@
 
 package org.apache.ignite.ml.util;
 
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -28,11 +28,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
 
 /**
  * Common utility code used in some ML examples to set up test cache.
@@ -40,6 +42,9 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 public class SandboxMLCache {
     /** */
     private final Ignite ignite;
+
+    private static final ResourcePatternResolver RESOURCE_RESOLVER =
+        new PathMatchingResourcePatternResolver(SandboxMLCache.class.getClassLoader());
 
     /** */
     public SandboxMLCache(Ignite ignite) {
@@ -72,23 +77,19 @@ public class SandboxMLCache {
      * @return Filled Ignite Cache.
      * @throws FileNotFoundException If file not found.
      */
-    public IgniteCache<Integer, Vector> fillCacheWith(MLSandboxDatasets dataset) throws FileNotFoundException {
-
+    public IgniteCache<Integer, Vector> fillCacheWith(MLSandboxDatasets dataset) throws IOException {
         IgniteCache<Integer, Vector> cache = getCache();
 
         String fileName = dataset.getFileName();
+        Resource[] resources = RESOURCE_RESOLVER.getResources("classpath*:*/" + fileName);
+        A.ensure(resources.length == 1, "Cannot find resource");
 
-        File file = IgniteUtils.resolveIgnitePath(fileName);
-
-        if (file == null)
-            throw new FileNotFoundException(fileName);
-
-        Scanner scanner = new Scanner(file);
+        Scanner scanner = new Scanner(resources[0].getInputStream());
 
         int cnt = 0;
         while (scanner.hasNextLine()) {
             String row = scanner.nextLine();
-            if(dataset.hasHeader() && cnt == 0) {
+            if (dataset.hasHeader() && cnt == 0) {
                 cnt++;
                 continue;
             }
@@ -99,9 +100,11 @@ public class SandboxMLCache {
             NumberFormat format = NumberFormat.getInstance(Locale.FRANCE);
 
             for (int i = 0; i < cells.length; i++)
-                try{
-                    if(cells[i].equals("")) data[i] = Double.NaN;
-                    else data[i] = Double.valueOf(cells[i]);
+                try {
+                    if (cells[i].equals(""))
+                        data[i] = Double.NaN;
+                    else
+                        data[i] = Double.valueOf(cells[i]);
                 } catch (java.lang.NumberFormatException e) {
                     try {
                         data[i] = format.parse(cells[i]).doubleValue();

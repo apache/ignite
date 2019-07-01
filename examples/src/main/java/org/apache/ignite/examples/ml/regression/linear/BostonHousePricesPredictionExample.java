@@ -16,7 +16,7 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -47,7 +47,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class BostonHousePricesPredictionExample {
     /** Runs example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
@@ -84,7 +84,8 @@ public class BostonHousePricesPredictionExample {
                 System.out.println(">>> Model: " + toString(mdl));
                 System.out.println(">>> R^2 score: " + score);
             } finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
     }

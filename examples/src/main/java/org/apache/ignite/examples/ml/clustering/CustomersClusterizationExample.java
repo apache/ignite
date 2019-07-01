@@ -16,7 +16,7 @@
 
 package org.apache.ignite.examples.ml.clustering;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,7 +51,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class CustomersClusterizationExample {
     /** Runs example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 

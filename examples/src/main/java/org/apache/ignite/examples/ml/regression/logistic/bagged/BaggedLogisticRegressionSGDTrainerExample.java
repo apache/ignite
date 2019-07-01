@@ -16,7 +16,7 @@
 
 package org.apache.ignite.examples.ml.regression.logistic.bagged;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -53,7 +53,7 @@ import org.apache.ignite.ml.util.SandboxMLCache;
  */
 public class BaggedLogisticRegressionSGDTrainerExample {
     /** Run example. */
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) throws IOException {
         System.out.println();
         System.out.println(">>> Logistic regression model over partitioned dataset usage example started.");
         // Start ignite grid.
@@ -107,7 +107,8 @@ public class BaggedLogisticRegressionSGDTrainerExample {
 
                 System.out.println(">>> Bagged logistic regression model over partitioned dataset usage example completed.");
             } finally {
-                dataCache.destroy();
+                if (dataCache != null)
+                    dataCache.destroy();
             }
         }
     }
