@@ -23,6 +23,8 @@ import org.jetbrains.annotations.NotNull;
 // t0d0 why must be RTE
 // t0d0 test
 public class IncompleteDeserializationException extends RuntimeException {
+    private static final long serialVersionUID = 0L;
+
     private final DiscoveryCustomMessage m;
 
     public IncompleteDeserializationException(@NotNull DiscoveryCustomMessage m) {
