@@ -3818,6 +3818,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Ignore("Does not handle interruption")
     @Test
     public void testIncrementTxMultipleNodeRestart() throws Exception {
         incrementTxMultiple(false, false, true);
