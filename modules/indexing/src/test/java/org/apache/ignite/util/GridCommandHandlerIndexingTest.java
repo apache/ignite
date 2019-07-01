@@ -25,8 +25,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -45,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.tree.SearchRow;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -54,13 +56,14 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
  *
  */
-public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
+public class GridCommandHandlerIndexingTest extends GridCommandHandlerAbstractTest {
     /** Test cache name. */
-    private static final String CACHE_NAME = "persons-cache-vi";
+    protected static final String CACHE_NAME = "persons-cache-vi";
 
     /**
      * Tests that validation doesn't fail if nothing is broken.
@@ -73,7 +76,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
 
-        assertTrue(testOut.toString().contains("no issues found"));
+        assertContains(log, testOut.toString(), "no issues found");
     }
 
     /**
@@ -95,10 +98,11 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
                 "--check-first", "10000",
                 "--check-through", "10"));
 
-        assertTrue(testOut.toString().contains("issues found (listed above)"));
+        String out = testOut.toString();
 
-        assertTrue(testOut.toString().contains(
-            "Key is present in SQL index, but is missing in corresponding data page."));
+        assertContains(log, out, "issues found (listed above)");
+
+        assertContains(log, out, "Key is present in SQL index, but is missing in corresponding data page.");
     }
 
     /**
@@ -114,7 +118,52 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
 
-        assertTrue(testOut.toString().contains("issues found (listed above)"));
+        assertContains(log, testOut.toString(), "issues found (listed above)");
+    }
+
+    /** */
+    @Test
+    public void testValidateIndexesFailedOnNotIdleCluster() throws Exception {
+        checkpointFreq = 100L;
+
+        Ignite ignite = prepareGridForTest();
+
+        AtomicBoolean stopFlag = new AtomicBoolean();
+
+        IgniteCache<Integer, Person> cache = ignite.cache(CACHE_NAME);
+
+        Thread loadThread = new Thread(() -> {
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            while (!stopFlag.get()) {
+                int id = rnd.nextInt();
+
+                cache.put(id, new Person(id, "name" + id));
+
+                if (Thread.interrupted())
+                    break;
+            }
+        });
+
+        try {
+            loadThread.start();
+
+            doSleep(checkpointFreq);
+
+            injectTestSystemOut();
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
+        }
+        finally {
+            stopFlag.set(true);
+
+            loadThread.join();
+        }
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "Index validation failed");
+        assertContains(log, out, "Checkpoint with dirty pages started! Cluster not idle!");
     }
 
     /**
@@ -140,7 +189,7 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", CACHE_NAME));
 
-        assertTrue(testOut.toString().contains("issues found (listed above)"));
+        assertContains(log, testOut.toString(), "issues found (listed above)");
     }
 
     /**
@@ -153,10 +202,8 @@ public class GridCommandHandlerIndexingTest extends GridCommandHandlerTest {
 
         Ignite client = startGrid("client");
 
-        String cacheName = "persons-cache-vi";
-
         client.getOrCreateCache(new CacheConfiguration<Integer, Person>()
-                .setName(cacheName)
+                .setName(CACHE_NAME)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                 .setBackups(1)

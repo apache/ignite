@@ -238,7 +238,6 @@ public class BinaryMetadataUpdatesFlowTest extends GridCommonAbstractTest {
         validateCache(regClient);
     }
 
-
     /**
      * Validates that all updates are readable on the specified node.
      *

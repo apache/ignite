@@ -86,7 +86,6 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** */
     private transient PlatformAffinityFunctionTarget baseTarget;
 
-
     /**
      * Ctor for serialization.
      *

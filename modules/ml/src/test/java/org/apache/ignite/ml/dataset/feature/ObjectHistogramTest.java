@@ -34,11 +34,13 @@ import static org.junit.Assert.assertTrue;
 public class ObjectHistogramTest {
     /** Data first partition. */
     private double[] dataFirstPart = new double[] {0., 0., 0., 0., 1., 1., 1, 2., 2., 3., 4., 5.};
+
     /** Data second partition. */
     private double[] dataSecondPart = new double[] {0., 1., 0., 1., 0., 1., 0, 1., 0., 1., 0., 5., 6.};
 
     /** */
     private ObjectHistogram<Double> hist1;
+
     /** */
     private ObjectHistogram<Double> hist2;
 
