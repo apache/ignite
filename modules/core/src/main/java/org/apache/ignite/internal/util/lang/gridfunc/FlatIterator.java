@@ -47,7 +47,14 @@ public class FlatIterator<T> extends GridIteratorAdapter<T> {
      * @param iterable Input iterable of iterators.
      */
     public FlatIterator(Iterable<?> iterable) {
-        iter = iterable.iterator();
+        this(iterable.iterator());
+    }
+
+    /**
+     * @param iterable Input iterable of iterators.
+     */
+    public FlatIterator(Iterator<?> iter) {
+        iter = iter;
         moved = true;
     }
 

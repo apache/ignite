@@ -17,18 +17,16 @@
 
 package org.apache.ignite.spi.metric.sql;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemViewColumnCondition;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -49,7 +47,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     public static final String SYS_VIEW_NAME = "METRICS";
 
     /** Metric filter. */
-    private @Nullable Predicate<Metric> filter;
+    private @Nullable Predicate<MetricGroup> filter;
 
     /** Metric Registry. */
     private ReadOnlyMetricRegistry mreg;
@@ -82,7 +80,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<Metric> filter) {
+    @Override public void setExportFilter(Predicate<MetricGroup> filter) {
         this.filter = filter;
     }
 
@@ -101,14 +99,40 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         /** {@inheritDoc} */
         @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-            Collection<Metric> metrics = mreg.getMetrics();
+            return new Iterator<Row>() {
+                private Iterator<MetricGroup> grps = mreg.iterator();
 
-            return F.iterator(metrics,
-                m -> createRow(ses,
-                    m.name(),
-                    m.getAsString(),
-                    m.description()),
-                true, m -> filter.test(m));
+                private Iterator<Metric> curr = Collections.emptyIterator();
+
+                private boolean advance() {
+                    while (grps.hasNext()) {
+                        MetricGroup grp = grps.next();
+
+                        if (!filter.test(grp))
+                            continue;
+
+                        curr = grp.iterator();
+
+                        if (curr.hasNext())
+                            return true;
+                    }
+
+                    return false;
+                }
+
+                @Override public boolean hasNext() {
+                    if (curr.hasNext())
+                        return true;
+
+                    return advance();
+                }
+
+                @Override public Row next() {
+                    Metric m = curr.next();
+
+                    return createRow(ses, m.name(), m.getAsString(), m.description());
+                }
+            };
         }
     }
 }

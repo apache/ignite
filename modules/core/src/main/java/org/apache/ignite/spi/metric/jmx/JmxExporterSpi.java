@@ -50,24 +50,24 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        mreg.addMetricGroupCreationListener(m -> {
-            if (filter != null && !filter.test(m))
+        mreg.addMetricGroupCreationListener(grp -> {
+            if (filter != null && !filter.test(grp))
                 return;
 
             if (log.isDebugEnabled())
-                log.debug("Found new metric set [name=" + m.name() + ']');
+                log.debug("Found new metric group [name=" + grp.name() + ']');
 
-            MetricName n = parse(m.name());
+            MetricName n = parse(grp.name());
 
             try {
-                MetricGroupMBean msetBean = new MetricGroupMBean(m);
+                MetricGroupMBean mgrpBean = new MetricGroupMBean(grp);
 
                 ObjectName mbean = U.registerMBean(
                     ignite().configuration().getMBeanServer(),
                     igniteInstanceName,
                     n.root(),
                     n.subName(),
-                    msetBean,
+                    mgrpBean,
                     MetricGroupMBean.class);
 
                 mBeans.add(mbean);
@@ -76,7 +76,7 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
                     log.debug("MetricSet JMX bean created. " + mbean);
             }
             catch (JMException e) {
-                log.error("MBean for " + m.name() + " can't be created.", e);
+                log.error("MBean for " + grp.name() + " can't be created.", e);
             }
         });
     }

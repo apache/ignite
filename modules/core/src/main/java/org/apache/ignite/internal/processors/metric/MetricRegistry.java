@@ -34,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class MetricRegistry implements ReadOnlyMetricRegistry {
     /** Registered metrics. */
-    private final ConcurrentHashMap<String, MetricGroup> metrics = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, MetricGroup> groups = new ConcurrentHashMap<>();
 
     /** Metric group creation listeners. */
     private final List<Consumer<MetricGroup>> metricGrpCreationLsnrs = new CopyOnWriteArrayList<>();
@@ -59,7 +59,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @return Group of metrics.
      */
     public MetricGroup group(String name) {
-        return metrics.computeIfAbsent(name, n -> {
+        return groups.computeIfAbsent(name, n -> {
             MetricGroup grp = new MetricGroup(name, log);
 
             notifyListeners(grp, metricGrpCreationLsnrs);
@@ -70,7 +70,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<MetricGroup> iterator() {
-        return metrics.values().iterator();
+        return groups.values().iterator();
     }
 
     /** {@inheritDoc} */
@@ -84,7 +84,7 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      * @param grpName Group name.
      */
     public void remove(String grpName) {
-        metrics.remove(grpName);
+        groups.remove(grpName);
     }
 
     /**

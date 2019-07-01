@@ -27,7 +27,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -37,14 +40,17 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsType;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
 import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanImplSelfTest.resetAllIoMetrics;
+import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
+import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -257,9 +263,9 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
      * @param cache Cache.
      */
     private void checkSelectStringEqual(IgniteCache<Key, Val> cache) {
-        final String STR = "foo011";
+        final String STR = key(11).keyStr;
 
-        final long LONG = 11;
+        final long LONG = key(11).keyLong;
 
         List<List<?>> data = cache.query(new SqlFieldsQuery("select _key, _val from Val where keyStr = ?")
             .setArgs(STR))
@@ -359,29 +365,16 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     public Set<String> deriveStatisticSubNames(IgniteEx ignite, IoStatisticsType statType) {
         assert statType != null;
 
-        MetricRegistry mset =
-            ignite.context().metric().registry().withPrefix(statType.metricGroupName());
+        return ioStats(ignite, statType).map(m -> {
+            if (m.name().startsWith(CACHE_GROUP.metricGroupName()))
+                return m.findMetric("grpId").getAsString();
 
-        return mset.getMetrics().stream().map(m -> {
-                switch (statType) {
-                    case CACHE_GROUP:
-                        if (m.name().endsWith("grpId"))
-                            return m.getAsString();
+            if (m.name().startsWith(HASH_INDEX.metricGroupName()) ||
+                m.name().startsWith(SORTED_INDEX.metricGroupName()))
+                return m.findMetric("indexName").getAsString();
 
-                        return "";
-
-                    case HASH_INDEX:
-                    case SORTED_INDEX:
-                        if (m.name().endsWith("indexName"))
-                            return m.getAsString();
-
-                        return "";
-
-                    default:
-                        return "";
-                }
-            })
-            .collect(Collectors.toSet());
+            throw new IgniteException("Wrong metric group " + m.name());
+        }).collect(Collectors.toSet());
     }
 
     /**
@@ -394,13 +387,20 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     public Set<String> deriveStatisticNames(IgniteEx ignite, IoStatisticsType statType) {
         assert statType != null;
 
-        MetricRegistry msets =
-            ignite.context().metric().registry().withPrefix(statType.metricGroupName());
+        Stream<MetricGroup> grpsStream = ioStats(ignite, statType);
 
-        return msets.getMetrics().stream()
+        return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))
             .filter(m -> m.name().endsWith("name"))
             .map(Metric::getAsString)
             .collect(Collectors.toSet());
+    }
+
+    /** @return Stream of MetricGroup for specified {@link statType}. */
+    private Stream<MetricGroup> ioStats(IgniteEx ignite, IoStatisticsType statType) {
+        MetricRegistry mreg = ignite.context().metric().registry();
+
+        return StreamSupport.stream(mreg.spliterator(), false)
+            .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
     }
 
     /**

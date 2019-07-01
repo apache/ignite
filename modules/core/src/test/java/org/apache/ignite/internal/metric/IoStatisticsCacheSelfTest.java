@@ -256,9 +256,9 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
     public Set<String> deriveStatisticNames(IoStatisticsType statType) {
         assert statType != null;
 
-        MetricRegistry registry = ignite.context().metric().registry();
+        MetricRegistry mreg = ignite.context().metric().registry();
 
-        Stream<MetricGroup> grpsStream = StreamSupport.stream(registry.spliterator(), false)
+        Stream<MetricGroup> grpsStream = StreamSupport.stream(mreg.spliterator(), false)
                 .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
 
         return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))
