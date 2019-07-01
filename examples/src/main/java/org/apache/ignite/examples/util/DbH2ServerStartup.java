@@ -67,7 +67,7 @@ public class DbH2ServerStartup {
     public static void main(String[] args) throws IgniteException {
         try {
             // Start H2 database TCP server in order to access sample in-memory database from other processes.
-            Server.createTcpServer("-tcpDaemon").start();
+            Server.createTcpServer("-tcpDaemon", "-ifNotExists").start();
 
             populateDatabase();
 
