@@ -60,11 +60,11 @@ public class MetricRegistry implements ReadOnlyMetricRegistry {
      */
     public MetricGroup group(String name) {
         return groups.computeIfAbsent(name, n -> {
-            MetricGroup grp = new MetricGroup(name, log);
+            MetricGroup mgrp = new MetricGroup(name, log);
 
-            notifyListeners(grp, metricGrpCreationLsnrs);
+            notifyListeners(mgrp, metricGrpCreationLsnrs);
 
-            return grp;
+            return mgrp;
         });
     }
 

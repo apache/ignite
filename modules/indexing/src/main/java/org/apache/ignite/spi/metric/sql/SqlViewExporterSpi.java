@@ -106,12 +106,12 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
                 private boolean advance() {
                     while (grps.hasNext()) {
-                        MetricGroup grp = grps.next();
+                        MetricGroup mgrp = grps.next();
 
-                        if (!filter.test(grp))
+                        if (!filter.test(mgrp))
                             continue;
 
-                        curr = grp.iterator();
+                        curr = mgrp.iterator();
 
                         if (curr.hasNext())
                             return true;

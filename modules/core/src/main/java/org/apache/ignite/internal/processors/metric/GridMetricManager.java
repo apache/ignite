@@ -177,19 +177,19 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricGroup sysreg = mreg.group(SYS_METRICS);
+        MetricGroup sysgrp = mreg.group(SYS_METRICS);
 
-        gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
-        cpuLoad = sysreg.doubleMetric(CPU_LOAD, "CPU load.");
+        gcCpuLoad = sysgrp.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
+        cpuLoad = sysgrp.doubleMetric(CPU_LOAD, "CPU load.");
 
-        sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
-        sysreg.register(UP_TIME, rt::getUptime, null);
-        sysreg.register(THREAD_CNT, threads::getThreadCount, null);
-        sysreg.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, null);
-        sysreg.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount, null);
-        sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
-        sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
-        sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
+        sysgrp.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
+        sysgrp.register(UP_TIME, rt::getUptime, null);
+        sysgrp.register(THREAD_CNT, threads::getThreadCount, null);
+        sysgrp.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, null);
+        sysgrp.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount, null);
+        sysgrp.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
+        sysgrp.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
+        sysgrp.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
     }
 
     /** {@inheritDoc} */

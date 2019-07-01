@@ -97,8 +97,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
     }
 
     /** */
-    private Row toRow(Session ses, int grpId, String grpName, MetricGroup mset) {
-        IntMetric grpIdMetric = (IntMetric)mset.findMetric("grpId");
+    private Row toRow(Session ses, int grpId, String grpName, MetricGroup mgrp) {
+        IntMetric grpIdMetric = (IntMetric)mgrp.findMetric("grpId");
 
         if (grpIdMetric == null)
             return createRow(ses, grpId, grpName, 0, 0);
@@ -107,8 +107,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
             ses,
             grpId,
             grpName,
-            ((LongMetric)mset.findMetric(PHYSICAL_READS)).value(),
-            ((LongMetric)mset.findMetric(LOGICAL_READS)).value()
+            ((LongMetric)mgrp.findMetric(PHYSICAL_READS)).value(),
+            ((LongMetric)mgrp.findMetric(LOGICAL_READS)).value()
         );
     }
 
