@@ -61,7 +61,7 @@ public class MaxAbsScalerExample {
                     new DatasetHelper(dataset).describe();
                 }
 
-                System.out.println(">>> Imputing example completed.");
+                System.out.println(">>> Max abs example completed.");
             } finally {
                 data.destroy();
             }
