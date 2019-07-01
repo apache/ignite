@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -57,9 +58,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class CacheFreeListSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
-
     /** */
     private static final long MB = 1024L * 1024L;
 
@@ -415,6 +413,15 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int partition() {
             return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() throws IgniteCheckedException {
+            int len = key().valueBytesLength(null);
+
+            len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
+
+            return len + (cacheId() != 0 ? 4 : 0);
         }
 
         /** {@inheritDoc} */

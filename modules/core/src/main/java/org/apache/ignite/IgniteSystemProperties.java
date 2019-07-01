@@ -1052,7 +1052,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DIAGNOSTIC_WARN_LIMIT = "IGNITE_DIAGNOSTIC_WARN_LIMIT";
 
     /**
-     * Default value of lazy query execution (Special for ver 2.5). Lazy mode must be used by default later.
+     * Flag to enable triggering failure handler for node if unrecoverable partition inconsistency is
+     * discovered during partition update counters exchange.
+     */
+    public static final String IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY =
+        "IGNITE_FAIL_NODE_ON_UNRECOVERABLE_PARTITION_INCONSISTENCY";
+
+    /**
+     * Enforces singleton.
      */
     public static final String IGNITE_QUERY_LAZY_DEFAULT = "IGNITE_QUERY_LAZY_DEFAULT";
 

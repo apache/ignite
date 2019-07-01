@@ -114,7 +114,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
- *
+ * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11820 https://issues.apache.org/jira/browse/IGNITE-11797
  */
 @SuppressWarnings({"unchecked", "ThrowableNotThrown"})
 public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
@@ -2061,7 +2061,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         for (final int i : sequence(loaders)) {
             final IgniteDataStreamer ldr = clientNode.dataStreamer(cache.getName());
-
+            ldr.allowOverwrite(true); // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11793
             ldr.autoFlushFrequency(0);
 
             cls.add(new Callable<Void>() {
@@ -2722,6 +2722,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     public void testConcurrentOperationsSameKeys() throws Exception {
@@ -3524,6 +3525,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     public void testContinuousQueriesMultipleGroups1() throws Exception {
@@ -3531,6 +3533,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     public void testContinuousQueriesMultipleGroups2() throws Exception {
@@ -3649,6 +3652,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11797
      * @throws Exception If failed.
      */
     public void testDataCleanup() throws Exception {

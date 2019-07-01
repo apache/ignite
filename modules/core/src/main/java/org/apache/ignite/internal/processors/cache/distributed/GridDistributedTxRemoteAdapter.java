@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -49,6 +50,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
@@ -57,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -751,11 +755,28 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
+                            TxCounters txCntrs = txCounters(false);
+
+                            // Apply update counters.
+                            if (txCntrs != null)
+                                cctx.tm().txHandler().applyPartitionsUpdatesCounters(txCntrs.updateCounters());
+                            else if (!near()){
+                                for (IgniteTxEntry entry : writeMap.values()) {
+                                    GridCacheContext ctx0 = cctx.cacheContext(entry.cacheId());
+
+                                    GridDhtPartitionTopology top = ctx0.topology();
+
+                                    GridDhtLocalPartition locPart = top.localPartition(entry.cached().partition());
+
+                                    locPart.updateCounter(entry.updateCounter() - 1, 1);
+                                }
+                            }
+
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null) {
                                 // Set new update counters for data entries received from persisted tx entries.
                                 List<DataEntry> entriesWithCounters = dataEntries.stream()
-                                        .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
-                                        .collect(Collectors.toList());
+                                    .map(tuple -> tuple.get1().partitionCounter(tuple.get2().updateCounter()))
+                                    .collect(Collectors.toList());
 
                                 cctx.wal().log(new DataRecord(entriesWithCounters));
                             }
@@ -894,13 +915,25 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (state(ROLLING_BACK) || state() == UNKNOWN) {
                 cctx.tm().rollbackTx(this, false, skipCompletedVers);
 
+                TxCounters counters = txCounters(false);
+
+                if (counters != null)
+                    cctx.tm().txHandler().applyPartitionsUpdatesCounters(counters.updateCounters(), true, false);
+
                 state(ROLLED_BACK);
             }
         }
-        catch (RuntimeException | Error e) {
+        catch (IgniteCheckedException | RuntimeException | Error e) {
             state(UNKNOWN);
 
-            throw e;
+            U.error(log, "Error during tx rollback.", e);
+
+            if (e instanceof IgniteCheckedException)
+                throw new IgniteException(e);
+            else if (e instanceof RuntimeException)
+                throw (RuntimeException) e;
+            else
+                throw (Error) e;
         }
     }
 

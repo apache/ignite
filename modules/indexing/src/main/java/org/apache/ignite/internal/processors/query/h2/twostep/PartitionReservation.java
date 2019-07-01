@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;

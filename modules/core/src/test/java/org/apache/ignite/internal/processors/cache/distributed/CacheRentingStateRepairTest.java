@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -27,13 +28,19 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -47,9 +54,14 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static final String CLIENT = "client";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setClientMode(CLIENT.equals(igniteInstanceName));
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -80,6 +92,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setPageSize(1024)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setPersistenceEnabled(true).setInitialSize(sz).setMaxSize(sz))
+            .setWalSegmentSize(8 * 1024 * 1024)
             .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(24L * 60 * 60 * 1000);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -107,18 +120,18 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             List<Integer> parts = evictingPartitionsAfterJoin(g0, g0.cache(DEFAULT_CACHE_NAME), 20);
 
-            int toEvictPart = parts.get(0);
+            int delayEvictPart = parts.get(0);
 
             int k = 0;
 
-            while (g0.affinity(DEFAULT_CACHE_NAME).partition(k) != toEvictPart)
+            while (g0.affinity(DEFAULT_CACHE_NAME).partition(k) != delayEvictPart)
                 k++;
 
             g0.cache(DEFAULT_CACHE_NAME).put(k, k);
 
             GridDhtPartitionTopology top = dht(g0.cache(DEFAULT_CACHE_NAME)).topology();
 
-            GridDhtLocalPartition part = top.localPartition(toEvictPart);
+            GridDhtLocalPartition part = top.localPartition(delayEvictPart);
 
             assertNotNull(part);
 
@@ -130,11 +143,20 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
             g0.cluster().setBaselineTopology(3);
 
             // Wait until all is evicted except first partition.
-            assertTrue("Failed to wait for partition eviction", waitForCondition(() -> {
-                for (int i = 1; i < parts.size(); i++) { // Skip reserved partition.
+            assertTrue("Failed to wait for partition eviction: reservedPart=" + part.id() + ", otherParts=" +
+                top.localPartitions().stream().map(p -> "[id=" + p.id() + ", state=" + p.state() + ']').collect(Collectors.toList()),
+                waitForCondition(() -> {
+                for (int i = 0; i < parts.size(); i++) {
+                    if (delayEvictPart == i)
+                        continue; // Skip reserved partition.
+
                     Integer p = parts.get(i);
 
-                    if (top.localPartition(p).state() != GridDhtPartitionState.EVICTED)
+                    @Nullable GridDhtLocalPartition locPart = top.localPartition(p);
+
+                    assertNotNull(locPart);
+
+                    if (locPart.state() != GridDhtPartitionState.EVICTED)
                         return false;
                 }
 
@@ -155,22 +177,128 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            part = dht(g0.cache(DEFAULT_CACHE_NAME)).topology().localPartition(toEvictPart);
+            part = dht(g0.cache(DEFAULT_CACHE_NAME)).topology().localPartition(delayEvictPart);
 
             assertNotNull(part);
 
             final GridDhtLocalPartition finalPart = part;
 
-            CountDownLatch clearLatch = new CountDownLatch(1);
-
-            part.onClearFinished(fut -> {
-                assertEquals(GridDhtPartitionState.EVICTED, finalPart.state());
-
-                clearLatch.countDown();
-            });
-
+            // Can't use onClearFinish here because EVICTED state is set inside listener callback and call order is not
+            // determined.
             assertTrue("Failed to wait for partition eviction after restart",
-                clearLatch.await(5_000, TimeUnit.MILLISECONDS));
+                GridTestUtils.waitForCondition(() -> finalPart.state() == GridDhtPartitionState.EVICTED, 10_000));
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    public void testRebalanceRentingPartitionAndServerNodeJoin() throws Exception {
+        testRebalanceRentingPartitionAndNodeJoin(false, 0);
+    }
+
+    /** */
+    public void testRebalanceRentingPartitionAndClientNodeJoin() throws Exception {
+        testRebalanceRentingPartitionAndNodeJoin(true, 0);
+    }
+
+    /** */
+    public void testRebalanceRentingPartitionAndServerNodeJoinWithDelay() throws Exception {
+        testRebalanceRentingPartitionAndNodeJoin(false, 5_000);
+    }
+
+    /** */
+    public void testRebalanceRentingPartitionAndClientNodeJoinWithDelay() throws Exception {
+        testRebalanceRentingPartitionAndNodeJoin(true, 5_000);
+    }
+
+    /**
+     * @param client {@code True} for client node join.
+     * @param delay Delay.
+     *
+     * @throws Exception if failed.
+     */
+    private void testRebalanceRentingPartitionAndNodeJoin(boolean client, long delay) throws Exception {
+        try {
+            IgniteEx g0 = startGrids(2);
+
+            g0.cluster().active(true);
+
+            awaitPartitionMapExchange();
+
+            List<Integer> parts = evictingPartitionsAfterJoin(g0, g0.cache(DEFAULT_CACHE_NAME), 20);
+
+            int delayEvictPart = parts.get(0);
+
+            List<Integer> keys = partitionKeys(g0.cache(DEFAULT_CACHE_NAME), delayEvictPart, 2000, 0);
+
+            for (Integer key : keys)
+                g0.cache(DEFAULT_CACHE_NAME).put(key, key);
+
+            GridDhtPartitionTopologyImpl top = (GridDhtPartitionTopologyImpl)dht(g0.cache(DEFAULT_CACHE_NAME)).topology();
+
+            GridDhtLocalPartition part = top.localPartition(delayEvictPart);
+
+            assertNotNull(part);
+
+            // Prevent eviction.
+            part.reserve();
+
+            startGrid(2);
+
+            resetBaselineTopology();
+
+            part.release();
+
+            part.rent(false).get();
+
+            CountDownLatch l1 = new CountDownLatch(1);
+            CountDownLatch l2 = new CountDownLatch(1);
+
+            // Create race between processing of final supply message and partition clearing.
+            top.partitionFactory((ctx, grp, id) -> id != delayEvictPart ? new GridDhtLocalPartition(ctx, grp, id, false) :
+                new GridDhtLocalPartition(ctx, grp, id, false) {
+                    @Override public void beforeApplyBatch(boolean last) {
+                        if (last) {
+                            l1.countDown();
+
+                            U.awaitQuiet(l2);
+
+                            if (delay > 0)
+                                doSleep(delay);
+                        }
+                    }
+                });
+
+            stopGrid(2);
+
+            resetBaselineTopology(); // Trigger rebalance after eviction
+
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        l1.await();
+
+                        // Trigger partition clear on next topology version.
+                        if (client)
+                            startGrid(CLIENT);
+                        else
+                            startGrid(2);
+
+                        l2.countDown(); // Finish partition rebalancing after initiating clear.
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }, 1);
+
+            fut.get();
+
+            awaitPartitionMapExchange(true, true, null, true);
+
+            assertPartitionsSame(idleVerify(g0));
         }
         finally {
             stopAllGrids();

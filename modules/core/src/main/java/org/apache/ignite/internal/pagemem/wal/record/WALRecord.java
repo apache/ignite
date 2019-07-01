@@ -181,7 +181,13 @@ public abstract class WALRecord {
         EXCHANGE,
 
         /** Reserved for future record. */
-        RESERVED;
+        RESERVED,
+
+        /** Rollback tx record. */
+        ROLLBACK_TX_RECORD,
+
+        /** */
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V2;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
@@ -57,7 +58,7 @@ public class ExchangeDiscoveryEvents {
     private DiscoveryEvent lastSrvEvt;
 
     /** All events. */
-    private List<DiscoveryEvent> evts = new ArrayList<>();
+    private List<DiscoveryEvent> evts = Collections.synchronizedList(new ArrayList<>());
 
     /** Server join flag. */
     private boolean srvJoin;

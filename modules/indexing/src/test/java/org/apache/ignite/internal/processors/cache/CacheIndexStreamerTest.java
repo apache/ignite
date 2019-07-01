@@ -33,7 +33,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -89,6 +88,9 @@ public class CacheIndexStreamerTest extends AbstractIndexingCommonTest {
 
                     while (!stop.get()) {
                         try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                            // TODO FIXME https://issues.apache.org/jira/browse/IGNITE-11793
+                            streamer.allowOverwrite(atomicityMode == TRANSACTIONAL);
+
                             for (int i = 0; i < 1; i++)
                                 streamer.addData(rnd.nextInt(KEYS), String.valueOf(i));
                         }

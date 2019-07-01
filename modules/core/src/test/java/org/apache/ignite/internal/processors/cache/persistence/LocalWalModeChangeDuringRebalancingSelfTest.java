@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -51,6 +52,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -84,8 +86,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                         .setInitialSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                         .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                 )
-                // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
+                // Test verifies checkpoint count, so it is essential that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
+                .setWalMode(WALMode.LOG_ONLY)
                 .setFileIOFactory(new TestFileIOFactory(new DataStorageConfiguration().getFileIOFactory()))
         );
 
@@ -351,7 +354,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         for (int nodeIdx = 2; nodeIdx < nodeCnt; nodeIdx++) {
             CacheGroupContext grpCtx = grid(nodeIdx).cachex(REPL_CACHE).context().group();
 
-            assertFalse(grpCtx.walEnabled());
+            assertTrue(GridTestUtils.waitForCondition(() -> !grpCtx.walEnabled(), 5_000));
         }
 
         // Invoke rebalance manually.
@@ -664,5 +667,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         @Override public void close() throws IOException {
             delegate.close();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getPartitionMapExchangeTimeout() {
+        return super.getPartitionMapExchangeTimeout() * 2;
     }
 }

@@ -41,6 +41,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
+import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -67,11 +68,11 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1218,6 +1219,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void prepare0() {
+        boolean error = false;
+
         try {
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
@@ -1257,10 +1260,24 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
+            TxCounters counters = tx.txCounters(true);
+
             // Assign keys to primary nodes.
             if (!F.isEmpty(req.writes())) {
-                for (IgniteTxEntry write : req.writes())
-                    map(tx.entry(write.txKey()));
+                for (IgniteTxEntry write : req.writes()) {
+                    IgniteTxEntry entry = tx.entry(write.txKey());
+
+                    assert entry != null && entry.cached() != null : entry;
+
+                    // Counter shouldn't be reserved for local cache entries, NOOP operations and NOOP transforms.
+                    if (!entry.cached().isLocal() && entry.op() != NOOP &&
+                        !(entry.op() == TRANSFORM &&
+                            (entry.entryProcessorCalculatedValue() == null || // Possible for txs over cachestore
+                                entry.entryProcessorCalculatedValue().get1() == NOOP)))
+                        counters.incrementUpdateCounter(entry.cacheId(), entry.cached().partition());
+
+                    map(entry);
+                }
             }
 
             if (!F.isEmpty(req.reads())) {
@@ -1271,11 +1288,20 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (isDone())
                 return;
 
-            if (last)
+            if (last) {
+                tx.calculatePartitionUpdateCounters();
+
                 sendPrepareRequests();
+            }
+        }
+        catch (Throwable t) {
+            error = true;
+
+            throw t;
         }
         finally {
-            markInitialized();
+            if (!error) // Prevent marking future as initialized on error.
+                markInitialized();
         }
     }
 
@@ -1338,7 +1364,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
-                retVal);
+                retVal,
+                IgniteFeatures.nodeSupports(n, IgniteFeatures.TX_TRACKING_UPDATE_COUNTER) ?
+                    cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n) : null);
 
             int idx = 0;
 
@@ -1441,7 +1469,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
-                    retVal);
+                    retVal,
+                    null);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {

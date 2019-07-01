@@ -217,6 +217,11 @@ public class GridH2KeyValueRowOnheap extends GridH2Row {
     }
 
     /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public final int hashCode() {
         throw new UnsupportedOperationException();
     }

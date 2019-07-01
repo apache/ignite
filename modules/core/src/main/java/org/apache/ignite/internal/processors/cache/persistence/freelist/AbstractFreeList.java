@@ -106,7 +106,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
-            int rowSize = io.getRowSize(row);
+            int rowSize = row.size();
 
             boolean updated = io.updateRow(pageAddr, itemId, pageSize(), null, row, rowSize);
 
@@ -153,7 +153,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
-            int rowSize = io.getRowSize(row);
+            int rowSize = row.size();
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
             assert oldFreeSpace > 0 : oldFreeSpace;
@@ -472,12 +472,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** {@inheritDoc} */
     @Override public void insertDataRow(T row, IoStatisticsHolder statHolder) throws IgniteCheckedException {
-        int rowSize = ioVersions().latest().getRowSize(row);
+        int rowSize = row.size();
 
         int written = 0;
 
         try {
             do {
+                IOVersions ioVersions = row.ioVersions();
+
                 if (written != 0)
                     memMetrics.incrementLargeEntriesPages();
 
@@ -486,14 +488,14 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 long pageId = 0L;
 
                 if (freeSpace == MIN_SIZE_FOR_DATA_PAGE)
-                    pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions(), statHolder);
+                    pageId = takeEmptyPage(emptyDataPagesBucket, ioVersions, statHolder);
 
                 boolean reuseBucket = false;
 
                 // TODO: properly handle reuse bucket.
                 if (pageId == 0L) {
                     for (int b = bucket(freeSpace, false) + 1; b < BUCKETS - 1; b++) {
-                        pageId = takeEmptyPage(b, ioVersions(), statHolder);
+                        pageId = takeEmptyPage(b, ioVersions, statHolder);
 
                         if (pageId != 0L) {
                             reuseBucket = isReuseBucket(b);
@@ -510,7 +512,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 else
                     pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
-                AbstractDataPageIO<T> init = reuseBucket || allocated ? ioVersions().latest() : null;
+                PageIO init = reuseBucket || allocated ? ioVersions.latest() : null;
 
                 written = write(pageId, writeRow, init, row, written, FAIL_I, statHolder);
 
@@ -538,7 +540,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             Boolean updated = write(pageId, updateRow, row, itemId, null, statHolder);
 
             assert updated != null; // Can't fail here.
-
+            
             return updated;
         }
         catch (IgniteCheckedException | Error e) {
@@ -646,11 +648,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             throw new CorruptedFreeListException("Failed to count recycled pages", t);
         }
     }
-
-    /**
-     * @return IOVersions.
-     */
-    public abstract IOVersions<? extends AbstractDataPageIO<T>> ioVersions();
 
     /** {@inheritDoc} */
     @Override public String toString() {

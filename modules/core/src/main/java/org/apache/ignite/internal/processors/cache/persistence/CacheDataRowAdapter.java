@@ -645,6 +645,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public int size() throws IgniteCheckedException {
+        return DataPageIO.getRowSize(this, this.cacheId != 0);
+    }
+
+    /** {@inheritDoc} */
     @Override public int hash() {
         throw new UnsupportedOperationException();
     }

@@ -129,10 +129,10 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         IgniteCache<Integer, Integer> atomicCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
-                .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC));
+            .setName("atomic").setAtomicityMode(CacheAtomicityMode.ATOMIC));
 
         IgniteCache<Integer, Integer> txCache = ig.createCache(new CacheConfiguration<Integer, Integer>()
-                .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+            .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         assertTrue(GridTestUtils.waitForCondition(() ->
                 new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
@@ -192,7 +192,7 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
             .setName("tx").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         assertTrue(GridTestUtils.waitForCondition(() ->
-            new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
+                new AffinityTopologyVersion(4, 3).equals(grid(3).context().discovery().topologyVersionEx()),
             5_000));
 
         startClient = true;
@@ -384,9 +384,9 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         }
     }
 
-     /**
-      * @throws Exception If failed.
-      */
+    /**
+     * @throws Exception If failed.
+     */
     public void testAffinityChangeOnClientConnectWithStaticallyConfiguredCaches() throws Exception {
         Ignite ig = startGrids(2);
 
@@ -405,11 +405,11 @@ public class CacheNoAffinityExchangeTest extends GridCommonAbstractTest {
         Ignite client = startGrid(2);
 
         assertTrue(GridTestUtils.waitForCondition(() -> {
-                AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
-                AffinityTopologyVersion topVer1 = grid(1).context().discovery().topologyVersionEx();
+            AffinityTopologyVersion topVer0 = grid(0).context().discovery().topologyVersionEx();
+            AffinityTopologyVersion topVer1 = grid(1).context().discovery().topologyVersionEx();
 
-                return topVer0.topologyVersion() == 3 && topVer1.topologyVersion() == 2;
-            }, 10_000));
+            return topVer0.topologyVersion() == 3 && topVer1.topologyVersion() == 2;
+        }, 10_000));
 
         final IgniteCache<Integer, Integer> txCache = client.cache(PARTITIONED_TX_CLIENT_CACHE_NAME);
 

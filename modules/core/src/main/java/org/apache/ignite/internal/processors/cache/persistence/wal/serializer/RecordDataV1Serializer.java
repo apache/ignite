@@ -61,6 +61,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuc
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
@@ -136,7 +137,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 CheckpointRecord cpRec = (CheckpointRecord)record;
 
                 assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
+                    "Invalid WAL record: " + cpRec;
 
                 int cacheStatesSize = cacheStatesSize(cpRec.cacheGroupStates());
 
@@ -149,7 +150,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
-                        + /*allocatedIdxCandidate*/ 4;
+                    + /*allocatedIdxCandidate*/ 4;
+
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
+                    + /*allocatedIdxCandidate*/ 4 + /*link*/ 8;
 
             case MEMORY_RECOVERY:
                 return 8;
@@ -180,7 +185,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 DataPageUpdateRecord uRec = (DataPageUpdateRecord)record;
 
                 return 4 + 8 + 2 + 4 +
-                        uRec.payload().length;
+                    uRec.payload().length;
 
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
                 final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
@@ -350,17 +355,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
-                cacheId = in.readInt();
-                pageId = in.readLong();
+                res = new MetaPageUpdatePartitionDataRecord(in);
 
-                long updCntr = in.readLong();
-                long rmvId = in.readLong();
-                int partSize = in.readInt();
-                long countersPageId = in.readLong();
-                byte state = in.readByte();
-                int allocatedIdxCandidate = in.readInt();
+                break;
 
-                res = new MetaPageUpdatePartitionDataRecord(cacheId, pageId, updCntr, rmvId, partSize, countersPageId, state, allocatedIdxCandidate);
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                res = new MetaPageUpdatePartitionDataRecordV2(in);
 
                 break;
 
@@ -656,7 +656,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 int dstIdx = in.readUnsignedShort();
                 long srcPageId = in.readLong();
                 int srcIdx = in.readUnsignedShort();
-                rmvId = in.readLong();
+                long rmvId = in.readLong();
 
                 res = new InnerReplaceRecord<>(cacheId, pageId, dstIdx, srcPageId, srcIdx, rmvId);
 
@@ -818,7 +818,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 partId = in.readInt();
 
-                state = in.readByte();
+                byte state = in.readByte();
 
                 long updateCntr = in.readLong();
 
@@ -891,17 +891,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
-                MetaPageUpdatePartitionDataRecord partDataRec = (MetaPageUpdatePartitionDataRecord)rec;
-
-                buf.putInt(partDataRec.groupId());
-                buf.putLong(partDataRec.pageId());
-
-                buf.putLong(partDataRec.updateCounter());
-                buf.putLong(partDataRec.globalRemoveId());
-                buf.putInt(partDataRec.partitionSize());
-                buf.putLong(partDataRec.countersPageId());
-                buf.put(partDataRec.state());
-                buf.putInt(partDataRec.allocatedIndexCandidate());
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                ((MetaPageUpdatePartitionDataRecord)rec).toBytes(buf);
 
                 break;
 
@@ -909,7 +900,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 CheckpointRecord cpRec = (CheckpointRecord)rec;
 
                 assert cpRec.checkpointMark() == null || cpRec.checkpointMark() instanceof FileWALPointer :
-                        "Invalid WAL record: " + cpRec;
+                    "Invalid WAL record: " + cpRec;
 
                 FileWALPointer walPtr = (FileWALPointer)cpRec.checkpointMark();
                 UUID cpId = cpRec.checkpointId();
@@ -1298,7 +1289,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_SUCCESSFUL_FULL_SNAPSHOT_ID:
                 MetaPageUpdateLastSuccessfulFullSnapshotId mpUpdateLastSuccFullSnapshotId =
-                        (MetaPageUpdateLastSuccessfulFullSnapshotId)rec;
+                    (MetaPageUpdateLastSuccessfulFullSnapshotId)rec;
 
                 buf.putInt(mpUpdateLastSuccFullSnapshotId.groupId());
                 buf.putLong(mpUpdateLastSuccFullSnapshotId.pageId());
@@ -1309,7 +1300,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_SUCCESSFUL_SNAPSHOT_ID:
                 MetaPageUpdateLastSuccessfulSnapshotId mpUpdateLastSuccSnapshotId =
-                        (MetaPageUpdateLastSuccessfulSnapshotId)rec;
+                    (MetaPageUpdateLastSuccessfulSnapshotId)rec;
 
                 buf.putInt(mpUpdateLastSuccSnapshotId.groupId());
                 buf.putLong(mpUpdateLastSuccSnapshotId.pageId());
@@ -1321,7 +1312,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case META_PAGE_UPDATE_LAST_ALLOCATED_INDEX:
                 MetaPageUpdateLastAllocatedIndex mpUpdateLastAllocatedIdx =
-                        (MetaPageUpdateLastAllocatedIndex) rec;
+                    (MetaPageUpdateLastAllocatedIndex) rec;
 
                 buf.putInt(mpUpdateLastAllocatedIdx.groupId());
                 buf.putLong(mpUpdateLastAllocatedIdx.pageId());
@@ -1339,7 +1330,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.put(partMetaStateRecord.state());
 
-                buf.putLong(partMetaStateRecord.updateCounter());
+                buf.putLong(0);
 
                 break;
 
@@ -1488,31 +1479,31 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             CacheObject val = valBytes != null ? co.toCacheObject(coCtx, valType, valBytes) : null;
 
             return new DataEntry(
-                    cacheId,
-                    key,
-                    val,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr
+                cacheId,
+                key,
+                val,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr
             );
         }
         else
             return new LazyDataEntry(
-                    cctx,
-                    cacheId,
-                    keyType,
-                    keyBytes,
-                    valType,
-                    valBytes,
-                    op,
-                    nearXidVer,
-                    writeVer,
-                    expireTime,
-                    partId,
-                    partCntr);
+                cctx,
+                cacheId,
+                keyType,
+                keyBytes,
+                valType,
+                valBytes,
+                op,
+                nearXidVer,
+                writeVer,
+                expireTime,
+                partId,
+                partCntr);
     }
 
     /**

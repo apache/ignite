@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
 
 /**
@@ -101,11 +103,17 @@ public class RowStore {
 
             try {
                 freeList.insertDataRow(row, statHolder);
+
+                assert row.link() != 0L;
             }
             finally {
                 ctx.database().checkpointReadUnlock();
             }
         }
+
+        assert row.key().partition() == PageIdUtils.partId(row.link()) :
+            "Constructed a link with invalid partition ID [partId=" + row.key().partition() +
+                ", link=" + U.hexLong(row.link()) + ']';
     }
 
     /**
