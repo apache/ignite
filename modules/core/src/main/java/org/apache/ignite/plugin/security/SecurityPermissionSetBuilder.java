@@ -66,13 +66,16 @@ public class SecurityPermissionSetBuilder {
     /** Default allow all.*/
     private boolean dfltAllowAll;
 
+    /** */
+    public static final SecurityPermissionSet ALLOW_ALL = create().defaultAllowAll(true).build();
+
     /**
      * Static factory method for create new permission builder.
      *
      * @return SecurityPermissionSetBuilder
      */
-    public static SecurityPermissionSetBuilder create(){
-        return new SecurityPermissionSetBuilder();
+    public static SecurityPermissionSetBuilder create() {
+        return new SecurityPermissionSetBuilder().defaultAllowAll(true);
     }
 
     /**

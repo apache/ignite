@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.junit.Ignore;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -166,7 +167,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeQuery(sqlText);
             }
         });
@@ -531,7 +532,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeUpdate(sqlText);
             }
         });
@@ -603,14 +604,14 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMaxFieldSize();
             }
         });
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setMaxFieldSize(100);
             }
         });
@@ -654,14 +655,14 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMaxRows();
             }
         });
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setMaxRows(maxRows);
             }
         });
@@ -698,7 +699,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setEscapeProcessing(true);
             }
         });
@@ -736,14 +737,14 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getQueryTimeout();
             }
         });
 
         // Call on a closed statement
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setQueryTimeout(timeout);
             }
         });
@@ -769,7 +770,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         );
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setMaxFieldSize(100);
             }
         });
@@ -789,13 +790,13 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getQueryTimeout();
             }
         });
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setQueryTimeout(10);
             }
         });
@@ -813,13 +814,13 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getWarnings();
             }
         });
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.clearWarnings();
             }
         });
@@ -831,7 +832,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
     @org.junit.Test
     public void testCursorName() throws Exception {
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setCursorName("test");
             }
         });
@@ -839,7 +840,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setCursorName("test");
             }
         });
@@ -865,7 +866,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMoreResults();
             }
         });
@@ -891,7 +892,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
             }
         });
@@ -915,7 +916,7 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
             }
         });
@@ -959,13 +960,13 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         stmt.close();
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.setFetchDirection(-1);
             }
         });
 
         checkStatementClosed(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getFetchDirection();
             }
         });
@@ -1001,43 +1002,43 @@ public class JdbcThinStatementSelfTest extends JdbcThinAbstractSelfTest {
         assertFalse(conn.getMetaData().supportsGetGeneratedKeys());
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.getGeneratedKeys();
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeUpdate("select 1", Statement.RETURN_GENERATED_KEYS);
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeUpdate("select 1", new int[] {1, 2});
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.executeUpdate("select 1", new String[] {"a", "b"});
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.execute("select 1", Statement.RETURN_GENERATED_KEYS);
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.execute("select 1", new int[] {1, 2});
             }
         });
 
         checkNotSupported(new RunnableX() {
-            @Override public void run() throws Exception {
+            @Override public void runx() throws Exception {
                 stmt.execute("select 1", new String[] {"a", "b"});
             }
         });

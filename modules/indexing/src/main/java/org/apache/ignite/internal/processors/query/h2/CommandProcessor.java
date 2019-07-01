@@ -694,9 +694,9 @@ public class CommandProcessor {
                 }
             }
             else if (cmdH2 instanceof GridSqlCreateTable) {
-                ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, null);
-
                 GridSqlCreateTable cmd = (GridSqlCreateTable)cmdH2;
+
+                ctx.security().authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE);
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -739,8 +739,6 @@ public class CommandProcessor {
                 }
             }
             else if (cmdH2 instanceof GridSqlDropTable) {
-                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
-
                 GridSqlDropTable cmd = (GridSqlDropTable)cmdH2;
 
                 isDdlOnSchemaSupported(cmd.schemaName());
@@ -752,8 +750,11 @@ public class CommandProcessor {
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
                             cmd.tableName());
                 }
-                else
+                else {
+                    ctx.security().authorize(tbl.cacheName(), SecurityPermission.CACHE_DESTROY);
+
                     ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
+                }
             }
             else if (cmdH2 instanceof GridSqlAlterTableAddColumn) {
                 GridSqlAlterTableAddColumn cmd = (GridSqlAlterTableAddColumn)cmdH2;
