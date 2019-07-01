@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.metric.sql;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -26,17 +24,11 @@ import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.h2.engine.Session;
-import org.h2.result.Row;
-import org.h2.result.SearchRow;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -58,7 +50,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
 
         SchemaManager mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
 
-        mgr.createSystemView(QueryUtils.SCHEMA_MONITORING, new MetricSetLocalSystemView(ctx));
+        mgr.createSystemView(QueryUtils.SCHEMA_MONITORING, new MetricSetLocalSystemView(ctx, mreg, filter));
 
         if (log.isDebugEnabled())
             log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");
@@ -84,55 +76,4 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
         this.filter = filter;
     }
 
-    /** */
-    public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
-        /**
-         * @param ctx Context.
-         */
-        public MetricSetLocalSystemView(GridKernalContext ctx) {
-            super(SYS_VIEW_NAME, "Ignite metrics",
-                ctx,
-                newColumn("NAME", Value.STRING),
-                newColumn("VALUE", Value.STRING),
-                newColumn("DESCRIPTION", Value.STRING));
-        }
-
-        /** {@inheritDoc} */
-        @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
-            return new Iterator<Row>() {
-                private Iterator<MetricGroup> grps = mreg.iterator();
-
-                private Iterator<Metric> curr = Collections.emptyIterator();
-
-                private boolean advance() {
-                    while (grps.hasNext()) {
-                        MetricGroup mgrp = grps.next();
-
-                        if (!filter.test(mgrp))
-                            continue;
-
-                        curr = mgrp.iterator();
-
-                        if (curr.hasNext())
-                            return true;
-                    }
-
-                    return false;
-                }
-
-                @Override public boolean hasNext() {
-                    if (curr.hasNext())
-                        return true;
-
-                    return advance();
-                }
-
-                @Override public Row next() {
-                    Metric m = curr.next();
-
-                    return createRow(ses, m.name(), m.getAsString(), m.description());
-                }
-            };
-        }
-    }
 }
