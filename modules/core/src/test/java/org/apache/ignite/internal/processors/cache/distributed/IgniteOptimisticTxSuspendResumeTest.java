@@ -39,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -886,28 +887,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         @Override public void apply(T o) {
             try {
                 applyx(o);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    /**
-     * Runnable that can throw any exception.
-     */
-    public abstract static class RunnableX implements Runnable {
-        /**
-         * Closure body.
-         *
-         * @throws Exception If failed.
-         */
-        public abstract void runx() throws Exception;
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                runx();
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

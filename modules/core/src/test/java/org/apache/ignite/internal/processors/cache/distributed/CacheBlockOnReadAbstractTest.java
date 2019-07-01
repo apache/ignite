@@ -76,6 +76,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -1237,29 +1238,6 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
             blockLatch.countDown();
 
             super.stop();
-        }
-    }
-
-    /**
-     * Runnable that can throw exceptions.
-     */
-    @FunctionalInterface
-    public interface RunnableX extends Runnable {
-        /**
-         * Closure body.
-         *
-         * @throws Exception If failed.
-         */
-        void runx() throws Exception;
-
-        /** {@inheritdoc} */
-        @Override default void run() {
-            try {
-                runx();
-            }
-            catch (Exception e) {
-                throw new IgniteException(e);
-            }
         }
     }
 

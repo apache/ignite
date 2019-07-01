@@ -168,6 +168,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -1104,6 +1105,22 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
         catch (IgniteException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
+        }
+    }
+
+    /**
+     * @param obj Object.
+     * @param ver Security serialize version.
+     * @return Marshaled object.
+     */
+    private byte[] marshalWithSecurityVersion(Object obj, int ver) throws IgniteCheckedException {
+        try {
+            SecurityUtils.serializeVersion(ver);
+
+            return U.marshal(spi.marshaller(), obj);
+        }
+        finally {
+            SecurityUtils.restoreDefaultSerializeVersion();
         }
     }
 
@@ -2214,39 +2231,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * @param obj Object.
-     * @param ver Security serialize version.
-     * @return Marshaled object.
-     */
-    private byte[] marshalWithSecurityVersion(Object obj, int ver) throws IgniteCheckedException {
-        try {
-            SecurityUtils.serializeVersion(ver);
-
-            return U.marshal(spi.marshaller(), obj);
-        }
-        finally {
-            SecurityUtils.restoreDefaultSerializeVersion();
-        }
-    }
-
-    /**
-     * @param bytes Marshaled object.
-     * @param ver Security serialize version.
-     * @return Unmarshaled object.
-     */
-    private <T> T unmarshalWithSecurityVersion(byte[] bytes, int ver) throws IgniteCheckedException {
-        try {
-            if (ver > 0)
-                SecurityUtils.serializeVersion(ver);
-
-            return spi.marshaller().unmarshal(bytes, U.resolveClassLoader(spi.ignite().configuration()));
-        }
-        finally {
-            SecurityUtils.restoreDefaultSerializeVersion();
         }
     }
 
@@ -4622,22 +4606,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            byte[] subjBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-                            byte[] subjBytesV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
-
-                            SecurityContext coordSubj;
-
-                            try {
-                                if (subjBytesV2 == null)
-                                    SecurityUtils.serializeVersion(1);
-
-                                coordSubj = U.unmarshal(spi.marshaller(),
-                                    subjBytesV2 != null ? subjBytesV2 : subjBytes,
-                                    U.resolveClassLoader(spi.ignite().configuration()));
-                            }
-                            finally {
-                                SecurityUtils.restoreDefaultSerializeVersion();
-                            }
+                            SecurityContext coordSubj = nodeSecurityContext(
+                                spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
+                            );
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -4654,7 +4625,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 authFailed = false;
                         }
                     }
-                    catch (IgniteException | IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
                     }
                     finally {
@@ -4730,23 +4701,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     new TcpDiscoveryAuthFailedMessage(locNodeId, spi.locHost, node.id());
 
                                 try {
-                                    byte[] rmSubj = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
-                                    byte[] locSubj = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT);
+                                    ClassLoader ldr = U.resolveClassLoader(spi.ignite().configuration());
 
-                                    byte[] rmSubjV2 = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
-                                    byte[] locSubjV2 = locNode.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
+                                    SecurityContext rmCrd = nodeSecurityContext(
+                                        spi.marshaller(), ldr, node
+                                    );
 
-                                    int ver = 1; // Compatible version.
-
-                                    if (rmSubjV2 != null && locSubjV2 != null) {
-                                        rmSubj = rmSubjV2;
-                                        locSubj = locSubjV2;
-
-                                        ver = 0; // Default version.
-                                    }
-
-                                    SecurityContext rmCrd = unmarshalWithSecurityVersion(rmSubj, ver);
-                                    SecurityContext locCrd = unmarshalWithSecurityVersion(locSubj, ver);
+                                    SecurityContext locCrd = nodeSecurityContext(
+                                        spi.marshaller(), ldr, locNode
+                                    );
 
                                     if (!permissionsEqual(locCrd.subject().permissions(),
                                         rmCrd.subject().permissions())) {
@@ -4765,7 +4728,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         return;
                                     }
                                 }
-                                catch (IgniteCheckedException e) {
+                                catch (IgniteException e) {
                                     U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
 
                                     joinRes.set(authFail);

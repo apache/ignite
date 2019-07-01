@@ -820,7 +820,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (CU.isSystemCache(name()))
             return;
 
-        ctx.security().authorize(name(), op, null);
+        ctx.security().authorize(name(), op);
     }
 
     /**
