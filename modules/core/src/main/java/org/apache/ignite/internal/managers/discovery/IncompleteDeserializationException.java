@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.marshaller.jdk;
+package org.apache.ignite.internal.managers.discovery;
 
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.jetbrains.annotations.NotNull;
 
 // t0d0 why must be RTE
