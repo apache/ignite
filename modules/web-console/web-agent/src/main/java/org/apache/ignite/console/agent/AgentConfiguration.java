@@ -32,6 +32,7 @@ import com.beust.jcommander.Parameter;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.console.agent.AgentUtils.trim;
 
 /**
  * Agent configuration.
@@ -541,6 +542,10 @@ public class AgentConfiguration {
 
         if (cipherSuites == null)
             cipherSuites(cfg.cipherSuites());
+
+        tokens = trim(tokens);
+        nodeURIs = trim(nodeURIs);
+        cipherSuites = trim(cipherSuites);
     }
 
     /**
