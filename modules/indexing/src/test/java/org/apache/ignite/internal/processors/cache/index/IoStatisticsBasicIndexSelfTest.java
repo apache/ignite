@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -81,11 +82,17 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         fields.put("valLong", Long.class.getName());
         fields.put("valPojo", Pojo.class.getName());
 
+        Set<String> keyFields = new HashSet<>();
+        keyFields.add("keyStr");
+        keyFields.add("keyLong");
+        keyFields.add("keyPojo");
+
         CacheConfiguration<Key, Val> ccfg = new CacheConfiguration<Key, Val>(DEFAULT_CACHE_NAME)
             .setQueryEntities(Collections.singleton(
                 new QueryEntity()
                     .setKeyType(Key.class.getName())
                     .setValueType(Val.class.getName())
+                    .setKeyFields(keyFields)
                     .setFields(fields)
                     .setIndexes(indexes)
             ));
@@ -263,7 +270,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
      * @param cache Cache.
      */
     private void checkSelectStringEqual(IgniteCache<Key, Val> cache) {
-        final String STR = key(11).keyStr;
+        final String STR = "foo011";
 
         final long LONG = 11;
 
@@ -303,7 +310,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
      * @param cache Cache.
      */
     private void checkSelectStringRange(IgniteCache<Key, Val> cache) {
-        final String PREFIX = key(6).keyStr;
+        final String PREFIX = "foo06";
 
         List<List<?>> data = cache.query(new SqlFieldsQuery("select _key, _val from Val where keyStr like ?")
             .setArgs(PREFIX + "%"))
