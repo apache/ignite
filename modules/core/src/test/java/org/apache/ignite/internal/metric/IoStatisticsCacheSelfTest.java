@@ -214,7 +214,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         long logicalReads = logicalReads(mreg, CACHE_GROUP, CACHE_GROUP_NAME);
 
-        assertEquals(RECORD_COUNT * 6, logicalReads);
+        assertEquals(RECORD_COUNT * 4, logicalReads);
     }
 
     /**
