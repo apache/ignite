@@ -217,11 +217,11 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         for (Ignite ignite : G.allGrids()) {
             IgniteEx ig = (IgniteEx)ignite;
 
-            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
+            final Collection<GridCacheFuture<?>> activeFuts = ig.context().cache().context().mvcc().activeFutures();
 
             boolean hasFutures = false;
 
-            for (GridCacheFuture<?> fut : futs) {
+            for (GridCacheFuture<?> fut : activeFuts) {
                 if (!fut.isDone()) {
                     //skipping system tx futures if possible
                     if (fut instanceof GridNearTxPrepareFutureAdapter
