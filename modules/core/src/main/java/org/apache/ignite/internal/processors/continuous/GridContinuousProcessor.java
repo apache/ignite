@@ -1328,9 +1328,20 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param req Start request.
      */
     private void processStartRequest(ClusterNode node, StartRoutineDiscoveryMessage req) {
-        UUID routineId = req.routineId();
         if (node.id().equals(ctx.localNodeId()))
             return;
+
+        UUID routineId = req.routineId();
+
+        if (req.deserializationException() != null) {
+            IgniteCheckedException err = new IgniteCheckedException(req.deserializationException());
+
+            req.addError(node.id(), err);
+
+            U.error(log, "Failed to register handler [nodeId=" + node.id() + ", routineId=" + routineId + ']', err);
+
+            return;
+        }
 
         StartRequestData data = req.startRequestData();
 
