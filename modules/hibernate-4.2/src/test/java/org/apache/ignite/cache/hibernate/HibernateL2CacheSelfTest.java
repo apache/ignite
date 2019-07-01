@@ -52,6 +52,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.service.ServiceRegistryBuilder;
 import org.hibernate.stat.NaturalIdCacheStatistics;
 import org.hibernate.stat.SecondLevelCacheStatistics;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -1122,6 +1123,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Counts messages")
     public void testNaturalIdCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testNaturalIdCache(accessType);
@@ -1742,6 +1744,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param nameToId Name-ID mapping.
      * @param absentNames Absent entities' names.
      */
+    @Ignore("Counts messages")
     private void assertNaturalIdCache(SessionFactory sesFactory, Map<String, Integer> nameToId, String... absentNames) {
         sesFactory.getStatistics().clear();
 
