@@ -35,12 +35,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
@@ -74,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
@@ -82,7 +85,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOAD
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_LOADED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isEnoughSpaceForData;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
@@ -778,7 +780,8 @@ public class GridDhtPartitionDemander {
                                 try {
                                     if (grp.mvccEnabled())
                                         mvccPreloadEntries(topVer, node, p, infos);
-                                    else if (isEnoughSpaceForData(grp.dataRegion(), supplyMsg.messageSize() * 2))
+                                    else if (!CU.isEvictionsEnabled(grp.dataRegion().config()) ||
+                                        isEnoughSpaceForData(supplyMsg.messageSize() * 2))
                                         preloadEntriesBatched(topVer, node, p, infos);
                                     else
                                         preloadEntries(topVer, node, p, infos);
@@ -881,7 +884,7 @@ public class GridDhtPartitionDemander {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private void mvccPreloadEntries(AffinityTopologyVersion topVer, ClusterNode node, int p,
-        Collection<GridCacheEntryInfo> infos) throws IgniteCheckedException {
+        List<GridCacheEntryInfo> infos) throws IgniteCheckedException {
         if (infos.isEmpty())
             return;
 
@@ -930,11 +933,7 @@ public class GridDhtPartitionDemander {
                         if (cctx != null) {
                             mvccPreloadEntry(cctx, node, entryHist, topVer, p);
 
-                            //TODO: IGNITE-11330: Update metrics for touched cache only.
-                            for (GridCacheContext ctx : grp.caches()) {
-                                if (ctx.statisticsEnabled())
-                                    ctx.cache().metrics0().onRebalanceKeyReceived();
-                            }
+                            updateCacheMetrics();
                         }
 
                         if (!hasMore)
@@ -962,7 +961,7 @@ public class GridDhtPartitionDemander {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private void preloadEntries(AffinityTopologyVersion topVer, ClusterNode node, int p,
-        Iterable<GridCacheEntryInfo> infos) throws IgniteCheckedException {
+        List<GridCacheEntryInfo> infos) throws IgniteCheckedException {
         GridCacheContext cctx = null;
 
         Iterator<GridCacheEntryInfo> iter = infos.iterator();
@@ -989,11 +988,7 @@ public class GridDhtPartitionDemander {
 
                     preloadEntry(node, p, entry, topVer, cctx, null);
 
-                    //TODO: IGNITE-11330: Update metrics for touched cache only.
-                    for (GridCacheContext ctx : grp.caches()) {
-                        if (ctx.statisticsEnabled())
-                            ctx.cache().metrics0().onRebalanceKeyReceived();
-                    }
+                    updateCacheMetrics();
                 }
             }
             finally {
@@ -1015,11 +1010,11 @@ public class GridDhtPartitionDemander {
         int p,
         List<GridCacheEntryInfo> infos
     ) throws IgniteCheckedException {
-        int batchOff = 0;
+        int cnt = infos.size();
+        int off = 0;
 
-        while (batchOff < infos.size()) {
-            Collection<GridCacheEntryInfo> batch =
-                infos.subList(batchOff, Math.min(infos.size(), batchOff += CHECKPOINT_THRESHOLD));
+        while (off < cnt) {
+            Collection<GridCacheEntryInfo> batch = infos.subList(off, Math.min(cnt, off += CHECKPOINT_THRESHOLD));
 
             ctx.database().checkpointReadLock();
 
@@ -1027,27 +1022,24 @@ public class GridDhtPartitionDemander {
                 GridDhtLocalPartition part = grp.topology().localPartition(p);
 
                 // Create data rows on data pages before getting locks on cache entries.
-                try (GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> iter =
-                         grp.offheap().allocateRows(p, batch)) {
+                try (GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> iter =
+                         part.dataStore().allocateRows(batch)) {
 
                     while (iter.hasNext()) {
-                        Map.Entry<GridCacheEntryInfo, CacheDataRow> e = iter.next();
+                        IgniteBiTuple<GridCacheEntryInfo, CacheDataRow> tup = iter.next();
 
-                        GridCacheEntryInfo info = e.getKey();
-                        CacheDataRow row = e.getValue();
+                        GridCacheEntryInfo info = tup.get1();
+                        CacheDataRow row = tup.get2();
 
                         GridCacheContext cctx = resolveCacheContext(info);
 
-                        if (cctx == null || !preloadEntry(from, p, info, topVer, cctx, row))
-                            part.dataStore().removeRow(row);
-
                         if (cctx == null)
-                            continue;
+                            part.dataStore().removeRow(row);
+                        else {
+                            if (!preloadEntry(from, p, info, topVer, cctx, row))
+                                part.dataStore().removeRow(row);
 
-                        //TODO: IGNITE-11330: Update metrics for touched cache only.
-                        for (GridCacheContext cctx0 : grp.caches()) {
-                            if (cctx0.statisticsEnabled())
-                                cctx0.cache().metrics0().onRebalanceKeyReceived();
+                            updateCacheMetrics();
                         }
                     }
                 }
@@ -1233,6 +1225,49 @@ public class GridDhtPartitionDemander {
             cctx = cctx.dhtCache().context();
 
         return cctx;
+    }
+
+    /**
+     * Update rebalancing metrics.
+     */
+    private void updateCacheMetrics() {
+        // TODO: IGNITE-11330: Update metrics for touched cache only.
+        // Due to historical rebalancing "EstimatedRebalancingKeys" metric is currently calculated for the whole cache
+        // group (by partition counters), so "RebalancedKeys" and "RebalancingKeysRate" is calculated in the same way.
+        for (GridCacheContext cctx0 : grp.caches()) {
+            if (cctx0.statisticsEnabled())
+                cctx0.cache().metrics0().onRebalanceKeyReceived();
+        }
+    }
+
+    /**
+     * Calculates whether there is enough free space in the current memory region for the specified amount of data.
+     *
+     * @param size Data size in bytes.
+     * @return {@code True} if a specified amount of data can be stored in the memory region without evictions.
+     */
+    private boolean isEnoughSpaceForData(long size) {
+        assert size >= 0 : size;
+
+        DataRegionConfiguration plc = grp.dataRegion().config();
+
+        PageMemory pageMem = grp.dataRegion().pageMemory();
+
+        int sysPageSize = pageMem.systemPageSize();
+
+        long pagesRequired = (long)Math.ceil(size / (double)sysPageSize);
+
+        long maxPages = plc.getMaxSize() / sysPageSize;
+
+        // There are enough pages left.
+        if (pagesRequired < maxPages - pageMem.loadedPages())
+            return true;
+
+        // Empty pages pool size restricted.
+        if (pagesRequired > plc.getEmptyPagesPoolSize())
+            return false;
+
+        return pagesRequired < Math.round(maxPages * (1.0d - plc.getEvictionThreshold()));
     }
 
     /** {@inheritDoc} */

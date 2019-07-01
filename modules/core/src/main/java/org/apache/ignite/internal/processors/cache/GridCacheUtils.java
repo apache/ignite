@@ -66,7 +66,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -2002,35 +2001,13 @@ public class GridCacheUtils {
     }
 
     /**
-     * Calculates whether there is enough free space in a region to store a specified amount of data.
+     * Check whether in-memory evictions enabled.
      *
-     * @param memPlc Data region.
-     * @param size Data size in bytes.
-     * @return {@code True} if a specified amount of data can be stored in the memory region without evictions.
+     * @param memPlcCfg Data region configuration.
+     * @return {@code True} if eviction policy enabled and native persistence is disabled.
      */
-    public static boolean isEnoughSpaceForData(DataRegion memPlc, long size) {
-        DataRegionConfiguration plc = memPlc.config();
-
-        if (size <= 0 || plc.isPersistenceEnabled() || plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED)
-            return true;
-
-        PageMemory pageMem = memPlc.pageMemory();
-
-        int sysPageSize = pageMem.systemPageSize();
-
-        long pagesRequired = Math.round(size / (double)sysPageSize);
-
-        long maxPages = plc.getMaxSize() / sysPageSize;
-
-        // There are enough pages left.
-        if (pagesRequired < maxPages - pageMem.loadedPages())
-            return true;
-
-        // Empty pages pool size restricted.
-        if (pagesRequired > plc.getEmptyPagesPoolSize())
-            return false;
-
-        return pagesRequired < Math.round(maxPages * (1.0d - plc.getEvictionThreshold()));
+    public static boolean isEvictionsEnabled(DataRegionConfiguration memPlcCfg) {
+        return memPlcCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED && !memPlcCfg.isPersistenceEnabled();
     }
 
     /**

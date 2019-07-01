@@ -453,20 +453,6 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
-     * Create a batch of data rows in page memory which is not associated with the cache entries.
-     *
-     * @param part Partition number.
-     * @param infos Entry infos.
-     * @return {@link AutoCloseable} iterator with the mapping of source entry info to created cache data row (row can
-     * be {@code null} if the source value is {@code null}). Iterator automatically removes unprocessed rows on close.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> allocateRows(
-        int part,
-        Collection<GridCacheEntryInfo> infos
-    ) throws IgniteCheckedException;
-
-    /**
      * @param parts Partitions.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
@@ -710,20 +696,22 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException;
 
         /**
-         * Create data rows.
-         *
-         * @param infos Entry infos.
-         * @return Created rows.
-         * @throws IgniteCheckedException If failed.
-         */
-        public Collection<? extends CacheDataRow> createRows(
-            Collection<GridCacheEntryInfo> infos
-        ) throws IgniteCheckedException;
-
-        /**
          * @param row Row removed from cache.
          */
         public void removeRow(CacheDataRow row) throws IgniteCheckedException;
+
+        /**
+         * Create a batch of data rows in page memory which is not associated with the cache entries.
+         *
+         * @param infos Entry infos.
+         * @return {@link AutoCloseable} iterator with the mapping of source entry info to created cache data row (row
+         * can be {@code null} if the source value is {@code null}). Iterator automatically removes unprocessed data
+         * rows from page memory on close.
+         * @throws IgniteCheckedException If failed.
+         */
+        public GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> allocateRows(
+            Collection<GridCacheEntryInfo> infos
+        ) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

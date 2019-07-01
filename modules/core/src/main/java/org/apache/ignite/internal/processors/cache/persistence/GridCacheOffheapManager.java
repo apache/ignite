@@ -101,6 +101,7 @@ import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwar
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -2419,14 +2420,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends CacheDataRow> createRows(
+        @Override public GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> allocateRows(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
             assert ctx.database().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
-            return delegate.createRows(infos);
+            return delegate.allocateRows(infos);
         }
 
         /** {@inheritDoc} */

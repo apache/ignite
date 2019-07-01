@@ -1178,37 +1178,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<Map.Entry<GridCacheEntryInfo, CacheDataRow>> allocateRows(
-        int partId,
-        Collection<GridCacheEntryInfo> infos
-    ) throws IgniteCheckedException {
-        CacheDataStore dataStore = dataStore(partId);
-
-        Collection<? extends CacheDataRow> rows = dataStore.createRows(F.view(infos, info -> info.value() != null));
-
-        return new GridCloseableIteratorAdapter<Map.Entry<GridCacheEntryInfo, CacheDataRow>>() {
-            private final Iterator<? extends CacheDataRow> rowsIter = rows.iterator();
-            private final Iterator<GridCacheEntryInfo> infosIter = infos.iterator();
-
-            @Override protected IgniteBiTuple<GridCacheEntryInfo, CacheDataRow> onNext() {
-                GridCacheEntryInfo info = infosIter.next();
-
-                return new IgniteBiTuple<>(info, info.value() == null ? null : rowsIter.next());
-            }
-
-            @Override protected boolean onHasNext() {
-                return infosIter.hasNext();
-            }
-
-            @Override protected void onClose() throws IgniteCheckedException {
-                while (rowsIter.hasNext())
-                    dataStore.removeRow(rowsIter.next());
-
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts,
         final AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
@@ -1759,15 +1728,15 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends CacheDataRow> createRows(
+        @Override public GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> allocateRows(
             Collection<GridCacheEntryInfo> infos
         ) throws IgniteCheckedException {
-            if (!busyLock.enterBusy())
-                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+            Collection<DataRow> rows = new ArrayList<>(infos.size());
 
-            List<DataRow> rows = new ArrayList<>(infos.size());
+            // Skipping infos with null values.
+            Collection<GridCacheEntryInfo> nonNullInfos = F.view(infos, info -> info.value() != null);
 
-            for (GridCacheEntryInfo info : infos) {
+            for (GridCacheEntryInfo info : nonNullInfos) {
                 rows.add(makeDataRow(info.key(),
                     info.value(),
                     info.version(),
@@ -1775,10 +1744,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID));
             }
 
+            if (!busyLock.enterBusy())
+                throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
+
             try {
                 rowStore.addRows(rows, grp.statisticsHolderData());
 
-                Iterator<GridCacheEntryInfo> iter = infos.iterator();
+                Iterator<GridCacheEntryInfo> iter = nonNullInfos.iterator();
 
                 if (grp.sharedGroup() && !grp.storeCacheIdInDataPage()) {
                     for (DataRow row : rows)
@@ -1789,7 +1761,25 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 busyLock.leaveBusy();
             }
 
-            return rows;
+            return new GridCloseableIteratorAdapter<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>>() {
+                private final Iterator<? extends CacheDataRow> rowsIter = rows.iterator();
+                private final Iterator<GridCacheEntryInfo> infosIter = infos.iterator();
+
+                @Override protected IgniteBiTuple<GridCacheEntryInfo, CacheDataRow> onNext() {
+                    GridCacheEntryInfo info = infosIter.next();
+
+                    return new IgniteBiTuple<>(info, info.value() == null ? null : rowsIter.next());
+                }
+
+                @Override protected boolean onHasNext() {
+                    return infosIter.hasNext();
+                }
+
+                @Override protected void onClose() throws IgniteCheckedException {
+                    while (rowsIter.hasNext())
+                        removeRow(rowsIter.next());
+                }
+            };
         }
 
         /** {@inheritDoc} */
