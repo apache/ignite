@@ -60,6 +60,8 @@ public class IgniteBinaryCacheTestSuite {
         TestSuite suite = new TestSuite("Binary Cache Test Suite");
 
         // Tests below have a special version for Binary Marshaller
+        ignoredTests.add(DataStreamProcessorSelfTest.class);
+        ignoredTests.add(DataStreamProcessorPersistenceSelfTest.class);
         ignoredTests.add(GridCacheAffinityRoutingSelfTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalExpiryPolicyTest.class);
         ignoredTests.add(GridCacheEntryMemorySizeSelfTest.class);

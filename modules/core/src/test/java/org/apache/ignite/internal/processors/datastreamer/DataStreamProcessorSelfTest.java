@@ -513,6 +513,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             afterGridStarted();
 
+            afterGridStarted();
+
             // Get and configure loader.
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(DEFAULT_CACHE_NAME);
 
@@ -932,6 +934,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             afterGridStarted();
 
+            afterGridStarted();
+
             for (int i = 0; i < 1000; i++)
                 storeMap.put(i, i);
 
@@ -995,6 +999,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             Ignite ignite = startGridsMultiThreaded(3);
+
+            afterGridStarted();
 
             afterGridStarted();
 

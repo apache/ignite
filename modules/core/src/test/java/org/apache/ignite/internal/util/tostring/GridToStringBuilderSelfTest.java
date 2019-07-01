@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+
 /**
  * Tests for {@link GridToStringBuilder}.
  */
@@ -98,6 +99,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-602")
     @Test
     public void testToStringCheckAdvancedRecursionPrevention() throws Exception {
+
         ArrayList<Object> list1 = new ArrayList<>();
         ArrayList<Object> list2 = new ArrayList<>();
 
