@@ -30,8 +30,11 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -41,7 +44,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageAddRootRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineFlagsCreatedVersionRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ReplaceRecord;
@@ -60,8 +63,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandlerWrapper;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.GridArrays;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteTree;
@@ -718,9 +719,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             io.initRoot(pageAddr, rootId, pageSize());
             io.setInlineSize(pageAddr, inlineSize);
+            io.initFlagsAndVersion(pageAddr, BPlusMetaIO.FLAGS_DEFAULT, IgniteVersionUtils.VER);
 
             if (needWalDeltaRecord(metaId, metaPage, walPlc))
-                wal.log(new MetaPageInitRootInlineRecord(cacheId, metaId, rootId, inlineSize));
+                wal.log(new MetaPageInitRootInlineFlagsCreatedVersionRecord(cacheId, metaId, rootId, inlineSize));
 
             assert io.getRootLevel(pageAddr) == 0;
             assert io.getFirstPageId(pageAddr, 0) == rootId;
