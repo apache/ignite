@@ -283,7 +283,7 @@ public class CacheGroupContext {
      * @return {@code True} if cacheId should be stored in data pages.
      */
     public boolean storeCacheIdInDataPage() {
-        return storeCacheId;
+        return storeCacheId || sharedGroup();
     }
 
     /**
