@@ -44,7 +44,7 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
  */
 public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter<Map<KeyCacheObject, EntryGetResult>> {
     /** Default max remap count value. */
-    public static final int DFLT_MAX_REMAP_CNT = 3;
+    public static final int DFLT_MAX_REMAP_CNT = 30; // Retry for atomic caches! Fot test puproses only.
 
     /** Maximum number of attempts to remap key to the same primary node. */
     protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
