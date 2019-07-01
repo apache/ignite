@@ -1292,9 +1292,9 @@ export default class IgniteConfigurationGenerator {
                 case 'StopNodeOnHalt':
                     const failover = handler.StopNodeOnHalt;
 
-                    bean = new Bean('org.apache.ignite.failure.StopNodeOrHaltFailureHandler', 'failureHandler', handler.StopNodeOnHalt);
+                    bean = new Bean('org.apache.ignite.failure.StopNodeOrHaltFailureHandler', 'failureHandler', failover);
 
-                    if (failover || failover.tryStop || failover.timeout) {
+                    if (failover && (failover.tryStop || failover.timeout)) {
                         failover.tryStop = failover.tryStop || false;
                         failover.timeout = failover.timeout || 0;
 
