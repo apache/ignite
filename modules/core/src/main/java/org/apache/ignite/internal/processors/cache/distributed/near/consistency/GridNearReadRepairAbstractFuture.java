@@ -119,7 +119,7 @@ public abstract class GridNearReadRepairAbstractFuture extends GridFutureAdapter
     /**
      *
      */
-    private synchronized void map(AffinityTopologyVersion topVer) {
+    protected synchronized void map(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
 
         futs.clear();
