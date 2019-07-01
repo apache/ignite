@@ -609,10 +609,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 pageStoreFileIoFactory, pageStoreV1FileIoFactory, igniteCfg.getDataStorageConfiguration());
 
             FilePageStore idxStore =
-            pageStoreFactory.createPageStore(
-                PageMemory.FLAG_IDX,
-                idxFile,
-                allocatedTracker);
+                pageStoreFactory.createPageStore(
+                    PageMemory.FLAG_IDX,
+                    idxFile,
+                    allocatedTracker);
 
             FilePageStore[] partStores = new FilePageStore[partitions];
 
