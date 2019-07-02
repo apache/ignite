@@ -782,7 +782,7 @@ public class GridDhtPartitionDemander {
                                     if (grp.mvccEnabled())
                                         mvccPreloadEntries(topVer, node, p, infos);
                                     else if (CU.isEvictionsDisabled(grp.dataRegion().config()) ||
-                                        isEnoughSpace(grp.dataRegion(), supplyMsg.messageSize() * 2))
+                                        isEnoughSpace(grp.dataRegion(), supplyMsg.messageSize()))
                                         preloadEntriesBatched(topVer, node, p, infos);
                                     else
                                         preloadEntries(topVer, node, p, infos);
