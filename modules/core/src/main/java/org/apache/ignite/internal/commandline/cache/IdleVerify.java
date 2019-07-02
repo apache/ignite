@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -42,7 +41,6 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTask;
@@ -323,7 +321,7 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
 
         IdleVerifyResultV2 res = executeTask(client, VisorIdleVerifyTaskV2.class, taskArg, clientCfg);
 
-        logParsedArgs(taskArg, logger::log);
+        logParsedArgs(taskArg, System.out::print);
 
         res.print(System.out::print);
     }
