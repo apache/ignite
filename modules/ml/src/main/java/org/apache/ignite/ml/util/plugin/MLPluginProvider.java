@@ -76,7 +76,7 @@ public class MLPluginProvider implements PluginProvider<MLPluginConfiguration> {
 
     /** {@inheritDoc} */
     @Override public String copyright() {
-        return null;
+        return "Copyright 2019 GridGain Systems, Inc. and Contributors.";
     }
 
     /** {@inheritDoc} */
