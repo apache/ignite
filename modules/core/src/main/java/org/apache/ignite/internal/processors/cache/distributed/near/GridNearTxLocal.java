@@ -3086,16 +3086,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     expiryPlc0,
                     skipVals,
                     needVer,
+                    true,
                     this)
+                    .multi()
                     .chain((fut) -> {
                         try {
-                            for (Map.Entry<KeyCacheObject, EntryGetResult> entry : fut.get().entrySet())
-                                processLoaded(
-                                    entry.getKey(),
-                                    needVer ? entry.getValue() : entry.getValue().value(),
-                                    needVer,
-                                    skipVals,
-                                    c);
+                            Map<Object, Object> map = fut.get();
+
+                            processLoaded(map, keys, needVer, c);
 
                             return null;
                         }

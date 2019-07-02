@@ -43,6 +43,9 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
     /** Need version. */
     private final boolean needVer;
 
+    /** Keep cache objects. */
+    private boolean keepCacheObjects;
+
     /**
      *
      */
@@ -56,6 +59,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
         IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer,
+        boolean keepCacheObjects,
         IgniteInternalTx tx) {
         super(null,
             ctx,
@@ -69,6 +73,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
 
         this.skipVals = skipVals;
         this.needVer = needVer;
+        this.keepCacheObjects = keepCacheObjects;
     }
 
     /** {@inheritDoc} */
@@ -112,7 +117,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                         entry.getKey(),
                         getRes.value(),
                         skipVals,
-                        false,
+                        keepCacheObjects,
                         deserializeBinary,
                         false,
                         getRes,
@@ -151,7 +156,7 @@ public class GridNearReadRepairCheckOnlyFuture extends GridNearReadRepairAbstrac
                         entry.getKey(),
                         getRes.value(),
                         skipVals,
-                        false,
+                        keepCacheObjects,
                         deserializeBinary,
                         false,
                         getRes,
