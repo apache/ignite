@@ -78,7 +78,7 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
             mBeans.add(mbean);
 
             if (log.isDebugEnabled())
-                log.debug("MetricSet JMX bean created. " + mbean);
+                log.debug("MetricGroup JMX bean created. " + mbean);
         }
         catch (JMException e) {
             log.error("MBean for " + grp.name() + " can't be created.", e);
