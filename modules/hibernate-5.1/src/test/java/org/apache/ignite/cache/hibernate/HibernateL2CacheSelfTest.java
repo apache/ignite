@@ -56,6 +56,7 @@ import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.stat.NaturalIdCacheStatistics;
 import org.hibernate.stat.SecondLevelCacheStatistics;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -1100,6 +1101,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Counts messages")
     public void testNaturalIdCache() throws Exception {
         for (AccessType accessType : accessTypes())
             testNaturalIdCache(accessType);
