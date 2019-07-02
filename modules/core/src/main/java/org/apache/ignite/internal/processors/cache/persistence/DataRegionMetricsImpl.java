@@ -41,7 +41,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
      * Full name will contain {@link DataRegionConfiguration#getName()} also.
      * {@code "io.dataregion.default"}, for example.
      */
-    public static final String DATAREGION_METRICS_PREFIX = "io.dataregion";
+    public static final String DATAREGION_METRICS_PREFIX = metricName("io", "dataregion");
 
     /** */
     private final DataRegionMetricsProvider dataRegionMetricsProvider;

@@ -57,7 +57,7 @@ public class CacheMetricsImpl implements CacheMetrics {
      * Full name will contain {@link CacheConfiguration#getName()} also.
      * {@code "cache.sys-cache"}, for example.
      */
-    public static final String CACHE_METRICS_PREFIX = "cache";
+    public static final String CACHE_METRICS = "cache";
 
     /** Number of reads. */
     private final LongMetricImpl reads;

@@ -48,7 +48,7 @@ import static org.apache.ignite.internal.processors.job.GridJobProcessor.ACTIVE;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.CANCELED;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.EXECUTION_TIME;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.FINISHED;
-import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS;
+import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_METRICS;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.REJECTED;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.STARTED;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.WAITING;
@@ -76,7 +76,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
             .setCollisionSpi(collisioinSpi);
 
         try (IgniteEx g = startGrid(cfg)) {
-            MetricGroup mgrp = g.context().metric().registry().group(JOBS);
+            MetricGroup mgrp = g.context().metric().registry().group(JOBS_METRICS);
 
             LongMetric started = (LongMetric)mgrp.findMetric(STARTED);
             LongMetric active = (LongMetric)mgrp.findMetric(ACTIVE);
@@ -164,7 +164,7 @@ public class GridJobMetricsSelfTest extends GridCommonAbstractTest {
         latch = new CountDownLatch(1);
 
         try(IgniteEx g = startGrid(0)) {
-            MetricGroup mgrp = g.context().metric().registry().group(JOBS);
+            MetricGroup mgrp = g.context().metric().registry().group(JOBS_METRICS);
 
             LongMetric started = (LongMetric)mgrp.findMetric(STARTED);
             LongMetric active = (LongMetric)mgrp.findMetric(ACTIVE);

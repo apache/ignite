@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.metric.impl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 
-import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
 /**
  * Utility class to build or parse metric name in dot notation.
@@ -75,9 +75,9 @@ public class MetricUtils {
      */
     public static String cacheMetricsGroupName(String cacheName, boolean isNear) {
         if (isNear)
-            return metricName(CACHE_METRICS_PREFIX, cacheName, "near");
+            return metricName(CACHE_METRICS, cacheName, "near");
 
-        return metricName(CACHE_METRICS_PREFIX, cacheName);
+        return metricName(CACHE_METRICS, cacheName);
     }
 
     /**
