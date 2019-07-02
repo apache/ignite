@@ -10,9 +10,27 @@ insert into test values(1, 'Hello');
 > update count: 1
 
 select floor(null) vn, floor(1) v1, floor(1.1) v2, floor(-1.1) v3, floor(1.9) v4, floor(-1.9) v5 from test;
-> VN   V1  V2  V3   V4  V5
-> ---- --- --- ---- --- ----
-> null 1.0 1.0 -2.0 1.0 -2.0
+> VN   V1 V2 V3 V4 V5
+> ---- -- -- -- -- --
+> null 1  1  -2 1  -2
+> rows: 1
+
+SELECT FLOOR(1.5), FLOOR(-1.5);
+> 1 -2
+> - --
+> 1 -2
+> rows: 1
+
+SELECT FLOOR(1.5::DOUBLE), FLOOR(-1.5::DOUBLE);
+> 1.0 -2.0
+> --- ----
+> 1.0 -2.0
+> rows: 1
+
+SELECT FLOOR(1.5::REAL), FLOOR(-1.5::REAL);
+> 1.0 -2.0
+> --- ----
+> 1.0 -2.0
 > rows: 1
 
 

@@ -775,23 +775,9 @@ public abstract class Value {
                     return ValueDecimal.get(BigDecimal.valueOf(getInt()));
                 case LONG:
                     return ValueDecimal.get(BigDecimal.valueOf(getLong()));
-                case DOUBLE: {
-                    double d = getDouble();
-                    if (Double.isInfinite(d) || Double.isNaN(d)) {
-                        throw DbException.get(
-                                ErrorCode.DATA_CONVERSION_ERROR_1, "" + d);
-                    }
-                    return ValueDecimal.get(BigDecimal.valueOf(d));
-                }
-                case FLOAT: {
-                    float f = getFloat();
-                    if (Float.isInfinite(f) || Float.isNaN(f)) {
-                        throw DbException.get(
-                                ErrorCode.DATA_CONVERSION_ERROR_1, "" + f);
-                    }
-                    // better rounding behavior than BigDecimal.valueOf(f)
-                    return ValueDecimal.get(new BigDecimal(Float.toString(f)));
-                }
+                case DOUBLE:
+                case FLOAT:
+                    return ValueDecimal.get(getBigDecimal());
                 case TIMESTAMP_TZ:
                     throw DbException.get(
                             ErrorCode.DATA_CONVERSION_ERROR_1, getString());

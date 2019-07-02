@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -56,7 +58,9 @@ import org.h2.value.ValueArray;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueBytes;
 import org.h2.value.ValueDate;
+import org.h2.value.ValueDecimal;
 import org.h2.value.ValueDouble;
+import org.h2.value.ValueFloat;
 import org.h2.value.ValueInt;
 import org.h2.value.ValueLong;
 import org.h2.value.ValueNull;
@@ -181,14 +185,14 @@ public class Function extends Expression implements FunctionCall {
         addFunction("BITGET", BITGET, 2, Value.BOOLEAN);
         addFunction("BITOR", BITOR, 2, Value.LONG);
         addFunction("BITXOR", BITXOR, 2, Value.LONG);
-        addFunction("CEILING", CEILING, 1, Value.DOUBLE);
-        addFunction("CEIL", CEILING, 1, Value.DOUBLE);
+        addFunction("CEILING", CEILING, 1, Value.NULL);
+        addFunction("CEIL", CEILING, 1, Value.NULL);
         addFunction("COS", COS, 1, Value.DOUBLE);
         addFunction("COSH", COSH, 1, Value.DOUBLE);
         addFunction("COT", COT, 1, Value.DOUBLE);
         addFunction("DEGREES", DEGREES, 1, Value.DOUBLE);
         addFunction("EXP", EXP, 1, Value.DOUBLE);
-        addFunction("FLOOR", FLOOR, 1, Value.DOUBLE);
+        addFunction("FLOOR", FLOOR, 1, Value.NULL);
         addFunction("LOG", LOG, 1, Value.DOUBLE);
         addFunction("LN", LN, 1, Value.DOUBLE);
         addFunction("LOG10", LOG10, 1, Value.DOUBLE);
@@ -200,7 +204,7 @@ public class Function extends Expression implements FunctionCall {
         // RAND with one argument: seed the random generator
         addFunctionNotDeterministic("RAND", RAND, VAR_ARGS, Value.DOUBLE);
         addFunctionNotDeterministic("RANDOM", RAND, VAR_ARGS, Value.DOUBLE);
-        addFunction("ROUND", ROUND, VAR_ARGS, Value.DOUBLE);
+        addFunction("ROUND", ROUND, VAR_ARGS, Value.NULL);
         addFunction("ROUNDMAGIC", ROUNDMAGIC, 1, Value.DOUBLE);
         addFunction("SIGN", SIGN, 1, Value.INT);
         addFunction("SIN", SIN, 1, Value.DOUBLE);
@@ -584,7 +588,7 @@ public class Function extends Expression implements FunctionCall {
             result = ValueDouble.get(Math.atan(v0.getDouble()));
             break;
         case CEILING:
-            result = ValueDouble.get(Math.ceil(v0.getDouble()));
+            result = getCeilOrFloor(v0, false);
             break;
         case COS:
             result = ValueDouble.get(Math.cos(v0.getDouble()));
@@ -607,7 +611,7 @@ public class Function extends Expression implements FunctionCall {
             result = ValueDouble.get(Math.exp(v0.getDouble()));
             break;
         case FLOOR:
-            result = ValueDouble.get(Math.floor(v0.getDouble()));
+            result = getCeilOrFloor(v0, true);
             break;
         case LN:
             result = ValueDouble.get(Math.log(v0.getDouble()));
@@ -1170,15 +1174,9 @@ public class Function extends Expression implements FunctionCall {
             result = ValueDouble.get(Math.pow(
                     v0.getDouble(), v1.getDouble()));
             break;
-        case ROUND: {
-            double f = v1 == null ? 1. : Math.pow(10., v1.getDouble());
-
-            double middleResult = v0.getDouble() * f;
-
-            int oneWithSymbol = middleResult > 0 ? 1 : -1;
-            result = ValueDouble.get(Math.round(Math.abs(middleResult)) / f * oneWithSymbol);
+        case ROUND:
+            result = round(v0, v1);
             break;
-        }
         case TRUNCATE: {
             if (v0.getType() == Value.TIMESTAMP) {
                 result = ValueTimestamp.fromDateValueAndNanos(((ValueTimestamp) v0).getDateValue(), 0);
@@ -1652,6 +1650,36 @@ public class Function extends Expression implements FunctionCall {
         }
         default:
             throw DbException.throwInternalError("type=" + info.type);
+        }
+        return result;
+    }
+
+    private static Value getCeilOrFloor(Value v0, boolean floor) {
+        Value result;
+        int t = v0.getType();
+        if (t == Value.DOUBLE || t == Value.FLOAT) {
+            double v = v0.getDouble();
+            v = floor ? Math.floor(v) : Math.ceil(v);
+            result = t == Value.DOUBLE ? ValueDouble.get(v) : ValueFloat.get((float) v);
+        } else {
+            result = ValueDecimal
+                .get(v0.getBigDecimal().setScale(0, floor ? RoundingMode.FLOOR : RoundingMode.CEILING));
+        }
+        return result;
+    }
+
+    private Value round(Value v0, Value v1) {
+        BigDecimal bd = v0.getBigDecimal().setScale(v1 == null ? 0 : v1.getInt(), RoundingMode.HALF_UP);
+        Value result;
+        switch (dataType) {
+            case Value.DOUBLE:
+                result = ValueDouble.get(bd.doubleValue());
+                break;
+            case Value.FLOAT:
+                result = ValueFloat.get(bd.floatValue());
+                break;
+            default:
+                result = ValueDecimal.get(bd);
         }
         return result;
     }

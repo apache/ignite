@@ -122,7 +122,6 @@ public class TestFunctions extends TestBase implements AggregateFunction {
         testThatCurrentTimestampStaysTheSameWithinATransaction();
         testThatCurrentTimestampUpdatesOutsideATransaction();
 //        testAnnotationProcessorsOutput();
-        testRound();
         testSignal();
 
         deleteDb("functions");
@@ -2005,29 +2004,6 @@ public class TestFunctions extends TestBase implements AggregateFunction {
         } finally {
             System.clearProperty(TestAnnotationProcessor.MESSAGES_KEY);
         }
-    }
-
-    private void testRound() throws SQLException {
-        deleteDb("functions");
-
-        Connection conn = getConnection("functions");
-        Statement stat = conn.createStatement();
-
-        final ResultSet rs = stat.executeQuery(
-                "select ROUND(-1.2), ROUND(-1.5), ROUND(-1.6), " +
-                "ROUND(2), ROUND(1.5), ROUND(1.8), ROUND(1.1) from dual");
-
-        rs.next();
-        assertEquals(-1, rs.getInt(1));
-        assertEquals(-2, rs.getInt(2));
-        assertEquals(-2, rs.getInt(3));
-        assertEquals(2, rs.getInt(4));
-        assertEquals(2, rs.getInt(5));
-        assertEquals(2, rs.getInt(6));
-        assertEquals(1, rs.getInt(7));
-
-        rs.close();
-        conn.close();
     }
 
     private void testSignal() throws SQLException {
