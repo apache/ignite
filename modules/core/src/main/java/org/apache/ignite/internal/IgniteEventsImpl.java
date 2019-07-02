@@ -171,6 +171,9 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
                 autoUnsubscribe,
                 prj.predicate()));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
