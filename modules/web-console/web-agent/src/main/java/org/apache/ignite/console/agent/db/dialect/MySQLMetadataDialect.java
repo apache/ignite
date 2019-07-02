@@ -38,25 +38,8 @@ public class MySQLMetadataDialect extends JdbcMetadataDialect {
         return new HashSet<>(Arrays.asList("information_schema", "mysql", "performance_schema", "sys"));
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<String> schemas(Connection conn) throws SQLException {
-        Collection<String> schemas = new ArrayList<>();
-
-        ResultSet rs = conn.getMetaData().getCatalogs();
-
-        Set<String> sys = systemSchemas();
-
-        while(rs.next()) {
-            String schema = rs.getString(1);
-
-            // Skip system schemas.
-            if (sys.contains(schema))
-                continue;
-
-            schemas.add(schema);
-        }
-
-        return schemas;
+    @Override protected ResultSet getSchemas(Connection conn) throws SQLException {
+        return conn.getMetaData().getCatalogs();
     }
 
     /** {@inheritDoc} */

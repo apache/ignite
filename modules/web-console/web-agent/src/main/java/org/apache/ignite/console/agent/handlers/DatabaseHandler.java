@@ -172,7 +172,7 @@ public class DatabaseHandler {
                 catalog = parts.length > 0 ? parts[parts.length - 1] : "NONE";
             }
 
-            Collection<String> schemas = dbMetaReader.schemas(conn);
+            Collection<String> schemas = dbMetaReader.schemas(conn, args.getBoolean("importSamples", false));
 
             log.info("Collected database schemas:" + schemas.size());
 
