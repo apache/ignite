@@ -247,8 +247,8 @@
 
         <!-- Copy Python sources. -->
         <fileSet>
-            <directory>modules/platforms/python/pyignite</directory>
-            <outputDirectory>/platforms/python/pyignite</outputDirectory>
+            <directory>modules/platforms/python/pygridgain</directory>
+            <outputDirectory>/platforms/python/pygridgain</outputDirectory>
         </fileSet>
 
         <fileSet>
