@@ -33,16 +33,19 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.integration.CompletionListener;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
+import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -80,12 +83,12 @@ import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeMan
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxyImpl;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
@@ -126,6 +129,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -700,7 +704,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     !affNodes.get(0).equals(dht.context().affinity().primaryByPartition(p, readyVer));
 
                                 if (affNodesCnt != ownerNodesCnt || !affNodes.containsAll(owners) ||
-                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING) ||
+                                    (waitEvicts && loc != null && loc.state() != OWNING) ||
                                     notPrimary) {
                                     if (i % 50 == 0)
                                         LT.warn(log(), "Waiting for topology map update [" +
@@ -790,7 +794,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                             ", locNode=" + g.cluster().localNode() + ']');
                                     }
 
-                                    if (entry.getValue() != GridDhtPartitionState.OWNING) {
+                                    if (entry.getValue() != OWNING) {
                                         LT.warn(log(),
                                             "Waiting for correct partition state part=" + entry.getKey()
                                                 + ", should be OWNING [state=" + entry.getValue() + "], node=" +
@@ -929,8 +933,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                 sb.append("local part=");
 
-                if (part != null)
-                    sb.append(p).append(" state=").append(part.state());
+                if (part != null) {
+                    sb.append(p).append(" counters=")
+                        .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
+                        .append(" fullSize=")
+                        .append(part == null ? "NA" : part.fullSize())
+                        .append(" state=").append(part.state());
+                }
                 else
                     sb.append(p).append(" is null");
 
@@ -944,8 +953,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             .append(nodeId)
                             .append(" part=")
                             .append(p)
+                            .append(" counters=")
+                            .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
+                            .append(" fullSize=")
+                            .append(part == null ? "NA" : part.fullSize())
                             .append(" state=")
-                            .append(top.partitionState(nodeId, p))
+                            .append(part == null ? "NA" : top.partitionState(nodeId, p))
                             .append(" isAffNode=")
                             .append(affNodes.contains(nodeId))
                             .append("\n");
@@ -1090,11 +1103,23 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
+        return findKeys(null, cache, cnt, startFrom, type);
+    }
+
+    /**
+     * @param node Node.
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is primary.
+     */
+    protected List<Integer> findKeys(@Nullable ClusterNode node, IgniteCache<?, ?> cache,
+        final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
         final List<Integer> found = new ArrayList<>(cnt);
 
-        final ClusterNode locNode = localNode(cache);
+        final ClusterNode node0 = node != null ? node : localNode(cache);
 
         final Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
 
@@ -1107,11 +1132,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         boolean ok;
 
                         if (type == 0)
-                            ok = aff.isPrimary(locNode, key);
+                            ok = aff.isPrimary(node0, key);
                         else if (type == 1)
-                            ok = aff.isBackup(locNode, key);
+                            ok = aff.isBackup(node0, key);
                         else if (type == 2)
-                            ok = !aff.isPrimaryOrBackup(locNode, key);
+                            ok = !aff.isPrimaryOrBackup(node0, key);
                         else {
                             fail();
 
@@ -1152,6 +1177,77 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             set.add(entry);
 
         return set;
+    }
+
+    /**
+     * @param cache Cache.
+     * @param part Partition.
+     * @param cnt Count.
+     * @param skipCnt Skip keys from start.
+     * @return List of keys for partition.
+     */
+    protected List<Integer> partitionKeys(IgniteCache<?, ?> cache, int part, int cnt, int skipCnt) {
+        IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
+
+        GridCacheContext<?, ?> cctx = proxy.context();
+
+        int k = 0, c = 0, skip0 = 0;
+
+        List<Integer> keys = new ArrayList<>(cnt);
+
+        while(c < cnt) {
+            if (cctx.affinity().partition(k) == part) {
+                if (skip0 < skipCnt) {
+                    k++;
+                    skip0++;
+
+                    continue;
+                }
+
+                c++;
+
+                keys.add(k);
+            }
+
+            k++;
+        }
+
+        return keys;
+    }
+
+    /**
+     * @param cache Cache.
+     * @param part Partition.
+     * @return Unbounded iterator for partition keys.
+     */
+    protected Iterator<Integer> partitionKeysIterator(IgniteCache<?, ?> cache, int part) {
+        IgniteCacheProxyImpl proxy = cache.unwrap(IgniteCacheProxyImpl.class);
+
+        GridCacheContext<?, ?> cctx = proxy.context();
+
+        return new Iterator<Integer>() {
+            int cur, next = 0;
+
+            {
+                advance();
+            }
+
+            private void advance() {
+                while(cctx.affinity().partition(cur = next++) != part);
+            }
+
+            @Override public boolean hasNext() {
+                return true;
+            }
+
+            @Override public Integer next() {
+                int tmp = cur;
+
+                advance();
+
+                return tmp;
+            }
+        };
     }
 
     /**
@@ -2031,7 +2127,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             }
 
             if (hasFutures)
-                fail("Some mvcc futures are not finished");
+                fail("Some cache futures are not finished");
 
             Collection<IgniteInternalTx> txs = ig.context().cache().context().tm().activeTransactions();
 
@@ -2041,6 +2137,51 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             if (!txs.isEmpty())
                 fail("Some transaction are not finished");
         }
+    }
+
+    /**
+     * Load data into single partition.
+     *
+     * @param p Partition.
+     * @param cacheName Cache name.
+     * @param total Total keys count.
+     * @param skip Skip keys from the beginning.
+     * @param putType Optional put type (default putAll). Possible values 0, 1, 2, 3.
+     *
+     * @return List of last keys.
+     */
+    protected List<Integer> loadDataToPartition(int p, String gridName, String cacheName, int total, int skip, int... putType) {
+        IgniteCache<Integer, Integer> cache = grid(gridName).cache(cacheName);
+
+        List<Integer> keys = partitionKeys(cache, p, total, skip);
+
+        int mode = putType != null && putType.length > 0 ? putType[0] : 0;
+
+        Map<Integer, Integer> map = keys.stream().collect(Collectors.toMap(k -> k, k -> k));
+
+        switch (mode) {
+            case 0:
+                cache.putAll(map);
+
+                break;
+
+            case 1:
+                for (Map.Entry<Integer, Integer> entry : map.entrySet())
+                    cache.put(entry.getKey(), entry.getValue());
+
+                break;
+
+            default:
+                try(IgniteDataStreamer<Integer, Integer> ds = grid(gridName).dataStreamer(cacheName)) {
+                    ds.allowOverwrite(mode == 2);
+
+                    ds.addData(map);
+                }
+
+                break;
+        }
+
+        return keys;
     }
 
     /**
@@ -2109,6 +2250,71 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             for (Ignite g : grids)
                 g.events().stopLocalListen(lsnr);
+        }
+    }
+
+    /**
+     * @param partId Partition id.
+     * @param gridName Grid name.
+     *
+     * @return Partition update counter or {@code null} if node is not an owner.
+     */
+    protected @Nullable PartitionUpdateCounter counter(int partId, String gridName) {
+        @Nullable GridDhtLocalPartition locPart =
+            internalCache(grid(gridName).cache(DEFAULT_CACHE_NAME)).context().topology().localPartition(partId);
+
+        return locPart == null || locPart.state() != OWNING ? null : locPart.dataStore().partUpdateCounter();
+    }
+
+    /**
+     * @param partId Partition id.
+     * @param cacheName Cache name.
+     * @param gridName Grid name.
+     *
+     * @return Partition update counter or {@code null} if node is not an owner.
+     */
+    protected @Nullable PartitionUpdateCounter counter(int partId, String cacheName, String gridName) {
+        @Nullable GridDhtLocalPartition locPart =
+            internalCache(grid(gridName).cache(cacheName)).context().topology().localPartition(partId);
+
+        return locPart == null || locPart.state() != OWNING ? null : locPart.dataStore().partUpdateCounter();
+    }
+
+    /**
+     * @param res Response.
+     */
+    protected void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
+        if (res.hasConflicts()) {
+            StringBuilder b = new StringBuilder();
+
+            res.print(b::append);
+
+            fail(b.toString());
+        }
+    }
+
+    /**
+     * @param partId Partition.
+     * @param withReserveCntr {@code True} to compare reserve counters. Because reserve counters are synced during
+     * PME invoking with {@code true} makes sense only after PME was finished.
+     */
+    protected void assertCountersSame(int partId, boolean withReserveCntr) throws AssertionFailedError {
+        PartitionUpdateCounter cntr0 = null;
+
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.configuration().isClientMode())
+                continue;
+
+            PartitionUpdateCounter cntr = counter(partId, ignite.name());
+
+            if (cntr0 != null) {
+                assertEquals("Expecting same counters [partId=" + partId + ']', cntr0, cntr);
+
+                if (withReserveCntr)
+                    assertEquals("Expecting same reservation counters", cntr0.reserved(), cntr.reserved());
+            }
+
+            cntr0 = cntr;
         }
     }
 }

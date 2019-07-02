@@ -17,33 +17,14 @@
 
 package org.apache.ignite.ml.nn.performance;
 
-import org.apache.ignite.ml.dataset.feature.extractor.impl.FeatureLabelExtractorWrapper;
-import org.apache.ignite.ml.math.primitives.matrix.Matrix;
-import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
-import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
-import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
-import org.apache.ignite.ml.util.MnistUtils;
-import org.junit.Test;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link MLPTrainer} on the MNIST dataset using locally stored data.
  */
 public class MLPTrainerMnistTest {
     /** Tests on the MNIST dataset. */
-    @Test
+/*    @Test
     public void testMNIST() throws IOException {
         int featCnt = 28 * 28;
         int hiddenNeuronsCnt = 100;
@@ -101,5 +82,5 @@ public class MLPTrainerMnistTest {
 
         double accuracy = 1.0 * correctAnswers / (correctAnswers + incorrectAnswers);
         assertTrue("Accuracy should be >= 80% (not " + accuracy * 100 + "%)", accuracy >= 0.8);
-    }
+    }*/
 }

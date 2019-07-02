@@ -96,7 +96,9 @@
         <module>modules/ml</module>
         <module>modules/ml/spark-model-parser</module>
         <module>modules/ml/xgboost-model-parser</module>
+        <module>modules/ml/tensorflow-model-parser</module>
         <module>modules/tensorflow</module>
+        <module>modules/opencensus</module>
     </modules>
 
     <profiles>

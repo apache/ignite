@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.util.concurrent.CountDownLatch;
@@ -31,13 +34,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 /**
  *
  */
-public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
+public abstract class LazyCacheFreeList implements FreeList<CacheDataRow>, ReuseList {
     /** */
     private static final AtomicReferenceFieldUpdater<LazyCacheFreeList, CountDownLatch> initLatchUpdater =
         AtomicReferenceFieldUpdater.newUpdater(LazyCacheFreeList.class, CountDownLatch.class, "initLatch");
 
     /** */
-    private volatile CacheFreeList<CacheDataRow> delegate;
+    private volatile CacheFreeList delegate;
 
     /** */
     private IgniteCheckedException initErr;
@@ -76,7 +79,7 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
     /** {@inheritDoc} */
     @Override public int emptyDataPages() {
         try {
-            CacheFreeList<CacheDataRow> freeList = initDelegateIfNeeded(false);
+            CacheFreeList freeList = initDelegateIfNeeded(false);
 
             return freeList != null ? freeList.emptyDataPages() : 0;
         }
@@ -88,7 +91,7 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
     /** {@inheritDoc} */
     @Override public long freeSpace() {
         try {
-            CacheFreeList<CacheDataRow> freeList = initDelegateIfNeeded(false);
+            CacheFreeList freeList = initDelegateIfNeeded(false);
 
             return freeList != null ? freeList.freeSpace() : null;
         }
@@ -124,14 +127,14 @@ public abstract class LazyCacheFreeList implements CacheFreeList<CacheDataRow> {
      * @return Cache free list.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract CacheFreeList<CacheDataRow> createDelegate(boolean create) throws IgniteCheckedException;
+    protected abstract CacheFreeList createDelegate(boolean create) throws IgniteCheckedException;
 
     /**
      * @return Cache free list.
      * @throws IgniteCheckedException If failed to initialize free list.
      */
-    private CacheFreeList<CacheDataRow> initDelegateIfNeeded(boolean create) throws IgniteCheckedException {
-        CacheFreeList<CacheDataRow> delegate = this.delegate;
+    private CacheFreeList initDelegateIfNeeded(boolean create) throws IgniteCheckedException {
+        CacheFreeList delegate = this.delegate;
 
         if (delegate != null)
             return delegate;

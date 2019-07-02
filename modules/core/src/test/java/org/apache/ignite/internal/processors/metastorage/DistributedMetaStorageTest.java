@@ -21,6 +21,8 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -28,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -388,6 +391,73 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         assertEquals("value1", metastorage(1).read("key1"));
 
         assertEquals("value2", metastorage(1).read("key2"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testUnstableTopology() throws Exception {
+        int cnt = 8;
+
+        startGridsMultiThreaded(cnt);
+
+        grid(0).cluster().active(true);
+
+        stopGrid(0);
+
+        startGrid(0);
+
+        AtomicInteger gridIdxCntr = new AtomicInteger(0);
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            int gridIdx = gridIdxCntr.incrementAndGet();
+
+            try {
+                while (!stop.get()) {
+                    stopGrid(gridIdx, true);
+
+                    Thread.sleep(100L);
+
+                    startGrid(gridIdx);
+
+                    Thread.sleep(100L);
+                }
+            }
+            catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        }, cnt - 1);
+
+        long start = System.currentTimeMillis();
+
+        long duration = GridTestUtils.SF.applyLB(15_000, 5_000);
+
+        try {
+            for (int i = 0; System.currentTimeMillis() < start + duration; i++) {
+                metastorage(0).write(
+                    "key" + i, Integer.toString(ThreadLocalRandom.current().nextInt(1000))
+                );
+            }
+        }
+        finally {
+            stop.set(true);
+
+            fut.get();
+        }
+
+        awaitPartitionMapExchange();
+
+        for (int i = 0; i < cnt; i++) {
+            DistributedMetaStorage distributedMetastorage = metastorage(i);
+
+            assertNull(U.field(distributedMetastorage, "startupExtras"));
+        }
+
+        for (int i = 1; i < cnt; i++)
+            assertDistributedMetastoragesAreEqual(grid(0), grid(i));
     }
 
     /** */

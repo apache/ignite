@@ -33,6 +33,4 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 public abstract class GridifyTaskAdapter<R> extends ComputeTaskAdapter<GridifyArgument, R> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    // No-op.
 }

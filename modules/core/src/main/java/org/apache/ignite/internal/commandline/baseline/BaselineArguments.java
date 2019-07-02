@@ -24,16 +24,20 @@ import java.util.List;
  */
 public class BaselineArguments {
     /** Command. */
-    private BaselineCommand cmd;
+    private BaselineSubcommands cmd;
+
     /**
      * {@code true} if auto-adjust should be enable, {@code false} if it should be disable, {@code null} if no operation
      * needed.
      */
     private Boolean enableAutoAdjust;
+
     /** New value of soft timeout. */
     private Long softBaselineTimeout;
+
     /** Requested topology version. */
     private long topVer = -1;
+
     /** List of consistent ids for operation. */
     List<String> consistentIds;
 
@@ -44,7 +48,7 @@ public class BaselineArguments {
      * @param topVer Requested topology version.
      * @param consistentIds List of consistent ids for operation.
      */
-    public BaselineArguments(BaselineCommand cmd, Boolean enableAutoAdjust, Long softBaselineTimeout,
+    public BaselineArguments(BaselineSubcommands cmd, Boolean enableAutoAdjust, Long softBaselineTimeout,
         long topVer, List<String> consistentIds) {
         this.cmd = cmd;
         this.enableAutoAdjust = enableAutoAdjust;
@@ -56,7 +60,7 @@ public class BaselineArguments {
     /**
      * @return Command.
      */
-    public BaselineCommand getCmd() {
+    public BaselineSubcommands getCmd() {
         return cmd;
     }
 
@@ -94,23 +98,27 @@ public class BaselineArguments {
      */
     public static class Builder {
         /** Command. */
-        private BaselineCommand cmd;
+        private BaselineSubcommands cmd;
+
         /**
          * {@code true} if auto-adjust should be enable, {@code false} if it should be disable, {@code null} if no
          * operation needed.
          */
         private Boolean enable;
+
         /** New value of soft timeout. */
         private Long timeout;
+
         /** Requested topology version. */
         private long ver = -1;
+
         /** List of consistent ids for operation. */
         private List<String> ids;
 
         /**
          * @param cmd Command.
          */
-        public Builder(BaselineCommand cmd) {
+        public Builder(BaselineSubcommands cmd) {
             this.cmd = cmd;
         }
 

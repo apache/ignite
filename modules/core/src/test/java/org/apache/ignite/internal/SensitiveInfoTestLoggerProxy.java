@@ -114,16 +114,20 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     /** */
     @GridToStringInclude
     private IgniteLogger impl;
+
     /** */
     private String gridName;
+
     /** */
     private String id8;
+
     /** */
     @GridToStringInclude
     private Object ctgr;
 
     /** Whether testing sensitive is enabled for the logger */
     private boolean testSensitive;
+
     /**
      * No-arg constructor is required by externalization.
      */

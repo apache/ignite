@@ -50,9 +50,10 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
-import org.apache.ignite.internal.stat.IoStatisticsHolderNoOp;
-import org.apache.ignite.internal.stat.IoStatisticsType;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolderCache;
+import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
+import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,15 +64,20 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.stat.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
+import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 
 /**
  *
@@ -180,6 +186,11 @@ public class CacheGroupContext {
     /** Statistics holder to track IO operations for data pages. */
     private final IoStatisticsHolder statHolderData;
 
+    /** */
+    private volatile boolean hasAtomicCaches;
+
+    /** Store cache group metrics. */
+    private final CacheGroupMetricsImpl metrics;
 
     /**
      * @param ctx Context.
@@ -242,6 +253,8 @@ public class CacheGroupContext {
 
         log = ctx.kernalContext().log(getClass());
 
+        metrics = new CacheGroupMetricsImpl();
+
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
         if (systemCache()) {
@@ -249,10 +262,10 @@ public class CacheGroupContext {
             statHolderData = IoStatisticsHolderNoOp.INSTANCE;
         }
         else {
-            statHolderIdx = ctx.kernalContext().ioStats().registerIndex(IoStatisticsType.HASH_INDEX,
-                cacheOrGroupName(), HASH_PK_IDX_NAME);
+            MetricRegistry mreg = ctx.kernalContext().metric().registry();
 
-            statHolderData = ctx.kernalContext().ioStats().registerCacheGroup(cacheOrGroupName(), grpId);
+            statHolderIdx = new IoStatisticsHolderIndex(HASH_INDEX, cacheOrGroupName(), HASH_PK_IDX_NAME, mreg);
+            statHolderData = new IoStatisticsHolderCache(cacheOrGroupName(), grpId, mreg);
         }
     }
 
@@ -355,6 +368,9 @@ public class CacheGroupContext {
 
         if (!drEnabled && cctx.isDrEnabled())
             drEnabled = true;
+
+        if (!hasAtomicCaches)
+            hasAtomicCaches = cctx.config().getAtomicityMode() == ATOMIC;
     }
 
     /**
@@ -495,6 +511,54 @@ public class CacheGroupContext {
                     cctx.localNode(),
                     "Cache unloading event.",
                     EVT_CACHE_REBALANCE_PART_UNLOADED,
+                    part,
+                    null,
+                    0,
+                    0));
+    }
+
+    /**
+     * Adds partition supply event.
+     *
+     * @param part Partition.
+     */
+    public void addRebalanceSupplyEvent(int part) {
+        if (!eventRecordable(EVT_CACHE_REBALANCE_PART_SUPPLIED))
+            LT.warn(log, "Added event without checking if event is recordable: " +
+                U.gridEventName(EVT_CACHE_REBALANCE_PART_SUPPLIED));
+
+        List<GridCacheContext> caches = this.caches;
+
+        for (GridCacheContext cctx : caches)
+            if (!cctx.config().isEventsDisabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache partition supplied event.",
+                    EVT_CACHE_REBALANCE_PART_SUPPLIED,
+                    part,
+                    null,
+                    0,
+                    0));
+    }
+
+    /**
+     * Adds partition supply event.
+     *
+     * @param part Partition.
+     */
+    public void addRebalanceMissEvent(int part) {
+        if (!eventRecordable(EVT_CACHE_REBALANCE_PART_MISSED))
+            LT.warn(log, "Added event without checking if event is recordable: " +
+                U.gridEventName(EVT_CACHE_REBALANCE_PART_MISSED));
+
+        List<GridCacheContext> caches = this.caches;
+
+        for (GridCacheContext cctx : caches)
+            if (!cctx.config().isEventsDisabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache partition missed event.",
+                    EVT_CACHE_REBALANCE_PART_MISSED,
                     part,
                     null,
                     0,
@@ -927,7 +991,6 @@ public class CacheGroupContext {
         this.contQryCaches = contQryCaches;
     }
 
-
     /**
      * Obtain the group listeners lock. Write lock should be held to register/unregister listeners. Read lock should be
      * hel for CQ listeners notification.
@@ -1022,8 +1085,8 @@ public class CacheGroupContext {
                 ccfg.getAffinity(),
                 ccfg.getNodeFilter(),
                 ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL,
-                persistenceEnabled());
+                ccfg.getCacheMode() == LOCAL
+            );
 
         if (ccfg.getCacheMode() != LOCAL)
             top = new GridDhtPartitionTopologyImpl(ctx, this);
@@ -1227,5 +1290,19 @@ public class CacheGroupContext {
      */
     public IoStatisticsHolder statisticsHolderData() {
         return statHolderData;
+    }
+
+    /**
+     * @return {@code True} if group has atomic caches.
+     */
+    public boolean hasAtomicCaches() {
+        return hasAtomicCaches;
+    }
+
+    /**
+     * @return Metrics.
+     */
+    public CacheGroupMetricsImpl metrics0() {
+        return metrics;
     }
 }

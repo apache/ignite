@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-
 import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 
 /**
  * Query descriptor.
@@ -48,6 +47,9 @@ public class GridRunningQueryInfo {
 
     /** */
     private final boolean loc;
+
+    /** */
+    private final QueryRunningFuture fut = new QueryRunningFuture();
 
     /**
      * Constructor.
@@ -138,6 +140,13 @@ public class GridRunningQueryInfo {
     public void cancel() {
         if (cancel != null)
             cancel.cancel();
+    }
+
+    /**
+     * @return Query running future.
+     */
+    public QueryRunningFuture runningFuture(){
+        return fut;
     }
 
     /**

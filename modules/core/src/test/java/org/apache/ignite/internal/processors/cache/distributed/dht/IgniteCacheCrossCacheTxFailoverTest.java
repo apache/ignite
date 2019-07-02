@@ -297,7 +297,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
                 }
             }, 10, "tx-thread");
 
-            long stopTime = System.currentTimeMillis() + SF.applyLB(3 * 60_000, 20_000);
+            long stopTime = System.currentTimeMillis() + SF.applyLB((int)TEST_TIME, 20_000);
 
             long topVer = ignite0.cluster().topologyVersion();
 

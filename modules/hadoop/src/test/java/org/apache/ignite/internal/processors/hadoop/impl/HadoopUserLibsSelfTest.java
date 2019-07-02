@@ -185,6 +185,7 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
         assert res.contains(FILE_2_1);
         assert res.contains(FILE_2_2);
     }
+
     /**
      * Ensure provided file exists.
      *

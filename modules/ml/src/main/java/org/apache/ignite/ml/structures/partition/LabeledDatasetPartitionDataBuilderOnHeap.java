@@ -17,16 +17,15 @@
 
 package org.apache.ignite.ml.structures.partition;
 
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.structures.LabeledVectorSet;
-
 import java.io.Serializable;
 import java.util.Iterator;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.structures.LabeledVectorSet;
 
 /**
  * Partition data builder that builds {@link LabeledVectorSet}.
@@ -35,21 +34,21 @@ import java.util.Iterator;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializable, CO extends Serializable>
+public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, LabeledVectorSet<Double, LabeledVector>> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
 
     /** Upstream vectorizer. */
-    private final Vectorizer<K, V, CO, Double> vectorizer;
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Constructs a new instance of SVM partition data builder.
      *
-     * @param vectorizer Upstream vectorizer.
+     * @param preprocessor Upstream preprocessor.
      */
-    public LabeledDatasetPartitionDataBuilderOnHeap(Vectorizer<K, V, CO, Double> vectorizer) {
-        this.vectorizer = vectorizer;
+    public LabeledDatasetPartitionDataBuilderOnHeap(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
@@ -65,7 +64,7 @@ public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializab
 
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            LabeledVector<Double> labeledVector = vectorizer.apply(entry.getKey(), entry.getValue());
+            LabeledVector<Double> labeledVector = preprocessor.apply(entry.getKey(), entry.getValue());
             Vector row = labeledVector.features();
 
             if (xCols < 0) {

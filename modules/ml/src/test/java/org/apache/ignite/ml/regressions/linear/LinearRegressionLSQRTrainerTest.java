@@ -17,14 +17,13 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.dataset.feature.extractor.impl.ArraysVectorizer;
-import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
+import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -55,7 +54,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(
@@ -93,7 +92,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(coef, mdl.getWeights().getStorage().data(), 1e-6);
@@ -122,7 +121,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
 
         LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
-        Vectorizer<Integer, double[], Integer, Double> vectorizer = new ArraysVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
         LinearRegressionModel originalMdl = trainer.fit(
             data,
             parts,
@@ -138,7 +137,7 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
 
         LinearRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
             vectorizer
         );

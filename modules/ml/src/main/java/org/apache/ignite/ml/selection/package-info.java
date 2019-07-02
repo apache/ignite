@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for dataset splitters, cross validation and search through parameters.
  */
+
 package org.apache.ignite.ml.selection;

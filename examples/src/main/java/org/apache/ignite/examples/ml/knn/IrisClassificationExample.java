@@ -66,7 +66,7 @@ public class IrisClassificationExample {
                 TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>().split(0.6);
 
                 System.out.println(">>> Start traininig.");
-                NNClassificationModel model = trainer.fit(
+                NNClassificationModel mdl = trainer.fit(
                     ignite, dataCache,
                     split.getTrainFilter(),
                     vectorizer
@@ -79,7 +79,7 @@ public class IrisClassificationExample {
                 double accuracy = Evaluator.evaluate(
                     dataCache,
                     split.getTestFilter(),
-                    model,
+                    mdl,
                     vectorizer,
                     new Accuracy<>()
                 );

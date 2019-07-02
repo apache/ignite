@@ -187,6 +187,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     private static class TimeoutChecker {
         /** */
         final IgniteEx ignite;
+
         /** */
         final String cacheName;
 

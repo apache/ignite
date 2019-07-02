@@ -17,11 +17,11 @@
 
 package org.apache.ignite.ml.composition.boosting.convergence;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -29,8 +29,7 @@ import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-
-import java.io.Serializable;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Contains logic of error computing and convergence checking for Gradient Boosting algorithms.
@@ -38,7 +37,7 @@ import java.io.Serializable;
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public abstract class ConvergenceChecker<K, V, C extends Serializable> implements Serializable {
+public abstract class ConvergenceChecker<K, V> implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 710762134746674105L;
 
@@ -51,8 +50,8 @@ public abstract class ConvergenceChecker<K, V, C extends Serializable> implement
     /** Loss function. */
     private Loss loss;
 
-    /** Upstream vectorizer. */
-    private Vectorizer<K, V, C, Double> vectorizer;
+    /** Upstream preprocessor. */
+    private Preprocessor<K, V> preprocessor;
 
     /** Precision of convergence check. */
     private double precision;
@@ -64,13 +63,13 @@ public abstract class ConvergenceChecker<K, V, C extends Serializable> implement
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param loss Loss gradient.
      * @param datasetBuilder Dataset builder.
-     * @param vectorizer Upstream vectorizer.
+     * @param preprocessor Upstream preprocessor.
      * @param precision Precision.FeatureMatrixWithLabelsOnHeapDataBuilder.java
      */
     public ConvergenceChecker(long sampleSize,
-        IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
-        DatasetBuilder<K, V> datasetBuilder,
-        Vectorizer<K, V, C, Double> vectorizer, double precision) {
+                              IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
+                              DatasetBuilder<K, V> datasetBuilder,
+                              Preprocessor<K, V> preprocessor, double precision) {
 
         assert precision < 1 && precision >= 0;
 
@@ -78,7 +77,7 @@ public abstract class ConvergenceChecker<K, V, C extends Serializable> implement
         this.externalLbToInternalMapping = externalLbToInternalMapping;
         this.loss = loss;
         this.precision = precision;
-        this.vectorizer = vectorizer;
+        this.preprocessor = preprocessor;
     }
 
     /**
@@ -95,7 +94,7 @@ public abstract class ConvergenceChecker<K, V, C extends Serializable> implement
         try (Dataset<EmptyContext, FeatureMatrixWithLabelsOnHeapData> dataset = datasetBuilder.build(
             envBuilder,
             new EmptyContextBuilder<>(),
-            new FeatureMatrixWithLabelsOnHeapDataBuilder<>(vectorizer)
+            new FeatureMatrixWithLabelsOnHeapDataBuilder<>(preprocessor)
         )) {
             return isConverged(dataset, currMdl);
         }

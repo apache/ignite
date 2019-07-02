@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.metric.IoStatisticsHolder;
 
 /**
  */
@@ -69,6 +69,13 @@ public interface FreeList<T extends Storable> {
      * @return Free space available for use, in bytes.
      */
     public long freeSpace();
+
+    /**
+     * Save metadata.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void saveMetadata() throws IgniteCheckedException;
 
     /**
      * @param log Logger.

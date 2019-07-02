@@ -134,7 +134,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
      * @param r Runnable.
      * @param expCode Error code.
      */
-    static void assertSqlException(DynamicIndexAbstractBasicSelfTest.RunnableX r, int expCode) {
+    static void assertSqlException(Runnable r, int expCode) {
         try {
             try {
                 r.run();
@@ -432,7 +432,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
      * @param node Node.
      * @return Query processor.
      */
-    static GridQueryProcessor queryProcessor(Ignite node) {
+    public static GridQueryProcessor queryProcessor(Ignite node) {
         return queryProcessor((IgniteEx)node);
     }
 
@@ -662,17 +662,5 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
         public String field() {
             return field;
         }
-    }
-
-    /**
-     * Runnable which can throw checked exceptions.
-     */
-    protected interface RunnableX {
-        /**
-         * Do run.
-         *
-         * @throws Exception If failed.
-         */
-        public void run() throws Exception;
     }
 }

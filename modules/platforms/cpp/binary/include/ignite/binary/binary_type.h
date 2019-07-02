@@ -149,6 +149,72 @@ namespace ignite
         struct IGNITE_IMPORT_EXPORT BinaryType { };
 
         /**
+         * Default implementations of BinaryType hashing functions.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeDefaultHashing
+        {
+            /**
+             * Get binary object type ID.
+             *
+             * @return Type ID.
+             */
+            static int32_t GetTypeId()
+            {
+                std::string typeName;
+                BinaryType<T>::GetTypeName(typeName);
+
+                return GetBinaryStringHashCode(typeName.c_str());
+            }
+
+            /**
+             * Get binary object field ID.
+             *
+             * @param name Field name.
+             * @return Field ID.
+             */
+            static int32_t GetFieldId(const char* name)
+            {
+                return GetBinaryStringHashCode(name);
+            }
+        };
+
+        /**
+         * Default implementations of BinaryType methods for non-null type.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeNonNullableType
+        {
+            /**
+             * Check whether passed binary object should be interpreted as NULL.
+             *
+             * @return True if binary object should be interpreted as NULL.
+             */
+            static bool IsNull(const T&)
+            {
+                return false;
+            }
+
+            /**
+             * Get NULL value for the given binary type.
+             *
+             * @param dst Null value for the type.
+             */
+            static void GetNull(T& dst)
+            {
+                dst = T();
+            }
+        };
+
+        /**
+         * Default implementations of BinaryType hashing functions and non-null type behaviour.
+         */
+        template<typename T>
+        struct IGNITE_IMPORT_EXPORT BinaryTypeDefaultAll :
+            BinaryTypeDefaultHashing<T>,
+            BinaryTypeNonNullableType<T> { };
+
+        /**
          * Templated binary type specification for pointers.
          */
         template <typename T>

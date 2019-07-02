@@ -17,15 +17,14 @@
 
 package org.apache.ignite.ml.dataset.primitive.builder.data;
 
+import java.io.Serializable;
+import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
-
-import java.io.Serializable;
-import java.util.Iterator;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * A partition {@code data} builder that makes {@link SimpleDatasetData}.
@@ -41,15 +40,15 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
     private static final long serialVersionUID = 756800193212149975L;
 
     /** Function that extracts features from an {@code upstream} data. */
-    private final Vectorizer<K, V, CO, ?> featureExtractor;
+    private final Preprocessor<K, V> preprocessor;
 
     /**
      * Construct a new instance of partition {@code data} builder that makes {@link SimpleDatasetData}.
      *
-     * @param featureExtractor Function that extracts features from an {@code upstream} data.
+     * @param preprocessor Function that extracts features from an {@code upstream} data.
      */
-    public SimpleDatasetDataBuilder(Vectorizer<K, V, CO, ?> featureExtractor) {
-        this.featureExtractor = featureExtractor;
+    public SimpleDatasetDataBuilder(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
     }
 
     /** {@inheritDoc} */
@@ -63,7 +62,7 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            Vector row = featureExtractor.apply(entry.getKey(), entry.getValue()).features();
+            Vector row = preprocessor.apply(entry.getKey(), entry.getValue()).features();
 
             if (cols < 0) {
                 cols = row.size();

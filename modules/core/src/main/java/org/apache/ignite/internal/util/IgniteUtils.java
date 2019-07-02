@@ -64,6 +64,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.NetworkInterface;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -296,7 +297,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 @SuppressWarnings({"UnusedReturnValue", "RedundantStringConstructorCall"})
 public abstract class IgniteUtils {
     /** */
-    private static final long GB = 1024L * 1024 * 1024;
+    public static final long GB = 1024L * 1024 * 1024;
 
     /** Minimum checkpointing page buffer size (may be adjusted by Ignite). */
     public static final Long DFLT_MIN_CHECKPOINTING_PAGE_BUFFER_SIZE = GB / 4;
@@ -3580,6 +3581,7 @@ public abstract class IgniteUtils {
 
         return e;
     }
+
     /**
      * Deletes file or directory with all sub-directories and files.
      *
@@ -4254,6 +4256,32 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Quietly closes given {@link Socket} ignoring possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Socket sock) {
+        if (sock == null)
+            return;
+
+        try {
+            // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
+            sock.shutdownOutput();
+            sock.shutdownInput();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        try {
+            sock.close();
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+    }
+
+    /**
      * Quietly releases file lock ignoring all possible exceptions.
      *
      * @param lock File lock. If it's {@code null} - it's no-op.
@@ -4696,9 +4724,16 @@ public abstract class IgniteUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
+        DynamicMBean mbean;
 
-        mbean.getMBeanInfo();
+        if (impl instanceof DynamicMBean) {
+            mbean = (DynamicMBean)impl;
+        }
+        else {
+            mbean = new IgniteStandardMXBean(impl, itf);
+
+            mbean.getMBeanInfo();
+        }
 
         return mbeanSrv.registerMBean(mbean, name).getObjectName();
     }
@@ -8075,6 +8110,7 @@ public abstract class IgniteUtils {
             return false;
         }
     }
+
     /**
      * Gets object field offset.
      *
@@ -9519,6 +9555,60 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Create a map with single key-value pair.
+     *
+     * @param k Key.
+     * @param v Value.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> map(K k, V v) {
+        GridLeanMap<K, V> map = new GridLeanMap<>(1);
+
+        map.put(k, v);
+
+        return map;
+    }
+
+    /**
+     * Create a map with two key-value pairs.
+     *
+     * @param k1 Key 1.
+     * @param v1 Value 1.
+     * @param k2 Key 2.
+     * @param v2 Value 2.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> map(K k1, V v1, K k2, V v2) {
+        GridLeanMap<K, V> map = new GridLeanMap<>(2);
+
+        map.put(k1, v1);
+        map.put(k2, v2);
+
+        return map;
+    }
+
+    /**
+     * Create a map with three key-value pairs.
+     *
+     * @param k1 Key 1.
+     * @param v1 Value 1.
+     * @param k2 Key 2.
+     * @param v2 Value 2.
+     * @param k3 Key 3.
+     * @param v3 Value 3.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> map(K k1, V v1, K k2, V v2, K k3, V v3) {
+        GridLeanMap<K, V> map = new GridLeanMap<>(3);
+
+        map.put(k1, v1);
+        map.put(k2, v2);
+        map.put(k3, v3);
+
+        return map;
+    }
+
+    /**
      * @param col non-null collection with one element
      * @return a SingletonList containing the element in the original collection
      */
@@ -9699,7 +9789,7 @@ public abstract class IgniteUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return arrayList(c, c.size(), p);
+        return arrayList(c.iterator(), c.size(), p);
     }
 
     /**
@@ -9718,14 +9808,16 @@ public abstract class IgniteUtils {
      * @param p Optional filters.
      * @return Resulting array list.
      */
-    public static <T extends R, R> List<R> arrayList(Iterable<T> c, int cap,
+    public static <T extends R, R> List<R> arrayList(Iterator<T> c, int cap,
         @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
         assert cap >= 0;
 
         List<R> list = new ArrayList<>(cap);
 
-        for (T t : c) {
+        while (c.hasNext()) {
+            T t = c.next();
+
             if (F.isAll(t, p))
                 list.add(t);
         }
@@ -10385,7 +10477,7 @@ public abstract class IgniteUtils {
             if (log != null)
                 U.quietAndInfo(log, "Automatically adjusted max WAL archive size to " +
                     U.readableSize(adjustedWalArchiveSize, false) +
-                    " (to override, use DataStorageConfiguration.setMaxWalArhiveSize)");
+                    " (to override, use DataStorageConfiguration.setMaxWalArchiveSize)");
 
             return adjustedWalArchiveSize;
         }
@@ -10607,7 +10699,6 @@ public abstract class IgniteUtils {
     public static BaselineTopology getBaselineTopology(@NotNull GridKernalContext ctx) {
         return ctx.state().clusterState().baselineTopology();
     }
-
 
     /**
      * @param cctx Context.
@@ -10976,12 +11067,15 @@ public abstract class IgniteUtils {
     /**
      * @return {@code true} if local node is coordinator.
      */
-    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoveryManager) {
-        DiscoverySpi spi = discoveryManager.getInjectedDiscoverySpi();
+    public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoMgr) {
+        if (discoMgr.localNode().isClient() || discoMgr.localNode().isDaemon())
+            return false;
+
+        DiscoverySpi spi = discoMgr.getInjectedDiscoverySpi();
 
         return spi instanceof TcpDiscoverySpi
             ? ((TcpDiscoverySpi)spi).isLocalNodeCoordinator()
-            : F.eq(discoveryManager.localNode(), U.oldest(discoveryManager.aliveServerNodes(), null));
+            : F.eq(discoMgr.localNode(), U.oldest(discoMgr.aliveServerNodes(), null));
     }
 
     /**

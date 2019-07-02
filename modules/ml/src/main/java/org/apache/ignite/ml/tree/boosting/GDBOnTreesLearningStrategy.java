@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.tree.boosting;
 
+import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.composition.ModelsComposition;
 import org.apache.ignite.ml.composition.boosting.GDBLearningStrategy;
@@ -25,20 +27,16 @@ import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.predictionsaggregator.WeightedPredictionsAggregator;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.logging.MLLogger;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 import org.apache.ignite.ml.tree.DecisionTree;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
-
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Gradient boosting on trees specific learning strategy reusing learning dataset with index between several learning
@@ -58,8 +56,8 @@ public class GDBOnTreesLearningStrategy extends GDBLearningStrategy {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
-        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer) {
+    @Override public <K, V> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+                                                                     DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> vectorizer) {
 
         DatasetTrainer<? extends IgniteModel<Vector, Double>, Double> trainer = baseMdlTrainerBuilder.get();
         assert trainer instanceof DecisionTree;
@@ -67,7 +65,7 @@ public class GDBOnTreesLearningStrategy extends GDBLearningStrategy {
 
         List<IgniteModel<Vector, Double>> models = initLearningState(mdlToUpdate);
 
-        ConvergenceChecker<K, V, C> convCheck = checkConvergenceStgyFactory.create(sampleSize,
+        ConvergenceChecker<K, V> convCheck = checkConvergenceStgyFactory.create(sampleSize,
             externalLbToInternalMapping, loss, datasetBuilder, vectorizer);
 
         try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(

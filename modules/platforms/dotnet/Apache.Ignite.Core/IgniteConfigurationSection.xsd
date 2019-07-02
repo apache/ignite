@@ -118,6 +118,16 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="diskPageCompression" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="SkipGarbage" />
+            <xs:enumeration value="Zstd" />
+            <xs:enumeration value="Lz4" />
+            <xs:enumeration value="Snappy" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -941,6 +951,11 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="metricExporterSpi" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Metrics exporter spi. Null for NoOp implementation.</xs:documentation>
+                    </xs:annotation>
+                </xs:element>
                 <xs:element name="discoverySpi" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Discovery service provider. Null for default discovery.</xs:documentation>
@@ -1514,6 +1529,11 @@
                                 <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="handshakeTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Handshake timeout for client connections on the server side. If no successful handshake is performed within this timeout upon successful establishment of TCP connection, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                         <xs:attribute name="thinClientEnabled" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Enables thin client connector.</xs:documentation>
@@ -1714,6 +1734,13 @@
                                             <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                Enable lazy memory allocation.
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                             <xs:element name="dataRegionConfigurations">
@@ -1785,6 +1812,13 @@
                                                 <xs:attribute name="checkpointPageBufferSize" type="xs:long">
                                                     <xs:annotation>
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            Enable lazy memory allocation.
+                                                        </xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
                                             </xs:complexType>
@@ -1933,6 +1967,16 @@
                                 <xs:documentation>
                                     Timeout for checkpoint read lock acquisition.
                                 </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompression" type="diskPageCompression">
+                            <xs:annotation>
+                                <xs:documentation>Compression algorithm for WAL page snapshot records.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompressionLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Compression level for WAL page snapshot records.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>

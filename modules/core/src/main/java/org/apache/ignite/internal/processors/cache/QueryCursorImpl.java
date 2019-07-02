@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 
 import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.CLOSED;
 import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.EXECUTION;
@@ -61,6 +62,9 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** */
     private final GridQueryCancel cancel;
+
+    /** Partition result. */
+    private PartitionResult partRes;
 
     /**
      * @param iterExec Query executor.
@@ -145,7 +149,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
 
     /** {@inheritDoc} */
     @Override public void close() {
-        while(state != CLOSED) {
+        while (state != CLOSED) {
             if (STATE_UPDATER.compareAndSet(this, RESULT_READY, CLOSED)) {
                 closeIter();
 
@@ -222,5 +226,19 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         /** Executing. */EXECUTION,
         /** Result ready. */RESULT_READY,
         /** Closed. */CLOSED,
+    }
+
+    /**
+     * @return Partition result.
+     */
+    public PartitionResult partitionResult() {
+        return partRes;
+    }
+
+    /**
+     * @param partRes New partition result.
+     */
+    public void partitionResult(PartitionResult partRes) {
+        this.partRes = partRes;
     }
 }

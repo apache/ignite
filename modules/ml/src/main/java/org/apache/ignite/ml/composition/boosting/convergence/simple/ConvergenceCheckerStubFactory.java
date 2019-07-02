@@ -21,10 +21,8 @@ import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-
-import java.io.Serializable;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Factory for {@link ConvergenceCheckerStub}.
@@ -38,10 +36,10 @@ public class ConvergenceCheckerStubFactory extends ConvergenceCheckerFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V, C extends Serializable> ConvergenceChecker<K, V, C> create(long sampleSize,
+    @Override public <K, V> ConvergenceChecker<K, V> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
-        DatasetBuilder<K, V> datasetBuilder, Vectorizer<K, V, C, Double> vectorizer) {
+        DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
 
-        return new ConvergenceCheckerStub<>(sampleSize, externalLbToInternalMapping, loss, datasetBuilder, vectorizer, precision);
+        return new ConvergenceCheckerStub<>(sampleSize, externalLbToInternalMapping, loss, datasetBuilder, preprocessor, precision);
     }
 }

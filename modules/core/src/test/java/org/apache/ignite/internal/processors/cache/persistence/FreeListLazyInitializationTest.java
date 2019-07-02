@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -161,7 +162,7 @@ public class FreeListLazyInitializationTest extends GridCommonAbstractTest {
         assertEquals(expParts, partsList.size());
 
         for (GridDhtLocalPartition part : partsList) {
-            CacheFreeList freeList = getFieldValue(part.dataStore(), "freeList");
+            FreeList freeList = getFieldValue(part.dataStore(), "freeList");
 
             if (expInit || freeList != null)
                 assertTrue(freeList.getClass().getName(), freeList instanceof LazyCacheFreeList);

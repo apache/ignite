@@ -76,13 +76,13 @@ public class CustomersClusterizationExample {
                     // Splits dataset to train and test samples with 80/20 proportion.
                     TrainTestSplit<Integer, Vector> split = new TrainTestDatasetSplitter<Integer, Vector>().split(0.8);
 
-                    KMeansModel model = trainer.fit(
+                    KMeansModel mdl = trainer.fit(
                         ignite, dataCache,
                         split.getTrainFilter(),
                         vectorizer
                     );
 
-                    double entropy = computeMeanEntropy(dataCache, split.getTestFilter(), vectorizer, model);
+                    double entropy = computeMeanEntropy(dataCache, split.getTestFilter(), vectorizer, mdl);
                     System.out.println(String.format(">> Clusters mean entropy [%d clusters]: %.2f", amountOfClusters, entropy));
                 }
             } finally {

@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.hadoop.impl.proto.HadoopClientProto
 import org.apache.ignite.internal.processors.hadoop.mapreduce.MapReduceClient;
 import org.apache.ignite.internal.util.typedef.F;
 
-
 /**
  * Ignite Hadoop client protocol provider.
  */

@@ -17,14 +17,13 @@
 
 package org.apache.ignite.ml.tree.data;
 
-import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.dataset.UpstreamEntry;
-import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
-import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.structures.LabeledVector;
-
 import java.io.Serializable;
 import java.util.Iterator;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * A partition {@code data} builder that makes {@link DecisionTreeData}.
@@ -33,13 +32,13 @@ import java.util.Iterator;
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class DecisionTreeDataBuilder<K, V, C extends Serializable, CO extends Serializable>
+public class DecisionTreeDataBuilder<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, DecisionTreeData> {
     /** */
     private static final long serialVersionUID = 3678784980215216039L;
 
     /** Extractor of features and labels from an {@code upstream} data. */
-    private final Vectorizer<K, V, CO, Double> extractor;
+    private final Preprocessor<K, V> preprocessor;
 
     /** Build index. */
     private final boolean buildIdx;
@@ -47,11 +46,11 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable, CO extends Se
     /**
      * Constructs a new instance of decision tree data builder.
      *
-     * @param extractor Extractor of features and labels from an {@code upstream} data..
+     * @param preprocessor Extractor of features and labels from an {@code upstream} data..
      * @param buildIdx Build index.
      */
-    public DecisionTreeDataBuilder(Vectorizer<K, V, CO, Double> extractor, boolean buildIdx) {
-        this.extractor = extractor;
+    public DecisionTreeDataBuilder(Preprocessor<K, V> preprocessor, boolean buildIdx) {
+        this.preprocessor = preprocessor;
         this.buildIdx = buildIdx;
     }
 
@@ -68,7 +67,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable, CO extends Se
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            LabeledVector<Double> featsAndLbl = extractor.extract(entry.getKey(), entry.getValue());
+            LabeledVector<Double> featsAndLbl = preprocessor.apply(entry.getKey(), entry.getValue());
             features[ptr] = featsAndLbl.features().asArray();
 
             labels[ptr] = featsAndLbl.label();
