@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.zk;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
@@ -36,6 +35,8 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryLongP2PTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingCluster;
@@ -96,6 +97,8 @@ public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstra
         suite.addTestSuite(GridCommandHandlerClusterByClassTest.class);
 
         suite.addTestSuite(GridP2PContinuousDeploymentSelfTest.class);
+        suite.addTestSuite(CacheContinuousQueryOperationP2PTest.class);
+        suite.addTestSuite(CacheContinuousQueryLongP2PTest.class);
 
         return suite;
     }

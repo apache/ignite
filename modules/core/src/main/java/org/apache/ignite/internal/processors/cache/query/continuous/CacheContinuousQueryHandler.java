@@ -33,10 +33,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
+import javax.cache.event.CacheEntryListener;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -54,8 +56,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
@@ -63,6 +65,8 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -112,6 +116,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /** Topic for ordered messages. */
     private Object topic;
+
+    /** P2P unmarshalling future. */
+    protected transient IgniteInternalFuture<Void> p2pUnmarshalFut = new GridFinishedFuture<>();
+
+    /** Initialization future. */
+    protected transient IgniteInternalFuture<Void> initFut;
 
     /** Local listener. */
     private transient CacheEntryUpdatedListener<K, V> locLsnr;
@@ -314,36 +324,25 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         assert routineId != null;
         assert ctx != null;
 
-        if (locLsnr != null) {
-            if (locLsnr instanceof JCacheQueryLocalListener) {
-                ctx.resource().injectGeneric(((JCacheQueryLocalListener)locLsnr).impl);
+        initLocalListener(locLsnr, ctx);
 
-                asyncCb = ((JCacheQueryLocalListener)locLsnr).async();
-            }
-            else {
-                ctx.resource().injectGeneric(locLsnr);
+        if (initFut == null) {
+            initFut = p2pUnmarshalFut.chain((fut) -> {
+                try {
+                    fut.get();
 
-                asyncCb = U.hasAnnotation(locLsnr, IgniteAsyncCallback.class);
-            }
+                    initRemoteFilter(getEventFilter0(), ctx);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to initialize a remote filter.", e);
+                }
+
+                return null;
+            });
         }
 
-        final CacheEntryEventFilter filter = getEventFilter();
-
-        if (filter != null) {
-            if (filter instanceof JCacheQueryRemoteFilter) {
-                if (((JCacheQueryRemoteFilter)filter).impl != null)
-                    ctx.resource().injectGeneric(((JCacheQueryRemoteFilter)filter).impl);
-
-                if (!asyncCb)
-                    asyncCb = ((JCacheQueryRemoteFilter)filter).async();
-            }
-            else {
-                ctx.resource().injectGeneric(filter);
-
-                if (!asyncCb)
-                    asyncCb = U.hasAnnotation(filter, IgniteAsyncCallback.class);
-            }
-        }
+        if (initFut.error() != null)
+            throw new IgniteCheckedException("Failed to initialize a continuous query.", initFut.error());
 
         entryBufs = new ConcurrentHashMap<>();
 
@@ -364,28 +363,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         log = ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY);
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
-            @Override public void onExecution() {
-                GridCacheContext<K, V> cctx = cacheContext(ctx);
-
-                if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    ctx.event().record(new CacheQueryExecutedEvent<>(
-                        ctx.discovery().localNode(),
-                        "Continuous query executed.",
-                        EVT_CACHE_QUERY_EXECUTED,
-                        CacheQueryType.CONTINUOUS.name(),
-                        cacheName,
-                        null,
-                        null,
-                        null,
-                        filter instanceof CacheEntryEventSerializableFilter ?
-                            (CacheEntryEventSerializableFilter)filter : null,
-                        null,
-                        nodeId,
-                        taskName()
-                    ));
-                }
-            }
-
             @Override public boolean keepBinary() {
                 return keepBinary;
             }
@@ -433,8 +410,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void onUnregister() {
-                if (filter instanceof PlatformContinuousQueryFilter)
-                    ((PlatformContinuousQueryFilter)filter).onQueryUnregister();
+                try {
+                    CacheEntryEventFilter filter = getEventFilter();
+
+                    if (filter instanceof PlatformContinuousQueryFilter)
+                        ((PlatformContinuousQueryFilter)filter).onQueryUnregister();
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Failed to execute the onUnregister callback " +
+                            "on the continuoue query listener. " +
+                            "[nodeId=" + nodeId + ", routineId=" + routineId + ", cacheName=" + cacheName +
+                            ", err=" + e + "]");
+                    }
+                }
             }
 
             @Override public void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
@@ -582,13 +571,112 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (mgr == null)
             return RegisterStatus.DELAYED;
 
-        return mgr.registerListener(routineId, lsnr, internal);
+        RegisterStatus regStatus = mgr.registerListener(routineId, lsnr, internal);
+
+        if (regStatus == RegisterStatus.REGISTERED)
+            initFut.listen(res -> sendQueryExecutedEvent());
+
+        return regStatus;
+    }
+
+    /**
+     * Fires continuous query execution event.
+     * @see org.apache.ignite.events.EventType#EVT_CACHE_QUERY_EXECUTED
+     */
+    private void sendQueryExecutedEvent() {
+        GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+        CacheEntryEventFilter filter;
+        try {
+            filter = getEventFilter();
+        }
+        catch (IgniteCheckedException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("Failed to trigger the continuoue query executed event. " +
+                    "[routineId=" + routineId + ", cacheName=" + cacheName + ", err=" + e + "]");
+            }
+
+            return;
+        }
+
+        if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            //noinspection unchecked
+            ctx.event().record(new CacheQueryExecutedEvent<K, V>(
+                ctx.discovery().localNode(),
+                "Continuous query executed.",
+                EVT_CACHE_QUERY_EXECUTED,
+                CacheQueryType.CONTINUOUS.name(),
+                cacheName,
+                null,
+                null,
+                null,
+                filter instanceof CacheEntryEventSerializableFilter ?
+                    (CacheEntryEventSerializableFilter)filter : null,
+                null,
+                nodeId,
+                taskName()
+            ));
+        }
+    }
+
+    /**
+     * Performs resource injection and checks asynchrony for the provided local listener.
+     *
+     * @param lsnr Local listener.
+     * @param ctx Kernal context.
+     * @throws IgniteCheckedException If failed to perform resource injection.
+     */
+    private void initLocalListener(CacheEntryListener lsnr, GridKernalContext ctx) throws IgniteCheckedException {
+        if (lsnr != null) {
+            CacheEntryListener impl =
+                lsnr instanceof JCacheQueryLocalListener
+                    ? ((JCacheQueryLocalListener)lsnr).impl
+                    : lsnr;
+
+            ctx.resource().injectGeneric(impl);
+
+            asyncCb = U.hasAnnotation(impl, IgniteAsyncCallback.class);
+        }
+    }
+
+    /**
+     * Performs resource injection and checks asynchrony for the provided remote filter.
+     *
+     * @param filter Remote filter.
+     * @param ctx Kernal context.
+     * @throws IgniteCheckedException If failed to perform resource injection.
+     */
+    protected void initRemoteFilter(CacheEntryEventFilter filter, GridKernalContext ctx) throws IgniteCheckedException {
+        CacheEntryEventFilter impl =
+            filter instanceof JCacheQueryRemoteFilter
+                ? ((JCacheQueryRemoteFilter)filter).impl
+                : filter;
+
+        if (impl != null) {
+            ctx.resource().injectGeneric(impl);
+
+            if (!asyncCb)
+                asyncCb = U.hasAnnotation(impl, IgniteAsyncCallback.class);
+        }
     }
 
     /**
      * @return Cache entry event filter.
+     *
+     * @throws IgniteCheckedException If P2P unmarshalling failed.
      */
-    public CacheEntryEventFilter getEventFilter() {
+    public CacheEntryEventFilter getEventFilter() throws IgniteCheckedException {
+        initFut.get();
+
+        return getEventFilter0();
+    }
+
+    /**
+     * Returns an event filter without waiting on the unmarshalling future.
+     *
+     * @return Cache entry event filter.
+     */
+    protected CacheEntryEventFilter getEventFilter0() {
         return rmtFilter;
     }
 
@@ -813,7 +901,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /**
      * @param evt Query event.
-     * @return {@code True} if event passed filter otherwise {@code true}.
+     * @return {@code True} if event passed filter otherwise {@code false}.
      */
     public boolean filter(CacheContinuousQueryEvent evt) {
         CacheContinuousQueryEntry entry = evt.entry();
@@ -840,7 +928,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param loc Listener deployed on this node.
      * @param recordIgniteEvt Record ignite event.
      */
-    private void onEntryUpdate(CacheContinuousQueryEvent evt, boolean notify, boolean loc, boolean recordIgniteEvt) {
+    private void onEntryUpdate(CacheContinuousQueryEvent<K, V> evt,
+        boolean notify, boolean loc, boolean recordIgniteEvt) {
         try {
             GridCacheContext<K, V> cctx = cacheContext(ctx);
 
@@ -893,7 +982,21 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         if (recordIgniteEvt && notify) {
-            ctx.event().record(new CacheQueryReadEvent<>(
+            CacheEntryEventFilter filter;
+            try {
+                filter = getEventFilter();
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Failed to trigger a continuoue query event. " +
+                        "[routineId=" + routineId + ", cacheName=" + cacheName + ", err=" + e + "]");
+                }
+
+                return;
+            }
+
+            //noinspection unchecked
+            ctx.event().record(new CacheQueryReadEvent<K, V>(
                 ctx.discovery().localNode(),
                 "Continuous query executed.",
                 EVT_CACHE_QUERY_OBJECT_READ,
@@ -902,8 +1005,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 null,
                 null,
                 null,
-                getEventFilter() instanceof CacheEntryEventSerializableFilter ?
-                    (CacheEntryEventSerializableFilter)getEventFilter() : null,
+                filter instanceof CacheEntryEventSerializableFilter ?
+                    (CacheEntryEventSerializableFilter)filter : null,
                 null,
                 nodeId,
                 taskName(),
@@ -1097,7 +1200,41 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (rmtFilterDep != null)
-            rmtFilter = rmtFilterDep.unmarshal(nodeId, ctx);
+            rmtFilter = p2pUnmarshal(rmtFilterDep, nodeId, ctx);
+
+        if (!p2pUnmarshalFut.isDone())
+            ((GridFutureAdapter)p2pUnmarshalFut).onDone();
+    }
+
+    /**
+     * @return Whether the handler is marshalled for peer class loading.
+     */
+    public boolean isMarshalled() {
+        return rmtFilter == null || U.isGrid(rmtFilter.getClass()) || rmtFilterDep != null;
+    }
+
+    /**
+     * @param depObj Deployable object to unmarshal.
+     * @param nodeId Sender node Id.
+     * @param ctx Kernal context.
+     * @param <T> Result type.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException In case of unmarshalling failures.
+     */
+    protected <T> T p2pUnmarshal(CacheContinuousQueryDeployableObject depObj,
+        UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
+        if (depObj != null) {
+            try {
+                return depObj.unmarshal(nodeId, ctx);
+            }
+            catch (IgniteCheckedException e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw e;
+            }
+        }
+        else
+            return null;
     }
 
     /** {@inheritDoc} */
@@ -1207,8 +1344,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         boolean b = in.readBoolean();
 
-        if (b)
+        if (b) {
             rmtFilterDep = (CacheContinuousQueryDeployableObject)in.readObject();
+
+            p2pUnmarshalFut = new GridFutureAdapter<>();
+        }
         else
             rmtFilter = (CacheEntryEventSerializableFilter<K, V>)in.readObject();
 
