@@ -303,7 +303,7 @@ class AnyDataObject:
         """
         from pygridgain.datatypes import (
             LongObject, DoubleObject, String, BoolObject, Null, UUIDObject,
-            DateObject, TimeObject, DecimalObject,
+            DateObject, TimeObject, DecimalObject, ByteArrayObject,
         )
 
         cls._python_map = {
@@ -311,6 +311,7 @@ class AnyDataObject:
             float: DoubleObject,
             str: String,
             bytes: String,
+            bytearray: ByteArrayObject,
             bool: BoolObject,
             type(None): Null,
             uuid.UUID: UUIDObject,
@@ -356,7 +357,7 @@ class AnyDataObject:
             cls._init_python_array_map()
 
         value_type = type(value)
-        if is_iterable(value) and value_type is not str:
+        if is_iterable(value) and value_type not in (str, bytearray, bytes):
             value_subtype = cls.get_subtype(value)
             if value_subtype in cls._python_array_map:
                 return cls._python_array_map[value_subtype]

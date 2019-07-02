@@ -47,7 +47,9 @@ from pygridgain.datatypes import *
 
         # arrays of integers
         ([1, 2, 3, 5], None),
-        ([1, 2, 3, 5], ByteArrayObject),
+        (b'buzz', ByteArrayObject),
+        (bytearray([7, 8, 8, 11]), None),
+        (bytearray([7, 8, 8, 11]), ByteArrayObject),
         ([1, 2, 3, 5], ShortArrayObject),
         ([1, 2, 3, 5], IntArrayObject),
 
@@ -134,6 +136,31 @@ def test_put_get_data(client, cache, value, value_hint):
     result = cache_get(conn, cache, 'my_key')
     assert result.status == 0
     assert result.value == value
+
+
+@pytest.mark.parametrize(
+    'value',
+    [
+        [1, 2, 3, 5],
+        (7, 8, 13, 18),
+    ]
+)
+def test_bytearray_from_list_or_tuple(client, cache, value):
+    """
+    ByteArrayObject's pythonic type is `bytearray`, but it should also accept
+    lists or tuples as a content.
+    """
+
+    conn = client.random_node
+
+    result = cache_put(
+        conn, cache, 'my_key', value, value_hint=ByteArrayObject
+    )
+    assert result.status == 0
+
+    result = cache_get(conn, cache, 'my_key')
+    assert result.status == 0
+    assert result.value == bytearray(value)
 
 
 @pytest.mark.parametrize(
