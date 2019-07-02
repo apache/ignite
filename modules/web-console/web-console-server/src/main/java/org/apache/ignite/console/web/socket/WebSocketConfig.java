@@ -16,11 +16,9 @@
 
 package org.apache.ignite.console.web.socket;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistration;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 import static org.apache.ignite.console.websocket.WebSocketEvents.AGENTS_PATH;
@@ -38,14 +36,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
     /** */
     private final BrowsersHandler browsersHnd;
 
-    /** */
-    @Value("${websocket.cors.enabled:false}")
-    private boolean corsEnabled;
-
-    /** */
-    @Value("${websocket.allowed.origin:https://localhost}")
-    private String allowedOrigin;
-
     /**
      * @param agentsHnd Agents handler.
      * @param browsersHnd Browsers handler.
@@ -60,10 +50,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
      */
     @Override public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(agentsHnd, AGENTS_PATH);
-
-        WebSocketHandlerRegistration browsersReg = registry.addHandler(browsersHnd, BROWSERS_PATH);
-
-        if (corsEnabled)
-            browsersReg.setAllowedOrigins(allowedOrigin);
+        registry.addHandler(browsersHnd, BROWSERS_PATH);
     }
 }
