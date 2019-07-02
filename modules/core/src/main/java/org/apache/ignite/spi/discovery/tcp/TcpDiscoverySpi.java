@@ -2080,14 +2080,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             }
         }
         else {
-            try {
-                dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log, false);
-            }
-            catch (IgniteCheckedException e) {
-                // Impossible.
-                // Following throw in code is required for "dataBag" to be considered initialized by compiler.
-                throw new IgniteException(e);
-            }
+            dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
 
             //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
             //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.

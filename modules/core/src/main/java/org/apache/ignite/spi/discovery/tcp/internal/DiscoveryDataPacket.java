@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.X;
@@ -166,10 +167,50 @@ public class DiscoveryDataPacket implements Serializable {
      * @param clsLdr Class loader.
      * @param clientNode Client node.
      * @param log Logger.
+     * @throws IgniteCheckedException If unmarshalling failed.
+     */
+    public DiscoveryDataBag unmarshalJoiningNodeData(
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
+    ) throws IgniteCheckedException {
+        return unmarshalJoiningNodeData(marsh, clsLdr, clientNode, log, true);
+    }
+
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param clientNode Client node.
+     * @param log Logger.
+     */
+    public DiscoveryDataBag unmarshalJoiningNodeDataSilently(
+        Marshaller marsh,
+        ClassLoader clsLdr,
+        boolean clientNode,
+        IgniteLogger log
+    ) {
+        try {
+            return unmarshalJoiningNodeData(marsh, clsLdr, clientNode, log, false);
+        }
+        catch (IgniteCheckedException impossible) {
+            assert false : impossible;
+
+            log.error("Failed to unmarshal joining node data", impossible);
+
+            throw new IgniteException(impossible);
+        }
+    }
+
+    /**
+     * @param marsh Marsh.
+     * @param clsLdr Class loader.
+     * @param clientNode Client node.
+     * @param log Logger.
      * @param panic Throw unmarshalling if {@code true}.
      * @throws IgniteCheckedException If {@code panic} is {@code true} and unmarshalling failed.
      */
-    public DiscoveryDataBag unmarshalJoiningNodeData(
+    private DiscoveryDataBag unmarshalJoiningNodeData(
         Marshaller marsh,
         ClassLoader clsLdr,
         boolean clientNode,

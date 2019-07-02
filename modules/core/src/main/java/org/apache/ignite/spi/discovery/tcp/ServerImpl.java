@@ -4042,8 +4042,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             spi.marshaller(),
                             U.resolveClassLoader(spi.ignite().configuration()),
                             false,
-                            log,
-                            true
+                            log
                         );
 
                         err = spi.getSpiContext().validateNode(node, data);
