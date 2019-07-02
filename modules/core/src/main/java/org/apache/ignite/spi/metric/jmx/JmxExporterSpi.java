@@ -25,7 +25,7 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.impl.MetricUtils.MetricName;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -50,35 +50,39 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        mreg.addMetricGroupCreationListener(grp -> {
-            if (filter != null && !filter.test(grp))
-                return;
+        mreg.forEach(this::register);
+
+        mreg.addMetricGroupCreationListener(this::register);
+    }
+
+    private void register(MetricGroup grp) {
+        if (filter != null && !filter.test(grp))
+            return;
+
+        if (log.isDebugEnabled())
+            log.debug("Found new metric group [name=" + grp.name() + ']');
+
+        MetricUtils.MetricName n = parse(grp.name());
+
+        try {
+            MetricGroupMBean mgrpBean = new MetricGroupMBean(grp);
+
+            ObjectName mbean = U.registerMBean(
+                ignite().configuration().getMBeanServer(),
+                igniteInstanceName,
+                n.root(),
+                n.subName(),
+                mgrpBean,
+                MetricGroupMBean.class);
+
+            mBeans.add(mbean);
 
             if (log.isDebugEnabled())
-                log.debug("Found new metric group [name=" + grp.name() + ']');
-
-            MetricName n = parse(grp.name());
-
-            try {
-                MetricGroupMBean mgrpBean = new MetricGroupMBean(grp);
-
-                ObjectName mbean = U.registerMBean(
-                    ignite().configuration().getMBeanServer(),
-                    igniteInstanceName,
-                    n.root(),
-                    n.subName(),
-                    mgrpBean,
-                    MetricGroupMBean.class);
-
-                mBeans.add(mbean);
-
-                if (log.isDebugEnabled())
-                    log.debug("MetricSet JMX bean created. " + mbean);
-            }
-            catch (JMException e) {
-                log.error("MBean for " + grp.name() + " can't be created.", e);
-            }
-        });
+                log.debug("MetricSet JMX bean created. " + mbean);
+        }
+        catch (JMException e) {
+            log.error("MBean for " + grp.name() + " can't be created.", e);
+        }
     }
 
     /** {@inheritDoc} */
