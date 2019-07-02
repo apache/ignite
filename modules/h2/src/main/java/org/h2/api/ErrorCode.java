@@ -2060,7 +2060,13 @@ public class ErrorCode {
      */
     public static final int DATABASE_NOT_FOUND_2 = 90146;
 
-    // next is 90147
+    /**
+     * The error with code <code>90147</code> is thrown when query tries
+     * to allocate memory over the limit.
+     */
+    public static final int MEMORY_ALLOCATION_ERROR = 90147;
+
+    // next is 90148
 
     private ErrorCode() {
         // utility class
@@ -2128,6 +2134,7 @@ public class ErrorCode {
 
         // HY
         case GENERAL_ERROR_1: return "HY000";
+        case MEMORY_ALLOCATION_ERROR: return "HY001";
         case UNKNOWN_DATA_TYPE_1: return "HY004";
 
         case FEATURE_NOT_SUPPORTED_1: return "HYC00";

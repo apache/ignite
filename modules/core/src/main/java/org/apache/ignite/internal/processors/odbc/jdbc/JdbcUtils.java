@@ -128,4 +128,17 @@ public class JdbcUtils {
         if (val != null)
             writer.writeInt(val);
     }
+
+    /**
+     * Write nullable integer.
+     *
+     * @param writer Binary writer.
+     * @param val Integer value..
+     */
+    public static void writeNullableLong(BinaryWriterExImpl writer, @Nullable Long val) {
+        writer.writeBoolean(val != null);
+
+        if (val != null)
+            writer.writeLong(val);
+    }
 }

@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.query.h2.H2ConnectionWrapper;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.MapH2QueryInfo;
-import org.apache.ignite.internal.processors.query.h2.QueryMemoryTracker;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -352,7 +351,7 @@ public class GridMapQueryExecutor {
                 distributedJoinCtx,
                 mvccSnapshot,
                 reserved,
-                maxMem < 0 ? null : new QueryMemoryTracker(maxMem),
+                maxMem < 0 ? null : h2.memoryManager().createQueryMemoryTracker(maxMem),
                 true
             );
 
@@ -398,7 +397,7 @@ public class GridMapQueryExecutor {
                 try {
                     res.lock();
 
-                    // Ensure we are on the target node for this replicated query.
+                    // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         String sql = qry.query();
                         Collection<Object> params0 = F.asList(qry.parameters(params));

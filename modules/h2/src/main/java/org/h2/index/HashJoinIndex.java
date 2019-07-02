@@ -24,7 +24,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.processors.query.h2.H2MemoryTracker;
 import org.h2.command.dml.AllColumnsForPlan;
+import org.h2.engine.Constants;
 import org.h2.engine.DbObject;
 import org.h2.engine.Session;
 import org.h2.expression.ExpressionVisitor;
@@ -71,6 +73,9 @@ public class HashJoinIndex extends BaseIndex {
 
     /** Filter index condition. */
     private ArrayList<IndexCondition> filterIdxCond;
+
+    /** Memory reserved for index data. */
+    private long memoryReserved;
 
     /**
      * @param tbl Table to build temporary hash join index.
@@ -433,6 +438,8 @@ public class HashJoinIndex extends BaseIndex {
         boolean [] ignorecase_bak = Arrays.copyOf(ignorecase, ignorecase.length);
         Arrays.fill(ignorecase, false);
 
+        H2MemoryTracker memTracker = ses.queryMemoryTracker();
+
         while (cur.next()) {
             Row r = cur.get();
 
@@ -444,6 +451,16 @@ public class HashJoinIndex extends BaseIndex {
                     continue;
 
                 List<Row> keyRows = hashTbl.get(key);
+
+                if (memTracker != null) {
+                    int size = keyRows != null ? 0 :
+                        40 /*HashMap entry*/ + key.getMemory() + Constants.MEMORY_ARRAY;
+
+                    size += Constants.MEMORY_POINTER + r.getMemory();
+
+                    memTracker.reserve(size);
+                    memoryReserved += size;
+                }
 
                 if (keyRows == null) {
                     keyRows = new ArrayList<>();
@@ -512,6 +529,14 @@ public class HashJoinIndex extends BaseIndex {
      */
     public void clearHashTable(Session session) {
         hashTbl = null;
+
+        if (memoryReserved > 0) {
+            assert session.queryMemoryTracker() != null;
+
+            session.queryMemoryTracker().release(memoryReserved);
+
+            memoryReserved = 0;
+        }
     }
 
     /**

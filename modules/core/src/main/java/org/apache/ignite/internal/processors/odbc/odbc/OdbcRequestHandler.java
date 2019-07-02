@@ -148,7 +148,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean collocated,
         boolean lazy,
         boolean skipReducerOnUpdate,
-        AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
+        AuthorizationContext actx,
+        NestedTxMode nestedTxMode,
+        ClientListenerProtocolVersion ver) {
         this.ctx = ctx;
 
         Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
@@ -167,7 +169,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             lazy,
             skipReducerOnUpdate,
             null,
-            null
+            null,
+            0 //TODO: GG-18629: Fix odbc client.
         );
 
         this.busyLock = busyLock;

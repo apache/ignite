@@ -14,15 +14,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.oom;
+package org.apache.ignite.internal.jdbc2;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import org.apache.ignite.jdbc.thin.JdbcThinQueryMemoryTrackerSelfTest;
 
 /**
- * Tests for OOME on query.
+ * Query memory manager for local queries.
  */
-@Deprecated //TODO: GG-18628: Drop these tests.
-public class QueryOOMWithoutQueryParallelismTest extends AbstractQueryOOMTest {
+public class JdbcQueryMemoryTrackerSelfTest extends JdbcThinQueryMemoryTrackerSelfTest {
+
     /** {@inheritDoc} */
-    @Override protected int queryParallelism() {
-        return 1;
+    @Override protected Connection createConnection(boolean lazy) throws SQLException {
+        Connection conn = DriverManager.getConnection("jdbc:ignite:cfg://" +
+            "queryMaxMemory=" + (maxMem) + ":lazy=" + lazy +
+            "@modules/clients/src/test/config/jdbc-config.xml"
+        );
+
+        conn.setSchema("\"PUBLIC\"");
+
+        return conn;
     }
 }

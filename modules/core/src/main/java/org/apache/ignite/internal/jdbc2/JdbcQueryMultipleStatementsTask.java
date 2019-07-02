@@ -61,6 +61,9 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
     /** Fetch size. */
     private final int fetchSize;
 
+    /** Query max memory size. */
+    private final long maxMem;
+
     /** Local execution flag. */
     private final boolean loc;
 
@@ -87,6 +90,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
      * @param loc Local execution flag.
      * @param args Args.
      * @param fetchSize Fetch size.
+     * @param maxMem Query memory limit.
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
@@ -94,7 +98,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
      * @param lazy Lazy query execution flag.
      */
     public JdbcQueryMultipleStatementsTask(Ignite ignite, String schemaName, String sql, Boolean isQry, boolean loc,
-        Object[] args, int fetchSize, boolean locQry, boolean collocatedQry, boolean distributedJoins,
+        Object[] args, int fetchSize, long maxMem, boolean locQry, boolean collocatedQry, boolean distributedJoins,
         boolean enforceJoinOrder, boolean lazy) {
         this.ignite = ignite;
         this.args = args;
@@ -102,6 +106,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
         this.sql = sql;
         this.isQry = isQry;
         this.fetchSize = fetchSize;
+        this.maxMem = maxMem;
         this.loc = loc;
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
@@ -112,8 +117,8 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
 
     /** {@inheritDoc} */
     @Override public List<JdbcStatementResultInfo> call() throws Exception {
-        SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry) : new SqlFieldsQuery(sql))
-            .setArgs(args);
+        SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry).setMaxMemory(maxMem) :
+            new SqlFieldsQuery(sql)).setArgs(args);
 
         qry.setPageSize(fetchSize);
         qry.setLocal(locQry);

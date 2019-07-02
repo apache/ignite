@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.engine.Constants;
 import org.h2.result.Row;
 import org.h2.value.Value;
 
@@ -71,6 +72,12 @@ public class H2PlainRowPair extends H2Row {
     /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMemory() {
+        return Constants.MEMORY_OBJECT + (v1 == null ? 0 : v1.getMemory())
+            + (v2 == null ? 0 : v2.getMemory());
     }
 
     /** {@inheritDoc} */

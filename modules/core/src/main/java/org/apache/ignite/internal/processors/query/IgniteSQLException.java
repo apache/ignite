@@ -58,7 +58,7 @@ public class IgniteSQLException extends IgniteException {
         super(cause);
 
         this.sqlState = cause.getSQLState();
-        this.statusCode = UNKNOWN;
+        this.statusCode =  cause.getErrorCode() == 0 ? UNKNOWN : cause.getErrorCode();
     }
 
     /**
