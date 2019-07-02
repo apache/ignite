@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -2001,13 +2000,13 @@ public class GridCacheUtils {
     }
 
     /**
-     * Check whether in-memory evictions enabled.
+     * Check whether in-memory evictions disabled.
      *
      * @param memPlcCfg Data region configuration.
-     * @return {@code True} if eviction policy enabled and native persistence is disabled.
+     * @return {@code True} if eviction policy disabled and native persistence is enabled.
      */
-    public static boolean isEvictionsEnabled(DataRegionConfiguration memPlcCfg) {
-        return memPlcCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED && !memPlcCfg.isPersistenceEnabled();
+    public static boolean isEvictionsDisabled(DataRegionConfiguration memPlcCfg) {
+        return memPlcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || memPlcCfg.isPersistenceEnabled();
     }
 
     /**

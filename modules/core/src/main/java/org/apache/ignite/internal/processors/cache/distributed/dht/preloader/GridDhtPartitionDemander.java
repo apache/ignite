@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -780,8 +781,8 @@ public class GridDhtPartitionDemander {
                                 try {
                                     if (grp.mvccEnabled())
                                         mvccPreloadEntries(topVer, node, p, infos);
-                                    else if (!CU.isEvictionsEnabled(grp.dataRegion().config()) ||
-                                        isEnoughSpaceForData(supplyMsg.messageSize() * 2))
+                                    else if (CU.isEvictionsDisabled(grp.dataRegion().config()) ||
+                                        isEnoughSpace(grp.dataRegion(), supplyMsg.messageSize() * 2))
                                         preloadEntriesBatched(topVer, node, p, infos);
                                     else
                                         preloadEntries(topVer, node, p, infos);
@@ -1221,10 +1222,10 @@ public class GridDhtPartitionDemander {
     private GridCacheContext resolveCacheContext(GridCacheEntryInfo info) {
         GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
 
-        if (cctx != null && cctx.isNear())
-            cctx = cctx.dhtCache().context();
+        if (cctx == null)
+            return null;
 
-        return cctx;
+        return cctx.isNear() ? cctx.dhtCache().context() : cctx;
     }
 
     /**
@@ -1243,31 +1244,32 @@ public class GridDhtPartitionDemander {
     /**
      * Calculates whether there is enough free space in the current memory region for the specified amount of data.
      *
+     * @param dataRegion Data region.
      * @param size Data size in bytes.
      * @return {@code True} if a specified amount of data can be stored in the memory region without evictions.
      */
-    private boolean isEnoughSpaceForData(long size) {
+    private boolean isEnoughSpace(DataRegion dataRegion, long size) {
         assert size >= 0 : size;
 
-        DataRegionConfiguration plc = grp.dataRegion().config();
+        DataRegionConfiguration cfg = dataRegion.config();
 
-        PageMemory pageMem = grp.dataRegion().pageMemory();
+        PageMemory pageMem = dataRegion.pageMemory();
 
         int sysPageSize = pageMem.systemPageSize();
 
         long pagesRequired = (long)Math.ceil(size / (double)sysPageSize);
 
-        long maxPages = plc.getMaxSize() / sysPageSize;
+        long maxPages = cfg.getMaxSize() / sysPageSize;
 
         // There are enough pages left.
         if (pagesRequired < maxPages - pageMem.loadedPages())
             return true;
 
         // Empty pages pool size restricted.
-        if (pagesRequired > plc.getEmptyPagesPoolSize())
+        if (pagesRequired > cfg.getEmptyPagesPoolSize())
             return false;
 
-        return pagesRequired < Math.round(maxPages * (1.0d - plc.getEvictionThreshold()));
+        return pagesRequired < Math.round(maxPages * (1.0d - cfg.getEvictionThreshold()));
     }
 
     /** {@inheritDoc} */
