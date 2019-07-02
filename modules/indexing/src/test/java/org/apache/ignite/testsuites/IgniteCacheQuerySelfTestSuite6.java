@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationNearEnabledTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationStoreEnabledTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryDeserializationErrorOnNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.ContinuousQueryMarshallerTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryLocalAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryMultiNodesFilteringTest;
@@ -58,6 +59,7 @@ import org.junit.runners.Suite;
     CacheKeepBinaryIterationNearEnabledTest.class,
     GridCacheContinuousQueryPartitionedOnlySelfTest.class,
     CacheContinuousQueryOperationP2PTest.class,
+    ContinuousQueryDeserializationErrorOnNodeJoinTest.class,
     CacheContinuousBatchAckTest.class,
     CacheContinuousQueryOrderingEventTest.class,
     IgniteCacheContinuousQueryClientTest.class,
