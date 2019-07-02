@@ -424,6 +424,8 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         for (int i = 0; i < cacheSize; i++)
             streamer.addData(i, generatingFunc.apply(name, i));
+
+        streamer.close();
     }
 
     /** */

@@ -91,6 +91,7 @@ public interface CacheContinuousQueryListener<K, V> {
      * @param part Partition.
      * @param cntr Counter to skip.
      * @param topVer Topology version.
+     * @param primary {@code True} if called on primary node.
      * @return Context.
      */
     @Nullable public CounterSkipContext skipUpdateCounter(

@@ -116,7 +116,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionRecoverState;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -234,6 +233,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Invalid region configuration message. */
     private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node " +
         "(Incompatible data region configuration [region=%s, locNodeId=%s, isPersistenceEnabled=%s, rmtNodeId=%s, isPersistenceEnabled=%s])";
+
+    /** Template of message of failed node join because encryption settings are different for the same cache. */
+    private static final String ENCRYPT_MISMATCH_MESSAGE = "Failed to join node to the cluster " +
+        "(encryption settings are different for cache '%s' : local=%s, remote=%s.)";
 
     /** */
     private final boolean startClientCaches =
@@ -3489,14 +3492,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             boolean isGridActive = ctx.state().clusterState().active();
 
-            StringBuilder errorMessage = new StringBuilder();
+            StringBuilder errorMsg = new StringBuilder();
 
             if (!node.isClient()) {
                 validateRmtRegions(node).forEach(error -> {
-                    if (errorMessage.length() > 0)
-                        errorMessage.append("\n");
+                    if (errorMsg.length() > 0)
+                        errorMsg.append("\n");
 
-                    errorMessage.append(error);
+                    errorMsg.append(error);
                 });
             }
 
@@ -3507,7 +3510,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     secCtx = nodeSecurityContext(marsh, U.resolveClassLoader(ctx.config()), node);
                 }
                 catch (SecurityException se) {
-                    errorMessage.append(se.getMessage());
+                    errorMsg.append(se.getMessage());
                 }
             }
 
@@ -3517,34 +3520,47 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         authorizeCacheCreate(cacheInfo.cacheData().config());
                     }
                     catch (SecurityException ex) {
-                        if (errorMessage.length() > 0)
-                            errorMessage.append("\n");
+                        if (errorMsg.length() > 0)
+                            errorMsg.append("\n");
 
-                        errorMessage.append(ex.getMessage());
+                        errorMsg.append(ex.getMessage());
                     }
                 }
 
-                DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
+                DynamicCacheDescriptor locDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
-                if (localDesc == null)
+                if (locDesc == null)
                     continue;
 
-                QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+                QuerySchemaPatch schemaPatch = locDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
 
                 if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
-                    if (errorMessage.length() > 0)
-                        errorMessage.append("\n");
+                    if (errorMsg.length() > 0)
+                        errorMsg.append("\n");
 
                     if (schemaPatch.hasConflicts())
-                        errorMessage.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
-                            localDesc.cacheName(), schemaPatch.getConflictsMessage()));
+                        errorMsg.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
+                            locDesc.cacheName(), schemaPatch.getConflictsMessage()));
                     else
-                        errorMessage.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, localDesc.cacheName()));
+                        errorMsg.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, locDesc.cacheName()));
+                }
+
+                // This check must be done on join, otherwise group encryption key will be
+                // written to metastore regardless of validation check and could trigger WAL write failures.
+                boolean locEnc = locDesc.cacheConfiguration().isEncryptionEnabled();
+                boolean rmtEnc = cacheInfo.cacheData().config().isEncryptionEnabled();
+
+                if (locEnc != rmtEnc) {
+                    if (errorMsg.length() > 0)
+                        errorMsg.append("\n");
+
+                    // Message will be printed on remote node, so need to swap local and remote.
+                    errorMsg.append(String.format(ENCRYPT_MISMATCH_MESSAGE, locDesc.cacheName(), rmtEnc, locEnc));
                 }
             }
 
-            if (errorMessage.length() > 0) {
-                String msg = errorMessage.toString();
+            if (errorMsg.length() > 0) {
+                String msg = errorMsg.toString();
 
                 return new IgniteNodeValidationResult(node.id(), msg, msg);
             }
@@ -6051,7 +6067,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          */
         private void restorePartitionStates(
             Collection<CacheGroupContext> forGroups,
-            Map<GroupPartitionId, PartitionRecoverState> partitionStates
+            Map<GroupPartitionId, Integer> partitionStates
         ) throws IgniteCheckedException {
             long startRestorePart = U.currentTimeMillis();
 

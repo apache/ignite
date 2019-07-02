@@ -146,7 +146,11 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             }
 
             if (topFut.isDone()) {
-                topVer = topFut.topologyVersion();
+                if ((topVer = topFut.topologyVersion()) == null && topFut.error() != null) {
+                    onDone(topFut.error()); // Prevent stack overflow if topFut has error.
+
+                    return;
+                }
 
                 if (remap)
                     tx.onRemap(topVer);

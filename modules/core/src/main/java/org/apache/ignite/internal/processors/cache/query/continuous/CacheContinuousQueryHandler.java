@@ -53,8 +53,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
@@ -1106,13 +1106,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         if (buf == null) {
             buf = new CacheContinuousQueryEventBuffer(part) {
-                @Override protected long currentPartitionCounter() {
+                @Override protected long currentPartitionCounter(boolean backup) {
                     GridDhtLocalPartition locPart = cctx.topology().localPartition(part, null, false);
 
                     if (locPart == null)
                         return -1L;
 
-                    return locPart.updateCounter();
+                    // Use HWM for primary, LWM for backup.
+                    return backup ? locPart.updateCounter() : locPart.reservedCounter();
                 }
             };
 

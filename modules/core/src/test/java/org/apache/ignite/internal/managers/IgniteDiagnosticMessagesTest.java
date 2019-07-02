@@ -16,6 +16,7 @@
 
 package org.apache.ignite.internal.managers;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -37,10 +38,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -379,7 +382,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     @Test
     public void testLongRunningTx() throws Exception {
         checkLongRunningTx(TRANSACTIONAL);
-
     }
 
     /**
@@ -398,30 +400,33 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", testLog);
 
+        testSpi = true;
+
         try {
+            this.testLog = testLog;
+
             IgniteEx grid1 = startGrid(0);
 
+            IgniteEx grid2 = startGrid(1);
+
+            grid1.context().cache().context().tm().longOperationsDumpTimeout(longOpDumpTimeout);
+
+            awaitPartitionMapExchange();
+
             LogListener lsnr = LogListener
-                    .matches(Pattern.compile("Transaction tx=GridNearTxLocal \\[.*\\] timed out, can't acquire lock for"))
+                    .matches(Pattern.compile("Transaction tx=GridDhtTxLocal \\[.*\\] timed out, can't acquire lock for"))
                     .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, " +
                             "nearNodeId=" + grid1.cluster().localNode().id() + ".*"))
                     .build();
 
             testLog.registerListener(lsnr);
 
-            this.testLog = testLog;
-
-            IgniteEx grid2 = startGrid(1);
-
-            grid2.context().cache().context().tm().longOperationsDumpTimeout(longOpDumpTimeout);
-
-            awaitPartitionMapExchange();
-
             emulateTxLockTimeout(grid1, grid2);
 
             assertTrue(lsnr.check());
         }
         finally {
+            testSpi = false;
             GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", oldLog);
         }
     }
@@ -696,18 +701,27 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @param node2 Second node.
      * @throws Exception If failed.
      */
-    private void emulateTxLockTimeout(Ignite node1, Ignite node2) throws Exception {
+    private void emulateTxLockTimeout(IgniteEx node1, IgniteEx node2) throws Exception {
         node1.createCache(cacheConfiguration(TRANSACTIONAL).setBackups(1));
+
+        assertNotNull(node2.cache(DEFAULT_CACHE_NAME));
+
+        // Delay finish message until dht lock future is triggered.
+        TestRecordingCommunicationSpi.spi(node2).
+                blockMessages((node, message) -> message instanceof GridNearTxFinishRequest);
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
+
+        // Second tx will map on node1.
+        Integer key = primaryKey(node1.cache(DEFAULT_CACHE_NAME));
 
         IgniteInternalFuture<?> fut1 = runAsync(new Runnable() {
             @Override public void run() {
                 try {
                     try (Transaction tx = node1.transactions().withLabel("lock")
-                            .txStart(PESSIMISTIC, REPEATABLE_READ, 60_000, 2)) {
-                        node1.cache(DEFAULT_CACHE_NAME).put(1, 10);
+                            .txStart(PESSIMISTIC, REPEATABLE_READ, 60_000, 1)) {
+                        node1.cache(DEFAULT_CACHE_NAME).put(key, 10);
 
                         l1.countDown();
 
@@ -727,22 +741,32 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> fut2 = runAsync(new Runnable() {
             @Override public void run() {
                 try (Transaction tx = node2.transactions().withLabel("lock")
-                        .txStart(PESSIMISTIC, REPEATABLE_READ, 2000L, 2)) {
+                        .txStart(PESSIMISTIC, REPEATABLE_READ, 8000L, 1)) {
                     U.awaitQuiet(l1);
 
-                    node2.cache(DEFAULT_CACHE_NAME).put(1, 20);
+                    node2.cache(DEFAULT_CACHE_NAME).put(key, 20);
 
                     tx.commit();
                 }
                 catch (Exception e) {
                     log.error("Failed on node2 " + node2.cluster().localNode().id(), e);
-
-                    l2.countDown();
                 }
             }
         }, "Second");
 
-        fut1.get();
         fut2.get();
+
+        final Collection<GridCacheFuture<?>> futs = node1.context().cache().context().mvcc().activeFutures();
+
+        if (!futs.isEmpty()) {
+            // Synchronously wait for completion.
+            GridCacheFuture<?> fut = futs.iterator().next();
+
+            fut.get(30_000);
+        }
+
+        l2.countDown();
+
+        fut1.get();
     }
 }

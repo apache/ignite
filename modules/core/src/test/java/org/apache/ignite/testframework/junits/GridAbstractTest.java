@@ -191,6 +191,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         }
     };
 
+    /** Allows easy repeating for test. */
+    @Rule public transient RepeatRule repeatRule = new RepeatRule();
+
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for methods invoked
      * from {@code runTest(Statement)}.
