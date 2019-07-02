@@ -35,6 +35,7 @@ class JdbcQueryMultipleStatementsNotAllowTask extends JdbcQueryMultipleStatement
      * @param loc Local execution flag.
      * @param args Args.
      * @param fetchSize Fetch size.
+     * @param maxMem Query memory limit.
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
@@ -42,9 +43,9 @@ class JdbcQueryMultipleStatementsNotAllowTask extends JdbcQueryMultipleStatement
      * @param lazy Lazy query execution flag.
      */
     public JdbcQueryMultipleStatementsNotAllowTask(Ignite ignite, String schemaName, String sql, Boolean isQry, boolean loc,
-        Object[] args, int fetchSize, boolean locQry, boolean collocatedQry, boolean distributedJoins,
+        Object[] args, int fetchSize, long maxMem, boolean locQry, boolean collocatedQry, boolean distributedJoins,
         boolean enforceJoinOrder, boolean lazy) {
-        super(ignite, schemaName, sql, isQry, loc, args, fetchSize, locQry, collocatedQry, distributedJoins,
+        super(ignite, schemaName, sql, isQry, loc, args, fetchSize, maxMem, locQry, collocatedQry, distributedJoins,
             enforceJoinOrder, lazy);
     }
 

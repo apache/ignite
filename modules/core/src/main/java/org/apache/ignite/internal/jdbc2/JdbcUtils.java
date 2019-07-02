@@ -189,8 +189,12 @@ public class JdbcUtils {
         Throwable t = e;
 
         while (sqlEx == null && t != null) {
-            if (t instanceof SQLException)
-                return (SQLException)t;
+            if (t instanceof SQLException) {
+                if (t.getCause() instanceof IgniteSQLException)
+                    return ((IgniteSQLException)t.getCause()).toJdbcException();
+                else
+                    return (SQLException)t;
+            }
             else if (t instanceof IgniteSQLException)
                 return ((IgniteSQLException)t).toJdbcException();
 

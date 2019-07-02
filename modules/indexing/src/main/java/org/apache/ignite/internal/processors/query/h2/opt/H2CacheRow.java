@@ -18,14 +18,20 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Constants;
 import org.h2.result.Row;
 import org.h2.value.Value;
 import org.h2.value.ValueNull;
@@ -42,6 +48,9 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
 
     /** */
     private Value[] valCache;
+
+    /** Row size. */
+    int memory = -1;
 
     /**
      * Constructor.
@@ -303,6 +312,43 @@ public class H2CacheRow extends H2Row implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public boolean hasSharedData(Row other) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMemory() {
+        if (memory != MEMORY_CALCULATE)
+            return memory;
+
+        long size = 32 /* H2CacheRow obj size. */;
+        if (!F.isEmpty(valCache)) {
+            int len = valCache.length;
+
+            size += Constants.MEMORY_ARRAY + len * Constants.MEMORY_POINTER;
+
+            for (Value v : valCache) {
+                if (v != null)
+                    size += v.getMemory();
+            }
+        }
+
+        assert row instanceof CacheDataRowAdapter;
+        assert row.key() instanceof KeyCacheObjectImpl;
+        assert row.value() instanceof BinaryObjectImpl;
+
+        try {
+            size += 56; /* CacheDataRowAdapter */ //CacheDataRow =49, DataRow =57, MvccDataRow =100
+            size += 32 /* KeyCacheObjectImpl */ + Constants.MEMORY_ARRAY + row.key().valueBytesLength(null);
+            size += 40 /* BinaryObjectImpl */ + Constants.MEMORY_ARRAY + ((BinaryObjectImpl)row.value()).array().length;
+        }
+        catch (IgniteCheckedException e) {
+            U.warn(desc.context().logger(H2CacheRow.class), e);
+        }
+
+        assert size < Integer.MAX_VALUE;
+
+        memory = (int)size;
+
+        return memory;
     }
 
     /** {@inheritDoc} */

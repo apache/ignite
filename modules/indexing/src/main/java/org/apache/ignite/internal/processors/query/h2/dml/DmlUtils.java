@@ -214,7 +214,7 @@ public class DmlUtils {
                 String msg = "Failed to INSERT some keys because they are already in cache " +
                     "[keys=" + sender.failedKeys() + ']';
 
-                SQLException dupEx = new SQLException(msg, SqlStateCode.CONSTRAINT_VIOLATION);
+                SQLException dupEx = createJdbcSqlException(msg, DUPLICATE_KEY);
 
                 if (resEx == null)
                     resEx = dupEx;

@@ -336,6 +336,9 @@ public class IgniteJdbcDriver implements Driver {
     /** Parameter: schema name. */
     public static final String PARAM_SCHEMA = "schema";
 
+    /** Parameter: query max memory. */
+    public static final String PARAM_QRY_MAX_MEMORY = "queryMaxMemory";
+
     /** Hostname property name. */
     public static final String PROP_HOST = PROP_PREFIX + "host";
 
@@ -389,6 +392,9 @@ public class IgniteJdbcDriver implements Driver {
 
     /** Schema property name. */
     public static final String PROP_SCHEMA = PROP_PREFIX + PARAM_SCHEMA;
+
+    /** Query max memory property name. */
+    public static final String PROP_QRY_MAX_MEMORY = PROP_PREFIX + PARAM_QRY_MAX_MEMORY;
 
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
@@ -464,7 +470,8 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
             new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), ""),
-            new JdbcDriverPropertyInfo("Schema name", info.getProperty(PROP_SCHEMA), "")
+            new JdbcDriverPropertyInfo("Schema name", info.getProperty(PROP_SCHEMA), ""),
+            new JdbcDriverPropertyInfo("Query memory limit", info.getProperty(PROP_QRY_MAX_MEMORY), "")
         );
 
         if (info.getProperty(PROP_CFG) != null)

@@ -261,6 +261,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Parser. */
     private QueryParser parser;
 
+    /** Memory manager */
+    private QueryMemoryManager memoryManager;
+
     /** */
     private final IgniteInClosure<? super IgniteInternalFuture<?>> logger = new IgniteInClosure<IgniteInternalFuture<?>>() {
         @Override public void apply(IgniteInternalFuture<?> fut) {
@@ -526,7 +529,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 null,
                 mvccSnapshot,
                 null,
-                maxMem < 0 ? null : new QueryMemoryTracker(maxMem),
+                maxMem < 0 ? null : memoryManager.createQueryMemoryTracker(maxMem),
                 true
             );
 
@@ -763,6 +766,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             stmt = useStmtCache ? connMgr.prepareStatement(conn, sql) : connMgr.prepareStatementNoCache(conn, sql);
         }
         catch (SQLException e) {
+            H2Utils.resetSession(conn);
+
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
         }
 
@@ -782,7 +787,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     private ResultSet executeSqlQuery(final Connection conn, final PreparedStatement stmt,
-        int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException {
+        int timeoutMillis, @Nullable GridQueryCancel cancel) throws IgniteCheckedException  {
         if (cancel != null)
             cancel.set(() -> cancelStatement(stmt));
 
@@ -801,7 +806,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (e.getErrorCode() == ErrorCode.STATEMENT_WAS_CANCELED)
                 throw new QueryCancelledException();
 
-            throw new IgniteCheckedException("Failed to execute SQL query. " + e.getMessage(), e);
+            if (e.getCause() instanceof IgniteSQLException)
+                throw (IgniteSQLException)e.getCause();
+
+            throw new IgniteSQLException(e);
         }
     }
 
@@ -1385,7 +1393,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 try {
                     return new GridQueryCacheObjectsIterator(res.iterator(), objectContext(), keepBinary);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteCheckedException | IgniteSQLException e) {
                     throw new CacheException(e);
                 }
             };
@@ -1905,6 +1913,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return runningQryMgr;
     }
 
+    /**
+     * @return Reduce query executor.
+     */
+    public QueryMemoryManager memoryManager() {
+        return memoryManager;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"deprecation"})
     @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
@@ -1934,6 +1949,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         nodeId = ctx.localNodeId();
         marshaller = ctx.config().getMarshaller();
+
+        memoryManager = new QueryMemoryManager(ctx, 0); //TODO: GG-18629: Get global_memory_quota value from configuration.
 
         mapQryExec = new GridMapQueryExecutor();
         rdcQryExec = new GridReduceQueryExecutor();
@@ -2158,6 +2175,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         connMgr.stop();
 
         cmdProc.stop();
+
+        memoryManager.close();
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -2893,7 +2912,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             U.error(log, "Error during update [localNodeId=" + ctx.localNodeId() + "]", ex);
 
-            throw new IgniteSQLException("Failed to run update. " + ex.getMessage(), ex);
+            throw new IgniteSQLException("Failed to run SQL update query. " + ex.getMessage(), ex);
         }
         finally {
             if (commit)
