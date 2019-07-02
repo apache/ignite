@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsGroupName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** */
@@ -72,7 +73,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCacheMetricsAddRemove() throws Exception {
-        String cachePrefix = metricName("cache", DEFAULT_CACHE_NAME);
+        String cachePrefix = cacheMetricsGroupName(DEFAULT_CACHE_NAME, false);
 
         checkMetricsEmpty(cachePrefix);
 
@@ -115,7 +116,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
             assertNotNull(mgrp.findMetric(CACHE_PUTS));
 
             if (nearEnabled) {
-                mgrp = mreg.group(metricName("cache", DEFAULT_CACHE_NAME, "near"));
+                mgrp = mreg.group(cacheMetricsGroupName(DEFAULT_CACHE_NAME, true));
 
                 assertNotNull(mgrp.findMetric(CACHE_GETS));
                 assertNotNull(mgrp.findMetric(CACHE_PUTS));
@@ -134,7 +135,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
             assertNull(mgrp.findMetric(metricName(cachePrefix, CACHE_PUTS)));
 
             if (nearEnabled) {
-                mgrp = mreg.group(metricName("cache", DEFAULT_CACHE_NAME, "near"));
+                mgrp = mreg.group(cacheMetricsGroupName(DEFAULT_CACHE_NAME, true));
 
                 assertNull(mgrp.findMetric(CACHE_GETS));
                 assertNull(mgrp.findMetric(CACHE_PUTS));
