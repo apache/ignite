@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1733,28 +1734,30 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         ) throws IgniteCheckedException {
             Collection<DataRow> rows = new ArrayList<>(infos.size());
 
-            // Skipping infos with null values.
-            Collection<GridCacheEntryInfo> nonNullInfos = F.view(infos, info -> info.value() != null);
-
-            for (GridCacheEntryInfo info : nonNullInfos) {
-                rows.add(makeDataRow(info.key(),
-                    info.value(),
-                    info.version(),
-                    info.expireTime(),
-                    grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID));
+            for (GridCacheEntryInfo info : infos) {
+                rows.add(info.value() == null ? null :
+                    makeDataRow(info.key(),
+                        info.value(),
+                        info.version(),
+                        info.expireTime(),
+                        grp.storeCacheIdInDataPage() ? info.cacheId() : CU.UNDEFINED_CACHE_ID));
             }
 
             if (!busyLock.enterBusy())
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
             try {
-                rowStore.addRows(rows, grp.statisticsHolderData());
+                rowStore.addRows(F.view(rows, Objects::nonNull), grp.statisticsHolderData());
 
-                Iterator<GridCacheEntryInfo> iter = nonNullInfos.iterator();
+                Iterator<GridCacheEntryInfo> iter = infos.iterator();
 
                 if (grp.sharedGroup() && !grp.storeCacheIdInDataPage()) {
-                    for (DataRow row : rows)
-                        row.cacheId(iter.next().cacheId());
+                    for (DataRow row : rows) {
+                        GridCacheEntryInfo info = iter.next();
+
+                        if (row != null)
+                            row.cacheId(info.cacheId());
+                    }
                 }
             }
             finally {
@@ -1766,13 +1769,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 private final Iterator<GridCacheEntryInfo> infosIter = infos.iterator();
 
                 @Override protected IgniteBiTuple<GridCacheEntryInfo, CacheDataRow> onNext() {
-                    GridCacheEntryInfo info = infosIter.next();
-
-                    return new IgniteBiTuple<>(info, info.value() == null ? null : rowsIter.next());
+                    return new IgniteBiTuple<>(infosIter.next(), rowsIter.next());
                 }
 
                 @Override protected boolean onHasNext() {
-                    return infosIter.hasNext();
+                    return rowsIter.hasNext() && infosIter.hasNext();
                 }
 
                 @Override protected void onClose() throws IgniteCheckedException {

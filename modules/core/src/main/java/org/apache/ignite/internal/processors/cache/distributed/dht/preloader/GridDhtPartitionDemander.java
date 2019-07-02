@@ -1025,7 +1025,6 @@ public class GridDhtPartitionDemander {
                 // Create data rows on data pages before getting locks on cache entries.
                 try (GridCloseableIterator<IgniteBiTuple<GridCacheEntryInfo, CacheDataRow>> iter =
                          part.dataStore().allocateRows(batch)) {
-
                     while (iter.hasNext()) {
                         IgniteBiTuple<GridCacheEntryInfo, CacheDataRow> tup = iter.next();
 
