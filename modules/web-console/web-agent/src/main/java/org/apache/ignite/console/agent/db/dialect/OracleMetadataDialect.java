@@ -138,21 +138,27 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
             "SYSTEM", "TSMSYS", "WK_TEST", "WKSYS", "WKPROXY", "WMSYS", "XDB",
 
             "APEX_040000", "APEX_PUBLIC_USER", "DIP", "FLOWS_30000", "FLOWS_FILES", "MDDATA", "ORACLE_OCM",
-            "SPATIAL_CSW_ADMIN_USR", "SPATIAL_WFS_ADMIN_USR", "XS$NULL",
+            "SPATIAL_CSW_ADMIN_USR", "SPATIAL_WFS_ADMIN_USR", "XS$NULL"));
+    }
 
-            "BI", "HR", "OE", "PM", "IX", "SH"));
+    @Override public Set<String> sampleSchemas() {
+        return new HashSet<>(Arrays.asList("BI", "HR", "OE", "PM", "IX", "SH"));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<String> schemas(Connection conn) throws SQLException {
+    @Override public Collection<String> schemas(Connection conn, boolean importSamples) throws SQLException {
         Collection<String> schemas = new ArrayList<>();
 
-        ResultSet rs = conn.getMetaData().getSchemas();
+        ResultSet rs = getSchemas(conn);
 
         Set<String> sysSchemas = systemSchemas();
+        Set<String> samples = sampleSchemas();
 
         while(rs.next()) {
             String schema = rs.getString(1);
+
+            if (!importSamples && samples.contains(schema))
+                continue;
 
             if (!sysSchemas.contains(schema) && !schema.startsWith("FLOWS_"))
                 schemas.add(schema);

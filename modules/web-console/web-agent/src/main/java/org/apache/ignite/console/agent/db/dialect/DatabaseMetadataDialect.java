@@ -18,6 +18,7 @@ package org.apache.ignite.console.agent.db.dialect;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,10 +41,21 @@ public abstract class DatabaseMetadataDialect {
      * Gets schemas from database.
      *
      * @param conn Database connection.
+     * @param importSamples If {@code true} include sample schemas.
      * @return Collection of schema descriptors.
      * @throws SQLException If failed to get schemas.
      */
-    public abstract Collection<String> schemas(Connection conn) throws SQLException;
+    public abstract Collection<String> schemas(Connection conn, boolean importSamples) throws SQLException;
+
+    /**
+     * Get DB schema metadata.
+     *
+     * @param conn Database connection.
+     * @return Result set with schemas information.
+     */
+    protected ResultSet getSchemas(Connection conn) throws SQLException {
+        return conn.getMetaData().getSchemas();
+    }
 
     /**
      * Gets tables from database.
@@ -62,6 +74,13 @@ public abstract class DatabaseMetadataDialect {
      */
     public Set<String> systemSchemas() {
         return Collections.singleton("INFORMATION_SCHEMA");
+    }
+
+    /**
+     * @return Collection of sample schemas.
+     */
+    public Set<String> sampleSchemas() {
+        return Collections.emptySet();
     }
 
     /**

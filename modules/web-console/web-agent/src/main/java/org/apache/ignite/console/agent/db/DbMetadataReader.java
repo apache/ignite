@@ -76,11 +76,12 @@ public class DbMetadataReader {
      * Get list of schemas from database.
      *
      * @param conn Connection to database.
+     * @param importSamples If {@code true} include sample schemas.
      * @return List of schema names.
      * @throws SQLException If schemas loading failed.
      */
-    public Collection<String> schemas(Connection conn) throws SQLException  {
-        return dialect(conn).schemas(conn);
+    public Collection<String> schemas(Connection conn, boolean importSamples) throws SQLException  {
+        return dialect(conn).schemas(conn, importSamples);
     }
 
     /**

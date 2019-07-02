@@ -105,6 +105,14 @@ mixin td-ellipses-lbl(w, lbl)
                             })(
                                 ignite-on-enter='importDomainNext()'
                             )
+                        .pc-form-grid-col-60(ng-if='selectedPreset.samples')
+                            +form-field__checkbox({
+                                label: 'Include sample schemas',
+                                model: 'selectedPreset.importSamples',
+                                name: '"importSamples"',
+                                tip: 'If selected, then sample tables metadata will be parsed if exist',
+                                tipOpts
+                            })
                         .pc-form-grid-col-60
                             +form-field__checkbox({
                                 label: 'Tables only',
