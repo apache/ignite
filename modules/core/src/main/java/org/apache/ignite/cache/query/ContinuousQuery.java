@@ -30,22 +30,22 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
 /**
  * API for configuring continuous cache queries.
  * <p>
- * Continuous queries allow to register a remote filter and a local listener
+ * Continuous queries allow registering a remote filter and a local listener
  * for cache updates. If an update event passes the filter, it will be sent to
- * the node that executed the query and local listener will be notified.
+ * the node that executed the query, and local listener will be notified.
  * <p>
- * Additionally, you can execute initial query to get currently existing data.
+ * Additionally, you can execute an initial query to get currently existing data.
  * Query can be of any type (SQL, TEXT or SCAN) and can be set via {@link #setInitialQuery(Query)}
  * method.
  * <p>
  * Query can be executed either on all nodes in topology using {@link IgniteCache#query(Query)}
  * method, or only on the local node, if {@link Query#setLocal(boolean)} parameter is set to {@code true}.
- * Note that in case query is distributed and a new node joins, it will get the remote
- * filter for the query during discovery process before it actually joins topology,
+ * Note that if the query is distributed and a new node joins, it will get the remote
+ * filter for the query during discovery process before it actually joins a topology,
  * so no updates will be missed.
  * <h1 class="header">Example</h1>
- * As an example, suppose we have cache with {@code 'Person'} objects and we need
- * to query all persons with salary above 1000.
+ * As an example, suppose we have a cache with {@code 'Person'} objects and we need
+ * to query for all people with salary above 1000.
  * <p>
  * Here is the {@code Person} class:
  * <pre name="code" class="java">
@@ -60,17 +60,17 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  * }
  * </pre>
  * <p>
- * You can create and execute continuous query like so:
+ * You can create and execute a continuous query like so:
  * <pre name="code" class="java">
- * // Create new continuous query.
+ * // Create a new continuous query.
  * ContinuousQuery&lt;Long, Person&gt; qry = new ContinuousQuery&lt;&gt;();
  *
- * // Initial iteration query will return all persons with salary above 1000.
+ * // Initial iteration query will return all people with salary above 1000.
  * qry.setInitialQuery(new ScanQuery&lt;&gt;((id, p) -> p.getSalary() &gt; 1000));
  *
  *
  * // Callback that is called locally when update notifications are received.
- * // It simply prints out information about all created persons.
+ * // It simply prints out information about all created or modified records.
  * qry.setLocalListener((evts) -> {
  *     for (CacheEntryEvent&lt;? extends Long, ? extends Person&gt; e : evts) {
  *         Person p = e.getValue();
@@ -79,29 +79,29 @@ import org.apache.ignite.lang.IgniteAsyncCallback;
  *     }
  * });
  *
- * // Continuous listener will be notified for persons with salary above 1000.
+ * // The continuous listener will be notified for people with salary above 1000.
  * qry.setRemoteFilter(evt -> evt.getValue().getSalary() &gt; 1000);
  *
- * // Execute query and get cursor that iterates through initial data.
+ * // Execute the query and get a cursor that iterates through the initial data.
  * QueryCursor&lt;Cache.Entry&lt;Long, Person&gt;&gt; cur = cache.query(qry);
  * </pre>
- * This will execute query on all nodes that have cache you are working with and
- * listener will start to receive notifications for cache updates.
+ * This will execute query on all nodes that have the cache you are working with and
+ * listener will start receiving notifications for cache updates.
  * <p>
  * To stop receiving updates call {@link QueryCursor#close()} method:
  * <pre name="code" class="java">
  * cur.close();
  * </pre>
- * Note that this works even if you didn't provide initial query. Cursor will
+ * Note that this works even if you didn't provide the initial query. Cursor will
  * be empty in this case, but it will still unregister listeners when {@link QueryCursor#close()}
  * is called.
  * <p>
  * {@link IgniteAsyncCallback} annotation is supported for {@link CacheEntryEventFilter}
  * (see {@link #setRemoteFilterFactory(Factory)}) and {@link CacheEntryUpdatedListener}
  * (see {@link #setLocalListener(CacheEntryUpdatedListener)}).
- * If filter and/or listener are annotated with {@link IgniteAsyncCallback} then annotated callback
- * is executed in async callback pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()})
- * and notification order is kept the same as update order for given cache key.
+ * If a filter and/or listener are annotated with {@link IgniteAsyncCallback} then the annotated callback
+ * is executed in an async callback pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()})
+ * and a notification order is kept the same as an update order for a given cache key.
  *
  * @see ContinuousQueryWithTransformer
  * @see IgniteAsyncCallback
@@ -130,10 +130,10 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     }
 
     /**
-     * Sets local callback. This callback is called only in local node when new updates are received.
+     * Sets a local callback. This callback is called only on local node when new updates are received.
      * <p>
-     * The callback predicate accepts ID of the node from where updates are received and collection
-     * of received entries. Note that for removed entries value will be {@code null}.
+     * The callback predicate accepts ID of the node from where updates are received and a collection
+     * of the received entries. Note that for removed entries values will be {@code null}.
      * <p>
      * If the predicate returns {@code false}, query execution will be cancelled.
      * <p>
@@ -141,7 +141,7 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
      * synchronization or transactional cache operations), should be executed asynchronously without
      * blocking the thread that called the callback. Otherwise, you can get deadlocks.
      * <p>
-     * If local listener are annotated with {@link IgniteAsyncCallback} then it is executed in async callback pool
+     * If local listener are annotated with {@link IgniteAsyncCallback} then it is executed in an async callback pool
      * (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()}) that allow to perform a cache operations.
      *
      * @param locLsnr Local callback.
@@ -157,8 +157,6 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     }
 
     /**
-     * Gets local listener.
-     *
      * @return Local listener.
      */
     public CacheEntryUpdatedListener<K, V> getLocalListener() {
@@ -214,7 +212,7 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
     }
 
     /**
-     * Sets whether this query should be executed on local node only.
+     * Sets whether this query should be executed on a local node only.
      *
      * Note: backup event queues are not kept for local continuous queries. It may lead to loss of notifications in case
      * of node failures. Use {@link ContinuousQuery#setRemoteFilterFactory(Factory)} to register cache event listeners
