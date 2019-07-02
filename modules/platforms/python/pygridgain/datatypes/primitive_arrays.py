@@ -110,6 +110,20 @@ class ByteArray(PrimitiveArray):
     primitive_type = Byte
     type_code = TC_BYTE_ARRAY
 
+    @classmethod
+    def to_python(cls, ctype_object, *args, **kwargs):
+        return bytearray(ctype_object.data)
+
+    @classmethod
+    def from_python(cls, value):
+        header_class = cls.build_header_class()
+        header = header_class()
+
+        # no need to iterate on bytes or bytearray
+        # to create ByteArray data buffer
+        header.length = len(value)
+        return bytes(bytearray(header) + bytearray(value))
+
 
 class ShortArray(PrimitiveArray):
     _type_name = NAME_SHORT_ARR
@@ -189,6 +203,24 @@ class ByteArrayObject(PrimitiveArrayObject):
     _type_id = TYPE_BYTE_ARR
     primitive_type = Byte
     type_code = TC_BYTE_ARRAY
+
+    @classmethod
+    def to_python(cls, ctype_object, *args, **kwargs):
+        return ByteArray.to_python(ctype_object, *args, **kwargs)
+
+    @classmethod
+    def from_python(cls, value):
+        header_class = cls.build_header_class()
+        header = header_class()
+        header.type_code = int.from_bytes(
+            cls.type_code,
+            byteorder=PROTOCOL_BYTE_ORDER
+        )
+
+        # no need to iterate on bytes or bytearray
+        # to create ByteArrayObject data buffer
+        header.length = len(value)
+        return bytes(bytearray(header) + bytearray(value))
 
 
 class ShortArrayObject(PrimitiveArrayObject):
