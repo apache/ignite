@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -40,7 +41,7 @@ public abstract class LazyCacheFreeList implements FreeList<CacheDataRow>, Reuse
         AtomicReferenceFieldUpdater.newUpdater(LazyCacheFreeList.class, CountDownLatch.class, "initLatch");
 
     /** */
-    private volatile CacheFreeList delegate;
+    private volatile AbstractFreeList<CacheDataRow> delegate;
 
     /** */
     private IgniteCheckedException initErr;
@@ -50,7 +51,7 @@ public abstract class LazyCacheFreeList implements FreeList<CacheDataRow>, Reuse
 
     /** {@inheritDoc} */
     @Override public void saveMetadata() throws IgniteCheckedException {
-        CacheFreeList delegate = this.delegate;
+        AbstractFreeList<CacheDataRow> delegate = this.delegate;
 
         if (delegate != null)
             delegate.saveMetadata();
@@ -79,7 +80,7 @@ public abstract class LazyCacheFreeList implements FreeList<CacheDataRow>, Reuse
     /** {@inheritDoc} */
     @Override public int emptyDataPages() {
         try {
-            CacheFreeList freeList = initDelegateIfNeeded(false);
+            AbstractFreeList<CacheDataRow> freeList = initDelegateIfNeeded(false);
 
             return freeList != null ? freeList.emptyDataPages() : 0;
         }
@@ -91,7 +92,7 @@ public abstract class LazyCacheFreeList implements FreeList<CacheDataRow>, Reuse
     /** {@inheritDoc} */
     @Override public long freeSpace() {
         try {
-            CacheFreeList freeList = initDelegateIfNeeded(false);
+            AbstractFreeList<CacheDataRow> freeList = initDelegateIfNeeded(false);
 
             return freeList != null ? freeList.freeSpace() : null;
         }
@@ -102,7 +103,7 @@ public abstract class LazyCacheFreeList implements FreeList<CacheDataRow>, Reuse
 
     /** {@inheritDoc} */
     @Override public void dumpStatistics(IgniteLogger log) {
-        CacheFreeList delegate = this.delegate;
+        AbstractFreeList<CacheDataRow> delegate = this.delegate;
 
         if (delegate != null)
             delegate.dumpStatistics(log);
@@ -133,8 +134,8 @@ public abstract class LazyCacheFreeList implements FreeList<CacheDataRow>, Reuse
      * @return Cache free list.
      * @throws IgniteCheckedException If failed to initialize free list.
      */
-    private CacheFreeList initDelegateIfNeeded(boolean create) throws IgniteCheckedException {
-        CacheFreeList delegate = this.delegate;
+    private AbstractFreeList<CacheDataRow> initDelegateIfNeeded(boolean create) throws IgniteCheckedException {
+        AbstractFreeList<CacheDataRow> delegate = this.delegate;
 
         if (delegate != null)
             return delegate;
