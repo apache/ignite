@@ -1437,6 +1437,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 expiry,
                 skipVals,
                 needVer,
+                false,
                 null).single();
         }
 
@@ -1504,6 +1505,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 expiry,
                 skipVals,
                 needVer,
+                false,
                 null).multi();
         }
 

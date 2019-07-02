@@ -274,6 +274,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
                 skipVals,
                 needVer,
+                false,
                 tx).single();
         }
 
@@ -395,6 +396,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
                 skipVals,
                 needVer,
+                false,
                 tx).multi();
         }
 
