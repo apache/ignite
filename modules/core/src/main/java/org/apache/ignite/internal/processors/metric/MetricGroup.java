@@ -38,6 +38,9 @@ import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
+import org.apache.ignite.spi.metric.BooleanMetric;
+import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -162,7 +165,7 @@ public class MetricGroup implements Iterable<Metric> {
     }
 
     /**
-     * Registers {@code ObjectMetric} which value will be queried from the specified {@link Supplier}.
+     * Registers {@link ObjectGauge} which value will be queried from the specified {@link Supplier}.
      *
      * @param name Name.
      * @param supplier Supplier.

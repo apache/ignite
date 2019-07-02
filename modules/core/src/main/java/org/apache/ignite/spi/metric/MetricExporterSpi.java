@@ -48,7 +48,7 @@ public interface MetricExporterSpi extends IgniteSpi {
      *
      * Registry should be empty in the time this method called.
      * So all {@link MetricRegistry} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link MetricRegistry#addMetricCreationListener(Consumer)}.
+     * listeners passed to {@link MetricRegistry#addMetricGroupCreationListener(Consumer)}.
      *
      * @param registry Metric registry.
      */
