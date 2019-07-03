@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.commandline.diagnostic;
 
 import java.util.Arrays;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
-import org.apache.ignite.internal.commandline.CommandLogger;
 
+import static org.apache.ignite.internal.commandline.Command.usage;
 import static org.apache.ignite.internal.commandline.CommandHandler.UTILITY_NAME;
 import static org.apache.ignite.internal.commandline.CommandList.DIAGNOSTIC;
+import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.join;
 import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.HELP;
 import static org.apache.ignite.internal.commandline.diagnostic.DiagnosticSubCommand.PAGE_LOCKS;
@@ -36,17 +38,10 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     /** */
     private DiagnosticSubCommand subcommand;
 
-    /**
-     *
-     */
-    private CommandLogger logger;
-
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
-        this.logger = logger;
-
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         if (subcommand == HELP) {
-            printDiagnosticHelp();
+            printDiagnosticHelp(logger);
 
             return null;
         }
@@ -99,26 +94,27 @@ public class DiagnosticCommand implements Command<DiagnosticSubCommand> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
-        logger.logWithIndent("View diagnostic information in a cluster. For more details type:");
-        logger.logWithIndent(join(" ", UTILITY_NAME, DIAGNOSTIC, HELP), 2);
-        logger.nl();
+    @Override public String name() {
+        return "diagnostic";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printUsage(Logger logger) {
+        usage(logger, "View diagnostic information in a cluster. For more details type:", DIAGNOSTIC);
     }
 
     /**
      * Print diagnostic command help.
      */
-    private void printDiagnosticHelp() {
-        logger.logWithIndent(join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
+    private void printDiagnosticHelp(Logger logger) {
+        logger.info(INDENT + join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
 
-        logger.nl();
-
-        logger.logWithIndent("Subcommands:");
+        logger.info(INDENT + "Subcommands:");
 
         Arrays.stream(DiagnosticSubCommand.values()).forEach(c -> {
             if (c.subcommand() != null) c.subcommand().printUsage(logger);
         });
 
-        logger.nl();
+        logger.info("");
     }
 }
