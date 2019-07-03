@@ -342,7 +342,7 @@ public class Account extends AbstractDto implements UserDetails, CredentialsCont
 
     /** {@inheritDoc} */
     @Override public void eraseCredentials() {
-        this.hashedPwd = null;
+        hashedPwd = null;
     }
 
     /**

@@ -470,7 +470,7 @@ public class AgentConfiguration {
 
         val = props.getProperty("node-uri");
 
-        // Intentionaly wrapped by ArrayList, for further maniulations.
+        // Intentionally wrapped by ArrayList, for further manipulations.
         if (val != null)
             nodeURIs(new ArrayList<>(Arrays.asList(val.split(","))));
 

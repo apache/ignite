@@ -18,6 +18,7 @@ package org.apache.ignite.console.demo.model;
 
 import java.io.Serializable;
 import java.sql.Date;
+import java.util.Objects;
 
 /**
  * Employee definition.
@@ -286,31 +287,28 @@ public class Employee implements Serializable {
         if (departmentId != that.departmentId)
             return false;
 
-        if (managerId != null ? !managerId.equals(that.managerId) : that.managerId != null)
+        if (!Objects.equals(managerId, that.managerId))
             return false;
 
-        if (firstName != null ? !firstName.equals(that.firstName) : that.firstName != null)
+        if (!Objects.equals(firstName, that.firstName))
             return false;
 
-        if (lastName != null ? !lastName.equals(that.lastName) : that.lastName != null)
+        if (!Objects.equals(lastName, that.lastName))
             return false;
 
-        if (email != null ? !email.equals(that.email) : that.email != null)
+        if (!Objects.equals(email, that.email))
             return false;
 
-        if (phoneNumber != null ? !phoneNumber.equals(that.phoneNumber) : that.phoneNumber != null)
+        if (!Objects.equals(phoneNumber, that.phoneNumber))
             return false;
 
-        if (hireDate != null ? !hireDate.equals(that.hireDate) : that.hireDate != null)
+        if (!Objects.equals(hireDate, that.hireDate))
             return false;
 
-        if (job != null ? !job.equals(that.job) : that.job != null)
+        if (!Objects.equals(job, that.job))
             return false;
 
-        if (salary != null ? !salary.equals(that.salary) : that.salary != null)
-            return false;
-
-        return true;
+        return Objects.equals(salary, that.salary);
     }
 
     /** {@inheritDoc} */

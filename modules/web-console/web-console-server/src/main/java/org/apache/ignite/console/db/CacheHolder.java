@@ -65,6 +65,6 @@ public class CacheHolder<K, V> {
 
     /** */
     public IgniteInternalCache<K, V> internalCache() {
-        return ((IgniteKernal)this.ignite).getCache(cacheName);
+        return ((IgniteKernal)ignite).getCache(cacheName);
     }
 }

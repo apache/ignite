@@ -17,6 +17,7 @@
 package org.apache.ignite.console.demo.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Parking definition.
@@ -121,13 +122,10 @@ public class Parking implements Serializable {
         if (id != that.id)
             return false;
 
-        if (name != null ? !name.equals(that.name) : that.name != null)
+        if (!Objects.equals(name, that.name))
             return false;
 
-        if (capacity != that.capacity)
-            return false;
-
-        return true;
+        return capacity == that.capacity;
     }
 
     /** {@inheritDoc} */

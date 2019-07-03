@@ -67,14 +67,14 @@ public class DemoRandomCacheLoadService implements Service {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(ServiceContext ctx) throws Exception {
+    @Override public void init(ServiceContext ctx) {
         ignite.getOrCreateCache(cacheRandom());
 
         cachePool = AgentDemoUtils.newScheduledThreadPool(2, "demo-sql-random-load-cache-tasks");
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(ServiceContext ctx) throws Exception {
+    @Override public void execute(ServiceContext ctx) {
         cachePool.scheduleWithFixedDelay(new Runnable() {
             @Override public void run() {
                 try {

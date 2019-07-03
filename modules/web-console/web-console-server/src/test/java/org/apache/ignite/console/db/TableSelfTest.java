@@ -92,7 +92,7 @@ public class TableSelfTest extends GridCommonAbstractTest {
         /**
          * @param idx Index.
          */
-        public TestObject(String idx) {
+        TestObject(String idx) {
             super(UUID.randomUUID());
 
             this.idx = idx;

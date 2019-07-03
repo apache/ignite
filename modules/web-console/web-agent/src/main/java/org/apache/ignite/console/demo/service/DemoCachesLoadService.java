@@ -118,7 +118,7 @@ public class DemoCachesLoadService implements Service {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(ServiceContext ctx) throws Exception {
+    @Override public void init(ServiceContext ctx) {
         ignite.getOrCreateCaches(Arrays.asList(
             cacheCountry(), cacheDepartment(), cacheEmployee(), cacheCar(), cacheParking()
         ));
@@ -130,7 +130,7 @@ public class DemoCachesLoadService implements Service {
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(ServiceContext ctx) throws Exception {
+    @Override public void execute(ServiceContext ctx) {
         cachePool.scheduleWithFixedDelay(new Runnable() {
             @Override public void run() {
                 try {
@@ -139,9 +139,9 @@ public class DemoCachesLoadService implements Service {
                     if (cacheEmployee != null)
                         try(Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             for (int i = 0, n = 1; i < cnt; i++, n++) {
-                                Integer id = rnd.nextInt(EMPL_CNT);
+                                int id = rnd.nextInt(EMPL_CNT);
 
-                                Integer depId = rnd.nextInt(DEP_CNT);
+                                int depId = rnd.nextInt(DEP_CNT);
 
                                 double r = rnd.nextDouble();
 
@@ -174,7 +174,7 @@ public class DemoCachesLoadService implements Service {
 
                     if (cache != null)
                         for (int i = 0; i < cnt; i++) {
-                            Integer carId = rnd.nextInt(CAR_CNT);
+                            int carId = rnd.nextInt(CAR_CNT);
 
                             cache.put(carId, new Car(carId, rnd.nextInt(PARK_CNT), "Car #" + (i + 1)));
 
@@ -439,7 +439,7 @@ public class DemoCachesLoadService implements Service {
         }
 
         for (int i = 0, n = 1; i < EMPL_CNT; i++, n++) {
-            Integer depId = rnd.nextInt(DEP_CNT);
+            int depId = rnd.nextInt(DEP_CNT);
 
             double r = rnd.nextDouble();
 

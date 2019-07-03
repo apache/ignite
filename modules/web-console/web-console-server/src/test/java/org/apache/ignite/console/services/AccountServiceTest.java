@@ -31,6 +31,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -97,6 +98,6 @@ public class AccountServiceTest {
             srvc.register(userReq);
 
             return null;
-        }, IllegalAccessError.class, null);
+        }, AuthenticationServiceException.class, null);
     }
 }

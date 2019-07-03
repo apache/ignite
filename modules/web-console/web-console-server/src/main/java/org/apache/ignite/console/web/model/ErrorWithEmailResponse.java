@@ -40,7 +40,7 @@ public class ErrorWithEmailResponse extends ErrorResponse {
     public ErrorWithEmailResponse(int code, String msg, String username) {
         super(code, msg);
 
-        this.email = username;
+        email = username;
     }
 
     /**
