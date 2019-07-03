@@ -37,17 +37,17 @@ public class MetricUtils {
      * root = io - JMX tree root.
      * subName = statistics.PRIMARY_KEY_IDX - bean name.
      *
-     * @param grpName Group metric name.
+     * @param regName Metric registry name.
      * @return Parsed names parts.
      */
-    public static MetricName parse(String grpName) {
-        int firstDot = grpName.indexOf('.');
+    public static MetricName parse(String regName) {
+        int firstDot = regName.indexOf('.');
 
         if (firstDot == -1)
-            return new MetricName(null, grpName);
+            return new MetricName(null, regName);
 
-        String grp = grpName.substring(0, firstDot);
-        String beanName = grpName.substring(firstDot + 1);
+        String grp = regName.substring(0, firstDot);
+        String beanName = regName.substring(firstDot + 1);
 
         return new MetricName(grp, beanName);
     }

@@ -54,7 +54,7 @@ public interface MetricExporterSpi extends IgniteSpi {
 
     /**
      * Sets export filter.
-     * Metric registry that not satisfy {@code filter} shouldn't be exported by this filter.
+     * Metric registry that not satisfy {@code filter} shouldn't be exported.
      *
      * @param filter Filter.
      */
