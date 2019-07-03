@@ -195,7 +195,7 @@ mixin table-result-heading-query
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
             label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
         .col-xs-2
-            div(ng-if='paragraph.qryType === "SQL_FIELDS"')
+            div(ng-if='paragraph.queryType === "SQL_FIELDS"')
                 +result-toolbar
         .col-xs-3
             .pull-right
@@ -234,7 +234,7 @@ mixin table-result-heading-scan
             label.margin-left-dflt Duration: #[b {{paragraph.duration | duration}}]
             label.margin-left-dflt(ng-show='paragraph.localQueryMode') NodeID8: #[b {{paragraph.resNodeId | id8}}]
         .col-xs-2
-            div(ng-if='paragraph.qryType === "SQL_FIELDS"')
+            div(ng-if='paragraph.queryType === "SQL_FIELDS"')
                 +result-toolbar
         .col-xs-3
             .pull-right
@@ -495,14 +495,14 @@ div
             .panel-group
                 .panel-paragraph(ng-repeat='paragraph in notebook.paragraphs' id='{{paragraph.id}}' ng-form='form_{{paragraph.id}}')
                     panel-collapsible(
-                        ng-if='paragraph.qryType === "SCAN"'
+                        ng-if='paragraph.queryType === "SCAN"'
                         opened='$ctrl.isParagraphOpened($index)'
                         on-close='$ctrl.onParagraphClose($index)'
                         on-open='$ctrl.onParagraphOpen($index)'
                     )
                         +paragraph-scan
                     panel-collapsible(
-                        ng-if='paragraph.qryType === "SQL_FIELDS"'
+                        ng-if='paragraph.queryType === "SQL_FIELDS"'
                         opened='$ctrl.isParagraphOpened($index)'
                         on-close='$ctrl.onParagraphClose($index)'
                         on-open='$ctrl.onParagraphOpen($index)'

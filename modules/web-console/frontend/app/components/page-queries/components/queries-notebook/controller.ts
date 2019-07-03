@@ -69,13 +69,13 @@ let paragraphId = 0;
 
 class Paragraph {
     name: string;
-    qryType: 'SCAN' | 'SQL_FIELDS';
+    queryType: 'SCAN' | 'SQL_FIELDS';
 
     constructor($animate, $timeout, JavaTypes, errorParser, paragraph) {
         const self = this;
 
         self.id = 'paragraph-' + paragraphId++;
-        self.qryType = paragraph.qryType || 'SQL_FIELDS';
+        self.queryType = paragraph.queryType || 'SQL_FIELDS';
         self.maxPages = 0;
         self.filter = '';
         self.useAsDefaultSchema = false;
@@ -153,7 +153,7 @@ class Paragraph {
         }});
 
         this.showLoading = (enable) => {
-            if (this.qryType === 'SCAN')
+            if (this.queryType === 'SCAN')
                 this.scanningInProgress = enable;
 
             this.loading = enable;
@@ -223,7 +223,7 @@ class Paragraph {
     }
 
     scanExplain() {
-        return this.queryExecuted() && (this.qryType === 'SCAN' || this.queryArgs.query.startsWith('EXPLAIN '));
+        return this.queryExecuted() && (this.queryType === 'SCAN' || this.queryArgs.query.startsWith('EXPLAIN '));
     }
 
     timeLineSupported() {
@@ -279,7 +279,7 @@ class Paragraph {
             useAsDefaultSchema: this.useAsDefaultSchema,
             chartsOptions: this.chartsOptions,
             rate: this.rate,
-            qryType: this.qryType,
+            queryType: this.queryType,
             nonCollocatedJoins: this.nonCollocatedJoins,
             enforceJoinOrder: this.enforceJoinOrder,
             lazy: this.lazy,
@@ -1084,7 +1084,7 @@ export class NotebookCtrl {
                     unit: 60000,
                     installed: false
                 },
-                qryType: 'SQL_FIELDS',
+                queryType: 'SQL_FIELDS',
                 lazy: true
             });
 
@@ -1113,7 +1113,7 @@ export class NotebookCtrl {
                     unit: 60000,
                     installed: false
                 },
-                qryType: 'SCAN'
+                queryType: 'SCAN'
             });
 
             $scope.addParagraph(paragraph, sz);
@@ -1268,13 +1268,13 @@ export class NotebookCtrl {
         /**
          * Execute query and get first result page.
          *
-         * @param qryType Query type. 'SQL_FIELDS' or `SCAN`.
+         * @param queryType Query type. 'SQL_FIELDS' or `SCAN`.
          * @param qryArg Argument with query properties.
          * @param {(res) => any} onQueryStarted Action to execute when query ID is received.
          * @return {Observable<VisorQueryResult>} Observable with first query result page.
          */
-        const _executeQuery0 = (qryType, qryArg, onQueryStarted: (res) => any = () => {}) => {
-            return from(qryType === 'SCAN' ? agentMgr.queryScan(qryArg) : agentMgr.querySql(qryArg)).pipe(
+        const _executeQuery0 = (queryType, qryArg, onQueryStarted: (res) => any = () => {}) => {
+            return from(queryType === 'SCAN' ? agentMgr.queryScan(qryArg) : agentMgr.querySql(qryArg)).pipe(
                 tap((res) => {
                     onQueryStarted(res);
                     $scope.$applyAsync();
@@ -1318,7 +1318,7 @@ export class NotebookCtrl {
             onError: (err) => any = () => {}
         ) => {
             return from(_closeOldQuery(paragraph)).pipe(
-                switchMap(() => _executeQuery0(paragraph.qryType, qryArg, onQueryStarted)),
+                switchMap(() => _executeQuery0(paragraph.queryType, qryArg, onQueryStarted)),
                 tap((res) => {
                     onQueryFinished(res);
                     $scope.$applyAsync();
@@ -1351,7 +1351,7 @@ export class NotebookCtrl {
             onError: (err) => any = () => {}
         ) => {
             return from(_closeOldExport(paragraph)).pipe(
-                switchMap(() => _executeQuery0(paragraph.qryType, qryArg, onQueryStarted)),
+                switchMap(() => _executeQuery0(paragraph.queryType, qryArg, onQueryStarted)),
                 expand((acc) => {
                     return from(agentMgr.queryNextPage(acc.responseNodeId, acc.queryId, qryArg.pageSize)
                         .then((res) => {
@@ -1956,7 +1956,7 @@ export class NotebookCtrl {
         const exportFileName = (paragraph, all) => {
             const args = paragraph.queryArgs;
 
-            if (paragraph.qryType === 'SCAN')
+            if (paragraph.queryType === 'SCAN')
                 return `export-scan-${args.cacheName}-${paragraph.name}${all ? '-all' : ''}.csv`;
 
             return `export-query-${paragraph.name}${all ? '-all' : ''}.csv`;
@@ -2116,7 +2116,7 @@ export class NotebookCtrl {
             if (!_.isNil(paragraph)) {
                 const scope = $scope.$new();
 
-                if (paragraph.qryType === 'SCAN') {
+                if (paragraph.queryType === 'SCAN') {
                     scope.title = 'SCAN query';
 
                     const filter = paragraph.queryArgs.filter;
