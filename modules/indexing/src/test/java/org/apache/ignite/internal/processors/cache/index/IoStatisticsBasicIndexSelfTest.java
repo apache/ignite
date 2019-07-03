@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.stat.IoStatisticsManager;
 import org.apache.ignite.internal.stat.IoStatisticsType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -64,11 +66,17 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         fields.put("valLong", Long.class.getName());
         fields.put("valPojo", Pojo.class.getName());
 
+        Set<String> keyFields = new HashSet<>();
+        keyFields.add("keyStr");
+        keyFields.add("keyLong");
+        keyFields.add("keyPojo");
+
         CacheConfiguration<Key, Val> ccfg = new CacheConfiguration<Key, Val>(DEFAULT_CACHE_NAME)
             .setQueryEntities(Collections.singleton(
                 new QueryEntity()
                     .setKeyType(Key.class.getName())
                     .setValueType(Val.class.getName())
+                    .setKeyFields(keyFields)
                     .setFields(fields)
                     .setIndexes(indexes)
             ));
@@ -107,6 +115,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception In case of failure.
      */
+    @Test
     public void testNoIndexes() throws Exception {
         indexes = Collections.emptyList();
 
@@ -126,6 +135,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception In case of failure.
      */
+    @Test
     public void testAllIndexes() throws Exception {
         indexes = Arrays.asList(
             new QueryIndex("keyStr"),
@@ -157,14 +167,14 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
 
-        Set<String> sortedIndexCaches = ioStat.deriveStatisticNames(IoStatisticsType.SORTED_INDEX);
+        Set<String> sortedIdxCaches = ioStat.deriveStatisticNames(IoStatisticsType.SORTED_INDEX);
 
-        Assert.assertEquals(1, sortedIndexCaches.size());
+        Assert.assertEquals(1, sortedIdxCaches.size());
 
         Set<String> sortedIdxNames = ioStat.deriveStatisticSubNames(IoStatisticsType.SORTED_INDEX,
-            sortedIndexCaches.toArray()[0].toString());
+            sortedIdxCaches.toArray()[0].toString());
 
-        Assert.assertEquals(sortedIndexCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES, sortedIdxNames.size());
+        Assert.assertEquals(sortedIdxCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES, sortedIdxNames.size());
 
         for (String idxName : sortedIdxNames) {
             Long logicalReads = ioStat.logicalReads(IoStatisticsType.SORTED_INDEX, DEFAULT_CACHE_NAME, idxName);
