@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.verify.CacheFilterEnum;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyDumpTaskArg;
@@ -296,6 +298,8 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
 
         String path = executeTask(client, VisorIdleVerifyDumpTask.class, arg, clientCfg);
 
+        logParsedArgs(arg, logger::log);
+
         logger.log("VisorIdleVerifyDumpTask successfully written output to '" + path + "'");
     }
 
@@ -307,13 +311,41 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
         GridClient client,
         GridClientConfiguration clientCfg
     ) throws GridClientException {
-        IdleVerifyResultV2 res = executeTask(
-            client,
-            VisorIdleVerifyTaskV2.class,
-            new VisorIdleVerifyTaskArg(args.caches(), args.excludeCaches(), args.idleCheckCrc()),
-            clientCfg);
+        VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(
+            args.caches(),
+            args.excludeCaches(),
+            args.isSkipZeros(),
+            args.getCacheFilterEnum(),
+            args.idleCheckCrc()
+        );
+
+        IdleVerifyResultV2 res = executeTask(client, VisorIdleVerifyTaskV2.class, taskArg, clientCfg);
+
+        logParsedArgs(taskArg, System.out::print);
 
         res.print(System.out::print);
+    }
+
+    /**
+     * Passes idle_verify parsed arguments to given log consumer.
+     *
+     * @param args idle_verify arguments.
+     * @param logConsumer Logger.
+     */
+    public static void logParsedArgs(VisorIdleVerifyTaskArg args, Consumer<String> logConsumer) {
+        SB options = new SB("idle_verify task was executed with the following args: ");
+
+        options
+            .a("caches=[")
+            .a(args.caches() == null ? "" : String.join(", ", args.caches()))
+            .a("], excluded=[")
+            .a(args.excludeCaches() == null ? "" : String.join(", ", args.excludeCaches()))
+            .a("]")
+            .a(", cacheFilter=[")
+            .a(args.cacheFilterEnum().toString())
+            .a("]\n");
+
+        logConsumer.accept(options.toString());
     }
 
     /**
@@ -328,7 +360,13 @@ public class IdleVerify implements Command<IdleVerify.Arguments> {
         VisorIdleVerifyTaskResult res = executeTask(
             client,
             VisorIdleVerifyTask.class,
-            new VisorIdleVerifyTaskArg(args.caches(), args.excludeCaches(), args.idleCheckCrc()),
+            new VisorIdleVerifyTaskArg(
+                args.caches(),
+                args.excludeCaches(),
+                args.isSkipZeros(),
+                args.getCacheFilterEnum(),
+                args.idleCheckCrc()
+            ),
             clientCfg);
 
         Map<PartitionKey, List<PartitionHashRecord>> conflicts = res.getConflicts();
