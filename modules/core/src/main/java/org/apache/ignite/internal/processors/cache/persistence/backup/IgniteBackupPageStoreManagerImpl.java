@@ -216,39 +216,6 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
         pageTrackErrors.clear();
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> forceStart() {
-        return (IgniteInternalFuture<Void>)dbMgr.forceCheckpoint("backup manager").beginFuture();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Void> setupCacheBackup(
-        String backupName,
-        Map<Integer, Set<Integer>> parts
-    ) {
-        if (backupMap.containsKey(backupName)) {
-            return new GridFinishedFuture<>(new IgniteCheckedException("Backup with requested name is already scheduled " +
-                "to be created: " + backupName));
-        }
-
-        BackupContext result = new BackupContext(backupName);
-        File backupDir = new File(backupWorkDir, backupName);
-
-        try {
-            for (Map.Entry<Integer, Set<Integer>> grpEntry : parts.entrySet()) {
-                result.grpBackupMap.put(grpEntry.getKey(),
-                    createCacheBackupContext(backupDir,
-                        cctx.cacheContext(grpEntry.getKey()),
-                        grpEntry.getValue()));
-            }
-        }
-        catch (IgniteCheckedException e) {
-            result.setupFut.onDone(e);
-        }
-
-        return result.setupFut;
-    }
-
     /**
      * @param dir Backup directory to save intermeidate results.
      * @param cctx Cache context to setup cache backup context.
@@ -282,12 +249,37 @@ public class IgniteBackupPageStoreManagerImpl extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> runLocalBackup(String backupName, File dir, Executor executor) {
-        BackupContext ctx = backupMap.get(backupName);
+    @Override public IgniteInternalFuture<?> createLocalBackup(
+        String backupName,
+        Map<Integer, Set<Integer>> parts,
+        File dir,
+        Executor executor
+    ) {
+        if (backupMap.containsKey(backupName)) {
+            return new GridFinishedFuture<>(new IgniteCheckedException("Backup with requested name is already scheduled " +
+                "to be created: " + backupName));
+        }
+
+        BackupContext result = new BackupContext(backupName);
+        File backupDir = new File(backupWorkDir, backupName);
+
+        try {
+            for (Map.Entry<Integer, Set<Integer>> grpEntry : parts.entrySet()) {
+                result.grpBackupMap.put(grpEntry.getKey(),
+                    createCacheBackupContext(backupDir,
+                        cctx.cacheContext(grpEntry.getKey()),
+                        grpEntry.getValue()));
+            }
+        }
+        catch (IgniteCheckedException e) {
+            result.setupFut.onDone(e);
+        }
+
+//        return result.setupFut;
 
         // Submit to executor service.
 
-        return ctx.completeFut;
+        return result.setupFut;
     }
 
     /** {@inheritDoc} */
