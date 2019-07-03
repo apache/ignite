@@ -1213,7 +1213,7 @@ public final class IgniteSystemProperties {
     /**
      * Defines default memory reservation block size.
      *
-     * Default: 128K.
+     * Default: 512K.
      */
     public static final String IGNITE_SQL_MEMORY_RESERVATION_BLOCK_SIZE = "IGNITE_SQL_MEMORY_RESERVATION_BLOCK_SIZE";
 
