@@ -1370,11 +1370,6 @@ public class CacheMetricsImpl implements CacheMetrics {
             delegate.onOffHeapEvict();
     }
 
-    /** @return Prefix for the cache metrics. */
-    public String metricsPrefix() {
-        return grpName;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsImpl.class, this);

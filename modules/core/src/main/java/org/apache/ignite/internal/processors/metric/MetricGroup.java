@@ -91,7 +91,7 @@ public class MetricGroup implements Iterable<Metric> {
      * @param name Name.
      * @param type Type.
      * @param description Description.
-     * @return Gauge.
+     * @return {@link ObjectMetricImpl}
      */
     public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String description) {
         return addMetric(name, new ObjectMetricImpl<>(metricName(grpName, name), description, type));
@@ -183,7 +183,7 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param description Description.
-     * @return Metric
+     * @return {@link DoubleMetricImpl}.
      */
     public DoubleMetricImpl doubleMetric(String name, @Nullable String description) {
         return addMetric(name, new DoubleMetricImpl(metricName(grpName, name), description));
@@ -195,7 +195,7 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param description Description.
-     * @return Metric.
+     * @return {@link IntMetricImpl}.
      */
     public IntMetricImpl intMetric(String name, @Nullable String description) {
         return addMetric(name, new IntMetricImpl(metricName(grpName, name), description));
@@ -207,7 +207,7 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param description Description.
-     * @return Metric.
+     * @return {@link LongMetricImpl}.
      */
     public LongMetricImpl metric(String name, @Nullable String description) {
         return addMetric(name, new LongMetricImpl(metricName(grpName, name), description));
@@ -219,7 +219,7 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param description Description.
-     * @return Metric
+     * @return {@link LongAdderMetricImpl}.
      */
     public LongAdderMetricImpl longAdderMetric(String name, @Nullable String description) {
         return addMetric(name, new LongAdderMetricImpl(metricName(grpName, name), description));
@@ -234,7 +234,7 @@ public class MetricGroup implements Iterable<Metric> {
      * @param rateTimeInterval Rate time interval.
      * @param size Array size for underlying calculations.
      * @return Metric.
-     * @see HitRateMetric
+     * @see {@link HitRateMetric}.
      */
     public HitRateMetric hitRateMetric(String name, @Nullable String description, long rateTimeInterval, int size) {
         return addMetric(name, new HitRateMetric(metricName(grpName, name), description, rateTimeInterval, size));
@@ -246,7 +246,7 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param description Description.
-     * @return Gauge.
+     * @return {@link BooleanMetricImpl}
      */
     public BooleanMetricImpl booleanMetric(String name, @Nullable String description) {
         return addMetric(name, new BooleanMetricImpl(metricName(grpName, name), description));
@@ -258,7 +258,7 @@ public class MetricGroup implements Iterable<Metric> {
      * @param name Name
      * @param bounds Bounds of measurements.
      * @param description Description.
-     * @return HistogramGauge.
+     * @return {@link HistogramMetric}
      */
     public HistogramMetric histogram(String name, long[] bounds, @Nullable String description) {
         return addMetric(name, new HistogramMetric(metricName(grpName, name), description, bounds));
