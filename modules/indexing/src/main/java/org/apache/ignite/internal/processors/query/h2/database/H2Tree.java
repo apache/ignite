@@ -23,11 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -42,11 +45,14 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerI
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
+import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.stat.IoStatisticsHolder;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
@@ -185,6 +191,15 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         this.cctx = cctx;
         this.table = table;
         this.stats = stats;
+        this.log = log;
+        this.rowCache = rowCache;
+        this.idxName = idxName;
+        this.cacheName = cacheName;
+        this.tblName = tblName;
+        this.maxCalculatedInlineSize = maxCalculatedInlineSize;
+        this.pk = pk;
+        this.affinityKey = affinityKey;
+        this.mvccEnabled = mvccEnabled;
 
         if (!initNew) {
             // Page is ready - read meta information.
@@ -193,25 +208,37 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             inlineSize = metaInfo.inlineSize();
 
             unwrappedPk = metaInfo.useUnwrappedPk();
+
+            setIos(
+                H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
+                H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
+
+            List<InlineIndexHelper> inlineIdxs0 = unwrappedPk ? unwrappedColsInfo.inlineIdx()
+                : wrappedColsInfo.inlineIdx();
+
+            boolean inlineObjSupported = inlineSize > 0 && inlineObjectSupported(metaInfo, inlineIdxs0);
+
+            inlineIdxs = inlineObjSupported ? inlineIdxs0 : inlineIdxs0.stream()
+                .filter(ih -> ih.type() != Value.JAVA_OBJECT)
+                .collect(Collectors.toList());
+
+            if (!metaInfo.flagsSupported())
+                upgradeMetaPage(inlineObjSupported);
         }
         else {
             unwrappedPk = true;
 
             inlineSize = unwrappedColsInfo.inlineSize();
+
+            inlineIdxs = unwrappedColsInfo.inlineIdx();
+
+            setIos(
+                H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
+                H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
+
+            initTree(initNew, inlineSize);
         }
 
-        this.idxName = idxName;
-        this.cacheName = cacheName;
-        this.tblName = tblName;
-
-        this.maxCalculatedInlineSize = maxCalculatedInlineSize;
-
-        this.pk = pk;
-        this.affinityKey = affinityKey;
-
-        this.mvccEnabled = mvccEnabled;
-
-        inlineIdxs = unwrappedPk ? unwrappedColsInfo.inlineIdx() : wrappedColsInfo.inlineIdx();
         cols = unwrappedPk ? unwrappedColsInfo.cols() : wrappedColsInfo.cols();
 
         columnIds = new int[cols.length];
@@ -219,15 +246,34 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         for (int i = 0; i < cols.length; i++)
             columnIds[i] = cols[i].column.getColumnId();
 
-        setIos(H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled), H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled));
-
-        this.rowCache = rowCache;
-
-        this.log = log;
-
-        initTree(initNew, inlineSize);
-
         created = initNew;
+    }
+
+    /**
+     * @param metaInfo Metapage info.
+     * @param inlineIdxs Base collection of index helpers.
+     * @return {@code true} if inline object is supported by exists tree.
+     */
+    private boolean inlineObjectSupported(MetaPageInfo metaInfo, List<InlineIndexHelper> inlineIdxs) {
+        if (metaInfo.flagsSupported())
+            return metaInfo.inlineObjectSupported();
+        else {
+            try {
+                if (H2TreeInlineObjectDetector.objectMayBeInlined(inlineSize, inlineIdxs)) {
+                    H2TreeInlineObjectDetector inlineObjDetector = new H2TreeInlineObjectDetector(
+                        inlineSize, inlineIdxs);
+
+                    findFirst(inlineObjDetector);
+
+                    return inlineObjDetector.inlineObjectSupported();
+                }
+                else
+                    return false;
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Unexpected exception on detect inline object", e);
+            }
+        }
     }
 
     /**
@@ -353,7 +399,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
 
-                return new MetaPageInfo(io.getInlineSize(pageAddr), io.unwrappedPk());
+                return new MetaPageInfo(io, pageAddr);
             }
             finally {
                 readUnlock(metaPageId, metaPage, pageAddr);
@@ -363,6 +409,39 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             releasePage(metaPageId, metaPage);
         }
     }
+
+    /**
+     * Update root meta page if need (previous version not supported features flags
+     * and created product version on root meta page).
+     *
+     * @param inlineObjSupported inline POJO by created tree flag.
+     * @throws IgniteCheckedException On error.
+     */
+    private void upgradeMetaPage(boolean inlineObjSupported) throws IgniteCheckedException {
+        final long metaPage = acquirePage(metaPageId);
+
+        try {
+            long pageAddr = writeLock(metaPageId, metaPage); // Meta can't be removed.
+
+            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
+                U.hexLong(metaPageId) + ']';
+
+            try {
+                BPlusMetaIO.upgradePageVersion(pageAddr, inlineObjSupported, false, pageSize());
+
+                if (wal != null)
+                    wal.log(new PageSnapshot(new FullPageId(metaPageId, grpId),
+                        pageAddr, pageMem.pageSize(), pageMem.realPageSize(grpId)));
+            }
+            finally {
+                writeUnlock(metaPageId, metaPage, pageAddr, true);
+            }
+        }
+        finally {
+            releasePage(metaPageId, metaPage);
+        }
+    }
+
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -596,6 +675,29 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
     }
 
     /**
+     * @return Inline indexes for the segment.
+     */
+    public List<InlineIndexHelper> inlineIndexes() {
+        return inlineIdxs;
+    }
+
+    /**
+     * @param idxs Full set of inline helpers.
+     */
+    public void refreshColumnIds(List<InlineIndexHelper> idxs) {
+        assert inlineIdxs.size() <= idxs.size();
+
+        for (int i = 0; i < inlineIdxs.size(); ++i) {
+            final int idx = i;
+
+            inlineIdxs.set(idx, F.find(idxs, null,
+                (IgnitePredicate<InlineIndexHelper>)ih -> ih.colName().equals(inlineIdxs.get(idx).colName())));
+
+            assert inlineIdxs.get(idx) != null;
+        }
+    }
+
+    /**
      *
      */
     private static class MetaPageInfo {
@@ -605,13 +707,28 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
         /** */
         boolean useUnwrappedPk;
 
+        /** */
+        boolean flagsSupported;
+
+        /** */
+        Boolean inlineObjectSupported;
+
+        /** */
+        IgniteProductVersion createdVer;
+
         /**
-         * @param inlineSize Inline size.
-         * @param useUnwrappedPk {@code true} In case use unwrapped PK for indexes.
+         * @param io Metapage IO.
+         * @param pageAddr Page address.
          */
-        public MetaPageInfo(int inlineSize, boolean useUnwrappedPk) {
-            this.inlineSize = inlineSize;
-            this.useUnwrappedPk = useUnwrappedPk;
+        public MetaPageInfo(BPlusMetaIO io, long pageAddr) {
+            inlineSize = io.getInlineSize(pageAddr);
+            useUnwrappedPk = io.unwrappedPk(pageAddr);
+            flagsSupported = io.supportFlags();
+
+            if (flagsSupported)
+                inlineObjectSupported = io.inlineObjectSupported(pageAddr);
+
+            createdVer = io.createdVersion(pageAddr);
         }
 
         /**
@@ -626,6 +743,20 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
          */
         public boolean useUnwrappedPk() {
             return useUnwrappedPk;
+        }
+
+        /**
+         * @return {@code true} In case metapage contains flags.
+         */
+        public boolean flagsSupported() {
+            return flagsSupported;
+        }
+
+        /**
+         * @return {@code true} In case inline object is supported.
+         */
+        public boolean inlineObjectSupported() {
+            return inlineObjectSupported;
         }
     }
 

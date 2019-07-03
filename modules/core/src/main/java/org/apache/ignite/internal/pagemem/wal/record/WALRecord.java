@@ -216,7 +216,10 @@ public abstract class WALRecord {
         ROLLBACK_TX_RECORD (LOGICAL),
 
         /** */
-        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (PHYSICAL);
+        PARTITION_META_PAGE_UPDATE_COUNTERS_V2 (PHYSICAL),
+
+        /** Init root meta page (with flags and created version)*/
+        BTREE_META_PAGE_INIT_ROOT_V3 (PHYSICAL);
 
         /**
          * When you're adding a new record don't forget to choose record purpose explicitly
