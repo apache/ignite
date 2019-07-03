@@ -20,7 +20,7 @@ package org.apache.ignite.internal.metric;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,14 +61,14 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
         this.cacheName = cacheName;
         this.grpId = grpId;
 
-        MetricGroup mgrp = mmgr.group(metricName(CACHE_GROUP.metricGroupName(), cacheName));
+        MetricRegistry mreg = mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), cacheName));
 
-        mgrp.metric("startTime", null).value(U.currentTimeMillis());
-        mgrp.objectMetric("name", String.class, null).value(cacheName);
-        mgrp.intMetric("grpId", null).value(grpId);
+        mreg.metric("startTime", null).value(U.currentTimeMillis());
+        mreg.objectMetric("name", String.class, null).value(cacheName);
+        mreg.intMetric("grpId", null).value(grpId);
 
-        this.logicalReadCtr = mgrp.longAdderMetric(LOGICAL_READS, null);
-        this.physicalReadCtr = mgrp.longAdderMetric(PHYSICAL_READS, null);
+        this.logicalReadCtr = mreg.longAdderMetric(LOGICAL_READS, null);
+        this.physicalReadCtr = mreg.longAdderMetric(PHYSICAL_READS, null);
     }
 
     /** {@inheritDoc} */

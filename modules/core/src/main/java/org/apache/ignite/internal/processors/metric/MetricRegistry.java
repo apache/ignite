@@ -49,9 +49,9 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
 
 /**
- * Metric group.
+ * Metric registry.
  */
-public class MetricGroup implements Iterable<Metric> {
+public class MetricRegistry implements Iterable<Metric> {
     /** Group name. */
     private String grpName;
 
@@ -65,7 +65,7 @@ public class MetricGroup implements Iterable<Metric> {
      * @param grpName Group name.
      * @param log Logger.
      */
-    public MetricGroup(String grpName, IgniteLogger log) {
+    public MetricRegistry(String grpName, IgniteLogger log) {
         this.grpName = grpName;
         this.log = log;
     }

@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -80,35 +80,35 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         GridMetricManager mmgr = ign.context().metric();
 
-        checkEmptyStat(mmgr.group(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME)), CACHE_GROUP);
+        checkEmptyStat(mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME)), CACHE_GROUP);
 
-        checkEmptyStat(mmgr.group(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME)),
+        checkEmptyStat(mmgr.registry(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME)),
             HASH_INDEX);
     }
 
     /**
-     * @param mgrp Metric Group.
+     * @param mreg Metric registry.
      */
-    private void checkEmptyStat(MetricGroup mgrp, IoStatisticsType type) {
-        assertNotNull(mgrp);
+    private void checkEmptyStat(MetricRegistry mreg, IoStatisticsType type) {
+        assertNotNull(mreg);
 
         if (type == CACHE_GROUP) {
-            assertEquals(5, Iterators.size(mgrp.iterator()));
+            assertEquals(5, Iterators.size(mreg.iterator()));
 
-            assertEquals(0, ((LongMetric)mgrp.findMetric(LOGICAL_READS)).longValue());
+            assertEquals(0, ((LongMetric)mreg.findMetric(LOGICAL_READS)).longValue());
 
-            assertEquals(0, ((LongMetric)mgrp.findMetric(PHYSICAL_READS)).longValue());
+            assertEquals(0, ((LongMetric)mreg.findMetric(PHYSICAL_READS)).longValue());
         }
         else {
-            assertEquals(7, Iterators.size(mgrp.iterator()));
+            assertEquals(7, Iterators.size(mreg.iterator()));
 
-            assertEquals(0, ((LongMetric)mgrp.findMetric(LOGICAL_READS_LEAF)).longValue());
+            assertEquals(0, ((LongMetric)mreg.findMetric(LOGICAL_READS_LEAF)).longValue());
 
-            assertEquals(0, ((LongMetric)mgrp.findMetric(LOGICAL_READS_INNER)).longValue());
+            assertEquals(0, ((LongMetric)mreg.findMetric(LOGICAL_READS_INNER)).longValue());
 
-            assertEquals(0, ((LongMetric)mgrp.findMetric(PHYSICAL_READS_LEAF)).longValue());
+            assertEquals(0, ((LongMetric)mreg.findMetric(PHYSICAL_READS_LEAF)).longValue());
 
-            assertEquals(0, ((LongMetric)mgrp.findMetric(PHYSICAL_READS_INNER)).longValue());
+            assertEquals(0, ((LongMetric)mreg.findMetric(PHYSICAL_READS_INNER)).longValue());
         }
     }
 
@@ -227,19 +227,19 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     public Long physicalReads(GridMetricManager mmgr, IoStatisticsType statType, String name, String subName) {
         String fullName = subName == null ? name : metricName(name, subName);
 
-        MetricGroup mgrp = mmgr.group(metricName(statType.metricGroupName(), fullName));
+        MetricRegistry mreg = mmgr.registry(metricName(statType.metricGroupName(), fullName));
 
-        if (mgrp == null)
+        if (mreg == null)
             return null;
 
         switch (statType) {
             case CACHE_GROUP:
-                return ((LongMetric)mgrp.findMetric(PHYSICAL_READS)).value();
+                return ((LongMetric)mreg.findMetric(PHYSICAL_READS)).value();
 
             case HASH_INDEX:
             case SORTED_INDEX:
-                long leaf = ((LongMetric)mgrp.findMetric(PHYSICAL_READS_LEAF)).value();
-                long inner = ((LongMetric)mgrp.findMetric(PHYSICAL_READS_INNER)).value();
+                long leaf = ((LongMetric)mreg.findMetric(PHYSICAL_READS_LEAF)).value();
+                long inner = ((LongMetric)mreg.findMetric(PHYSICAL_READS_INNER)).value();
 
                 return leaf + inner;
 

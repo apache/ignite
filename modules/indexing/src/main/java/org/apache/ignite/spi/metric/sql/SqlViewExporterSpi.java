@@ -20,7 +20,7 @@ package org.apache.ignite.spi.metric.sql;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
@@ -39,7 +39,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     public static final String SYS_VIEW_NAME = "METRICS";
 
     /** Metric filter. */
-    private @Nullable Predicate<MetricGroup> filter;
+    private @Nullable Predicate<MetricRegistry> filter;
 
     /** Metric Registry. */
     private ReadOnlyMetricRegistry mreg;
@@ -72,7 +72,7 @@ public class SqlViewExporterSpi extends IgniteSpiAdapter implements MetricExport
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricGroup> filter) {
+    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
         this.filter = filter;
     }
 

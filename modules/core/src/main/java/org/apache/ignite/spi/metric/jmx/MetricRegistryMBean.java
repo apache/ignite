@@ -25,7 +25,7 @@ import javax.management.AttributeList;
 import javax.management.DynamicMBean;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -35,17 +35,17 @@ import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 /**
- * MBean for exporting values of metric group.
+ * MBean for exporting values of metric registry.
  */
-public class MetricGroupMBean implements DynamicMBean {
-    /** Metric group. */
-    MetricGroup mgrp;
+public class MetricRegistryMBean implements DynamicMBean {
+    /** Metric registry. */
+    MetricRegistry mreg;
 
     /**
-     * @param mgrp Metric group.
+     * @param mreg Metric registry.
      */
-    public MetricGroupMBean(MetricGroup mgrp) {
-        this.mgrp = mgrp;
+    public MetricRegistryMBean(MetricRegistry mreg) {
+        this.mreg = mreg;
     }
 
     /** {@inheritDoc} */
@@ -53,7 +53,7 @@ public class MetricGroupMBean implements DynamicMBean {
         if (attribute.equals("MBeanInfo"))
             return getMBeanInfo();
 
-        Metric metric = mgrp.findMetric(attribute);
+        Metric metric = mreg.findMetric(attribute);
 
         if (metric == null)
             return null;
@@ -74,13 +74,13 @@ public class MetricGroupMBean implements DynamicMBean {
 
     /** {@inheritDoc} */
     @Override public MBeanInfo getMBeanInfo() {
-        Iterator<Metric> iter = mgrp.iterator();
+        Iterator<Metric> iter = mreg.iterator();
 
         List<MBeanAttributeInfo> attributes = new ArrayList<>();
 
         iter.forEachRemaining(metric -> {
             attributes.add(new MBeanAttributeInfo(
-                metric.name().substring(mgrp.name().length() + 1),
+                metric.name().substring(mreg.name().length() + 1),
                 metricClass(metric),
                 metric.name(),
                 true,
@@ -90,7 +90,7 @@ public class MetricGroupMBean implements DynamicMBean {
 
         return new MBeanInfo(
             ReadOnlyMetricRegistry.class.getName(),
-            mgrp.name(),
+            mreg.name(),
             attributes.toArray(new MBeanAttributeInfo[attributes.size()]),
             null,
             null,

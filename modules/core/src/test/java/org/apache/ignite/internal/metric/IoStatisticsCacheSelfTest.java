@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -258,7 +258,7 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
 
         GridMetricManager mmgr = ignite.context().metric();
 
-        Stream<MetricGroup> grpsStream = StreamSupport.stream(mmgr.spliterator(), false)
+        Stream<MetricRegistry> grpsStream = StreamSupport.stream(mmgr.spliterator(), false)
                 .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
 
         return grpsStream.flatMap(grp -> StreamSupport.stream(grp.spliterator(), false))
@@ -303,13 +303,13 @@ public class IoStatisticsCacheSelfTest extends GridCommonAbstractTest {
      * @return Logical reads count.
      */
     public static long logicalReads(GridMetricManager mmgr, IoStatisticsType type, String id) {
-        MetricGroup mgrp = mmgr.group(metricName(type.metricGroupName(), id));
+        MetricRegistry mreg = mmgr.registry(metricName(type.metricGroupName(), id));
 
         if (type == CACHE_GROUP)
-            return ((LongMetric)mgrp.findMetric(LOGICAL_READS)).value();
+            return ((LongMetric)mreg.findMetric(LOGICAL_READS)).value();
         else {
-            long leaf = ((LongMetric)mgrp.findMetric(LOGICAL_READS_LEAF)).value();
-            long inner = ((LongMetric)mgrp.findMetric(LOGICAL_READS_INNER)).value();
+            long leaf = ((LongMetric)mreg.findMetric(LOGICAL_READS_LEAF)).value();
+            long inner = ((LongMetric)mreg.findMetric(LOGICAL_READS_INNER)).value();
 
             return leaf + inner;
         }

@@ -18,16 +18,16 @@
 package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 
 /**
  * Read only metric registry.
  */
-public interface ReadOnlyMetricRegistry extends Iterable<MetricGroup> {
+public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
     /**
      * Adds listener of metrics group creation events.
      *
      * @param lsnr Listener.
      */
-    public void addMetricGroupCreationListener(Consumer<MetricGroup> lsnr);
+    public void addMetricGroupCreationListener(Consumer<MetricRegistry> lsnr);
 }

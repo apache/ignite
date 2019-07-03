@@ -24,7 +24,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -43,7 +43,7 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
     private ReadOnlyMetricRegistry mreg;
 
     /** Metric filter. */
-    private @Nullable Predicate<MetricGroup> filter;
+    private @Nullable Predicate<MetricRegistry> filter;
 
     /** Registered beans. */
     private final List<ObjectName> mBeans = new ArrayList<>();
@@ -55,25 +55,25 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
         mreg.addMetricGroupCreationListener(this::register);
     }
 
-    private void register(MetricGroup grp) {
+    private void register(MetricRegistry grp) {
         if (filter != null && !filter.test(grp))
             return;
 
         if (log.isDebugEnabled())
-            log.debug("Found new metric group [name=" + grp.name() + ']');
+            log.debug("Found new metric registry [name=" + grp.name() + ']');
 
         MetricUtils.MetricName n = parse(grp.name());
 
         try {
-            MetricGroupMBean mgrpBean = new MetricGroupMBean(grp);
+            MetricRegistryMBean mregBean = new MetricRegistryMBean(grp);
 
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
                 igniteInstanceName,
                 n.root(),
                 n.subName(),
-                mgrpBean,
-                MetricGroupMBean.class);
+                mregBean,
+                MetricRegistryMBean.class);
 
             mBeans.add(mbean);
 
@@ -113,7 +113,7 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricGroup> filter) {
+    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
         this.filter = filter;
     }
 }

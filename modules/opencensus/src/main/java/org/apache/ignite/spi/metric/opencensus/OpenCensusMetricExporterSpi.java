@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -72,7 +72,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  *
- * @see MetricGroup
+ * @see MetricRegistry
  * @see GridMetricManager
  * @see ReadOnlyMetricRegistry
  */
@@ -133,11 +133,11 @@ public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
         try (Scope globalScope = tagScope()) {
             MeasureMap mmap = recorder.newMeasureMap();
 
-            mreg.forEach(mgrp -> {
-                if (filter != null && !filter.test(mgrp))
+            mreg.forEach(mreg -> {
+                if (filter != null && !filter.test(mreg))
                     return;
 
-                mgrp.forEach(metric -> {
+                mreg.forEach(metric -> {
                     if (metric instanceof LongMetric ||
                         metric instanceof IntMetric ||
                         metric instanceof BooleanMetric ||

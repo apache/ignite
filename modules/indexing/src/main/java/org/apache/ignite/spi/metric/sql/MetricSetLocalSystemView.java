@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.query.h2.sys.view.SqlAbstractLocalSystemView;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -39,15 +39,15 @@ public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
     private ReadOnlyMetricRegistry mreg;
 
     /** Metric filter. */
-    private @Nullable Predicate<MetricGroup> filter;
+    private @Nullable Predicate<MetricRegistry> filter;
 
     /**
      * @param ctx Context.
      * @param mreg Metric registry.
-     * @param filter Metric group filter.
+     * @param filter Metric registry filter.
      */
     public MetricSetLocalSystemView(GridKernalContext ctx, ReadOnlyMetricRegistry mreg,
-        @Nullable Predicate<MetricGroup> filter) {
+        @Nullable Predicate<MetricRegistry> filter) {
         super(SqlViewExporterSpi.SYS_VIEW_NAME, "Ignite metrics",
             ctx,
             newColumn("NAME", Value.STRING),
@@ -62,7 +62,7 @@ public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
     @Override public Iterator<Row> getRows(Session ses, SearchRow first, SearchRow last) {
         return new Iterator<Row>() {
             /** */
-            private Iterator<MetricGroup> grps = mreg.iterator();
+            private Iterator<MetricRegistry> grps = mreg.iterator();
 
             /** */
             private Iterator<Metric> curr = Collections.emptyIterator();
@@ -70,12 +70,12 @@ public class MetricSetLocalSystemView extends SqlAbstractLocalSystemView {
             /** */
             private boolean advance() {
                 while (grps.hasNext()) {
-                    MetricGroup mgrp = grps.next();
+                    MetricRegistry mreg = grps.next();
 
-                    if (!filter.test(mgrp))
+                    if (!filter.test(mreg))
                         continue;
 
-                    curr = mgrp.iterator();
+                    curr = mreg.iterator();
 
                     if (curr.hasNext())
                         return true;

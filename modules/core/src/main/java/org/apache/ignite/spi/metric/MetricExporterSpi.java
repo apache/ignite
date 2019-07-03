@@ -19,7 +19,7 @@ package org.apache.ignite.spi.metric;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
 
@@ -45,7 +45,7 @@ public interface MetricExporterSpi extends IgniteSpi {
      * Sets metrics registry that SPI should export.
      * This method called before {@link #spiStart(String)}.
      *
-     * So all {@link MetricGroup} that will be created by Ignite internal components can be obtained by
+     * So all {@link MetricRegistry} that will be created by Ignite internal components can be obtained by
      * listeners passed to {@link ReadOnlyMetricRegistry#addMetricGroupCreationListener(Consumer)}.
      *
      * @param registry Metric registry.
@@ -54,9 +54,9 @@ public interface MetricExporterSpi extends IgniteSpi {
 
     /**
      * Sets export filter.
-     * Metric group that not satisfy {@code filter} shouldn't be exported by this filter.
+     * Metric registry that not satisfy {@code filter} shouldn't be exported by this filter.
      *
      * @param filter Filter.
      */
-    public void setExportFilter(Predicate<MetricGroup> filter);
+    public void setExportFilter(Predicate<MetricRegistry> filter);
 }

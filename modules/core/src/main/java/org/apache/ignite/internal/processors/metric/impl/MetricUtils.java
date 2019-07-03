@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
@@ -26,14 +26,14 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
  * Utility class to build or parse metric name in dot notation.
  *
  * @see GridMetricManager
- * @see MetricGroup
+ * @see MetricRegistry
  */
 public class MetricUtils {
     /** Metric name part separator. */
     public static final String SEPARATOR = ".";
 
     /**
-     * Example - metric group name - "io.statistics.PRIMARY_KEY_IDX".
+     * Example - metric registry name - "io.statistics.PRIMARY_KEY_IDX".
      * root = io - JMX tree root.
      * subName = statistics.PRIMARY_KEY_IDX - bean name.
      *
@@ -108,9 +108,9 @@ public class MetricUtils {
     }
 
     /**
-     * Parsed metric group name parts.
+     * Parsed metric registry name parts.
      *
-     * Example - metric group name - "io.statistics.PRIMARY_KEY_IDX".
+     * Example - metric registry name - "io.statistics.PRIMARY_KEY_IDX".
      * root = io - JMX tree root.
      * subName = statistics.PRIMARY_KEY_IDX - bean name.
      */

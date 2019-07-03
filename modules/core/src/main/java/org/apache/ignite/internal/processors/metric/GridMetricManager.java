@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
- * @see MetricGroup
+ * @see MetricRegistry
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricRegistry {
     /** */
@@ -151,10 +151,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
 
     /** Registered metrics groups. */
-    private final ConcurrentHashMap<String, MetricGroup> groups = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, MetricRegistry> groups = new ConcurrentHashMap<>();
 
-    /** Metric group creation listeners. */
-    private final List<Consumer<MetricGroup>> metricGrpCreationLsnrs = new CopyOnWriteArrayList<>();
+    /** Metric registry creation listeners. */
+    private final List<Consumer<MetricRegistry>> metricGrpCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -185,7 +185,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricGroup sysgrp = group(SYS_METRICS);
+        MetricRegistry sysgrp = registry(SYS_METRICS);
 
         gcCpuLoad = sysgrp.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
         cpuLoad = sysgrp.doubleMetric(CPU_LOAD, "CPU load.");
@@ -222,28 +222,28 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /**
-     * Gets or creates metric group.
+     * Gets or creates metric registry.
      *
      * @param name Group name.
      * @return Group of metrics.
      */
-    public MetricGroup group(String name) {
+    public MetricRegistry registry(String name) {
         return groups.computeIfAbsent(name, n -> {
-            MetricGroup mgrp = new MetricGroup(name, log);
+            MetricRegistry mreg = new MetricRegistry(name, log);
 
-            notifyListeners(mgrp, metricGrpCreationLsnrs);
+            notifyListeners(mreg, metricGrpCreationLsnrs);
 
-            return mgrp;
+            return mreg;
         });
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public Iterator<MetricGroup> iterator() {
+    @NotNull @Override public Iterator<MetricRegistry> iterator() {
         return groups.values().iterator();
     }
 
     /** {@inheritDoc} */
-    @Override public void addMetricGroupCreationListener(Consumer<MetricGroup> lsnr) {
+    @Override public void addMetricGroupCreationListener(Consumer<MetricRegistry> lsnr) {
         metricGrpCreationLsnrs.add(lsnr);
     }
 
@@ -348,49 +348,49 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param execSvc Executor to register a bean for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
-        MetricGroup mgrp = group(metricName(THREAD_POOLS, name));
+        MetricRegistry mreg = registry(metricName(THREAD_POOLS, name));
 
         if (execSvc instanceof ThreadPoolExecutor) {
             ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
-            mgrp.register("ActiveCount", exec::getActiveCount, ACTIVE_COUNT_DESC);
-            mgrp.register("CompletedTaskCount", exec::getCompletedTaskCount, COMPLETED_TASK_DESC);
-            mgrp.register("CorePoolSize", exec::getCorePoolSize, CORE_SIZE_DESC);
-            mgrp.register("LargestPoolSize", exec::getLargestPoolSize, LARGEST_SIZE_DESC);
-            mgrp.register("MaximumPoolSize", exec::getMaximumPoolSize, MAX_SIZE_DESC);
-            mgrp.register("PoolSize", exec::getPoolSize, POOL_SIZE_DESC);
-            mgrp.register("TaskCount", exec::getTaskCount, TASK_COUNT_DESC);
-            mgrp.register("QueueSize", () -> exec.getQueue().size(), QUEUE_SIZE_DESC);
-            mgrp.register("KeepAliveTime", () -> exec.getKeepAliveTime(MILLISECONDS), KEEP_ALIVE_TIME_DESC);
-            mgrp.register("Shutdown", exec::isShutdown, IS_SHUTDOWN_DESC);
-            mgrp.register("Terminated", exec::isTerminated, IS_TERMINATED_DESC);
-            mgrp.register("Terminating", exec::isTerminating, IS_TERMINATING_DESC);
-            mgrp.register("RejectedExecutionHandlerClass", () -> {
+            mreg.register("ActiveCount", exec::getActiveCount, ACTIVE_COUNT_DESC);
+            mreg.register("CompletedTaskCount", exec::getCompletedTaskCount, COMPLETED_TASK_DESC);
+            mreg.register("CorePoolSize", exec::getCorePoolSize, CORE_SIZE_DESC);
+            mreg.register("LargestPoolSize", exec::getLargestPoolSize, LARGEST_SIZE_DESC);
+            mreg.register("MaximumPoolSize", exec::getMaximumPoolSize, MAX_SIZE_DESC);
+            mreg.register("PoolSize", exec::getPoolSize, POOL_SIZE_DESC);
+            mreg.register("TaskCount", exec::getTaskCount, TASK_COUNT_DESC);
+            mreg.register("QueueSize", () -> exec.getQueue().size(), QUEUE_SIZE_DESC);
+            mreg.register("KeepAliveTime", () -> exec.getKeepAliveTime(MILLISECONDS), KEEP_ALIVE_TIME_DESC);
+            mreg.register("Shutdown", exec::isShutdown, IS_SHUTDOWN_DESC);
+            mreg.register("Terminated", exec::isTerminated, IS_TERMINATED_DESC);
+            mreg.register("Terminating", exec::isTerminating, IS_TERMINATING_DESC);
+            mreg.register("RejectedExecutionHandlerClass", () -> {
                 RejectedExecutionHandler hnd = exec.getRejectedExecutionHandler();
 
                 return hnd == null ? "" : hnd.getClass().getName();
             }, String.class, REJ_HND_DESC);
-            mgrp.register("ThreadFactoryClass", () -> {
+            mreg.register("ThreadFactoryClass", () -> {
                 ThreadFactory factory = exec.getThreadFactory();
 
                 return factory == null ? "" : factory.getClass().getName();
             }, String.class, THRD_FACTORY_DESC);
         }
         else {
-            mgrp.metric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
-            mgrp.metric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
-            mgrp.metric("CorePoolSize", CORE_SIZE_DESC).value(0);
-            mgrp.metric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
-            mgrp.metric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
-            mgrp.metric("PoolSize", POOL_SIZE_DESC).value(0);
-            mgrp.metric("TaskCount", TASK_COUNT_DESC);
-            mgrp.metric("QueueSize", QUEUE_SIZE_DESC).value(0);
-            mgrp.metric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
-            mgrp.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
-            mgrp.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
-            mgrp.metric("Terminating", IS_TERMINATING_DESC);
-            mgrp.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
-            mgrp.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
+            mreg.metric("ActiveCount", ACTIVE_COUNT_DESC).value(0);
+            mreg.metric("CompletedTaskCount", COMPLETED_TASK_DESC).value(0);
+            mreg.metric("CorePoolSize", CORE_SIZE_DESC).value(0);
+            mreg.metric("LargestPoolSize", LARGEST_SIZE_DESC).value(0);
+            mreg.metric("MaximumPoolSize", MAX_SIZE_DESC).value(0);
+            mreg.metric("PoolSize", POOL_SIZE_DESC).value(0);
+            mreg.metric("TaskCount", TASK_COUNT_DESC);
+            mreg.metric("QueueSize", QUEUE_SIZE_DESC).value(0);
+            mreg.metric("KeepAliveTime", KEEP_ALIVE_TIME_DESC).value(0);
+            mreg.register("Shutdown", execSvc::isShutdown, IS_SHUTDOWN_DESC);
+            mreg.register("Terminated", execSvc::isTerminated, IS_TERMINATED_DESC);
+            mreg.metric("Terminating", IS_TERMINATING_DESC);
+            mreg.objectMetric("RejectedExecutionHandlerClass", String.class, REJ_HND_DESC).value("");
+            mreg.objectMetric("ThreadFactoryClass", String.class, THRD_FACTORY_DESC).value("");
         }
     }
 
@@ -400,47 +400,47 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param svc Executor.
      */
     private void monitorStripedPool(StripedExecutor svc) {
-        MetricGroup mgrp = group(metricName(THREAD_POOLS, "StripedExecutor"));
+        MetricRegistry mreg = registry(metricName(THREAD_POOLS, "StripedExecutor"));
 
-        mgrp.register("DetectStarvation",
+        mreg.register("DetectStarvation",
             svc::detectStarvation,
             "True if possible starvation in striped pool is detected.");
 
-        mgrp.register("StripesCount",
+        mreg.register("StripesCount",
             svc::stripes,
             "Stripes count.");
 
-        mgrp.register("Shutdown",
+        mreg.register("Shutdown",
             svc::isShutdown,
             "True if this executor has been shut down.");
 
-        mgrp.register("Terminated",
+        mreg.register("Terminated",
             svc::isTerminated,
             "True if all tasks have completed following shut down.");
 
-        mgrp.register("TotalQueueSize",
+        mreg.register("TotalQueueSize",
             svc::queueSize,
             "Total queue size of all stripes.");
 
-        mgrp.register("TotalCompletedTasksCount",
+        mreg.register("TotalCompletedTasksCount",
             svc::completedTasks,
             "Completed tasks count of all stripes.");
 
-        mgrp.register("StripesCompletedTasksCounts",
+        mreg.register("StripesCompletedTasksCounts",
             svc::stripesCompletedTasks,
             long[].class,
             "Number of completed tasks per stripe.");
 
-        mgrp.register("ActiveCount",
+        mreg.register("ActiveCount",
             svc::activeStripesCount,
             "Number of active tasks of all stripes.");
 
-        mgrp.register("StripesActiveStatuses",
+        mreg.register("StripesActiveStatuses",
             svc::stripesActiveStatuses,
             boolean[].class,
             "Number of active tasks per stripe.");
 
-        mgrp.register("StripesQueueSizes",
+        mreg.register("StripesQueueSizes",
             svc::stripesQueueSizes,
             int[].class,
             "Size of queue per stripe.");
@@ -591,16 +591,16 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         private final LongMetricImpl max;
 
         /**
-         * @param group Metric group.
+         * @param group Metric registry.
          * @param metricNamePrefix Metric name prefix.
          */
         public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricGroup mgrp = GridMetricManager.this.group(group);
+            MetricRegistry mreg = GridMetricManager.this.registry(group);
 
-            this.init = mgrp.metric(metricName(metricNamePrefix, "init"), null);
-            this.used = mgrp.metric(metricName(metricNamePrefix, "used"), null);
-            this.committed = mgrp.metric(metricName(metricNamePrefix, "committed"), null);
-            this.max = mgrp.metric(metricName(metricNamePrefix, "max"), null);
+            this.init = mreg.metric(metricName(metricNamePrefix, "init"), null);
+            this.used = mreg.metric(metricName(metricNamePrefix, "used"), null);
+            this.committed = mreg.metric(metricName(metricNamePrefix, "committed"), null);
+            this.max = mreg.metric(metricName(metricNamePrefix, "max"), null);
         }
 
         /** Updates metric to the provided values. */

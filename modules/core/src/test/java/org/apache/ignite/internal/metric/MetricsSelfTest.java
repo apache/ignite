@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
@@ -52,18 +52,18 @@ import static org.junit.Assert.assertNotNull;
 /** */
 public class MetricsSelfTest {
     /** */
-    private MetricGroup mgrp;
+    private MetricRegistry mreg;
 
     /** */
     @Before
     public void setUp() throws Exception {
-        mgrp = new MetricGroup("group", null);
+        mreg = new MetricRegistry("group", null);
     }
 
     /** */
     @Test
     public void testLongCounter() throws Exception {
-        LongMetricImpl l = mgrp.metric("ltest", "test");
+        LongMetricImpl l = mreg.metric("ltest", "test");
 
         run(l::increment, 100);
 
@@ -77,7 +77,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testLongAdderCounter() throws Exception {
-        LongAdderMetricImpl l = mgrp.longAdderMetric("latest", "test");
+        LongAdderMetricImpl l = mreg.longAdderMetric("latest", "test");
 
         run(l::increment, 100);
 
@@ -91,7 +91,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testDoubleCounter() throws Exception {
-        DoubleMetricImpl l = mgrp.doubleMetric("dtest", "test");
+        DoubleMetricImpl l = mreg.doubleMetric("dtest", "test");
 
         run(() -> l.add(1), 100);
 
@@ -105,7 +105,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testIntCounter() throws Exception {
-        IntMetricImpl l = mgrp.intMetric("itest", "test");
+        IntMetricImpl l = mreg.intMetric("itest", "test");
 
         run(() -> l.add(1), 100);
 
@@ -121,9 +121,9 @@ public class MetricsSelfTest {
     public void testRegister() throws Exception {
         LongMetricImpl l = new LongMetricImpl("rtest", "test");
 
-        mgrp.register(l);
+        mreg.register(l);
 
-        assertEquals(l, mgrp.findMetric("rtest"));
+        assertEquals(l, mreg.findMetric("rtest"));
 
         l.reset();
 
@@ -135,9 +135,9 @@ public class MetricsSelfTest {
     public void testBooleanMetric() throws Exception {
         final boolean[] v = new boolean[1];
 
-        mgrp.register("bmtest", () -> v[0], "test");
+        mreg.register("bmtest", () -> v[0], "test");
 
-        BooleanMetric m = (BooleanMetric)mgrp.findMetric("bmtest");
+        BooleanMetric m = (BooleanMetric)mreg.findMetric("bmtest");
 
         assertEquals(v[0], m.value());
 
@@ -151,9 +151,9 @@ public class MetricsSelfTest {
     public void testDoubleMetric() throws Exception {
         final double[] v = new double[] {42};
 
-        mgrp.register("dmtest", () -> v[0], "test");
+        mreg.register("dmtest", () -> v[0], "test");
 
-        DoubleMetric m = (DoubleMetric)mgrp.findMetric("dmtest");
+        DoubleMetric m = (DoubleMetric)mreg.findMetric("dmtest");
 
         assertEquals(v[0], m.value(), 0);
 
@@ -167,9 +167,9 @@ public class MetricsSelfTest {
     public void testIntMetric() throws Exception {
         final int[] v = new int[] {42};
 
-        mgrp.register("imtest", () -> v[0], "test");
+        mreg.register("imtest", () -> v[0], "test");
 
-        IntMetric m = (IntMetric)mgrp.findMetric("imtest");
+        IntMetric m = (IntMetric)mreg.findMetric("imtest");
 
         assertEquals(v[0], m.value());
 
@@ -183,9 +183,9 @@ public class MetricsSelfTest {
     public void testLongMetric() throws Exception {
         final long[] v = new long[] {42};
 
-        mgrp.register("lmtest", () -> v[0], "test");
+        mreg.register("lmtest", () -> v[0], "test");
 
-        LongMetric m = (LongMetric)mgrp.findMetric("lmtest");
+        LongMetric m = (LongMetric)mreg.findMetric("lmtest");
 
         assertEquals(v[0], m.value());
 
@@ -199,9 +199,9 @@ public class MetricsSelfTest {
     public void testObjectMetric() throws Exception {
         final String[] v = new String[] {"42"};
 
-        mgrp.register("omtest", () -> v[0], String.class, "test");
+        mreg.register("omtest", () -> v[0], String.class, "test");
 
-        ObjectMetric<String> m = (ObjectMetric<String>)mgrp.findMetric("omtest");
+        ObjectMetric<String> m = (ObjectMetric<String>)mreg.findMetric("omtest");
 
         assertEquals(v[0], m.value());
 
@@ -213,7 +213,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testBooleanGauges() throws Exception {
-        BooleanMetricImpl bg = mgrp.booleanMetric("bg", "test");
+        BooleanMetricImpl bg = mreg.booleanMetric("bg", "test");
 
         bg.value(true);
 
@@ -227,7 +227,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testHistogram() throws Exception {
-        HistogramMetric h = mgrp.histogram("hmtest", new long[] {10, 100, 500}, "test");
+        HistogramMetric h = mreg.histogram("hmtest", new long[] {10, 100, 500}, "test");
 
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -267,18 +267,18 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricGroup mgrp = new MetricGroup("group", null);
+        MetricRegistry mreg = new MetricRegistry("group", null);
 
-        mgrp.metric("test1", "");
-        mgrp.metric("test2", "");
-        mgrp.metric("test3", "");
-        mgrp.metric("test4", "");
-        mgrp.metric("test5", "");
+        mreg.metric("test1", "");
+        mreg.metric("test2", "");
+        mreg.metric("test3", "");
+        mreg.metric("test4", "");
+        mreg.metric("test5", "");
 
         Set<String> names = new HashSet<>(asList("group.test1", "group.test2", "group.test3", "group.test4",
             "group.test5"));
 
-        Set<String> res = StreamSupport.stream(Spliterators.spliteratorUnknownSize(mgrp.iterator(), 0), false)
+        Set<String> res = StreamSupport.stream(Spliterators.spliteratorUnknownSize(mreg.iterator(), 0), false)
             .map(Metric::name)
             .collect(toSet());
 
@@ -288,25 +288,25 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testRemove() throws Exception {
-        MetricGroup mgrp = new MetricGroup("group", null);
+        MetricRegistry mreg = new MetricRegistry("group", null);
 
-        LongMetricImpl cntr = mgrp.metric("my.name", null);
-        LongMetricImpl cntr2 = mgrp.metric("my.name.x", null);
+        LongMetricImpl cntr = mreg.metric("my.name", null);
+        LongMetricImpl cntr2 = mreg.metric("my.name.x", null);
 
         assertNotNull(cntr);
         assertNotNull(cntr2);
 
-        assertNotNull(mgrp.findMetric("my.name"));
-        assertNotNull(mgrp.findMetric("my.name.x"));
+        assertNotNull(mreg.findMetric("my.name"));
+        assertNotNull(mreg.findMetric("my.name.x"));
 
-        mgrp.remove("my.name");
+        mreg.remove("my.name");
 
-        assertNull(mgrp.findMetric("my.name"));
-        assertNotNull(mgrp.findMetric("my.name.x"));
+        assertNull(mreg.findMetric("my.name"));
+        assertNotNull(mreg.findMetric("my.name.x"));
 
-        cntr = mgrp.metric("my.name", null);
+        cntr = mreg.metric("my.name", null);
 
-        assertNotNull(mgrp.findMetric("my.name"));
+        assertNotNull(mreg.findMetric("my.name"));
     }
 
     /** */

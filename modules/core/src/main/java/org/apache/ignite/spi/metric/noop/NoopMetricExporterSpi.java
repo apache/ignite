@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.metric.noop;
 
 import java.util.function.Predicate;
-import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
@@ -47,7 +47,7 @@ public class NoopMetricExporterSpi extends IgniteSpiAdapter implements MetricExp
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricGroup> filter) {
+    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
         // No-op.
     }
 }

@@ -37,7 +37,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     protected ReadOnlyMetricRegistry mreg;
 
     /** Metric filter. */
-    protected  @Nullable Predicate<MetricGroup> filter;
+    protected  @Nullable Predicate<MetricRegistry> filter;
 
     /** Export period. */
     private long period;
@@ -98,7 +98,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<MetricGroup> filter) {
+    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
         this.filter = filter;
     }
 }
