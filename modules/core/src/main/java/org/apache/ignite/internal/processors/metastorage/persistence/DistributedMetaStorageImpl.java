@@ -640,7 +640,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 
-                    return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+                    return new IgniteNodeValidationResult(node.id(), errorMsg);
                 }
                 else
                     return null;
@@ -651,7 +651,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (joiningData == null) {
                 String errorMsg = "Cannot unmarshal joining node data";
 
-                return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+                return new IgniteNodeValidationResult(node.id(), errorMsg);
             }
 
             if (!isPersistenceEnabled)
@@ -740,7 +740,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
             }
 
-            return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+            return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg);
         }
         finally {
             lock.readLock().unlock();
