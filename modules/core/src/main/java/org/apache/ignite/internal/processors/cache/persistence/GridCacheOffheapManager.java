@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.migration.UpgradePendingTreeToPerPartitionTask;
@@ -1560,7 +1559,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      *
      */
-    private static class PartitionCacheFreeList extends CacheFreeList {
+    private static class CachePartitionFreeList extends CacheFreeList {
         /** */
         private final CacheGroupContext grp;
 
@@ -1573,7 +1572,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @param reuseRoot Reuse list root page.
          * @throws IgniteCheckedException If failed.
          */
-        PartitionCacheFreeList(CacheGroupContext grp, String freeListName, int partId, RootPage reuseRoot)
+        CachePartitionFreeList(CacheGroupContext grp, String freeListName, int partId, RootPage reuseRoot)
             throws IgniteCheckedException {
             super(grp.groupId(),
                 freeListName,
@@ -1605,7 +1604,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private final int partId;
 
         /** */
-        private volatile FreeList freeList;
+        private volatile FreeList<CacheDataRow> freeList;
 
         /** */
         private PendingEntriesTree pendingTree;
@@ -1730,7 +1729,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                                 assert grp.shared().database().checkpointLockIsHeldByThread();
 
-                                return new PartitionCacheFreeList(grp, freeListName, partId, reuseRoot);
+                                return new CachePartitionFreeList(grp, freeListName, partId, reuseRoot);
                             }
                             finally {
                                 if (lock)

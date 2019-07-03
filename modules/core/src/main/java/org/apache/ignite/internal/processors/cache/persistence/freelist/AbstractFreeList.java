@@ -649,9 +649,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         return bucket == REUSE_BUCKET;
     }
 
-    /**
-     * @return Number of empty data pages in free list.
-     */
+    /** {@inheritDoc} */
     @Override public int emptyDataPages() {
         return bucketsSize[REUSE_BUCKET].intValue();
     }

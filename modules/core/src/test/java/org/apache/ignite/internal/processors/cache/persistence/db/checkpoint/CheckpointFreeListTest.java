@@ -144,10 +144,16 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @param cacheData Cache data store.
+     * @return Free list buckets.
+     */
     private AtomicReferenceArray<PagesList.Stripe[]> freeListBuckets(IgniteCacheOffheapManager.CacheDataStore cacheData) {
         FreeList freeList = cacheData.rowStore().freeList();
 
         if (freeList instanceof LazyCacheFreeList) {
+            freeList.freeSpace(); // Force initialization.
+
             freeList = GridTestUtils.getFieldValue(freeList, LazyCacheFreeList.class, "delegate");
 
             if (freeList == null)
