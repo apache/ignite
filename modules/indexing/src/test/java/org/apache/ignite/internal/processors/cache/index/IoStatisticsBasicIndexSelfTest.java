@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
@@ -35,9 +36,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsType;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -73,11 +74,17 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         fields.put("valLong", Long.class.getName());
         fields.put("valPojo", Pojo.class.getName());
 
+        Set<String> keyFields = new HashSet<>();
+        keyFields.add("keyStr");
+        keyFields.add("keyLong");
+        keyFields.add("keyPojo");
+
         CacheConfiguration<Key, Val> ccfg = new CacheConfiguration<Key, Val>(DEFAULT_CACHE_NAME)
             .setQueryEntities(Collections.singleton(
                 new QueryEntity()
                     .setKeyType(Key.class.getName())
                     .setValueType(Val.class.getName())
+                    .setKeyFields(keyFields)
                     .setFields(fields)
                     .setIndexes(indexes)
             ));
@@ -168,13 +175,13 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
 
-        Set<String> sortedIndexCaches = deriveStatisticNames(grid(), SORTED_INDEX);
+        Set<String> sortedIdxCaches = deriveStatisticNames(grid(), SORTED_INDEX);
 
-        Assert.assertEquals(1, sortedIndexCaches.size());
+        Assert.assertEquals(1, sortedIdxCaches.size());
 
         Set<String> sortedIdxNames = deriveStatisticSubNames(grid(), SORTED_INDEX);
 
-        Assert.assertEquals(sortedIndexCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES,
+        Assert.assertEquals(sortedIdxCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES,
             sortedIdxNames.size());
 
         for (String idxName : sortedIdxNames) {
@@ -349,7 +356,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Extract all tracked subNames for given statistics type .
+     * Extract all tracked subNames for given statistics type.
      *
      * @param statType Type of statistics which tracked names need to extract.
      * @return Set of present names for given statType
@@ -360,25 +367,21 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
         MetricRegistry mset =
             ignite.context().metric().registry().withPrefix(statType.metricGroupName());
 
-        return mset.getMetrics().stream().map(m -> {
+        return mset.getMetrics().stream()
+            .filter(m -> {
                 switch (statType) {
                     case CACHE_GROUP:
-                        if (m.name().endsWith("grpId"))
-                            return m.getAsString();
-
-                        return "";
+                        return m.name().endsWith("grpId");
 
                     case HASH_INDEX:
                     case SORTED_INDEX:
-                        if (m.name().endsWith("indexName"))
-                            return m.getAsString();
-
-                        return "";
+                        return m.name().endsWith("indexName");
 
                     default:
-                        return "";
+                        return false;
                 }
             })
+            .map(Metric::getAsString)
             .collect(Collectors.toSet());
     }
 
