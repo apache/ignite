@@ -174,9 +174,6 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Write-behind store, if configured. */
     private GridCacheWriteBehindStore store;
 
-    /** Group name for the cache metrics. */
-    private String grpName;
-
     /**
      * Creates cache metrics.
      *
@@ -205,7 +202,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        grpName = cacheMetricsGroupName(cctx.name(), isNear);
+        String grpName = cacheMetricsGroupName(cctx.name(), isNear);
 
         MetricGroup mgrp = cctx.kernalContext().metric().registry().group(grpName);
 
