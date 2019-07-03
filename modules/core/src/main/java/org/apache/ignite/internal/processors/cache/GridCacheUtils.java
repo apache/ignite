@@ -2000,12 +2000,12 @@ public class GridCacheUtils {
     }
 
     /**
-     * Check whether in-memory evictions disabled.
+     * Check whether in-memory eviction disabled.
      *
      * @param memPlcCfg Data region configuration.
      * @return {@code True} if eviction policy disabled or native persistence is enabled.
      */
-    public static boolean isEvictionsDisabled(DataRegionConfiguration memPlcCfg) {
+    public static boolean isEvictionDisabled(DataRegionConfiguration memPlcCfg) {
         return memPlcCfg.getPageEvictionMode() == DataPageEvictionMode.DISABLED || memPlcCfg.isPersistenceEnabled();
     }
 
