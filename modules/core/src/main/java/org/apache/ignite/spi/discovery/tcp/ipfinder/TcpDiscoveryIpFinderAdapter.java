@@ -39,7 +39,13 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
     @GridToStringExclude
     private volatile IgniteSpiContext spiCtx;
 
-    /** Ignite instance . */
+    /**
+     * Ignite instance.
+     *
+     * @deprecated Since 2.8. May contain an invalid Ignite instance when multiple nodes shares same
+     * {@link TcpDiscoveryIpFinder} instance.
+     */
+    @Deprecated
     @IgniteInstanceResource
     @GridToStringExclude
     protected Ignite ignite;
@@ -56,8 +62,7 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
 
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-        if (!discoveryClientMode())
-            registerAddresses(addrs);
+        registerAddresses(addrs);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +96,10 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
 
     /**
      * @return {@code True} if TCP discovery works in client mode.
+     * @deprecated Since 2.8. May return incorrect value if client and server nodes shares same {@link
+     * TcpDiscoveryIpFinder} instance.
      */
+    @Deprecated
     protected boolean discoveryClientMode() {
         boolean clientMode;
 
