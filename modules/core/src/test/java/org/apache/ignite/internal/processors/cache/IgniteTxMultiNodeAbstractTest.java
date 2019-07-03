@@ -508,6 +508,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11956")
     @Test
     public void testPutTwoEntryInTxMultiThreaded() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
@@ -593,6 +594,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11956")
     @Test
     public void testRemoveInTxSimple() throws Exception {
         startGrids(GRID_CNT);
@@ -640,6 +642,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11956")
     @Test
     public void testRemoveInTxQueriedMultiThreaded() throws Exception {
         //resetLog4j(Level.INFO, true, GridCacheTxManager.class.getPackage().getName());
