@@ -309,11 +309,11 @@ public interface IgniteBinary {
     /**
      * Gets type ID for given type name.
      * If no user defined {@link org.apache.ignite.binary.BinaryIdMapper} is configured
-     * via {@link org.apache.ignite.configuration.BinaryConfiguration}, then default mapper will be used.
+     * via {@link org.apache.ignite.configuration.BinaryConfiguration}, then system mapper will be used.
+     *
      *
      * @param typeName Type name.
-     * @return Type ID.
-     * @throws IgniteException in case of error.
+     * @return Type ID which a type would have had if it has been registered in Ignite.
      */
     public int typeId(@NotNull String typeName);
 
@@ -331,6 +331,7 @@ public interface IgniteBinary {
      *
      * @param typeName Type name.
      * @return Newly binary builder.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryObjectBuilder builder(String typeName) throws BinaryObjectException;
 
@@ -383,6 +384,7 @@ public interface IgniteBinary {
      * @param typeName Type name.
      * @param ord Ordinal.
      * @return Enum object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryObject buildEnum(String typeName, int ord) throws BinaryObjectException;
 
@@ -392,6 +394,7 @@ public interface IgniteBinary {
      * @param typeName Type name.
      * @param name Name.
      * @return Enum object.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryObject buildEnum(String typeName, String name) throws BinaryObjectException;
 
@@ -401,6 +404,7 @@ public interface IgniteBinary {
      * @param typeName Type name.
      * @param vals Mapping of enum constant names to ordinals.
      * @return Binary type for registered enum.
+     * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryType registerEnum(String typeName, Map<String, Integer> vals) throws BinaryObjectException;
 }
