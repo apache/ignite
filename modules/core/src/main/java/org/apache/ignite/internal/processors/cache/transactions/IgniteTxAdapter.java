@@ -808,18 +808,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     public void logTxFinishErrorSafe(@Nullable IgniteLogger log, boolean commit, Throwable e) {
         assert e != null : "Exception is expected";
 
-        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s, plc=%s]";
+        final String fmt = "Failed completing the transaction: [commit=%s, tx=%s]";
 
         try {
             // First try printing a full transaction. This is error prone.
-            U.error(log, String.format(fmt, commit, this,
-                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+            U.error(log, String.format(fmt, commit, this), e);
         }
         catch (Throwable e0) {
             e.addSuppressed(e0);
 
-            U.error(log, String.format(fmt, commit, CU.txString(this),
-                cctx.gridConfig().getFailureHandler().getClass().getSimpleName()), e);
+            U.error(log, String.format(fmt, commit, CU.txString(this)), e);
         }
     }
 
