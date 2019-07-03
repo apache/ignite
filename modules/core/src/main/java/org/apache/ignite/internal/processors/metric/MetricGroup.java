@@ -90,11 +90,11 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param type Type.
-     * @param description Description.
+     * @param desc Description.
      * @return {@link ObjectMetricImpl}
      */
-    public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String description) {
-        return addMetric(name, new ObjectMetricImpl<>(metricName(grpName, name), description, type));
+    public <T> ObjectMetricImpl<T> objectMetric(String name, Class<T> type, @Nullable String desc) {
+        return addMetric(name, new ObjectMetricImpl<>(metricName(grpName, name), desc, type));
     }
 
     /** {@inheritDoc} */
@@ -125,10 +125,10 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param supplier Supplier.
-     * @param description Description.
+     * @param desc Description.
      */
-    public void register(String name, BooleanSupplier supplier, @Nullable String description) {
-        addMetric(name, new BooleanGauge(metricName(grpName, name), description, nonThrowableSupplier(supplier, log)));
+    public void register(String name, BooleanSupplier supplier, @Nullable String desc) {
+        addMetric(name, new BooleanGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -136,10 +136,10 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param supplier Supplier.
-     * @param description Description.
+     * @param desc Description.
      */
-    public void register(String name, DoubleSupplier supplier, @Nullable String description) {
-        addMetric(name, new DoubleGauge(metricName(grpName, name), description, nonThrowableSupplier(supplier, log)));
+    public void register(String name, DoubleSupplier supplier, @Nullable String desc) {
+        addMetric(name, new DoubleGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -147,10 +147,10 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param supplier Supplier.
-     * @param description Description.
+     * @param desc Description.
      */
-    public void register(String name, IntSupplier supplier, @Nullable String description) {
-        addMetric(name, new IntGauge(metricName(grpName, name), description, nonThrowableSupplier(supplier, log)));
+    public void register(String name, IntSupplier supplier, @Nullable String desc) {
+        addMetric(name, new IntGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -158,10 +158,10 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name.
      * @param supplier Supplier.
-     * @param description Description.
+     * @param desc Description.
      */
-    public void register(String name, LongSupplier supplier, @Nullable String description) {
-        addMetric(name, new LongGauge(metricName(grpName, name), description, nonThrowableSupplier(supplier, log)));
+    public void register(String name, LongSupplier supplier, @Nullable String desc) {
+        addMetric(name, new LongGauge(metricName(grpName, name), desc, nonThrowableSupplier(supplier, log)));
     }
 
     /**
@@ -170,10 +170,10 @@ public class MetricGroup implements Iterable<Metric> {
      * @param name Name.
      * @param supplier Supplier.
      * @param type Type.
-     * @param description Description.
+     * @param desc Description.
      */
-    public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String description) {
-        addMetric(name, new ObjectGauge<>(metricName(grpName, name), description,
+    public <T> void register(String name, Supplier<T> supplier, Class<T> type, @Nullable String desc) {
+        addMetric(name, new ObjectGauge<>(metricName(grpName, name), desc,
             nonThrowableSupplier(supplier, log), type));
     }
 
@@ -182,11 +182,11 @@ public class MetricGroup implements Iterable<Metric> {
      * Returned instance are thread safe.
      *
      * @param name Name.
-     * @param description Description.
+     * @param desc Description.
      * @return {@link DoubleMetricImpl}.
      */
-    public DoubleMetricImpl doubleMetric(String name, @Nullable String description) {
-        return addMetric(name, new DoubleMetricImpl(metricName(grpName, name), description));
+    public DoubleMetricImpl doubleMetric(String name, @Nullable String desc) {
+        return addMetric(name, new DoubleMetricImpl(metricName(grpName, name), desc));
     }
 
     /**
@@ -194,11 +194,11 @@ public class MetricGroup implements Iterable<Metric> {
      * Returned instance are thread safe.
      *
      * @param name Name.
-     * @param description Description.
+     * @param desc Description.
      * @return {@link IntMetricImpl}.
      */
-    public IntMetricImpl intMetric(String name, @Nullable String description) {
-        return addMetric(name, new IntMetricImpl(metricName(grpName, name), description));
+    public IntMetricImpl intMetric(String name, @Nullable String desc) {
+        return addMetric(name, new IntMetricImpl(metricName(grpName, name), desc));
     }
 
     /**
@@ -206,11 +206,11 @@ public class MetricGroup implements Iterable<Metric> {
      * Returned instance are thread safe.
      *
      * @param name Name.
-     * @param description Description.
+     * @param desc Description.
      * @return {@link LongMetricImpl}.
      */
-    public LongMetricImpl metric(String name, @Nullable String description) {
-        return addMetric(name, new LongMetricImpl(metricName(grpName, name), description));
+    public LongMetricImpl metric(String name, @Nullable String desc) {
+        return addMetric(name, new LongMetricImpl(metricName(grpName, name), desc));
     }
 
     /**
@@ -218,11 +218,11 @@ public class MetricGroup implements Iterable<Metric> {
      * Returned instance are thread safe.
      *
      * @param name Name.
-     * @param description Description.
+     * @param desc Description.
      * @return {@link LongAdderMetricImpl}.
      */
-    public LongAdderMetricImpl longAdderMetric(String name, @Nullable String description) {
-        return addMetric(name, new LongAdderMetricImpl(metricName(grpName, name), description));
+    public LongAdderMetricImpl longAdderMetric(String name, @Nullable String desc) {
+        return addMetric(name, new LongAdderMetricImpl(metricName(grpName, name), desc));
     }
 
     /**
@@ -236,8 +236,8 @@ public class MetricGroup implements Iterable<Metric> {
      * @return Metric.
      * @see {@link HitRateMetric}.
      */
-    public HitRateMetric hitRateMetric(String name, @Nullable String description, long rateTimeInterval, int size) {
-        return addMetric(name, new HitRateMetric(metricName(grpName, name), description, rateTimeInterval, size));
+    public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
+        return addMetric(name, new HitRateMetric(metricName(grpName, name), desc, rateTimeInterval, size));
     }
 
     /**
@@ -245,11 +245,11 @@ public class MetricGroup implements Iterable<Metric> {
      * Returned instance are thread safe.
      *
      * @param name Name.
-     * @param description Description.
+     * @param desc Description.
      * @return {@link BooleanMetricImpl}
      */
-    public BooleanMetricImpl booleanMetric(String name, @Nullable String description) {
-        return addMetric(name, new BooleanMetricImpl(metricName(grpName, name), description));
+    public BooleanMetricImpl booleanMetric(String name, @Nullable String desc) {
+        return addMetric(name, new BooleanMetricImpl(metricName(grpName, name), desc));
     }
 
     /**
@@ -257,11 +257,11 @@ public class MetricGroup implements Iterable<Metric> {
      *
      * @param name Name
      * @param bounds Bounds of measurements.
-     * @param description Description.
+     * @param desc Description.
      * @return {@link HistogramMetric}
      */
-    public HistogramMetric histogram(String name, long[] bounds, @Nullable String description) {
-        return addMetric(name, new HistogramMetric(metricName(grpName, name), description, bounds));
+    public HistogramMetric histogram(String name, long[] bounds, @Nullable String desc) {
+        return addMetric(name, new HistogramMetric(metricName(grpName, name), desc, bounds));
     }
 
     /**
