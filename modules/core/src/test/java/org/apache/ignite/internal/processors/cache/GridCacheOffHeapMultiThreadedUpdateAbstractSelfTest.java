@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -212,6 +213,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Atomic updates multithread")
     public void testPutGet() throws Exception {
         testPutGet(keyForNode(0));
 
