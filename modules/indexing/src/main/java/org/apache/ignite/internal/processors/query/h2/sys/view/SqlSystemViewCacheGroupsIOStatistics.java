@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -63,7 +63,7 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
         if (nameCond.isEquality()) {
             String cacheGrpName = nameCond.valueForEquality().getString();
 
-            MetricGroup mgrp = ctx.metric().registry().group(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
+            MetricGroup mgrp = ctx.metric().group(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
 
             IntMetric grpId = (IntMetric)mgrp.findMetric("grpId");
             ObjectMetric<String> grpName = (ObjectMetric<String>)mgrp.findMetric("name");
@@ -82,13 +82,13 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
         else {
             Collection<CacheGroupContext> grpCtxs = ctx.cache().cacheGroups();
 
-            MetricRegistry mreg = ctx.metric().registry();
+            GridMetricManager mmgr = ctx.metric();
 
             return iterator(grpCtxs,
                 grpCtx -> toRow(ses,
                     grpCtx.groupId(),
                     grpCtx.cacheOrGroupName(),
-                    mreg.group(metricName(CACHE_GROUP.metricGroupName(), grpCtx.cacheOrGroupName()))),
+                    mmgr.group(metricName(CACHE_GROUP.metricGroupName(), grpCtx.cacheOrGroupName()))),
                 true,
                 grpCtx -> !grpCtx.systemCache());
         }

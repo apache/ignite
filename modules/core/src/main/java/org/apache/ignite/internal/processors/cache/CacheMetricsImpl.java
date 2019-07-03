@@ -204,7 +204,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         String grpName = cacheMetricsGroupName(cctx.name(), isNear);
 
-        MetricGroup mgrp = cctx.kernalContext().metric().registry().group(grpName);
+        MetricGroup mgrp = cctx.kernalContext().metric().group(grpName);
 
         reads = mgrp.metric("CacheGets",
             "The total number of gets to the cache.");

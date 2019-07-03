@@ -25,7 +25,6 @@ import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
@@ -58,7 +57,7 @@ public class MetricsSelfTest {
     /** */
     @Before
     public void setUp() throws Exception {
-        mgrp = new MetricRegistry().group("group");
+        mgrp = new MetricGroup("group", null);
     }
 
     /** */
@@ -268,7 +267,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricGroup mgrp = new MetricRegistry().group("group");
+        MetricGroup mgrp = new MetricGroup("group", null);
 
         mgrp.metric("test1", "");
         mgrp.metric("test2", "");
@@ -288,30 +287,8 @@ public class MetricsSelfTest {
 
     /** */
     @Test
-    public void testCreationListener() throws Exception {
-        MetricRegistry mreg = new MetricRegistry();
-
-        mreg.group("test0");
-
-        Set<String> res = new HashSet<>();
-
-        mreg.addMetricGroupCreationListener(g -> res.add(g.name()));
-
-        mreg.group("test1");
-        mreg.group("test2");
-        mreg.group("test3");
-        mreg.group("test4");
-        mreg.group("test5");
-
-        Set<String> names = new HashSet<>(asList("test1", "test2", "test3", "test4", "test5"));
-
-        assertEquals(names, res);
-    }
-
-    /** */
-    @Test
     public void testRemove() throws Exception {
-        MetricGroup mgrp = new MetricRegistry().group("group");
+        MetricGroup mgrp = new MetricGroup("group", null);
 
         LongMetricImpl cntr = mgrp.metric("my.name", null);
         LongMetricImpl cntr2 = mgrp.metric("my.name.x", null);

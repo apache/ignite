@@ -19,11 +19,11 @@
 package org.apache.ignite.internal.metric;
 
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -53,15 +53,15 @@ public class IoStatisticsHolderCache implements IoStatisticsHolder {
     /**
      * @param cacheName Name of cache.
      * @param grpId Group id.
-     * @param mreg Metric registry.
+     * @param mmgr Metric manager.
      */
-    public IoStatisticsHolderCache(String cacheName, int grpId, MetricRegistry mreg) {
+    public IoStatisticsHolderCache(String cacheName, int grpId, GridMetricManager mmgr) {
         assert cacheName != null;
 
         this.cacheName = cacheName;
         this.grpId = grpId;
 
-        MetricGroup mgrp = mreg.group(metricName(CACHE_GROUP.metricGroupName(), cacheName));
+        MetricGroup mgrp = mmgr.group(metricName(CACHE_GROUP.metricGroupName(), cacheName));
 
         mgrp.metric("startTime", null).value(U.currentTimeMillis());
         mgrp.objectMetric("name", String.class, null).value(cacheName);

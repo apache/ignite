@@ -29,8 +29,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -87,7 +87,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         populateCache(cnt);
 
-        MetricGroup mgrp = ignite.context().metric().registry()
+        MetricGroup mgrp = ignite.context().metric()
             .group(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
         long idxLeafLogicalCnt = ((LongMetric)mgrp.findMetric(LOGICAL_READS_LEAF)).value();
@@ -124,7 +124,7 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         populateCache(cnt);
 
-        MetricGroup mgrp = ignite.context().metric().registry()
+        MetricGroup mgrp = ignite.context().metric()
             .group(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
 
         long cacheLogicalReadsCnt = ((LongMetric)mgrp.findMetric(LOGICAL_READS)).value();
@@ -158,9 +158,9 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      * @param ignite Ignite.
      */
     public static void resetAllIoMetrics(IgniteEx ignite) throws MalformedObjectNameException {
-        MetricRegistry mreg = ignite.context().metric().registry();
+        GridMetricManager mmgr = ignite.context().metric();
 
-        StreamSupport.stream(mreg.spliterator(), false)
+        StreamSupport.stream(mmgr.spliterator(), false)
             .map(MetricGroup::name)
             .filter(name -> {
                 for (IoStatisticsType type : IoStatisticsType.values()) {

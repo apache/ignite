@@ -65,7 +65,7 @@ public class MetricGroup implements Iterable<Metric> {
      * @param grpName Group name.
      * @param log Logger.
      */
-    MetricGroup(String grpName, IgniteLogger log) {
+    public MetricGroup(String grpName, IgniteLogger log) {
         this.grpName = grpName;
         this.log = log;
     }
@@ -112,7 +112,7 @@ public class MetricGroup implements Iterable<Metric> {
     }
 
     /**
-     * Removes metrics with the {@code name} from registry.
+     * Removes metrics with the {@code name}.
      *
      * @param name Metric name.
      */

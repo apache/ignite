@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.monitoring.opencensus;
+package org.apache.ignite.spi.metric.opencensus;
 
 import io.opencensus.common.Scope;
 import io.opencensus.stats.Aggregation.LastValue;
@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -47,8 +49,8 @@ import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ObjectMetric;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -70,7 +72,9 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  *
- * @see MetricRegistry
+ * @see MetricGroup
+ * @see GridMetricManager
+ * @see ReadOnlyMetricRegistry
  */
 public class OpenCensusMetricExporterSpi extends PushMetricsExporterAdapter {
     /** Flag to enable or disable tag with Ignite instance name. */

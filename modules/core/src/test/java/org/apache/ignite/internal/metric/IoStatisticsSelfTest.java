@@ -26,8 +26,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -78,11 +78,11 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     public void testEmptyIOStat() throws Exception {
         IgniteEx ign = prepareIgnite(true);
 
-        MetricRegistry mreg = ign.context().metric().registry();
+        GridMetricManager mmgr = ign.context().metric();
 
-        checkEmptyStat(mreg.group(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME)), CACHE_GROUP);
+        checkEmptyStat(mmgr.group(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME)), CACHE_GROUP);
 
-        checkEmptyStat(mreg.group(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME)),
+        checkEmptyStat(mmgr.group(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME)),
             HASH_INDEX);
     }
 
@@ -141,16 +141,16 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     private void ioStatGlobalPageTrackTest(boolean isPersistent) throws Exception {
         IgniteEx grid = prepareData(isPersistent);
 
-        MetricRegistry mreg = grid.context().metric().registry();
+        GridMetricManager mmgr = grid.context().metric();
 
-        long physicalReadsCnt = physicalReads(mreg, CACHE_GROUP, DEFAULT_CACHE_NAME, null);
+        long physicalReadsCnt = physicalReads(mmgr, CACHE_GROUP, DEFAULT_CACHE_NAME, null);
 
         if (isPersistent)
             Assert.assertTrue(physicalReadsCnt > 0);
         else
             Assert.assertEquals(0, physicalReadsCnt);
 
-        Long logicalReads = logicalReads(mreg, HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
+        Long logicalReads = logicalReads(mmgr, HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
         Assert.assertNotNull(logicalReads);
 
@@ -224,10 +224,10 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
      * @param subName subName of statistics which need to take, e.g. index name.
      * @return Number of physical reads since last reset statistics.
      */
-    public Long physicalReads(MetricRegistry mreg, IoStatisticsType statType, String name, String subName) {
+    public Long physicalReads(GridMetricManager mmgr, IoStatisticsType statType, String name, String subName) {
         String fullName = subName == null ? name : metricName(name, subName);
 
-        MetricGroup mgrp = mreg.group(metricName(statType.metricGroupName(), fullName));
+        MetricGroup mgrp = mmgr.group(metricName(statType.metricGroupName(), fullName));
 
         if (mgrp == null)
             return null;

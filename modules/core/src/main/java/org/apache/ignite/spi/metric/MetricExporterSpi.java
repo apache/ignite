@@ -20,12 +20,11 @@ package org.apache.ignite.spi.metric;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.metric.jmx.JmxExporterSpi;
 
 /**
- * Exporter of monitoring information to the external recepient.
+ * Exporter of metric information to the external recepient.
  * Expected, that each implementation would support some specific protocol.
  *
  * Implementation of this Spi should work by pull paradigm.
@@ -46,9 +45,8 @@ public interface MetricExporterSpi extends IgniteSpi {
      * Sets metrics registry that SPI should export.
      * This method called before {@link #spiStart(String)}.
      *
-     * Registry should be empty in the time this method called.
-     * So all {@link MetricRegistry} that will be created by Ignite internal components can be obtained by
-     * listeners passed to {@link MetricRegistry#addMetricGroupCreationListener(Consumer)}.
+     * So all {@link MetricGroup} that will be created by Ignite internal components can be obtained by
+     * listeners passed to {@link ReadOnlyMetricRegistry#addMetricGroupCreationListener(Consumer)}.
      *
      * @param registry Metric registry.
      */

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.metric.impl;
 
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.MetricGroup;
 
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
@@ -26,7 +26,7 @@ import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE
  * Utility class to build or parse metric name in dot notation.
  *
  * @see GridMetricManager
- * @see MetricRegistry
+ * @see MetricGroup
  */
 public class MetricUtils {
     /** Metric name part separator. */

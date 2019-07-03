@@ -4501,7 +4501,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public void resetMetrics(String groupName) {
         assert groupName != null;
 
-        MetricGroup mgrp = ctx.metric().registry().group(groupName);
+        MetricGroup mgrp = ctx.metric().group(groupName);
 
         if (mgrp != null)
             mgrp.reset();

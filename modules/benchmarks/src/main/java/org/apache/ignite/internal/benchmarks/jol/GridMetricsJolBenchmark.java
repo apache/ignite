@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.benchmarks.jol;
 
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
@@ -109,10 +108,10 @@ public class GridMetricsJolBenchmark {
     }
 
     /**
-     * Calculates and prints the size of metric registry of {@code TOTAL} size;
+     * Calculates and prints the size of metric group of {@code TOTAL} size;
      */
     private static void measureMetricRegistry() {
-        MetricGroup mgrp = new MetricRegistry().group("test");
+        MetricGroup mgrp = new MetricGroup("test", null);
 
         for(int i=0; i<BOOLEAN_CNT; i++)
             mgrp.booleanMetric(BOOLEAN_METRIC + i, null);
@@ -131,6 +130,6 @@ public class GridMetricsJolBenchmark {
 
         long sz = GraphLayout.parseInstance(mgrp).totalSize();
 
-        System.out.println("Total size of " + TOTAL + " metric registry is " + (sz/1024) + "KiB, " + sz + " bytes.");
+        System.out.println("Total size of " + TOTAL + " metric group is " + (sz/1024) + "KiB, " + sz + " bytes.");
     }
 }

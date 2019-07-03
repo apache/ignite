@@ -23,12 +23,12 @@ import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTracker;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -122,16 +122,29 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
      * @param memPlcCfg DataRegionConfiguration.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
-        this(memPlcCfg, new MetricRegistry(), NO_OP_METRICS);
+        this.memPlcCfg = memPlcCfg;
+        this.dataRegionMetricsProvider = NO_OP_METRICS;
+        this.totalAllocatedPages = null;
+        this.largeEntriesPages = null;
+        this.dirtyPages = null;
+        this.readPages = null;
+        this.writtenPages = null;
+        this.replacedPages = null;
+        this.offHeapSize = null;
+        this.checkpointBufferSize = null;
+        this.allocRate = null;
+        this.evictRate = null;
+        this.pageReplaceRate = null;
+        this.pageReplaceAge = null;
     }
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
-     * @param mreg Metrics registry.
+     * @param mmgr Metrics manager.
      * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
-        MetricRegistry mreg,
+        GridMetricManager mmgr,
         DataRegionMetricsProvider dataRegionMetricsProvider) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = dataRegionMetricsProvider;
@@ -144,7 +157,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
         subInts = memPlcCfg.getMetricsSubIntervalCount();
 
-        MetricGroup mgrp = mreg.group(metricName(DATAREGION_METRICS_PREFIX, memPlcCfg.getName()));
+        MetricGroup mgrp = mmgr.group(metricName(DATAREGION_METRICS_PREFIX, memPlcCfg.getName()));
 
         totalAllocatedPages = mgrp.longAdderMetric("TotalAllocatedPages",
             "Total number of allocated pages.");

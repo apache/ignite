@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Collection;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 
 /**
  *
@@ -105,13 +105,13 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private final LongMetricImpl sparseStorageSize;
 
     /**
-     * @param mreg Metrics registry.
+     * @param mmgr Metrics manager.
      * @param metricsEnabled Metrics enabled flag.
      * @param rateTimeInterval Rate time interval.
      * @param subInts Number of sub-intervals.
      */
     public DataStorageMetricsImpl(
-        MetricRegistry mreg,
+        GridMetricManager mmgr,
         boolean metricsEnabled,
         long rateTimeInterval,
         int subInts
@@ -120,7 +120,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         this.rateTimeInterval = rateTimeInterval;
         this.subInts = subInts;
 
-        MetricGroup mgrp = mreg.group(DATASTORAGE_METRIC_PREFIX);
+        MetricGroup mgrp = mmgr.group(DATASTORAGE_METRIC_PREFIX);
 
         walLoggingRate = mgrp.hitRateMetric("WalLoggingRate",
             "Average number of WAL records per second written during the last time interval.",

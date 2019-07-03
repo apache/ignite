@@ -25,11 +25,16 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -41,7 +46,9 @@ import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,12 +56,12 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
- * This manager should provide {@link MetricRegistry} for each configured {@link MetricExporterSpi}.
+ * This manager should provide {@link ReadOnlyMetricRegistry} for each configured {@link MetricExporterSpi}.
  *
  * @see MetricExporterSpi
- * @see MetricRegistry
+ * @see MetricGroup
  */
-public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
+public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricRegistry {
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -143,8 +150,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** */
     private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
 
-    /** Monitoring registry. */
-    private MetricRegistry mreg;
+    /** Registered metrics groups. */
+    private final ConcurrentHashMap<String, MetricGroup> groups = new ConcurrentHashMap<>();
+
+    /** Metric group creation listeners. */
+    private final List<Consumer<MetricGroup>> metricGrpCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -167,8 +177,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     public GridMetricManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getMetricExporterSpi());
 
-        mreg = new MetricRegistry(ctx.log(MetricRegistry.class));
-
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
         heap = new MemoryUsageMetrics(SYS_METRICS, metricName("memory", "heap"));
@@ -177,7 +185,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricGroup sysgrp = mreg.group(SYS_METRICS);
+        MetricGroup sysgrp = group(SYS_METRICS);
 
         gcCpuLoad = sysgrp.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
         cpuLoad = sysgrp.doubleMetric(CPU_LOAD, "CPU load.");
@@ -200,7 +208,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         for (MetricExporterSpi spi : getSpis())
-            spi.setMetricRegistry(mreg);
+            spi.setMetricRegistry(this);
 
         startSpi();
     }
@@ -214,10 +222,54 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
     }
 
     /**
-     * @return Metric resitry.
+     * Gets or creates metric group.
+     *
+     * @param name Group name.
+     * @return Group of metrics.
      */
-    public MetricRegistry registry() {
-        return mreg;
+    public MetricGroup group(String name) {
+        return groups.computeIfAbsent(name, n -> {
+            MetricGroup mgrp = new MetricGroup(name, log);
+
+            notifyListeners(mgrp, metricGrpCreationLsnrs);
+
+            return mgrp;
+        });
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public Iterator<MetricGroup> iterator() {
+        return groups.values().iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addMetricGroupCreationListener(Consumer<MetricGroup> lsnr) {
+        metricGrpCreationLsnrs.add(lsnr);
+    }
+
+    /**
+     * Removes group.
+     *
+     * @param grpName Group name.
+     */
+    public void remove(String grpName) {
+        groups.remove(grpName);
+    }
+
+    /**
+     * @param t Consumed object.
+     * @param lsnrs Listeners.
+     * @param <T> Type of consumed object.
+     */
+    private <T> void notifyListeners(T t, List<Consumer<T>> lsnrs) {
+        for (Consumer<T> lsnr : lsnrs) {
+            try {
+                lsnr.accept(t);
+            }
+            catch (Exception e) {
+                U.warn(log, "Metric listener error", e);
+            }
+        }
     }
 
     /**
@@ -296,7 +348,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param execSvc Executor to register a bean for.
      */
     private void monitorExecutor(String name, ExecutorService execSvc) {
-        MetricGroup mgrp = mreg.group(metricName(THREAD_POOLS, name));
+        MetricGroup mgrp = group(metricName(THREAD_POOLS, name));
 
         if (execSvc instanceof ThreadPoolExecutor) {
             ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
@@ -348,7 +400,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
      * @param svc Executor.
      */
     private void monitorStripedPool(StripedExecutor svc) {
-        MetricGroup mgrp = mreg.group(metricName(THREAD_POOLS, "StripedExecutor"));
+        MetricGroup mgrp = group(metricName(THREAD_POOLS, "StripedExecutor"));
 
         mgrp.register("DetectStarvation",
             svc::detectStarvation,
@@ -543,7 +595,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> {
          * @param metricNamePrefix Metric name prefix.
          */
         public MemoryUsageMetrics(String group, String metricNamePrefix) {
-            MetricGroup mgrp = GridMetricManager.this.mreg.group(group);
+            MetricGroup mgrp = GridMetricManager.this.group(group);
 
             this.init = mgrp.metric(metricName(metricNamePrefix, "init"), null);
             this.used = mgrp.metric(metricName(metricNamePrefix, "used"), null);

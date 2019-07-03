@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
@@ -172,9 +171,7 @@ public class ClusterMetricsImpl implements ClusterMetrics {
         this.ctx = ctx;
         this.nodeStartTime = nodeStartTime;
 
-        MetricRegistry mreg = ctx.metric().registry();
-
-        MetricGroup mgrp = mreg.group(SYS_METRICS);
+        MetricGroup mgrp = ctx.metric().group(SYS_METRICS);
 
         gcCpuLoad = (DoubleMetric)mgrp.findMetric(GC_CPU_LOAD);
         cpuLoad = (DoubleMetric)mgrp.findMetric(CPU_LOAD);

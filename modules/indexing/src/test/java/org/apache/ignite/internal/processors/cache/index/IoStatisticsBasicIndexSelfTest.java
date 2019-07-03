@@ -41,8 +41,8 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsType;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricGroup;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.metric.Metric;
 import org.junit.Assert;
@@ -177,9 +177,9 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
     /** */
     private void checkStat() throws Exception {
-        MetricRegistry mreg = grid().context().metric().registry();
+        GridMetricManager mmgr = grid().context().metric();
 
-        Set<String> hashIndexes = deriveStatisticNames(grid(), IoStatisticsType.HASH_INDEX);
+        Set<String> hashIndexes = deriveStatisticNames(grid(), HASH_INDEX);
 
         Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
 
@@ -193,7 +193,7 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
             sortedIdxNames.size());
 
         for (String idxName : sortedIdxNames) {
-            Long logicalReads = logicalReads(mreg, SORTED_INDEX, metricName(DEFAULT_CACHE_NAME, idxName));
+            Long logicalReads = logicalReads(mmgr, SORTED_INDEX, metricName(DEFAULT_CACHE_NAME, idxName));
 
             Assert.assertNotNull(idxName, logicalReads);
 
@@ -404,9 +404,9 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
     /** @return Stream of MetricGroup for specified {@link statType}. */
     private Stream<MetricGroup> ioStats(IgniteEx ignite, IoStatisticsType statType) {
-        MetricRegistry mreg = ignite.context().metric().registry();
+        GridMetricManager mmgr = ignite.context().metric();
 
-        return StreamSupport.stream(mreg.spliterator(), false)
+        return StreamSupport.stream(mmgr.spliterator(), false)
             .filter(grp -> grp.name().startsWith(statType.metricGroupName()));
     }
 
