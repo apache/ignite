@@ -323,6 +323,11 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         return 0;
     }
 
+    /** {@inheritDoc} */
+    @Override protected IoStatisticsHolder statisticsHolder() {
+        return stats;
+    }
+
     /**
      * @param v1 First value.
      * @param v2 Second value.
