@@ -386,6 +386,13 @@ public class GridReduceQueryExecutor {
         ReduceQueryRun lastRun = null;
 
         for (int attempt = 0;; attempt++) {
+            try {
+                cancel.checkCancelled();
+            }
+            catch (QueryCancelledException cancelEx) {
+                throw new CacheException("Failed to run reduce query locally. " + cancelEx.getMessage(),  cancelEx);
+            }
+
             if (attempt > 0 && retryTimeout > 0 && (U.currentTimeMillis() - startTime > retryTimeout)) {
                 UUID retryNodeId = lastRun.retryNodeId();
                 String retryCause = lastRun.retryCause();
@@ -724,7 +731,7 @@ public class GridReduceQueryExecutor {
                         cause = disconnectedErr;
                 }
 
-                throw new CacheException("Failed to run reduce query locally.", cause);
+                throw new CacheException("Failed to run reduce query locally. " + cause.getMessage(), cause);
             }
             finally {
                 if (detachedConn != null)

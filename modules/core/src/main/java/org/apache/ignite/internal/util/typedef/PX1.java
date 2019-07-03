@@ -31,4 +31,4 @@ import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 public abstract class PX1<E1> extends IgnitePredicateX<E1> {
     /** */
     private static final long serialVersionUID = 0L;
- /* No-op. */ }
+}

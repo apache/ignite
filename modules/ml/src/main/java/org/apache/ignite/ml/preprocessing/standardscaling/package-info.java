@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains Standard scaler preprocessor.
  */
+
 package org.apache.ignite.ml.preprocessing.standardscaling;

@@ -255,9 +255,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     if (part.reserve()) {
                         part.moving();
 
-                        if (exchFut != null)
-                            exchFut.addClearingPartition(grp, part.id());
-
                         part.clearAsync();
 
                         part.release();
@@ -282,8 +279,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         histSupplier = ctx.discovery().node(nodeId);
                 }
 
-                // Clearing partition should always be fully reloaded.
-                if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
+                if (histSupplier != null && exchFut.isHistoryPartition(grp, p)) {
                     assert grp.persistenceEnabled();
                     assert remoteOwners(p, topVer).contains(histSupplier) : remoteOwners(p, topVer);
 
