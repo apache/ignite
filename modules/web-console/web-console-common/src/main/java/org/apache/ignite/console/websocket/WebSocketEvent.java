@@ -115,7 +115,7 @@ public class WebSocketEvent {
      * @param payload Payload.
      */
     public WebSocketEvent withPayload(Object payload) {
-        return new WebSocketEvent(this.reqId, evtType, toJson(payload));
+        return new WebSocketEvent(reqId, evtType, toJson(payload));
     }
 
     /**
@@ -128,7 +128,7 @@ public class WebSocketEvent {
 
         err.put("message", msg);
 
-        return new WebSocketEvent(this.reqId, ERROR, toJson(err));
+        return new WebSocketEvent(reqId, ERROR, toJson(err));
     }
     
     /** {@inheritDoc} */

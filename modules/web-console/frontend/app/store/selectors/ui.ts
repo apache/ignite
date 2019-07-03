@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import {State, AppStore} from '..';
+import {State} from '..';
 import {pluck, map} from 'rxjs/operators';
 import {pipe} from 'rxjs';
-import {memoize, orderBy} from 'lodash';
+import {orderBy} from 'lodash';
 
 const orderMenu = <T extends {order: number}>(menu: Array<T>) => orderBy(menu, 'order');
 

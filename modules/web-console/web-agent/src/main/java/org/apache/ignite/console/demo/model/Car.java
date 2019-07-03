@@ -17,6 +17,7 @@
 package org.apache.ignite.console.demo.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Car definition.
@@ -124,10 +125,7 @@ public class Car implements Serializable {
         if (parkingId != that.parkingId)
             return false;
 
-        if (name != null ? !name.equals(that.name) : that.name != null)
-            return false;
-
-        return true;
+        return Objects.equals(name, that.name);
     }
 
     /** {@inheritDoc} */

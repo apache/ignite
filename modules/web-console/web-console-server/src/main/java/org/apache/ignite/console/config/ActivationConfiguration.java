@@ -65,7 +65,7 @@ public class ActivationConfiguration implements InitializingBean {
     }
 
     /** {@inheritDoc} */
-    @Override public void afterPropertiesSet() throws Exception {
+    @Override public void afterPropertiesSet() {
         if (enabled && isNoopMailSrv) {
             enabled = false;
 

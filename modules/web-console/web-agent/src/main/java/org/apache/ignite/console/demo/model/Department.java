@@ -17,6 +17,7 @@
 package org.apache.ignite.console.demo.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Department definition.
@@ -124,10 +125,7 @@ public class Department implements Serializable {
         if (countryId != that.countryId)
             return false;
 
-        if (name != null ? !name.equals(that.name) : that.name != null)
-            return false;
-
-        return true;
+        return Objects.equals(name, that.name);
     }
 
     /** {@inheritDoc} */

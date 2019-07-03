@@ -141,6 +141,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
             "SPATIAL_CSW_ADMIN_USR", "SPATIAL_WFS_ADMIN_USR", "XS$NULL"));
     }
 
+    /** {@inheritDoc} */
     @Override public Set<String> sampleSchemas() {
         return new HashSet<>(Arrays.asList("BI", "HR", "OE", "PM", "IX", "SH"));
     }

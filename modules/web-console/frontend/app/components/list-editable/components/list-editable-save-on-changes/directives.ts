@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {default as ListEditableController, ID, ItemScope} from '../../controller';
+import {default as ListEditableController, ItemScope} from '../../controller';
 import {ListEditableTransclude} from '../list-editable-transclude/directive';
 
 const CUSTOM_EVENT_TYPE = '$ngModel.change';

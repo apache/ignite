@@ -42,8 +42,10 @@ public class DemoComputeTask implements ComputeTask<Void, Integer>{
     private static final Random rnd = new Random();
 
     /** {@inheritDoc} */
-    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable Void arg) throws IgniteException {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
+        List<ClusterNode> subgrid,
+        @Nullable Void arg
+    ) throws IgniteException {
         HashMap<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
 
         for (ClusterNode node: subgrid) {

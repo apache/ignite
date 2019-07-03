@@ -18,15 +18,13 @@ import 'app/../test/angular-testbed-init';
 import {ReactiveFormsModule, FormControl, Validators, FormGroup} from '@angular/forms';
 
 import {assert} from 'chai';
-import {TestBed, async, ComponentFixture, tick, fakeAsync} from '@angular/core/testing';
+import {TestBed, ComponentFixture, tick, fakeAsync} from '@angular/core/testing';
 import {Component, Directive, NO_ERRORS_SCHEMA, Input, TemplateRef} from '@angular/core';
 import { By } from '@angular/platform-browser';
 import {
-    FormField, FormFieldError, FormFieldHint, FormFieldTooltip,
+    FormField, FormFieldHint,
     FormFieldRequiredMarkerStyles, FormFieldErrorStyles, FORM_FIELD_OPTIONS
 } from './index';
-import {FormFieldErrors} from './errors.component';
-import {IgniteIcon} from '../igniteIcon.component';
 
 suite('Angular form-field component', () => {
     @Component({selector: 'popper-content', template: ''}) class PopperContentStub {}

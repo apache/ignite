@@ -36,6 +36,7 @@ public class MySQLMetadataDialect extends JdbcMetadataDialect {
         return new HashSet<>(Arrays.asList("information_schema", "mysql", "performance_schema", "sys"));
     }
 
+    /** {@inheritDoc} */
     @Override protected ResultSet getSchemas(Connection conn) throws SQLException {
         return conn.getMetaData().getCatalogs();
     }

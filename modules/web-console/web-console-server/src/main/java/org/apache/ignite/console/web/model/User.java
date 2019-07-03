@@ -73,12 +73,12 @@ public class User {
      * @param acc AccountDTO.
      */
     public User(Account acc) {
-        this.email = acc.getEmail();
-        this.firstName = acc.getFirstName();
-        this.lastName = acc.getLastName();
-        this.phone = acc.getPhone();
-        this.company = acc.getCompany();
-        this.country = acc.getCountry();
+        email = acc.getEmail();
+        firstName = acc.getFirstName();
+        lastName = acc.getLastName();
+        phone = acc.getPhone();
+        company = acc.getCompany();
+        country = acc.getCountry();
     }
 
     /**
