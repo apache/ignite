@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimi
 import org.apache.ignite.internal.processors.cache.IgniteCacheGroupsSqlTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
+import org.apache.ignite.internal.processors.cache.index.IoStatisticsBasicIndexSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
@@ -97,6 +98,8 @@ public class IgniteCacheWithIndexingTestSuite {
         suite.addTest(new JUnit4TestAdapter(ClusterReadOnlyModeSqlTest.class));
 
         suite.addTest(new JUnit4TestAdapter(RebuildIndexLogMessageTest.class));
+
+        suite.addTest(new JUnit4TestAdapter(IoStatisticsBasicIndexSelfTest.class));
 
         return suite;
     }
