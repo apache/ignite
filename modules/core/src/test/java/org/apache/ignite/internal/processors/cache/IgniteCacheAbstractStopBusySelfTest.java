@@ -50,6 +50,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -219,6 +220,7 @@ public abstract class IgniteCacheAbstractStopBusySelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Counts messages")
     public void testGet() throws Exception {
         bannedMsg.set(GridNearSingleGetRequest.class);
 
