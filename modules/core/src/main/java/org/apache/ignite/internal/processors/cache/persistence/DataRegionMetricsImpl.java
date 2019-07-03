@@ -124,18 +124,18 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = NO_OP_METRICS;
-        this.totalAllocatedPages = null;
-        this.largeEntriesPages = null;
-        this.dirtyPages = null;
-        this.readPages = null;
-        this.writtenPages = null;
-        this.replacedPages = null;
-        this.offHeapSize = null;
-        this.checkpointBufferSize = null;
-        this.allocRate = null;
-        this.evictRate = null;
-        this.pageReplaceRate = null;
-        this.pageReplaceAge = null;
+        this.totalAllocatedPages = new LongAdderMetricImpl("NO_OP", null);
+        this.largeEntriesPages = new LongAdderMetricImpl("NO_OP", null);
+        this.dirtyPages = new LongAdderMetricImpl("NO_OP", null);
+        this.readPages = new LongAdderMetricImpl("NO_OP", null);
+        this.writtenPages = new LongAdderMetricImpl("NO_OP", null);
+        this.replacedPages = new LongAdderMetricImpl("NO_OP", null);
+        this.offHeapSize = new LongMetricImpl("NO_OP", null);
+        this.checkpointBufferSize = new LongMetricImpl("NO_OP", null);
+        this.allocRate = new HitRateMetric("NO_OP", null, 60_000, 5);
+        this.evictRate = new HitRateMetric("NO_OP", null, 60_000, 5);
+        this.pageReplaceRate = new HitRateMetric("NO_OP", null, 60_000, 5);
+        this.pageReplaceAge = new HitRateMetric("NO_OP", null, 60_000, 5);
     }
 
     /**
