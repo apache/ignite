@@ -195,7 +195,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         final boolean recovery = opCtx != null && opCtx.recovery();
-        final boolean readRepair = !ctx.systemTx() && !ctx.isLocal() && !ctx.readThrough() && ctx.config().getBackups() > 0 && !ctx.isNear() && !ctx.mvccEnabled() /* TODO replace with "opCtx != null && opCtx.readRepair()" */;
+        final boolean readRepair = (opCtx == null || !opCtx.allowedAtomicOpsInTx()) && !ctx.systemTx() && !ctx.isLocal() && !ctx.readThrough() && ctx.config().getBackups() > 0 && !ctx.isNear() && !ctx.mvccEnabled() /* TODO replace with "opCtx != null && opCtx.readRepair()" */;
 
         // Get operation bypass Tx in Mvcc mode.
         if (!ctx.mvccEnabled() && tx != null && !tx.implicit() && !skipTx) {
