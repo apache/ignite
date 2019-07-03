@@ -54,11 +54,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -114,6 +117,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * Discovery SPI implementation that uses TCP/IP for node discovery.
@@ -2061,10 +2065,22 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         DiscoveryDataBag dataBag;
 
-        if (dataPacket.joiningNodeId().equals(locNode.id()))
-            dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+        if (dataPacket.joiningNodeId().equals(locNode.id())) {
+            try {
+                dataBag = dataPacket.unmarshalGridData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+            }
+            catch (IgniteCheckedException e) {
+                if (ignite() instanceof IgniteEx) {
+                    FailureProcessor failure = ((IgniteEx)ignite()).context().failure();
+
+                    failure.process(new FailureContext(CRITICAL_ERROR, e));
+                }
+
+                throw new IgniteException(e);
+            }
+        }
         else {
-            dataBag = dataPacket.unmarshalJoiningNodeData(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
+            dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
 
             //Marshal unzipped joining node data if it was zipped but not whole cluster supports that.
             //It can be happened due to several nodes, including node without compression support, are trying to join cluster concurrently.

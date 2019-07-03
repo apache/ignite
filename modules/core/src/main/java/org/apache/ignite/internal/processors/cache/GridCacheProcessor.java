@@ -3565,7 +3565,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (errorMsg.length() > 0) {
                 String msg = errorMsg.toString();
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
         }
 
@@ -4755,7 +4755,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             String msg = "Joining node during caches restart is not allowed [joiningNodeId=" + node.id() +
                 ", restartingCaches=" + new HashSet<>(cachesInfo.restartingCaches()) + ']';
 
-            return new IgniteNodeValidationResult(node.id(), msg, msg);
+            return new IgniteNodeValidationResult(node.id(), msg);
         }
 
         return null;

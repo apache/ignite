@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -55,14 +56,12 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
     /** */
     private Arguments arguments;
 
-    /**
-     *
-     */
-    private CommandLogger logger;
+    /** */
+    private Logger logger;
 
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, CommandLogger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
         this.logger = logger;
 
         Set<String> nodeIds = arguments.nodeIds;
@@ -145,9 +144,9 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(CommandLogger logger) {
-        logger.log("View pages locks state information on the node or nodes.");
-        logger.log(join(" ",
+    @Override public void printUsage(Logger logger) {
+        logger.info("View pages locks state information on the node or nodes.");
+        logger.info(join(" ",
             UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, DUMP,
             optional(PATH, "path_to_directory"),
             optional(ALL),
@@ -155,13 +154,18 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
             optional(CommandLogger.or(NODES, "consistentId1,consistentId2,..")),
             "// Save page locks dump to file generated in IGNITE_HOME" +
                 File.separatorChar + "work" + File.separatorChar + DEFAULT_TARGET_FOLDER + " directory."));
-        logger.log(join(" ",
+        logger.info(join(" ",
             UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, DUMP_LOG,
             optional(ALL),
             optional(CommandLogger.or(NODES, "nodeId1,nodeId2,..")),
             optional(CommandLogger.or(NODES, "consistentId1,consistentId2,..")),
             "// Pring page locks dump to console on the node or nodes."));
-        logger.nl();
+        logger.info("");
+    }
+
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return PAGE_LOCKS.toString();
     }
 
     /**
@@ -169,7 +173,7 @@ public class PageLocksCommand implements Command<PageLocksCommand.Arguments> {
      */
     private void printResult(Map<ClusterNode, VisorPageLocksResult> res) {
         res.forEach((n, res0) -> {
-            logger.log(n.id() + " (" + n.consistentId() + ") " + res0.result());
+            logger.info(n.id() + " (" + n.consistentId() + ") " + res0.result());
         });
     }
 
