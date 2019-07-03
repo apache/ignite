@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsGroupName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** */
@@ -73,7 +73,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCacheMetricsAddRemove() throws Exception {
-        String cachePrefix = cacheMetricsGroupName(DEFAULT_CACHE_NAME, false);
+        String cachePrefix = cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false);
 
         checkMetricsEmpty(cachePrefix);
 
@@ -116,7 +116,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
             assertNotNull(mreg.findMetric(CACHE_PUTS));
 
             if (nearEnabled) {
-                mreg = mmgr.registry(cacheMetricsGroupName(DEFAULT_CACHE_NAME, true));
+                mreg = mmgr.registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, true));
 
                 assertNotNull(mreg.findMetric(CACHE_GETS));
                 assertNotNull(mreg.findMetric(CACHE_PUTS));
@@ -135,7 +135,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
             assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_PUTS)));
 
             if (nearEnabled) {
-                mreg = mmgr.registry(cacheMetricsGroupName(DEFAULT_CACHE_NAME, true));
+                mreg = mmgr.registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, true));
 
                 assertNull(mreg.findMetric(CACHE_GETS));
                 assertNull(mreg.findMetric(CACHE_PUTS));

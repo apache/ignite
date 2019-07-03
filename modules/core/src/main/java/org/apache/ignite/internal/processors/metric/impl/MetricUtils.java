@@ -71,9 +71,9 @@ public class MetricUtils {
     /**
      * @param cacheName Cache name.
      * @param isNear Is near flag.
-     * @return Cache metrics group name.
+     * @return Cache metrics registry name.
      */
-    public static String cacheMetricsGroupName(String cacheName, boolean isNear) {
+    public static String cacheMetricsRegistryName(String cacheName, boolean isNear) {
         if (isNear)
             return metricName(CACHE_METRICS, cacheName, "near");
 

@@ -52,7 +52,7 @@ public class JmxExporterSpi extends IgniteSpiAdapter implements MetricExporterSp
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         mreg.forEach(this::register);
 
-        mreg.addMetricGroupCreationListener(this::register);
+        mreg.addMetricRegistryCreationListener(this::register);
     }
 
     private void register(MetricRegistry grp) {

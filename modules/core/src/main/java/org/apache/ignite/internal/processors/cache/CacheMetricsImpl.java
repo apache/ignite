@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsGroupName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * Adapter for cache metrics.
@@ -53,7 +53,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
     /**
-     * Cache metrics grpName.
+     * Cache metrics registry name first part.
      * Full name will contain {@link CacheConfiguration#getName()} also.
      * {@code "cache.sys-cache"}, for example.
      */
@@ -202,9 +202,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        String grpName = cacheMetricsGroupName(cctx.name(), isNear);
+        String regName = cacheMetricsRegistryName(cctx.name(), isNear);
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(grpName);
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(regName);
 
         reads = mreg.metric("CacheGets",
             "The total number of gets to the cache.");

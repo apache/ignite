@@ -150,11 +150,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** */
     private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
 
-    /** Registered metrics groups. */
-    private final ConcurrentHashMap<String, MetricRegistry> groups = new ConcurrentHashMap<>();
+    /** Registered metrics registries. */
+    private final ConcurrentHashMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
     /** Metric registry creation listeners. */
-    private final List<Consumer<MetricRegistry>> metricGrpCreationLsnrs = new CopyOnWriteArrayList<>();
+    private final List<Consumer<MetricRegistry>> metricRegCreationLsnrs = new CopyOnWriteArrayList<>();
 
     /** Metrics update worker. */
     private GridTimeoutProcessor.CancelableTask metricsUpdateTask;
@@ -185,19 +185,19 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         heap.update(mem.getHeapMemoryUsage());
         nonHeap.update(mem.getNonHeapMemoryUsage());
 
-        MetricRegistry sysgrp = registry(SYS_METRICS);
+        MetricRegistry sysreg = registry(SYS_METRICS);
 
-        gcCpuLoad = sysgrp.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
-        cpuLoad = sysgrp.doubleMetric(CPU_LOAD, "CPU load.");
+        gcCpuLoad = sysreg.doubleMetric(GC_CPU_LOAD, "GC CPU load.");
+        cpuLoad = sysreg.doubleMetric(CPU_LOAD, "CPU load.");
 
-        sysgrp.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
-        sysgrp.register(UP_TIME, rt::getUptime, null);
-        sysgrp.register(THREAD_CNT, threads::getThreadCount, null);
-        sysgrp.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, null);
-        sysgrp.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount, null);
-        sysgrp.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
-        sysgrp.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
-        sysgrp.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
+        sysreg.register("SystemLoadAverage", os::getSystemLoadAverage, Double.class, null);
+        sysreg.register(UP_TIME, rt::getUptime, null);
+        sysreg.register(THREAD_CNT, threads::getThreadCount, null);
+        sysreg.register(PEAK_THREAD_CNT, threads::getPeakThreadCount, null);
+        sysreg.register(TOTAL_STARTED_THREAD_CNT, threads::getTotalStartedThreadCount, null);
+        sysreg.register(DAEMON_THREAD_CNT, threads::getDaemonThreadCount, null);
+        sysreg.register("CurrentThreadCpuTime", threads::getCurrentThreadCpuTime, null);
+        sysreg.register("CurrentThreadUserTime", threads::getCurrentThreadUserTime, null);
     }
 
     /** {@inheritDoc} */
@@ -228,10 +228,10 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @return Group of metrics.
      */
     public MetricRegistry registry(String name) {
-        return groups.computeIfAbsent(name, n -> {
+        return registries.computeIfAbsent(name, n -> {
             MetricRegistry mreg = new MetricRegistry(name, log);
 
-            notifyListeners(mreg, metricGrpCreationLsnrs);
+            notifyListeners(mreg, metricRegCreationLsnrs);
 
             return mreg;
         });
@@ -239,12 +239,12 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<MetricRegistry> iterator() {
-        return groups.values().iterator();
+        return registries.values().iterator();
     }
 
     /** {@inheritDoc} */
-    @Override public void addMetricGroupCreationListener(Consumer<MetricRegistry> lsnr) {
-        metricGrpCreationLsnrs.add(lsnr);
+    @Override public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr) {
+        metricRegCreationLsnrs.add(lsnr);
     }
 
     /**
@@ -253,7 +253,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param grpName Group name.
      */
     public void remove(String grpName) {
-        groups.remove(grpName);
+        registries.remove(grpName);
     }
 
     /**

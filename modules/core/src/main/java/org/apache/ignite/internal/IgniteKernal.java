@@ -4498,15 +4498,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void resetMetrics(String groupName) {
-        assert groupName != null;
+    @Override public void resetMetrics(String registry) {
+        assert registry != null;
 
-        MetricRegistry mreg = ctx.metric().registry(groupName);
+        MetricRegistry mreg = ctx.metric().registry(registry);
 
         if (mreg != null)
             mreg.reset();
         else if (log.isInfoEnabled())
-            log.info("\"" + groupName + "\" not found.");
+            log.info("\"" + registry + "\" not found.");
     }
 
     /** {@inheritDoc} */
