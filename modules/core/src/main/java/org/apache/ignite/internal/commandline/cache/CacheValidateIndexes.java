@@ -198,9 +198,9 @@ public class CacheValidateIndexes implements Command<CacheValidateIndexes.Argume
             }
 
             if (!errors)
-                logger.severe("no issues found.");
+                logger.info("no issues found.");
             else
-                logger.severe("issues found (listed above).");
+                logger.info("issues found (listed above).");
 
             logger.info("");
 

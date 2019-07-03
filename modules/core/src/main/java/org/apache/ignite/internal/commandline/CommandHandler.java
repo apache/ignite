@@ -278,10 +278,12 @@ public class CommandHandler {
             }
 
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_OK);
+
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
             logger.severe("Check arguments. " + CommandLogger.errorMessage(e));
+
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
             return EXIT_CODE_INVALID_ARGUMENTS;
@@ -289,6 +291,7 @@ public class CommandHandler {
         catch (Throwable e) {
             if (isAuthError(e)) {
                 logger.severe("Authentication error. " + CommandLogger.errorMessage(e));
+
                 logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
 
                 return ERR_AUTHENTICATION_FAILED;
@@ -296,6 +299,7 @@ public class CommandHandler {
 
             if (isConnectionError(e)) {
                 logger.severe("Connection to cluster failed. " + CommandLogger.errorMessage(e));
+
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_CONNECTION_FAILED);
 
                 return EXIT_CODE_CONNECTION_FAILED;
