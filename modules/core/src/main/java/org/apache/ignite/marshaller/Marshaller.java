@@ -76,9 +76,8 @@ public interface Marshaller {
     /**
      * Marshals object to the output stream. This method should not close
      * given output stream.
-     * Note: {@code null} obj will be marshaled to binary {@code null} representation.
      *
-     * @param obj Object to marshal.
+     * @param obj Object to marshal. {@code null} object will be marshaled to binary {@code null} representation.
      * @param out Output stream to marshal into.
      * @throws IgniteCheckedException If marshalling failed.
      */
@@ -86,9 +85,8 @@ public interface Marshaller {
 
     /**
      * Marshals object to byte array.
-     * Note: {@code null} obj will be marshaled to binary {@code null} representation.
      *
-     * @param obj Object to marshal.
+     * @param obj Object to marshal. {@code null} object will be marshaled to binary {@code null} representation.
      * @return Byte array.
      * @throws IgniteCheckedException If marshalling failed.
      */
@@ -100,7 +98,7 @@ public interface Marshaller {
      *
      * @param <T> Type of unmarshalled object.
      * @param in Input stream.
-     * @param clsLdr Class loader to use.
+     * @param clsLdr If not {@code null} then given class loader will be used for unmarshal object.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
@@ -111,7 +109,7 @@ public interface Marshaller {
      *
      * @param <T> Type of unmarshalled object.
      * @param arr Byte array.
-     * @param clsLdr Class loader to use.
+     * @param clsLdr If not {@code null} then given class loader will be used for unmarshal object.
      * @return Unmarshalled object.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
