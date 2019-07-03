@@ -42,6 +42,12 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** Check CRC */
     private boolean checkCrc;
 
+    /** */
+    private boolean skipZeros;
+
+    /** Cache kind. */
+    private CacheFilterEnum cacheFilterEnum;
+
     /**
      * Default constructor.
      */
@@ -52,11 +58,21 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @param caches Caches.
      * @param excludeCaches Exclude caches or group.
+     * @param skipZeros Skip zeros partitions.
+     * @param cacheFilterEnum Cache kind.
      * @param checkCrc Check CRC sum on stored pages on disk.
      */
-    public VisorIdleVerifyTaskArg(Set<String> caches, Set<String> excludeCaches, boolean checkCrc) {
+    public VisorIdleVerifyTaskArg(
+        Set<String> caches,
+        Set<String> excludeCaches,
+        boolean skipZeros,
+        CacheFilterEnum cacheFilterEnum,
+        boolean checkCrc
+    ) {
         this.caches = caches;
         this.excludeCaches = excludeCaches;
+        this.skipZeros = skipZeros;
+        this.cacheFilterEnum = (cacheFilterEnum == null ? CacheFilterEnum.DEFAULT : cacheFilterEnum);
         this.checkCrc = checkCrc;
     }
 
@@ -77,27 +93,27 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     }
 
     /** */
-    public boolean isCheckCrc() {
+    public boolean checkCrc() {
         return checkCrc;
     }
 
     /**
      * @return Caches.
      */
-    public Set<String> getCaches() {
+    public Set<String> caches() {
         return caches;
     }
 
     /**
      * @return Exclude caches or groups.
      */
-    public Set<String> getExcludeCaches() {
+    public Set<String> excludeCaches() {
         return excludeCaches;
     }
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V3;
+        return V4;
     }
 
     /** {@inheritDoc} */
@@ -114,6 +130,10 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
             U.writeCollection(out, excludeCaches);
 
             out.writeBoolean(checkCrc);
+
+            out.writeBoolean(skipZeros);
+
+            U.writeEnum(out, cacheFilterEnum);
         }
     }
 
@@ -136,6 +156,14 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
             if (protoVer >= V3)
                 checkCrc = in.readBoolean();
+
+            if (protoVer >= V4) {
+                skipZeros = in.readBoolean();
+
+                CacheFilterEnum cfe = CacheFilterEnum.fromOrdinal(in.readByte());
+
+                cacheFilterEnum = (cfe == null ? CacheFilterEnum.DEFAULT : cfe);
+            }
         }
     }
 
@@ -147,6 +175,30 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** */
     protected void checkCrc(boolean checkCrc) {
         this.checkCrc = checkCrc;
+    }
+
+    /**
+     * @return Skip zeros partitions.
+     */
+    public boolean skipZeros() {
+        return skipZeros;
+    }
+
+    /** */
+    protected void skipZeros(boolean skipZeros) {
+        this.skipZeros = skipZeros;
+    }
+
+    /** */
+    protected void cacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
+        this.cacheFilterEnum = (cacheFilterEnum == null ? CacheFilterEnum.DEFAULT : cacheFilterEnum);
+    }
+
+    /**
+     * @return Kind fo cache.
+     */
+    public CacheFilterEnum cacheFilterEnum() {
+        return cacheFilterEnum;
     }
 
     /** {@inheritDoc} */
