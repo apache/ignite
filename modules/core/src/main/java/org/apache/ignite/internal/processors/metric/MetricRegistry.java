@@ -233,8 +233,8 @@ public class MetricRegistry implements Iterable<Metric> {
      *
      * @param rateTimeInterval Rate time interval.
      * @param size Array size for underlying calculations.
-     * @return Metric.
-     * @see {@link HitRateMetric}.
+     * @return {@link HitRateMetric}
+     * @see HitRateMetric
      */
     public HitRateMetric hitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
         return addMetric(name, new HitRateMetric(metricName(grpName, name), desc, rateTimeInterval, size));

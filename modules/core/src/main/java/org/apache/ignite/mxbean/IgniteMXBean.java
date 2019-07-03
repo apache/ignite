@@ -499,7 +499,7 @@ public interface IgniteMXBean {
     /**
      * Resets metrics for of a given registry.
      *
-     * @param groupName Metrics registry name.
+     * @param registry Metrics registry name.
      */
     @MXBeanDescription("Resets metrics of a given registry.")
     @MXBeanParametersNames("registry")
