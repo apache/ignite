@@ -2207,7 +2207,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     }
                 }
 
-                if (!U.isLocalNodeCoordinator(cctx.discovery()) && (serverNodeDiscoveryEvent() || localJoinExchange()))
+                if (!crd.isLocal() && (serverNodeDiscoveryEvent() || localJoinExchange()))
                     detectLostPartitions(res);
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
