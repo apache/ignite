@@ -1365,7 +1365,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         UUID routineId = req.routineId();
 
-        if (req.deserializationException() != null) {
+        if (req.deserializationException() != null && checkNodeFilter(req)) {
             IgniteCheckedException err = new IgniteCheckedException(req.deserializationException());
 
             req.addError(node.id(), err);
@@ -1468,6 +1468,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (err != null)
             req.addError(ctx.localNodeId(), err);
+    }
+
+    /** */
+    private boolean checkNodeFilter(StartRoutineDiscoveryMessage req) {
+        StartRequestData reqData = req.startRequestData();
+        IgnitePredicate<ClusterNode> prjPred;
+
+        return reqData == null || (prjPred = reqData.projectionPredicate()) == null
+            || prjPred.apply(ctx.discovery().localNode());
     }
 
     /**
