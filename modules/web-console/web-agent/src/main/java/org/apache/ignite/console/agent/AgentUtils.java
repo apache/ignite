@@ -27,6 +27,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.apache.ignite.console.websocket.WebSocketEvent;
@@ -298,7 +301,16 @@ public class AgentUtils {
      * @throws Exception If failed to send event.
      */
     public static void send(Session ses, WebSocketEvent evt) throws Exception {
-        ses.getRemote().sendStringByFuture(toJson(evt)).get();
+        Future<Void> fut = ses.getRemote().sendStringByFuture(toJson(evt));
+
+        try {
+            fut.get(10L, TimeUnit.SECONDS);
+        }
+        catch (TimeoutException e) {
+            fut.cancel(true);
+
+            throw e;
+        }
     }
 
     /**
