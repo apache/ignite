@@ -143,6 +143,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Counts messages")
     public void testGetFromBackupStoreReadThroughDisabled() throws Exception {
         checkGetFromBackupStoreReadThroughDisabled(cacheConfigurations());
     }
@@ -188,6 +189,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Counts messages")
     public void testGetFromPrimaryPreloadInProgress() throws Exception {
         checkGetFromPrimaryPreloadInProgress(cacheConfigurations());
     }
@@ -291,6 +293,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Counts messages")
     public void testNoPrimaryReadPreloadFinished() throws Exception {
         checkNoPrimaryReadPreloadFinished(cacheConfigurations());
     }
