@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
@@ -69,6 +70,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setUserAttributes(Collections.singletonMap("name", igniteInstanceName));
 
         cfg.setClientMode(client);
 

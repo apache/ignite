@@ -56,6 +56,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         cc.setRebalanceMode(preloadMode);
         cc.setAffinity(new RendezvousAffinityFunction(false, 521));
         cc.setBackups(1);
+        cc.setOnheapCacheEnabled(true);
 
         c.setCacheConfiguration(cc);
 

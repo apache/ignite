@@ -32,6 +32,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -60,6 +61,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     /** Test thread count. */
     private static final int THREAD_CNT = 10;
+
+    /** Number of iterations (adjust for prolonged debugging). */
+    public static final int MAX_ITER_CNT = 10_000;
 
     /** Store enable flag. */
     private boolean storeEnabled;
@@ -240,7 +244,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutsMultithreadedColocated() throws Exception {
-        checkPutsMultithreaded(true, false, 100000);
+        checkPutsMultithreaded(true, false, MAX_ITER_CNT);
     }
 
     /**
@@ -248,7 +252,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutsMultithreadedRemote() throws Exception {
-       checkPutsMultithreaded(false, true, 100000);
+       checkPutsMultithreaded(false, true, MAX_ITER_CNT);
     }
 
     /**
@@ -256,7 +260,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPutsMultithreadedMixed() throws Exception {
-        checkPutsMultithreaded(true, true, 100000);
+        checkPutsMultithreaded(true, true, MAX_ITER_CNT);
     }
 
     /**
@@ -790,9 +794,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkStore(Ignite ignite, Map<Integer, String> map) throws Exception {
-        String cacheName = ignite.configuration().getCacheConfiguration()[0].getName();
+        String cacheName = ignite.configuration().getCacheConfiguration()[1].getName();
 
-        GridCacheContext ctx = ((IgniteKernal)grid()).context().cache().internalCache(cacheName).context();
+        GridCacheContext ctx = ((IgniteKernal)ignite).context().cache().internalCache(cacheName).context();
 
         CacheStore store = ctx.store().configuredStore();
 
@@ -806,9 +810,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     private void clearStores(int cnt) {
         for (int i = 0; i < cnt; i++) {
-            String cacheName = grid(i).configuration().getCacheConfiguration()[0].getName();
+            IgniteEx grid = grid(i);
 
-            GridCacheContext ctx = ((IgniteKernal)grid()).context().cache().internalCache(cacheName).context();
+            String cacheName = grid.configuration().getCacheConfiguration()[1].getName();
+
+            GridCacheContext ctx = grid.context().cache().internalCache(cacheName).context();
 
             CacheStore store = ctx.store().configuredStore();
 

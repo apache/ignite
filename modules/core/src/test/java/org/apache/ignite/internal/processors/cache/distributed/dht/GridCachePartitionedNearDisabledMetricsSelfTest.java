@@ -21,8 +21,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.junit.Ignore;
+import org.apache.ignite.internal.processors.cache.GridCacheTransactionalAbstractMetricsSelfTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -32,7 +31,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Metrics test for partitioned cache with disabled near cache.
  */
-public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAbstractSelfTest {
+public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
     /** */
     private static final int GRID_CNT = 2;
 
@@ -63,22 +62,56 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         return GRID_CNT;
     }
 
-    // TODO: extend from GridCacheTransactionalAbstractMetricsSelfTest and uncomment:
+    /** {@inheritDoc} */
+    @Override protected int expectedReadsPerPut(boolean isPrimary) {
+        return 1;
+    }
 
-//    /** {@inheritDoc} */
-//    @Override protected int expectedReadsPerPut(boolean isPrimary) {
-//        return 1;
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override protected int expectedMissesPerPut(boolean isPrimary) {
-//        return 1;
-//    }
+    /** {@inheritDoc} */
+    @Override protected int expectedMissesPerPut(boolean isPrimary) {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Override public void testMisses() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        int keyCnt = keyCount();
+
+        int expReads = 0;
+
+        // Get a few keys missed keys.
+        for (int i = 0; i < keyCnt; i++) {
+            assertNull("Value is not null for key: " + i, cache.get(i));
+
+            expReads++;
+        }
+
+        // Check metrics for the whole cache.
+        long puts = 0;
+        long reads = 0;
+        long hits = 0;
+        long misses = 0;
+
+        for (int i = 0; i < gridCount(); i++) {
+            CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
+
+            puts += m.getCachePuts();
+            reads += m.getCacheGets();
+            hits += m.getCacheHits();
+            misses += m.getCacheMisses();
+        }
+
+        assertEquals(0, puts);
+        assertEquals(expReads, reads);
+        assertEquals(0, hits);
+        assertEquals(expReads, misses);
+    }
 
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-819")
     @Test
     public void testGettingRemovedKey() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);

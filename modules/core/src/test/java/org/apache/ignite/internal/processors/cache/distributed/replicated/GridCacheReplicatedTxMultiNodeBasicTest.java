@@ -16,10 +16,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
+import java.util.Collections;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteTxMultiNodeAbstractTest;
-import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -37,51 +38,11 @@ public class GridCacheReplicatedTxMultiNodeBasicTest extends IgniteTxMultiNodeAb
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setQueryEntities(Collections.singleton(new QueryEntity()
+            .setKeyType(String.class.getCanonicalName()).setValueType(Integer.class.getCanonicalName())));
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testPutOneEntryInTx() throws Exception {
-        super.testPutOneEntryInTx();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testPutTwoEntriesInTx() throws Exception {
-        super.testPutTwoEntriesInTx();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testPutOneEntryInTxMultiThreaded() throws Exception {
-        super.testPutOneEntryInTxMultiThreaded();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testPutTwoEntryInTxMultiThreaded() throws Exception {
-        super.testPutTwoEntryInTxMultiThreaded();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testRemoveInTxQueried() throws Exception {
-        super.testRemoveInTxQueried();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testRemoveInTxSimple() throws Exception {
-        super.testRemoveInTxSimple();
-    }
-
-    /** {@inheritDoc} */
-    @Test
-    @Override public void testRemoveInTxQueriedMultiThreaded() throws Exception {
-        super.testRemoveInTxQueriedMultiThreaded();
     }
 }

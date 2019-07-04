@@ -43,7 +43,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind
      * if there is nothing to clean yet.
      */
-    public static final long UNWIND_THROTTLING_TIMEOUT = Long.getLong(
+    private final long unwindThrottlingTimeout = Long.getLong(
         IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, 500L);
 
     /** Entries pending removal. This collection tracks entries for near cache only. */
@@ -236,7 +236,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 return true;
 
             // There is nothing to clean, so the next clean up can be postponed.
-            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
+            nextCleanTime = U.currentTimeMillis() + unwindThrottlingTimeout;
 
             if (amount != -1 && pendingEntries != null) {
                 EntryWrapper e = pendingEntries.firstx();

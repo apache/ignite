@@ -147,7 +147,7 @@ public class NearCacheMultithreadedUpdateTest extends GridCommonAbstractTest {
         }
 
         try {
-            long stopTime = System.currentTimeMillis() + 30_000;
+            long stopTime = System.currentTimeMillis() + 10_000;
 
             int iter = 0;
 
