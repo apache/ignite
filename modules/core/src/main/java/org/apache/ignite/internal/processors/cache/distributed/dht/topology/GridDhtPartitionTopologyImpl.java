@@ -1587,9 +1587,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (exchangeVer != null &&
                     nodeMap != null &&
                     grp.persistenceEnabled() &&
-                    readyTopVer.initialized()) {
-
-                    assert exchFut != null;
+                    readyTopVer.initialized() &&
+                    exchFut != null) {
 
                     for (Map.Entry<Integer, GridDhtPartitionState> e : nodeMap.entrySet()) {
                         int p = e.getKey();
