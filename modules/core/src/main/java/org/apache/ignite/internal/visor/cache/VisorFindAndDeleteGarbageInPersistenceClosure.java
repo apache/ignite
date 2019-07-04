@@ -126,7 +126,6 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                 }
             }));
 
-
         Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCount = new HashMap<>();
 
         int curPart = 0;

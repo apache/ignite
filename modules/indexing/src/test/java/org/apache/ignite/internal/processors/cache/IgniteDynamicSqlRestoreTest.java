@@ -59,6 +59,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implements Serializable {
 
     public static final String TEST_CACHE_NAME = "test";
+
     public static final String TEST_INDEX_OBJECT = "TestIndexObject";
 
     /** {@inheritDoc} */

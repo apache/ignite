@@ -34,7 +34,6 @@ import org.apache.ignite.ml.math.exceptions.knn.FileParsingException;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
-
 /**
  * Common utility code used in some ML examples to set up test cache.
  */

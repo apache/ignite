@@ -44,6 +44,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedBaselineConfiguration;
@@ -385,7 +386,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         GridChangeGlobalStateFuture fut = this.stateChangeFut.get();
 
         if (fut != null)
-            fut.onDone(new IgniteCheckedException("Failed to wait for cluster state change, node is stopping."));
+            fut.onDone(new NodeStoppingException("Failed to wait for cluster state change, node is stopping."));
 
         super.onKernalStop(cancel);
     }
@@ -1025,7 +1026,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 String msg = "Node not supporting BaselineTopology" +
                     " is not allowed to join the cluster with BaselineTopology";
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
 
             return null;
@@ -1040,7 +1041,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 "from node " + node.consistentId() + ": " + e.getMessage() +
                 "; node is not allowed to join";
 
-            return new IgniteNodeValidationResult(node.id(), msg , msg);
+            return new IgniteNodeValidationResult(node.id(), msg);
         }
 
         if (joiningNodeState == null || joiningNodeState.baselineTopology() == null)
@@ -1050,7 +1051,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
                 String msg = "Node with set up BaselineTopology is not allowed to join cluster without one: " + node.consistentId();
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
         }
 
@@ -1061,7 +1062,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             String msg = "Node with set up BaselineTopology is not allowed " +
                 "to join cluster in the process of first activation: " + node.consistentId();
 
-            return new IgniteNodeValidationResult(node.id(), msg, msg);
+            return new IgniteNodeValidationResult(node.id(), msg);
         }
 
         BaselineTopology clusterBlt;
@@ -1084,7 +1085,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 + " New BaselineTopology was set on joining node with set-baseline command."
                 + recommendation;
 
-            return new IgniteNodeValidationResult(node.id(), msg, msg);
+            return new IgniteNodeValidationResult(node.id(), msg);
         }
 
         if (joiningNodeBlt.id() == clusterBlt.id()) {
@@ -1097,7 +1098,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     + joiningNodeBlt.branchingPointHash()
                     + ")." + recommendation;
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
         }
         else if (joiningNodeBlt.id() < clusterBlt.id()) {
@@ -1111,7 +1112,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     + joiningNodeBlt.branchingPointHash()
                     + ")." + recommendation;
 
-                return new IgniteNodeValidationResult(node.id(), msg, msg);
+                return new IgniteNodeValidationResult(node.id(), msg);
             }
         }
 
@@ -1406,7 +1407,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @param discoCache Discovery cache from the discovery manager.
      * @param topVer Topology version.
      * @param minorTopVer Minor topology version.
-     * @return {@code true} if baseline was changed.
+     * @return {@code true} if baseline was changed and discovery cache recalculation is required.
      */
     public boolean autoAdjustInMemoryClusterState(
         UUID nodeId,
@@ -1462,8 +1463,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 onStateFinishMessage(finishMsg);
 
                 globalState.localBaselineAutoAdjustment(true);
-
-                ctx.discovery().updateTopologySnapshot();
 
                 return true;
             }

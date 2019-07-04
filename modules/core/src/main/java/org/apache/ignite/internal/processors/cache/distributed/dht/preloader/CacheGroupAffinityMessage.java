@@ -182,7 +182,8 @@ public class CacheGroupAffinityMessage implements Message {
      * @param discoCache Discovery data cache.
      * @return Nodes list.
      */
-    public static List<ClusterNode> toNodes(GridLongList assign, Map<Long, ClusterNode> nodesByOrder, DiscoCache discoCache) {
+    public static List<ClusterNode> toNodes(GridLongList assign, Map<Long, ClusterNode> nodesByOrder,
+        DiscoCache discoCache) {
         List<ClusterNode> assign0 = new ArrayList<>(assign.size());
 
         for (int n = 0; n < assign.size(); n++) {

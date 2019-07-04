@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Machine learning preprocessing examples.
  */
+
 package org.apache.ignite.examples.ml.preprocessing;

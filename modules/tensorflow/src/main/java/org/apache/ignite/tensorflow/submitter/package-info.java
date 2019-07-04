@@ -20,4 +20,5 @@
  * This package contains classes that allow to use command line interface to submit jobs into TensorFlow in Apache
  * Ignite infrastructure.
  */
+
 package org.apache.ignite.tensorflow.submitter;

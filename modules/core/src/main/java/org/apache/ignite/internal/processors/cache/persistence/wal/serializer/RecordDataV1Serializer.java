@@ -70,6 +70,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuc
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
@@ -374,6 +375,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
                         + /*allocatedIdxCandidate*/ 4;
 
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                return /*cache ID*/4 + /*page ID*/8 + /*upd cntr*/8 + /*rmv id*/8 + /*part size*/4 + /*counters page id*/8 + /*state*/ 1
+                    + /*allocatedIdxCandidate*/ 4 + /*link*/ 8;
+
             case MEMORY_RECOVERY:
                 return 8;
 
@@ -597,17 +602,12 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
-                cacheId = in.readInt();
-                pageId = in.readLong();
+                res = new MetaPageUpdatePartitionDataRecord(in);
 
-                long updCntr = in.readLong();
-                long rmvId = in.readLong();
-                int partSize = in.readInt();
-                long countersPageId = in.readLong();
-                byte state = in.readByte();
-                int allocatedIdxCandidate = in.readInt();
+                break;
 
-                res = new MetaPageUpdatePartitionDataRecord(cacheId, pageId, updCntr, rmvId, partSize, countersPageId, state, allocatedIdxCandidate);
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                res = new MetaPageUpdatePartitionDataRecordV2(in);
 
                 break;
 
@@ -950,7 +950,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 int dstIdx = in.readUnsignedShort();
                 long srcPageId = in.readLong();
                 int srcIdx = in.readUnsignedShort();
-                rmvId = in.readLong();
+                long rmvId = in.readLong();
 
                 res = new InnerReplaceRecord<>(cacheId, pageId, dstIdx, srcPageId, srcIdx, rmvId);
 
@@ -1112,7 +1112,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 partId = in.readInt();
 
-                state = in.readByte();
+                byte state = in.readByte();
 
                 long updateCntr = in.readLong();
 
@@ -1201,17 +1201,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case PARTITION_META_PAGE_UPDATE_COUNTERS:
-                MetaPageUpdatePartitionDataRecord partDataRec = (MetaPageUpdatePartitionDataRecord)rec;
-
-                buf.putInt(partDataRec.groupId());
-                buf.putLong(partDataRec.pageId());
-
-                buf.putLong(partDataRec.updateCounter());
-                buf.putLong(partDataRec.globalRemoveId());
-                buf.putInt(partDataRec.partitionSize());
-                buf.putLong(partDataRec.countersPageId());
-                buf.put(partDataRec.state());
-                buf.putInt(partDataRec.allocatedIndexCandidate());
+            case PARTITION_META_PAGE_UPDATE_COUNTERS_V2:
+                ((MetaPageUpdatePartitionDataRecord)rec).toBytes(buf);
 
                 break;
 
@@ -1690,7 +1681,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.put(partMetaStateRecord.state());
 
-                buf.putLong(partMetaStateRecord.updateCounter());
+                buf.putLong(0);
 
                 break;
 

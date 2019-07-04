@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import javax.cache.CacheException;
-import javax.management.JMException;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -28,10 +26,15 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -50,6 +53,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import javax.management.JMException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
 import org.apache.ignite.DataStorageMetrics;
@@ -141,6 +146,7 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
@@ -148,6 +154,8 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -162,8 +170,8 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
-import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
@@ -218,6 +226,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
@@ -749,6 +758,109 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    /** */
+    private void ackClassPathElementRecursive(File clsPathEntry, SB clsPathContent) {
+        if (clsPathEntry.isDirectory()) {
+            String[] list = clsPathEntry.list();
+
+            for (String listElement : list)
+                ackClassPathElementRecursive(new File(clsPathEntry, listElement), clsPathContent);
+        }
+        else {
+            String path = clsPathEntry.getAbsolutePath();
+
+            if (path.endsWith(".class"))
+                clsPathContent.a(path).a(";");
+        }
+    }
+
+    /** */
+    private void ackClassPathEntry(String clsPathEntry, SB clsPathContent) {
+        File clsPathElementFile = new File(clsPathEntry);
+
+        if (clsPathElementFile.isDirectory())
+            ackClassPathElementRecursive(clsPathElementFile, clsPathContent);
+        else {
+            String extension = clsPathEntry.length() >= 4
+                ? clsPathEntry.substring(clsPathEntry.length() - 4).toLowerCase()
+                : null;
+
+            if (".jar".equals(extension) || ".zip".equals(extension))
+                clsPathContent.a(clsPathEntry).a(";");
+        }
+    }
+
+    /** */
+    private void ackClassPathWildCard(String clsPathEntry, SB clsPathContent) {
+        final int lastSeparatorIdx = clsPathEntry.lastIndexOf(File.separator);
+
+        final int asteriskIdx = clsPathEntry.indexOf('*');
+
+        //just to log possibly incorrent entries to err
+        if (asteriskIdx >= 0 && asteriskIdx < lastSeparatorIdx)
+            throw new RuntimeException("Could not parse classpath entry");
+
+        final int fileMaskFirstIdx = lastSeparatorIdx + 1;
+
+        final String fileMask =
+            (fileMaskFirstIdx >= clsPathEntry.length()) ? "*.jar" : clsPathEntry.substring(fileMaskFirstIdx);
+
+        Path path = Paths.get(lastSeparatorIdx > 0 ? clsPathEntry.substring(0, lastSeparatorIdx) : ".")
+            .toAbsolutePath()
+            .normalize();
+
+        if (lastSeparatorIdx == 0)
+            path = path.getRoot();
+
+        try {
+            DirectoryStream<Path> files =
+                Files.newDirectoryStream(path, fileMask);
+
+            for (Path f : files) {
+                String s = f.toString();
+
+                if (s.toLowerCase().endsWith(".jar"))
+                    clsPathContent.a(f.toString()).a(";");
+            }
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Prints the list of *.jar and *.class files containing in classpath.
+     */
+    private void ackClassPathContent() {
+        assert log != null;
+
+        boolean enabled = IgniteSystemProperties.getBoolean(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, true);
+
+        if (enabled) {
+            String clsPath = System.getProperty("java.class.path", ".");
+
+            String[] clsPathElements = clsPath.split(File.pathSeparator);
+
+            U.log(log, "Classpath value: " + clsPath);
+
+            SB clsPathContent = new SB("List of files containing in classpath: ");
+
+            for (String clsPathEntry : clsPathElements) {
+                try {
+                    if (clsPathEntry.contains("*"))
+                        ackClassPathWildCard(clsPathEntry, clsPathContent);
+                    else
+                        ackClassPathEntry(clsPathEntry, clsPathContent);
+                }
+                catch (Exception e) {
+                    U.warn(log, String.format("Could not log class path entry '%s': %s", clsPathEntry, e.getMessage()));
+                }
+            }
+
+            U.log(log, clsPathContent.toString());
+        }
+    }
+
     /**
      * @param cfg Configuration to use.
      * @param utilityCachePool Utility cache pool.
@@ -919,6 +1031,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 longJVMPauseDetector
             );
 
+            startProcessor(new DiagnosticProcessor(ctx));
+
             mBeansMgr = new IgniteMBeansManager(this);
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
@@ -984,6 +1098,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Start SPI managers.
             // NOTE: that order matters as there are dependencies between managers.
+            startManager(new GridMetricManager(ctx));
             startManager(new GridIoManager(ctx));
             startManager(new GridCheckpointManager(ctx));
 
@@ -1162,6 +1277,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (recon)
                 reconnectState.waitFirstReconnect();
 
+            ctx.metric().registerThreadPools(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc,
+                p2pExecSvc, mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc,
+                callbackExecSvc, qryExecSvc, schemaExecSvc, customExecSvcs);
+
             // Register MBeans.
             mBeansMgr.registerAllMBeans(utilityCachePool, execSvc, svcExecSvc, sysExecSvc, stripedExecSvc, p2pExecSvc,
                 mgmtExecSvc, igfsExecSvc, dataStreamExecSvc, restExecSvc, affExecSvc, idxExecSvc, callbackExecSvc,
@@ -1287,6 +1406,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.performance().logSuggestions(log, igniteInstanceName);
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
+
+        ackClassPathContent();
 
         ackStart(rtBean);
 
@@ -2438,7 +2559,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             MarshallerExclusions.clearCache();
             BinaryEnumCache.clear();
 
-
             gw.writeLock();
 
             try {
@@ -2502,8 +2622,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 // Preserve interrupt status.
                 Thread.currentThread().interrupt();
             }
-
-            ctx.ioStats().stop();
         }
         else {
             // Proper notification.
@@ -2653,6 +2771,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (cfg.getRebalanceThreadPoolSize() < 1)
                 throw new IgniteCheckedException("Rebalance thread pool size minimal allowed value is 1. " +
                     "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
+
+            if (cfg.getRebalanceBatchesPrefetchCount() < 1)
+                throw new IgniteCheckedException("Rebalance batches prefetch count minimal allowed value is 1. " +
+                    "Change IgniteConfiguration.rebalanceBatchesPrefetchCount property before next start.");
+
+            if (cfg.getRebalanceBatchSize() <= 0)
+                throw new IgniteCheckedException("Rebalance batch size must be greater than zero. " +
+                    "Change IgniteConfiguration.rebalanceBatchSize property before next start.");
+
+            if (cfg.getRebalanceThrottle() < 0)
+                throw new IgniteCheckedException("Rebalance throttle can't have negative value. " +
+                    "Change IgniteConfiguration.rebalanceThrottle property before next start.");
+
+            if (cfg.getRebalanceTimeout() < 0)
+                throw new IgniteCheckedException("Rebalance message timeout can't have negative value. " +
+                    "Change IgniteConfiguration.rebalanceTimeout property before next start.");
 
             for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
                 if (ccfg.getRebalanceBatchesPrefetchCount() < 1)
@@ -4361,6 +4495,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Override public void clearNodeLocalMap() {
         ctx.cluster().get().clearNodeMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resetMetrics(String prefix) {
+        assert prefix != null;
+
+        MetricRegistry mreg = ctx.metric().registry().withPrefix(prefix);
+
+        mreg.reset();
     }
 
     /** {@inheritDoc} */

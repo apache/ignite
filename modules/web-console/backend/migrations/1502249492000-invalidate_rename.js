@@ -16,13 +16,13 @@
  */
 
 exports.up = function up(done) {
-    this('Cache').update({}, { $rename: {invalidate: 'isInvalidate'}}, {multi: true})
+    this('Cache').updateMany({}, { $rename: {invalidate: 'isInvalidate'}})
         .then(() => done())
         .catch(done);
 };
 
 exports.down = function down(done) {
-    this('Cache').update({}, { $rename: {isInvalidate: 'invalidate'}}, {multi: true})
+    this('Cache').updateMany({}, { $rename: {isInvalidate: 'invalidate'}})
         .then(() => done())
         .catch(done);
 };

@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -525,7 +526,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 filter,
                 null,
                 mvccSnapshot,
-                null
+                null,
+                true
             );
 
             return new GridQueryFieldsResultAdapter(select.meta(), null) {
@@ -884,11 +886,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             ResultSet rs = executeSqlQuery(conn, stmt, timeoutMillis, cancel);
 
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout())
-                qryInfo.printLogMessage(log, connMgr, "Long running query is finished");            return rs;
+                qryInfo.printLogMessage(log, "Long running query is finished");
+
+            return rs;
         }
         catch (Throwable e) {
             if (qryInfo != null && qryInfo.time() > longRunningQryMgr.getTimeout()) {
-                qryInfo.printLogMessage(log, connMgr, "Long running query is finished with error: "
+                qryInfo.printLogMessage(log, "Long running query is finished with error: "
                     + e.getMessage());
             }
 
@@ -1815,6 +1819,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         markIndexRebuild(cctx.name(), true);
 
+        if (cctx.group().metrics0() != null)
+            cctx.group().metrics0().setIndexBuildCountPartitionsLeft(cctx.topology().localPartitions().size());
+
         GridWorker worker = new GridWorker(ctx.igniteInstanceName(), "index-rebuild-worker-" + cctx.name(), log) {
             @Override protected void body() {
                 try {
@@ -2222,6 +2229,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         int inlineSize = getInlineSize(page, grpId, pageMemory);
 
+        String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
+
+        PageLockListener lockLsnr = ctx.cache().context().diagnostic()
+            .pageLockTracker().createPageLockTracker(grpName + "IndexTree##" + indexName);
+
         BPlusTree<H2Row, H2Row> tree = new BPlusTree<H2Row, H2Row>(
             indexName,
             grpId,
@@ -2232,7 +2244,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             reuseList,
             H2ExtrasInnerIO.getVersions(inlineSize, mvccEnabled),
             H2ExtrasLeafIO.getVersions(inlineSize, mvccEnabled),
-            ctx.failure()
+            ctx.failure(),
+            lockLsnr
         ) {
             @Override protected int compare(BPlusIO io, long pageAddr, int idx, H2Row row) {
                 throw new AssertionError();

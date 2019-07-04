@@ -38,7 +38,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
      *
      * @param {RemoveResult} result - The results of remove operation.
      */
-    const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
+    const convertRemoveStatus = (result) => ({rowsAffected: result.n});
 
     /**
      * Update existing notebook.
@@ -106,7 +106,7 @@ module.exports.factory = (mongo, spacesService, errors) => {
             if (_.isNil(notebookId))
                 return Promise.reject(new errors.IllegalArgumentException('Notebook id can not be undefined or null'));
 
-            return mongo.Notebook.remove({_id: notebookId}).exec()
+            return mongo.Notebook.deleteOne({_id: notebookId}).exec()
                 .then(convertRemoveStatus);
         }
     }

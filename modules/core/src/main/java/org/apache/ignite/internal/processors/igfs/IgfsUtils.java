@@ -423,7 +423,6 @@ public class IgfsUtils {
 
                 ccfgs.add(ccfgData);
 
-
                 // No copy-on-read.
                 ccfgMeta.setCopyOnRead(false);
                 ccfgData.setCopyOnRead(false);
@@ -521,7 +520,6 @@ public class IgfsUtils {
             cfgNames.add(name);
         }
     }
-
 
     /**
      * @return Default IGFS cache configuration.

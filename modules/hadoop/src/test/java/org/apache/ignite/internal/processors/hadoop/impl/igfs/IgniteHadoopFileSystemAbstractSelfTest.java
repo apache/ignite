@@ -239,6 +239,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
         Thread.sleep(500);
     }
+
     /**
      * Starts the nodes for this test.
      *

@@ -130,7 +130,6 @@ public class ClientCacheConfigurationSerializer {
     /** */
     private static final short STATISTICS_ENABLED = 406;
 
-
     /**
      * Writes the cache configuration.
      * @param writer Writer.

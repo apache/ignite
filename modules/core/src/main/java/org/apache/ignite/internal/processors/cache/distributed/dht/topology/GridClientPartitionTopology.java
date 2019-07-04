@@ -375,7 +375,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
         long updateSeq = this.updateSeq.incrementAndGet();
 
-        // If this is the oldest node.
+        // If this is the oldest node (coordinator) or cache was added during this exchange
         if (oldest.id().equals(loc.id()) || exchFut.dynamicCacheGroupStarted(grpId)) {
             if (node2part == null) {
                 node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
@@ -729,7 +729,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         @Nullable CachePartitionFullCountersMap cntrMap,
         Set<Integer> partsToReload,
         @Nullable Map<Integer, Long> partSizes,
-        @Nullable AffinityTopologyVersion msgTopVer) {
+        @Nullable AffinityTopologyVersion msgTopVer,
+        @Nullable GridDhtPartitionsExchangeFuture exchFut) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + ']');
 
@@ -1162,7 +1163,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory) {
+    @Override public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters,
+        Set<Integer> haveHistory,
+        GridDhtPartitionsExchangeFuture exchFut) {
         Map<UUID, Set<Integer>> result = new HashMap<>();
 
         lock.writeLock().lock();
