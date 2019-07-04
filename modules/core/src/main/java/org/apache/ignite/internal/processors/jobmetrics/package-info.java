@@ -16,6 +16,6 @@
 
 /**
  * <!-- Package description. -->
- * TODO.
+ * Job metrics.
  */
 package org.apache.ignite.internal.processors.jobmetrics;
