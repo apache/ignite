@@ -124,6 +124,15 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = NO_OP_METRICS;
+
+        metricsEnabled = memPlcCfg.isMetricsEnabled();
+
+        persistenceEnabled = memPlcCfg.isPersistenceEnabled();
+
+        rateTimeInterval = memPlcCfg.getMetricsRateTimeInterval();
+
+        subInts = memPlcCfg.getMetricsSubIntervalCount();
+
         this.totalAllocatedPages = new LongAdderMetricImpl("NO_OP", null);
         this.largeEntriesPages = new LongAdderMetricImpl("NO_OP", null);
         this.dirtyPages = new LongAdderMetricImpl("NO_OP", null);
