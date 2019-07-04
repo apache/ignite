@@ -21,11 +21,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -77,6 +81,8 @@ public class AsyncChannelTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> igniteCache = ignite.cache(CACHE_NAME);
             ClientCache<Integer, Integer> clientCache = client.cache(CACHE_NAME);
 
+            clientCache.clear();
+
             Lock keyLock = igniteCache.lock(0);
 
             IgniteInternalFuture fut;
@@ -127,6 +133,8 @@ public class AsyncChannelTest extends GridCommonAbstractTest {
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR))) {
             ClientCache<Integer, Integer> clientCache = client.cache(CACHE_NAME);
 
+            clientCache.clear();
+
             AtomicInteger keyCnt = new AtomicInteger();
 
             CyclicBarrier barrier = new CyclicBarrier(THREADS_CNT);
@@ -147,6 +155,43 @@ public class AsyncChannelTest extends GridCommonAbstractTest {
                     assertEquals(key, (long)clientCache.get(key));
                 }
 
+            }, THREADS_CNT, "thin-client-thread");
+        }
+    }
+
+    /**
+     * Test multiple concurrent async queries.
+     */
+    @Test
+    public void testConcurrentQueries() throws Exception {
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(CLIENT_CONN_ADDR))) {
+            ClientCache<Integer, Integer> clientCache = client.cache(CACHE_NAME);
+
+            clientCache.clear();
+
+            for (int i = 0; i < 10; i++)
+                clientCache.put(i, i);
+
+            CyclicBarrier barrier = new CyclicBarrier(THREADS_CNT);
+
+            GridTestUtils.runMultiThreaded(() -> {
+                try {
+                    barrier.await();
+                }
+                catch (Exception e) {
+                    fail();
+                }
+
+                for (int i = 0; i < 10; i++) {
+                    Query<Cache.Entry<Integer, String>> qry = new ScanQuery<Integer, String>().setPageSize(1);
+
+                    try (QueryCursor<Cache.Entry<Integer, String>> cur = clientCache.query(qry)) {
+                        int cacheSize = clientCache.size(CachePeekMode.PRIMARY);
+                        int curSize = cur.getAll().size();
+
+                        assertEquals(cacheSize, curSize);
+                    }
+                }
             }, THREADS_CNT, "thin-client-thread");
         }
     }

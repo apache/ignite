@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Adds failover abd thread-safety to {@link ClientChannel}.
@@ -57,6 +58,9 @@ final class ReliableChannel implements AutoCloseable {
 
     /** Ignite config. */
     private final ClientConfiguration clientCfg;
+
+    /** Channel is closed. */
+    private boolean closed;
 
     /**
      * Constructor.
@@ -89,7 +93,7 @@ final class ReliableChannel implements AutoCloseable {
 
         for (int i = 0; i < addrs.size(); i++) {
             try {
-                ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(addrs.get(i))).get();
+                ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
 
                 return;
             } catch (ClientConnectionException e) {
@@ -104,6 +108,8 @@ final class ReliableChannel implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public synchronized void close() throws Exception {
+        closed = true;
+
         if (ch != null) {
             ch.close();
 
@@ -112,7 +118,7 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
-     * Send request and handle response. The method is synchronous and single-threaded.
+     * Send request and handle response.
      */
     public <T> T service(
         ClientOperation op,
@@ -127,9 +133,7 @@ final class ReliableChannel implements AutoCloseable {
             try {
                 ch = channel();
 
-                long id = ch.send(op, payloadWriter);
-
-                return ch.receive(op, id, payloadReader);
+                return ch.service(op, payloadWriter, payloadReader);
             }
             catch (ClientConnectionException e) {
                 if (failure == null)
@@ -192,6 +196,9 @@ final class ReliableChannel implements AutoCloseable {
 
     /** */
     private synchronized ClientChannel channel() {
+        if (closed)
+            throw new ClientException("Channel is closed");
+
         if (ch == null)
             ch = chFactory.apply(new ClientChannelConfiguration(clientCfg).setAddress(primary)).get();
 
@@ -207,12 +214,7 @@ final class ReliableChannel implements AutoCloseable {
                 primary = backups.removeFirst();
             }
 
-            try {
-                ch.close();
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
+            U.closeQuiet(ch);
 
             ch = null;
         }

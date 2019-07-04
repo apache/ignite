@@ -154,10 +154,23 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public long send(ClientOperation op, Consumer<PayloadOutputStream> payloadWriter)
+    @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputStream> payloadWriter,
+        Function<PayloadInputStream, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException {
+        long id = send(op, payloadWriter);
+
+        return receive(op, id, payloadReader);
+    }
+
+    /**
+     * @param op Operation.
+     * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
+     * @return Request ID.
+     */
+    private long send(ClientOperation op, Consumer<PayloadOutputStream> payloadWriter)
         throws ClientConnectionException {
         long id = reqId.getAndIncrement();
 
+        // Only one thread at a time can have access to write to the channel.
         sndLock.lock();
 
         try (PayloadOutputStream req = new PayloadOutputStream(this)) {
@@ -186,13 +199,22 @@ class TcpClientChannel implements ClientChannel {
         return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public <T> T receive(ClientOperation op, long reqId, Function<PayloadInputStream, T> payloadReader)
+    /**
+     * @param op Operation.
+     * @param reqId ID of the request to receive the response for.
+     * @param payloadReader Payload reader from stream.
+     * @return Received operation payload or {@code null} if response has no payload.
+     */
+    private <T> T receive(ClientOperation op, long reqId, Function<PayloadInputStream, T> payloadReader)
         throws ClientConnectionException, ClientAuthorizationException {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
         assert pendingReq != null : "Pending request future not found for request " + reqId;
 
+        // Each thread creates a future on request sent and returns a response when this future is completed.
+        // Only one thread at a time can have access to read from the channel. This thread reads the next available
+        // response and complete corresponding future. All other concurrent threads wait for their own futures with
+        // a timeout and periodically try to lock the channel to process the next response.
         try {
             while (true) {
                 if (rcvLock.tryLock()) {
@@ -436,7 +458,7 @@ class TcpClientChannel implements ClientChannel {
         try {
             long val = dataInput.readLong();
 
-            totalBytesRead += Long.SIZE >> 3;
+            totalBytesRead += Long.BYTES;
 
             return val;
         }
@@ -452,7 +474,7 @@ class TcpClientChannel implements ClientChannel {
         try {
             int val = dataInput.readInt();
 
-            totalBytesRead += Integer.SIZE >> 3;
+            totalBytesRead += Integer.BYTES;
 
             return val;
         }
@@ -468,7 +490,7 @@ class TcpClientChannel implements ClientChannel {
         try {
             short val = dataInput.readShort();
 
-            totalBytesRead += Short.SIZE >> 3;
+            totalBytesRead += Short.BYTES;
 
             return val;
         }
