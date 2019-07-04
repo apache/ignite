@@ -20,10 +20,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /** */
 public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
@@ -61,18 +59,14 @@ public abstract class AbstractExporterSpiTest extends GridCommonAbstractTest {
      * @param ignite Ignite.
      */
     protected void createAdditionalMetrics(IgniteEx ignite) {
-        MetricRegistry mreg = ignite.context().metric().registry();
+        GridMetricManager mmgr = ignite.context().metric();
 
-        mreg.metric(metricName(FILTERED_PREFIX, "test"), "")
-            .add(2);
+        mmgr.registry(FILTERED_PREFIX).metric("test", "").add(2);
 
-        mreg.metric(metricName("other.prefix", "test"), "")
-            .add(42);
+        mmgr.registry("other.prefix").metric("test", "").add(42);
 
-        mreg.metric(metricName("other.prefix", "test2"), "")
-            .add(43);
+        mmgr.registry("other.prefix").metric("test2", "").add(43);
 
-        mreg.metric(metricName("other.prefix2", "test3"), "")
-            .add(44);
+        mmgr.registry("other.prefix2").metric("test3", "").add(44);
     }
 }

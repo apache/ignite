@@ -36,6 +36,10 @@ import org.junit.Test;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.GC_CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
@@ -54,7 +58,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         JmxExporterSpi jmxSpi = new JmxExporterSpi();
 
-        jmxSpi.setExportFilter(m -> !m.name().startsWith(FILTERED_PREFIX));
+        jmxSpi.setExportFilter(mgrp -> !mgrp.name().startsWith(FILTERED_PREFIX));
 
         cfg.setMetricExporterSpi(jmxSpi);
 
@@ -73,6 +77,23 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         stopAllGrids(true);
 
         cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testSysJmxMetrics() throws Exception {
+        DynamicMBean sysMBean = metricSet(null, SYS_METRICS);
+
+        Set<String> res = stream(sysMBean.getMBeanInfo().getAttributes())
+            .map(MBeanFeatureInfo::getName)
+            .collect(toSet());
+
+        assertTrue(res.contains(CPU_LOAD));
+        assertTrue(res.contains(GC_CPU_LOAD));
+        assertTrue(res.contains(metricName("memory", "heap", "init")));
+        assertTrue(res.contains(metricName("memory", "heap", "used")));
+        assertTrue(res.contains(metricName("memory", "nonheap", "committed")));
+        assertTrue(res.contains(metricName("memory", "nonheap", "max")));
     }
 
     /** */

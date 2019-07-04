@@ -30,11 +30,11 @@ public class LongGauge extends AbstractMetric implements LongMetric {
 
     /**
      * @param name Name.
-     * @param descr Description.
+     * @param desc Description.
      * @param val Supplier.
      */
-    public LongGauge(String name, @Nullable String descr, LongSupplier val) {
-        super(name, descr);
+    public LongGauge(String name, @Nullable String desc, LongSupplier val) {
+        super(name, desc);
 
         this.val = val;
     }

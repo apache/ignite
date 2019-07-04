@@ -33,11 +33,11 @@ public class HistogramMetric extends AbstractMetric implements ObjectMetric<long
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param desc Description.
      * @param bounds Bounds.
      */
-    public HistogramMetric(String name, @Nullable String description, long[] bounds) {
-        super(name, description);
+    public HistogramMetric(String name, @Nullable String desc, long[] bounds) {
+        super(name, desc);
 
         holder = new HistogramHolder(bounds);
     }

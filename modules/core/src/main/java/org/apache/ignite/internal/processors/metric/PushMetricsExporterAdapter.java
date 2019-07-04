@@ -22,7 +22,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.function.Predicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -30,14 +29,14 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- *
+ * Base class for exporters that pushes metrics to the external system.
  */
 public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implements MetricExporterSpi {
     /** Metric registry. */
     protected ReadOnlyMetricRegistry mreg;
 
     /** Metric filter. */
-    protected  @Nullable Predicate<Metric> filter;
+    protected  @Nullable Predicate<MetricRegistry> filter;
 
     /** Export period. */
     private long period;
@@ -98,8 +97,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void setExportFilter(Predicate<Metric> filter) {
+    @Override public void setExportFilter(Predicate<MetricRegistry> filter) {
         this.filter = filter;
     }
-
 }

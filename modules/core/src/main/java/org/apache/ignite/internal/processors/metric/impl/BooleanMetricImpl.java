@@ -29,10 +29,10 @@ public class BooleanMetricImpl extends AbstractMetric implements BooleanMetric {
 
     /**
      * @param name Name.
-     * @param descr Description.
+     * @param desc Description.
      */
-    public BooleanMetricImpl(String name, @Nullable String descr) {
-        super(name, descr);
+    public BooleanMetricImpl(String name, @Nullable String desc) {
+        super(name, desc);
     }
 
     /**

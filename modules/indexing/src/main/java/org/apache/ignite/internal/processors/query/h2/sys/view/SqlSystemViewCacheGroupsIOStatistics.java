@@ -20,9 +20,10 @@ import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.h2.engine.Session;
 import org.h2.result.Row;
@@ -34,6 +35,7 @@ import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.LOGICAL_READS;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL_READS;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.lang.GridFunc.iterator;
 
 /**
@@ -59,32 +61,32 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
         if (nameCond.isEquality()) {
             String cacheGrpName = nameCond.valueForEquality().getString();
 
-            MetricRegistry mset = ctx.metric().registry().withPrefix(CACHE_GROUP.metricGroupName(), cacheGrpName);
+            MetricRegistry mreg = ctx.metric().registry(metricName(CACHE_GROUP.metricGroupName(), cacheGrpName));
 
-            IntMetric grpId = (IntMetric)mset.findMetric("grpId");
-            ObjectMetric<String> grpName = (ObjectMetric<String>)mset.findMetric("name");
+            IntMetric grpId = (IntMetric)mreg.findMetric("grpId");
+            ObjectMetric<String> grpName = (ObjectMetric<String>)mreg.findMetric("name");
 
             if (grpId == null)
                 emptyIterator();
 
-            if (mset != null) {
+            if (mreg != null) {
                 return singleton(toRow(ses,
                     grpId.value(),
                     grpName.value(),
-                    mset)
+                    mreg)
                 ).iterator();
             }
         }
         else {
             Collection<CacheGroupContext> grpCtxs = ctx.cache().cacheGroups();
 
-            MetricRegistry mset = ctx.metric().registry().withPrefix(CACHE_GROUP.metricGroupName());
+            GridMetricManager mmgr = ctx.metric();
 
             return iterator(grpCtxs,
                 grpCtx -> toRow(ses,
                     grpCtx.groupId(),
                     grpCtx.cacheOrGroupName(),
-                    mset.withPrefix(grpCtx.cacheOrGroupName())),
+                    mmgr.registry(metricName(CACHE_GROUP.metricGroupName(), grpCtx.cacheOrGroupName()))),
                 true,
                 grpCtx -> !grpCtx.systemCache());
         }
@@ -93,8 +95,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
     }
 
     /** */
-    private Row toRow(Session ses, int grpId, String grpName, MetricRegistry mset) {
-        IntMetric grpIdMetric = (IntMetric)mset.findMetric("grpId");
+    private Row toRow(Session ses, int grpId, String grpName, MetricRegistry mreg) {
+        IntMetric grpIdMetric = (IntMetric)mreg.findMetric("grpId");
 
         if (grpIdMetric == null)
             return createRow(ses, grpId, grpName, 0, 0);
@@ -103,8 +105,8 @@ public class SqlSystemViewCacheGroupsIOStatistics extends SqlAbstractLocalSystem
             ses,
             grpId,
             grpName,
-            ((LongMetric)mset.findMetric(PHYSICAL_READS)).value(),
-            ((LongMetric)mset.findMetric(LOGICAL_READS)).value()
+            ((LongMetric)mreg.findMetric(PHYSICAL_READS)).value(),
+            ((LongMetric)mreg.findMetric(LOGICAL_READS)).value()
         );
     }
 

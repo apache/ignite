@@ -17,18 +17,21 @@
 package org.apache.ignite.internal.metric;
 
 import java.lang.management.ManagementFactory;
+import java.util.stream.StreamSupport;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.spi.metric.LongMetric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -41,6 +44,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderQuery.LOGICAL_
 import static org.apache.ignite.internal.metric.IoStatisticsHolderQuery.PHYSICAL_READS;
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Test of local node IO statistics MX bean.
@@ -75,14 +79,14 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      */
     @Test
     public void testIndexBasic() throws Exception {
-        resetMetric(ignite, HASH_INDEX.metricGroupName());
+        resetMetric(ignite, metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
         int cnt = 100;
 
         populateCache(cnt);
 
-        MetricRegistry mreg = ignite.context().metric().registry()
-            .withPrefix(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME);
+        MetricRegistry mreg = ignite.context().metric()
+            .registry(metricName(HASH_INDEX.metricGroupName(), DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
         long idxLeafLogicalCnt = ((LongMetric)mreg.findMetric(LOGICAL_READS_LEAF)).value();
 
@@ -114,12 +118,12 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
 
         clearCache(cnt);
 
-        resetMetric(ignite, CACHE_GROUP.metricGroupName());
+        resetMetric(ignite, metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
 
         populateCache(cnt);
 
-        MetricRegistry mreg = ignite.context().metric().registry()
-            .withPrefix(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME);
+        MetricRegistry mreg = ignite.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
 
         long cacheLogicalReadsCnt = ((LongMetric)mreg.findMetric(LOGICAL_READS)).value();
 
@@ -152,26 +156,42 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
      * @param ignite Ignite.
      */
     public static void resetAllIoMetrics(IgniteEx ignite) throws MalformedObjectNameException {
-        for (IoStatisticsType type : IoStatisticsType.values())
-            resetMetric(ignite, type.metricGroupName());
+        GridMetricManager mmgr = ignite.context().metric();
+
+        StreamSupport.stream(mmgr.spliterator(), false)
+            .map(MetricRegistry::name)
+            .filter(name -> {
+                for (IoStatisticsType type : IoStatisticsType.values()) {
+                    if (name.startsWith(type.metricGroupName()))
+                        return true;
+                }
+
+                return false;
+            })
+            .forEach(grpName -> resetMetric(ignite, grpName));
+
     }
 
     /**
      * Resets all metrics for a given prefix.
      *
-     * @param prefix Prefix to reset metrics.
+     * @param grpName Group name to reset metrics.
      */
-    public static void resetMetric(IgniteEx ignite, String prefix) throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeMBeanName(ignite.name(), "Kernal",
-            IgniteKernal.class.getSimpleName());
+    public static void resetMetric(IgniteEx ignite, String grpName) {
+        try {
+            ObjectName mbeanName = U.makeMBeanName(ignite.name(), "Kernal",
+                IgniteKernal.class.getSimpleName());
 
-        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+            MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
-        if (!mbeanSrv.isRegistered(mbeanName))
-            fail("MBean is not registered: " + mbeanName.getCanonicalName());
+            if (!mbeanSrv.isRegistered(mbeanName))
+                fail("MBean is not registered: " + mbeanName.getCanonicalName());
 
-        IgniteMXBean bean = MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, IgniteMXBean.class, false);
+            IgniteMXBean bean = MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, IgniteMXBean.class, false);
 
-        bean.resetMetrics(prefix);
+            bean.resetMetrics(grpName);
+        } catch (MalformedObjectNameException e) {
+            throw new IgniteException(e);
+        }
     }
 }

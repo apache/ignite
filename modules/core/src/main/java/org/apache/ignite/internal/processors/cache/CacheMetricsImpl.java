@@ -26,16 +26,15 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.store.GridCacheWriteBehindStore;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
-import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
  * Adapter for cache metrics.
@@ -53,11 +52,11 @@ public class CacheMetricsImpl implements CacheMetrics {
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
     /**
-     * Cache metrics prefix.
+     * Cache metrics registry name first part.
      * Full name will contain {@link CacheConfiguration#getName()} also.
      * {@code "cache.sys-cache"}, for example.
      */
-    public static final String CACHE_METRICS_PREFIX = "cache";
+    public static final String CACHE_METRICS = "cache";
 
     /** Number of reads. */
     private final LongMetricImpl reads;
@@ -174,25 +173,22 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Write-behind store, if configured. */
     private GridCacheWriteBehindStore store;
 
-    /** Prefix for the cache metrics. */
-    private String prefix;
-
     /**
      * Creates cache metrics.
      *
      * @param cctx Cache context.
      */
     public CacheMetricsImpl(GridCacheContext<?, ?> cctx) {
-        this(cctx, null);
+        this(cctx, false);
     }
 
     /**
      * Creates cache metrics.
      *
      * @param cctx Cache context.
-     * @param suffix Suffix for the metric set name.
+     * @param isNear Is near flag.
      */
-    public CacheMetricsImpl(GridCacheContext<?, ?> cctx, @Nullable String suffix) {
+    public CacheMetricsImpl(GridCacheContext<?, ?> cctx, boolean isNear) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -205,12 +201,9 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        if (suffix == null)
-            prefix = metricName(CACHE_METRICS_PREFIX, cctx.name());
-        else
-            prefix = metricName(CACHE_METRICS_PREFIX, cctx.name(), suffix);
+        String regName = cacheMetricsRegistryName(cctx.name(), isNear);
 
-        MetricRegistry mreg = cctx.kernalContext().metric().registry().withPrefix(prefix);
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(regName);
 
         reads = mreg.metric("CacheGets",
             "The total number of gets to the cache.");
@@ -1371,11 +1364,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (delegate != null)
             delegate.onOffHeapEvict();
-    }
-
-    /** @return Prefix for the cache metrics. */
-    public String metricsPrefix() {
-        return prefix;
     }
 
     /** {@inheritDoc} */

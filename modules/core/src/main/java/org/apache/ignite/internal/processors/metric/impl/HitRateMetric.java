@@ -39,12 +39,12 @@ public class HitRateMetric extends AbstractMetric implements LongMetric {
 
     /**
      * @param name Name.
-     * @param description Description.
+     * @param desc Description.
      * @param rateTimeInterval Rate time interval.
      * @param size Counters array size.
      */
-    public HitRateMetric(String name, @Nullable String description, long rateTimeInterval, int size) {
-        super(name, description);
+    public HitRateMetric(String name, @Nullable String desc, long rateTimeInterval, int size) {
+        super(name, desc);
 
         cntr = new HitRateMetricImpl(rateTimeInterval, size);
     }

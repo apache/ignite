@@ -20,62 +20,43 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Spliterators;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.DoubleMetric;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.ObjectMetric;
-import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetric;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 /** */
-@RunWith(Parameterized.class)
 public class MetricsSelfTest {
-    /** Metrics prefix. */
-    @Parameterized.Parameters(name = "Prefix {0}")
-    public static Iterable<String[]> data() {
-        return asList(
-            new String[] {""},
-            new String[] {"test.prefix"});
-    }
-
-    /** Prefix. */
-    @Parameterized.Parameter
-    public String prefix;
-
     /** */
     private MetricRegistry mreg;
 
     /** */
     @Before
     public void setUp() throws Exception {
-        mreg = new MetricRegistryImpl();
-
-        if (!F.isEmpty(prefix))
-            mreg = mreg.withPrefix(prefix);
+        mreg = new MetricRegistry("group", null);
     }
 
     /** */
@@ -137,7 +118,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testRegister() throws Exception {
-        LongMetricImpl l = new LongMetricImpl(testMetricName("rtest"), "test");
+        LongMetricImpl l = new LongMetricImpl("rtest", "test");
 
         mreg.register(l);
 
@@ -285,7 +266,7 @@ public class MetricsSelfTest {
     /** */
     @Test
     public void testGetMetrics() throws Exception {
-        MetricRegistry mreg = newMetricRegistry();
+        MetricRegistry mreg = new MetricRegistry("group", null);
 
         mreg.metric("test1", "");
         mreg.metric("test2", "");
@@ -293,14 +274,10 @@ public class MetricsSelfTest {
         mreg.metric("test4", "");
         mreg.metric("test5", "");
 
-        Set<String> names = new HashSet<>(asList(
-            testMetricName("test1"),
-            testMetricName("test2"),
-            testMetricName("test3"),
-            testMetricName("test4"),
-            testMetricName("test5")));
+        Set<String> names = new HashSet<>(asList("group.test1", "group.test2", "group.test3", "group.test4",
+            "group.test5"));
 
-        Set<String> res = mreg.getMetrics().stream()
+        Set<String> res = StreamSupport.stream(Spliterators.spliteratorUnknownSize(mreg.iterator(), 0), false)
             .map(Metric::name)
             .collect(toSet());
 
@@ -309,35 +286,8 @@ public class MetricsSelfTest {
 
     /** */
     @Test
-    public void testCreationListener() throws Exception {
-        MetricRegistry mreg = newMetricRegistry();
-
-        mreg.metric("test0", "");
-
-        Set<String> res = new HashSet<>();
-
-        mreg.addMetricCreationListener(m -> res.add(m.name()));
-
-        mreg.metric("test1", null);
-        mreg.metric("test2", null);
-        mreg.metric("test3", null);
-        mreg.metric("test4", null);
-        mreg.metric("test5", null);
-
-        Set<String> names = new HashSet<>(asList(
-            testMetricName("test1"),
-            testMetricName("test2"),
-            testMetricName("test3"),
-            testMetricName("test4"),
-            testMetricName("test5")));
-
-        assertEquals(names, res);
-    }
-
-    /** */
-    @Test
     public void testRemove() throws Exception {
-        MetricRegistry mreg = newMetricRegistry();
+        MetricRegistry mreg = new MetricRegistry("group", null);
 
         LongMetricImpl cntr = mreg.metric("my.name", null);
         LongMetricImpl cntr2 = mreg.metric("my.name.x", null);
@@ -359,15 +309,6 @@ public class MetricsSelfTest {
     }
 
     /** */
-    private MetricRegistry newMetricRegistry() {
-        MetricRegistry mreg = new MetricRegistryImpl();
-
-        if (!F.isEmpty(prefix))
-            mreg = mreg.withPrefix(prefix);
-        return mreg;
-    }
-
-    /** */
     private void run(Runnable r, int cnt) throws org.apache.ignite.IgniteCheckedException {
         List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -380,13 +321,5 @@ public class MetricsSelfTest {
 
         for (IgniteInternalFuture fut : futs)
             fut.get();
-    }
-
-    /** */
-    private String testMetricName(String name) {
-        if (prefix.isEmpty())
-            return name;
-
-        return metricName(prefix, name);
     }
 }

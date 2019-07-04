@@ -30,11 +30,11 @@ public class BooleanGauge extends AbstractMetric implements BooleanMetric {
 
     /**
      * @param name Name.
-     * @param descr Description.
+     * @param desc Description.
      * @param val Supplier.
      */
-    public BooleanGauge(String name, @Nullable String descr, BooleanSupplier val) {
-        super(name, descr);
+    public BooleanGauge(String name, @Nullable String desc, BooleanSupplier val) {
+        super(name, desc);
 
         this.val = val;
     }

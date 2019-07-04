@@ -30,10 +30,10 @@ public class DoubleMetricImpl extends AbstractMetric implements DoubleMetric {
 
     /**
      * @param name Name.
-     * @param descr Description.
+     * @param desc Description.
      */
-    public DoubleMetricImpl(String name, @Nullable String descr) {
-        super(name, descr);
+    public DoubleMetricImpl(String name, @Nullable String desc) {
+        super(name, desc);
 
         this.val = new DoubleAccumulator(Double::sum, 0d);
     }
