@@ -23,8 +23,11 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -63,7 +66,10 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
     /** System out. */
     protected PrintStream sysOut;
 
-    /** Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test. */
+    /**
+     * Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test.
+     * Will be as well passed as a handler output for an anonymous logger in the test.
+     */
     protected ByteArrayOutputStream testOut;
 
     /** Atomic configuration. */
@@ -101,34 +107,51 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
 
         sysOut = System.out;
 
-        testOut = new ByteArrayOutputStream(1024 * 1024);
+        testOut = new ByteArrayOutputStream(16 * 1024);
 
         checkpointFreq = DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        log.info("Test output for " + currentTestMethod());
+        log.info("----------------------------------------");
+
+        if (testOut != null)
+            System.out.println(testOut.toString());
+
+        testOut = null;
+
+        System.setOut(sysOut);
+
         stopAllGrids();
 
         cleanPersistenceDir();
 
         // Delete idle-verify dump files.
-        try (DirectoryStream<Path> files = newDirectoryStream(
-            Paths.get(U.defaultWorkDirectory()),
-            entry -> entry.toFile().getName().startsWith(IDLE_DUMP_FILE_PREFIX)
-        )
-        ) {
+        try (DirectoryStream<Path> files = newDirectoryStream(Paths.get(U.defaultWorkDirectory()), this::idleVerifyRes)) {
             for (Path path : files)
                 delete(path);
         }
 
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+    }
 
-        System.setOut(sysOut);
+    /**
+     * @return Logger.
+     */
+    private Logger createTestLogger() {
+        Logger log = CommandHandler.initLogger(null);
 
-        log.info("----------------------------------------");
-        if (testOut != null)
-            System.out.println(testOut.toString());
+        // Adding logging to console.
+        log.addHandler(CommandHandler.setupStreamHandler());
+
+        return log;
+    }
+
+    /** */
+    private boolean idleVerifyRes(Path p) {
+        return p.toFile().getName().startsWith(IDLE_DUMP_FILE_PREFIX);
     }
 
     /** {@inheritDoc} */
@@ -175,7 +198,7 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
      * @return Result of execution
      */
     protected int execute(List<String> args) {
-        return execute(new CommandHandler(), args);
+        return execute(new CommandHandler(createTestLogger()), args);
     }
 
     /**
@@ -192,7 +215,13 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         if (!F.isEmpty(args) && !"--help".equalsIgnoreCase(args.get(0)))
             addExtraArguments(args);
 
-        return hnd.execute(args);
+        int exitCode = hnd.execute(args);
+
+        // Flush all Logger handlers to make log data available to test.
+        Logger logger = U.field(hnd, "logger");
+        Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
+
+        return exitCode;
     }
 
     /**
@@ -217,11 +246,11 @@ public class GridCommandHandlerAbstractTest extends GridCommonAbstractTest {
         for (Ignite ignite : G.allGrids()) {
             IgniteEx ig = (IgniteEx)ignite;
 
-            final Collection<GridCacheFuture<?>> activeFuts = ig.context().cache().context().mvcc().activeFutures();
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
 
             boolean hasFutures = false;
 
-            for (GridCacheFuture<?> fut : activeFuts) {
+            for (GridCacheFuture<?> fut : futs) {
                 if (!fut.isDone()) {
                     //skipping system tx futures if possible
                     if (fut instanceof GridNearTxPrepareFutureAdapter

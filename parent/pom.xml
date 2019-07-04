@@ -530,6 +530,10 @@
                                 <title>Ignite Web Console</title>
                                 <packages>org.apache.ignite.console*</packages>
                             </group>
+                            <group>
+                                <title>Metric SPI</title>
+                                <packages>org.apache.ignite.spi.metric*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
