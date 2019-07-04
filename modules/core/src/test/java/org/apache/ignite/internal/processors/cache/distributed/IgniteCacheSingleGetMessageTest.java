@@ -83,6 +83,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("Counts messages")
     public void testSingleGetMessage() throws Exception {
         checkSingleGetMessage(cacheConfigurations());
     }
