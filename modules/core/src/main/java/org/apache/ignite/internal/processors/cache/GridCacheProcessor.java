@@ -799,7 +799,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        grp.metrics().removeAll();
+        grp.metrics().remove();
 
         cachesInfo.cleanupRemovedGroup(grp.groupId());
     }
