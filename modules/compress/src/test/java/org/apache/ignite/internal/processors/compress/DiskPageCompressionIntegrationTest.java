@@ -49,6 +49,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  *
@@ -139,8 +140,8 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         assertEquals(cacheId, groupId);
 
-        MetricRegistry mreg = ignite.context().metric().registry()
-            .withPrefix(CACHE_GROUP_METRICS_PREFIX, cctx.group().cacheOrGroupName());
+        MetricRegistry mreg = ignite.context().metric().registry(
+            metricName(CACHE_GROUP_METRICS_PREFIX, cctx.group().cacheOrGroupName()));
 
         storeSize = ((LongMetric)mreg.findMetric("StorageSize")).longValue();
         sparseStoreSize = ((LongMetric)mreg.findMetric("SparseStorageSize")).longValue();
@@ -199,8 +200,8 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         IgniteInternalCache<Integer,TestVal> cache = ignite.cachex(cacheName);
 
-        MetricRegistry mreg = ignite.context().metric().registry()
-            .withPrefix(CACHE_GROUP_METRICS_PREFIX, cacheName);
+        MetricRegistry mreg = ignite.context().metric().registry(
+            metricName(CACHE_GROUP_METRICS_PREFIX, cacheName));
 
         GridCacheDatabaseSharedManager dbMgr = ((GridCacheDatabaseSharedManager)ignite.context()
             .cache().context().database());
