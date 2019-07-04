@@ -17,43 +17,17 @@
 
 package org.apache.ignite.spi.metric;
 
-import java.util.Collection;
 import java.util.function.Consumer;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 
 /**
  * Read only metric registry.
  */
-public interface ReadOnlyMetricRegistry {
+public interface ReadOnlyMetricRegistry extends Iterable<MetricRegistry> {
     /**
-     * @param prefix prefix for all metrics.
-     * @return Proxy implementation that will search and create only metrics with specified prefix.
-     */
-    public <T extends ReadOnlyMetricRegistry> T withPrefix(String prefix);
-
-    /**
-     * Prefixes combined using dot notation {@code ["io", "stat"] -> "io.stat"}
-     *
-     * @param prefixes prefixes for all metrics.
-     * @return Proxy implementation that will search and create only metrics with specified prefixes.
-     */
-    public <T extends ReadOnlyMetricRegistry> T withPrefix(String... prefixes);
-
-    /**
-     * @return Metrics stored in this group.
-     */
-    public Collection<Metric> getMetrics();
-
-    /**
-     * Adds listener of metrics sets creation events.
+     * Adds listener of metrics group creation events.
      *
      * @param lsnr Listener.
      */
-    public void addMetricCreationListener(Consumer<Metric> lsnr);
-
-    /**
-     * @param name Name of the metric
-     * @return Metric with specified name if exists. Null otherwise.
-     */
-    @Nullable public Metric findMetric(String name);
+    public void addMetricRegistryCreationListener(Consumer<MetricRegistry> lsnr);
 }

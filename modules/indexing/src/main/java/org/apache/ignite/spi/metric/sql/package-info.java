@@ -15,33 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.impl;
-
-import java.util.function.BooleanSupplier;
-import org.apache.ignite.internal.processors.metric.AbstractMetric;
-import org.apache.ignite.spi.metric.BooleanMetric;
-import org.jetbrains.annotations.Nullable;
+/**
+ *
+ */
 
 /**
- * Implementation based on primitive supplier.
+ * <!-- Package description. -->
+ * Contains Sql view metric exporter implementation.
  */
-public class BooleanGauge extends AbstractMetric implements BooleanMetric {
-    /** Value supplier. */
-    private final BooleanSupplier val;
-
-    /**
-     * @param name Name.
-     * @param desc Description.
-     * @param val Supplier.
-     */
-    public BooleanGauge(String name, @Nullable String desc, BooleanSupplier val) {
-        super(name, desc);
-
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean value() {
-        return val.getAsBoolean();
-    }
-}
+package org.apache.ignite.spi.metric.sql;

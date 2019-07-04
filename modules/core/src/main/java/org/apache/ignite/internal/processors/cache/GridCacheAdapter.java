@@ -105,7 +105,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
-import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -155,7 +155,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_KEY_VALIDATION_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.NEAR_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
@@ -341,7 +340,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         log = ctx.logger(getClass());
         txLockMsgLog = ctx.shared().txLockMessageLogger();
 
-        metrics = new CacheMetricsImpl(ctx, isNear() ? NEAR_SUFFIX : null);
+        metrics = new CacheMetricsImpl(ctx, isNear());
 
         locMxBean = new CacheLocalMetricsMXBeanImpl(this);
         clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
@@ -654,11 +653,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         // no matter what references these futures are holding.
         lastFut = null;
 
-        MetricRegistry mreg = ctx.kernalContext().metric().registry();
-
-        mreg.withPrefix(metrics.metricsPrefix())
-            .getMetrics()
-            .forEach(m -> mreg.remove(m.name()));
+        ctx.kernalContext().metric().remove(MetricUtils.cacheMetricsRegistryName(ctx.name(), isNear()));
     }
 
     /**
