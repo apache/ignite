@@ -35,6 +35,8 @@ import org.jetbrains.annotations.Nullable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.context.event.SimpleApplicationEventMulticaster;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -46,6 +48,14 @@ import static org.mockito.Mockito.when;
 @Configuration
 @Import(Application.class)
 public class TestConfiguration {
+    /**
+     * @return Application event multicaster.
+     */
+    @Bean(name = "applicationEventMulticaster")
+    public ApplicationEventMulticaster simpleApplicationEventMulticaster() {
+        return new SimpleApplicationEventMulticaster();
+    }
+
     /** Announcement mock. */
     @Bean
     public AnnouncementRepository announcementRepository() {

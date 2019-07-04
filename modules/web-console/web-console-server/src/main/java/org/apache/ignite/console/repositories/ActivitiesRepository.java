@@ -69,9 +69,11 @@ public class ActivitiesRepository {
      * @param accId Account ID.
      * @param grp Activity group.
      * @param act Activity action.
+     *
+     * @return Activity.
      */
-    public void save(UUID accId, String grp, String act) {
-        txMgr.doInTransaction(() -> {
+    public Activity save(UUID accId, String grp, String act) {
+        return txMgr.doInTransaction(() -> {
             // Activity period is the current year and month.
             long date = LocalDate.now().atStartOfDay(UTC).withDayOfMonth(1).toInstant().toEpochMilli();
 
@@ -85,7 +87,7 @@ public class ActivitiesRepository {
                 .stream()
                 .filter(item -> item.getGroup().equals(grp) && item.getAction().equals(act))
                 .findFirst()
-                .orElse(new Activity(UUID.randomUUID(), grp, act, 0));
+                .orElse(new Activity(UUID.randomUUID(), accId, grp, act, 0));
 
             activity.increment(1);
 
@@ -94,6 +96,8 @@ public class ActivitiesRepository {
             ids.add(activity.getId());
 
             activitiesIdx.addAll(activityKey, ids);
+
+            return activity;
         });
     }
 

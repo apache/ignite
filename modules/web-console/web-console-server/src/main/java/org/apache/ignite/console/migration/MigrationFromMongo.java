@@ -489,6 +489,7 @@ public class MigrationFromMongo {
 
                 Activity activity = new Activity(
                     UUID.randomUUID(),
+                    accId,
                     activityMongo.getString("group"),
                     act,
                     amount != null ? amount.intValue() : 0
