@@ -117,12 +117,13 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
 
     /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
-        // Reserved update counter is updated only on exchange.
         long cur = get();
 
-        // Special case: single node in topology.
-        if (val == 0)
-            reserveCntr.set(cur);
+        // Always set reserved counter equal to max known counter.
+        long max = Math.max(val, cur);
+
+        if (reserveCntr.get() < max)
+            reserveCntr.set(max);
 
         if (val < cur) // Outdated counter (txs are possible before current topology future is finished).
             return;
@@ -133,12 +134,9 @@ public class PartitionTxUpdateCounterImpl implements PartitionUpdateCounter {
         if (val < highestAppliedCounter())
             throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
-        if (reserveCntr.get() < val)
-            reserveCntr.set(val); // Adjust counter on new primary.
-
         cntr.set(val);
 
-        // If some holes are present at this point, that means some update were missed on recovery and will be restored
+        // If some holes are present at this point, thar means some update were missed on recovery and will be restored
         // during rebalance. All gaps are safe to "forget".
         if (!queue.isEmpty())
             queue.clear();
