@@ -22,6 +22,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -129,6 +130,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = NO_OP_METRICS;
         this.mmgr = null;
+        this.metricsEnabled = true;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -138,7 +140,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         subInts = memPlcCfg.getMetricsSubIntervalCount();
 
-        this.totalAllocatedPages = new LongAdderMetricImpl("NO_OP", null);
+        this.allocRate = new HitRateMetric("NO_OP", null, 60_000, 5);
+        this.totalAllocatedPages = new LongAdderWithDelegateMetricImpl("NO_OP", this::updateAllocRate, null);
         this.largeEntriesPages = new LongAdderMetricImpl("NO_OP", null);
         this.dirtyPages = new LongAdderMetricImpl("NO_OP", null);
         this.readPages = new LongAdderMetricImpl("NO_OP", null);
@@ -146,7 +149,6 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         this.replacedPages = new LongAdderMetricImpl("NO_OP", null);
         this.offHeapSize = new LongMetricImpl("NO_OP", null);
         this.checkpointBufferSize = new LongMetricImpl("NO_OP", null);
-        this.allocRate = new HitRateMetric("NO_OP", null, 60_000, 5);
         this.evictRate = new HitRateMetric("NO_OP", null, 60_000, 5);
         this.pageReplaceRate = new HitRateMetric("NO_OP", null, 60_000, 5);
         this.pageReplaceAge = new HitRateMetric("NO_OP", null, 60_000, 5);
@@ -179,10 +181,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             60_000,
             5);
 
-        totalAllocatedPages = mreg.longAdderMetric("TotalAllocatedPages", delta -> {
-            if (metricsEnabled && delta > 0)
-                allocRate.add(delta);
-        }, "Total number of allocated pages.");
+        totalAllocatedPages = mreg.longAdderMetric("TotalAllocatedPages",
+            this::updateAllocRate,
+            "Total number of allocated pages.");
 
         evictRate = mreg.hitRateMetric("EvictionRate",
             "Eviction rate (pages per second).",
@@ -613,5 +614,15 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         evictRate.reset();
         pageReplaceRate.reset();
         pageReplaceAge.reset();
+    }
+
+    /**
+     * Updates allocation rate metric.
+     *
+     * @param delta Delta.
+     */
+    private void updateAllocRate(long delta) {
+        if (metricsEnabled && delta > 0)
+            allocRate.add(delta);
     }
 }
