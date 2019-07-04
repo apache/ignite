@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * This task is used for JDBCConnection validation.
+ * This task is used for {@link org.apache.ignite.internal.jdbc.JdbcConnection} validation.
  *
  * @deprecated Using Ignite client node based JDBC driver is preferable.
  * See documentation of {@link org.apache.ignite.IgniteJdbcDriver} for details.
