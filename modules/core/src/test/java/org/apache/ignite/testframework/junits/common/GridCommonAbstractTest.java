@@ -951,9 +951,9 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                 if (part != null) {
                     sb.append(p).append(" counters=")
-                        .append(part == null ? "NA" : part.dataStore().partUpdateCounter())
+                        .append(part.dataStore().partUpdateCounter())
                         .append(" fullSize=")
-                        .append(part == null ? "NA" : part.fullSize())
+                        .append(part.fullSize())
                         .append(" state=").append(part.state())
                         .append(" reservations=").append(part.reservations());
                 }
@@ -975,7 +975,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             .append(" fullSize=")
                             .append(part == null ? "NA" : part.fullSize())
                             .append(" state=")
-                            .append(part == null ? "NA" : top.partitionState(nodeId, p))
+                            .append(top.partitionState(nodeId, p))
                             .append(" isAffNode=")
                             .append(affNodes.contains(nodeId))
                             .append("\n");
@@ -1866,6 +1866,17 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+    }
+
+    /**
+     * @param name Instance name.
+     */
+    protected void cleanPersistenceDir(String name) throws Exception {
+        String dn2DirName = name.replace(".", "_");
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/archive/" + dn2DirName, true));
     }
 
     /**

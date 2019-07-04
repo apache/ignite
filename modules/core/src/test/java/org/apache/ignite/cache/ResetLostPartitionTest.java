@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -31,14 +31,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -149,25 +147,18 @@ public class ResetLostPartitionTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        Ignite igniteClient = startGrid(getClientConfiguration("client"));
-
         for (String cacheName : CACHE_NAMES) {
-            IgniteCache<Integer, String> cache = igniteClient.cache(cacheName);
-
-            for (int j = 0; j < CACHE_SIZE; j++)
-                cache.put(j, "Value" + j);
+            try(IgniteDataStreamer<Object, Object> st = grid(0).dataStreamer(cacheName)) {
+                for (int j = 0; j < CACHE_SIZE; j++)
+                    st.addData(j, "Value" + j);
+            }
         }
 
-        stopGrid("client");
-
-        String dn2DirName = grid(1).name().replace(".", "_");
+        String g1Name = grid(1).name();
 
         stopGrid(1);
 
-        //Clean up the pds and WAL for second data node.
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + dn2DirName, true));
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/wal/" + dn2DirName, true));
+        cleanPersistenceDir(g1Name);
 
         //Here we have two from three data nodes and cache with 1 backup. So there is no data loss expected.
         assertEquals(CACHE_NAMES.length * CACHE_SIZE, averageSizeAroundAllNodes());
