@@ -276,23 +276,19 @@ public class CommandHandlerParsingTest extends TestCase {
     public void testExperimentalCommandIsDisabled() {
         System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
-        try {
-            parseArgs(Arrays.asList(WAL.text(), WAL_PRINT));
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(Arrays.asList(WAL.text(), WAL_PRINT)),
+            IllegalArgumentException.class,
+            null
+        );
 
-            assertTrue(e instanceof IllegalArgumentException);
-        }
-
-        try {
-            parseArgs(Arrays.asList(WAL.text(), WAL_DELETE));
-        }
-        catch (Throwable e) {
-            e.printStackTrace();
-
-            assertTrue(e instanceof IllegalArgumentException);
-        }
+        GridTestUtils.assertThrows(
+            null,
+            () -> parseArgs(Arrays.asList(WAL.text(), WAL_DELETE)),
+            IllegalArgumentException.class,
+            null
+        );
     }
 
     /**

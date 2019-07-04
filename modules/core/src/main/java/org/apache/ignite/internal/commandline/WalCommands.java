@@ -69,8 +69,9 @@ public class WalCommands implements Command<T2<String, String>> {
      */
     private String walArgs;
 
+    /** {@inheritDoc} */
     @Override public void printUsage(Logger logger) {
-        if (IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false)) {
+        if (enableExperimental()) {
             Command.usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
                 WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
             Command.usage(logger, "Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
@@ -115,6 +116,9 @@ public class WalCommands implements Command<T2<String, String>> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
+        if (!enableExperimental())
+            throw new IllegalArgumentException("Experimental command is disabled.");
+
         String str = argIter.nextArg("Expected arguments for " + WAL.text());
 
         String walAct = str.toLowerCase();
@@ -267,5 +271,12 @@ public class WalCommands implements Command<T2<String, String>> {
     /** {@inheritDoc} */
     @Override public String name() {
         return WAL.toCommandName();
+    }
+
+    /**
+     * @return Value of {@link IgniteSystemProperties#IGNITE_ENABLE_EXPERIMENTAL_COMMAND}
+     */
+    private boolean enableExperimental() {
+        return IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
     }
 }
