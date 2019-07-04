@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
+import org.apache.ignite.internal.processors.cache.index.IoStatisticsBasicIndexSelfTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.AllTests;
@@ -36,6 +37,7 @@ public class IgniteCacheWithIndexingAndPersistenceTestSuite {
 
         suite.addTest(new JUnit4TestAdapter(GridCommandHandlerIndexingTest.class));
         suite.addTest(new JUnit4TestAdapter(StartCachesInParallelTest.class));
+        suite.addTest(new JUnit4TestAdapter(IoStatisticsBasicIndexSelfTest.class));
 
         return suite;
     }
