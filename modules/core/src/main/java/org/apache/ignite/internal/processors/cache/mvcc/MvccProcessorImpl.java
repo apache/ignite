@@ -308,7 +308,7 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
             String errMsg = "Failed to add node to topology. MVCC is enabled on the cluster, but " +
                 "the node doesn't support MVCC [nodeId=" + node.id() + ']';
 
-            return new IgniteNodeValidationResult(node.id(), errMsg, errMsg);
+            return new IgniteNodeValidationResult(node.id(), errMsg);
         }
 
         return null;

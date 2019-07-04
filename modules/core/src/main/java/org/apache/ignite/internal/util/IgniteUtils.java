@@ -10477,7 +10477,7 @@ public abstract class IgniteUtils {
             if (log != null)
                 U.quietAndInfo(log, "Automatically adjusted max WAL archive size to " +
                     U.readableSize(adjustedWalArchiveSize, false) +
-                    " (to override, use DataStorageConfiguration.setMaxWalArhiveSize)");
+                    " (to override, use DataStorageConfiguration.setMaxWalArchiveSize)");
 
             return adjustedWalArchiveSize;
         }
