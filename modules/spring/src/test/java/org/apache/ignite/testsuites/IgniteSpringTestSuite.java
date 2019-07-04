@@ -91,7 +91,6 @@ import org.junit.runners.Suite;
     SpringEncryptedCacheRestartTest.class,
     SpringEncryptedCacheRestartClientTest.class,
 
-    //GridSpringCacheManagerMultiJvmSelfTest.class,
     GridSpringCacheManagerMultiJvmSelfTest.class,
 
     GridCommandLineLoaderTest.class,
