@@ -17,24 +17,19 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.Permissions;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
  * Common class for security tests.
  */
 public class AbstractSecurityTest extends GridCommonAbstractTest {
-    /** Empty array of permissions. */
-    protected static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
-
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
@@ -62,21 +57,16 @@ public class AbstractSecurityTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteEx startGridAllowAll(String login) throws Exception {
-        return startGrid(login, ALLOW_ALL, false);
+        return startGrid(login, PermissionsBuilder.createAllowAll(), false);
     }
 
     /** */
     protected IgniteEx startClientAllowAll(String login) throws Exception {
-        return startGrid(login, ALLOW_ALL, true);
+        return startGrid(login, PermissionsBuilder.createAllowAll(), true);
     }
 
-    /**
-     * @param login Login.
-     * @param prmSet Security permission set.
-     * @param isClient Is client.
-     */
-    protected IgniteEx startGrid(String login, SecurityPermissionSet prmSet, boolean isClient) throws Exception {
-        return startGrid(getConfiguration(login, new TestSecurityPluginProvider(login, "", prmSet))
-                .setClientMode(isClient));
+    protected IgniteEx startGrid(String login, Permissions permissions, boolean isClient) throws Exception {
+        return startGrid(getConfiguration(login, new TestSecurityPluginProvider(login, "", permissions))
+            .setClientMode(isClient));
     }
 }

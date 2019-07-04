@@ -19,6 +19,7 @@ package org.apache.ignite.plugin.security;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.security.Permissions;
 import java.util.UUID;
 
 /**
@@ -53,10 +54,5 @@ public interface SecuritySubject extends Serializable {
      */
     public InetSocketAddress address();
 
-    /**
-     * Authorized permission set for the subject.
-     *
-     * @return Authorized permission set for the subject.
-     */
-    public SecurityPermissionSet permissions();
+    public Permissions permissions();
 }

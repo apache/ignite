@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.Permission;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -93,8 +94,13 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
-        // No-op.
+    @Override public void checkPermission(Permission perm) throws SecurityException {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T doAsCurrentSubject(Callable<T> c) throws Exception {
+        return c.call();
     }
 
     /** {@inheritDoc} */

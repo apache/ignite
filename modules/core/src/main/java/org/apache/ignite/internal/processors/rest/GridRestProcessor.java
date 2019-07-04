@@ -21,6 +21,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,15 +46,16 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridBaselineCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.memory.MemoryMetricsCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
@@ -65,7 +67,9 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityConstants;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.task.permission.TaskPermission;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -84,12 +88,16 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SECURITY_TOKEN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.CREATE;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.DESTROY;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.GET;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.PUT;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.REMOVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
@@ -827,16 +835,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @throws SecurityException If authorization failed.
      */
     private void authorize(GridRestRequest req) throws SecurityException {
-        SecurityPermission perm = null;
-        String name = null;
+        Permission perm = null;
 
         switch (req.command()) {
             case CACHE_GET:
             case CACHE_CONTAINS_KEY:
             case CACHE_CONTAINS_KEYS:
             case CACHE_GET_ALL:
-                perm = SecurityPermission.CACHE_READ;
-                name = ((GridRestCacheRequest)req).cacheName();
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), GET);
 
                 break;
 
@@ -845,8 +851,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case EXECUTE_SCAN_QUERY:
             case CLOSE_SQL_QUERY:
             case FETCH_SQL_QUERY:
-                perm = SecurityPermission.CACHE_READ;
-                name = ((RestQueryRequest)req).cacheName();
+                perm = new CachePermission(((RestQueryRequest)req).cacheName(), GET);
 
                 break;
 
@@ -857,43 +862,52 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CACHE_CAS:
             case CACHE_APPEND:
             case CACHE_PREPEND:
+            case CACHE_PUT_IF_ABSENT:
+            case CACHE_REPLACE_VALUE:
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), PUT);
+
+                break;
+
             case CACHE_GET_AND_PUT:
             case CACHE_GET_AND_REPLACE:
             case CACHE_GET_AND_PUT_IF_ABSENT:
-            case CACHE_PUT_IF_ABSENT:
-            case CACHE_REPLACE_VALUE:
-                perm = SecurityPermission.CACHE_PUT;
-                name = ((GridRestCacheRequest)req).cacheName();
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), GET + ',' + PUT);
 
                 break;
 
             case CACHE_REMOVE:
             case CACHE_REMOVE_ALL:
             case CACHE_CLEAR:
-            case CACHE_GET_AND_REMOVE:
             case CACHE_REMOVE_VALUE:
-                perm = SecurityPermission.CACHE_REMOVE;
-                name = ((GridRestCacheRequest)req).cacheName();
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), REMOVE);
+
+                break;
+
+            case CACHE_GET_AND_REMOVE:
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), GET + ',' + REMOVE);
 
                 break;
 
             case EXE:
             case RESULT:
-                perm = SecurityPermission.TASK_EXECUTE;
-
                 GridRestTaskRequest taskReq = (GridRestTaskRequest)req;
-                name = taskReq.taskName();
+                String name = taskReq.taskName();
 
                 // We should extract task name wrapped by VisorGatewayTask.
                 if (VisorGatewayTask.class.getName().equals(name))
                     name = (String)taskReq.params().get(WRAPPED_TASK_IDX);
 
+                perm = new TaskPermission(name, TaskPermission.EXECUTE);
+
                 break;
 
             case GET_OR_CREATE_CACHE:
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), CREATE);
+
+                break;
+
             case DESTROY_CACHE:
-                perm = SecurityPermission.ADMIN_CACHE;
-                name = ((GridRestCacheRequest)req).cacheName();
+                perm = new CachePermission(((GridRestCacheRequest)req).cacheName(), DESTROY);
 
                 break;
 
@@ -904,7 +918,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case BASELINE_SET:
             case BASELINE_ADD:
             case BASELINE_REMOVE:
-                perm = SecurityPermission.ADMIN_OPS;
+                perm = SecurityConstants.VISOR_ADMIN_OPS_PERMISSION;
 
                 break;
 
@@ -935,7 +949,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         }
 
         if (perm != null)
-            ctx.security().authorize(name, perm);
+            ctx.security().checkPermission(perm);
     }
 
     /**

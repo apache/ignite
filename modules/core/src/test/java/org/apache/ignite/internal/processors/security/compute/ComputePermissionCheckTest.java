@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.security.compute;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -38,14 +39,14 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.SecurityConstants;
+import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
+import org.apache.ignite.internal.processors.task.permission.TaskPermission;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.GridTestUtils.RunnableX;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,8 +56,6 @@ import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
-import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -123,17 +122,17 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /** */
     @Test
     public void test() throws Exception {
-        Ignite srvAllowed = startGrid("srv_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), false);
+        Ignite srvAllowed = startGrid("srv_allowed", permissions("execute,cancel"), false);
 
-        Ignite srvForbidden = startGrid("srv_forbidden", permissions(EMPTY_PERMS), false);
+        Ignite srvForbidden = startGrid("srv_forbidden", permissions(null), false);
 
-        Ignite srvForbiddenCancel = startGrid("srv_forbidden_cnl", permissions(TASK_EXECUTE), false);
+        Ignite srvForbiddenCancel = startGrid("srv_forbidden_cnl", permissions("execute"), false);
 
-        Ignite clntAllowed = startGrid("clnt_allowed", permissions(TASK_EXECUTE, TASK_CANCEL), true);
+        Ignite clntAllowed = startGrid("clnt_allowed", permissions("execute,cancel"), true);
 
-        Ignite clntForbidden = startGrid("clnt_forbidden", permissions(EMPTY_PERMS), true);
+        Ignite clntForbidden = startGrid("clnt_forbidden", permissions(null), true);
 
-        Ignite clntForbiddenCancel = startGrid("clnt_forbidden_cnl", permissions(TASK_EXECUTE), true);
+        Ignite clntForbiddenCancel = startGrid("clnt_forbidden_cnl", permissions("execute"), true);
 
         srvAllowed.cluster().active(true);
 
@@ -180,16 +179,16 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
         return Arrays.stream(nodes).map(nodeOps).flatMap(identity());
     }
 
-    /**
-     * @param perms Permissions.
-     */
-    private SecurityPermissionSet permissions(SecurityPermission... perms) {
-        return SecurityPermissionSetBuilder.create()
-            .appendTaskPermissions(TEST_COMPUTE_TASK.getClass().getName(), perms)
-            .appendTaskPermissions(TEST_CALLABLE.getClass().getName(), perms)
-            .appendTaskPermissions(TEST_RUNNABLE.getClass().getName(), perms)
-            .appendTaskPermissions(TEST_CLOSURE.getClass().getName(), perms)
-            .build();
+    private Permissions permissions(String actions) {
+        PermissionsBuilder builder = PermissionsBuilder.create()
+            .add(SecurityConstants.JOIN_AS_SERVER_PERMISSION);
+
+        if (actions != null)
+            builder.add(
+                new TaskPermission("org.apache.ignite.internal.processors.security.compute.*", actions)
+            );
+
+        return builder.get();
     }
 
     /**

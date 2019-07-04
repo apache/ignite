@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -66,7 +67,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -513,7 +513,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), e);
         }
 
-        cctx.checkSecurity(SecurityPermission.CACHE_READ);
+        cctx.checkCachePermission(CachePermission.GET);
 
         if (nodes.isEmpty())
             return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyCheckedException());
@@ -557,7 +557,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
-        cctx.checkSecurity(SecurityPermission.CACHE_READ);
+        cctx.checkCachePermission(CachePermission.GET);
 
         if (nodes.isEmpty()) {
             if (part != null) {

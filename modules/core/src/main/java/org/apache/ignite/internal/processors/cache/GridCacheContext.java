@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTran
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
@@ -107,7 +108,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT;
@@ -813,15 +813,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         return new IgniteTxKey(key, cacheId);
     }
 
-    /**
-     * @param op Operation to check.
-     * @throws SecurityException If security check failed.
-     */
-    public void checkSecurity(SecurityPermission op) throws SecurityException {
-        if (CU.isSystemCache(name()))
-            return;
-
-        ctx.security().authorize(name(), op);
+    /** . */
+    public void checkCachePermission(String actions) throws SecurityException {
+        if (!CU.isSystemCache(name()))
+            ctx.security().checkPermission(new CachePermission(name(), actions));
     }
 
     /**

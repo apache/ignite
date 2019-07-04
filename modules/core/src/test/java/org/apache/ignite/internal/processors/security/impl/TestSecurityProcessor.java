@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.net.InetSocketAddress;
+import java.security.Permissions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,9 +35,6 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
@@ -45,8 +43,8 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
  * Security processor for test.
  */
 public class TestSecurityProcessor extends GridProcessorAdapter implements GridSecurityProcessor {
-    /** Permissions. */
-    private static final Map<SecurityCredentials, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
+
+    private static final Map<SecurityCredentials, Permissions> PERMISSIONS = new ConcurrentHashMap<>();
 
     /** Node security data. */
     private final TestSecurityData nodeSecData;
@@ -75,7 +73,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setId(node.id())
                 .setAddr(new InetSocketAddress(F.first(node.addresses()), 0))
                 .setLogin(cred.getLogin())
-                .setPerms(PERMS.get(cred))
+                .setPermissions(PERMISSIONS.get(cred))
         );
     }
 
@@ -92,7 +90,7 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
                 .setId(ctx.subjectId())
                 .setAddr(ctx.address())
                 .setLogin(ctx.credentials().getLogin())
-                .setPerms(PERMS.get(ctx.credentials()))
+                .setPermissions(PERMISSIONS.get(ctx.credentials()))
         );
     }
 
@@ -104,15 +102,6 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
-        throws SecurityException {
-        if (!((TestSecurityContext)securityCtx).operationAllowed(name, perm))
-            throw new SecurityException("Authorization failed [perm=" + perm +
-                ", name=" + name +
-                ", subject=" + securityCtx.subject() + ']');
     }
 
     /** {@inheritDoc} */
@@ -129,21 +118,21 @@ public class TestSecurityProcessor extends GridProcessorAdapter implements GridS
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        PERMS.put(nodeSecData.credentials(), nodeSecData.getPermissions());
+        PERMISSIONS.put(nodeSecData.credentials(), nodeSecData.getPermissions());
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS, nodeSecData.credentials());
 
         for (TestSecurityData data : predefinedAuthData)
-            PERMS.put(data.credentials(), data.getPermissions());
+            PERMISSIONS.put(data.credentials(), data.getPermissions());
     }
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         super.stop(cancel);
 
-        PERMS.remove(nodeSecData.credentials());
+        PERMISSIONS.remove(nodeSecData.credentials());
 
         for (TestSecurityData data : predefinedAuthData)
-            PERMS.remove(data.credentials());
+            PERMISSIONS.remove(data.credentials());
     }
 }

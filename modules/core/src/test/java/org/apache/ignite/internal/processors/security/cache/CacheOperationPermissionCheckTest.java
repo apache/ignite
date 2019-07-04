@@ -23,17 +23,15 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
-import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -59,9 +57,9 @@ public class CacheOperationPermissionCheckTest extends AbstractCacheOperationPer
      */
     private void testCrudCachePermissions(boolean isClient) throws Exception {
         Ignite node = startGrid(loginPrefix(isClient) + "_test_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, CACHE_READ, CACHE_PUT, CACHE_REMOVE)
-                .appendCachePermissions(FORBIDDEN_CACHE, EMPTY_PERMS).build(), isClient);
+            PermissionsBuilder.create(!isClient)
+                .add(new CachePermission(CACHE_NAME, CachePermission.ALL))
+                .add(new CachePermission(FORBIDDEN_CACHE, "create,destroy")).get(), isClient);
 
         for (Consumer<IgniteCache<String, String>> c : operations()) {
             c.accept(node.cache(CACHE_NAME));

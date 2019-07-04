@@ -114,7 +114,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -128,6 +127,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DEL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.GET;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.PUT;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.REMOVE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
@@ -458,7 +460,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkCachePermission(GET);
 
         if (keyCheck)
             validateCacheKey(key);
@@ -549,7 +551,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean needVer,
         boolean asyncOp
     ) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkCachePermission(GET);
 
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -1023,7 +1025,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (map != null && keyCheck)
             validateCacheKeys(map.keySet());
 
-        ctx.checkSecurity(SecurityPermission.CACHE_PUT);
+        ctx.checkCachePermission(PUT);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -1136,7 +1138,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         validateCacheKey(key);
 
-        ctx.checkSecurity(SecurityPermission.CACHE_PUT);
+        ctx.checkCachePermission(PUT);
 
         final GridNearAtomicAbstractUpdateFuture updateFut =
             createSingleUpdateFuture(key, val, proc, invokeArgs, retval, filter);
@@ -1171,7 +1173,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean async) {
         assert ctx.updatesAllowed();
 
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        ctx.checkCachePermission(REMOVE);
 
         final GridNearAtomicAbstractUpdateFuture updateFut = createSingleUpdateFuture(key,
             null,
@@ -1325,7 +1327,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        ctx.checkCachePermission(REMOVE);
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -3225,6 +3227,23 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ", node=" + nodeId + ']');
         }
 
+        //todo MY_TODO здесь была попытка решить проблему с выполнением
+        // проверки разрешения на удаленном узле .
+        /*if (ctx.kernalContext().security().enabled()) {
+            IgniteSecurity security = ctx.kernalContext().security();
+
+            try (OperationSecurityContext psc = security.withContext(nodeId)) {
+                SecurityPermission perm;
+
+                if (req.operation() == UPDATE)
+                    perm = SecurityPermission.CACHE_PUT;
+                else
+                    perm = SecurityPermission.CACHE_REMOVE;
+
+                security.authorize(ctx.name(), perm);
+            }
+        }*/
+
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null) {
@@ -3233,6 +3252,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             return;
         }
+
+        /*System.out.println(
+            "MY_DEBUG processNearAtomicUpdateRequest locId=" + ctx.localNodeId() +
+                ", nodeId=" + node.id() + ", operation=" + req.operation()
+        );*/
 
         updateAllAsyncInternal(node, req, updateReplyClos);
     }

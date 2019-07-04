@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.security.impl;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.security.Permission;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
@@ -38,41 +37,8 @@ public class TestSecurityContext implements SecurityContext, Serializable {
         this.subject = subject;
     }
 
-    /**
-     * @param opName Op name.
-     * @param perm Permission.
-     */
-    public boolean operationAllowed(String opName, SecurityPermission perm) {
-        switch (perm) {
-            case CACHE_PUT:
-            case CACHE_READ:
-            case CACHE_REMOVE:
-
-                return cacheOperationAllowed(opName, perm);
-
-            case TASK_CANCEL:
-            case TASK_EXECUTE:
-                return taskOperationAllowed(opName, perm);
-
-            case SERVICE_DEPLOY:
-            case SERVICE_INVOKE:
-            case SERVICE_CANCEL:
-                return serviceOperationAllowed(opName, perm);
-
-            case EVENTS_DISABLE:
-            case EVENTS_ENABLE:
-            case ADMIN_VIEW:
-            case ADMIN_CACHE:
-            case ADMIN_QUERY:
-            case ADMIN_OPS:
-            case CACHE_CREATE:
-            case CACHE_DESTROY:
-            case JOIN_AS_SERVER:
-                return systemOperationAllowed(perm);
-
-            default:
-                throw new IllegalStateException("Invalid security permission: " + perm);
-        }
+    @Override public boolean implies(Permission perm) throws SecurityException {
+        return subject.permissions().implies(perm);
     }
 
     /** {@inheritDoc} */
@@ -81,45 +47,7 @@ public class TestSecurityContext implements SecurityContext, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
-        return hasPermission(subject.permissions().taskPermissions().get(taskClsName), perm);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
-        return hasPermission(subject.permissions().cachePermissions().get(cacheName), perm);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
-        return hasPermission(subject.permissions().servicePermissions().get(srvcName), perm);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean systemOperationAllowed(SecurityPermission perm) {
-        Collection<SecurityPermission> perms = subject.permissions().systemPermissions();
-
-        if (F.isEmpty(perms))
-            return subject.permissions().defaultAllowAll();
-
-        return perms.stream().anyMatch(p -> perm == p);
-    }
-
-    /**
-     * @param perms Permissions.
-     * @param perm Permission.
-     */
-    private boolean hasPermission(Collection<SecurityPermission> perms, SecurityPermission perm) {
-        if (perms == null)
-            return subject.permissions().defaultAllowAll();
-
-        return perms.stream().anyMatch(p -> perm == p);
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return "TestSecurityContext{" +
-            "subject=" + subject +
-            '}';
+        return "TestSecurityContext{" + "subject=" + subject + '}';
     }
 }

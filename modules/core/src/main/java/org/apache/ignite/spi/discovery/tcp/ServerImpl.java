@@ -32,11 +32,14 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.security.Permission;
+import java.security.Permissions;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -79,6 +82,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.security.SecurityConstants;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -104,8 +108,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -1955,22 +1957,20 @@ class ServerImpl extends TcpDiscoveryImpl {
             !(msg instanceof TcpDiscoveryConnectionCheckMessage);
     }
 
-    /**
-     * Checks if two given {@link SecurityPermissionSet} objects contain the same permissions.
-     * Each permission belongs to one of three groups : cache, task or system.
-     *
-     * @param locPerms The first set of permissions.
-     * @param rmtPerms The second set of permissions.
-     * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
-     */
-    private boolean permissionsEqual(SecurityPermissionSet locPerms, SecurityPermissionSet rmtPerms) {
-        boolean dfltAllowMatch = locPerms.defaultAllowAll() == rmtPerms.defaultAllowAll();
+    /** . */
+    private boolean localPermissionsImplyRemotePermissions(Permissions locPerms, Permissions rmtPerms) {
+        Enumeration<Permission> e = rmtPerms.elements();
 
-        boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
-            F.eqNotOrdered(rmtPerms.cachePermissions(), locPerms.cachePermissions()) &&
-            F.eqNotOrdered(rmtPerms.taskPermissions(), locPerms.taskPermissions());
+        Permission prm;
 
-        return dfltAllowMatch && bothHaveSamePerms;
+        while (e.hasMoreElements()) {
+            prm = e.nextElement();
+
+            if (!locPerms.implies(prm))
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -3957,9 +3957,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 authFailedMsg = "Authentication subject is not serializable";
                             }
-                            else if (node.clientRouterNodeId() == null &&
-                                !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
-                                authFailedMsg = "Node is not authorised to join as a server node";
+                            else if (node.clientRouterNodeId() == null) {
+                                if (!subj.implies(SecurityConstants.JOIN_AS_SERVER_PERMISSION))
+                                    authFailedMsg = "Node is not authorised to join as a server node";
+                            }
 
                             if (authFailedMsg != null) {
                                 // Always output in debug.
@@ -4549,13 +4550,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             authFailed = false;
                         }
                         else {
-                            SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
+                            SecurityContext locSubj = spi.nodeAuth.authenticateNode(node, cred);
 
-                            SecurityContext coordSubj = nodeSecurityContext(
+                            SecurityContext rmtSubj = nodeSecurityContext(
                                 spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), node
                             );
-
-                            if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
+                            //todo MY_TODO нужен тест
+                            if (!localPermissionsImplyRemotePermissions(locSubj.subject().permissions(),
+                                rmtSubj.subject().permissions())) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication failed [nodeId=" + node.id() +
                                     ", addrs=" + U.addressesAsString(node) + ']');
@@ -4654,7 +4656,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         spi.marshaller(), ldr, locNode
                                     );
 
-                                    if (!permissionsEqual(locCrd.subject().permissions(),
+                                    //todo MY_TODO нужен тест
+                                    if (!localPermissionsImplyRemotePermissions(locCrd.subject().permissions(),
                                         rmCrd.subject().permissions())) {
                                         // Node has not pass authentication.
                                         LT.warn(log,

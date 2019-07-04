@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.Permission;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 
 /**
@@ -101,23 +102,28 @@ public interface IgniteSecurity {
      */
     public void onSessionExpired(UUID subjId);
 
-    /**
-     * Authorizes grid operation.
-     *
-     * @param name Cache name or task class name.
-     * @param perm Permission to authorize.
-     * @throws SecurityException If security check failed.
-     */
-    public void authorize(String name, SecurityPermission perm) throws SecurityException;
+    public void checkPermission(Permission perm) throws SecurityException;
 
     /**
-     * Authorizes grid system operation.
+     * todo MY_TODO
      *
-     * @param perm Permission to authorize.
-     * @throws SecurityException If security check failed.
+     * @param c
+     * @param <T>
+     * @return
      */
-    public default void authorize(SecurityPermission perm) throws SecurityException {
-        authorize(null, perm);
+    public <T> T doAsCurrentSubject(Callable<T> c) throws Exception;
+
+    /**
+     * todo MY_TODO
+     *
+     * @param r
+     */
+    public default void doAsCurrentSubject(Runnable r) throws Exception {
+        doAsCurrentSubject(() -> {
+            r.run();
+
+            return null;
+        });
     }
 
     /**

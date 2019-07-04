@@ -448,6 +448,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 jobBytes = null;
             }
 
+            //todo MY_TODO задача sandbox
+            if(System.getSecurityManager() != null)
+                job = new SecureComputeJob(ctx, job);
+
             // Inject resources.
             ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
 

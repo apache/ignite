@@ -1,0 +1,105 @@
+package org.apache.ignite.internal.processors.security;
+
+import java.lang.ref.WeakReference;
+import java.security.Permissions;
+import java.security.ProtectionDomain;
+import java.util.WeakHashMap;
+import javax.security.auth.Subject;
+import javax.security.auth.SubjectDomainCombiner;
+
+public class IgniteSubjectDomainCombainer extends SubjectDomainCombiner {
+
+    private final WeakKeyValueMap<ProtectionDomain, ProtectionDomain> cachedPDs = new WeakKeyValueMap<>();
+
+    private final Permissions permissions;
+
+    /** . */
+    public IgniteSubjectDomainCombainer(Subject subject, Permissions permissions) {
+        super(subject);
+
+        this.permissions = permissions;
+    }
+
+    @Override public ProtectionDomain[] combine(ProtectionDomain[] currentDomains, ProtectionDomain[] assignedDomains) {
+        if (currentDomains == null || currentDomains.length == 0)
+            return assignedDomains;
+
+        currentDomains = optimize(currentDomains);
+
+        if (currentDomains == null && assignedDomains == null)
+            return null;
+
+        int cLen = currentDomains == null ? 0 : currentDomains.length;
+
+        ProtectionDomain[] newDomains = new ProtectionDomain[cLen];
+
+        synchronized (cachedPDs) {
+            ProtectionDomain subjectPd;
+
+            for (int i = 0; i < cLen; i++) {
+                ProtectionDomain pd = currentDomains[i];
+
+                subjectPd = cachedPDs.getValue(pd);
+
+                if (subjectPd == null) {
+                    subjectPd = new ProtectionDomain(pd.getCodeSource(), permissions);
+
+                    cachedPDs.putValue(pd, subjectPd);
+                }
+
+                newDomains[i] = subjectPd;
+            }
+        }
+
+        return newDomains == null || newDomains.length == 0 ? null : newDomains;
+    }
+
+    private static ProtectionDomain[] optimize(ProtectionDomain[] domains) {
+        if (domains == null || domains.length == 0)
+            return null;
+
+        ProtectionDomain[] optimized = new ProtectionDomain[domains.length];
+
+        ProtectionDomain pd;
+
+        int num = 0;
+
+        for (int i = 0; i < domains.length; i++) {
+            if ((pd = domains[i]) != null) {
+                boolean found = false;
+
+                for (int j = 0; j < num && !found; j++)
+                    found = (optimized[j] == pd);
+
+                if (!found)
+                    optimized[num++] = pd;
+            }
+        }
+
+        // resize the array if necessary
+        if (num > 0 && num < domains.length) {
+            ProtectionDomain[] downSize = new ProtectionDomain[num];
+
+            System.arraycopy(optimized, 0, downSize, 0, downSize.length);
+
+            optimized = downSize;
+        }
+
+        return num == 0 || optimized.length == 0 ? null : optimized;
+    }
+
+    private static class WeakKeyValueMap<K, V> extends WeakHashMap<K, WeakReference<V>> {
+
+        public V getValue(K key) {
+            WeakReference<V> wr = get(key);
+
+            return wr != null ? wr.get() : null;
+        }
+
+        public V putValue(K key, V value) {
+            WeakReference<V> wr = put(key, new WeakReference<V>(value));
+
+            return wr != null ? wr.get() : null;
+        }
+    }
+}

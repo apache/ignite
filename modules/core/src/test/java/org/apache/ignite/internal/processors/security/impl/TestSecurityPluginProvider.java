@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.security.impl;
 
+import java.security.Permissions;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 /** */
 public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvider {
@@ -31,25 +31,23 @@ public class TestSecurityPluginProvider extends AbstractTestSecurityPluginProvid
     /** Password. */
     private final String pwd;
 
-    /** Permissions. */
-    private final SecurityPermissionSet perms;
+    private final Permissions permissions;
 
     /** Users security data. */
     private final TestSecurityData[] clientData;
 
-    /** */
-    public TestSecurityPluginProvider(String login, String pwd, SecurityPermissionSet perms,
+    public TestSecurityPluginProvider(String login, String pwd, Permissions permissions,
         TestSecurityData... clientData) {
         this.login = login;
         this.pwd = pwd;
-        this.perms = perms;
+        this.permissions = permissions;
         this.clientData = clientData.clone();
     }
 
     /** {@inheritDoc} */
     @Override protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
         return new TestSecurityProcessor(ctx,
-            new TestSecurityData(login, pwd, perms),
+            new TestSecurityData(login, pwd, permissions),
             Arrays.asList(clientData));
     }
 }

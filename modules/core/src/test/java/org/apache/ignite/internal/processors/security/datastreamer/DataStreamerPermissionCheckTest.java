@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationPermissionCheckTest;
+import org.apache.ignite.internal.processors.security.impl.PermissionsBuilder;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -56,10 +56,9 @@ public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermi
     @Test
     public void testDataStreamer() throws Exception {
         Ignite node = startGrid(loginPrefix(clientMode) + "_test_node",
-            SecurityPermissionSetBuilder.create()
-                .appendCachePermissions(CACHE_NAME, SecurityPermission.CACHE_PUT)
-                .appendCachePermissions(FORBIDDEN_CACHE, SecurityPermission.CACHE_READ)
-                .build(), clientMode);
+            PermissionsBuilder.create(!clientMode)
+                .add(new CachePermission(CACHE_NAME, "create,put"))
+                .add(new CachePermission(FORBIDDEN_CACHE, "create,get")).get(), clientMode);
 
         List<Consumer<IgniteDataStreamer<String, Integer>>> ops = Arrays.asList(
             s -> s.addData("k", 1),

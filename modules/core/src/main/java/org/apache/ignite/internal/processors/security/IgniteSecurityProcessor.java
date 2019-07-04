@@ -17,10 +17,20 @@
 
 package org.apache.ignite.internal.processors.security;
 
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.Permission;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.security.auth.Subject;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -34,7 +44,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -48,6 +57,9 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeS
  * Default IgniteSecurity implementation.
  */
 public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
+
+    private static final ProtectionDomain[] NULL_PD_ARRAY = new ProtectionDomain[0];
+
     /** Internal attribute name constant. */
     public static final String ATTR_GRID_SEC_PROC_CLASS = "grid.security.processor.class";
 
@@ -142,13 +154,44 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         secPrc.onSessionExpired(subjId);
     }
 
-    /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm) throws SecurityException {
+    @Override public void checkPermission(Permission perm) throws SecurityException {
+        Objects.requireNonNull(perm);
+
         SecurityContext secCtx = curSecCtx.get();
 
         assert secCtx != null;
 
-        secPrc.authorize(name, perm, secCtx);
+        if (!secCtx.implies(perm))
+            throw new SecurityException("Authorization is failed [perm=" + perm + ']');
+    }
+
+    @Override public <T> T doAsCurrentSubject(Callable<T> c) throws Exception {
+        Objects.requireNonNull(c);
+
+        final SecurityContext secCtx = curSecCtx.get();
+
+        assert secCtx != null;
+
+        final Subject subject = new Subject(true,
+            Collections.singleton(new IgnitePrincipal(secCtx.subject().login().toString())),
+            Collections.emptySet(), Collections.emptySet()
+        );
+
+        final AccessControlContext acc = AccessController.doPrivileged
+            (new java.security.PrivilegedAction<AccessControlContext>() {
+                @Override public AccessControlContext run() {
+                    return new AccessControlContext
+                        (new AccessControlContext(NULL_PD_ARRAY),
+                            new IgniteSubjectDomainCombainer(subject, secCtx.subject().permissions()));
+                }
+            });
+
+        try {
+            return AccessController.doPrivileged((PrivilegedExceptionAction<T>)c::call, acc);
+        }
+        catch (PrivilegedActionException pae) {
+            throw pae.getException();
+        }
     }
 
     /** {@inheritDoc} */
@@ -254,6 +297,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
      * @return Validation result or {@code null} in case of success.
      */
     private IgniteNodeValidationResult validateSecProcClass(ClusterNode node) {
+        //todo MY_TODO валидаию нужно делать с учетом версии плагина безопасности, а не только по его классу
         String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
         String locCls = secPrc.getClass().getName();
 

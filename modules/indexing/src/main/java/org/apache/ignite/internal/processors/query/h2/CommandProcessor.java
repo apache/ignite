@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -109,7 +110,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
@@ -126,6 +126,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.CREATE;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.DESTROY;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
@@ -697,7 +699,7 @@ public class CommandProcessor {
             else if (cmdH2 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)cmdH2;
 
-                ctx.security().authorize(cmd.cacheName(), SecurityPermission.CACHE_CREATE);
+                ctx.security().checkPermission(new CachePermission(cmd.cacheName(), CREATE));
 
                 isDdlOnSchemaSupported(cmd.schemaName());
 
@@ -752,7 +754,7 @@ public class CommandProcessor {
                             cmd.tableName());
                 }
                 else {
-                    ctx.security().authorize(tbl.cacheName(), SecurityPermission.CACHE_DESTROY);
+                    ctx.security().checkPermission(new CachePermission(tbl.cacheName(), DESTROY));
 
                     ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
                 }

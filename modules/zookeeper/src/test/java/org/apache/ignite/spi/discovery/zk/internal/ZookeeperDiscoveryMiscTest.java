@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
+import java.security.Permission;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,7 +47,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
@@ -569,23 +570,7 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
                 return null;
             }
 
-            /** {@inheritDoc} */
-            @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
-                return true;
-            }
-
-            /** {@inheritDoc} */
-            @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+            @Override public boolean implies(Permission perm) throws SecurityException {
                 return true;
             }
         }

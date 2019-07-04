@@ -89,6 +89,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -112,7 +113,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -589,7 +589,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
-        checkSecurityPermission(SecurityPermission.CACHE_PUT);
+        checkSecurityPermission(CachePermission.PUT);
 
         Collection<DataStreamerEntry> batch = new ArrayList<>(entries.size());
 
@@ -739,10 +739,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
 
-        if (val == null)
-            checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
-        else
-            checkSecurityPermission(SecurityPermission.CACHE_PUT);
+        checkSecurityPermission(val == null ? CachePermission.REMOVE : CachePermission.PUT);
 
         KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
@@ -1432,18 +1429,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         return nextFlushTime() > ((DataStreamerImpl)o).nextFlushTime() ? 1 : -1;
     }
 
-    /**
-     * Check permissions for streaming.
-     *
-     * @param perm Security permission.
-     * @throws org.apache.ignite.plugin.security.SecurityException If permissions are not enough for streaming.
-     */
-    private void checkSecurityPermission(SecurityPermission perm)
+    private void checkSecurityPermission(String actions)
         throws org.apache.ignite.plugin.security.SecurityException {
-        if (!ctx.security().enabled())
-            return;
-
-        ctx.security().authorize(cacheName, perm);
+        if (ctx.security().enabled())
+            ctx.security().checkPermission(new CachePermission(cacheName, actions));
     }
 
     /**

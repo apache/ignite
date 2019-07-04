@@ -103,7 +103,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -116,6 +115,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.GET;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.PUT;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.REMOVE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -1672,7 +1674,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return new GridFinishedFuture(e);
         }
 
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        cacheCtx.checkCachePermission(REMOVE);
 
         if (retval)
             needReturnValue(true);
@@ -2482,7 +2484,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
 
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_READ);
+        cacheCtx.checkCachePermission(GET);
 
         boolean single = keysCnt == 1;
 
@@ -4726,7 +4728,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         checkUpdatesAllowed(cacheCtx);
 
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
+        cacheCtx.checkCachePermission(PUT);
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
             throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
@@ -4750,7 +4752,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         checkUpdatesAllowed(cacheCtx);
 
-        cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        cacheCtx.checkCachePermission(REMOVE);
 
         if (cacheCtx.mvccEnabled() && !isOperationAllowed(mvccOp))
             throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);

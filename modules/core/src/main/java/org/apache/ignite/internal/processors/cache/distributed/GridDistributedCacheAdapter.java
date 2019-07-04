@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Externalizable;
+import java.security.Permission;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -46,10 +47,12 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
+import org.apache.ignite.internal.processors.security.permission.PermissionSupplier;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -322,7 +325,8 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * Remove task.
      */
     @GridInternal
-    private static class RemoveAllTask extends ComputeTaskAdapter<Object, Boolean> {
+    private static class RemoveAllTask extends ComputeTaskAdapter<Object, Boolean>
+        implements PermissionSupplier {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -348,6 +352,10 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             this.topVer = topVer;
             this.skipStore = skipStore;
             this.keepBinary = keepBinary;
+        }
+
+        @Override public Permission permission() {
+            return new CachePermission(cacheName, CachePermission.REMOVE);
         }
 
         /** {@inheritDoc} */

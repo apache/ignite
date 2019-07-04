@@ -23,6 +23,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.security.Permission;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -96,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -106,6 +108,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
+import org.apache.ignite.internal.processors.security.permission.PermissionSupplier;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -142,7 +145,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -156,6 +158,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUN
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.GET;
+import static org.apache.ignite.internal.processors.cache.permission.CachePermission.REMOVE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
@@ -760,7 +764,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         CachePeekMode[] peekModes) throws IgniteCheckedException {
         assert peekModes != null;
 
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkCachePermission(GET);
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -824,7 +828,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKey(key);
 
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkCachePermission(GET);
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
@@ -1126,7 +1130,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public void clearLocally(boolean srv, boolean near, boolean readers) {
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        ctx.checkCachePermission(REMOVE);
 
         //TODO IGNITE-7952
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
@@ -1907,7 +1911,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean skipVals,
         final boolean needVer
     ) {
-        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+        ctx.checkCachePermission(GET);
 
         if (keyCheck)
             validateCacheKeys(keys);
@@ -4646,7 +4650,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         //TODO IGNITE-7952
         MvccUtils.verifyMvccOperationSupport(ctx, "Clear");
 
-        ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
+        ctx.checkCachePermission(REMOVE);
 
         if (keyCheck)
             validateCacheKey(key);
@@ -6704,7 +6708,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Clear task.
      */
     @GridInternal
-    private static class ClearTask<K> extends ComputeTaskAdapter<Object, Object> {
+    private static class ClearTask<K> extends ComputeTaskAdapter<Object, Object>
+        implements PermissionSupplier {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -6731,6 +6736,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             this.topVer = topVer;
             this.keys = keys;
             this.near = near;
+        }
+
+        @Override public Permission permission() {
+            return new CachePermission(cacheName, REMOVE);
         }
 
         /** {@inheritDoc} */

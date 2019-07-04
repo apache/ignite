@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.task;
 
+import java.security.Permission;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -65,6 +66,8 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.security.permission.PermissionSupplier;
+import org.apache.ignite.internal.processors.task.permission.TaskPermission;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
@@ -78,7 +81,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_MANAGEMENT_TASK_STARTED;
@@ -578,8 +580,16 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             // Reset thread-local context.
             thCtx.set(null);
 
-        if (map.get(TC_SKIP_AUTH) == null)
-            ctx.security().authorize(taskClsName, SecurityPermission.TASK_EXECUTE);
+        if (map.get(TC_SKIP_AUTH) == null) {
+            final Permission perm;
+
+            if (task instanceof PermissionSupplier)
+                perm = ((PermissionSupplier)task).permission();
+            else
+                perm = new TaskPermission(taskClsName, TaskPermission.EXECUTE);
+
+            ctx.security().checkPermission(perm);
+        }
 
         Long timeout = (Long)map.get(TC_TIMEOUT);
 

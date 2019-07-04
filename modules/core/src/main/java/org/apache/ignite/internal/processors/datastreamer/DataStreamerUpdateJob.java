@@ -24,10 +24,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.permission.CachePermission;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 
@@ -118,13 +118,18 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
 
                 CacheObject val = e.getValue();
 
+                final String action;
+
                 if (val != null) {
-                    checkSecurityPermission(SecurityPermission.CACHE_PUT);
+                    action = CachePermission.PUT;
 
                     val.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
                 }
                 else
-                    checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
+                    action = CachePermission.REMOVE;
+
+                if (ctx.security().enabled())
+                    ctx.security().checkPermission(new CachePermission(cacheName, action));
             }
 
             if (unwrapEntries()) {
@@ -155,17 +160,5 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
      */
     private boolean unwrapEntries() {
         return !(rcvr instanceof DataStreamerCacheUpdaters.InternalUpdater);
-    }
-
-    /**
-     * @param perm Security permission.
-     * @throws org.apache.ignite.plugin.security.SecurityException If permission is not enough.
-     */
-    private void checkSecurityPermission(SecurityPermission perm)
-        throws org.apache.ignite.plugin.security.SecurityException {
-        if (!ctx.security().enabled())
-            return;
-
-        ctx.security().authorize(cacheName, perm);
     }
 }

@@ -583,6 +583,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (depEnabled)
                 cctx.deploy().ignoreOwnership(true);
 
+            //todo MY_TODO думаю куда то сюда можно вставить проверку прав на выполнение?
+            // а может ваще в реализации самого мессаджа это сделать?
+
             unmarshall(nodeId, cacheMsg);
 
             if (cacheMsg.classError() != null)

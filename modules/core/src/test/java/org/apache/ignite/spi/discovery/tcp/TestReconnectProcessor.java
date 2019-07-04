@@ -19,6 +19,8 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.security.Permission;
+import java.security.Permissions;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,11 +34,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.plugin.security.SecuritySubjectType;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Updates node attributes on disconnect.
@@ -78,12 +77,6 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void authorize(String name, SecurityPermission perm,
-        @Nullable SecurityContext securityCtx) throws SecurityException {
-
     }
 
     /** {@inheritDoc} */
@@ -136,8 +129,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
             return null;
         }
 
-        /** {@inheritDoc} */
-        @Override public SecurityPermissionSet permissions() {
+        @Override public Permissions permissions() {
             return null;
         }
     }
@@ -164,23 +156,7 @@ public class TestReconnectProcessor extends GridProcessorAdapter implements Grid
             return subj;
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean taskOperationAllowed(String taskClsName, SecurityPermission perm) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean cacheOperationAllowed(String cacheName, SecurityPermission perm) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean serviceOperationAllowed(String srvcName, SecurityPermission perm) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean systemOperationAllowed(SecurityPermission perm) {
+        @Override public boolean implies(Permission perm) throws SecurityException {
             return true;
         }
     }
