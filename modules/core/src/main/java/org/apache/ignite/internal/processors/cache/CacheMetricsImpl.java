@@ -59,9 +59,6 @@ public class CacheMetricsImpl implements CacheMetrics {
      */
     public static final String CACHE_METRICS = "cache";
 
-    /** Suffix for near caches. */
-    public static final String NEAR_SUFFIX = "near";
-
     /** Number of reads. */
     private final LongMetricImpl reads;
 
@@ -205,9 +202,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         delegate = null;
 
-        String regName = cacheMetricsRegistryName(cctx.name(), isNear);
-
-        MetricRegistry mreg = cctx.kernalContext().metric().registry(regName);
+        MetricRegistry mreg = cctx.kernalContext().metric().registry(cacheMetricsRegistryName(cctx.name(), isNear));
 
         reads = mreg.metric("CacheGets",
             "The total number of gets to the cache.");

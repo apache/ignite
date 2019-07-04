@@ -22,15 +22,12 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cache.query.QueryMetrics;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS_PREFIX;
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
  * Adapter for {@link QueryMetrics}.
@@ -57,26 +54,19 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics {
     /**
      * @param mreg Metric registry.
      * @param cacheName Cache name.
-     * @param suffix Suffix for the metrics group name.
+     * @param isNear Is near flag.
      */
-    public GridCacheQueryMetricsAdapter(MetricRegistry mreg, String cacheName, @Nullable String suffix) {
-        String prefix;
+    public GridCacheQueryMetricsAdapter(GridMetricManager mmgr, String cacheName, boolean isNear) {
+        MetricRegistry mreg = mmgr.registry(MetricUtils.cacheMetricsRegistryName(cacheName, isNear));
 
-        if (suffix == null)
-            prefix = metricName(CACHE_METRICS_PREFIX, cacheName, "query");
-        else
-            prefix = metricName(CACHE_METRICS_PREFIX, cacheName, suffix, "query");
-
-        mreg = mreg.withPrefix(prefix);
-
-        minTime = mreg.metric("MinimalTime", null);
+        minTime = mreg.metric("QueryMinimalTime", null);
         minTime.value(Long.MAX_VALUE);
 
-        maxTime = mreg.metric("MaximumTime", null);
-        sumTime = mreg.longAdderMetric("SumTime", null);
-        execs = mreg.longAdderMetric("Executed", null);
-        completed = mreg.longAdderMetric("Completed", null);
-        fails = mreg.longAdderMetric("Failed", null);
+        maxTime = mreg.metric("QueryMaximumTime", null);
+        sumTime = mreg.longAdderMetric("QuerySumTime", null);
+        execs = mreg.longAdderMetric("QueryExecuted", null);
+        completed = mreg.longAdderMetric("QueryCompleted", null);
+        fails = mreg.longAdderMetric("QueryFailed", null);
     }
 
     /** {@inheritDoc} */

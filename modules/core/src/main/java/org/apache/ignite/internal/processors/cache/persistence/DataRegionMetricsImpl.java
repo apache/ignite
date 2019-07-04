@@ -32,8 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
-import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-
 /**
  *
  */
