@@ -103,6 +103,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
                 msg = U.unmarshal(marsh, msgBytes, ldr);
             }
             catch (IgniteCheckedException e) {
+                // Try to resurrect a message in a case of deserialization failure
                 if (e.getCause() instanceof IncompleteDeserializationException)
                     return new CustomMessageWrapper(((IncompleteDeserializationException)e.getCause()).message());
 

@@ -19,20 +19,36 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.jetbrains.annotations.NotNull;
 
-// t0d0 why must be RTE
 // t0d0 test
+/**
+ * Exception which can be used to access a message which failed to be deserialized completely using Java serialization.
+ * Throwed from deserialization methods it can be caught by a caller.
+ * <p>
+ * Should be {@link RuntimeException} because of limitations of Java serialization mechanisms.
+ * <p>
+ * Catching {@link ClassNotFoundException} inside deserialization methods cannot do the same trick because
+ * Java deserialization remembers such exception internally and will rethrow it anyway upon returing to a user.
+ */
 public class IncompleteDeserializationException extends RuntimeException {
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private final DiscoveryCustomMessage m;
 
+    /**
+     * @param m Message.
+     */
     public IncompleteDeserializationException(@NotNull DiscoveryCustomMessage m) {
         super(null, null, false, false);
 
         this.m = m;
     }
 
-    @NotNull public <T> T message() {
-        return (T)m;
+    /**
+     * @return Message.
+     */
+    @NotNull public DiscoveryCustomMessage message() {
+        return m;
     }
 }

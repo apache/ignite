@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Discovery message used for Continuous Query registartion.
  */
 public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** */
@@ -52,6 +52,7 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
     /** Keep binary flag. */
     private boolean keepBinary;
 
+    /** */
     private transient ClassNotFoundException deserEx;
 
     /**
@@ -138,7 +139,10 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
         return new StartRoutineAckDiscoveryMessage(routineId, errs(), updateCntrs, updateCntrsPerNode);
     }
 
+    /** */
     private void readObject(ObjectInputStream in) throws IOException {
+        // Override default serialization in order to tolerate missing classes exceptions (e.g. remote filter class).
+        // We need this means because CQ registration process assumes that an "ack message" will be sent.
         try {
             in.defaultReadObject();
         }
@@ -149,6 +153,9 @@ public class StartRoutineDiscoveryMessage extends AbstractContinuousMessage {
         }
     }
 
+    /**
+     * @return Exception occurred during deserialization.
+     */
     @Nullable public ClassNotFoundException deserializationException() {
         return deserEx;
     }
