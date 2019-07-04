@@ -40,6 +40,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -639,7 +640,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 
-                    return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+                    return new IgniteNodeValidationResult(node.id(), errorMsg);
                 }
                 else
                     return null;
@@ -650,7 +651,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (joiningData == null) {
                 String errorMsg = "Cannot unmarshal joining node data";
 
-                return new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+                return new IgniteNodeValidationResult(node.id(), errorMsg);
             }
 
             if (!isPersistenceEnabled)
@@ -739,7 +740,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 }
             }
 
-            return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg, errorMsg);
+            return (errorMsg == null) ? null : new IgniteNodeValidationResult(node.id(), errorMsg);
         }
         finally {
             lock.readLock().unlock();
@@ -1173,6 +1174,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
                 completeCas(bridge, (DistributedMetaStorageCasMessage)msg);
             else
                 completeWrite(bridge, new DistributedMetaStorageHistoryItem(msg.key(), msg.value()), false, true);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw U.convertException(e);
         }
         catch (IgniteCheckedException | Error e) {
             throw criticalError(e);

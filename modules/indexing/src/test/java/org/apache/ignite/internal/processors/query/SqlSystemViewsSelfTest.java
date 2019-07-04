@@ -293,7 +293,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         }
     }
 
-
     /**
      * @return Default cache configuration.
      */
@@ -485,7 +484,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         String id1 = (String)res1.get(1);
 
         assertNotEquals(id0, id1);
-
 
         String qryPrefix = ignite.localNode().id() + "_";
 
@@ -1054,8 +1052,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertTrue("All tables should be dropped", execSql(selectTabNameCacheName).isEmpty());
     }
 
-
-
     /**
      * Dummy implementation of the mapper. Required to test "AFFINITY_KEY_COLUMN".
      */
@@ -1470,7 +1466,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         public MockedClusterMetrics(ClusterMetricsImpl original) throws Exception {
             super(
                 getField(original, "ctx"),
-                getField(original, "vmMetrics"),
                 getField(original, "nodeStartTime"));
         }
 

@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,17 +37,18 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
     private CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that will be preloaded from all it's current data. */
+    @GridToStringInclude
     private Set<Integer> full;
 
     public IgniteDhtDemandedPartitionsMap(
         @Nullable CachePartitionPartialCountersMap historical,
-        @Nullable Set<Integer> full)
-    {
+        @Nullable Set<Integer> full) {
         this.historical = historical;
         this.full = full;
     }
 
     public IgniteDhtDemandedPartitionsMap() {
+        // No-op.
     }
 
     /**
@@ -68,6 +70,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
 
     /**
      * Adds partition for preloading from all current data.
+     *
      * @param partId Partition ID.
      */
     public void addFull(int partId) {
@@ -81,6 +84,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
 
     /**
      * Removes partition.
+     *
      * @param partId Partition ID.
      * @return {@code True} if changed.
      */

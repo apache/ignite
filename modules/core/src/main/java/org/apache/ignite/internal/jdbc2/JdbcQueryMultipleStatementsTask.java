@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteJdbcDriver;
+import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
@@ -123,11 +126,18 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
 
         GridKernalContext ctx = ((IgniteKernal)ignite).context();
 
-        List<FieldsQueryCursor<List<?>>> curs = ctx.query().querySqlFields(qry, true, false);
+        List<FieldsQueryCursor<List<?>>> curs = ctx.query().querySqlFields(
+            qry, true, !allowMultipleStatements());
 
         List<JdbcStatementResultInfo> resultsInfo = new ArrayList<>(curs.size());
 
         for (FieldsQueryCursor<List<?>> cur0 : curs) {
+            if (cur0 instanceof BulkLoadContextCursor) {
+                curs.forEach(QueryCursor::close);
+
+                throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
+            }
+
             QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)cur0;
 
             long updCnt = -1;
@@ -165,4 +175,10 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
         return resultsInfo;
     }
 
+    /**
+     * @return {@code true} if query with multiple statements is allowed.
+     */
+    protected boolean allowMultipleStatements() {
+        return true;
+    }
 }

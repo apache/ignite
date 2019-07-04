@@ -97,6 +97,15 @@
         </category>
     -->
 
+    <!--
+        Uncomment to enable debugging of partition counters.
+    -->
+    <!--
+    <category name="org.apache.ignite.internal.processors.cache.PartitionTxUpdateCounterDebugWrapper">
+        <level value="DEBUG"/>
+    </category>
+    -->
+
     <!-- Disable all open source debugging. -->
     <category name="org">
         <level value="INFO"/>

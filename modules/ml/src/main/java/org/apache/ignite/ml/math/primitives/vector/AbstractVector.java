@@ -63,6 +63,7 @@ public abstract class AbstractVector implements Vector {
 
     /** Maximum cached element. */
     private Element maxElm = null;
+
     /** Minimum cached element. */
     private Element minElm = null;
 

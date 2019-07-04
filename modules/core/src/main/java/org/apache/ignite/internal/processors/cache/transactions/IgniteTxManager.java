@@ -321,6 +321,38 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param cachesToStop Caches to stop.
+     */
+    public void rollbackTransactionsForCaches(Set<Integer> cachesToStop) {
+        if (!cachesToStop.isEmpty()) {
+            IgniteTxManager tm = context().tm();
+
+            Collection<IgniteInternalTx> active = tm.activeTransactions();
+
+            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> compFut = new GridCompoundFuture<>();
+
+            for (IgniteInternalTx tx : active) {
+                for (IgniteTxEntry e : tx.allEntries()) {
+                    if (cachesToStop.contains(e.context().cacheId())) {
+                        compFut.add(tx.rollbackAsync());
+
+                        break;
+                    }
+                }
+            }
+
+            compFut.markInitialized();
+
+            try {
+                compFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Error occured during tx rollback.", e);
+            }
+        }
+    }
+
+    /**
      * Rollback transactions blocking partition map exchange.
      *
      * @param topVer Initial exchange version.
@@ -2128,8 +2160,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         if (commit)
             tx.commitAsync().listen(new CommitListener(tx));
-        else if (tx.mvccSnapshot() != null && !tx.local())
-            // remote (backup) mvcc transaction sends partition counters to other backup transaction
+        else if (!tx.local())
+            // remote (backup) transaction sends partition counters to other backup transaction on recovery rollback
             // in order to keep counters consistent
             neighborcastPartitionCountersAndRollback(tx);
         else
@@ -2437,8 +2469,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         clearThreadMap(tx);
-
-        transactionMap(tx).remove(tx.xidVersion(), tx);
     }
 
     /**
@@ -2462,13 +2492,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         assert !threadMap.containsValue(tx) : tx;
-        assert !transactionMap(tx).containsValue(tx) : tx;
         assert !haveSystemTxForThread(Thread.currentThread().getId());
 
         if (threadMap.putIfAbsent(threadId, tx) != null)
-            throw new IgniteCheckedException("Thread already has started a transaction.");
-
-        if (transactionMap(tx).putIfAbsent(tx.xidVersion(), tx) != null)
             throw new IgniteCheckedException("Thread already has started a transaction.");
 
         tx.threadId(threadId);
@@ -2571,6 +2597,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final class NodeFailureTimeoutObject extends GridTimeoutObjectAdapter {
         /** */
         private final ClusterNode node;
+
         /** */
         private final MvccCoordinator mvccCrd;
 

@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
@@ -228,7 +230,6 @@ public class CommandHandlerParsingTest {
 
         return res;
     }
-
 
     private <T> void generateAllCombinations(List<T> res, List<T> source, Predicate<T> stopFunc, List<List<T>> acc) {
         acc.add(res);
@@ -617,7 +618,22 @@ public class CommandHandlerParsingTest {
      * @return Common parameters container object.
      */
     private ConnectionAndSslParameters parseArgs(List<String> args) {
-        return new CommonArgParser(new CommandLogger()).
+        return new CommonArgParser(setupTestLogger()).
             parseAndValidate(args.iterator());
+    }
+
+    /**
+     * @return logger for tests.
+     */
+    private Logger setupTestLogger() {
+        Logger result;
+
+        result = Logger.getLogger(getClass().getName());
+        result.setLevel(Level.INFO);
+        result.setUseParentHandlers(false);
+
+        result.addHandler(CommandHandler.setupStreamHandler());
+
+        return result;
     }
 }

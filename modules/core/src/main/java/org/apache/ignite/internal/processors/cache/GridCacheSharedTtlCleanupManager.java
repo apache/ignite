@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
@@ -164,7 +165,13 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                 }
             }
             catch (Throwable t) {
-                if (!(X.hasCause(t, IgniteInterruptedCheckedException.class, InterruptedException.class)))
+                if (X.hasCause(t, NodeStoppingException.class)) {
+                    isCancelled = true; // Treat node stopping as valid worker cancellation.
+
+                    return;
+                }
+
+                if (!(t instanceof IgniteInterruptedCheckedException || t instanceof InterruptedException))
                     err = t;
 
                 throw t;

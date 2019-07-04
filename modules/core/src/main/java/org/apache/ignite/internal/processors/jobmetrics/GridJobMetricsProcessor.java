@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
@@ -30,7 +31,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_METRICS_CONCU
 
 /**
  * Processes job metrics.
+ *
+ * @deprecated Use {@link GridMetricManager} instead.
  */
+@Deprecated
 public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** */
     private static final int CONCURRENCY_LEVEL = Integer.getInteger(IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL, 64);

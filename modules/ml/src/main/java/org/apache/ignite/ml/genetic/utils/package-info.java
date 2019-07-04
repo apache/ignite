@@ -18,4 +18,5 @@
 /**
  * Contains utils for GA Grid
  */
+
 package org.apache.ignite.ml.genetic.utils;

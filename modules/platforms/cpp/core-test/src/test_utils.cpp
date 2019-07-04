@@ -38,6 +38,7 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_QUIET=false");
         cfg.jvmOpts.push_back("-DIGNITE_CONSOLE_APPENDER=false");
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
+        cfg.jvmOpts.push_back("-DIGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP=false");
         cfg.jvmOpts.push_back("-Duser.language=en");
 
         cfg.igniteHome = jni::ResolveIgniteHome();
