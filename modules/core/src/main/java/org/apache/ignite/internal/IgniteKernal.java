@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.UncheckedIOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import javax.cache.CacheException;
-import javax.management.JMException;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -33,10 +26,15 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -4500,12 +4498,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void resetMetrics(String prefix) {
-        assert prefix != null;
+    @Override public void resetMetrics(String registry) {
+        assert registry != null;
 
-        MetricRegistry mreg = ctx.metric().registry().withPrefix(prefix);
+        MetricRegistry mreg = ctx.metric().registry(registry);
 
-        mreg.reset();
+        if (mreg != null)
+            mreg.reset();
+        else if (log.isInfoEnabled())
+            log.info("\"" + registry + "\" not found.");
     }
 
     /** {@inheritDoc} */

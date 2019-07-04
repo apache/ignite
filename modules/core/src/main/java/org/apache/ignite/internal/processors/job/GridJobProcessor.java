@@ -86,6 +86,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.metric.DoubleMetric;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -104,6 +105,8 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU_LOAD;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -116,7 +119,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
 
     /** Metrics prefix. */
-    public static final String JOBS = metricName("compute", "jobs");
+    public static final String JOBS_METRICS = metricName("compute", "jobs");
 
     /** Started jobs metric name. */
     public static final String STARTED = "Started";
@@ -204,6 +207,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** Total job execution time (unaccounted for in metrics). */
     @Deprecated
     private final LongAdder finishedJobsTime = new LongAdder();
+
+    /** Cpu load metric */
+    private final DoubleMetric cpuLoadMetric;
 
     /** Maximum job execution time for finished jobs. */
     @Deprecated
@@ -296,7 +302,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
         jobExecLsnr = new JobExecutionListener();
         discoLsnr = new JobDiscoveryListener();
 
-        MetricRegistry mreg = ctx.metric().registry().withPrefix(JOBS);
+        cpuLoadMetric = (DoubleMetric)ctx.metric().registry(SYS_METRICS).findMetric(CPU_LOAD);
+
+        MetricRegistry mreg = ctx.metric().registry(JOBS_METRICS);
 
         startedJobsMetric = mreg.metric(STARTED, "Number of started jobs.");
 
@@ -1079,7 +1087,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             m.setMaximumExecutionTime(maxFinishedTime);
 
         // CPU load.
-        m.setCpuLoad(ctx.discovery().metrics().getCurrentCpuLoad());
+        m.setCpuLoad(cpuLoadMetric.value());
 
         ctx.jobMetric().addSnapshot(m);
     }
