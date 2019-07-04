@@ -45,6 +45,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -206,7 +207,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         return new T2<>(
             MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, CacheGroupMetricsMXBean.class, true),
-            grid(nodeIdx).context().metric().registry().withPrefix(CACHE_GROUP_METRICS_PREFIX, cacheOrGrpName)
+            grid(nodeIdx).context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, cacheOrGrpName))
         );
     }
 
@@ -389,10 +390,12 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
         T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp2 = mxBean(0, "group2");
         T2<CacheGroupMetricsMXBean, MetricRegistry> mxBean0Grp3 = mxBean(0, "cache4");
 
-        long totalPages = ((LongMetric)ignite.context().metric().registry().findMetric(
-            metricName(DATAREGION_METRICS_PREFIX, "default", "TotalAllocatedPages"))).value();
+        GridMetricManager mmgr = ignite.context().metric();
 
-        assertEquals(totalPages,
+        LongMetric totalPages = (LongMetric)mmgr.registry(metricName(DATAREGION_METRICS_PREFIX, "default"))
+            .findMetric("TotalAllocatedPages");
+
+        assertEquals(((LongMetric)totalPages).value(),
             ((LongMetric)mxBean0Grp1.get2().findMetric("TotalAllocatedPages")).value() +
             ((LongMetric)mxBean0Grp2.get2().findMetric("TotalAllocatedPages")).value() +
             ((LongMetric)mxBean0Grp3.get2().findMetric("TotalAllocatedPages")).value());
@@ -404,10 +407,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
                 cache.put(i, new byte[100]);
         }
 
-        totalPages = ((LongMetric)ignite.context().metric().registry().findMetric(
-            metricName(DATAREGION_METRICS_PREFIX, "default", "TotalAllocatedPages"))).value();
-
-        assertEquals(totalPages,
+        assertEquals(((LongMetric)totalPages).value(),
             ((LongMetric)mxBean0Grp1.get2().findMetric("TotalAllocatedPages")).value() +
             ((LongMetric)mxBean0Grp2.get2().findMetric("TotalAllocatedPages")).value() +
             ((LongMetric)mxBean0Grp3.get2().findMetric("TotalAllocatedPages")).value());

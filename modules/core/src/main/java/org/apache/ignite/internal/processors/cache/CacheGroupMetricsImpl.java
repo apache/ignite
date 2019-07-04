@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -41,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
-import org.apache.ignite.spi.metric.Metric;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -76,8 +74,7 @@ public class CacheGroupMetricsImpl {
     public CacheGroupMetricsImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
 
-        MetricRegistry mreg = ctx.shared().kernalContext().metric().registry()
-            .withPrefix(metricGroupName());
+        MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
 
         mreg.register("Caches", this::getCaches, List.class, null);
 
@@ -377,6 +374,9 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap() {
+        if (ctx.affinity().lastVersion().topologyVersion() < 0)
+            return Collections.EMPTY_MAP;
+
         AffinityAssignment assignment = ctx.affinity().cachedAffinity(AffinityTopologyVersion.NONE);
 
         int part = 0;
@@ -438,12 +438,7 @@ public class CacheGroupMetricsImpl {
 
     /** Removes all metric for cache group. */
     public void removeAll() {
-        MetricRegistry mreg = ctx.shared().kernalContext().metric().registry();
-
-        Collection<Metric> metrics = mreg.withPrefix(metricGroupName()).getMetrics();
-
-        for (Metric m : metrics)
-            mreg.remove(m.name());
+        ctx.shared().kernalContext().metric().remove(metricGroupName());
     }
 
     /**

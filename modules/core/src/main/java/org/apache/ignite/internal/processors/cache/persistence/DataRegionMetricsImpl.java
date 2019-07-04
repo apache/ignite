@@ -104,7 +104,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     private PageMemory pageMem;
 
     /** */
-    private MetricRegistry mreg;
+    private final GridMetricManager mmgr;
 
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
@@ -128,6 +128,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = NO_OP_METRICS;
+        this.mmgr = null;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -159,9 +160,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
         GridMetricManager mmgr,
         DataRegionMetricsProvider dataRegionMetricsProvider) {
-        this.mreg = mreg;
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = dataRegionMetricsProvider;
+        this.mmgr = mmgr;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -505,11 +506,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      */
     public LongAdderMetricImpl getOrAllocateGroupPageAllocationTracker(int grpId, String grpName) {
         return grpAllocationTrackers.computeIfAbsent(grpId,
-            id -> mreg.longAdderMetric(
-                metricName(CACHE_GROUP_METRICS_PREFIX, grpName, "TotalAllocatedPages"),
+            id -> mmgr.registry(metricName(CACHE_GROUP_METRICS_PREFIX, grpName)).longAdderMetric(
+                "TotalAllocatedPages",
                 totalAllocatedPages::add,
-                "Cache group total allocated pages.")
-        );
+                "Cache group total allocated pages."));
     }
 
     /**

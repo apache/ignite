@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.IntGauge;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.LongMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
@@ -53,7 +54,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier
  * Metric registry.
  */
 public class MetricRegistry implements Iterable<Metric> {
-    /** Group name. */
+    /** Registry name. */
     private String grpName;
 
     /** Logger. */
@@ -232,10 +233,12 @@ public class MetricRegistry implements Iterable<Metric> {
      *
      * @param name Name.
      * @param delegate Delegate to which all updates from new metric will be delegated to.
-     * @param description Description.
-     * @return Metric
+     * @param desc Description.
+     * @return {@link LongAdderWithDelegateMetricImpl}.
      */
-    public LongAdderMetricImpl longAdderMetric(String name, LongConsumer delegate, @Nullable String description);
+    public LongAdderMetricImpl longAdderMetric(String name, LongConsumer delegate, @Nullable String desc) {
+        return addMetric(name, new LongAdderWithDelegateMetricImpl(metricName(grpName, name), delegate, desc));
+    }
 
     /**
      * Creates and register hit rate metric.
