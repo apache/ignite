@@ -15,7 +15,7 @@
 #
 
 # Uncomment for migration of user data from MongoDB.
-#migration.mongo.db.name: console
+#migration.mongo.db.url: mongodb://localhost:27017/console
 
 # Uncomment for HTTPS:
 #server:
