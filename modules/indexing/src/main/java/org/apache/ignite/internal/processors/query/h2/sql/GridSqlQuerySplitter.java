@@ -1169,11 +1169,8 @@ public class GridSqlQuerySplitter {
         for (GridSqlAst exp : mapExps) // Add all map expressions as visible.
             mapQry.addColumn(exp, true);
 
-        for (int i = 0; i < visibleCols; i++) // Add visible reduce columns.
-            rdcQry.addColumn(rdcExps.get(i), true);
-
-        for (int i = visibleCols; i < rdcExps.size(); i++) // Add invisible reduce columns (HAVING).
-            rdcQry.addColumn(rdcExps.get(i), false);
+        for (GridSqlAst exp: rdcExps) // Add all reduce columns as visible.
+            rdcQry.addColumn(exp, true);
 
         for (int i = rdcExps.size(); i < mapExps.size(); i++)  // Add all extra map columns as invisible reduce columns.
             rdcQry.addColumn(SplitterUtils.column(((GridSqlAlias)mapExps.get(i)).alias()), false);
@@ -1235,14 +1232,27 @@ public class GridSqlQuerySplitter {
             mapQry.offset(null);
         }
 
+        GridSqlSelect resQry;
+        if (rdcQry.visibleColumns() > visibleCols) { // Reduce query has extra columns which should be omitted in result query.
+            resQry = new GridSqlSelect().from(new GridSqlSubquery(rdcQry));
+
+            for (int i = 0; i < visibleCols; i++)
+                if (rdcExps.get(i) instanceof GridSqlAlias)
+                    resQry.addColumn(SplitterUtils.column(((GridSqlAlias) rdcExps.get(i)).alias()), true);
+                else
+                    resQry.addColumn(rdcExps.get(i), true);
+
+        } else // Reduce query contains only desired columns, so we do not need any wrapper.
+            resQry = rdcQry;
+
         // -- DISTINCT
         if (mapQry.distinct()) {
             mapQry.distinct(!aggregateFound && mapQry.groupColumns() == null && mapQry.havingColumn() < 0);
-            rdcQry.distinct(true);
+            resQry.distinct(true);
         }
 
-        // Replace the given select with generated reduce query in the parent.
-        parent.child(childIdx, rdcQry);
+        // Replace the given select with generated result query in the parent.
+        parent.child(childIdx, resQry);
 
         // Setup resulting map query.
         GridCacheSqlQuery map = new GridCacheSqlQuery(mapQry.getSQL());
