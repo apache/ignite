@@ -23,7 +23,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientReconnectedException;
 
 /**
- * Generic query pager. Override {@link this#readResult(PayloadInputStream)} to make it specific.
+ * Generic query pager. Override {@link this#readResult(PayloadInputChannel)} to make it specific.
  */
 abstract class GenericQueryPager<T> implements QueryPager<T> {
     /** Query op. */
@@ -33,7 +33,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     private final ClientOperation pageQryOp;
 
     /** Query writer. */
-    private final Consumer<PayloadOutputStream> qryWriter;
+    private final Consumer<PayloadOutputChannel> qryWriter;
 
     /** Channel. */
     private final ReliableChannel ch;
@@ -55,7 +55,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
         ReliableChannel ch,
         ClientOperation qryOp,
         ClientOperation pageQryOp,
-        Consumer<PayloadOutputStream> qryWriter
+        Consumer<PayloadOutputChannel> qryWriter
     ) {
         this.ch = ch;
         this.qryOp = qryOp;
@@ -75,7 +75,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
     @Override public void close() throws Exception {
         // Close cursor only if the server has more pages: the server closes cursor automatically on last page
         if (cursorId != null && hasNext)
-            ch.request(ClientOperation.RESOURCE_CLOSE, req -> req.writeLong(cursorId));
+            ch.request(ClientOperation.RESOURCE_CLOSE, req -> req.out().writeLong(cursorId));
     }
 
     /** {@inheritDoc} */
@@ -104,12 +104,12 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
      * cursor ID and trailing "has next page" flag.
      * Use {@link this#hasFirstPage} flag to differentiate between the initial query and page query responses.
      */
-    abstract Collection<T> readEntries(PayloadInputStream in);
+    abstract Collection<T> readEntries(PayloadInputChannel in);
 
     /** */
-    private Collection<T> readResult(PayloadInputStream in) {
+    private Collection<T> readResult(PayloadInputChannel payloadCh) {
         if (!hasFirstPage) {
-            long resCursorId = in.readLong();
+            long resCursorId = payloadCh.in().readLong();
 
             if (cursorId != null) {
                 if (cursorId != resCursorId)
@@ -120,13 +120,13 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
             else {
                 cursorId = resCursorId;
 
-                clientCh = in.clientChannel();
+                clientCh = payloadCh.clientChannel();
             }
         }
 
-        Collection<T> res = readEntries(in);
+        Collection<T> res = readEntries(payloadCh);
 
-        hasNext = in.readBoolean();
+        hasNext = payloadCh.in().readBoolean();
 
         hasFirstPage = true;
 
@@ -141,7 +141,7 @@ abstract class GenericQueryPager<T> implements QueryPager<T> {
                     "query results can be inconsistent, please retry the query.");
             }
 
-            req.writeLong(cursorId);
+            req.out().writeLong(cursorId);
         }, this::readResult);
     }
 }

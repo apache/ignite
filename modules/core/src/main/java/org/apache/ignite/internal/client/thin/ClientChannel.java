@@ -34,8 +34,8 @@ interface ClientChannel extends AutoCloseable {
      * @param payloadReader Payload reader from stream.
      * @return Received operation payload or {@code null} if response has no payload.
      */
-    public <T> T service(ClientOperation op, Consumer<PayloadOutputStream> payloadWriter,
-        Function<PayloadInputStream, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException;
+    public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException;
 
     /**
      * @return Server version.

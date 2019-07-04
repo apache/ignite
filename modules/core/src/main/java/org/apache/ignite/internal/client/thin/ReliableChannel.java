@@ -122,8 +122,8 @@ final class ReliableChannel implements AutoCloseable {
      */
     public <T> T service(
         ClientOperation op,
-        Consumer<PayloadOutputStream> payloadWriter,
-        Function<PayloadInputStream, T> payloadReader
+        Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException {
         ClientConnectionException failure = null;
 
@@ -151,7 +151,7 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * Send request without payload and handle response.
      */
-    public <T> T service(ClientOperation op, Function<PayloadInputStream, T> payloadReader)
+    public <T> T service(ClientOperation op, Function<PayloadInputChannel, T> payloadReader)
         throws ClientException {
         return service(op, null, payloadReader);
     }
@@ -159,7 +159,7 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * Send request and handle response without payload.
      */
-    public void request(ClientOperation op, Consumer<PayloadOutputStream> payloadWriter) throws ClientException {
+    public void request(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter) throws ClientException {
         service(op, payloadWriter, null);
     }
 

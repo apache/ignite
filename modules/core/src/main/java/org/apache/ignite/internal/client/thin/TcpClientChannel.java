@@ -154,8 +154,8 @@ class TcpClientChannel implements ClientChannel {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputStream> payloadWriter,
-        Function<PayloadInputStream, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException {
+    @Override public <T> T service(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter,
+        Function<PayloadInputChannel, T> payloadReader) throws ClientConnectionException, ClientAuthorizationException {
         long id = send(op, payloadWriter);
 
         return receive(op, id, payloadReader);
@@ -166,24 +166,26 @@ class TcpClientChannel implements ClientChannel {
      * @param payloadWriter Payload writer to stream or {@code null} if request has no payload.
      * @return Request ID.
      */
-    private long send(ClientOperation op, Consumer<PayloadOutputStream> payloadWriter)
+    private long send(ClientOperation op, Consumer<PayloadOutputChannel> payloadWriter)
         throws ClientConnectionException {
         long id = reqId.getAndIncrement();
 
         // Only one thread at a time can have access to write to the channel.
         sndLock.lock();
 
-        try (PayloadOutputStream req = new PayloadOutputStream(this)) {
+        try (PayloadOutputChannel payloadCh = new PayloadOutputChannel(this)) {
             pendingReqs.put(id, new ClientRequestFuture());
 
-            req.writeInt(0); // reserve an integer for the request size
+            BinaryOutputStream req = payloadCh.out();
+
+            req.writeInt(0); // Reserve an integer for the request size.
             req.writeShort(op.code());
             req.writeLong(id);
 
             if (payloadWriter != null)
-                payloadWriter.accept(req);
+                payloadWriter.accept(payloadCh);
 
-            req.writeInt(0, req.position() - 4); // actual size
+            req.writeInt(0, req.position() - 4); // Actual size.
 
             write(req.array(), req.position());
         }
@@ -205,7 +207,7 @@ class TcpClientChannel implements ClientChannel {
      * @param payloadReader Payload reader from stream.
      * @return Received operation payload or {@code null} if response has no payload.
      */
-    private <T> T receive(ClientOperation op, long reqId, Function<PayloadInputStream, T> payloadReader)
+    private <T> T receive(ClientOperation op, long reqId, Function<PayloadInputChannel, T> payloadReader)
         throws ClientConnectionException, ClientAuthorizationException {
         ClientRequestFuture pendingReq = pendingReqs.get(reqId);
 
@@ -233,7 +235,7 @@ class TcpClientChannel implements ClientChannel {
                     if (payload == null || payloadReader == null)
                         return null;
 
-                    return payloadReader.apply(new PayloadInputStream(this, payload));
+                    return payloadReader.apply(new PayloadInputChannel(this, payload));
                 }
                 catch (IgniteFutureTimeoutCheckedException ignore) {
                     // Next cycle if timed out.
